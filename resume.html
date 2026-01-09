@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume - Shannon</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #7f8c8d;
+            --accent-color: #48864B;
+            --text-color: #333;
+            --line-height: 1.6;
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            line-height: var(--line-height);
+            color: var(--text-color);
+            background-color: #ffffff;
+            font-size: 11pt; /* Print friendly size */
+            max-width: 800px; /* A4 width approx */
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header Section */
+        header {
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 28pt;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .contact-info {
+            display: flex;
+            gap: 20px;
+            font-size: 10pt;
+            color: var(--secondary-color);
+            flex-wrap: wrap;
+        }
+
+        .contact-info span {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Section Styling */
+        section {
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            font-size: 14pt;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        /* Experience Item */
+        .experience-item {
+            margin-bottom: 20px;
+        }
+
+        .job-main-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 2px;
+        }
+
+        .job-title {
+            font-weight: bold;
+            font-size: 12pt;
+            color: var(--primary-color);
+        }
+
+        .date-range {
+            font-style: italic;
+            font-size: 10pt;
+            color: var(--secondary-color);
+        }
+
+        .company-name {
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .location {
+            font-size: 0.9em;
+            color: #999;
+            margin-left: 10px;
+        }
+
+        ul {
+            list-style-position: outside;
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        li {
+            margin-bottom: 2px;
+        }
+
+        /* Skills Grid */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                max-width: 100%;
+            }
+            @page {
+                margin: 0.5in;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Shannon</h1>
+        <div class="contact-info">
+            <span>Email: shannon@plantbased-balance.org</span>
+            <span>Location: Gold Coast, QLD</span>
+            <!-- <span>Phone: [Phone Number]</span> -->
+        </div>
+    </header>
+
+    <section>
+        <h2>Professional Summary</h2>
+        <p>
+            Dedicated Exercise Scientist and experienced Personal Trainer with over a decade of experience in fitness, healthcoaching, and business management. Proven track record of building successful fitness businesses from the ground up, with strong expertise in sales, marketing, and client transformation. Founder of Plant Based Balance, specializing in holistic health protocols.
+        </p>
+    </section>
+
+    <section>
+        <h2>Work Experience</h2>
+
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Founder & Online Coach</span>
+                <span class="date-range">2024 - Present</span>
+            </div>
+            <span class="company-name">Plant Based Balance <span class="location">Remote</span></span>
+            <ul>
+                <li>Founded and operate a specialized online coaching business for plant-based health and perimenopause support.</li>
+                <li>Manage all aspects of business operations including sales, customer service, and digital product delivery.</li>
+                <li>Develop custom health protocols and meal plans for clients.</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Owner & Personal Trainer</span>
+                <span class="date-range">2019 - 2024</span>
+            </div>
+            <span class="company-name">Coco's Personal Training <span class="location">Hampton, VIC (3188)</span></span>
+            <ul>
+                <li>Established and ran a successful independent personal training studio for 5 years.</li>
+                <li>Executed comprehensive business strategies: advertising, marketing campaigns, and direct sales.</li>
+                <li>Conducted group classes and one-on-one personal training sessions.</li>
+                <li>Managed client retention and daily studio operations.</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Personal Trainer</span>
+                <span class="date-range">2017 - 2019</span>
+            </div>
+            <span class="company-name">TriFusion <span class="location">Melbourne, VIC</span></span>
+            <ul>
+                <li>Delivered personalized fitness training to a diverse client base.</li>
+                <li>Collaborated with gym management to drive member engagement.</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Full Time Associate</span>
+                <span class="date-range">2015 - 2016</span>
+            </div>
+            <span class="company-name">ALDI Stores Australia</span>
+            <ul>
+                <li>Worked in a fast-paced retail environment, ensuring high levels of efficiency and customer service.</li>
+            </ul>
+        </div>
+
+    </section>
+
+    <section>
+        <h2>Education</h2>
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Bachelor of Exercise Science</span>
+                <span class="date-range">2012 - 2015</span>
+            </div>
+            <!-- <span class="company-name">University Name</span> -->
+        </div>
+    </section>
+
+    <section>
+        <h2>Core Competencies</h2>
+        <div class="skills-grid">
+            <ul>
+                <li>Personal Training & Group Fitness</li>
+                <li>Business Management & Operations</li>
+                <li>Sales & Marketing Strategy</li>
+            </ul>
+            <ul>
+                <li>Health & Nutrition Coaching</li>
+                <li>Customer Service & Client Retention</li>
+                <li>Program Design (Hypertrophy, Weight Loss)</li>
+            </ul>
+        </div>
+    </section>
+
+</body>
+</html>

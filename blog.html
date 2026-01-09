@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="facebook-domain-verification" content="tlduivhcqj8ee0gvyaa71o8l4xb78p" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog - PlantBasedBalance</title>
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1928402271406692');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1928402271406692&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Meta Pixel Code -->
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .blog-hero {
+            padding: 160px 0 80px;
+            background: linear-gradient(rgba(4, 106, 56, 0.9), rgba(4, 106, 56, 0.7)), url('assets/hero_image.png');
+            background-size: cover;
+            background-position: center;
+            color: #fff;
+            text-align: center;
+        }
+        .blog-hero h1 {
+            color: #fff;
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+        .search-bar {
+            max-width: 600px;
+            margin: 2rem auto 0;
+            position: relative;
+        }
+        .search-input {
+            width: 100%;
+            padding: 16px 24px;
+            padding-right: 60px;
+            border-radius: 50px;
+            border: none;
+            font-family: var(--font-body);
+            font-size: 1.1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .search-btn {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            height: 40px;
+            width: 40px;
+            background: var(--color-primary);
+            color: white;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .categories {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0 4rem;
+            flex-wrap: wrap;
+        }
+        .cat-tag {
+            padding: 8px 24px;
+            border: 1px solid #ddd;
+            border-radius: 30px;
+            font-weight: 600;
+            color: var(--color-text-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+        .cat-tag.active, .cat-tag:hover {
+            background: var(--color-primary);
+            color: #fff;
+            border-color: var(--color-primary);
+        }
+
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2.5rem;
+            margin-bottom: 4rem;
+        }
+        .blog-card {
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s;
+            background: #fff;
+        }
+        .blog-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+        .blog-thumb {
+            height: 220px;
+            background-color: #ddd;
+            position: relative;
+        }
+        .blog-cat-label {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(255,255,255,0.9);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            text-transform: uppercase;
+        }
+        .blog-content {
+            padding: 1.5rem;
+        }
+        .blog-content h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+            color: var(--color-text-main);
+        }
+        .blog-meta {
+            font-size: 0.85rem;
+            color: #999;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+        }
+        .read-more {
+            color: var(--color-secondary);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+        <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <img src="assets/logo_pbb.png" alt="PBB Logo" style="height: 45px; mix-blend-mode: multiply;">
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="switch28.html">Switch 28</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">Fitness <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="challenge-yoga.html" class="dropdown-item">
+                            <span class="item-title">Somatic Yoga</span>
+                            <span class="item-desc">Reverse cortisol weight gain.</span>
+                        </a>
+                        <a href="challenge-bodyweight.html" class="dropdown-item">
+                            <span class="item-title">Bodyweight Sculpt</span>
+                            <span class="item-desc">No-equipment metabolic toning.</span>
+                        </a>
+                        <a href="challenge-strength.html" class="dropdown-item">
+                            <span class="item-title">Home Strength</span>
+                            <span class="item-desc">Dumbbells & Resistance Bands.</span>
+                        </a>
+                        <a href="challenge-gym.html" class="dropdown-item">
+                            <span class="item-title">Full Gym Protocol</span>
+                            <span class="item-desc">Maximum structural transformation.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="calculators.html">Calculators</a>
+                <a href="blog.html">Blog</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">About <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="research.html" class="dropdown-item">
+                            <span class="item-title">Research</span>
+                            <span class="item-desc">The science behind our protocol.</span>
+                        </a>
+                        <a href="success-stories.html" class="dropdown-item">
+                            <span class="item-title">Reviews</span>
+                            <span class="item-desc">Real transformations.</span>
+                        </a>
+                        <a href="contact.html" class="dropdown-item">
+                            <span class="item-title">Contact Us</span>
+                            <span class="item-desc">Get in touch with our team.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="login.html" class="nav-member">Member Login</a>
+                <a href="quiz.html" class="btn btn-primary">Start Your Reset</a>
+            </div>
+            <div class="nav-toggle" style="display: none;" onclick="toggleMenu()">
+                <i data-lucide="menu"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="blog-hero">
+        <div class="container">
+            <h1>The Wellness <span class="text-gold">Journal</span></h1>
+            <p>Expert advice on nutrition, hormones, and finding balance after 40.</p>
+            
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="Search articles...">
+                <button class="search-btn"><i data-lucide="search" size="18"></i></button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Content -->
+    <div class="container">
+        <div class="categories">
+            <div class="cat-tag active">All Posts</div>
+            <div class="cat-tag">Nutrition</div>
+            <div class="cat-tag">Hormones</div>
+            <div class="cat-tag">Weight Loss</div>
+            <div class="cat-tag">Recipes</div>
+            <div class="cat-tag">Fitness</div>
+        </div>
+
+    <div class="blog-grid">
+            <!-- Article 1 -->
+            <div class="blog-card"><a href="blog-anti-inflammatory.html"><div class="blog-thumb" style="background: url('assets/blog_anti_inflammatory.png') center/cover;"><div class="blog-cat-label">Nutrition</div></div></a><div class="blog-content"><h3><a href="blog-anti-inflammatory.html">Top 5 Anti-Inflammatory Foods</a></h3><p>Discover the plant-based powerhouses that can help soothe symptoms.</p></div></div>
+            <!-- Article 2 -->
+            <div class="blog-card"><a href="blog-social-events.html"><div class="blog-thumb" style="background: url('assets/success_kitchen.png') center/cover;"><div class="blog-cat-label">Lifestyle</div></div></a><div class="blog-content"><h3><a href="blog-social-events.html">Navigating Social Events</a></h3><p>How to enjoy yourself without derailing your progress.</p></div></div>
+            <!-- Article 3 -->
+            <div class="blog-card"><a href="blog-supplements.html"><div class="blog-thumb" style="background: url('assets/blog_smoothie.png') center/cover;"><div class="blog-cat-label">Nutrition</div></div></a><div class="blog-content"><h3><a href="blog-supplements.html">Supplements 101</a></h3><p>What you actually need, and what's a waste of money.</p></div></div>
+            <!-- Article 4 -->
+            <div class="blog-card"><a href="blog-gut-health.html"><div class="blog-thumb" style="background: url('assets/blog_gut_health.png') center/cover;"><div class="blog-cat-label">Health</div></div></a><div class="blog-content"><h3><a href="blog-gut-health.html">Gut Health & Hormones</a></h3><p>The estrobolome connection you need to know about.</p></div></div>
+            <!-- Article 5 -->
+            <div class="blog-card"><a href="blog-thyroid.html"><div class="blog-thumb" style="background: url('assets/blog_thyroid.png') center/cover;"><div class="blog-cat-label">Health</div></div></a><div class="blog-content"><h3><a href="blog-thyroid.html">Thyroid Health</a></h3><p>Is it menopause, or is it your thyroid? Learn the signs.</p></div></div>
+            <!-- Article 6 -->
+            <div class="blog-card"><a href="blog-mindset.html"><div class="blog-thumb" style="background: url('assets/blog_sleep.png') center/cover;"><div class="blog-cat-label">Mindset</div></div></a><div class="blog-content"><h3><a href="blog-mindset.html">The All-or-Nothing Trap</a></h3><p>Why perfectionism is the enemy of progress.</p></div></div>
+            <!-- Article 7 -->
+            <div class="blog-card"><a href="blog-fasting.html"><div class="blog-thumb" style="background: url('assets/blog_calorie_counting.png') center/cover;"><div class="blog-cat-label">Nutrition</div></div></a><div class="blog-content"><h3><a href="blog-fasting.html">Intermittent Fasting Guide</a></h3><p>How to give your digestive system a much-needed break.</p></div></div>
+            <!-- Article 8 -->
+            <div class="blog-card"><a href="blog-protein.html"><div class="blog-thumb" style="background: url('assets/blog_anti_inflammatory.png') center/cover;"><div class="blog-cat-label">Nutrition</div></div></a><div class="blog-content"><h3><a href="blog-protein.html">The Protein Priority</a></h3><p>Why 100g is your new magic number for metabolism.</p></div></div>
+            <!-- Article 9 -->
+            <div class="blog-card"><a href="blog-workout.html"><div class="blog-thumb" style="background: url('assets/blog_workout_10min.png') center/cover;"><div class="blog-cat-label">Fitness</div></div></a><div class="blog-content"><h3><a href="blog-workout.html">The 10-Minute Workout</a></h3><p>No time? No problem. Use this EMOM circuit.</p></div></div>
+            <!-- Article 10 -->
+            <div class="blog-card"><a href="blog-meditation.html"><div class="blog-thumb" style="background: url('assets/success_yoga.png') center/cover;"><div class="blog-cat-label">Mindfulness</div></div></a><div class="blog-content"><h3><a href="blog-meditation.html">Meditation for Stress</a></h3><p>Quiet the noise and lower your cortisol instantly.</p></div></div>
+            <!-- Article 11 -->
+            <div class="blog-card"><a href="blog-skin.html"><div class="blog-thumb" style="background: url('assets/success_kitchen.png') center/cover;"><div class="blog-cat-label">Beauty</div></div></a><div class="blog-content"><h3><a href="blog-skin.html">Collagen & Skin Health</a></h3><p>Restoring your glow from the inside out.</p></div></div>
+            <!-- Article 12 -->
+            <div class="blog-card"><a href="blog-alcohol.html"><div class="blog-thumb" style="background: url('assets/blog_smoothie.png') center/cover;"><div class="blog-cat-label">Health</div></div></a><div class="blog-content"><h3><a href="blog-alcohol.html">The Truth About Alcohol</a></h3><p>Why your favorite glass of wine hits differently now.</p></div></div>
+            <!-- Article 13 -->
+            <div class="blog-card"><a href="blog-hydration.html"><div class="blog-thumb" style="background: url('assets/blog_supplements.png') center/cover;"><div class="blog-cat-label">Health</div></div></a><div class="blog-content"><h3><a href="blog-hydration.html">Hydration Hacks</a></h3><p>More than just drinking water. Eat your water.</p></div></div>
+            <!-- Article 14 -->
+            <div class="blog-card"><a href="blog-meal-prep.html"><div class="blog-thumb" style="background: url('assets/blog_calorie_counting.png') center/cover;"><div class="blog-cat-label">Lifestyle</div></div></a><div class="blog-content"><h3><a href="blog-meal-prep.html">Meal Prep Made Easy</a></h3><p>Setting yourself up for success in 2 hours a week.</p></div></div>
+            <!-- Article 15 -->
+            <div class="blog-card"><a href="blog-libido.html"><div class="blog-thumb" style="background: url('assets/blog_sleep.png') center/cover;"><div class="blog-cat-label">Wellness</div></div></a><div class="blog-content"><h3><a href="blog-libido.html">Reclaiming Your Libido</a></h3><p>It's not gone, it just needs a spark.</p></div></div>
+            <!-- Article 16 -->
+            <div class="blog-card"><a href="blog-insulin.html"><div class="blog-thumb" style="background: url('assets/blog_anti_inflammatory.png') center/cover;"><div class="blog-cat-label">Hormones</div></div></a><div class="blog-content"><h3><a href="blog-insulin.html">Insulin Resistance</a></h3><p>The hidden metabolic block you need to fix.</p></div></div>
+            <!-- Article 17 -->
+            <div class="blog-card"><a href="blog-calorie-counting.html"><div class="blog-thumb" style="background: url('assets/blog_calorie_counting.png') center/cover;"><div class="blog-cat-label">Weight Loss</div></div></a><div class="blog-content"><h3><a href="blog-calorie-counting.html">Why Calories Fail</a></h3><p>It's about density, not deprivation.</p></div></div>
+            <!-- Article 18 -->
+            <div class="blog-card"><a href="blog-cortisol.html"><div class="blog-thumb" style="background: url('assets/blog_cortisol.png') center/cover;"><div class="blog-cat-label">Hormones</div></div></a><div class="blog-content"><h3><a href="blog-cortisol.html">Understanding Cortisol</a></h3><p>The stress hormone driving your midsection weight.</p></div></div>
+            <!-- Article 19 -->
+            <div class="blog-card"><a href="blog-fitness.html"><div class="blog-thumb" style="background: url('assets/blog_fitness.png') center/cover;"><div class="blog-cat-label">Fitness</div></div></a><div class="blog-content"><h3><a href="blog-fitness.html">Strength vs Cardio</a></h3><p>Why lifting weights is the secret to youth.</p></div></div>
+            <!-- Article 20 -->
+            <div class="blog-card"><a href="blog-smoothie.html"><div class="blog-thumb" style="background: url('assets/blog_smoothie.png') center/cover;"><div class="blog-cat-label">Recipes</div></div></a><div class="blog-content"><h3><a href="blog-smoothie.html">Green Goddess Smoothie</a></h3><p>A deliciou protein-packed breakfast.</p></div></div>
+            <!-- Article 21 -->
+            <div class="blog-card"><a href="blog-sleep.html"><div class="blog-thumb" style="background: url('assets/blog_sleep.png') center/cover;"><div class="blog-cat-label">Hormones</div></div></a><div class="blog-content"><h3><a href="blog-sleep.html">Sleep Hygiene 101</a></h3><p>Fix your sleep to fix your hormones.</p></div></div>
+    </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="bottom-bar">
+                <p>&copy; 2026 PlantBasedBalance. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+        function toggleMenu() {
+            const nav = document.getElementById('navLinks');
+            nav.classList.toggle('active');
+        }
+
+        function toggleDropdown(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                const dropdown = e.target.closest('.dropdown');
+                dropdown.classList.toggle('active');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterButtons = document.querySelectorAll('.cat-tag');
+            const articles = document.querySelectorAll('.blog-card');
+            const searchInput = document.querySelector('.search-input');
+            const searchBtn = document.querySelector('.search-btn');
+
+            // Category Filtering
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Visual active state
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    const category = btn.textContent.trim().toUpperCase();
+
+                    articles.forEach(article => {
+                        const label = article.querySelector('.blog-cat-label').textContent.trim().toUpperCase();
+                        
+                        // Show all if 'All Posts' is selected
+                        if (category === 'ALL POSTS') {
+                            article.style.display = 'block';
+                        } else {
+                            // Detailed mapping or direct match
+                            // We can map some broader terms to specific buttons if we want, 
+                            // but for now direct matching is the expected behavior.
+                            if (label === category) {
+                                article.style.display = 'block';
+                            } else {
+                                article.style.display = 'none';
+                            }
+                        }
+                    });
+                });
+            });
+
+            // Search Functionality
+            function performSearch() {
+                const query = searchInput.value.toLowerCase().trim();
+                
+                // If search is empty, reset to current active filter or just show all
+                if (!query) {
+                    document.querySelector('.cat-tag.active').click(); // Re-trigger filter
+                    return;
+                }
+
+                articles.forEach(article => {
+                    const title = article.querySelector('h3').textContent.toLowerCase();
+                    const desc = article.querySelector('p').textContent.toLowerCase();
+                    
+                    if (title.includes(query) || desc.includes(query)) {
+                        article.style.display = 'block';
+                    } else {
+                        article.style.display = 'none';
+                    }
+                });
+            }
+
+            searchBtn.addEventListener('click', performSearch);
+            searchInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+        });
+    </script>
+</body>
+</html>

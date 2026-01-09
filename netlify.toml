@@ -1,0 +1,40 @@
+[build]
+  publish = "."
+
+# Edge Function Mappings
+[[edge_functions]]
+  function = "stripe-webhook"
+  path = "/.netlify/functions/stripe-webhook"
+
+[[edge_functions]]
+  function = "create-subscription"
+  path = "/.netlify/functions/create-subscription"
+
+[[edge_functions]]
+  function = "sales-bot"
+  path = "/.netlify/functions/sales-bot"
+
+[[edge_functions]]
+  function = "track-lead"
+  path = "/.netlify/functions/track-lead"
+
+[[edge_functions]]
+  function = "track-purchase"
+  path = "/.netlify/functions/track-purchase"
+
+# Ensure we redirect legacy URLs
+[[redirects]]
+  from = "/quiz"
+  to = "/quiz.html"
+  status = 200
+
+[[redirects]]
+  from = "/plantbasedswitch"
+  to = "/plantbasedswitch.html"
+  status = 200
+  
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false # Only if not exists

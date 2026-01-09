@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="facebook-domain-verification" content="tlduivhcqj8ee0gvyaa71o8l4xb78p" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Macro Split Calculator - PlantBasedBalance</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .calc-header {
+            padding: 120px 0 60px;
+            background: var(--color-neutral);
+            text-align: center;
+        }
+        .tool-container {
+            max-width: 600px;
+            margin: -40px auto 4rem;
+            background: #fff;
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            z-index: 10;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--color-text-main);
+        }
+        .form-control, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-family: var(--font-body);
+            font-size: 1rem;
+        }
+        .result-box {
+            background: #E0F7FA;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-top: 2rem;
+            text-align: center;
+            display: none;
+        }
+        .result-box.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        .macro-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .macro-item {
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .macro-val {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        .macro-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #666;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+        <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <img src="assets/logo_pbb.png" alt="PBB Logo" style="height: 45px; mix-blend-mode: multiply;">
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="switch28.html">Switch 28</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">Fitness <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="challenge-yoga.html" class="dropdown-item">
+                            <span class="item-title">Somatic Yoga</span>
+                            <span class="item-desc">Reverse cortisol weight gain.</span>
+                        </a>
+                        <a href="challenge-bodyweight.html" class="dropdown-item">
+                            <span class="item-title">Bodyweight Sculpt</span>
+                            <span class="item-desc">No-equipment metabolic toning.</span>
+                        </a>
+                        <a href="challenge-strength.html" class="dropdown-item">
+                            <span class="item-title">Home Strength</span>
+                            <span class="item-desc">Dumbbells & Resistance Bands.</span>
+                        </a>
+                        <a href="challenge-gym.html" class="dropdown-item">
+                            <span class="item-title">Full Gym Protocol</span>
+                            <span class="item-desc">Maximum structural transformation.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="calculators.html">Calculators</a>
+                <a href="blog.html">Blog</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">About <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="research.html" class="dropdown-item">
+                            <span class="item-title">Research</span>
+                            <span class="item-desc">The science behind our protocol.</span>
+                        </a>
+                        <a href="success-stories.html" class="dropdown-item">
+                            <span class="item-title">Reviews</span>
+                            <span class="item-desc">Real transformations.</span>
+                        </a>
+                        <a href="contact.html" class="dropdown-item">
+                            <span class="item-title">Contact Us</span>
+                            <span class="item-desc">Get in touch with our team.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="quiz.html" class="btn btn-primary">Start Your Reset</a>
+            </div>
+            <div class="nav-toggle" style="display: none;" onclick="toggleMenu()">
+                <i data-lucide="menu"></i>
+            </div>
+        </div>
+    </nav>
+
+    <header class="calc-header">
+        <div class="container">
+            <h1>Macro <span class="text-gold">Split</span></h1>
+            <p>Optimize your protein, carbs, and fats for your goal.</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="tool-container">
+            <div class="form-group">
+                <label>Daily Calories</label>
+                <input type="number" id="calories" class="form-control" value="1600" placeholder="e.g. 1600">
+            </div>
+            <div class="form-group">
+                <label>Goal</label>
+                <select id="goal" class="form-control">
+                    <option value="balanced">Balanced (40/30/30)</option>
+                    <option value="lowcarb">Low Carb / Keto (25/5/70)</option>
+                    <option value="highprotein">High Protein (45/35/20)</option>
+                    <option value="vegan">Vegan / Plant Based (20/50/30)</option>
+                </select>
+            </div>
+            
+            <button onclick="calculateMacros()" class="btn btn-primary" style="width: 100%;">Calculate</button>
+
+            <div id="result" class="result-box">
+                <h3 style="margin-bottom: 1rem;">Your Daily Macros</h3>
+                <div class="macro-grid">
+                    <div class="macro-item">
+                        <div class="macro-val" id="res-protein">120g</div>
+                        <div class="macro-label">Protein</div>
+                    </div>
+                    <div class="macro-item">
+                        <div class="macro-val" id="res-carbs">150g</div>
+                        <div class="macro-label">Carbs</div>
+                    </div>
+                    <div class="macro-item">
+                        <div class="macro-val" id="res-fats">50g</div>
+                        <div class="macro-label">Fats</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="bottom-bar">
+                <p>&copy; 2026 PlantBasedBalance. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        function calculateMacros() {
+            const cals = parseFloat(document.getElementById('calories').value);
+            const goal = document.getElementById('goal').value;
+            let p = 0, c = 0, f = 0;
+
+            if(goal === 'balanced') { p=0.30; c=0.40; f=0.30; }
+            else if(goal === 'lowcarb') { p=0.25; c=0.05; f=0.70; }
+            else if(goal === 'highprotein') { p=0.45; c=0.35; f=0.20; }
+            else if(goal === 'vegan') { p=0.20; c=0.50; f=0.30; } // Higher carb for plants
+
+            const pGrams = Math.round((cals * p) / 4);
+            const cGrams = Math.round((cals * c) / 4);
+            const fGrams = Math.round((cals * f) / 9);
+
+            document.getElementById('res-protein').innerText = pGrams + 'g';
+            document.getElementById('res-carbs').innerText = cGrams + 'g';
+            document.getElementById('res-fats').innerText = fGrams + 'g';
+
+            document.getElementById('result').classList.add('active');
+        }
+    </script>
+    <script>
+        // Ensure Lucide icons are initialized
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Mobile Menu Toggle
+        function toggleMenu() {
+            const nav = document.getElementById('navLinks');
+            if (nav) {
+                nav.classList.toggle('active');
+            }
+        }
+
+        // Mobile Dropdown Toggle
+        function toggleDropdown(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                const dropdown = e.target.closest('.dropdown');
+                if (dropdown) {
+                    dropdown.classList.toggle('active');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

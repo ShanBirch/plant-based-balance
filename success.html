@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="facebook-domain-verification" content="tlduivhcqj8ee0gvyaa71o8l4xb78p" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You! - PlantBasedBalance</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    
+    // Dynamic Purchase Tracking
+    const urlParams = new URLSearchParams(window.location.search);
+    const purchaseValue = parseFloat(urlParams.get('amount')) || 46.00;
+
+    fbq('init', '1928402271406692'); 
+    fbq('track', 'PageView');
+    fbq('track', 'Purchase', {
+        currency: "AUD", 
+        value: purchaseValue
+    });
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1928402271406692&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Meta Pixel Code -->
+    <script src="analytics.js"></script>
+    
+    <style>
+        .success-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .success-card {
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            max-width: 600px;
+        }
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background: #dcfce7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+        }
+        .bump-box {
+            background: #fff9db;
+            border: 2px dashed #fab005;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: none; /* Shown via JS */
+        }
+    </style>
+</head>
+<body>
+
+    <section class="success-page">
+        <div class="success-card">
+            <div class="icon-circle">
+                <i data-lucide="check" color="#166534" size="40"></i>
+            </div>
+            <h1 class="section-title">Payment Successful!</h1>
+            <p style="font-size: 18px; margin-bottom: 30px; line-height: 1.6;">
+                Thank you for joining the <strong>PlantBasedReset</strong>. 
+                <br>Your hormones will thank you!
+            </p>
+
+            <!-- Dynamic Order Bump Link -->
+            <div id="kickstart-box" class="bump-box">
+                <img src="assets/acupressure/acupressure_cv17.png" style="width: 140px; height: auto; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" alt="Acupressure Series">
+                <h3 style="margin: 0; color: #856404; font-size: 1.1rem;">Included: Instant Calm Acupressure Series</h3>
+                <p style="font-size: 0.9rem; color: #856404; margin: 5px 0 15px;">Your nervous system reset is ready.</p>
+                <a href="acupressure-guide.html" class="btn btn-primary" style="background: #fab005; border: none; color: #1a1a1a; width: 100%;">ACCESS ACUPRESSURE GUIDE</a>
+            </div>
+
+            <p style="color: #666; margin-bottom: 40px;">
+                Check your email (and spam folder) for your access details and download link.
+            </p>
+            <a href="index.html" class="btn btn-primary">Return to Home</a>
+        </div>
+    </section>
+
+    <script>
+        lucide.createIcons();
+
+        // Server-side CAPI Purchase Sync
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const purchaseValue = parseFloat(urlParams.get('amount')) || 46.00;
+            const isBump = urlParams.get('bump') === 'true';
+            
+            // Show Kickstart Box if purchased
+            if (isBump) {
+                const box = document.getElementById('kickstart-box');
+                if (box) box.style.display = 'block';
+            }
+
+            // Get user data from session (saved during quiz)
+            let email = '';
+            let name = '';
+            let fullProfile = {};
+            
+            const profileData = sessionStorage.getItem('userProfile');
+            const hormoneResult = sessionStorage.getItem('userResult');
+            const utmData = window.getUTMData ? window.getUTMData() : {};
+
+            if (profileData) {
+                fullProfile = JSON.parse(profileData);
+                email = fullProfile.email || '';
+                name = fullProfile.name || '';
+            }
+
+            // Fallback to URL params if session is empty (e.g. skipped quiz or old tab)
+            if (!email) email = urlParams.get('email') || '';
+            if (!name) name = urlParams.get('name') || '';
+
+            // Fire CAPI event via Netlify Function
+            fetch('/.netlify/functions/track-purchase', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: email,
+                    name: name,
+                    value: purchaseValue,
+                    utm_data: utmData,
+                    order_bump: isBump ? 'acupressure' : 'none',
+                    fbc: window.getFBParams ? window.getFBParams().fbc : null,
+                    fbp: window.getFBParams ? window.getFBParams().fbp : null
+                })
+            })
+            .then(response => console.log('Meta CAPI Purchase Sync:', response.status))
+            .catch(err => console.error('Meta CAPI Error:', err));
+
+            // --- SYNC PURCHASE TO ZAPIER ---
+            if (email) {
+                const ZAPIER_PURCHASE_URL = 'https://hooks.zapier.com/hooks/catch/17459466/uw28ea0/';
+                
+                let profile = 'CORTISOL'; 
+                if (hormoneResult && hormoneResult.toUpperCase().includes('ESTROGEN')) {
+                    profile = 'ESTROGEN';
+                }
+
+                const workoutLabels = {
+                    'yoga': 'Somatic Yoga',
+                    'wall_pilates': 'Somatic Yoga', // Fallback or map to Yoga
+                    'bands': 'Home Strength',
+                    'dumbbells': 'Home Strength',
+                    'pilates': 'Somatic Yoga', // Fallback
+                    'bodyweight': 'Bodyweight Sculpt',
+                    'recovery': 'Somatic Yoga', // Fallback
+                    'gym': 'Full Gym Protocol'
+                };
+
+                let workout = workoutLabels[fullProfile.equipment] || 'Bodyweight Strength';
+
+                let packagePlan = '1-Month Plan'; 
+                if (purchaseValue >= 100) packagePlan = '6-Month Plan';
+                else if (purchaseValue >= 90) packagePlan = '3-Month Plan';
+                else if (purchaseValue >= 40) packagePlan = '1-Month Plan';
+
+                const payload = {
+                    emailValue: email, // Named for Zapier consistency
+                    full_name: name,
+                    first_name: name.split(' ')[0] || '',
+                    last_name: name.split(' ').slice(1).join(' ') || 'Client',
+                    purchase_value: purchaseValue,
+                    package_name: packagePlan,
+                    hormone_profile: profile,
+                    workout_preference: workout,
+                    order_bump: isBump ? 'acupressure' : 'none',
+                    utm_data: utmData,
+                    status: 'purchased',
+                    timestamp: new Date().toISOString()
+                };
+
+                console.log('--- SENDING ONBOARDING DATA ---', payload);
+
+                fetch(ZAPIER_PURCHASE_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    body: JSON.stringify(payload)
+                })
+                .then(() => console.log('Purchase data successfully queued for Zapier'))
+                .catch(err => console.error('Zapier Sync Error:', err));
+            }
+        });
+    </script>
+    <script>
+        // Ensure Lucide icons are initialized
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Mobile Menu Toggle
+        function toggleMenu() {
+            const nav = document.getElementById('navLinks');
+            if (nav) {
+                nav.classList.toggle('active');
+            }
+        }
+
+        // Mobile Dropdown Toggle
+        function toggleDropdown(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                const dropdown = e.target.closest('.dropdown');
+                if (dropdown) {
+                    dropdown.classList.toggle('active');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

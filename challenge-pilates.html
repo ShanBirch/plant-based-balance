@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>28-Day Traditional Pilates Challenge - PlantBasedBalance</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .challenge-hero {
+            padding: 160px 0 80px;
+            background: #fafaf9;
+        }
+        .challenge-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+        .challenge-image {
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+        .challenge-content h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        .benefit-tag {
+            background: #f5f5f4;
+            color: #44403c;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .challenge-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 40px 0;
+            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--color-primary);
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--color-text-light);
+            text-transform: uppercase;
+        }
+        @media (max-width: 768px) {
+            .challenge-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            .challenge-hero {
+                padding-top: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+        <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <img src="assets/logo_pbb.png" alt="PBB Logo" style="height: 45px; mix-blend-mode: multiply;">
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="switch28.html">Switch 28</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">Fitness <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="challenge-yoga.html" class="dropdown-item">
+                            <span class="item-title">Somatic Yoga</span>
+                            <span class="item-desc">Reverse cortisol weight gain.</span>
+                        </a>
+                        <a href="challenge-bodyweight.html" class="dropdown-item">
+                            <span class="item-title">Bodyweight Sculpt</span>
+                            <span class="item-desc">No-equipment metabolic toning.</span>
+                        </a>
+                        <a href="challenge-strength.html" class="dropdown-item">
+                            <span class="item-title">Home Strength</span>
+                            <span class="item-desc">Dumbbells & Resistance Bands.</span>
+                        </a>
+                        <a href="challenge-gym.html" class="dropdown-item">
+                            <span class="item-title">Full Gym Protocol</span>
+                            <span class="item-desc">Maximum structural transformation.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="calculators.html">Calculators</a>
+                <a href="blog.html">Blog</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">About <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="research.html" class="dropdown-item">
+                            <span class="item-title">Research</span>
+                            <span class="item-desc">The science behind our protocol.</span>
+                        </a>
+                        <a href="success-stories.html" class="dropdown-item">
+                            <span class="item-title">Reviews</span>
+                            <span class="item-desc">Real transformations.</span>
+                        </a>
+                        <a href="contact.html" class="dropdown-item">
+                            <span class="item-title">Contact Us</span>
+                            <span class="item-desc">Get in touch with our team.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="login.html" class="nav-member">Member Login</a>
+                <a href="quiz.html" class="btn btn-primary">Start Your Reset</a>
+            </div>
+            <div class="nav-toggle" style="display: none;" onclick="toggleMenu()">
+                <i data-lucide="menu"></i>
+            </div>
+        </div>
+    </nav>
+
+    <section class="challenge-hero">
+        <div class="container">
+            <div class="challenge-grid">
+                <div class="challenge-image">
+                    <img src="assets/traditional_pilates_hero.png" alt="Traditional Pilates Challenge">
+                </div>
+                <div class="challenge-content">
+                    <span class="benefit-tag">Postural Alignment</span>
+                    <h1>28-Day Pilates Challenge</h1>
+                    <p>Master the fundamentals of contrology. Our Traditional Pilates challenge focuses on precision, breath, and flow to build a resilient core, improve spinal health, and create a long, toned physique that moves with ease.</p>
+                    
+                    <div class="challenge-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">25m</span>
+                            <span class="stat-label">Daily Effort</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">Med</span>
+                            <span class="stat-label">Intensity</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">Mat</span>
+                            <span class="stat-label">Required</span>
+                        </div>
+                    </div>
+
+                    <a href="quiz.html" class="btn btn-primary" style="width: 100%; text-align: center;">Start Today</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section style="padding: 100px 0;">
+        <div class="container" style="max-width: 800px;">
+            <h2 class="text-center" style="margin-bottom: 50px;">The <span class="text-green">Pilates Method</span></h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 40px;">
+                <div style="display: flex; gap: 20px; align-items: flex-start;">
+                    <div style="background: #44403c; color: white; border-radius: 50%; width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800;">1</div>
+                    <div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Precision Core Training</h3>
+                        <p style="color: #64748b;">Every movement originates from your 'powerhouse'. By mastering this control, you protect your back and create a tight, functional midsection.</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 20px; align-items: flex-start;">
+                    <div style="background: #44403c; color: white; border-radius: 50%; width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800;">2</div>
+                    <div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Improved Posture</h3>
+                        <p style="color: #64748b;">Counteract the effects of modern 'tech neck' and sitting. Pilates realigns your spine and opens up your chest for a more confident, upright stance.</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 20px; align-items: flex-start;">
+                    <div style="background: #44403c; color: white; border-radius: 50%; width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800;">3</div>
+                    <div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Mind-Body Control</h3>
+                        <p style="color: #64748b;">The focus required for Pilates creates a meditative state, reducing mental stress while simultaneously strengthening your physical body.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer style="background: #1a1a1a; color: #fff; padding: 4rem 0 2rem; text-align: center;">
+        <div class="container">
+            <p>&copy; 2026 PlantBasedBalance. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+    <script>
+        // Ensure Lucide icons are initialized
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Mobile Menu Toggle
+        function toggleMenu() {
+            const nav = document.getElementById('navLinks');
+            if (nav) {
+                nav.classList.toggle('active');
+            }
+        }
+
+        // Mobile Dropdown Toggle
+        function toggleDropdown(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                const dropdown = e.target.closest('.dropdown');
+                if (dropdown) {
+                    dropdown.classList.toggle('active');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
+
+

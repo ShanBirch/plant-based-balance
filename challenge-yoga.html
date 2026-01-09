@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>28-Day Somatic Yoga Challenge - PlantBasedBalance</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .challenge-hero {
+            padding: 160px 0 80px;
+            background: #f8fafc;
+        }
+        .challenge-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+        .challenge-image {
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+        .challenge-content h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        .benefit-tag {
+            background: var(--color-secondary-light);
+            color: var(--color-primary);
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .challenge-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 40px 0;
+            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--color-primary);
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--color-text-light);
+            text-transform: uppercase;
+        }
+        @media (max-width: 768px) {
+            .challenge-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            .challenge-hero {
+                padding-top: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+        <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <img src="assets/logo_pbb.png" alt="PBB Logo" style="height: 45px; mix-blend-mode: multiply;">
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="switch28.html">Switch 28</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">Fitness <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="challenge-yoga.html" class="dropdown-item">
+                            <span class="item-title">Somatic Yoga</span>
+                            <span class="item-desc">Reverse cortisol weight gain.</span>
+                        </a>
+                        <a href="challenge-bodyweight.html" class="dropdown-item">
+                            <span class="item-title">Bodyweight Sculpt</span>
+                            <span class="item-desc">No-equipment metabolic toning.</span>
+                        </a>
+                        <a href="challenge-strength.html" class="dropdown-item">
+                            <span class="item-title">Home Strength</span>
+                            <span class="item-desc">Dumbbells & Resistance Bands.</span>
+                        </a>
+                        <a href="challenge-gym.html" class="dropdown-item">
+                            <span class="item-title">Full Gym Protocol</span>
+                            <span class="item-desc">Maximum structural transformation.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="calculators.html">Calculators</a>
+                <a href="blog.html">Blog</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">About <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="research.html" class="dropdown-item">
+                            <span class="item-title">Research</span>
+                            <span class="item-desc">The science behind our protocol.</span>
+                        </a>
+                        <a href="success-stories.html" class="dropdown-item">
+                            <span class="item-title">Reviews</span>
+                            <span class="item-desc">Real transformations.</span>
+                        </a>
+                        <a href="contact.html" class="dropdown-item">
+                            <span class="item-title">Contact Us</span>
+                            <span class="item-desc">Get in touch with our team.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="login.html" class="nav-member">Member Login</a>
+                <a href="quiz.html?track=yoga" class="btn btn-primary">Start Your Reset</a>
+            </div>
+            <div class="nav-toggle" style="display: none;" onclick="toggleMenu()">
+                <i data-lucide="menu"></i>
+            </div>
+        </div>
+    </nav>
+
+    <section class="challenge-hero">
+        <div class="container">
+            <div class="challenge-grid">
+                <div class="challenge-image">
+                    <img src="assets/somatic_yoga_hero.png" alt="Somatic Yoga Challenge">
+                </div>
+                <div class="challenge-content">
+                    <span class="benefit-tag">Cortisol Weight Reset</span>
+                    <h1>28-Day Somatic Yoga Challenge</h1>
+                    <p>Stop fighting your body and start working with your biology. Our Somatic Yoga protocol is specifically designed for plant-based women over 40 to lower cortisol, release stored metabolic stress, and reverse hormonal weight gain.</p>
+                    
+                    <div class="challenge-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">15m</span>
+                            <span class="stat-label">Daily Effort</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">Low</span>
+                            <span class="stat-label">Impact</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">No</span>
+                            <span class="stat-label">Equipment</span>
+                        </div>
+                    </div>
+
+                    <a href="quiz.html?track=yoga" class="btn btn-primary" style="width: 100%; text-align: center;">Get My Custom Plan</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section style="padding: 100px 0;">
+        <div class="container" style="max-width: 800px;">
+            <h2 class="text-center" style="margin-bottom: 50px;">Why <span class="text-green">Somatic Yoga?</span></h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 40px;">
+                <div style="display: flex; gap: 20px; align-items: flex-start;">
+                    <div style="background: var(--color-primary); color: white; border-radius: 50%; width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800;">1</div>
+                    <div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Lower Cortisol Naturally</h3>
+                        <p style="color: #64748b;">Unlike high-intensity workouts that can spike stress hormones, somatic movements soothe the nervous system, signaling your body to release fat stores.</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 20px; align-items: flex-start;">
+                    <div style="background: var(--color-primary); color: white; border-radius: 50%; width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800;">2</div>
+                    <div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 10px;">End "Stubborn" Inflation</h3>
+                        <p style="color: #64748b;">Targeted therapeutic movements help flush metabolic waste and reduce the 'puffy' feeling caused by hormonal inflammation.</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 20px; align-items: flex-start;">
+                    <div style="background: var(--color-primary); color: white; border-radius: 50%; width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800;">3</div>
+                    <div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Mental Clarity & Sleep</h3>
+                        <p style="color: #64748b;">By regulating the vagus nerve, somatic yoga improves sleep quality and eliminates the brain fog common in perimenopause.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer style="background: #1a1a1a; color: #fff; padding: 4rem 0 2rem; text-align: center;">
+        <div class="container">
+            <p>&copy; 2026 PlantBasedBalance. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        function toggleMenu() {
+            const nav = document.getElementById('navLinks');
+            nav.classList.toggle('active');
+        }
+
+        function toggleDropdown(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                const dropdown = e.target.closest('.dropdown');
+                dropdown.classList.toggle('active');
+            }
+        }
+    </script>
+</body>
+</html>
+
+
