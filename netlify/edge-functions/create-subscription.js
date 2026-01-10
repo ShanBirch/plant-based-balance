@@ -80,28 +80,9 @@ export default async (request, context) => {
         const status = subscription.latest_invoice.payment_intent.status;
         const clientSecret = subscription.latest_invoice.payment_intent.client_secret;
 
-        // 5. Fire to Zapier (Background)
-        const ZAPIER_URL = 'https://hooks.zapier.com/hooks/catch/17459466/uw28ea0/';
-        const zapPayload = {
-            emailValue: email, // Changed from 'email' to match success.html payload
-            full_name: name,
-            first_name: name.split(' ')[0],
-            last_name: name.split(' ').slice(1).join(' ') || 'Client',
-            purchase_value: finalValue, // Use the calculated value
-            price_id: priceId, // Keep this for reference
-            package_name: priceId.includes('SkDKj') ? '6-Month Plan' : (priceId.includes('SkDKi') ? '3-Month Plan' : '1-Month Plan'), // Estimate plan name
-            hormone_profile: 'UNKNOWN (Wallet Pay)', // We don't have this in the wallet flow payload
-            workout_preference: 'UNKNOWN (Wallet Pay)',
-            status: 'purchased_via_wallet',
-            timestamp: new Date().toISOString()
-        };
-
-        context.waitUntil(
-            fetch(ZAPIER_URL, {
-                method: 'POST',
-                body: JSON.stringify(zapPayload)
-            }).catch(e => console.error("Zapier Background Sync Error:", e))
-        );
+        // 5. Fire to Zapier - REMOVED to prevent false positives. 
+        // We now rely on success.html (client-side) or stripe-webhook (server-side) 
+        // to ensure we only track *successful* payments.
 
         // 6. Return Data
         return new Response(JSON.stringify({
