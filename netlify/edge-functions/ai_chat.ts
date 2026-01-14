@@ -100,8 +100,12 @@ export default async function (request: Request, context: Context) {
 
   } catch (error) {
     console.error("Error in ai_chat:", error);
-    // Return 500 so frontend can silently fail
-    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+    // Return actual error for debugging
+    return new Response(JSON.stringify({ 
+        error: "Internal Server Error", 
+        details: error instanceof Error ? error.message : String(error),
+        hasKey: !!Deno.env.get("GEMINI_API_KEY") 
+    }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
