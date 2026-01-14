@@ -1,6 +1,6 @@
-const CACHE_NAME = 'pbb-app-v1';
+const CACHE_NAME = 'pbb-app-v2';
 const ASSETS = [
-  './protocols/cortisol/index.html',
+  './dashboard.html',
   './icon-192.png',
   './icon-512.png',
   './index.html'
