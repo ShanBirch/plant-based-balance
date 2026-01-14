@@ -8,7 +8,7 @@ export default async function (request: Request, context: Context) {
   }
 
   try {
-    const { message, mode, contextData, memberPersona, conversationStatus, localTime, chatHistory } = await request.json();
+    const { message, mode, contextData, memberPersona, conversationStatus, localTime, chatHistory, currentDateTime } = await request.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!apiKey) {
@@ -43,7 +43,7 @@ export default async function (request: Request, context: Context) {
       - Energy: ${contextData?.energy || "Unknown"}
       
       CURRENT SITUATION:
-      - Time: ${localTime || "Unknown"}
+      - Current Date/Time: ${currentDateTime || localTime || "Unknown"}
       - State: ${conversationStatus || 'new'} (If 'continuing', we are active right now.)
 
       GREETING RULES (CRITICAL):
@@ -93,7 +93,9 @@ export default async function (request: Request, context: Context) {
         chatHistory.forEach((msg: any) => {
              // Basic dedupe: if it's the exact same text as the current prompt, skip it to avoid "User: Hi, User: Hi".
             if (msg.role === 'user' && msg.content === message) return;
-            historyBlock += `${msg.role === 'user' ? 'User' : 'You'}: ${msg.content}\n`;
+            // Include timestamp if available
+            const timeStr = msg.time ? `[${msg.time}] ` : "";
+            historyBlock += `${timeStr}${msg.role === 'user' ? 'User' : 'You'}: ${msg.content}\n`;
         });
         historyBlock += "\n(End of History)\n";
     }
