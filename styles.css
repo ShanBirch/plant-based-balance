@@ -763,14 +763,26 @@ footer {
         cursor: pointer;
     }
     .nav-links {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: flex-end !important;
-        text-align: right !important;
-        padding-right: 2rem !important;
-        padding-top: 5rem !important;
-        gap: 2rem !important; /* Unified gap for EVERYTHING */
+        display: none; /* Hidden by default */
+        position: absolute;
+        top: 70px; /* Below navbar */
+        left: 0;
+        width: 100%;
+        background: white;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 2rem;
+        gap: 1.5rem;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        border-top: 1px solid #f1f5f9;
+        z-index: 1000;
     }
+
+    .nav-links.active {
+        display: flex; /* Show when active */
+    }
+
 
     /* 2. Remove Dropdown Wrappers from Flow */
     .dropdown {
