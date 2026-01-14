@@ -7000,6 +7000,28 @@ function triggerCoachResponse(userMsg) {
     // Get User Profile for Context
     const context = gatherUserContext();
     
+    // Get Chat History (Last 10 messages) for "Memory"
+    let history = [];
+    try {
+        const rawHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+        // We only want previous messages, not the one we just added (if it was added already)
+        // Check if the last message in storage matches current msg, if so, ignore it or ensure we don't duplicate.
+        // Actually, submitCoachMessage saves to history BEFORE calling this. 
+        // So the last message IS the current user message.
+        // We want to send the *previous* context + current message separately.
+        // So let's take everything BUT the last one, or just send it all and let backend handle it?
+        // Simplest: Send everything. The backend Prompt structure is "History + New Message".
+        // So we should exclude the very last one if it duplicates 'message'.
+        // Let's just send the last 10 items. The backend can render them as "Previous Log".
+        
+        history = rawHistory.slice(-10).map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'model', 
+            content: msg.text
+        }));
+    } catch (e) {
+        console.error("History parse error", e);
+    }
+
     // Update timestamp
     localStorage.setItem('lastChatTime', now);
 
@@ -7016,6 +7038,7 @@ function triggerCoachResponse(userMsg) {
             mode: 'coach',
             message: userMsg,
             contextData: context,
+            chatHistory: history,
             conversationStatus: isContinuing ? 'continuing' : 'new',
             localTime: new Date().toLocaleTimeString()
         })

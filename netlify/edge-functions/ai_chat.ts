@@ -8,7 +8,7 @@ export default async function (request: Request, context: Context) {
   }
 
   try {
-    const { message, mode, contextData, memberPersona, conversationStatus, localTime } = await request.json();
+    const { message, mode, contextData, memberPersona, conversationStatus, localTime, chatHistory } = await request.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!apiKey) {
@@ -86,7 +86,18 @@ export default async function (request: Request, context: Context) {
       `;
     }
 
-    // Using user-requested model: gemini-flash-lite-latest
+    // Format History
+    let historyBlock = "";
+    if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
+        historyBlock = "RECENT CONVERSATION HISTORY (For Context):\n";
+        chatHistory.forEach((msg: any) => {
+             // Basic dedupe: if it's the exact same text as the current prompt, skip it to avoid "User: Hi, User: Hi".
+            if (msg.role === 'user' && msg.content === message) return;
+            historyBlock += `${msg.role === 'user' ? 'User' : 'You'}: ${msg.content}\n`;
+        });
+        historyBlock += "\n(End of History)\n";
+    }
+
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`;
     
     const payload = {
@@ -94,7 +105,7 @@ export default async function (request: Request, context: Context) {
         {
           parts: [
             {
-              text: `${systemPrompt}\n\nUser Message: ${message}\n\nResponse:`
+              text: `${systemPrompt}\n\n${historyBlock}\nUser Message: ${message}\n\nResponse:`
             }
           ]
         }
