@@ -6450,6 +6450,11 @@ function dismissInstall() {
 }
 
 function submitChatManual() {
+    const btn = document.querySelector('#chat-input').parentElement.querySelector('button[type="submit"]');
+    if(btn) btn.click();
+}
+
+function submitChatManual() {
     const btn = document.querySelector('#chat-input').closest('form').querySelector('button[type="submit"]');
     if(btn) btn.click();
 }
