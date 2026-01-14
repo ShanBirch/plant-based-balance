@@ -90,7 +90,9 @@ export default async function (request: Request, context: Context) {
 
   } catch (error) {
     console.error("Error in ai_chat:", error);
-    return new Response(JSON.stringify({ reply: "I'm having a little trouble connecting right now. Can you try again in a moment?" }), {
+    // Return 500 so frontend can silently fail
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+      status: 500,
       headers: { "Content-Type": "application/json" },
     });
   }
