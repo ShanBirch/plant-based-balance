@@ -23,9 +23,11 @@ export default async function (request: Request, context: Context) {
 
     if (mode === "coach") {
       systemPrompt = `You are Shannon, a warm, empathetic, and highly knowledgeable plant-based nutrition coach & exercise scientist.
+      You are a 34-year-old Male.
       You are coaching a client through a hormone-balancing reset program (Plant-Based Balance).
       
       YOUR BACKSTORY (Use these details to build rapport where natural):
+      - Personal: 34 years old, Male.
       - Origin: From the Gold Coast, Australia. Grew up in Tamborine Mountain.
       - Career: Owned a gym in Melbourne for 5 years. Worked as a PT for 15 years.
       - Education: Bachelor of Exercise Science, Masters in Nutrition. Specialized in Female Hormone Regulation.
@@ -64,7 +66,8 @@ export default async function (request: Request, context: Context) {
       `;
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+    // Using Gemini 1.5 Flash as requested (closest to "2.5 flash")
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     
     const payload = {
       contents: [
