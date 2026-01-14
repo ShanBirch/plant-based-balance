@@ -6089,9 +6089,10 @@
 
                     <!-- Input Area -->
                     <div style="padding: 15px; border-top: 1px solid #f1f5f9; background: #fcfcfc;">
-                        <form onsubmit="handleChatSubmit(event)" style="display: flex; gap: 10px; width: 100%;">
+                        <form onsubmit="submitCoachMessage(event)" style="display: flex; gap: 10px; width: 100%;">
                             <input type="text" id="chat-input" placeholder="Type your message..." style="flex: 1; padding: 14px 20px; border-radius: 30px; border: 1px solid #e2e8f0; outline: none; font-size: 0.95rem; transition: border 0.2s;">
-                            <button type="submit" style="width: 50px; height: 50px; background: var(--primary); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(4, 106, 56, 0.3); transition: transform 0.1s; padding: 0;">
+                            <!-- Type=button with explicit onclick for robustness -->
+                            <button type="button" onclick="submitCoachMessage()" style="width: 50px; height: 50px; background: var(--primary); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(4, 106, 56, 0.3); transition: transform 0.1s; padding: 0;">
                                 <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white; margin-left: 4px; pointer-events: none;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                             </button>
                         </form>
@@ -6995,8 +6996,9 @@ function saveChatMessage(role, text) {
     localStorage.setItem('shannon_chat_history', JSON.stringify(history));
 }
 
-function handleChatSubmit(e) {
-    e.preventDefault();
+function submitCoachMessage(e) {
+    if(e) e.preventDefault();
+    
     const input = document.getElementById('chat-input');
     const msg = input.value.trim();
     if(!msg) return;
@@ -7053,15 +7055,18 @@ function triggerCoachResponse(userMsg) {
             contextData: context
         })
     })
-    .then(res => res.json())
+    .then(res => {
+        if(!res.ok) throw new Error('AI Connection Issue');
+        return res.json();
+    })
     .then(data => {
         removeTypingIndicator();
-        appendCoachMessage(data.reply);
+        if(data.reply) appendCoachMessage(data.reply);
     })
     .catch(err => {
+        // Silent fail as requested by user - do not show error message to UI
         console.error("AI Error:", err);
         removeTypingIndicator();
-        appendCoachMessage("I'm having a little trouble connecting to my brain right now. Please check your internet connection.");
     });
 }
 
