@@ -6996,7 +6996,8 @@ function saveChatMessage(role, text) {
     localStorage.setItem('shannon_chat_history', JSON.stringify(history));
 }
 
-function submitCoachMessage(e) {
+// Expose to window immediately to ensure inline HTML can find it
+window.submitCoachMessage = function(e) {
     if(e) e.preventDefault();
     
     const input = document.getElementById('chat-input');
@@ -7027,7 +7028,10 @@ function submitCoachMessage(e) {
 
     // Trigger AI Response
     triggerCoachResponse(msg);
-}
+};
+
+// Also define it as a standard function just in case
+function submitCoachMessage(e) { window.submitCoachMessage(e); }
 
 function triggerCoachResponse(userMsg) {
     const container = document.getElementById('chat-messages-container');
