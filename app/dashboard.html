@@ -6845,34 +6845,7 @@ function showSupportTab(tab, btn) {
 }
 
 // Simple Chat Handler (Frontend only Demo)
-function handleChatSubmit(e) {
-    e.preventDefault();
-    const input = document.getElementById('chat-input');
-    const msg = input.value.trim();
-    if(!msg) return;
-
-    const container = document.getElementById('chat-messages-container');
-    
-    // 1. Append User Message
-    const userDiv = document.createElement('div');
-    userDiv.style.cssText = "display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 20px; align-self: flex-end; max-width: 85%; animation: fadeIn 0.3s ease;";
-    userDiv.innerHTML = `
-        <div style="background: var(--primary); padding: 15px 20px; border-radius: 16px 0 16px 16px; color: white; box-shadow: 0 4px 10px rgba(4, 106, 56, 0.2);">
-            <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; color: white;">${msg}</p>
-        </div>
-        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px; margin-right: 2px;">You • Just now</div>
-    `;
-    container.appendChild(userDiv);
-    
-    // Clear input
-    input.value = '';
-    
-    // Scroll to bottom
-    container.scrollTop = container.scrollHeight;
-
-    // Trigger AI Response
-    triggerCoachResponse(msg);
-}
+// function handleChatSubmit(e) { e.preventDefault(); submitCoachMessage(); } // Redirected to submitCoachMessage handling
 
 // --- SHANNON AI SIMULATION ---
 
