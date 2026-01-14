@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume - Shannon Birch - AI & Automation</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #7f8c8d;
+            --accent-color: #2980b9; /* Changed to a more "tech" blue */
+            --text-color: #333;
+            --line-height: 1.6;
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            line-height: var(--line-height);
+            color: var(--text-color);
+            background-color: #ffffff;
+            font-size: 11pt;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header Section */
+        header {
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 28pt;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .role-title {
+            font-size: 14pt;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .contact-info {
+            display: flex;
+            gap: 20px;
+            font-size: 10pt;
+            color: var(--secondary-color);
+            flex-wrap: wrap;
+        }
+
+        .contact-info span {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Section Styling */
+        section {
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            font-size: 14pt;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        /* Experience Item */
+        .experience-item {
+            margin-bottom: 20px;
+        }
+
+        .job-main-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 2px;
+        }
+
+        .job-title {
+            font-weight: bold;
+            font-size: 12pt;
+            color: var(--primary-color);
+        }
+
+        .date-range {
+            font-style: italic;
+            font-size: 10pt;
+            color: var(--secondary-color);
+        }
+
+        .company-name {
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .location {
+            font-size: 0.9em;
+            color: #999;
+            margin-left: 10px;
+            font-weight: normal;
+        }
+
+        ul {
+            list-style-position: outside;
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        /* Skills Grid */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .skills-category {
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            @page {
+                margin: 2.5cm;
+                size: A4;
+            }
+            section {
+                margin-bottom: 20px;
+            }
+            .experience-item {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+             h2 {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+            ul {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Shannon Birch</h1>
+        <div class="role-title">AI Implementation Specialist & Automation Developer</div>
+        <div class="contact-info">
+            <span>Email: shannon@plantbased-balance.org</span>
+            <span>Ph: 0478 209 395</span>
+            <span>Location: Australia</span>
+            <span>Portfolio: plantbased-balance.org</span>
+        </div>
+    </header>
+
+    <section>
+        <h2>Technical Summary</h2>
+        <p>
+            Innovative Developer and Business Operator with a focus on Applied AI and Process Automation. Successfully leveraged advanced AI tools (Cursor, Large Language Models) to architect and build a complex, full-stack online coaching platform. Expertise in integrating disparate systems via webhooks and APIs to create seamless user experiences, developing custom AI chatbots for client engagement, and automating high-volume administrative workflows. Passionate about bridging the gap between operational needs and cutting-edge AI solutions.
+        </p>
+    </section>
+
+    <section>
+        <h2>Technical Projects & Experience</h2>
+
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Founder & Lead Developer</span>
+                <span class="date-range">2020 - Present</span>
+            </div>
+            <span class="company-name">Plant Based Balance (formerly Coco's Personal Training) <span class="location">Remote / Australia</span></span>
+            <p style="margin-bottom: 8px; color: #555; font-style: italic;">
+                Founder of a successful fitness brand, evolving from a boutique studio (Coco's Personal Training) to a scalable, tech-driven online platform (Plant Based Balance).
+            </p>
+            <ul>
+                <li><strong>AI-Driven Development:</strong> Utilized Cursor and advanced LLM prompts to write, debug, and deploy a full-stack web application, accelerating development cycles considerably.</li>
+                <li><strong>Workflow Automation:</strong> Designed and implemented end-to-end automation pipelines using Zapier and webhooks. Automated the user journey from Stripe payment to account provisioning in Trainerize, eliminating manual entry.</li>
+                <li><strong>Custom Chatbot Integration:</strong> Developed specific AI agents/chatbots to handle client check-ins and provide real-time feedback, significantly improving client engagement and scaling coaching capabilities.</li>
+                <li><strong>Backend Integration:</strong> Built custom backend logic to process webhooks, manage subscription states, and trigger specific user flows based on purchase data.</li>
+                <li><strong>Review Analysis Bot:</strong> Engineered an automated system to parse client check-ins and generate performance reviews, reducing administrative time by 80%.</li>
+                <li><strong>Business Operations:</strong> Managed all aspects of the business lifecycle, from initial studio launch and client acquisition to the strategic pivot towards a digital-first model.</li>
+            </ul>
+        </div>
+
+    </section>
+
+    <section>
+        <h2>Technical Skills</h2>
+        <div class="skills-grid">
+            <div>
+                <span class="skills-category">AI & Machine Learning Application</span>
+                <ul>
+                    <li>LLM Prompt Engineering & Context Management</li>
+                    <li>AI-Assisted Coding (Cursor, Copilot)</li>
+                    <li>Chatbot Development & Integration</li>
+                    <li>Automated Content Generation</li>
+                </ul>
+            </div>
+            <div>
+                <span class="skills-category">Development & Automation</span>
+                <ul>
+                    <li>Web Development (HTML, CSS, JavaScript)</li>
+                    <li>API Integration & Webhooks</li>
+                    <li>Workflow Automation (Zapier, Stripe API)</li>
+                    <li>Platform Integration (Trainerize, Payment Gateways)</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>Education</h2>
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Bachelor of Exercise Science</span>
+                <span class="date-range">2011 - 2014</span>
+            </div>
+            <span class="company-name">Griffith University <span class="location">Southport, QLD</span></span>
+        </div>
+    </section>
+
+</body>
+</html>

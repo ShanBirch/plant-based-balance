@@ -1,5 +1,5 @@
 import Stripe from "https://esm.sh/stripe?target=deno";
-import { sendCAPIEvent, hash } from "./capi-utils.js";
+import { sendCAPIEvent, hash } from "./lib/capi-utils.js";
 
 export default async (request, context) => {
     // Only allow POST
@@ -73,6 +73,11 @@ export default async (request, context) => {
 
         if (isDiscounted !== false) {
             subscriptionData.coupon = 'rjrlOEdm'; 
+        }
+
+        // Logic for 7-Day Mobile Wallet Trial
+        if (body.isTrial) {
+             subscriptionData.trial_period_days = 7;
         }
 
         const subscription = await stripe.subscriptions.create(subscriptionData);

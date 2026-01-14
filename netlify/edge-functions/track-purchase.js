@@ -1,4 +1,4 @@
-import { sendCAPIEvent } from "./capi-utils.js";
+import { sendCAPIEvent } from "./lib/capi-utils.js";
 
 export default async (request, context) => {
   if (request.method !== 'POST') {

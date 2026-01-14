@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Adrenal Rescue - 28-Day Smoothie Guide</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+    :root {
+        --primary: #1e3a5f;
+        --primary-light: #2c5282;
+        --secondary: #d4af37;
+        --accent-green: #e0e8e3;
+        --bg: #f9f9f7;
+        --surface: #ffffff;
+        --text-main: #2d3748;
+        --text-muted: #718096;
+        --border-radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body { 
+        font-family: 'Inter', sans-serif; 
+        background: var(--bg);
+        color: var(--text-main); 
+        margin: 0; 
+        padding: 40px 20px; 
+        line-height: 1.6;
+    }
+    h1, h2, h3, h4 { 
+        font-family: 'Playfair Display', serif; 
+        color: var(--primary);
+        margin-top: 0;
+    }
+    .container { 
+        max-width: 800px; 
+        margin: 0 auto; 
+        background: var(--surface); 
+        padding: 50px;
+        border-radius: var(--border-radius);
+        box-shadow: 0 0 50px rgba(0,0,0,0.03); 
+    }
+    .header-section {
+        text-align: center;
+        margin-bottom: 50px;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        padding-bottom: 40px;
+    }
+    .subtitle {
+        color: var(--secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+        display: block;
+    }
+    h1 { font-size: 2.5rem; margin-bottom: 20px; line-height: 1.2; }
+    .recipe-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+    .recipe-item {
+        background: #f8fafc;
+        padding: 0;
+        border-radius: 12px;
+        border: 1px solid rgba(0,0,0,0.03);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .recipe-img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+    .recipe-content {
+        padding: 20px;
+    }
+    .recipe-title {
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 10px;
+        display: block;
+        font-size: 1.1rem;
+    }
+    ul { padding-left: 20px; margin: 0; font-size: 0.9rem; }
+    li { margin-bottom: 5px; }
+    .print-btn {
+        display: block;
+        width: 250px;
+        margin: 50px auto 0;
+        padding: 15px;
+        background: var(--primary);
+        color: white;
+        text-align: center;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .print-btn:hover { background: var(--primary-light); }
+    @media print { .print-btn { display: none; } }
+    @media (max-width: 600px) {
+        .recipe-grid { grid-template-columns: 1fr; }
+        .container { padding: 30px 20px; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header-section">
+        <span class="subtitle">Cortisol Recovery Protocol</span>
+        <h1>Adrenal Rescue Smoothie Guide</h1>
+        <p style="color:var(--text-muted); font-style:italic;">"Grounding recipes to stop the jitters and stabilize blood sugar."</p>
+    </div>
+
+    <div class="recipe-grid">
+        <div class="recipe-item">
+            <img src="images/smoothie_berry_blast.png" class="recipe-img" alt="Berry Blast">
+            <div class="recipe-content">
+                <span class="recipe-title">1. Berry Blast</span>
+                <ul>
+                    <li>1 cup frozen blueberries</li>
+                    <li>1 handful spinach</li>
+                    <li>1/4 avocado</li>
+                    <li>1 scoop protein powder</li>
+                    <li>1 tbsp chia seeds</li>
+                    <li>1.5 cups almond milk</li>
+                </ul>
+            </div>
+        </div>
+        <div class="recipe-item">
+            <img src="images/smoothie_zen_green.png" class="recipe-img" alt="Zen Green">
+            <div class="recipe-content">
+                <span class="recipe-title">2. Zen Green</span>
+                <ul>
+                    <li>1/2 cucumber, 1/2 pear</li>
+                    <li>1 inch fresh ginger</li>
+                    <li>Squeeze of lime</li>
+                    <li>1 tbsp hemp seeds</li>
+                    <li>Coconut water base</li>
+                </ul>
+            </div>
+        </div>
+        <div class="recipe-item">
+            <img src="images/smoothie_cacao_calm.png" class="recipe-img" alt="Cacao Night Calm">
+            <div class="recipe-content">
+                <span class="recipe-title">3. Cacao Night Calm</span>
+                <ul>
+                    <li>1 frozen banana</li>
+                    <li>1 tbsp raw cacao powder</li>
+                    <li>1 tbsp almond butter</li>
+                    <li>Pinch sea salt</li>
+                    <li>Oat milk base</li>
+                </ul>
+            </div>
+        </div>
+        <div class="recipe-item">
+            <img src="images/smoothie_golden_turmeric.png" class="recipe-img" alt="Golden Anti-Inflammatory">
+            <div class="recipe-content">
+                <span class="recipe-title">4. Golden Anti-Inflammatory</span>
+                <ul>
+                    <li>1/2 cup frozen mango</li>
+                    <li>1 tsp turmeric + pinch pepper</li>
+                    <li>1 scoop vanilla protein</li>
+                    <li>1 tsp flax oil</li>
+                    <li>Coconut milk base</li>
+                </ul>
+            </div>
+        </div>
+        <div class="recipe-item">
+            <img src="images/smoothie_avocado_lime.png" class="recipe-img" alt="Creamy Avocado Lime">
+            <div class="recipe-content">
+                <span class="recipe-title">5. Creamy Avocado Lime</span>
+                <ul>
+                    <li>1/2 ripe avocado</li>
+                    <li>Zest & juice of 1 lime</li>
+                    <li>1 serving vanilla protein</li>
+                    <li>Handful of spinach</li>
+                    <li>Cashew milk base</li>
+                </ul>
+            </div>
+        </div>
+        <div class="recipe-item">
+            <img src="images/smoothie_cherry_sleep.png" class="recipe-img" alt="Cherry Sleep">
+            <div class="recipe-content">
+                <span class="recipe-title">6. Cherry Sleep</span>
+                <ul>
+                    <li>1 cup frozen tart cherries</li>
+                    <li>1/2 cup chamomile (chilled)</li>
+                    <li>1 tbsp almond butter</li>
+                    <li>1 tsp honey (optional)</li>
+                    <li>Almond milk base</li>
+                </ul>
+            </div>
+        </div>
+        <div class="recipe-item">
+            <img src="images/smoothie_pumpkin_pie.png" class="recipe-img" alt="Pumpkin Pie">
+            <div class="recipe-content">
+                <span class="recipe-title">7. Pumpkin Pie</span>
+                <ul>
+                    <li>1/2 cup pumpkin purée</li>
+                    <li>1 frozen banana</li>
+                    <li>1 tsp pumpkin spice</li>
+                    <li>1 tbsp pumpkin seeds</li>
+                    <li>Vanilla protein & oat milk</li>
+                </ul>
+            </div>
+        </div>
+        <div class="recipe-item">
+            <img src="images/smoothie_matcha_mint.png" class="recipe-img" alt="Matcha Mint">
+            <div class="recipe-content">
+                <span class="recipe-title">8. Matcha Mint</span>
+                <ul>
+                    <li>1 tsp matcha powder</li>
+                    <li>Fresh mint leaves</li>
+                    <li>1/2 frozen banana</li>
+                    <li>1 scoop protein</li>
+                    <li>Coconut milk base</li>
+                </ul>
+            </div>
+        </div>
+        <div class="recipe-item">
+            <img src="images/smoothie_beet_berry.png" class="recipe-img" alt="Beet & Berry">
+            <div class="recipe-content">
+                <span class="recipe-title">9. Beet & Berry</span>
+                <ul>
+                    <li>1/4 raw beet (peeled)</li>
+                    <li>1 cup mixed berries</li>
+                    <li>1/2 lemon (juiced)</li>
+                    <li>1 tsp flax seeds</li>
+                    <li>Coconut water base</li>
+                </ul>
+            </div>
+        </div>
+        <div class="recipe-item">
+            <img src="images/smoothie_banana_nut.png" class="recipe-img" alt="Banana Nut">
+            <div class="recipe-content">
+                <span class="recipe-title">10. Banana Nut</span>
+                <ul>
+                    <li>1 large frozen banana</li>
+                    <li>1/4 cup rolled oats</li>
+                    <li>1 tbsp walnut butter</li>
+                    <li>Dash of cinnamon</li>
+                    <li>Almond milk base</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <button class="print-btn" onclick="window.print()">Print This Guide</button>
+</div>
+</body>
+</html>

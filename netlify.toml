@@ -19,8 +19,17 @@
   path = "/.netlify/functions/track-lead"
 
 [[edge_functions]]
+  function = "create-checkout-session"
+  path = "/.netlify/functions/create-checkout-session"
+
+[[edge_functions]]
   function = "track-purchase"
   path = "/.netlify/functions/track-purchase"
+
+[[edge_functions]]
+  function = "ai_chat"
+  path = "/.netlify/functions/ai-chat"
+
 
 # Ensure we redirect legacy URLs
 [[redirects]]

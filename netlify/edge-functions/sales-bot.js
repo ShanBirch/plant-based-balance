@@ -123,7 +123,7 @@ export default async (request, context) => {
 
     } catch (err) {
         console.error("Sales Bot Error:", err);
-        return new Response(JSON.stringify({ error: "Sorry, I'm having trouble thinking right now." }), {
+        return new Response(JSON.stringify({ error: err.toString() + " (Check logs)" }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" }
         });

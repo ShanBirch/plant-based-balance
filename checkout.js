@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     paymentRequest.on('paymentmethod', async (ev) => {
         // 1. Send ID to backend to create subscription
         try {
+            const isTrial = (currentSelectedPlan === '6-month');
             const response = await fetch('/.netlify/functions/create-subscription', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -58,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     paymentMethodId: ev.paymentMethod.id,
                     priceId: PRICES[currentSelectedPlan],
                     isDiscounted: isDiscounted,
+                    isTrial: isTrial, // Pass Trial Flag
                     fbc: getCookie('_fbc'),
                     fbp: getCookie('_fbp')
                 })
@@ -82,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("Payment Confirmation Failed: " + confirmResult.error.message);
             } else {
                 ev.complete('success');
-                // Redirect to success page with dynamic amount and user info
+                // Redirect to success page
                 const amount = PLAN_DETAILS[currentSelectedPlan].amount / 100;
                 const emailParam = encodeURIComponent(ev.payerEmail || '');
                 const nameParam = encodeURIComponent(ev.payerName || '');
@@ -101,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check Availability
     paymentRequest.canMakePayment().then(function(result) {
-        console.log("Stripe Wallet Result:", result); 
         if (result) {
             walletAvailable = true;
             const btns = document.querySelectorAll('.checkout-btn');
@@ -109,8 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const plan = btn.getAttribute('data-plan');
                 const originalText = plan.replace('-', ' ').toUpperCase();
                 
-                // Determine the best label
-                let walletLabel = "G-Pay"; // Default to G-Pay if result is true
+                let walletLabel = "G-Pay"; 
                 const ua = navigator.userAgent.toLowerCase();
                 
                 if (result.applePay) {
@@ -121,7 +121,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     walletLabel = "G-Pay";
                 }
 
-                btn.innerHTML = `${originalText} <br/> <span style="font-size:0.8em; font-weight: 700;">Pay with ${walletLabel}</span>`;
+                // Don't override the "Start 7-Day Trial" text too aggressively
+                if (plan === '6-month') {
+                     btn.innerHTML = `START 7-DAY FREE TRIAL <br/> <span style="font-size:0.8em; font-weight: 700;">via ${walletLabel}</span>`;
+                } else {
+                     btn.innerHTML = `${originalText} <br/> <span style="font-size:0.8em; font-weight: 700;">Pay with ${walletLabel}</span>`;
+                }
             });
         }
     });
@@ -151,15 +156,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const termsBox = document.getElementById('terms-checkbox');
             if (termsBox && !termsBox.checked) {
                 alert("Please agree to the Terms & Conditions and Refund Policy to proceed.");
-                
-                // Highlight the box
                 const container = document.getElementById('checkout-terms-container');
                 if(container) {
                     container.style.border = "2px solid #ef4444";
                     container.style.background = "#fef2f2";
                     container.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    
-                    // Reset after 3s
                     setTimeout(() => {
                         container.style.border = "1px solid #e2e8f0";
                         container.style.background = "#f8fafc";
@@ -168,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // B. If Wallet is available -> Force Wallet Flow
+            // B. If Wallet is available
             if (walletAvailable) {
                 const details = PLAN_DETAILS[plan];
                 if (details) {
@@ -180,27 +181,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         displayLabel += " + Acupressure Series";
                     }
 
-                    // Update the request with the specific plan amount before showing
+                    // Special Logic for Trial Display in Wallet Sheet
+                    if (plan === '6-month') {
+                        // For Wallet Sheet, showing $0.00 might be confusing if we don't setup "Recurring" display items correctly.
+                        // But we CAN set total to $0 if there is no bump.
+                        // If bump, set total to $9.
+                        // Stripe Payment Request API handles 'recurring' line items if configured, but here we just request the initial charge.
+                        if (!isBumpChecked) {
+                            totalAmount = 0;
+                            displayLabel = "7-Day Free Trial (Then $108)";
+                        } else {
+                            totalAmount = BUMP_AMOUNT;
+                            displayLabel = "Acupressure Series (Trial Starts Now)";
+                        }
+                    }
+
                     paymentRequest.update({
                         total: { label: displayLabel, amount: totalAmount }
                     });
-
-                    if (typeof fbq === 'function') {
-                        fbq('track', 'InitiateCheckout', {
-                            content_name: displayLabel,
-                            value: totalAmount / 100,
-                            currency: 'AUD',
-                            ...utmData
-                        });
-                    }
                     
-                    console.log("Triggering Wallet Sheet for:", plan, isBumpChecked ? "+ Bump" : "");
                     try {
                         paymentRequest.show();
                         return;
                     } catch (e) {
                          console.error("Wallet Sheet Failed:", e);
-                         // Fall out to Redirect
                     }
                 }
             }
@@ -209,27 +213,48 @@ document.addEventListener('DOMContentLoaded', () => {
             const priceId = PRICES[plan];
             if (!priceId) return;
 
+            // NEW: 6-Month Plan uses Backend Session (for Trial)
+            if (plan === '6-month') {
+                btn.innerText = "Launching Trial...";
+                try {
+                    const response = await fetch('/.netlify/functions/create-checkout-session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            priceId: priceId,
+                            isTrial: true,
+                            email: sessionStorage.getItem('userEmail'),
+                            bump: isBumpChecked,
+                            utm_data: utmData,
+                            fbc: getCookie('_fbc'),
+                            fbp: getCookie('_fbp')
+                        })
+                    });
+                    const session = await response.json();
+                    if (session.error) {
+                         alert("Checkout Error: " + session.error.message);
+                         btn.innerText = "Try Again";
+                    } else {
+                         stripe.redirectToCheckout({ sessionId: session.sessionId });
+                    }
+                } catch (err) {
+                    console.error("Backend Checkout Error", err);
+                    alert("System Error. Please try again.");
+                }
+                return;
+            }
+
+            // EXISTING: 1 & 3 Month Plans use Client-Side Redirect (No Trial)
             const planData = PLAN_DETAILS[plan];
             let totalVal = planData.amount / 100;
             if (isBumpChecked) totalVal += 9;
 
-            // Track Initiate Checkout for Meta
-            if (typeof fbq === 'function' && planData) {
-                fbq('track', 'InitiateCheckout', {
-                    content_name: planData.label + (isBumpChecked ? " + Bump" : ""),
-                    value: totalVal,
-                    currency: 'AUD',
-                    ...utmData
-                });
-            }
-
-            // Prepare Line Items
             const lineItems = [{ price: priceId, quantity: 1 }];
             if (isBumpChecked) {
                 lineItems.push({ price: ACUPRESSURE_PRICE_ID, quantity: 1 });
             }
 
-            // Server-side CAPI InitiateCheckout 
+            // CAPI
             fetch('/.netlify/functions/track-lead', { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -251,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 discounts: discounts, 
                 successUrl: window.location.origin + '/success.html?amount=' + totalVal + '&bump=' + isBumpChecked,
                 cancelUrl: window.location.origin + '/plantbasedswitch.html',
-                customerEmail: sessionStorage.getItem('userEmail'), // Pre-fill email from Quiz
+                customerEmail: sessionStorage.getItem('userEmail'),
                 metadata: {
                     ...utmData,
                     order_bump: isBumpChecked ? "acupressure" : "none",

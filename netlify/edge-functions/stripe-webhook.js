@@ -1,5 +1,5 @@
 import Stripe from "https://esm.sh/stripe?target=deno";
-import { sendCAPIEvent } from "./capi-utils.js";
+import { sendCAPIEvent } from "./lib/capi-utils.js";
 
 export default async (request, context) => {
     // Only allow POST

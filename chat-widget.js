@@ -92,6 +92,8 @@
             
             if (data.reply) {
                 addMessage('bot', data.reply);
+            } else if (data.error) {
+                addMessage('bot', "Error: " + data.error);
             } else {
                 addMessage('bot', "I'm having a little trouble thinking clearly. Could you ask that again?");
             }

@@ -1,0 +1,21 @@
+{
+  "name": "PlantBased Balance",
+  "short_name": "PB Balance",
+  "start_url": "./protocols/cortisol/index.html",
+  "display": "standalone",
+  "background_color": "#f9f9f7",
+  "theme_color": "#1e3a5f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

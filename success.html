@@ -188,6 +188,12 @@
                     package_name: packagePlan,
                     hormone_profile: profile,
                     workout_preference: workout,
+                    
+                    // User Stats
+                    weight: fullProfile.weight || '',
+                    activity_level: fullProfile.activity_level || '',
+                    age: fullProfile.age || '',
+
                     order_bump: isBump ? 'acupressure' : 'none',
                     utm_data: utmData,
                     status: 'purchased',

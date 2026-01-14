@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resume - Shannon</title>
+    <title>Resume - Shannon Birch</title>
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -109,6 +109,7 @@
             font-size: 0.9em;
             color: #999;
             margin-left: 10px;
+            font-weight: normal;
         }
 
         ul {
@@ -131,10 +132,28 @@
         @media print {
             body {
                 padding: 0;
-                max-width: 100%;
+                margin: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
             @page {
-                margin: 0.5in;
+                margin: 2.5cm;
+                size: A4;
+            }
+            section {
+                margin-bottom: 20px;
+            }
+            .experience-item {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            h2 {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+            ul {
+                break-inside: avoid;
+                page-break-inside: avoid;
             }
         }
     </style>
@@ -142,18 +161,18 @@
 <body>
 
     <header>
-        <h1>Shannon</h1>
+        <h1>Shannon Birch</h1>
         <div class="contact-info">
             <span>Email: shannon@plantbased-balance.org</span>
+            <span>Ph: 0478 209 395</span>
             <span>Location: Gold Coast, QLD</span>
-            <!-- <span>Phone: [Phone Number]</span> -->
         </div>
     </header>
 
     <section>
         <h2>Professional Summary</h2>
         <p>
-            Dedicated Exercise Scientist and experienced Personal Trainer with over a decade of experience in fitness, healthcoaching, and business management. Proven track record of building successful fitness businesses from the ground up, with strong expertise in sales, marketing, and client transformation. Founder of Plant Based Balance, specializing in holistic health protocols.
+            Dedicated Exercise Scientist and experienced Personal Trainer with over a decade of experience in fitness, health coaching, and business management. Proven track record of building successful fitness businesses from the ground up, with strong expertise in sales, marketing, and client transformation. Background in both corporate wellness environments and boutique studio management.
         </p>
     </section>
 
@@ -162,51 +181,53 @@
 
         <div class="experience-item">
             <div class="job-main-line">
-                <span class="job-title">Founder & Online Coach</span>
-                <span class="date-range">2024 - Present</span>
+                <span class="job-title">Founder & Head Coach</span>
+                <span class="date-range">2020 - Present</span>
             </div>
-            <span class="company-name">Plant Based Balance <span class="location">Remote</span></span>
+            <span class="company-name">Plant Based Balance / Coco's Personal Training <span class="location">Remote / Australia</span></span>
             <ul>
-                <li>Founded and operate a specialized online coaching business for plant-based health and perimenopause support.</li>
-                <li>Manage all aspects of business operations including sales, customer service, and digital product delivery.</li>
-                <li>Develop custom health protocols and meal plans for clients.</li>
-            </ul>
-        </div>
-
-        <div class="experience-item">
-            <div class="job-main-line">
-                <span class="job-title">Owner & Personal Trainer</span>
-                <span class="date-range">2019 - 2024</span>
-            </div>
-            <span class="company-name">Coco's Personal Training <span class="location">Hampton, VIC (3188)</span></span>
-            <ul>
-                <li>Established and ran a successful independent personal training studio for 5 years.</li>
-                <li>Executed comprehensive business strategies: advertising, marketing campaigns, and direct sales.</li>
-                <li>Conducted group classes and one-on-one personal training sessions.</li>
-                <li>Managed client retention and daily studio operations.</li>
+                <li><strong>Hybrid Business Model:</strong> Founded and operated a dynamic fitness business combining a boutique personal training studio with a robust online coaching platform.</li>
+                <li><strong>Current Operations (Plant Based Balance):</strong> Currently running a fully remote, tech-enabled health coaching business serving clients globally with custom protocols and meal plans.</li>
+                <li><strong>Online Coaching:</strong> Successfully delivered online fitness programming and nutritional support to clients alongside in-person training since 2020.</li>
+                <li><strong>Client Success:</strong> Delivered high-touch training to hundreds of clients, specializing in perimenopause support, plant-based nutrition, and sustainable lifestyle changes.</li>
+                <li><strong>Operations Management:</strong> Managed all aspects of daily business operations including sales, digital marketing, financial planning, and client retention strategies.</li>
             </ul>
         </div>
 
         <div class="experience-item">
             <div class="job-main-line">
                 <span class="job-title">Personal Trainer</span>
-                <span class="date-range">2017 - 2019</span>
+                <span class="date-range">2019 - 2020</span>
             </div>
             <span class="company-name">TriFusion <span class="location">Melbourne, VIC</span></span>
             <ul>
-                <li>Delivered personalized fitness training to a diverse client base.</li>
-                <li>Collaborated with gym management to drive member engagement.</li>
+                <li>Delivered personalized fitness training and group instruction.</li>
+                <li>Designed high-intensity and resistance training programs for diverse client needs.</li>
             </ul>
         </div>
 
         <div class="experience-item">
             <div class="job-main-line">
-                <span class="job-title">Full Time Associate</span>
+                <span class="job-title">Personal Trainer & Group Fitness Instructor</span>
+                <span class="date-range">2017 - 2019</span>
+            </div>
+            <span class="company-name">Centre Health Management <span class="location">Melbourne City, VIC</span></span>
+            <ul>
+                <li>Worked in a corporate health environment delivering fitness solutions to professionals.</li>
+                <li>Instructed large group classes (up to 20 participants) including HIIT and small group resistance sessions.</li>
+                <li>Provided one-on-one personal training tailored to individual health goals.</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Retail Associate</span>
                 <span class="date-range">2015 - 2016</span>
             </div>
             <span class="company-name">ALDI Stores Australia</span>
             <ul>
-                <li>Worked in a fast-paced retail environment, ensuring high levels of efficiency and customer service.</li>
+                <li>Executed daily retail operations in a fast-paced environment.</li>
+                <li>Maintained high standards of customer service and efficiency.</li>
             </ul>
         </div>
 
@@ -217,9 +238,9 @@
         <div class="experience-item">
             <div class="job-main-line">
                 <span class="job-title">Bachelor of Exercise Science</span>
-                <span class="date-range">2012 - 2015</span>
+                <span class="date-range">2011 - 2014</span>
             </div>
-            <!-- <span class="company-name">University Name</span> -->
+            <span class="company-name">Griffith University <span class="location">Southport, QLD</span></span>
         </div>
     </section>
 
@@ -232,9 +253,9 @@
                 <li>Sales & Marketing Strategy</li>
             </ul>
             <ul>
-                <li>Health & Nutrition Coaching</li>
-                <li>Customer Service & Client Retention</li>
-                <li>Program Design (Hypertrophy, Weight Loss)</li>
+                <li>Corporate Health & Wellness</li>
+                <li>Program Design (HIIT, Strength)</li>
+                <li>Client Relations & Retention</li>
             </ul>
         </div>
     </section>
