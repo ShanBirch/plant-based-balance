@@ -6023,6 +6023,17 @@
         </div>
     </div>
 
+    <!-- INSTALL APP BANNER (Hidden by default) -->
+    <div id="pwa-install-banner" style="display:none; background: linear-gradient(135deg, #046A38 0%, #06542f 100%); color:white; padding: 20px; border-radius: 12px; margin: 20px 20px 0 20px; box-shadow: 0 10px 30px rgba(4,106,56,0.25); align-items:center;">
+        <div style="flex:1;">
+            <div style="font-weight:700; font-size:1.1rem; margin-bottom:4px;">Install App</div>
+            <div style="font-size:0.9rem; opacity:0.9;">Add to home screen for full experience without the browser bar.</div>
+        </div>
+        <button onclick="installPWA()" style="background:white; color:var(--primary); border:none; padding:10px 20px; border-radius:30px; font-weight:700; cursor:pointer; margin-left:15px; white-space:nowrap;">Install</button>
+        <button onclick="dismissInstall()" style="background:transparent; color:white; border:none; padding:10px; cursor:pointer; margin-left:5px;">✕</button>
+    </div>
+
+
     <!-- SUPPORT VIEW (Coach & Community) -->
     <div id="view-support" class="app-view" style="display:none; padding-bottom: 80px;">
         <div class="app-header">
@@ -6078,11 +6089,12 @@
 
                     <!-- Input Area -->
                     <div style="padding: 15px; border-top: 1px solid #f1f5f9; background: #fcfcfc;">
-                        <form onsubmit="handleChatSubmit(event)" style="display: flex; gap: 10px;">
+                        <form onsubmit="handleChatSubmit(event)" style="display: flex; gap: 10px; width: 100%;">
                             <input type="text" id="chat-input" placeholder="Type your message..." style="flex: 1; padding: 14px 20px; border-radius: 30px; border: 1px solid #e2e8f0; outline: none; font-size: 0.95rem; transition: border 0.2s;">
-                            <button type="submit" style="width: 50px; height: 50px; background: var(--primary); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(4, 106, 56, 0.3); transition: transform 0.1s;">
-                                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white; margin-left: 4px;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                            </button>
+                            <div onclick="submitChatManual()" style="width: 50px; height: 50px; background: var(--primary); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(4, 106, 56, 0.3); transition: transform 0.1s;">
+                                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white; margin-left: 4px; pointer-events: none;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                            </div>
+                            <button type="submit" style="display:none;"></button> <!-- Hidden submit for Enter key support -->
                         </form>
                     </div>
                 </div>
@@ -6400,6 +6412,43 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Initialize
     switchMainTab('dashboard', document.querySelector('.nav-item')); // Default to Home
 });
+
+// PWA Install Logic
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show the install button
+  const banner = document.getElementById('pwa-install-banner');
+  if(banner) {
+      banner.style.display = 'flex';
+      // Move to top of dashboard content logic if needed, but flex in normal flow is fine
+      // Actually better to inject it at top of view-dashboard
+      const dash = document.getElementById('view-dashboard');
+      if(dash) dash.insertBefore(banner, dash.firstChild);
+  }
+});
+
+function installPWA() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+        }
+        deferredPrompt = null;
+        document.getElementById('pwa-install-banner').style.display = 'none';
+    });
+}
+
+function dismissInstall() {
+    document.getElementById('pwa-install-banner').style.display = 'none';
+}
+
+function submitChatManual() {
+    const btn = document.querySelector('#chat-input').closest('form').querySelector('button[type="submit"]');
+    if(btn) btn.click();
+}
 
 function switchMainTab(tabName, btn) {
     // 1. Update Bottom Nav UI
