@@ -6117,11 +6117,15 @@
                 </div>
 
                 <!-- Input Area (Fixed above bottom nav) -->
-                <div style="position: fixed; bottom: 70px; left: 0; width: 100%; background: white; padding: 10px 15px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; gap: 10px; z-index: 60; box-shadow: 0 -2px 10px rgba(0,0,0,0.02);">
-                    <input type="text" id="community-chat-input" placeholder="Message..." style="flex: 1; background: #f1f5f9; border: none; padding: 12px 15px; border-radius: 20px; font-size: 1rem; outline: none; color: var(--text-main);">
-                    <button onclick="sendCommunityMessage()" style="width: 40px; height: 40px; border: none; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s;">
-                        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                    </button>
+                <div style="position: fixed; bottom: 70px; left: 0; width: 100%; background: white; padding: 10px 15px; border-top: 1px solid #f1f5f9; z-index: 60; box-shadow: 0 -2px 10px rgba(0,0,0,0.02);">
+                    <form onsubmit="event.preventDefault(); sendCommunityMessage();" style="display: flex; align-items: center; gap: 10px; width: 100%; margin: 0;">
+                        <input type="text" id="community-chat-input" placeholder="Message..." style="flex: 1; background: #f1f5f9; border: none; padding: 12px 15px; border-radius: 20px; font-size: 1rem; outline: none; color: var(--text-main);">
+                        <!-- Clickable container or specific button logic -->
+                        <div onclick="sendCommunityMessage()" style="width: 40px; height: 40px; border: none; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; flex-shrink: 0;">
+                             <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white; pointer-events: none;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                        </div>
+                        <button type="submit" style="display:none;"></button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -7242,11 +7246,20 @@ function triggerAICommunityResponse(userText) {
                     memberPersona: member
                 })
             })
-            .then(res => res.json())
+            .then(res => {
+                if(!res.ok) throw new Error('AI Offline');
+                return res.json();
+            })
             .then(data => {
                 const aiReply = data.reply;
-                addMessageToChat(member, aiReply);
+                if(aiReply && aiReply !== "undefined") {
+                     addMessageToChat(member, aiReply);
+                }
             })
+            .catch(err => {
+                console.log("AI Silent Fail:", err);
+                // Do nothing UI wise, just silent fail as requested
+            });
             .catch(err => console.error(err));
             
         }, delay);
