@@ -765,6 +765,9 @@ footer {
     .nav-toggle {
         display: block !important;
         cursor: pointer;
+        position: absolute; /* Add absolute positioning to ensure it stays in place */
+        top: 1.5rem; /* Match header padding */
+        right: 1.5rem; /* Match header padding */
     }
     .nav-links {
         display: none; /* Hidden by default */
