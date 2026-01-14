@@ -145,18 +145,18 @@
 
         @media print {
             body {
-                padding: 0;
-                margin: 0;
+                width: auto !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
-            @page {
-                margin: 2.5cm;
-                size: A4;
-            }
+            /* @page removed to allow PDF generator to control margins */
             section {
                 margin-bottom: 20px;
             }
+        }
             .experience-item {
                 break-inside: avoid;
                 page-break-inside: avoid;
@@ -210,7 +210,7 @@
                 <li><strong>Custom Chatbot Integration:</strong> Developed specific AI agents/chatbots to handle client check-ins and provide real-time feedback, significantly improving client engagement and scaling coaching capabilities.</li>
                 <li><strong>Backend Integration:</strong> Built custom backend logic to process webhooks, manage subscription states, and trigger specific user flows based on purchase data.</li>
                 <li><strong>Review Analysis Bot:</strong> Engineered an automated system to parse client check-ins and generate performance reviews, reducing administrative time by 80%.</li>
-                <li><strong>Business Operations:</strong> Managed all aspects of the business lifecycle, from initial studio launch and client acquisition to the strategic pivot towards a digital-first model.</li>
+                <li><strong>Full-Cycle Business Ownership:</strong> Founded and operated a profitable hybrid fitness business, managing detailed P&L, sales pipelines, and marketing strategy. Successfully pivoted from a physical studio to a scalable, tech-enabled online platform serving hundreds of clients.</li>
             </ul>
         </div>
 
