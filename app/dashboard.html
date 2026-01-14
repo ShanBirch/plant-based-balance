@@ -6994,7 +6994,9 @@ function triggerCoachResponse(userMsg) {
     const container = document.getElementById('chat-messages-container');
     const now = Date.now();
     const lastTime = parseInt(localStorage.getItem('lastChatTime') || 0);
-    
+    const diffMins = (now - lastTime) / (1000 * 60);
+    const isContinuing = lastTime > 0 && diffMins < 60; // Less than 60 mins = continuing
+
     // Get User Profile for Context
     const context = gatherUserContext();
     
@@ -7013,7 +7015,9 @@ function triggerCoachResponse(userMsg) {
         body: JSON.stringify({
             mode: 'coach',
             message: userMsg,
-            contextData: context
+            contextData: context,
+            conversationStatus: isContinuing ? 'continuing' : 'new',
+            localTime: new Date().toLocaleTimeString()
         })
     })
     .then(res => {

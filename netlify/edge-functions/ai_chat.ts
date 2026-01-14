@@ -8,7 +8,7 @@ export default async function (request: Request, context: Context) {
   }
 
   try {
-    const { message, mode, contextData, memberPersona } = await request.json();
+    const { message, mode, contextData, memberPersona, conversationStatus, localTime } = await request.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!apiKey) {
@@ -41,6 +41,14 @@ export default async function (request: Request, context: Context) {
       - Profile: ${contextData?.profile || "General"}
       - Sleep: ${contextData?.sleep || "Unknown"}
       - Energy: ${contextData?.energy || "Unknown"}
+      
+      CURRENT SITUATION:
+      - Time: ${localTime || "Unknown"}
+      - State: ${conversationStatus || 'new'} (If 'continuing', we are active right now.)
+
+      GREETING RULES (CRITICAL):
+      - IF State is 'continuing': DO NOT greet. No "Hey mate", No "Hi". Just answer the text directly. We are already talking.
+      - IF State is 'new': You can start with "Hey mate", "Yo", or just dive in.
       
       STYLE EXAMPLE (Reply like "You sent"):
       User: At least 5hrs per night
