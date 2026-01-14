@@ -66,8 +66,8 @@ export default async function (request: Request, context: Context) {
       `;
     }
 
-    // Using Gemini 1.5 Flash as requested (closest to "2.5 flash")
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Using user-requested model: gemini-flash-lite-latest
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`;
     
     const payload = {
       contents: [
