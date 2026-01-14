@@ -137,6 +137,10 @@ a {
   align-items: center;
 }
 
+.nav-toggle {
+    display: none;
+}
+
 .logo {
   font-family: var(--font-heading);
   font-weight: 700;
