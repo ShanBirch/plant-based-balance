@@ -6753,6 +6753,16 @@ function closeVideoModal() {
     <div style="padding: 0 25px; margin-bottom: 30px;">
         <div style="background:white; border-radius:12px; border:1px solid #f1f5f9; overflow:hidden;">
              <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                 <div>Color Theme</div>
+                 <select id="theme-selector" onchange="applyAppTheme(this.value)" style="border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; color:var(--primary); font-weight:600; outline:none; background:transparent; font-family: 'Inter', sans-serif; cursor: pointer;">
+                     <option value="default">Forest (Default)</option>
+                     <option value="antigravity-dark">Antigravity Dark</option>
+                     <option value="antigravity-light">Antigravity Light</option>
+                     <option value="ocean">Ocean Calm</option>
+                     <option value="sunset">Sunset Glow</option>
+                 </select>
+             </div>
+             <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                  <div>Units</div>
                  <div style="font-size:0.9rem; font-weight:700; color:var(--primary); cursor:pointer;" onclick="alert('Units toggled (Simulation)')">Metric (kg) ?</div>
              </div>
@@ -9659,6 +9669,106 @@ document.addEventListener('DOMContentLoaded', () => {
         communityInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendCommunityMessage();
         });
+    }
+});
+/* --- THEME SYSTEM --- */
+const APP_THEMES = {
+    'default': {
+        name: 'Forest (Default)',
+        colors: {
+            '--primary': '#046A38',
+            '--primary-light': '#06542f',
+            '--secondary': '#d4af37',
+            '--accent-green': '#f0fdf4',
+            '--bg': '#f9f9f7',
+            '--surface': '#ffffff',
+            '--text-main': '#1a202c',
+            '--text-muted': '#718096'
+        }
+    },
+    'antigravity-dark': {
+        name: 'Antigravity Dark',
+        colors: {
+            '--primary': '#7C3AED', /* Violet 600 */
+            '--primary-light': '#8B5CF6',
+            '--secondary': '#10B981', /* Emerald */
+            '--accent-green': '#1f2937', /* Dark Slate */
+            '--bg': '#111827', /* Gray 900 */
+            '--surface': '#1F2937', /* Gray 800 */
+            '--text-main': '#F3F4F6',
+            '--text-muted': '#9CA3AF'
+        }
+    },
+    'antigravity-light': {
+        name: 'Antigravity Light',
+        colors: {
+            '--primary': '#4F46E5', /* Indigo */
+            '--primary-light': '#6366F1',
+            '--secondary': '#F59E0B', /* Amber */
+            '--accent-green': '#EEF2FF',
+            '--bg': '#FFFFFF',
+            '--surface': '#F3F4F6', /* Gray 100 */
+            '--text-main': '#111827',
+            '--text-muted': '#6B7280'
+        }
+    },
+    'ocean': {
+        name: 'Ocean Calm',
+        colors: {
+            '--primary': '#0284c7', /* Sky 600 */
+            '--primary-light': '#38bdf8',
+            '--secondary': '#f472b6', /* Pink */
+            '--accent-green': '#e0f2fe',
+            '--bg': '#f0f9ff',
+            '--surface': '#ffffff',
+            '--text-main': '#0c4a6e',
+            '--text-muted': '#64748b'
+        }
+    },
+    'sunset': {
+        name: 'Sunset Glow',
+        colors: {
+            '--primary': '#be123c', /* Rose 700 */
+            '--primary-light': '#fb7185',
+            '--secondary': '#f59e0b', /* Amber */
+            '--accent-green': '#fff1f2',
+            '--bg': '#fff1f2',
+            '--surface': '#fff',
+            '--text-main': '#881337',
+            '--text-muted': '#9f1239'
+        }
+    }
+};
+
+function applyAppTheme(themeKey) {
+    const theme = APP_THEMES[themeKey];
+    if(!theme) return;
+    
+    const root = document.documentElement;
+    // Apply variables
+    for (const [key, value] of Object.entries(theme.colors)) {
+        root.style.setProperty(key, value);
+    }
+    
+    // Save
+    localStorage.setItem('userThemePreference', themeKey);
+    
+    // Update Dropdown UI if exists
+    const selector = document.getElementById('theme-selector');
+    if(selector) selector.value = themeKey;
+    
+    // Update chart colors if any exist (optional re-render trigger could go here)
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('userThemePreference') || 'default';
+    if(saved !== 'default') {
+        applyAppTheme(saved);
+    } else {
+        // Ensure UI is set to default
+         const selector = document.getElementById('theme-selector');
+         if(selector) selector.value = 'default';
     }
 });
 </script>
