@@ -2350,64 +2350,7 @@
 
 
 
-<!-- COACH & REFLECTIONS SECTION -->
-<div class="view-section" id="coach">
-    <div class="hero-card" style="padding: 40px; text-align: left; background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6d 100%); color: white;">
-        <div style="font-family:'Inter'; text-transform:uppercase; color:var(--secondary); font-weight:600; letter-spacing:1px; margin-bottom:10px;">Personal Support</div>
-        <h1 style="margin-bottom: 15px; color: white;">Chat with Your Coach</h1>
-        <p style="font-size: 1.1rem; color: #e2e8f0;">Have questions about the protocol? Ask here.</p>
-    </div>
 
-    <!-- GRID LAYOUT -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
-        <!-- ... existing coach stuff ... -->
-
-
-        <!-- COACH CHAT -->
-        <div class="card" style="margin:0;">
-            <div class="card-header" style="background: white; cursor: default;">
-                <div class="meal-title" style="color: var(--primary);">💬 Coach Chat</div>
-            </div>
-            <div class="card-body" style="padding: 0; max-height: none; opacity: 1; display: flex; flex-direction: column; height: 600px;">
-                <div id="chat-messages" class="chat-history-container" style="flex: 1; overflow-y: auto; padding: 20px; background: #f8fafc; display: flex; flex-direction: column; gap: 15px;">
-                    <!-- Messages -->
-                    <div style="align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px 12px 12px 0; border: 1px solid #e2e8f0; max-width: 85%;">
-                        <p style="margin: 0; color: #334155; font-size: 0.95rem;">Hey there! I'm Shannon, your reset coach. Drop any questions here and I'll get back to you straight away! 🤙</p>
-                        <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 5px;">Shannon • Just now</span>
-                    </div>
-                </div>
-                <div style="padding: 15px; background: white; border-top: 1px solid #e2e8f0;">
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="chat-input" placeholder="Ask a question..." style="flex: 1; padding: 12px; border: 1px solid #cbd5e0; border-radius: 25px; outline: none;">
-                        <button onclick="sendChatMessage()" style="background: var(--primary); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">➤</button>
-                    </div>
-                    <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 8px;">💬 Instant AI Response</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- JOURNAL HISTORY -->
-    </div>
-</div>
-
-<!-- ACUPRESSURE SERIES -->
-<div class="view-section" id="acupressure">
-    <div class="hero-card" style="padding: 40px; text-align: left; background: linear-gradient(to right, #fdfbfb, #ebedee);">
-        <div style="font-family:'Inter'; text-transform:uppercase; color:var(--secondary); font-weight:600; letter-spacing:1px; margin-bottom:10px;">Nervous System Reset</div>
-        <h1 style="margin-bottom: 15px;">Instant Calm Acupressure</h1>
-        <p style="font-size: 1.1rem; color: #555;">Simple techniques to stop an anxiety spike in its tracks. Hold each point for 1-2 minutes.</p>
-    </div>
-
-    <div class="card">
-        <div class="card-body" style="opacity: 1; max-height: none; padding: 30px;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
-                
-                <div style="padding-bottom: 20px; border-bottom: 1px solid #eee;">
-                    <img src="/assets/acupressure_cv17.png" style="width:100%; border-radius:10px; margin-bottom:15px; box-shadow:0 4px 10px rgba(0,0,0,0.05);"><h4 style="margin-top:0; color: var(--secondary);">1. Sea of Tranquility (CV 17)</h4>
-                    <p><strong>Location:</strong> Center of the breastbone, at heart level.</p>
-                    <p><strong>Effect:</strong> Opens the chest and relieves emotional heaviness.</p>
-                    <p><strong>Action:</strong> Press gently with thumbs in prayer pose.</p>
-                </div>
 
                 <div style="padding-bottom: 20px; border-bottom: 1px solid #eee;">
                     <img src="/assets/acupressure_pc6.png" style="width:100%; border-radius:10px; margin-bottom:15px; box-shadow:0 4px 10px rgba(0,0,0,0.05);"><h4 style="margin-top:0; color: var(--secondary);">2. Inner Frontier Gate (PC 6)</h4>
@@ -9486,195 +9429,92 @@ window.openAsClient = function() {
 // === COACH & COMMUNITY CHAT FUNCTIONS ===
 
 // Helper to get/save history
-function getChatHistory(chatType) {
-    const key = `chat_history_${chatType}`;
-    const history = localStorage.getItem(key);
-    return history ? JSON.parse(history) : [];
+function getChatHistory() {
+    return JSON.parse(localStorage.getItem('shannon_chat_history') || '[]');
 }
 
-function saveToHistory(chatType, sender, text) {
-    const key = `chat_history_${chatType}`;
-    const history = getChatHistory(chatType);
-    history.push({ sender, text, time: new Date().toISOString() });
-    // Keep last 20 messages for context efficiency
-    if (history.length > 20) history.shift();
-    localStorage.setItem(key, JSON.stringify(history));
+function saveToHistory(role, text) {
+    const history = getChatHistory();
+    history.push({ role, text, timestamp: Date.now() });
+    if (history.length > 50) history.shift();
+    localStorage.setItem('shannon_chat_history', JSON.stringify(history));
 }
 
 // Load history on tab switch or load
-window.loadChatHistory = function(chatType) {
-    const container = document.getElementById(chatType === 'coach' ? 'chat-messages' : 'community-messages');
+window.loadChatHistory = function() {
+    const container = document.getElementById('chat-messages-container');
     if (!container) return;
     
-    const history = getChatHistory(chatType);
+    const history = getChatHistory();
     if (history.length === 0) return;
     
-    // Clear initial greeting if history exists
+    // Clear and redraw
     container.innerHTML = '';
     
+    // Re-add intro
+    const introDiv = document.createElement('div');
+    introDiv.style.cssText = "display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; max-width: 85%;";
+    introDiv.innerHTML = `
+        <div style="background: #f8fafc; padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid #e2e8f0; color: var(--text-main);">
+        <p style="margin: 0; font-size: 0.95rem; line-height: 1.5;">Hey there! I'm Shannon, your reset coach. Leave a message here about your progress or any questions. I'll review it and get back to you with guidance!</p>
+        </div>
+        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px; margin-left: 2px;">Shannon • Always here</div>
+    `;
+    container.appendChild(introDiv);
+
     history.forEach(msg => {
-        const isUser = msg.sender === 'User';
+        const isUser = msg.role === 'user';
         const msgDiv = document.createElement('div');
-        msgDiv.style.cssText = isUser 
-            ? 'align-self: flex-end; background: var(--primary); color: white; padding: 12px 16px; border-radius: 12px 12px 0 12px; max-width: 85%; margin-bottom: 10px;'
-            : 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px 12px 12px 0; border: 1px solid #e2e8f0; max-width: 85%; margin-bottom: 10px;';
-        
-        const senderName = isUser ? 'You' : (chatType === 'coach' ? 'Shannon' : 'Community AI');
-        const timeStr = new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
-        msgDiv.innerHTML = `
-            <p style="margin: 0; font-size: 0.95rem; color: ${isUser ? 'white' : '#334155'};">${msg.text}</p>
-            <span style="font-size: 0.75rem; color: ${isUser ? 'rgba(255,255,255,0.7)' : '#94a3b8'}; display: block; margin-top: 5px;">${senderName} • ${timeStr}</span>
-        `;
+        if (isUser) {
+            msgDiv.style.cssText = "display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 20px; align-self: flex-end; max-width: 85%;";
+            msgDiv.innerHTML = `
+                <div style="background: var(--primary); padding: 15px 20px; border-radius: 16px 0 16px 16px; color: white; box-shadow: 0 4px 10px rgba(4, 106, 56, 0.2);">
+                    <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; color: white;">${msg.text}</p>
+                </div>
+                <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px; margin-right: 2px;">You • ${new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            `;
+        } else {
+            msgDiv.style.cssText = "display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; max-width: 85%;";
+            msgDiv.innerHTML = `
+                <div style="background: #f8fafc; padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid #e2e8f0; color: var(--text-main);">
+                    <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${msg.text}</p>
+                </div>
+                <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px; margin-left: 2px;">Shannon • ${new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            `;
+        }
         container.appendChild(msgDiv);
     });
     container.scrollTop = container.scrollHeight;
 };
 
-async function sendChatMessage() {
-    const input = document.getElementById('chat-input');
-    const container = document.getElementById('chat-messages');
-    const message = input.value.trim();
-    
-    if (!message) return;
-    
-    // Add user message to UI
-    const userMsg = document.createElement('div');
-    userMsg.style.cssText = 'align-self: flex-end; background: var(--primary); color: white; padding: 12px 16px; border-radius: 12px 12px 0 12px; max-width: 85%; margin-bottom: 10px;';
-    userMsg.innerHTML = `
-        <p style="margin: 0; font-size: 0.95rem;">${message}</p>
-        <span style="font-size: 0.75rem; opacity: 0.8; display: block; margin-top: 5px;">You • Just now</span>
-    `;
-    container.appendChild(userMsg);
-    input.value = '';
-    container.scrollTop = container.scrollHeight;
-    
-    // Save to history
-    saveToHistory('coach', 'User', message);
-    
-    // Get context for AI
-    const chatHistory = getChatHistory('coach');
-    const userProfile = {
-        name: document.querySelector('#profile-name')?.innerText || 'Client',
-        email: localStorage.getItem('userEmail') || '',
-        currentPhase: document.querySelector('.phase-badge')?.innerText || 'Week 1',
-        protocol: localStorage.getItem('selectedProtocol') || 'Perimenopause Reset'
-    };
-    
-    // Show typing indicator
-    const typing = document.createElement('div');
-    typing.id = 'typing-indicator';
-    typing.style.cssText = 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 10px;';
-    typing.innerHTML = '<p style="margin: 0; color: #94a3b8;">Shannon is typing...</p>';
-    container.appendChild(typing);
-    container.scrollTop = container.scrollHeight;
-    
-    try {
-        const response = await fetch('/.netlify/functions/ai-chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                message, 
-                chatType: 'coach',
-                chatHistory: chatHistory.slice(-10), // Send last 10 messages for context
-                userProfile: userProfile
-            })
-        });
-        
-        const data = await response.json();
-        typing.remove();
-        
-        if (data.error) throw new Error(data.error);
-
-        // Split into multiple messages by double newline as requested in backend prompt
-        const replies = data.reply.split(/\n\n+/).filter(r => r.trim());
-        
-        replies.forEach((reply, i) => {
-            // Variable delay between messages for "typing" feel
-            const delay = 800 + (Math.random() * 1200) + (i * 500);
-            
-            setTimeout(() => {
-                const aiMsg = document.createElement('div');
-                aiMsg.style.cssText = 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px 12px 12px 0; border: 1px solid #e2e8f0; max-width: 85%; margin-bottom: 10px;';
-                aiMsg.innerHTML = `
-                    <p style="margin: 0; color: #334155; font-size: 0.95rem;">${reply.trim()}</p>
-                    <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 5px;">Shannon • Just now</span>
-                `;
-                container.appendChild(aiMsg);
-                container.scrollTop = container.scrollHeight;
-                
-                // Save AI reply to history
-                saveToHistory('coach', 'Shannon', reply.trim());
-            }, delay);
-        });
-        
-    } catch (error) {
-        if (typing) typing.remove();
-        console.error('Chat error:', error);
-        const errorMsg = document.createElement('div');
-        errorMsg.style.cssText = 'align-self: flex-start; background: #fee2e2; padding: 10px; border-radius: 8px; font-size: 0.85rem; color: #b91c1c;';
-        errorMsg.innerText = "Connection flakey... try sending again mate.";
-        container.appendChild(errorMsg);
-    }
-}
-
-// Community chat (similar but different chatType)
+// Community chat
 async function sendCommunityMessage() {
-    const input = document.getElementById('community-input');
-    const container = document.getElementById('community-messages');
-    const message = input.value.trim();
+    const input = document.getElementById('community-chat-input');
+    const text = input.value.trim();
+    if(!text) return;
     
-    if (!message) return;
-    
-    const userMsg = document.createElement('div');
-    userMsg.style.cssText = 'align-self: flex-end; background: var(--secondary); color: white; padding: 12px 16px; border-radius: 12px 12px 0 12px; max-width: 85%;';
-    userMsg.innerHTML = `<p style="margin: 0; font-size: 0.95rem;">${message}</p>`;
-    container.appendChild(userMsg);
+    // Me message
+    const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    messages.push({ authorId: null, text, timestamp: Date.now() });
+    localStorage.setItem('community_chat_history', JSON.stringify(messages));
     input.value = '';
-    container.scrollTop = container.scrollHeight;
-    
-    const typing = document.createElement('div');
-    typing.id = 'community-typing';
-    typing.style.cssText = 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0;';
-    typing.innerHTML = '<p style="margin: 0; color: #94a3b8;">Community AI is typing...</p>';
-    container.appendChild(typing);
-    
-    try {
-        const response = await fetch('/.netlify/functions/ai-chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, chatType: 'community' })
-        });
-        
-        const data = await response.json();
-        typing.remove();
-        
-        const aiMsg = document.createElement('div');
-        aiMsg.style.cssText = 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0; max-width: 85%;';
-        aiMsg.innerHTML = `<p style="margin: 0; color: #334155; font-size: 0.95rem;">${data.reply}</p>`;
-        container.appendChild(aiMsg);
-        container.scrollTop = container.scrollHeight;
-        
-    } catch (error) {
-        typing.remove();
-        console.error('Community chat error:', error);
-    }
+    renderChat(messages);
+    triggerAICommunityResponse(text);
 }
 
-// Allow Enter key to send
+// Allow Enter key
 document.addEventListener('DOMContentLoaded', () => {
-    // Initial history load
-    loadChatHistory('coach');
-    loadChatHistory('community');
+    loadChatHistory();
+    loadCommunityFeed();
 
-    const chatInput = document.getElementById('chat-input');
-    if (chatInput) {
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendChatMessage();
+    const coachInput = document.getElementById('coach-chat-input');
+    if (coachInput) {
+        coachInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitCoachMessage();
         });
     }
     
-    const communityInput = document.getElementById('community-input');
+    const communityInput = document.getElementById('community-chat-input');
     if (communityInput) {
         communityInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendCommunityMessage();
@@ -9684,4 +9524,5 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
 
