@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
 <html lang="en">
 <head>
@@ -83,7 +83,7 @@
     }
 
     .nav-item.active {
-        color: var(--primary);
+        color: var(--secondary);
     }
     
     .nav-item svg {
@@ -105,7 +105,187 @@
         box-shadow: 0 2px 10px rgba(0,0,0,0.03);
     }
     .app-logo { font-family: 'Playfair Display'; font-weight: 700; font-size: 1.25rem; color: var(--primary); }
-    .profile-icon { width: 35px; height: 35px; background: var(--accent-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--primary); }
+    /* Profile View Styles */
+    .profile-header {
+        text-align: center;
+        padding: 40px 20px;
+        background: white;
+        border-bottom: 1px solid #f1f5f9;
+        margin-bottom: 25px;
+    }
+    .profile-photo-container {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 20px auto;
+        border-radius: 50%;
+        border: 4px solid var(--accent-green);
+        padding: 5px;
+    }
+    .profile-photo {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .photo-edit-btn {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        background: var(--secondary);
+        color: white;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid white;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .profile-name-large {
+        font-family: 'Playfair Display';
+        font-size: 1.8rem;
+        margin-bottom: 5px;
+        color: var(--primary);
+    }
+    .profile-email {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+    }
+    .profile-details-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        padding: 0 25px;
+        margin-bottom: 30px;
+    }
+    .detail-item {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid #f1f5f9;
+        text-align: center;
+    }
+    .detail-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+    }
+    .detail-val {
+        font-weight: 700;
+        color: var(--primary);
+        font-size: 1.1rem;
+    }
+    .connected-apps-list {
+        padding: 0 25px;
+    }
+    .app-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: white;
+        padding: 15px 20px;
+        border-radius: 16px;
+        margin-bottom: 15px;
+        border: 1px solid #f1f5f9;
+    }
+    .app-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    .app-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    .app-btn {
+        padding: 8px 20px;
+        border-radius: 50px;
+        border: 1px solid var(--primary);
+        background: transparent;
+        color: var(--primary);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .app-btn.connected {
+        background: #f0fdf4;
+        color: #166534;
+        border-color: #166534;
+    }
+
+    /* Subscription Management Styles */
+    .subscription-menu {
+        display: none;
+        margin-top: 15px;
+        padding: 15px;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+    .subscription-menu.active { display: block; }
+    .sub-action-btn {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: white;
+        color: var(--text-main);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .sub-action-btn:hover { background: #f1f5f9; }
+    .sub-action-btn.cancel { color: #dc2626; border-color: #fecaca; }
+    .sub-action-btn.cancel:hover { background: #fef2f2; }
+    
+    .pause-options {
+        display: none;
+        padding-top: 10px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+        margin-bottom: 8px;
+    }
+    .pause-options.active { display: grid; }
+    .pause-btn {
+        padding: 8px;
+        border: 1px solid var(--primary);
+        background: white;
+        color: var(--primary);
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+    }
+    .pause-btn:hover { background: #f0fdf4; }
+
+    .profile-icon { 
+        width: 35px; 
+        height: 35px; 
+        background: var(--accent-green); 
+        border-radius: 50%; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        font-weight: bold; 
+        color: var(--primary); 
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    .profile-icon:active { transform: scale(0.95); }
 
     /* Week Sub-Navigation (Pills) */
     .week-scroller { 
@@ -147,6 +327,7 @@
         border-bottom-right-radius: 30px;
         margin-bottom: 25px;
         box-shadow: 0 10px 30px -10px rgba(4, 106, 56, 0.4);
+        border-bottom: 5px solid var(--secondary);
     }
     .dashboard-welcome h1, 
     .dashboard-welcome .user-name,
@@ -653,6 +834,126 @@
         .timeline-item:nth-child(n) .timeline-content::after { font-size: 1rem; left: -8px; top: 4px; }
         .timeline-content { padding-left: 25px; }
     }
+
+    /* Today's Meals Redesign */
+    .today-menu-header {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .today-menu-header h2 {
+        font-size: 2rem;
+        margin-bottom: 5px;
+    }
+    .today-menu-header p {
+        color: var(--text-muted);
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+    }
+    #today .card {
+        border-radius: 20px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.03);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+    }
+    #today .card-header {
+        padding: 20px 25px;
+    }
+    #today .meal-title {
+        font-size: 1.15rem;
+    }
+    /* Onboarding Modal Styles */
+    .onboarding-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(4, 106, 56, 0.6); /* Primary with opacity */
+        backdrop-filter: blur(8px);
+        z-index: 9999;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+    }
+    .onboarding-overlay.active {
+        display: flex;
+        opacity: 1;
+    }
+    .onboarding-modal {
+        background: white;
+        width: 100%;
+        max-width: 450px;
+        border-radius: 20px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+        animation: slideUp 0.5s ease-out;
+    }
+    @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .onboarding-header {
+        background: linear-gradient(135deg, var(--primary) 0%, #034f2a 100%);
+        padding: 30px;
+        text-align: center;
+        color: white;
+    }
+    .onboarding-content {
+        padding: 30px;
+    }
+    .onboarding-step {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        align-items: flex-start;
+    }
+    .step-icon {
+        font-size: 1.5rem;
+        background: var(--accent-green);
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .step-text h4 {
+        margin: 0 0 5px 0;
+        color: var(--primary);
+        font-size: 1rem;
+        border: none;
+    }
+    .step-text p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+    }
+    .onboarding-btn {
+        width: 100%;
+        padding: 16px;
+        background: var(--secondary);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        margin-top: 10px;
+    }
+    .onboarding-btn:hover {
+        transform: translateY(-2px);
+        background: #bfa64d; /* Darker gold */
+    }
     </style>
 </head>
 <body>
@@ -661,26 +962,10 @@
 <div id="view-dashboard" class="app-view">
     <div class="dashboard-welcome">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-             <span class="welcome-text">Day 1 of 28</span>
-             <div class="profile-icon">S</div> <!-- Placeholder User Initial -->
+             <span id="daily-progress-counter" class="welcome-text" style="color: var(--secondary); font-weight: 700;">Day 1 of 28</span>
+             <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div> <!-- Placeholder User Initial -->
         </div>
         <h1 class="user-name">Hello, Shannon</h1>
-        <p id="welcome-message" style="opacity: 0.9; margin: 0;">Your biochemical reset is active. Cortisol levels are stabilizing.</p>
-        
-        <div class="stats-row">
-            <div class="stat-card">
-                <span class="stat-val">3</span>
-                <span class="stat-label">Meals</span>
-            </div>
-             <div class="stat-card">
-                <span class="stat-val">2.5L</span>
-                <span class="stat-label">Water</span>
-            </div>
-             <div class="stat-card">
-                <span class="stat-val">10m</span>
-                <span class="stat-label">Movement</span>
-            </div>
-        </div>
     </div>
 
     <div style="padding: 0 25px;">
@@ -697,12 +982,25 @@
             </div>
          </div>
 
+         <!-- Your Workout Actions -->
+         <h3 style="margin: 30px 0 15px 0;">Your Workout</h3>
+         <div class="card" onclick="switchMainTab('movement');" style="cursor: pointer; border-left: 5px solid var(--secondary);">
+            <div class="card-body" style="max-height: none; padding: 25px; opacity: 1; display: flex; align-items: center; gap: 20px;">
+                <div style="background: var(--accent-green); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🧘‍♀️</div>
+                <div>
+                    <h4 style="margin: 0 0 5px 0; border: none; padding: 0;">Today's Movement</h4>
+                    <p style="margin: 0; font-weight: 500; color: var(--primary);">Somatic Yoga Flow</p>
+                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">20 Min • Restoration &rarr;</p>
+                </div>
+            </div>
+         </div>
+
         <h3 style="margin: 30px 0 15px 0;">Coaching Insight</h3>
-        <div class="card">
-             <div class="card-body" style="max-height: none; padding: 20px; opacity: 1;">
-                 <p style="margin:0;"><strong>Biology Tip:</strong> Eating within 30 minutes of waking stops the morning cortisol spike. Have you had your breakfast?</p>
-             </div>
-        </div>
+         <div class="card">
+              <div class="card-body" style="max-height: none; padding: 20px; opacity: 1;">
+                  <p id="daily-coaching-tip" style="margin:0;"><strong>Biology Tip:</strong> Eating within 30 minutes of waking stops the morning cortisol spike. Have you had your breakfast?</p>
+              </div>
+         </div>
     </div>
 </div>
 
@@ -710,26 +1008,37 @@
 <div id="view-meals" class="app-view" style="display:none;">
     <div class="app-header">
         <div class="app-logo">Meals</div>
-        <div class="profile-icon">S</div>
+        <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
     </div>
     
     <!-- Week Pills Navigation -->
-    <div class="week-scroller">
-        <button class="pill-btn active" onclick="switchWeek('week1', this)">Week 1</button>
+    <div class="week-scroller" id="meals-nav-pills">
+        <button class="pill-btn active" onclick="switchWeek('today', this)">Today</button>
+        <button class="pill-btn" onclick="switchWeek('week1', this)">Week 1</button>
         <button class="pill-btn" onclick="switchWeek('week2', this)">Week 2</button>
         <button class="pill-btn" onclick="switchWeek('week3', this)">Week 3</button>
         <button class="pill-btn" onclick="switchWeek('week4', this)">Week 4</button>
         <button class="pill-btn" onclick="switchWeek('dining', this)">Dining Out</button>
-        <button class="pill-btn" onclick="switchWeek('shopping', this)">Shopping</button>
+        <button class="pill-btn" onclick="switchWeek('shopping', this)" style="background: var(--accent-green); color: var(--primary); font-weight: 600; border-color: rgba(4, 106, 56, 0.2);">🛒 Shopping List</button>
     </div>
 
     <!-- Container for Week Content -->
     <div id="meals-content-container">
+        <!-- Today's Meals View -->
+        <div class="view-section active" id="today">
+            <div id="today-meals-content">
+                <!-- Current day's meals will be injected here -->
+                <div style="text-align:center; padding:40px; color:var(--text-muted);">
+                    <p>Loading your meals for today...</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Week views will be injected/shown here -->
 
 <!-- START HERE -->
 <div class="view-section active" id="start">
-    <div class="hero-card" id="hero-card-bg" style="background: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), url('../assets/hero_image.webp'); background-size: cover; background-position: center; color: var(--primary);">
+    <div class="hero-card" id="hero-card-bg" style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); color: var(--primary);">
         <div style="font-family:'Inter'; text-transform:uppercase; color:var(--secondary); font-weight:600; letter-spacing:1px; margin-bottom:10px;">28-Day Plant Based Switch</div>
         <div class="hero-title" id="hero-title" style="color: var(--primary); font-size: 3rem; margin-bottom: 20px;">Your Cortisol Recovery Protocol</div>
         <div class="hero-subtitle" id="hero-subtitle" style="color: var(--primary-light); font-weight: 500; font-size: 1.1rem; margin-bottom: 20px; max-width: 700px; margin-left: auto; margin-right: auto;">
@@ -1161,7 +1470,66 @@
 
         // Re-render journal history
         loadJournalHistory();
+
+        // Trigger Celebration
+        // Parse "week1-Monday" to get "Day X" or just confirm "Day Complete"
+        // For simplicity, we can map days to numbers or just say "You did it!"
+        showDayCompletion(id);
     };
+
+    window.showDayCompletion = function(dayId) {
+        const modal = document.getElementById('day-completion-modal');
+        const text = document.getElementById('completion-text');
+        
+        // Simple heuristic for day number
+        // Assuming we are on Day 1 for demo if not strictly tracked elsewhere in this simpler version
+        // Or extract from dayId if it was "day1" etc. 
+        // dayId format: "week1-Monday"
+        
+        let displayDay = "Today";
+        if(dayId.includes('Monday')) displayDay = "Day 1";
+        if(dayId.includes('Tuesday')) displayDay = "Day 2";
+        if(dayId.includes('Wednesday')) displayDay = "Day 3";
+        if(dayId.includes('Thursday')) displayDay = "Day 4";
+        if(dayId.includes('Friday')) displayDay = "Day 5";
+        if(dayId.includes('Saturday')) displayDay = "Day 6";
+        if(dayId.includes('Sunday')) displayDay = "Day 7";
+
+        text.textContent = `You have successfully completed ${displayDay}.`;
+        modal.style.display = 'flex';
+        triggerConfetti();
+    }
+
+    window.closeCompletionModal = function() {
+        document.getElementById('day-completion-modal').style.display = 'none';
+    }
+
+    window.triggerConfetti = function() {
+        // Simple JS confetti
+        const colors = ['#d4af37', '#046A38', '#ffffff', '#f0fdf4'];
+        for(let i=0; i<50; i++) {
+            const el = document.createElement('div');
+            el.className = 'confetti-piece';
+            el.style.left = Math.random() * 100 + 'vw';
+            el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            el.style.animation = `fall ${Math.random() * 3 + 2}s linear forwards`;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 5000);
+        }
+    }
+    
+    // Inject confetti styles if not present
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    `;
+    document.head.appendChild(style);
 
     window.handlePhotoUpload = function(input, id) {
         if (input.files && input.files[0]) {
@@ -5956,72 +6324,7 @@
     </div> <!-- End view-meals -->
 
     <!-- Placeholder for moved sections (Movement, Support) - they will be moved here by JS -->
-    <!-- MOVEMENT VIEW -->
-    <div id="movement" class="app-view" style="display:none; padding-bottom: 80px;">
-        <div class="app-header">
-            <div class="app-logo">Movement Studio</div>
-            <div class="profile-icon">S</div>
-        </div>
-        <div style="padding: 20px;">
-            <div class="hero-card" style="padding: 60px 20px; margin-bottom: 30px; background: linear-gradient(rgba(4, 106, 56, 0.8), rgba(4, 106, 56, 0.8)), url('../assets/hero_image.webp');">
-                <div class="hero-title" style="color: white; font-size: 2rem;">Cortisol-Safe Training</div>
-                <p style="color: white; opacity: 0.9;">Low impact, high results. These workouts are designed to tone without triggering your fight-or-flight response.</p>
-            </div>
-
-            <h3 style="margin-bottom: 20px;">Your Weekly Schedule</h3>
-            
-            <div class="card">
-                <div class="card-header" onclick="toggleCard(this)">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <span style="font-size: 1.5rem;">🧘‍♀️</span>
-                        <div>
-                            <div class="meal-title" style="font-size: 1.1rem;">Somatic Yoga flow</div>
-                            <div class="meta">20 MIN • RESTORATIVE</div>
-                        </div>
-                    </div>
-                    <div class="expand-icon">+</div>
-                </div>
-                <div class="card-body">
-                    <p>A gentle flow to release stored trauma in the hips and lower back.</p>
-                    <button class="btn-primary" style="width: 100%; border-radius: 8px; padding: 12px; margin-top: 10px;" onclick="startWorkout('yoga')">Start Video &rarr;</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header" onclick="toggleCard(this)">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <span style="font-size: 1.5rem;">🚶‍♀️</span>
-                        <div>
-                            <div class="meal-title" style="font-size: 1.1rem;">Zone 2 Walking Audio</div>
-                            <div class="meta">30 MIN • OUTDOORS</div>
-                        </div>
-                    </div>
-                    <div class="expand-icon">+</div>
-                </div>
-                <div class="card-body">
-                    <p>Pop your headphones in. This guided audio walk keeps your heart rate in the fat-burning zone, not the stress zone.</p>
-                    <button class="btn-primary" style="width: 100%; border-radius: 8px; padding: 12px; margin-top: 10px;" onclick="startWorkout('walk')">Play Audio &rarr;</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header" onclick="toggleCard(this)">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <span style="font-size: 1.5rem;">💪</span>
-                        <div>
-                            <div class="meal-title" style="font-size: 1.1rem;">Pilates Core</div>
-                            <div class="meta">15 MIN • STRENGTH</div>
-                        </div>
-                    </div>
-                    <div class="expand-icon">+</div>
-                </div>
-                <div class="card-body">
-                    <p>Deep core activation to support your pelvic floor and flatten the lower belly.</p>
-                    <button class="btn-primary" style="width: 100%; border-radius: 8px; padding: 12px; margin-top: 10px;" onclick="startWorkout('pilates')">Start Video &rarr;</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Duplicate movement view removed -->
 
     <!-- INSTALL APP BANNER (Hidden by default) -->
     <div id="pwa-install-banner" style="display:none; background: linear-gradient(135deg, #046A38 0%, #06542f 100%); color:white; padding: 12px 20px; margin: 0; box-shadow: 0 4px 10px rgba(4,106,56,0.25); align-items:center;">
@@ -6038,7 +6341,7 @@
     <div id="view-support" class="app-view" style="display:none; padding-bottom: 80px;">
         <div class="app-header">
             <div class="app-logo">Support</div>
-            <div class="profile-icon">S</div>
+            <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
         </div>
         
         <div style="padding: 20px; min-height: calc(100vh - 160px); display: flex; flex-direction: column;">
@@ -6066,7 +6369,7 @@
                     <!-- Intro Message (re-added here as static first item, or handled by JS history load) -->
                     <div style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; max-width: 85%;">
                         <div style="background: #f8fafc; padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid #e2e8f0; color: var(--text-main);">
-                        <p style="margin: 0; font-size: 0.95rem; line-height: 1.5;">Hello there! I'm your specific reset coach. Leave a message here about your progress or any questions. I'll review it and get back to you with guidance!</p>
+                        <p style="margin: 0; font-size: 0.95rem; line-height: 1.5;">Hey there! I'm Shannon, your reset coach. Leave a message here about your progress or any questions. I'll review it and get back to you with guidance!</p>
                         </div>
                         <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px; margin-left: 2px;">Shannon • Always here</div>
                     </div>
@@ -6207,79 +6510,98 @@
             border-color: var(--primary);
             color: white;
         }
+
+        /* Day Completion Modal */
+        .completion-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            backdrop-filter: blur(8px);
+            animation: fadeIn 0.5s ease-out;
+        }
+        .completion-modal {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 90%;
+            width: 350px;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            animation: popUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 4px solid var(--secondary);
+        }
+        @keyframes popUp {
+            from { opacity: 0; transform: scale(0.8) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 10px; height: 10px;
+            background: #ffd700;
+            top: -10px;
+            z-index: 10000;
+        }
     </style>
+
+    <!-- DAY COMPLETION MODAL -->
+    <div id="day-completion-modal" class="completion-modal-overlay">
+        <div class="completion-modal">
+            <div style="font-size: 4rem; margin-bottom: 20px; animation: bounce 1s infinite;">🎉</div>
+            <h2 style="color: var(--primary); font-size: 1.8rem; margin: 0 0 10px 0;">Day Complete!</h2>
+            <p style="color: var(--text-muted); margin-bottom: 30px;" id="completion-text">You have successfully finished Day 1.</p>
+            
+            <div style="background: #f0fdf4; padding: 15px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #bbf7d0;">
+                <div style="font-size: 0.9rem; color: #166534; font-weight: 600;">Cortisol Level: Stabilizing 📉</div>
+            </div>
+
+            <button onclick="closeCompletionModal()" style="background: var(--primary); color: white; border: none; padding: 15px 40px; border-radius: 50px; font-weight: 700; font-size: 1.1rem; cursor: pointer; box-shadow: 0 5px 15px rgba(4, 106, 56, 0.3);">
+                CONTINUE
+            </button>
+        </div>
+    </div>
 
 
 <!-- MOVEMENT VIEW (Shared Main Tab) -->
 <div id="movement-tab" class="app-view" style="display:none;">
     <div class="app-header">
         <div class="app-logo">Movement Studio</div>
-        <div class="profile-icon">S</div>
+        <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
     </div>
     
     <div style="padding: 25px;">
-        <div class="dashboard-welcome" style="margin-bottom: 30px; background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);">
-            <h1 style="color:white; font-size: 2rem;">Today's Focus</h1>
-            <p style="color: #bfdbfe; margin-top: 5px;">Day 1: Cortisol Flush</p>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px;">
             <div>
-                <div style="color:var(--text-muted); font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">Today's Schedule</div>
-                <h1 style="color:var(--primary); margin:0; font-size:2rem; letter-spacing:-1px;">Workout of the Day</h1>
+                <div style="color:var(--text-muted); font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;" id="movement-today-date">Day 1</div>
+                <h1 style="color:var(--primary); margin:0; font-size:2rem; letter-spacing:-1px;">Today's Schedule</h1>
             </div>
+            <button onclick="openCheckInModal()" style="background: white; border: 1px solid var(--primary); color: var(--primary); padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Regenerate Suggestion</button>
         </div>
 
-        <!-- Main Workout Card (Trainerize Style) -->
-        <div class="card" onclick="startWorkout('yoga')" style="cursor: pointer; overflow:hidden; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.15); border:none; position: relative;">
-            <div style="position: relative; height: 400px;">
-                 <!-- Full height image -->
-                 <img src="../assets/somatic_yoga_hero.png" style="width:100%; height:100%; object-fit: cover;" onerror="this.src='https://placehold.co/600x800/png';">
-                 
-                 <!-- Gradient Overlay for Readability -->
-                 <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%);"></div>
-                 
-                 <!-- Content at bottom -->
-                 <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 30px;">
-                     <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-                        <div style="background: var(--secondary); color: white; display: inline-block; padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">Cortisol Recovery</div>
-                        <div style="background: rgba(255,255,255,0.2); backdrop-filter:blur(5px); color: white; display: inline-block; padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">Day 1</div>
-                     </div>
-                     
-                     <h2 style="color: white; margin: 0 0 10px 0; font-size: 2.2rem; line-height: 1.1; font-family:'Playfair Display';">Somatic Yoga Flow</h2>
-                     
-                     <div style="display: flex; gap: 20px; color: rgba(255,255,255,0.9); font-size: 0.95rem; margin-bottom: 25px; font-weight: 500;">
-                         <span style="display:flex; align-items:center; gap:6px;">⏱ 20 Min</span>
-                         <span style="display:flex; align-items:center; gap:6px;">🔥 Low Intensity</span>
-                         <span style="display:flex; align-items:center; gap:6px;">📹 Guided</span>
-                     </div>
-                     
-                     <!-- Big Start Button -->
-                     <button style="width: 100%; background: white; color: var(--primary); border: none; padding: 18px; border-radius: 50px; font-weight: 800; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); transition: transform 0.2s;">
-                        <span>START NOW</span>
-                        <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>
-                     </button>
-                 </div>
-            </div>
-        </div>
+        <!-- Dynamic Hero Container -->
+        <div id="movement-hero-container"></div>
 
-        <h3 style="margin: 30px 0 20px 0;">Other Options</h3>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div class="card" onclick="startWorkout('walk')" style="cursor: pointer; margin: 0;">
-                <div style="height: 120px; position: relative;">
-                     <div style="position: absolute; inset:0; background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.6));"></div>
-                    <div style="position: absolute; bottom: 10px; left: 10px; color: var(--primary); font-weight: 600;">Zone 2 Walk</div>
-                </div>
-            </div>
-             <div class="card" onclick="startWorkout('pilates')" style="cursor: pointer; margin: 0;">
-                <div style="height: 120px; position: relative;">
-                    <img src="../assets/wall_pilates_hero.png" style="width:100%; height:100%; object-fit: cover;" onerror="this.src='https://placehold.co/600x400/png';">
-                    <div style="position: absolute; inset:0; background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.6));"></div>
-                    <div style="position: absolute; bottom: 10px; left: 10px; color: white; font-weight: 600;">Wall Pilates</div>
-                </div>
-            </div>
-        </div>
+        <h3 style="margin: 0 0 20px 0;">Other Options</h3>
+
+        <!-- Dynamic Grid Container -->
+        <div id="movement-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
+    </div>
+</div>
+
+<!-- MOVED CHECK-IN MODAL TO BODY ROOT -->
+
+<style>
+    .checkin-btn.selected {
+        border-color: var(--primary) !important;
+        background: #f0fdf4 !important;
+        color: var(--primary);
+    }
+</style>
 
     </div>
 </div>
@@ -6320,6 +6642,49 @@
     </div>
 </div>
 
+</div>
+
+<!-- VIDEO MODAL (YouTube) -->
+<div id="video-modal" class="image-modal-overlay" style="display:none; justify-content:center; align-items:center;" onclick="closeVideoModal()">
+    <div style="position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; cursor: pointer; z-index: 10002;">×</div>
+    <div style="width:90%; max-width:800px; aspect-ratio:16/9; background:black; border-radius:12px; overflow:hidden; z-index:10001; position:relative;" onclick="event.stopPropagation()">
+        <iframe id="video-frame" width="100%" height="100%" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+</div>
+
+<script>
+function openExerciseVideo(url, title) {
+    if (!url) return; 
+    
+    // Simple YouTube ID extractor
+    let embedUrl = url;
+    if (url.includes('watch?v=')) {
+        const v = url.split('watch?v=')[1].split('&')[0];
+        embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
+    } else if (url.includes('youtu.be/')) {
+        const v = url.split('youtu.be/')[1].split('?')[0];
+        embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
+    } else if (url.includes('embed')) {
+         if (url.indexOf('?') > -1) embedUrl += "&autoplay=1";
+         else embedUrl += "?autoplay=1";
+    }
+
+    const modal = document.getElementById('video-modal');
+    const frame = document.getElementById('video-frame');
+    frame.src = embedUrl;
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+}
+
+function closeVideoModal() {
+    const modal = document.getElementById('video-modal');
+    const frame = document.getElementById('video-frame');
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+    frame.src = ''; // Stop audio
+}
+</script>
+
 <!-- WORKOUT SUCCESS VIEW -->
 <div id="view-workout-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 2000; background: var(--primary); color: white; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;">
     
@@ -6356,23 +6721,231 @@
 
     <!-- Bottom Navigation (Moved Outside Container) -->
     <nav class="bottom-nav" style="z-index: 9999 !important; position: fixed; bottom: 0; left: 0; width: 100%;">
-        <button class="nav-item active" onclick="switchMainTab('dashboard', this)">
+        <button class="nav-item active" onclick="switchAppTab('dashboard', this)">
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             <span>Home</span>
         </button>
-        <button class="nav-item" onclick="switchMainTab('meals', this)">
+        <button class="nav-item" onclick="switchAppTab('meals', this)">
             <svg viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
             <span>Meals</span>
         </button>
-        <button class="nav-item" onclick="switchMainTab('movement-tab', this)">
+        <button class="nav-item" onclick="switchAppTab('movement-tab', this)">
             <svg viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22 14.86 20.57 16.29 22 18.43 19.86 19.86 21.29 21.29 19.86l-1.43-1.43L21.29 17l-1.43-1.43L18.43 17l-3.57-3.57z"/></svg>
             <span>Movement</span>
         </button>
-        <button class="nav-item" onclick="switchMainTab('support', this)">
+        <button class="nav-item" onclick="switchAppTab('support', this)">
             <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
             <span>Support</span>
         </button>
-    </nav>
+     </nav>
+
+    <!-- PROFILE VIEW -->
+    <div id="view-profile" class="app-view" style="display:none; padding-bottom: 80px;">
+        <div class="app-header">
+            <div class="app-logo">Your Profile</div>
+            <div style="width:35px;"></div> <!-- Spacer -->
+        </div>
+
+        <div class="profile-header">
+            <!-- Robust Profile Photo: Text S is background, IMG overlays it -->
+            <div class="profile-photo-container" style="display:flex; align-items:center; justify-content:center; background:var(--accent-green); overflow:hidden;">
+                <span id="profile-default-initial" style="font-size:3rem; font-weight:700; color:var(--primary);">S</span>
+                <img src="" class="profile-photo" id="profile-photo-img" style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; object-fit:cover;" onerror="this.style.opacity=0" onload="this.style.opacity=1">
+                
+                <label for="profile-photo-input" class="photo-edit-btn">
+                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:white;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                </label>
+                <input type="file" id="profile-photo-input" style="display:none;" onchange="handlePhotoUpload(this)">
+            </div>
+            <h2 class="profile-name-large" id="profile-name-display" onclick="editProfileDetail('name', 'Name')" style="cursor:pointer; text-decoration-line:underline; text-decoration-style:dotted; text-underline-offset:4px;">Shannon</h2>
+            <div class="profile-email" id="profile-email-display" onclick="editProfileDetail('email', 'Email')" style="cursor:pointer; text-decoration-line:underline; text-decoration-style:dotted; text-underline-offset:4px;">shannon@example.com</div>
+        </div>
+
+        <div class="profile-details-grid">
+            <div class="detail-item" onclick="editProfileDetail('age', 'Age')" style="cursor:pointer; position:relative;">
+                <div class="detail-label">Age</div>
+                <div class="detail-val" id="profile-age-display">34</div>
+                <div style="font-size:0.65rem; color:var(--secondary); margin-top:4px;">✏️ Edit</div>
+            </div>
+            <div class="detail-item" onclick="editProfileDetail('weight', 'Weight')" style="cursor:pointer; position:relative;">
+                <div class="detail-label">Weight</div>
+                <div class="detail-val" id="profile-weight-display">68 kg</div>
+                <div style="font-size:0.65rem; color:var(--secondary); margin-top:4px;">✏️ Edit</div>
+            </div>
+            <div class="detail-item" onclick="editProfileDetail('goal', 'Goal')" style="cursor:pointer; position:relative;">
+                <div class="detail-label">Goal</div>
+                <div class="detail-val" id="profile-goal-display">Fat Loss</div>
+                <div style="font-size:0.65rem; color:var(--secondary); margin-top:4px;">✏️ Edit</div>
+            </div>
+            <div class="detail-item" onclick="editProfileDetail('profile', 'Profile Type')" style="cursor:pointer; position:relative;">
+                <div class="detail-label">Profile</div>
+                <div class="detail-val" id="profile-type-display">Cortisol</div>
+                <div style="font-size:0.65rem; color:var(--secondary); margin-top:4px;">✏️ Edit</div>
+            </div>
+        </div>
+
+    <!-- EDIT PROFILE MODAL -->
+    <div id="edit-profile-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
+        <div style="background:white; width:90%; max-width:350px; border-radius:24px; padding:30px; position:relative; animation: slideUp 0.3s ease-out;">
+            <h3 id="epm-title" style="color:var(--primary); margin:0 0 15px 0; text-align:center;">Edit</h3>
+            
+            <input type="text" id="epm-input" style="width:100%; box-sizing:border-box; padding:15px; border:1px solid #ddd; border-radius:12px; font-size:1.1rem; margin-bottom:20px; text-align:center;">
+            
+            <div style="display:flex; gap:10px;">
+                <button onclick="document.getElementById('edit-profile-modal').style.display='none'" style="flex:1; background:#f1f5f9; color:var(--text-main); border:none; padding:12px; border-radius:50px; font-weight:600; cursor:pointer;">Cancel</button>
+                <button onclick="saveProfileEdit()" style="flex:1; background:var(--primary); color:white; border:none; padding:12px; border-radius:50px; font-weight:600; cursor:pointer;">Save</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    let currentEditField = null;
+    function editProfileDetail(field, label) {
+        currentEditField = field;
+        const displayId = field === 'profile' ? 'profile-type-display' : 'profile-' + field + '-display';
+        let currentVal = document.getElementById(displayId).innerText;
+        
+        // Strip ' kg' if weight
+        if(field === 'weight') currentVal = currentVal.replace(' kg', '').trim();
+        
+        document.getElementById('epm-title').innerText = "Edit " + label;
+        document.getElementById('epm-input').value = currentVal;
+        document.getElementById('edit-profile-modal').style.display = 'flex';
+        document.getElementById('epm-input').focus();
+    }
+    
+    function saveProfileEdit() {
+        const newVal = document.getElementById('epm-input').value;
+        if(!newVal) return;
+        
+        // Update DOM
+        const displayId = currentEditField === 'profile' ? 'profile-type-display' : 'profile-' + currentEditField + '-display';
+        let displayVal = newVal;
+        if(currentEditField === 'weight' && !newVal.toLowerCase().includes('k') && !newVal.toLowerCase().includes('l')) {
+             displayVal += " kg";
+        }
+        document.getElementById(displayId).innerText = displayVal;
+        
+        // Update Session Storage
+        let quizData = {};
+        try { quizData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e){}
+        
+        if (currentEditField === 'goal') quizData.goal_weight = newVal;
+        else if (currentEditField === 'name') {
+            quizData.name = newVal;
+            sessionStorage.setItem('userName', newVal); // Priority Update
+        }
+        else if (currentEditField === 'email') {
+            quizData.email = newVal;
+            sessionStorage.setItem('userEmail', newVal); // Priority Update
+        }
+        else quizData[currentEditField] = newVal;
+        
+        sessionStorage.setItem('userProfile', JSON.stringify(quizData));
+        
+        // Hide Modal
+        document.getElementById('edit-profile-modal').style.display = 'none';
+    }
+    </script>
+    
+    <!-- APP SETTINGS -->
+    <h3 style="padding: 0 25px; margin-bottom: 20px;">Settings</h3>
+    <div style="padding: 0 25px; margin-bottom: 30px;">
+        <div style="background:white; border-radius:12px; border:1px solid #f1f5f9; overflow:hidden;">
+             <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                 <div>Units</div>
+                 <div style="font-size:0.9rem; font-weight:700; color:var(--primary); cursor:pointer;" onclick="alert('Units toggled (Simulation)')">Metric (kg) ⇩</div>
+             </div>
+             <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                 <div>Notifications</div>
+                 <label class="toggle-switch" style="display:inline-block; width:40px; height:24px; position:relative;">
+                     <input type="checkbox" checked onchange="console.log('Notifs toggled')">
+                     <span style="position:absolute; inset:0; background:#ccc; border-radius:24px; transition:0.3s;" class="slider"></span>
+                     <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:0.3s;" class="knob"></span>
+                 </label>
+                 <!-- Inline style for slider knob behavior needs css, will add simple mock -->
+                 <style> input:checked + .slider { background: var(--primary) !important; } input:checked + .slider + .knob { transform: translateX(16px); } </style>
+             </div>
+              <div style="padding:15px; display:flex; justify-content:space-between; align-items:center;">
+                 <div>Hide Weight</div>
+                 <label class="toggle-switch" style="display:inline-block; width:40px; height:24px; position:relative;">
+                     <input type="checkbox" onchange="alert('Dashboard tiles Updated (Simulation)')">
+                     <span style="position:absolute; inset:0; background:#ccc; border-radius:24px; transition:0.3s;"></span>
+                     <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:0.3s; transform: translateX(0);"></span>
+                 </label>
+             </div>
+        </div>
+    </div>
+
+        <h3 style="padding: 0 25px; margin-bottom: 20px;">Connected Apps</h3>
+        <div class="connected-apps-list">
+            <div class="app-item">
+                <div class="app-info">
+                    <div class="app-icon" style="background:#fee2e2; color:#dc2626;">❤️</div>
+                    <div>
+                        <div style="font-weight:700;">Apple Health</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">Activity Rings</div>
+                    </div>
+                </div>
+                <button class="app-btn connected" disabled>Connected</button>
+            </div>
+            <div class="app-item">
+                <div class="app-info">
+                    <div class="app-icon" style="background:#dbeafe; color:#2563eb;">🔵</div>
+                    <div>
+                        <div style="font-weight:700;">MyFitnessPal</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">Calorie Sync</div>
+                    </div>
+                </div>
+                <button class="app-btn" onclick="connectApp('MyFitnessPal')">Connect</button>
+            </div>
+            <div class="app-item">
+                <div class="app-info">
+                    <div class="app-icon" style="background:#f1f5f9; color:#0f172a;">⌚</div>
+                    <div>
+                        <div style="font-weight:700;">Fitbit</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">Steps & Sleep</div>
+                    </div>
+                </div>
+                <button class="app-btn" onclick="connectApp('Fitbit')">Connect</button>
+            </div>
+            <div class="app-item">
+                <div class="app-info">
+                    <div class="app-icon" style="background:#1a202c; color:white;">▲</div>
+                    <div>
+                        <div style="font-weight:700;">Garmin</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">Workouts & Recovery</div>
+                    </div>
+                </div>
+                <button class="app-btn" onclick="connectApp('Garmin')">Connect</button>
+            </div>
+        </div>
+
+
+
+        <div style="padding: 0 25px; margin-top: 30px;">
+            <button class="btn-primary" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:var(--primary);" onclick="toggleSubscriptionMenu()">
+                MANAGE SUBSCRIPTION
+            </button>
+            
+            <div id="subscription-management-menu" class="subscription-menu">
+                <button class="sub-action-btn" onclick="togglePauseOptions()">
+                    <span>⏸️</span> Pause Subscription
+                </button>
+                <div id="pause-duration-options" class="pause-options">
+                    <button class="pause-btn" onclick="handlePause(1)">1 Month</button>
+                    <button class="pause-btn" onclick="handlePause(2)">2 Months</button>
+                    <button class="pause-btn" onclick="handlePause(3)">3 Months</button>
+                </div>
+
+                <button id="btn-cancel-sub" class="sub-action-btn cancel" onclick="handleSubscriptionAction('cancel')">
+                    <span>❌</span> Cancel Subscription
+                </button>
+                <div id="sub-status-msg" style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 10px;">
+                    Managed securely via Stripe
+                </div>
+            </div>
+        </div>
+    </div>
 
 <script>
 // PWA & Navigation Logic
@@ -6382,7 +6955,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Move Sections out of Meals Container
     // We want Movement and Support to be top-level app views, not sub-views of Meals
-    const moveIds = ['movement-tab', 'group', 'view-support', 'sleep', 'view-active-workout', 'view-workout-success'];
+    const moveIds = ['movement-tab', 'group', 'view-support', 'sleep', 'view-active-workout', 'view-workout-success', 'view-profile'];
     const container = document.querySelector('.container');
     const bottomNav = document.querySelector('.bottom-nav');
     
@@ -6398,8 +6971,240 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 2. Initialize
-    switchMainTab('dashboard', document.querySelector('.nav-item')); // Default to Home
+    initProgramDate();
+    switchAppTab('dashboard', document.querySelector('.nav-item')); // Default to Home
 });
+
+// --- DAILY CONTENT LOGIC ---
+const COACHING_TIPS = [
+    "Eating within 30 minutes of waking stops the morning cortisol spike. Have you had your breakfast?",
+    "High cortisol blocks fat burning. Use the 'Somatic Flow' in Movement to signal safety to your body.",
+    "Your biology is not your destiny. By changing your input (food/light/movement), you change your output (mood/weight/sleep).",
+    "Feeling bloated? Your gut-brain axis is reset today. Sip warm lemon water to keep things moving.",
+    "The 3PM slump is a blood sugar signal. Try the 'Adrenal Rescue Smoothie' instead of a third coffee.",
+    "Sleep is when you shed. 70% of fat loss happens during deep REM sleep. Prioritize an early bedtime.",
+    "Box breathing for 2 minutes can lower salivary cortisol by 20%. Try it before your next meal.",
+    "Vitamin D3 is actually a pro-hormone. Are you taking your daily drop? It's key for mood stability.",
+    "Alcohol blocks the liver's ability to detox estrogen for 24 hours. Stick to sparkling water tonight!",
+    "Muscle is metabolic currency. Even the gentle resistance in our Pilates core sessions helps you burn at rest.",
+    "Magnesium glycinate is the 'relaxation mineral.' Take it 1 hour before bed for deeper sleep architecture.",
+    "Raw carrot salad helps bind excess estrogen. Have you had your crunch today?",
+    "Caffeine on an empty stomach spikes cortisol by 50%. Always eat your P+F+F (Protein, Fat, Fiber) first.",
+    "You are halfway through your 28-day reset. Your skin should be starting to glow as inflammation drops.",
+    "Nature is a nervous system hack. 10 minutes of morning sunlight sets your circadian rhythm for tonight.",
+    "Dandelion tea supports liver phase II detox. Perfect for this stage of the flush.",
+    "Consistency over perfection. If you missed a meal, don't worry. Just make the next choice a green one.",
+    "Your thyroid needs selenium. 1-2 Brazil nuts daily is all you need for this metabolic kickstart.",
+    "Gut dysbiosis causes brain fog. The fermented foods in this week's plan are feeding your 'good' bugs.",
+    "Hydration is not just water. Add a pinch of sea salt to your bottle to help your cells actually absorb it.",
+    "Ashwagandha is an adaptogen that 'adopts' your needs. If you're wired, it calms. If you're tired, it lifts.",
+    "The 'Stress Belly' is often just persistent inflammation. Notice if your waist feels looser this morning.",
+    "Digital detox! Screens after 8 PM block melatonin. Read a physical book tonight instead.",
+    "Omega-3s are anti-inflammatory gold. The algae-based DHA in your protocol supports brain and heart.",
+    "You're in the final stretch. Your body is now efficient at using fat for fuel instead of just glucose.",
+    "Lowering your core temperature by 1 degree helps you fall asleep. Try the warm-to-cool shower trick.",
+    "Zinc is critical for hormone conversion. Ensure you're hitting those pumpkin seeds today.",
+    "You have successfully reset your biochemistry. This is not a diet, it's a signal of safety to your body. Well done!"
+];
+
+function initProgramDate() {
+    let startDate = localStorage.getItem('pbb_start_date');
+    if (!startDate) {
+        startDate = new Date().toISOString();
+        localStorage.setItem('pbb_start_date', startDate);
+    }
+
+    const start = new Date(startDate);
+    const now = new Date();
+    const diffTime = Math.abs(now - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    let currentDay = diffDays;
+    if (currentDay < 1) currentDay = 1;
+
+    updateDailyContent(currentDay);
+}
+
+function updateDailyContent(day) {
+    let tipIndex = (day - 1) % COACHING_TIPS.length;
+    
+    const counterEl = document.getElementById('daily-progress-counter');
+    if (counterEl) {
+        counterEl.innerText = `Day ${day} of 28`;
+        if (day > 28) counterEl.innerText = `Day ${day} (Maintenance)`;
+    }
+
+    const tipEl = document.getElementById('daily-coaching-tip');
+    if (tipEl) {
+        tipEl.innerHTML = `<strong>Day ${day} Insight:</strong> ${COACHING_TIPS[tipIndex]}`;
+    }
+
+    // Update Movement Tab Header
+    const moveDate = document.getElementById('movement-today-date');
+    if (moveDate) {
+        moveDate.innerText = `Day ${day}`;
+    }
+}
+
+function loadProfileData() {
+    let quizData = {};
+    try {
+        quizData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+    } catch (e) {
+        console.warn("Profile data parse error", e);
+    }
+    
+    const context = {
+        name: sessionStorage.getItem('userName') || quizData.name || "Shannon",
+        email: sessionStorage.getItem('userEmail') || quizData.email || "shannonrhysbirch@gmail.com",
+        age: quizData.age || "34",
+        weight: quizData.weight || "68 kg",
+        // Prioritize goal weight as requested
+        goal: quizData.goal_weight || quizData.goal_body_type || quizData.goalBodyType || "Fat Loss",
+        profile: (sessionStorage.getItem('userResult') || 'Cortisol').toUpperCase()
+    };
+
+    if(document.getElementById('profile-name-display')) document.getElementById('profile-name-display').innerText = context.name;
+    if(document.getElementById('profile-email-display')) document.getElementById('profile-email-display').innerText = context.email;
+    if(document.getElementById('profile-age-display')) document.getElementById('profile-age-display').innerText = context.age;
+    
+    // Handle weight display (avoid double units if stored with unit)
+    // Convert to string safely to prevent crashes if weight is a number
+    const wStr = String(context.weight).toLowerCase();
+    const weightDisplay = wStr.includes('k') || wStr.includes('l') 
+        ? context.weight 
+        : context.weight + " kg";
+
+    if(document.getElementById('profile-weight-display')) document.getElementById('profile-weight-display').innerText = weightDisplay;
+    if(document.getElementById('profile-goal-display')) document.getElementById('profile-goal-display').innerText = context.goal;
+    if(document.getElementById('profile-type-display')) document.getElementById('profile-type-display').innerText = context.profile;
+
+    // Load saved avatar if exists
+    const savedPhoto = localStorage.getItem('profile_photo');
+    if(savedPhoto) {
+        const mainImg = document.getElementById('profile-photo-img');
+        if(mainImg) mainImg.src = savedPhoto;
+        // Also update all small profile icons
+        document.querySelectorAll('.profile-icon').forEach(el => {
+            el.innerHTML = `<img src="${savedPhoto}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            el.style.background = 'transparent';
+        });
+    }
+}
+
+function handlePhotoUpload(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const photoData = e.target.result;
+            document.getElementById('profile-photo-img').src = photoData;
+            localStorage.setItem('profile_photo', photoData);
+            
+            // Update all small icons
+            document.querySelectorAll('.profile-icon').forEach(el => {
+                el.innerHTML = `<img src="${photoData}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+                el.style.background = 'transparent';
+            });
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function connectApp(appName) {
+    const btn = event.target;
+    btn.innerText = "Connecting...";
+    btn.disabled = true;
+    
+    setTimeout(() => {
+        btn.innerText = "Connected";
+        btn.classList.add('connected');
+        alert(`${appName} connected successfully! (Simulation)`);
+    }, 1500);
+}
+
+function toggleSubscriptionMenu() {
+    const menu = document.getElementById('subscription-management-menu');
+    menu.classList.toggle('active');
+}
+
+function togglePauseOptions() {
+    const opts = document.getElementById('pause-duration-options');
+    opts.classList.toggle('active');
+}
+
+async function handlePause(months) {
+    if (!confirm(`Pause your subscription for ${months} month(s)? Your access will resume automatically.`)) return;
+
+    const msgEl = document.getElementById('sub-status-msg');
+    msgEl.innerText = "Processing pause request...";
+    
+    try {
+        const email = sessionStorage.getItem('userEmail') || "shannon@example.com"; 
+        
+        const response = await fetch('/.netlify/functions/pause-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, durationMonths: months })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            msgEl.innerText = `✅ Paused for ${months} months.`;
+            msgEl.style.color = "var(--primary)";
+            alert(data.message);
+            togglePauseOptions(); // Hide options
+        } else {
+            throw new Error(data.error || "Pause failed");
+        }
+    } catch (err) {
+        console.error(err);
+        msgEl.innerText = "Error pausing subscription.";
+        msgEl.style.color = "red";
+        alert("Error: " + err.message);
+    }
+}
+
+async function handleSubscriptionAction(action) {
+    if (action === 'cancel') {
+        if (!confirm("Are you sure you want to cancel? You will lose access to new content at the end of your billing cycle.")) {
+            return;
+        }
+
+        const btn = document.getElementById('btn-cancel-sub');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "Processing...";
+        btn.disabled = true;
+
+        try {
+            const email = sessionStorage.getItem('userEmail') || "shannon@example.com"; // Fallback for dev
+            
+            const response = await fetch('/.netlify/functions/cancel-subscription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                btn.innerHTML = "<span>✅</span> Cancelled";
+                btn.classList.remove('cancel');
+                document.getElementById('sub-status-msg').innerText = "Subscription cancelled. Access remains until period end.";
+                document.getElementById('sub-status-msg').style.color = "var(--primary)";
+                alert(data.message);
+            } else {
+                throw new Error(data.error || "Cancellation failed");
+            }
+
+        } catch (err) {
+            console.error(err);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            alert("Error cancelling subscription: " + err.message + ". Please try again or contact support.");
+        }
+    }
+}
 
 // PWA Install Logic
 let deferredPrompt;
@@ -6434,7 +7239,7 @@ function dismissInstall() {
 }
 
 
-function switchMainTab(tabName, btn) {
+function switchAppTab(tabName, btn) {
     // 1. Update Bottom Nav UI
     document.querySelectorAll('.bottom-nav .nav-item').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
@@ -6443,7 +7248,7 @@ function switchMainTab(tabName, btn) {
     }
 
     // 2. Hide All Top Level Views
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-support', 'sleep', 'view-active-workout', 'view-workout-success'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-support', 'sleep', 'view-active-workout', 'view-workout-success', 'view-profile'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) el.style.display = 'none';
@@ -6456,14 +7261,39 @@ function switchMainTab(tabName, btn) {
     } else if (tabName === 'meals') {
         document.getElementById('view-meals').style.display = 'block';
         if (!document.querySelector('#meals-content-container .view-section.active')) {
-            switchWeek('start');
+            switchWeek('today');
+        } else if (document.getElementById('today').classList.contains('active')) {
+            renderTodayMeals(); // Refresh today view if active
         }
     } else if (tabName === 'movement-tab') {
         const el = document.getElementById('movement-tab');
-        if(el) { el.classList.add('active'); el.style.display='block'; }
+        if(el) { 
+            el.classList.add('active'); 
+            el.style.display='block'; 
+            renderMovementView();
+            
+            // Auto-Check-in Logic (Once per day)
+            const todayStr = new Date().toDateString();
+            const lastAuto = localStorage.getItem('last_auto_checkin_date');
+            
+            if (lastAuto !== todayStr) {
+                setTimeout(() => {
+                    openCheckInModal();
+                    localStorage.setItem('last_auto_checkin_date', todayStr);
+                }, 500); // Small delay for smooth transition
+            }
+        }
     } else if (tabName === 'support') {
         const el = document.getElementById('view-support'); // Default to Coach/Chat logic
         if(el) { el.classList.add('active'); el.style.display='block'; }
+    } else if (tabName === 'profile') {
+        const el = document.getElementById('view-profile');
+        if(el) { 
+            el.classList.add('active'); 
+            el.style.display='block'; 
+            // Decouple data loading so errors don't stop view from showing
+            setTimeout(loadProfileData, 10);
+        }
     }
     
     window.scrollTo(0,0);
@@ -6476,12 +7306,118 @@ function switchWeek(id, btn) {
     
     // Show target
     const target = document.getElementById(id);
-    if(target) target.classList.add('active');
+    if(target) {
+        target.classList.add('active');
+        if (id === 'today') {
+            renderTodayMeals();
+        }
+    }
     
     // Update Pills
     if(btn) {
         document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+    } else if (id === 'today') {
+        // Find today pill if no btn passed
+        const pills = document.querySelectorAll('.pill-btn');
+        pills.forEach(p => {
+            if (p.textContent.toLowerCase() === 'today') {
+                pills.forEach(b => b.classList.remove('active'));
+                p.classList.add('active');
+            }
+        });
+    }
+}
+
+function renderTodayMeals() {
+    const container = document.getElementById('today-meals-content');
+    if (!container) return;
+
+    // 1. Calculate Day
+    const startDate = localStorage.getItem('pbb_start_date');
+    if (!startDate) return;
+
+    const start = new Date(startDate);
+    const now = new Date();
+    const diffTime = Math.abs(now - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    let currentDayNum = diffDays || 1;
+    if (currentDayNum > 28) currentDayNum = 28; // Cap at 28
+
+    const weekNum = Math.ceil(currentDayNum / 7);
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = days[now.getDay()];
+    
+    const targetDayId = `week${weekNum}-${dayName}`;
+    const sourceSection = document.getElementById(targetDayId);
+
+    if (!sourceSection) {
+        container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">
+            <p>Your meal plan for ${dayName} (Week ${weekNum}) couldn't be found. Please check the full plan.</p>
+        </div>`;
+        return;
+    }
+
+    // 2. Clone and Clean Cards
+    container.innerHTML = ''; // Clear loading state
+    
+    // Add Header
+    const header = document.createElement('div');
+    header.className = 'today-menu-header';
+    header.innerHTML = `<h2>Today's Menu</h2>
+                       <p>Week ${weekNum} • ${dayName}</p>`;
+    container.appendChild(header);
+
+    const cards = sourceSection.querySelectorAll('.card');
+    cards.forEach(card => {
+        if (card.classList.contains('reflection-card')) return;
+        
+        const clone = card.cloneNode(true);
+        // Ensure images open the modal
+        clone.querySelectorAll('img').forEach(img => {
+            img.onclick = function() {
+                // Check if openImageModal or similar exists
+                if (typeof openImageModal === 'function') {
+                    openImageModal(this.src);
+                } else {
+                    // Fallback to simple alert or nothing if not found
+                    console.log("Image modal function not found");
+                }
+            };
+        });
+        container.appendChild(clone);
+    });
+
+    // 3. Add Reflection at the bottom
+    const reflection = sourceSection.querySelector('.reflection-card');
+    if (reflection) {
+        const rfClone = reflection.cloneNode(true);
+        const textarea = rfClone.querySelector('textarea');
+        if (textarea) {
+            const originalId = textarea.id; // e.g., ref-week1-Monday
+            
+            // Ensure the clone's save button works correctly
+            const btn = rfClone.querySelector('button');
+            const idParts = originalId.split('-');
+            if (idParts.length >= 3) {
+                const weekDayId = idParts[1] + '-' + idParts[2];
+                if (btn) {
+                    btn.onclick = function() {
+                        saveDayReflection(weekDayId);
+                    };
+                }
+            }
+            
+            // Mirror textarea value
+            textarea.id = 'today-' + originalId;
+            textarea.oninput = function() {
+                const originalTextarea = document.getElementById(originalId);
+                if (originalTextarea) originalTextarea.value = this.value;
+            };
+        }
+
+        container.appendChild(rfClone);
     }
 }
 
@@ -6526,61 +7462,321 @@ function toggleCard(header) {
 }
 
 // --- TRAINERIZE WORKOUT LOGIC ---
+// --- TRAINERIZE WORKOUT LOGIC ---
 const WORKOUT_DB = {
+    'bodyweight': {
+        name: 'Bodyweight Sculpt',
+        schedule: [
+            { title: 'Full Body Tone', exercises: [
+                { name: 'Squats', sets: 3, reps: '15', videoUrl: '' },
+                { name: 'Pushups', sets: 3, reps: '10', videoUrl: '' },
+                { name: 'Lunges', sets: 3, reps: '12/leg', videoUrl: '' },
+                { name: 'Plank', sets: 3, reps: '45s', videoUrl: '' }
+            ]}, // Day 1
+            { title: 'Upper Body Focus', exercises: [
+                { name: 'Pike Pushups', sets: 3, reps: '10', videoUrl: '' },
+                { name: 'Tricep Dips', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'Superman', sets: 3, reps: '15', videoUrl: '' },
+                { name: 'Shoulder Taps', sets: 3, reps: '20', videoUrl: '' }
+            ]}, // Day 2
+            { title: 'Core & Mobility', exercises: [
+                { name: 'Dead Bug', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'Bird Dog', sets: 3, reps: '10/side', videoUrl: '' },
+                { name: 'Cat Cow', sets: 2, reps: '1 min', videoUrl: '' },
+                { name: 'Childs Pose', sets: 1, reps: '2 min', videoUrl: '' }
+            ]}, // Day 3
+            { title: 'Lower Body Blast', exercises: [
+                { name: 'Glute Bridges', sets: 3, reps: '20', videoUrl: '' },
+                { name: 'Lateral Lunges', sets: 3, reps: '12/leg', videoUrl: '' },
+                { name: 'Calf Raises', sets: 3, reps: '20', videoUrl: '' },
+                { name: 'Wall Sit', sets: 3, reps: '45s', videoUrl: '' }
+            ]}, // Day 4
+            { title: 'Active Recovery', exercises: [
+                { name: 'Light Walk', sets: 1, reps: '20 min', videoUrl: '' },
+                { name: 'Stretch Flow', sets: 1, reps: '10 min', videoUrl: '' }
+            ]}, // Day 5
+            { title: 'Full Body HIIT', exercises: [
+                { name: 'Jumping Jacks', sets: 3, reps: '30s', videoUrl: '' },
+                { name: 'High Knees', sets: 3, reps: '30s', videoUrl: '' },
+                { name: 'Mountain Climbers', sets: 3, reps: '30s', videoUrl: '' },
+                { name: 'Burpees', sets: 3, reps: '10', videoUrl: '' }
+            ]}, // Day 6
+            { title: 'Rest & Reset', exercises: [
+                { name: 'Meditation', sets: 1, reps: '10 min', videoUrl: '' },
+                { name: 'Gentle Walk', sets: 1, reps: '15 min', videoUrl: '' }
+            ]}  // Day 7
+        ]
+    },
+    'home': {
+        name: 'Home Strength',
+        schedule: [
+            { title: 'DB Lower Body', exercises: [
+                { name: 'Goblet Squats', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'RDLs', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'Reverse Lunges', sets: 3, reps: '10/leg', videoUrl: '' }
+            ]},
+            { title: 'DB Upper Body', exercises: [
+                { name: 'DB Press', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'Bent Over Row', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'Lateral Raise', sets: 3, reps: '15', videoUrl: '' }
+            ]},
+            { title: 'Core Stability', exercises: [
+                { name: 'Plank Drag', sets: 3, reps: '10', videoUrl: '' },
+                { name: 'Russian Twist', sets: 3, reps: '20', videoUrl: '' }
+            ]},
+            { title: 'Full Body DB', exercises: [
+                { name: 'Thrusters', sets: 3, reps: '10', videoUrl: '' },
+                { name: 'Renegade Row', sets: 3, reps: '8/side', videoUrl: '' }
+            ]},
+             { title: 'Mobility', exercises: [
+                { name: 'World\'s Greatest Stretch', sets: 1, reps: '5 min', videoUrl: '' }
+            ]},
+            { title: 'Metabolic Conditioning', exercises: [
+                { name: 'DB Swings', sets: 4, reps: '15', videoUrl: '' },
+                { name: 'Step Ups', sets: 4, reps: '12', videoUrl: '' }
+            ]},
+            { title: 'Rest', exercises: [{ name: 'Rest', sets: 1, reps: 'Full Day', videoUrl: '' }] }
+        ]
+    },
+    'gym': {
+        name: 'Full Gym Protocol',
+        schedule: [
+             { title: 'Leg Day A', exercises: [
+                { name: 'Barbell Squat', sets: 4, reps: '8', videoUrl: '' },
+                { name: 'Leg Press', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'Leg Extensions', sets: 3, reps: '15', videoUrl: '' }
+            ]},
+            { title: 'Push Day', exercises: [
+                { name: 'Bench Press', sets: 4, reps: '8', videoUrl: '' },
+                { name: 'Overhead Press', sets: 3, reps: '10', videoUrl: '' },
+                { name: 'Tricep Pushdown', sets: 3, reps: '12', videoUrl: '' }
+            ]},
+            { title: 'Pull Day', exercises: [
+                { name: 'Lat Pulldown', sets: 4, reps: '10', videoUrl: '' },
+                { name: 'Cable Row', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'Face Pulls', sets: 3, reps: '15', videoUrl: '' }
+            ]},
+            { title: 'Leg Day B', exercises: [
+                { name: 'Deadlift', sets: 3, reps: '8', videoUrl: '' },
+                { name: 'Hamstring Curl', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'Calf Raise', sets: 4, reps: '15', videoUrl: '' }
+            ]},
+            { title: 'Active Recovery', exercises: [{ name: 'Cardio', sets: 1, reps: '20 min Zone 2', videoUrl: '' }] },
+            { title: 'Upper Body Pump', exercises: [
+                { name: 'Incline DB Press', sets: 3, reps: '10', videoUrl: '' },
+                { name: 'DB Curl', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'Lateral Raise', sets: 3, reps: '15', videoUrl: '' }
+            ]},
+            { title: 'Rest', exercises: [{ name: 'Rest', sets: 1, reps: 'Full Day', videoUrl: '' }] }
+        ]
+    },
     'yoga': {
-        title: 'Somatic Yoga Flow',
-        exercises: [
-            { 
-                name: 'Cat Cow', 
-                sets: 2, 
-                reps: '1 min',
-                desc: 'Start on all fours. Inhale to drop your belly (Cow), exhale to round your spine (Cat). Move essentially from the pelvis.'
-            },
-            { 
-                name: 'Childs Pose', 
-                sets: 1, 
-                reps: '2 min',
-                desc: 'Knees wide, big toes touching. Sink hips back to heels and reach arms forward. Rest forehead on the mat to signal safety.'
-            },
-            { 
-                name: 'Hip Circles', 
-                sets: 3, 
-                reps: '10 rep',
-                desc: 'From all fours, make big circles with your hips. 10 clockwise, 10 counter-clockwise. Lubricates the hip joint.'
-            }
-        ]
-    },
-    'walk': {
-        title: 'Zone 2 Walking',
-        exercises: [
-            { name: 'Warm Up Walk', sets: 1, reps: '5 min' },
-            { name: 'Brisk Walk (Zone 2)', sets: 1, reps: '20 min' },
-            { name: 'Cool Down', sets: 1, reps: '5 min' }
-        ]
-    },
-    'pilates': {
-        title: 'Pilates Core',
-        exercises: [
-            { name: 'Dead Bug', sets: 3, reps: '12 rep' },
-            { name: 'Glute Bridge', sets: 3, reps: '15 rep' },
-            { name: 'Bird Dog', sets: 3, reps: '10/side' },
-            { name: 'Plank Hold', sets: 3, reps: '45 sec' }
+        name: 'Somatic Yoga',
+        schedule: [
+             { title: 'Cortisol Flush', exercises: [
+                { name: 'Cat Cow', sets: 2, reps: '2 min', videoUrl: '' },
+                { name: 'Childs Pose', sets: 1, reps: '3 min', videoUrl: '' },
+                { name: 'Legs Up Wall', sets: 1, reps: '5 min', videoUrl: '' }
+            ]}, // Day 1
+            { title: 'Hips & Emotions', exercises: [
+                { name: 'Pigeon Pose', sets: 1, reps: '3 min/side', videoUrl: '' },
+                { name: 'Butterfly', sets: 1, reps: '3 min', videoUrl: '' }
+            ]},
+            { title: 'Spinal Release', exercises: [
+                { name: 'Supine Twist', sets: 1, reps: '2 min/side', videoUrl: '' },
+                { name: 'Bridge Flow', sets: 3, reps: '1 min', videoUrl: '' }
+            ]},
+            { title: 'Grounding Flow', exercises: [
+                { name: 'Mountain Pose', sets: 1, reps: '2 min', videoUrl: '' },
+                { name: 'Tree Pose', sets: 1, reps: '1 min/side', videoUrl: '' }
+            ]},
+            { title: 'Breathwork Focus', exercises: [
+                { name: 'Box Breathing', sets: 1, reps: '5 min', videoUrl: '' },
+                { name: '4-7-8 Breath', sets: 1, reps: '5 min', videoUrl: '' }
+            ]},
+            { title: 'Gentle Opening', exercises: [
+                { name: 'Camel Pose (Supported)', sets: 2, reps: '30s', videoUrl: '' },
+                { name: 'Puppy Pose', sets: 1, reps: '2 min', videoUrl: '' }
+            ]},
+            { title: 'Deep Rest (Nidra)', exercises: [
+                { name: 'Savasana', sets: 1, reps: '10 min', videoUrl: '' },
+                { name: 'Body Scan', sets: 1, reps: '10 min', videoUrl: '' }
+            ]}
         ]
     }
 };
 
+// Check-in State
+let selectedEnergy = null;
+let selectedEquipment = null;
+
+function openCheckInModal() {
+    document.getElementById('checkin-modal').style.display = 'flex';
+}
+
+function selectEnergy(level) {
+    selectedEnergy = level;
+    document.querySelectorAll('[id^="btn-energy-"]').forEach(btn => btn.classList.remove('selected'));
+    document.getElementById('btn-energy-' + level).classList.add('selected');
+}
+
+function selectEquipment(type) {
+    selectedEquipment = type;
+    document.querySelectorAll('[id^="btn-eq-"]').forEach(btn => btn.classList.remove('selected'));
+    document.getElementById('btn-eq-' + type).classList.add('selected');
+}
+
+function submitCheckIn() {
+    if(!selectedEnergy || !selectedEquipment) {
+        alert("Please select both energy level and equipment access.");
+        return;
+    }
+    const todayStr = new Date().toDateString();
+    localStorage.setItem('daily_checkin_' + todayStr, JSON.stringify({
+        energy: selectedEnergy,
+        equipment: selectedEquipment
+    }));
+    document.getElementById('checkin-modal').style.display = 'none';
+    renderMovementView();
+}
+
+function renderMovementView() {
+    // 1. Get Date Index
+    const startDate = localStorage.getItem('pbb_start_date');
+    let dayIndex = 0;
+    if (startDate) {
+        const start = new Date(startDate);
+        const now = new Date();
+        const diffTime = Math.abs(now - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const currentDay = diffDays || 1;
+        dayIndex = (currentDay - 1) % 7;
+    }
+
+    // 2. Determine Suggested Workout
+    const todayStr = new Date().toDateString();
+    const checkin = JSON.parse(localStorage.getItem('daily_checkin_' + todayStr));
+    
+    let suggestedId = 'yoga'; // Default
+    if (checkin) {
+        if (checkin.energy === 'low') {
+            suggestedId = 'yoga';
+        } else {
+            // High Energy
+            if (checkin.equipment === 'gym') suggestedId = 'gym';
+            else if (checkin.equipment === 'dumbbells') suggestedId = 'home';
+            else suggestedId = 'bodyweight';
+        }
+    }
+
+    // 3. Helper for Assets
+    const assets = {
+        'yoga': { img: '../assets/somatic_yoga_hero.png', sub: 'Recovery', color: '#F59E0B' },
+        'bodyweight': { img: '../assets/bodyweight_sculpt_hero.png', sub: 'No Equipment', color: '#ec4899' },
+        'home': { img: '../assets/dumbbell_strength_hero.png', sub: 'Dumbbells', color: '#8b5cf6' },
+        'gym': { img: '../assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' }
+    };
+
+    // 4. Render Hero
+    const heroContainer = document.getElementById('movement-hero-container');
+    const heroProg = WORKOUT_DB[suggestedId];
+    const heroMeta = assets[suggestedId];
+    // Safe access schedule
+    const heroSched = heroProg.schedule[dayIndex >= heroProg.schedule.length ? 0 : dayIndex];
+
+    heroContainer.innerHTML = `
+    <div class="card" onclick="startWorkout('${suggestedId}')" style="cursor: pointer; overflow:hidden; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.15); border:none; position: relative; margin-bottom: 30px;">
+        <div style="position: relative; height: 320px;">
+             <img src="${heroMeta.img}" style="width:100%; height:100%; object-fit: cover;" onerror="this.src='https://placehold.co/600x800/png?text=${suggestedId}';">
+             <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0) 100%);"></div>
+             
+             <div style="position: absolute; top: 20px; left: 20px;">
+                <span style="background: ${heroMeta.color}; color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">Suggested for You</span>
+             </div>
+
+             <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 25px;">
+                 <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                    <div style="color: ${heroMeta.color}; font-weight: 700; font-size: 0.85rem; text-transform: uppercase;">${heroMeta.sub} • ${heroProg.name}</div>
+                 </div>
+                 <h2 style="color: white; margin: 0 0 10px 0; font-size: 2rem; line-height: 1.1; font-family:'Playfair Display';">${heroSched.title}</h2>
+                 <button style="width: 100%; background: white; color: var(--primary); border: none; padding: 16px; border-radius: 50px; font-weight: 800; font-size: 1rem; display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+                    <span>START SESSION</span>
+                    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>
+                 </button>
+             </div>
+        </div>
+    </div>`;
+
+    // 5. Render Grid (Others)
+    const gridContainer = document.getElementById('movement-grid-container');
+    gridContainer.innerHTML = ''; // Clear
+    
+    Object.keys(WORKOUT_DB).forEach(key => {
+        if (key === suggestedId) return; // Skip hero
+        
+        const prog = WORKOUT_DB[key];
+        const meta = assets[key];
+        const sched = prog.schedule[dayIndex >= prog.schedule.length ? 0 : dayIndex];
+
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.onclick = () => startWorkout(key);
+        div.style.cursor = 'pointer';
+        div.style.margin = '0';
+        div.style.minHeight = '140px';
+        div.style.position = 'relative';
+        div.style.overflow = 'hidden';
+        div.style.border = 'none';
+        div.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+        
+        div.innerHTML = `
+            <img src="${meta.img}" style="width:100%; height:100%; object-fit: cover; position:absolute; inset:0;" onerror="this.src='https://placehold.co/300x200?text=${key}';">
+            <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.1));"></div>
+            <div style="position: absolute; bottom: 15px; left: 15px; color: white; padding-right: 10px; z-index:2;">
+                <div style="font-size: 0.7rem; text-transform: uppercase; font-weight: 700; opacity: 0.9; margin-bottom:2px;">${meta.sub}</div>
+                <div style="font-size: 1.1rem; font-weight: 800; line-height: 1.1;">${sched.title}</div>
+            </div>
+        `;
+        gridContainer.appendChild(div);
+    });
+}
+
+
 let workoutTimerInterval;
 
 function startWorkout(id) {
-    const data = WORKOUT_DB[id];
-    if(!data) return;
+    const program = WORKOUT_DB[id];
+    if(!program) return;
 
-    // 1. Setup UI
+    // 1. Calculate Day & Workout
+    const startDate = localStorage.getItem('pbb_start_date');
+    let dayIndex = 0;
+    if (startDate) {
+        const start = new Date(startDate);
+        const now = new Date();
+        const diffTime = Math.abs(now - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const currentDay = diffDays || 1;
+        dayIndex = (currentDay - 1) % 7;
+    }
+    
+    // Fallback if array is short
+    if (dayIndex >= program.schedule.length) dayIndex = 0;
+    
+    const data = program.schedule[dayIndex];
+
+    // 2. Setup UI
     document.getElementById('workout-player-title').innerText = data.title;
     const list = document.getElementById('workout-exercises-list');
     list.innerHTML = ''; // Clear
 
-    // 2. Build Logger UI
+    // 3. Update Title Context
+    const playerTitle = document.getElementById('workout-player-title');
+    if(playerTitle) {
+        playerTitle.innerHTML = `${data.title} <div style="font-size:0.5em; opacity:0.6; font-weight:400; margin-top:4px;">${program.name} • Day ${dayIndex + 1}</div>`;
+    }
+
+    // 4. Build Logger UI
     data.exercises.forEach((ex, exIdx) => {
         let rows = '';
         for(let i=0; i<ex.sets; i++) {
@@ -6603,12 +7799,18 @@ function startWorkout(id) {
         card.innerHTML = `
             <div class="exercise-header" style="background:white; padding:15px; border-bottom:1px solid #f1f5f9; display:flex; gap:15px; align-items:flex-start;">
                 <!-- Video Square -->
-                <div style="width:80px; height:80px; flex-shrink:0; border-radius:8px; overflow:hidden; position:relative; background:#f1f5f9;">
-                    <img src="${thumbUrl}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://placehold.co/100x100/png';">
+                <div onclick="openExerciseVideo('${ex.videoUrl ? ex.videoUrl.replace(/'/g, "\\'") : ''}', '${ex.name.replace(/'/g, "\\'")}')" 
+                     style="width:80px; height:80px; flex-shrink:0; border-radius:8px; overflow:hidden; position:relative; background:#f1f5f9; cursor: ${ex.videoUrl ? 'pointer' : 'default'};">
+                    <img src="${thumbUrl}" style="width:100%; height:100%; object-fit:cover; opacity: ${ex.videoUrl ? '0.9' : '0.5'}" onerror="this.src='https://placehold.co/100x100/png';">
                     <div style="position:absolute; inset:0; background:rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center;">
-                        <div style="width:30px; height:30px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.2);">
-                             <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:var(--primary); margin-left:2px;"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
+                        ${ ex.videoUrl ? 
+                        `<div style="width:30px; height:30px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.3);">
+                             <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:white; margin-left:2px;"><path d="M8 5v14l11-7z"/></svg>
+                        </div>` : 
+                        `<div style="width:30px; height:30px; background:white; opacity:0.5; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                             <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:#94a3b8; margin-left:2px;"><path d="M8 5v14l11-7z"/></svg>
+                        </div>` 
+                        }
                     </div>
                 </div>
 
@@ -6757,7 +7959,7 @@ function closeSuccessScreen() {
     document.getElementById('view-active-workout').style.display = 'none';
     
     document.querySelector('.bottom-nav').style.display = 'flex';
-    switchMainTab('movement-tab');
+    switchAppTab('movement-tab');
 }</script>
 <!-- Image Modal HTML -->
 <div class="image-modal-overlay" id="imageModal" onclick="closeImageModal()">
@@ -6994,10 +8196,30 @@ function triggerCoachResponse(userMsg) {
     const container = document.getElementById('chat-messages-container');
     const now = Date.now();
     const lastTime = parseInt(localStorage.getItem('lastChatTime') || 0);
-    
+    const diffMins = (now - lastTime) / (1000 * 60);
+    const isContinuing = lastTime > 0 && diffMins < 60; // Less than 60 mins = continuing
+
     // Get User Profile for Context
     const context = gatherUserContext();
     
+    // Get Chat History (Last 100 messages) for "Memory"
+    let history = [];
+    try {
+        const rawHistory = JSON.parse(localStorage.getItem('shannon_chat_history') || '[]');
+        
+        // Take last 100 messages
+        history = rawHistory.slice(-100).map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'model', 
+            content: msg.text,
+            time: new Date(msg.timestamp).toLocaleString('en-AU', { 
+                weekday: 'short', month: 'short', day: 'numeric', 
+                hour: 'numeric', minute: '2-digit' 
+            })
+        }));
+    } catch (e) {
+        console.error("History parse error", e);
+    }
+
     // Update timestamp
     localStorage.setItem('lastChatTime', now);
 
@@ -7013,7 +8235,13 @@ function triggerCoachResponse(userMsg) {
         body: JSON.stringify({
             mode: 'coach',
             message: userMsg,
-            contextData: context
+            contextData: context,
+            chatHistory: history,
+            conversationStatus: isContinuing ? 'continuing' : 'new',
+            currentDateTime: new Date().toLocaleString('en-AU', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', 
+                hour: 'numeric', minute: '2-digit' 
+            })
         })
     })
     .then(res => {
@@ -7054,21 +8282,48 @@ function removeTypingIndicator() {
 }
 
 function appendCoachMessage(msg) {
-    const container = document.getElementById('chat-messages-container');
+
+    // Save to History (store as single block for history simplicity, or split? Let's act like user sent one block)
+    saveChatMessage('coach', msg);
+
+    // PARSE FOR MULTI-BUBBLE (|||)
+    const bubbles = msg.split('|||').map(t => t.trim()).filter(t => t);
     
+    // Render first bubble immediately
+    if (bubbles.length > 0) {
+        renderCoachBubble(bubbles[0]);
+    }
+    
+    // Queue subsequent bubbles
+    if (bubbles.length > 1) {
+        let delay = 0;
+        for (let i = 1; i < bubbles.length; i++) {
+             // 1-2 words = fast (800ms), longer = slower (1500ms+)
+             const readTime = Math.min(Math.max(bubbles[i-1].length * 20, 800), 2000);
+             delay += readTime;
+             
+             setTimeout(() => {
+                 showTypingIndicator();
+                 setTimeout(() => {
+                     removeTypingIndicator();
+                     renderCoachBubble(bubbles[i]);
+                 }, 600); // short typing burst
+             }, delay);
+        }
+    }
+}
+
+function renderCoachBubble(text) {
+    const container = document.getElementById('chat-messages-container');
     const div = document.createElement('div');
     div.style.cssText = "display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; max-width: 85%; animation: slideUp 0.3s ease;";
     div.innerHTML = `
         <div style="background: #f8fafc; padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid #e2e8f0; color: var(--text-main);">
-            <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${msg}</p>
+            <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${text}</p>
         </div>
         <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px; margin-left: 2px;">Shannon • Just now</div>
     `;
     container.appendChild(div);
-    
-    // Save to History
-    saveChatMessage('coach', msg);
-
     container.scrollTop = container.scrollHeight;
 }
 // --- AI COMMUNITY CHAT LOGIC ---
@@ -7102,21 +8357,21 @@ function loadCommunityFeed() {
     let messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
     
     if(messages.length === 0) {
-        messages = [
-            {
-                id: 'msg1',
-                authorId: 'm7', // Diane
-                text: "Just finished the Day 1 Yoga flow. I normally hate slow exercise but my hips feel so much looser!",
-                timestamp: Date.now() - 3600000
-            },
-            {
-                id: 'msg2',
-                authorId: 'm4', // Patricia
-                text: "Yes! I actually teared up a bit. It releases so much tension.",
-                timestamp: Date.now() - 3500000
-            }
-        ];
+        // NEW USER FLOW
+        const name = "Friend"; // Default
+        
+        // 1. Add System Message
+        const sysMsg = {
+            id: 'sys_' + Date.now(),
+            isSystem: true,
+            text: `${name} just joined the community`,
+            timestamp: Date.now()
+        };
+        messages.push(sysMsg);
         localStorage.setItem('community_chat_history', JSON.stringify(messages));
+        
+        // 2. Trigger Welcome Wagon
+        setTimeout(() => triggerWelcomeSequence(), 1500);
     }
     
     renderChat(messages);
@@ -7155,7 +8410,15 @@ function renderChat(messages) {
             </div>
         `;
         
-        container.innerHTML += html;
+        // System Message Override
+        if (msg.isSystem) {
+            container.innerHTML += `
+                <div style="text-align:center; margin: 20px 0; color:#94a3b8; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:1px;">
+                    ${msg.text}
+                </div>`;
+        } else {
+            container.innerHTML += html;
+        }
     });
     
     // Scroll to bottom
@@ -7239,9 +8502,88 @@ function addMessageToChat(member, replyText) {
     
     const commTab = document.getElementById('support-community');
     if(commTab.style.display !== 'none') {
-        renderChat(messages);
+        const bubbles = replyText.split('|||').map(t => t.trim()).filter(t => t);
+        
+        // Immediate first bubble
+        if(bubbles.length > 0) {
+             renderSingleCommunityBubble(member, bubbles[0]);
+        }
+        
+        // Delayed subsequent bubbles
+        if(bubbles.length > 1) {
+            let delay = 0;
+            for(let i=1; i<bubbles.length; i++) {
+                const readTime = Math.min(Math.max(bubbles[i-1].length * 20, 1000), 2500);
+                delay += readTime;
+                setTimeout(() => {
+                    renderSingleCommunityBubble(member, bubbles[i]);
+                }, delay);
+            }
+        }
     }
 }
+
+function renderSingleCommunityBubble(member, text) {
+    // Append to DOM immediately (no full re-render to avoid flicker)
+    const container = document.getElementById('community-chat-stream');
+    
+    // Build HTML for just this message
+    const imgNum = member.id.replace('m', '');
+    const avatarSrc = `https://randomuser.me/api/portraits/women/${imgNum}.jpg`;
+    const avatarHtml = `<img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; flex-shrink:0; align-self:flex-end; margin-bottom:5px;">`;
+
+    const html = `
+        <div style="display:flex; justify-content: flex-start; margin-bottom: 12px; gap: 8px; animation: fadeIn 0.3s ease;">
+            ${avatarHtml}
+            <div style="display:flex; flex-direction:column; max-width:75%; align-items:flex-start;">
+                <div style="font-size:0.7rem; color:#94a3b8; margin-left:10px; margin-bottom:2px;">${member.name}</div>
+                <div style="padding: 10px 15px; font-size: 0.95rem; line-height: 1.4; background: #f1f5f9; color: var(--text-main); border-radius: 18px 18px 18px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                    ${text}
+                </div>
+            </div>
+        </div>
+    `;
+    container.innerHTML += html;
+    container.scrollTop = container.scrollHeight;
+}
+
+function triggerWelcomeSequence() {
+    const coach = { id: 'coach', name: 'Coach Sarah', bio: 'Your personal coach', color: '#8B5CF6' };
+    const welcomeMessages = [
+        "Welcome to the community! I'm Coach Sarah, your guide for the next 28 days.",
+        "I'm so excited to have you here. This community is a great place to share your journey and get support.",
+        "Feel free to ask any questions you have, or just share how you're feeling. We're all in this together!",
+        "Don't forget to check out the Meal Plan tab for your daily recipes and shopping list. Let's get started!"
+    ];
+
+    let delay = 1000; // Initial delay before first message
+    welcomeMessages.forEach((msg, index) => {
+        setTimeout(() => {
+            appendCoachMessage(msg);
+        }, delay);
+        delay += 3000 + (msg.length * 20); // Stagger messages based on length
+    });
+}
+
+function appendCoachMessage(messageText) {
+    const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    const coach = { id: 'coach', name: 'Coach Sarah', bio: 'Your personal coach', color: '#8B5CF6' }; // Define coach here
+
+    messages.push({
+        id: 'msg' + Date.now(),
+        authorId: coach.id,
+        text: messageText,
+        timestamp: Date.now()
+    });
+    
+    localStorage.setItem('community_chat_history', JSON.stringify(messages));
+    
+    const commTab = document.getElementById('support-community');
+    if(commTab.style.display !== 'none') {
+        renderSingleCommunityBubble(coach, messageText);
+    }
+}
+
 
 function generateAIResponseText(member, text) {
     const lower = text.toLowerCase();
@@ -7280,8 +8622,800 @@ function timeAgo(ts) {
     return '';
 }
 
-if(document.readyState === 'complete') loadCommunityFeed();
+</script>
 
+<!-- COACH DASHBOARD STYLES -->
+<style>
+    /* Coach Dashboard Specific Styles */
+    #view-coach-dashboard {
+        display: none; /* Hidden by default */
+        position: fixed;
+        inset: 0;
+        background: #f8fafc;
+        z-index: 10000;
+        overflow-y: auto;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .coach-layout {
+        display: grid;
+        grid-template-columns: 250px 1fr;
+        min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .coach-sidebar {
+        background: #0f172a;
+        color: white;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .coach-logo {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.5rem;
+        margin-bottom: 40px;
+        color: var(--secondary);
+    }
+
+    .coach-nav-item {
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin-bottom: 5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #94a3b8;
+        transition: all 0.2s;
+    }
+
+    .coach-nav-item:hover, .coach-nav-item.active {
+        background: rgba(255,255,255,0.1);
+        color: white;
+    }
+
+    /* Main Content */
+    .coach-main {
+        padding: 30px;
+        overflow-y: auto;
+    }
+
+    .coach-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .coach-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    /* Dashboard Grid */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 25px;
+    }
+
+    .d-card {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        margin-bottom: 25px;
+    }
+
+    .d-card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 15px;
+        color: #334155;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 10px;
+    }
+
+    /* Compliance Snapshots */
+    .compliance-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 10px;
+    }
+    
+    .compliance-dot {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        font-size: 0.9rem;
+        cursor: pointer;
+        position: relative;
+    }
+    .status-warning { background: #F59E0B; }
+    .status-danger { background: #EF4444; }
+    .status-good { background: #10B981; }
+
+    /* Activity Feed */
+    .activity-item {
+        display: flex;
+        gap: 15px;
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Mobile Responsive adjustment for Coach View */
+    @media (max-width: 768px) {
+        .coach-layout { grid-template-columns: 1fr; }
+        .coach-sidebar { display: none; } /* Add a mobile toggler later if needed, assume desktop for "Command Center" initially */
+        .dashboard-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<!-- COACH DASHBOARD HTML -->
+<div id="view-coach-dashboard">
+    <div class="coach-layout">
+        <!-- Sidebar -->
+        <div class="coach-sidebar">
+            <div class="coach-logo">Shannon (Coach)</div>
+            <div class="coach-nav-item active" onclick="showCoachSection('overview')">
+                <span>📊</span> Overview
+            </div>
+            <div class="coach-nav-item" onclick="showCoachSection('clients')">
+                <span>👥</span> Clients
+            </div>
+            <div class="coach-nav-item" onclick="showCoachSection('messages')">
+                <span>💬</span> Messages <span class="badge" style="background:red; padding:2px 6px; border-radius:10px; font-size:0.7rem;">3</span>
+            </div>
+            <div class="coach-nav-item" onclick="showCoachSection('calendar')">
+                <span>📅</span> User Calendar
+            </div>
+             <div style="margin-top:auto;">
+                <div class="coach-nav-item" onclick="toggleCoachMode(false)">
+                    <span>🚪</span> Exit Coach Mode
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="coach-main">
+            <!-- SECTION: OVERVIEW -->
+            <div id="coach-sec-overview">
+                <div class="coach-header">
+                    <div>
+                        <div class="coach-title">Command Center</div>
+                        <div style="color:#64748b;">Welcome back, Shannon. Here is what's happening today.</div>
+                    </div>
+                    <button class="app-btn" style="width: auto; padding: 10px 20px;">+ Quick Add</button>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Left Col -->
+                    <div>
+                        <!-- Compliance -->
+                        <div class="d-card">
+                            <h3>Compliance Snapshots</h3>
+                            <div class="compliance-grid" id="compliance-container">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="d-card">
+                            <h3>Recent Activity</h3>
+                            <div id="activity-feed-container">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Col -->
+                    <div>
+                        <!-- Pending Requests -->
+                        <div class="d-card">
+                            <h3>Pending Requests (3)</h3>
+                            <div class="activity-item">
+                                <div class="activity-icon" style="background:#FEF3C7; color:#D97706;">⚠️</div>
+                                <div>
+                                    <div style="font-weight:600;">Consultation Form</div>
+                                    <div style="font-size:0.85rem; color:#64748b;">New Client Application</div>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon" style="background:#DBEAFE; color:#2563EB;">💶</div>
+                                <div>
+                                    <div style="font-weight:600;">Payment Failed</div>
+                                    <div style="font-size:0.85rem; color:#64748b;">Sarah J. - Subscription</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Daily Schedule -->
+                        <div class="d-card">
+                            <h3>Daily Schedule</h3>
+                            <div class="activity-item">
+                                <div style="font-weight:bold; color:var(--primary); width:50px;">09:00</div>
+                                <div>Check-in Review</div>
+                            </div>
+                            <div class="activity-item">
+                                <div style="font-weight:bold; color:var(--primary); width:50px;">14:30</div>
+                                <div>Call with Jessica</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: CLIENTS (Deep Dive) -->
+            <div id="coach-sec-clients" style="display:none;">
+                <div class="coach-header">
+                    <div class="coach-title">Client Profiles</div>
+                    <input type="text" placeholder="Search clients..." style="padding:10px; border-radius:8px; border:1px solid #ccc;">
+                </div>
+                <!-- Simple Client List for Selection -->
+                <div class="d-card" id="client-list-view">
+                    <h3>All Clients</h3>
+                    <div id="coach-client-list"></div>
+                </div>
+
+                <!-- SINGLE CLIENT VIEW (Hidden by default) -->
+                <div id="single-client-view" style="display:none;">
+                    <button onclick="closeClientProfile()" style="margin-bottom:20px; background:none; border:none; color:#64748b; cursor:pointer;">← Back to List</button>
+                    
+                    <div class="d-card" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; gap:20px; align-items:center;">
+                            <div id="sc-avatar" style="width:60px; height:60px; background:var(--primary); border-radius:50%; color:white; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">SJ</div>
+                            <div>
+                                <h2 id="sc-name" style="margin:0; font-size:1.5rem;">Sarah Jenkins</h2>
+                                <div id="sc-status" style="color:#64748b;">Active • Wk 3 • Cortisol Reset</div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="app-btn" style="width:auto; background:var(--secondary);" onclick="openAsClient()">Open App as Client</button>
+                            <button class="app-btn" style="width:auto;">Message</button>
+                        </div>
+                    </div>
+
+                    <!-- Client Tabs -->
+                    <div style="display:flex; gap:10px; margin-bottom:20px; border-bottom:1px solid #e2e8f0;">
+                        <div class="coach-nav-item active" style="color:var(--primary); border-bottom:2px solid var(--primary); border-radius:0;">Dash</div>
+                        <div class="coach-nav-item" style="color:#64748b;">Progress</div>
+                        <div class="coach-nav-item" style="color:#64748b;">Training</div>
+                        <div class="coach-nav-item" style="color:#64748b;">Nutrition</div>
+                        <div class="coach-nav-item" style="color:#64748b;">Notes 🔒</div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <!-- Stats Tiles -->
+                        <div style="grid-column: 1 / -1; display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-bottom:20px;">
+                            <div class="d-card" style="margin:0; text-align:center;">
+                                <div style="font-size:0.8rem; color:#64748b;">WEIGHT</div>
+                                <div style="font-size:1.5rem; font-weight:bold;">64.5kg</div>
+                                <div style="color:green; font-size:0.8rem;">↓ 0.5kg</div>
+                            </div>
+                            <div class="d-card" style="margin:0; text-align:center;">
+                                <div style="font-size:0.8rem; color:#64748b;">BODY FAT</div>
+                                <div style="font-size:1.5rem; font-weight:bold;">22%</div>
+                                <div style="color:green; font-size:0.8rem;">↓ 1.2%</div>
+                            </div>
+                            <div class="d-card" style="margin:0; text-align:center;">
+                                <div style="font-size:0.8rem; color:#64748b;">RHR</div>
+                                <div style="font-size:1.5rem; font-weight:bold;">58</div>
+                                <div style="color:green; font-size:0.8rem;">↓ 4 bpm</div>
+                            </div>
+                            <div class="d-card" style="margin:0; text-align:center;">
+                                <div style="font-size:0.8rem; color:#64748b;">KCALS</div>
+                                <div style="font-size:1.5rem; font-weight:bold;">1850</div>
+                                <div style="color:orange; font-size:0.8rem;">Avg</div>
+                            </div>
+                        </div>
+
+                        <!-- Left: Photos & Badges -->
+                        <div class="d-card">
+                            <h3>Progress Photos</h3>
+                            <div style="display:flex; gap:10px;">
+                                <div style="flex:1; background:#f1f5f9; aspect-ratio:3/4; display:flex; align-items:center; justify-content:center; border-radius:8px;">Front</div>
+                                <div style="flex:1; background:#f1f5f9; aspect-ratio:3/4; display:flex; align-items:center; justify-content:center; border-radius:8px;">Side</div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Trainer Notes -->
+                        <div class="d-card">
+                            <h3>Trainer Notes 🔒</h3>
+                            <textarea style="width:100%; height:150px; border:1px solid #e2e8f0; border-radius:8px; padding:10px;" placeholder="Private notes about this client..."></textarea>
+                            <button class="app-btn" style="width:auto; margin-top:10px;">Save Note</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Other sections (Calendar, Messages) placeholders -->
+            <div id="coach-sec-messages" style="display:none;">
+                <div class="coach-header"><div class="coach-title">Messages</div></div>
+                <div class="d-card">
+                     <p>Message Center Implementation Pending...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// COACH MODE LOGIC
+
+const MOCK_CLIENTS = [
+    { id: 'c1', name: 'Sarah J.', status: 'good', avatar: 'SJ', lastAct: 'Completed Workout 2h ago' },
+    { id: 'c2', name: 'Mike T.', status: 'warning', avatar: 'MT', lastAct: 'Missed check-in yesterday' },
+    { id: 'c3', name: 'Emma W.', status: 'good', avatar: 'EW', lastAct: 'Logged macros' },
+    { id: 'c4', name: 'John D.', status: 'danger', avatar: 'JD', lastAct: 'Inactive for 3 days' },
+    { id: 'c5', name: 'Current User', status: 'good', avatar: 'ME', lastAct: 'Online now' } // Maps to real user
+];
+
+function toggleCoachMode(show) {
+    const dash = document.getElementById('view-coach-dashboard');
+    if (show) {
+        dash.style.display = 'block';
+        initCoachDashboard();
+    } else {
+        dash.style.display = 'none';
+        // Reload normal view just in case
+    }
+}
+
+function initCoachDashboard() {
+    renderComplianceGrid();
+    renderActivityFeed();
+    renderClientList();
+}
+
+function renderComplianceGrid() {
+    const container = document.getElementById('compliance-container');
+    container.innerHTML = MOCK_CLIENTS.map(c => `
+        <div class="compliance-dot status-${c.status}" onclick="openClientProfile('${c.id}')">
+            ${c.avatar}
+        </div>
+    `).join('');
+}
+
+function renderActivityFeed() {
+    const container = document.getElementById('activity-feed-container');
+    const activities = [
+        { name: 'Sarah J.', action: 'completed Leg Day', time: '2h ago', icon: '🏋️‍♀️' },
+        { name: 'Emma W.', action: 'logged lunch', time: '3h ago', icon: '🥗' },
+        { name: 'Mike T.', action: 'uploaded progress photo', time: '5h ago', icon: '📸' }
+    ];
+    container.innerHTML = activities.map(a => `
+        <div class="activity-item">
+            <div class="activity-icon">${a.icon}</div>
+            <div>
+                <div style="font-weight:600;">${a.name}</div>
+                <div style="font-size:0.85rem; color:#64748b;">${a.action} • ${a.time}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showCoachSection(secId) {
+    // Hide all
+    ['overview', 'clients', 'messages'].forEach(id => {
+        const el = document.getElementById('coach-sec-' + id);
+        if(el) el.style.display = 'none';
+    });
+    
+    // Show selected
+    document.getElementById('coach-sec-' + secId).style.display = 'block';
+}
+
+function renderClientList() {
+    const container = document.getElementById('coach-client-list');
+    container.innerHTML = MOCK_CLIENTS.map(c => `
+        <div class="activity-item" style="cursor:pointer;" onclick="openClientProfile('${c.id}')">
+            <div class="activity-icon" style="background:${c.status === 'danger' ? '#FEE2E2' : '#F1F5F9'}">${c.avatar}</div>
+            <div style="flex:1;">
+                <div style="font-weight:600;">${c.name}</div>
+                <div style="font-size:0.85rem; color:#64748b;">${c.lastAct}</div>
+            </div>
+            <div>➜</div>
+        </div>
+    `).join('');
+}
+
+function openClientProfile(clientId) {
+    document.getElementById('client-list-view').style.display = 'none';
+    document.getElementById('single-client-view').style.display = 'block';
+    
+    const client = MOCK_CLIENTS.find(c => c.id === clientId);
+    document.getElementById('sc-name').innerText = client.name;
+    document.getElementById('sc-avatar').innerText = client.avatar;
+    
+    // If it's the current user, we could potentially verify real data
+    // For now, it is mock UI
+}
+
+function closeClientProfile() {
+    document.getElementById('single-client-view').style.display = 'none';
+    document.getElementById('client-list-view').style.display = 'block';
+}
+
+function openAsClient() {
+    // Switch to normal dashboard view
+    toggleCoachMode(false);
+    // Ideally we would load the specific client's data into the view
+    // For "Current User", it's already there.
+    // For others, we'd need to mock swap the data, but for this task we'll just close the coach view
+    // and show the "Current" view as a demo of the "Open" functionality.
+}
+
+</script>
+
+<!-- CHECK-IN MODAL (Moved to root) -->
+<div id="checkin-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:10005; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
+    <div style="background:white; width:90%; max-width:400px; border-radius:24px; padding:30px; position:relative; animation: slideUp 0.3s ease-out;">
+        <h2 style="color:var(--primary); margin:0 0 10px 0; text-align:center;">Daily Check-in</h2>
+        <p style="text-align:center; color:#64748b; margin-bottom:25px; font-size:0.95rem;">Let's customize your session for today.</p>
+
+        <!-- Step 1: Energy -->
+        <div style="margin-bottom:20px;">
+            <label style="display:block; font-weight:600; margin-bottom:10px; color:var(--text-main);">How is your energy?</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button onclick="selectEnergy('high')" id="btn-energy-high" class="checkin-btn" style="padding:15px; border:2px solid #e2e8f0; border-radius:12px; background:white; cursor:pointer; transition:all 0.2s;">
+                    <div style="font-size:1.5rem;">🔥</div>
+                    <div style="font-weight:600; margin-top:5px;">High</div>
+                </button>
+                <button onclick="selectEnergy('low')" id="btn-energy-low" class="checkin-btn" style="padding:15px; border:2px solid #e2e8f0; border-radius:12px; background:white; cursor:pointer; transition:all 0.2s;">
+                    <div style="font-size:1.5rem;">🧘‍♀️</div>
+                    <div style="font-weight:600; margin-top:5px;">Low</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Equipment -->
+        <div style="margin-bottom:30px;">
+            <label style="display:block; font-weight:600; margin-bottom:10px; color:var(--text-main);">Equipment Access?</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+                <button onclick="selectEquipment('none')" id="btn-eq-none" class="checkin-btn" style="padding:10px; border:2px solid #e2e8f0; border-radius:12px; background:white; cursor:pointer;">
+                    <span style="font-size:1.2rem;">🚫</span><br><span style="font-size:0.8rem; font-weight:600;">None</span>
+                </button>
+                <button onclick="selectEquipment('dumbbells')" id="btn-eq-dumbbells" class="checkin-btn" style="padding:10px; border:2px solid #e2e8f0; border-radius:12px; background:white; cursor:pointer;">
+                    <span style="font-size:1.2rem;">💪</span><br><span style="font-size:0.8rem; font-weight:600;">Dumbbells</span>
+                </button>
+                <button onclick="selectEquipment('gym')" id="btn-eq-gym" class="checkin-btn" style="padding:10px; border:2px solid #e2e8f0; border-radius:12px; background:white; cursor:pointer;">
+                    <span style="font-size:1.2rem;">🏋️‍♀️</span><br><span style="font-size:0.8rem; font-weight:600;">Gym</span>
+                </button>
+            </div>
+        </div>
+
+        <button onclick="submitCheckIn()" style="width:100%; background:var(--primary); color:white; border:none; padding:16px; border-radius:50px; font-weight:700; font-size:1rem; cursor:pointer;">Build My Workout</button>
+    </div>
+</div>
+
+<!-- Onboarding Modal -->
+<div class="onboarding-overlay" id="onboarding-overlay">
+    <div class="onboarding-modal">
+        <div class="onboarding-header">
+            <h2 style="color: white; font-size: 1.8rem; margin-bottom: 10px;">Welcome to Your Switch</h2>
+            <p style="margin: 0; opacity: 0.9;">Your 28-day cortisol recovery starts now.</p>
+        </div>
+        <div class="onboarding-content">
+            <div class="onboarding-step">
+                <div class="step-icon">💬</div>
+                <div class="step-text">
+                    <h4>Community Support</h4>
+                    <p>Chat with your group daily to share wins and stay motivated.</p>
+                </div>
+            </div>
+            <div class="onboarding-step">
+                <div class="step-icon">👩‍🏫</div>
+                <div class="step-text">
+                    <h4>Message Your Coach</h4>
+                    <p>Get direct guidance and answers whenever you need help.</p>
+                </div>
+            </div>
+            <div class="onboarding-step">
+                <div class="step-icon">📸</div>
+                <div class="step-text">
+                    <h4>Track Your Meals</h4>
+                    <p>Snap and upload photos of your meals each day to stay accountable.</p>
+                </div>
+            </div>
+            <div class="onboarding-step">
+                <div class="step-icon">📝</div>
+                <div class="step-text">
+                    <h4>Daily Reflections</h4>
+                    <p>Fill out your reflections to process thoughts and feelings.</p>
+                </div>
+            </div>
+            <div class="onboarding-step">
+                <div class="step-icon">🛒</div>
+                <div class="step-text">
+                    <h4>Shopping List</h4>
+                    <p>Access your weekly <strong>Shopping List</strong> in the Meal Plan tab.</p>
+                </div>
+            </div>
+            <button class="onboarding-btn" onclick="completeOnboarding()">Let's Get Started</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize Onboarding
+    function initOnboarding() {
+        // Check if user has seen onboarding
+        const hasSeenOnboarding = localStorage.getItem('plantbased_onboarding_complete');
+        
+        if (!hasSeenOnboarding) {
+            // Show modal with a slight delay for effect
+            setTimeout(() => {
+                const overlay = document.getElementById('onboarding-overlay');
+                overlay.style.display = 'flex';
+                // Trigger reflow
+                overlay.offsetHeight;
+                overlay.classList.add('active');
+            }, 1000);
+        }
+    }
+
+    function completeOnboarding() {
+        const overlay = document.getElementById('onboarding-overlay');
+        overlay.classList.remove('active');
+        
+        // Wait for animation
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            // Set flag in localStorage
+            localStorage.setItem('plantbased_onboarding_complete', 'true');
+        }, 400);
+    }
+    
+    // Run initialization
+    if(document.readyState === 'complete') {
+        loadCommunityFeed();
+        initOnboarding();
+    } else {
+        window.addEventListener('load', () => {
+            loadCommunityFeed();
+            initOnboarding();
+        });
+    }
+</script>
+
+<script>
+// --- AI COACH DRAFT MODE LOGIC & AUTHENTICATION ---
+// Overrides and Extensions for the Coach Command Center
+
+let isCoachMode = false;
+
+// 1. AUTH & ROUTING
+function checkUserRole() {
+    // Determine Identity
+    let email = sessionStorage.getItem('userEmail') || "shannonrhysbirch@gmail.com";
+    
+    // Check for Coach Domain
+    if (email.includes('plantbased-balance.org')) {
+        console.log("Coach Identity Detected: " + email);
+        if(!isCoachMode) toggleCoachMode(true);
+    } else {
+        console.log("User Identity Detected: " + email);
+        if(isCoachMode) toggleCoachMode(false);
+    }
+    
+    // Check for Draft Persistence
+    restoreDraft();
+}
+
+// Run on load
+window.addEventListener('DOMContentLoaded', () => { 
+    setTimeout(checkUserRole, 500); 
+});
+
+// 2. TOGGLE LOGIC
+const originalToggleCoachMode = window.toggleCoachMode || function(){};
+window.toggleCoachMode = function(show) {
+    isCoachMode = show;
+    // Call original logic if it exists (it toggles the UI)
+    if(typeof originalToggleCoachMode === 'function') originalToggleCoachMode(show);
+    
+    // UI Feedback or Reset
+    const dash = document.getElementById('view-coach-dashboard');
+    if (show) {
+        if(dash) dash.style.display = 'block';
+        if(typeof initCoachDashboard === 'function') initCoachDashboard();
+        
+        // Remove return button if exists
+        const returnBtn = document.getElementById('return-to-coach-btn');
+        if(returnBtn) returnBtn.remove();
+        
+        // Restore Drafts if any
+        restoreDraft();
+        
+    } else {
+        if(dash) dash.style.display = 'none';
+    }
+};
+
+// 3. AI INTERCEPTION
+const originalTriggerCoachResponse = window.triggerCoachResponse;
+
+window.triggerCoachResponse = function(userMsg) {
+    // If NOT in coach mode, standard behavior?
+    // User requested: "I don't want my coach AI to respond automatically" (implied context: Coach is watching).
+    
+    // If we are strictly in User Mode (shannonrhysbirch@gmail.com), the AI *should* respond?
+    // "shannonrhysbirch@gmail.com a user profile" -> User expects standard automated coaching.
+    // "shannon@plantbased-balance.org a coaching profile" -> Coach expects to APPROVE.
+    
+    // So:
+    // If isCoachMode (Coach Profile) -> Draft.
+    // If !isCoachMode (User Profile) -> Auto Reply.
+    
+    // Re-implement Fetch Logic
+    const container = document.getElementById('chat-messages-container');
+    const now = Date.now();
+    const lastTime = parseInt(localStorage.getItem('lastChatTime') || 0);
+    const diffMins = (now - lastTime) / (1000 * 60);
+    const isContinuing = lastTime > 0 && diffMins < 60;
+
+    let context = {};
+    if(typeof gatherUserContext === 'function') context = gatherUserContext();
+    
+    let history = [];
+    try {
+        const rawHistory = JSON.parse(localStorage.getItem('shannon_chat_history') || '[]');
+        history = rawHistory.slice(-100).map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'model', 
+            content: msg.text,
+            time: new Date(msg.timestamp).toLocaleString()
+        }));
+    } catch (e) { console.error(e); }
+
+    localStorage.setItem('lastChatTime', now);
+    
+    if(typeof showTypingIndicator === 'function') showTypingIndicator();
+
+    fetch('/.netlify/functions/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            mode: 'coach',
+            message: userMsg,
+            contextData: context,
+            chatHistory: history,
+            conversationStatus: isContinuing ? 'continuing' : 'new'
+        })
+    })
+    .then(res => {
+        if(!res.ok) throw new Error('AI Connection Issue');
+        return res.json();
+    })
+    .then(data => {
+        if(typeof removeTypingIndicator === 'function') removeTypingIndicator();
+        
+        if(data.reply) {
+            // DECISION POINT
+            if (isCoachMode) {
+                 renderDraftBubble(data.reply);
+                 saveDraft(data.reply); // PERSIST
+            } else {
+                 // Standard User Experience (AI Auto-Reply)
+                 if(typeof appendCoachMessage === 'function') appendCoachMessage(data.reply);
+            }
+        }
+    })
+    .catch(err => {
+        console.error("AI Error:", err);
+        if(typeof removeTypingIndicator === 'function') removeTypingIndicator();
+    });
+};
+
+// 4. DRAFT UI & PERSISTENCE
+function renderDraftBubble(text) {
+    const container = document.getElementById('chat-messages-container');
+    // Prevent duplicates
+    if(document.querySelector('.ai-draft-bubble')) return;
+
+    const draftId = 'draft-' + Date.now();
+    
+    const div = document.createElement('div');
+    div.id = draftId;
+    div.className = 'ai-draft-bubble';
+    div.style.cssText = "display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; max-width: 95%; animation: fadeIn 0.3s ease;";
+    div.innerHTML = `
+        <div style="background: #fff; border: 2px dashed #d4af37; padding: 15px 20px; border-radius: 16px; color: var(--text-main); position:relative; width:100%; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.1);">
+            <div style="font-size:0.7rem; font-weight:700; color:#d4af37; text-transform:uppercase; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                <span>✨ AI Suggested Reply</span>
+                <span style="cursor:pointer; padding:4px;" onclick="discardDraft('${draftId}')">✕</span>
+            </div>
+            
+            <textarea id="text-${draftId}" oninput="saveDraft(this.value)" style="width:100%; min-height:60px; border:none; background:transparent; font-family:'Inter'; font-size:0.95rem; line-height:1.5; resize:none; outline:none; color:#334155;">${text}</textarea>
+            
+            <div style="margin-top:10px; display:flex; justify-content:flex-end; gap:10px;">
+                 <button onclick="discardDraft('${draftId}')" style="background:transparent; color:#94a3b8; border:none; font-size:0.85rem; cursor:pointer;">Discard</button>
+                 <button onclick="approveDraft('${draftId}')" style="background:var(--primary); color:white; border:none; padding:8px 20px; border-radius:20px; font-weight:600; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                    Send Reply ➜
+                 </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    
+    setTimeout(() => {
+        const tx = document.getElementById(`text-${draftId}`);
+        if(tx) tx.style.height = (tx.scrollHeight) + "px";
+    }, 10);
+    
+    saveDraft(text);
+}
+
+function saveDraft(text) {
+    localStorage.setItem('coach_draft_content', text);
+}
+
+function restoreDraft() {
+    // Only restore if we are in coach context or viewing the chat
+    // For simplicity, restore if data exists
+    const text = localStorage.getItem('coach_draft_content');
+    if (text && isCoachMode) {
+        // We delay slightly to ensure chat container is ready
+        setTimeout(() => {
+             const container = document.getElementById('chat-messages-container');
+             if(container && !document.querySelector('.ai-draft-bubble')) {
+                 renderDraftBubble(text);
+             }
+        }, 500);
+    }
+}
+
+window.approveDraft = function(draftId) {
+    const draftEl = document.getElementById(draftId);
+    if(!draftEl) return;
+    
+    const text = document.getElementById(`text-${draftId}`).value;
+    draftEl.remove();
+    
+    if(typeof appendCoachMessage === 'function') appendCoachMessage(text);
+    localStorage.removeItem('coach_draft_content'); // Clear persistence
+};
+
+window.discardDraft = function(draftId) {
+    const draftEl = document.getElementById(draftId);
+    if(draftEl) draftEl.remove();
+    localStorage.removeItem('coach_draft_content'); // Clear persistence
+};
+
+// 5. OPEN AS CLIENT (with Return Ticket)
+window.openAsClient = function() {
+    toggleCoachMode(false);
+    if(typeof switchAppTab === 'function') switchAppTab('dashboard');
+    
+    // Add Return Floating Button
+    const btn = document.createElement('div');
+    btn.id = 'return-to-coach-btn';
+    btn.innerHTML = '👑 Return to Coach View';
+    btn.style.cssText = 'position:fixed; bottom:90px; right:20px; background:#1e293b; color:white; padding:12px 20px; border-radius:50px; font-weight:bold; box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:10000; cursor:pointer; animation:fadeIn 0.5s; font-size:0.9rem;';
+    btn.onclick = function() {
+        toggleCoachMode(true);
+        // It will remove itself in toggleCoachMode
+    };
+    document.body.appendChild(btn);
+};
 </script>
 </body>
 </html>
