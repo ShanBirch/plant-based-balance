@@ -6544,13 +6544,33 @@ function openWorkoutBuilder() {
 
 function filterExerciseLibrary(query) {
     const list = document.getElementById('builder-library-list');
+    if (!list) {
+        console.error("Builder library list element not found!");
+        return;
+    }
     list.innerHTML = '';
     
+    // Safety check for library loading
+    if (typeof EXERCISE_VIDEOS === 'undefined') {
+        list.innerHTML = `
+            <div style="padding:20px; text-align:center; color:red; background:#fee2e2; border-radius:12px;">
+                <strong>Error: Exercise Library Not Loaded</strong><br>
+                <div style="font-size:0.8rem; margin-top:5px;">Please verify 'exercise_videos.js' file exists and is in the same folder.</div>
+            </div>`;
+        return;
+    }
+
     const terms = query.toLowerCase().split(' ');
     let matches = 0;
     const maxItems = 50; // Rendering limit
     
-    const allKeys = Object.keys(EXERCISE_VIDEOS); // Ensure this is available
+    const allKeys = Object.keys(EXERCISE_VIDEOS);
+    
+    // Debug: If empty, show count
+    if (allKeys.length === 0) {
+        list.innerHTML = '<div style="padding:20px; text-align:center;">Library is empty.</div>';
+        return;
+    }
     
     for (let key of allKeys) {
         let match = true;
@@ -6566,8 +6586,8 @@ function filterExerciseLibrary(query) {
             const isSelected = customWorkoutSelection.includes(key);
             
             const div = document.createElement('div');
-            div.className = isSelected ? 'builder-item selected' : 'builder-item';
-            div.style.cssText = `background:white; border:1px solid ${isSelected ? 'var(--primary)' : '#f1f5f9'}; padding:15px; border-radius:16px; display:flex; justify-content:space-between; align-items:center; transition: all 0.2s;`;
+            // Use inline flex to ensure visibility
+            div.style.cssText = `background:white; border:1px solid ${isSelected ? 'var(--primary)' : '#f1f5f9'}; padding:15px; border-radius:16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; min-height:60px;`;
             if(isSelected) div.style.background = '#f0fdf4';
             
             div.innerHTML = `
