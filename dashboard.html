@@ -9427,6 +9427,39 @@ window.openAsClient = function() {
 
 // === COACH & COMMUNITY CHAT FUNCTIONS ===
 
+// Fixed: Submit Message Function
+window.submitCoachMessage = function() {
+    const input = document.getElementById('coach-chat-input');
+    if(!input) return;
+    
+    const text = input.value.trim();
+    if (!text) return;
+    
+    // Display user message
+    const container = document.getElementById('chat-messages-container');
+    if(container) {
+        const msgDiv = document.createElement('div');
+        msgDiv.style.cssText = "display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 20px; align-self: flex-end; max-width: 85%; animation: fadeIn 0.3s ease;";
+        msgDiv.innerHTML = `
+            <div style="background: var(--primary); padding: 15px 20px; border-radius: 16px 0 16px 16px; color: white; box-shadow: 0 4px 10px rgba(4, 106, 56, 0.2);">
+                <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; color: white;">${text}</p>
+            </div>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px; margin-right: 2px;">You • ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+        `;
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // Save history
+    if(typeof saveToHistory === 'function') saveToHistory('user', text);
+    
+    // Clear input
+    input.value = '';
+
+    // Trigger AI
+    if(typeof triggerCoachResponse === 'function') triggerCoachResponse(text);
+};
+
 // Helper to get/save history
 function getChatHistory() {
     return JSON.parse(localStorage.getItem('shannon_chat_history') || '[]');
