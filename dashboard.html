@@ -9287,9 +9287,8 @@ window.triggerCoachResponse = function(userMsg) {
     try {
         const rawHistory = JSON.parse(localStorage.getItem('shannon_chat_history') || '[]');
         history = rawHistory.slice(-100).map(msg => ({
-            role: msg.role === 'user' ? 'user' : 'model', 
-            content: msg.text,
-            time: new Date(msg.timestamp).toLocaleString()
+            sender: msg.role === 'user' ? 'User' : 'Shannon',
+            text: msg.text
         }));
     } catch (e) { console.error(e); }
 
@@ -9485,6 +9484,28 @@ window.loadChatHistory = function() {
         container.appendChild(msgDiv);
     });
     container.scrollTop = container.scrollHeight;
+};
+
+// Fixed: Add missing helper to display AI message
+window.appendCoachMessage = function(text) {
+    const container = document.getElementById('chat-messages-container');
+    if (!container) return;
+
+    // Create message element
+    const msgDiv = document.createElement('div');
+    msgDiv.style.cssText = "display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; max-width: 85%; animation: fadeIn 0.3s ease;";
+    msgDiv.innerHTML = `
+        <div style="background: #f8fafc; padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid #e2e8f0; color: var(--text-main);">
+            <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${text}</p>
+        </div>
+        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px; margin-left: 2px;">Shannon • ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+    `;
+
+    container.appendChild(msgDiv);
+    container.scrollTop = container.scrollHeight;
+
+    // Save to history using 'model' to distinguish from user
+    saveToHistory('model', text);
 };
 
 // Community chat
