@@ -9484,6 +9484,53 @@ window.openAsClient = function() {
 };
 
 // === COACH & COMMUNITY CHAT FUNCTIONS ===
+
+// Helper to get/save history
+function getChatHistory(chatType) {
+    const key = `chat_history_${chatType}`;
+    const history = localStorage.getItem(key);
+    return history ? JSON.parse(history) : [];
+}
+
+function saveToHistory(chatType, sender, text) {
+    const key = `chat_history_${chatType}`;
+    const history = getChatHistory(chatType);
+    history.push({ sender, text, time: new Date().toISOString() });
+    // Keep last 20 messages for context efficiency
+    if (history.length > 20) history.shift();
+    localStorage.setItem(key, JSON.stringify(history));
+}
+
+// Load history on tab switch or load
+window.loadChatHistory = function(chatType) {
+    const container = document.getElementById(chatType === 'coach' ? 'chat-messages' : 'community-messages');
+    if (!container) return;
+    
+    const history = getChatHistory(chatType);
+    if (history.length === 0) return;
+    
+    // Clear initial greeting if history exists
+    container.innerHTML = '';
+    
+    history.forEach(msg => {
+        const isUser = msg.sender === 'User';
+        const msgDiv = document.createElement('div');
+        msgDiv.style.cssText = isUser 
+            ? 'align-self: flex-end; background: var(--primary); color: white; padding: 12px 16px; border-radius: 12px 12px 0 12px; max-width: 85%; margin-bottom: 10px;'
+            : 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px 12px 12px 0; border: 1px solid #e2e8f0; max-width: 85%; margin-bottom: 10px;';
+        
+        const senderName = isUser ? 'You' : (chatType === 'coach' ? 'Shannon' : 'Community AI');
+        const timeStr = new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        msgDiv.innerHTML = `
+            <p style="margin: 0; font-size: 0.95rem; color: ${isUser ? 'white' : '#334155'};">${msg.text}</p>
+            <span style="font-size: 0.75rem; color: ${isUser ? 'rgba(255,255,255,0.7)' : '#94a3b8'}; display: block; margin-top: 5px;">${senderName} • ${timeStr}</span>
+        `;
+        container.appendChild(msgDiv);
+    });
+    container.scrollTop = container.scrollHeight;
+};
+
 async function sendChatMessage() {
     const input = document.getElementById('chat-input');
     const container = document.getElementById('chat-messages');
@@ -9491,9 +9538,9 @@ async function sendChatMessage() {
     
     if (!message) return;
     
-    // Add user message
+    // Add user message to UI
     const userMsg = document.createElement('div');
-    userMsg.style.cssText = 'align-self: flex-end; background: var(--primary); color: white; padding: 12px 16px; border-radius: 12px 12px 0 12px; max-width: 85%;';
+    userMsg.style.cssText = 'align-self: flex-end; background: var(--primary); color: white; padding: 12px 16px; border-radius: 12px 12px 0 12px; max-width: 85%; margin-bottom: 10px;';
     userMsg.innerHTML = `
         <p style="margin: 0; font-size: 0.95rem;">${message}</p>
         <span style="font-size: 0.75rem; opacity: 0.8; display: block; margin-top: 5px;">You • Just now</span>
@@ -9502,47 +9549,71 @@ async function sendChatMessage() {
     input.value = '';
     container.scrollTop = container.scrollHeight;
     
+    // Save to history
+    saveToHistory('coach', 'User', message);
+    
+    // Get context for AI
+    const chatHistory = getChatHistory('coach');
+    const userProfile = {
+        name: document.querySelector('#profile-name')?.innerText || 'Client',
+        email: localStorage.getItem('userEmail') || '',
+        currentPhase: document.querySelector('.phase-badge')?.innerText || 'Week 1',
+        protocol: localStorage.getItem('selectedProtocol') || 'Perimenopause Reset'
+    };
+    
     // Show typing indicator
     const typing = document.createElement('div');
     typing.id = 'typing-indicator';
-    typing.style.cssText = 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0;';
+    typing.style.cssText = 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 10px;';
     typing.innerHTML = '<p style="margin: 0; color: #94a3b8;">Shannon is typing...</p>';
     container.appendChild(typing);
     container.scrollTop = container.scrollHeight;
     
     try {
-        // Call AI
         const response = await fetch('/.netlify/functions/ai-chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, chatType: 'coach' })
+            body: JSON.stringify({ 
+                message, 
+                chatType: 'coach',
+                chatHistory: chatHistory.slice(-10), // Send last 10 messages for context
+                userProfile: userProfile
+            })
         });
         
         const data = await response.json();
         typing.remove();
         
-        // Shannon often sends 2-3 messages, so split by newlines
-        const replies = data.reply.split('\n').filter(r => r.trim());
+        if (data.error) throw new Error(data.error);
+
+        // Split into multiple messages by double newline as requested in backend prompt
+        const replies = data.reply.split(/\n\n+/).filter(r => r.trim());
         
         replies.forEach((reply, i) => {
+            // Variable delay between messages for "typing" feel
+            const delay = 800 + (Math.random() * 1200) + (i * 500);
+            
             setTimeout(() => {
                 const aiMsg = document.createElement('div');
-                aiMsg.style.cssText = 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px 12px 12px 0; border: 1px solid #e2e8f0; max-width: 85%;';
+                aiMsg.style.cssText = 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px 12px 12px 0; border: 1px solid #e2e8f0; max-width: 85%; margin-bottom: 10px;';
                 aiMsg.innerHTML = `
-                    <p style="margin: 0; color: #334155; font-size: 0.95rem;">${reply}</p>
+                    <p style="margin: 0; color: #334155; font-size: 0.95rem;">${reply.trim()}</p>
                     <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 5px;">Shannon • Just now</span>
                 `;
                 container.appendChild(aiMsg);
                 container.scrollTop = container.scrollHeight;
-            }, i * 800); // Delay between messages for natural feel
+                
+                // Save AI reply to history
+                saveToHistory('coach', 'Shannon', reply.trim());
+            }, delay);
         });
         
     } catch (error) {
-        typing.remove();
+        if (typing) typing.remove();
         console.error('Chat error:', error);
         const errorMsg = document.createElement('div');
-        errorMsg.style.cssText = 'align-self: flex-start; background: #fef2f2; padding: 12px 16px; border-radius: 12px; border: 1px solid #fecaca;';
-        errorMsg.innerHTML = '<p style="margin: 0; color: #b91c1c; font-size: 0.9rem;">Oops! Connection issue. Try again?</p>';
+        errorMsg.style.cssText = 'align-self: flex-start; background: #fee2e2; padding: 10px; border-radius: 8px; font-size: 0.85rem; color: #b91c1c;';
+        errorMsg.innerText = "Connection flakey... try sending again mate.";
         container.appendChild(errorMsg);
     }
 }
@@ -9592,6 +9663,10 @@ async function sendCommunityMessage() {
 
 // Allow Enter key to send
 document.addEventListener('DOMContentLoaded', () => {
+    // Initial history load
+    loadChatHistory('coach');
+    loadChatHistory('community');
+
     const chatInput = document.getElementById('chat-input');
     if (chatInput) {
         chatInput.addEventListener('keypress', (e) => {
