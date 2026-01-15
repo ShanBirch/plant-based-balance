@@ -8213,7 +8213,7 @@ function triggerCoachResponse(userMsg) {
     })
     .then(data => {
         removeTypingIndicator();
-        if(data.reply) appendCoachMessage(data.reply);
+        if(data.reply) appendCoachReply(data.reply);
     })
     .catch(err => {
         // Silent fail as requested by user - do not show error message to UI
@@ -8244,13 +8244,13 @@ function removeTypingIndicator() {
     if(el) el.remove();
 }
 
-function appendCoachMessage(msg) {
+function appendCoachReply(msg) {
 
-    // Save to History (store as single block for history simplicity, or split? Let's act like user sent one block)
+    // Save to History (store as single block for history simplicity)
     saveChatMessage('coach', msg);
 
-    // PARSE FOR MULTI-BUBBLE (|||)
-    const bubbles = msg.split('|||').map(t => t.trim()).filter(t => t);
+    // PARSE FOR MULTI-BUBBLE (\n\n)
+    const bubbles = msg.split('\n\n').map(t => t.trim()).filter(t => t);
     
     // Render first bubble immediately
     if (bubbles.length > 0) {
@@ -8522,13 +8522,13 @@ function triggerWelcomeSequence() {
     let delay = 1000; // Initial delay before first message
     welcomeMessages.forEach((msg, index) => {
         setTimeout(() => {
-            appendCoachMessage(msg);
+            appendCommunityCoachReply(msg);
         }, delay);
         delay += 3000 + (msg.length * 20); // Stagger messages based on length
     });
 }
 
-function appendCoachMessage(messageText) {
+function appendCommunityCoachReply(messageText) {
     const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
     const coach = { id: 'coach', name: 'Coach Sarah', bio: 'Your personal coach', color: '#8B5CF6' }; // Define coach here
 
