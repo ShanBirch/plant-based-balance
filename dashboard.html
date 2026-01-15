@@ -6568,31 +6568,7 @@
 
 
 
-<!-- WORKOUT BUILDER VIEW -->
-<div id="view-workout-builder" class="app-view" style="display:none; padding-bottom: 100px;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
-        <div style="font-weight: 700; font-size: 1.2rem;">Build Workout</div>
-        <div onclick="switchAppTab('movement-tab')" style="cursor:pointer; color:var(--text-muted); font-weight:600;">Close</div>
-    </div>
 
-    <div style="padding: 20px;">
-        <div style="position:relative; margin-bottom: 20px;">
-            <input type="text" id="builder-search" placeholder="Search 1800+ exercises..." onkeyup="filterExerciseLibrary(this.value)" 
-                   style="width:100%; padding:15px 15px 15px 45px; border-radius:16px; border:1px solid #e2e8f0; font-size:1rem; background: #f8fafc;">
-            <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#94a3b8; position:absolute; left:15px; top:50%; transform:translateY(-50%);"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        </div>
-        
-        <div id="builder-library-list" style="display:flex; flex-direction:column; gap:10px;">
-            <!-- Dynamic Content -->
-        </div>
-    </div>
-    
-    <div id="builder-floating-action" style="position:fixed; bottom:20px; left:0; width:100%; padding:20px; display:none; z-index: 101;">
-        <button onclick="startCustomBuilderWorkout()" style="width:100%; background:var(--primary); color:white; padding:18px; border-radius:50px; font-weight:800; border:none; box-shadow:0 10px 25px rgba(4,106,56,0.3); font-size: 1.1rem;">
-            START SESSION (<span id="builder-count">0</span>)
-        </button>
-    </div>
-</div>
 
 <script>
 let customWorkoutSelection = [];
@@ -6986,6 +6962,7 @@ function closeVideoModal() {
     }
 }
 </script>
+
 
 <!-- WORKOUT SUCCESS VIEW -->
 <div id="view-workout-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 2000; background: var(--primary); color: white; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;">
@@ -8122,14 +8099,27 @@ function startActiveWorkout(id) {
 
 function getPreviousStats(name, set) {
     const history = JSON.parse(localStorage.getItem('workout_history') || '[]');
-    for (let i = history.length - 1; i >= 0; i--) {
-        const h = history[i];
-        if (h.exercise === name && h.set === set) {
-            if (h.kg && h.kg !== '0') return `${h.kg}kg x ${h.reps}`;
-            return `${h.reps}`;
+    // Filter history for this specific exercise
+    const exerciseHistory = history.filter(h => h.exercise === name);
+    
+    // If no history at all, return 'New'
+    if (exerciseHistory.length === 0) return 'New';
+
+    // Find the entry for this specific set number in the MOST RECENT session
+    // We assume history is chronological. We iterate backwards.
+    // We need to group by session (date) effectively, or just look for the last occurrence of this set?
+    // Implementation choice: Look for the last object matching exercise + set.
+    // NOTE: This assumes one entry per set per session.
+    
+    for (let i = exerciseHistory.length - 1; i >= 0; i--) {
+        const h = exerciseHistory[i];
+        if (h.set == set) { // Use loose equality for '1' vs 1
+             if (h.kg && h.kg !== '0' && h.kg !== '') return `${h.kg}kg x ${h.reps}`;
+             return `${h.reps}`;
         }
     }
-    return '';
+    
+    return '-'; 
 }
 
 function getSetRowHtml(exName, setNum, isTimeBased) {
@@ -8149,12 +8139,37 @@ function getSetRowHtml(exName, setNum, isTimeBased) {
 }
 
 function addWorkoutSet(btn, exName, isTimeBased) {
-    const card = btn.closest('div[style*="background:white"]');
+    // Navigate up to the card container
+    // Structure: Button -> Div -> Div (padding) -> Card
+    const card = btn.closest('.card') || btn.parentElement.parentElement.parentElement;
+    
+    // Find the sets container within this card
     const container = card.querySelector('.sets-list-container');
+    
+    if (!container) {
+        console.error("Could not find .sets-list-container");
+        return;
+    }
+
     const setNum = container.children.length + 1;
+    
+    // Create new div wrapper (since getSetRowHtml returns a string)
     const div = document.createElement('div');
     div.innerHTML = getSetRowHtml(exName, setNum, isTimeBased).trim();
-    container.appendChild(div.firstElementChild);
+    
+    // Optional: Add simple animation
+    const newRow = div.firstElementChild;
+    newRow.style.opacity = '0';
+    newRow.style.transform = 'translateY(-10px)';
+    newRow.style.transition = 'all 0.3s ease';
+    
+    container.appendChild(newRow);
+    
+    // Trigger reflow for animation
+    requestAnimationFrame(() => {
+        newRow.style.opacity = '1';
+        newRow.style.transform = 'translateY(0)';
+    });
 }
 
 let workoutTimerInterval;
@@ -9644,6 +9659,31 @@ document.addEventListener('DOMContentLoaded', () => {
 // Immediate
 updateCoachUI();
 </script>
+<!-- WORKOUT BUILDER VIEW -->
+<div id="view-workout-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:2000; overflow-y:auto; padding-bottom: 100px;">
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-weight: 700; font-size: 1.2rem;">Build Workout</div>
+        <div onclick="switchAppTab('movement-tab')" style="cursor:pointer; color:var(--text-muted); font-weight:600;">Close</div>
+    </div>
+
+    <div style="padding: 20px;">
+        <div style="position:relative; margin-bottom: 20px;">
+            <input type="text" id="builder-search" placeholder="Search 1800+ exercises..." onkeyup="filterExerciseLibrary(this.value)" 
+                   style="width:100%; padding:15px 15px 15px 45px; border-radius:16px; border:1px solid #e2e8f0; font-size:1rem; background: #f8fafc;">
+            <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#94a3b8; position:absolute; left:15px; top:50%; transform:translateY(-50%);"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        </div>
+        
+        <div id="builder-library-list" style="display:flex; flex-direction:column; gap:10px;">
+            <!-- Dynamic Content -->
+        </div>
+    </div>
+    
+    <div id="builder-floating-action" style="position:fixed; bottom:20px; left:0; width:100%; padding:20px; display:none; z-index: 101;">
+        <button onclick="startCustomBuilderWorkout()" style="width:100%; background:var(--primary); color:white; padding:18px; border-radius:50px; font-weight:800; border:none; box-shadow:0 10px 25px rgba(4,106,56,0.3); font-size: 1.1rem;">
+            START SESSION (<span id="builder-count">0</span>)
+        </button>
+    </div>
+</div>
 </body>
 </html>
 
