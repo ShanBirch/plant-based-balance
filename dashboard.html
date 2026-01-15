@@ -2372,8 +2372,8 @@
                 <div id="chat-messages" class="chat-history-container" style="flex: 1; overflow-y: auto; padding: 20px; background: #f8fafc; display: flex; flex-direction: column; gap: 15px;">
                     <!-- Messages -->
                     <div style="align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px 12px 12px 0; border: 1px solid #e2e8f0; max-width: 85%;">
-                        <p style="margin: 0; color: #334155; font-size: 0.95rem;">Hello! I'm your specific reset coach. Leave a message here about your progress or any questions. I'll review it and get back to you with guidance!</p>
-                        <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 5px;">Coach • Just now</span>
+                        <p style="margin: 0; color: #334155; font-size: 0.95rem;">Hey there! I'm Shannon, your reset coach. Drop any questions here and I'll get back to you straight away! 🤙</p>
+                        <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 5px;">Shannon • Just now</span>
                     </div>
                 </div>
                 <div style="padding: 15px; background: white; border-top: 1px solid #e2e8f0;">
@@ -2381,7 +2381,7 @@
                         <input type="text" id="chat-input" placeholder="Ask a question..." style="flex: 1; padding: 12px; border: 1px solid #cbd5e0; border-radius: 25px; outline: none;">
                         <button onclick="sendChatMessage()" style="background: var(--primary); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">➤</button>
                     </div>
-                    <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 8px;">Artificial Intelligence response may take up to 12 hours for review.</p>
+                    <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 8px;">💬 Instant AI Response</p>
                 </div>
             </div>
         </div>
@@ -9482,6 +9482,130 @@ window.openAsClient = function() {
     };
     document.body.appendChild(btn);
 };
+
+// === COACH & COMMUNITY CHAT FUNCTIONS ===
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const container = document.getElementById('chat-messages');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Add user message
+    const userMsg = document.createElement('div');
+    userMsg.style.cssText = 'align-self: flex-end; background: var(--primary); color: white; padding: 12px 16px; border-radius: 12px 12px 0 12px; max-width: 85%;';
+    userMsg.innerHTML = `
+        <p style="margin: 0; font-size: 0.95rem;">${message}</p>
+        <span style="font-size: 0.75rem; opacity: 0.8; display: block; margin-top: 5px;">You • Just now</span>
+    `;
+    container.appendChild(userMsg);
+    input.value = '';
+    container.scrollTop = container.scrollHeight;
+    
+    // Show typing indicator
+    const typing = document.createElement('div');
+    typing.id = 'typing-indicator';
+    typing.style.cssText = 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0;';
+    typing.innerHTML = '<p style="margin: 0; color: #94a3b8;">Shannon is typing...</p>';
+    container.appendChild(typing);
+    container.scrollTop = container.scrollHeight;
+    
+    try {
+        // Call AI
+        const response = await fetch('/.netlify/functions/ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message, chatType: 'coach' })
+        });
+        
+        const data = await response.json();
+        typing.remove();
+        
+        // Shannon often sends 2-3 messages, so split by newlines
+        const replies = data.reply.split('\n').filter(r => r.trim());
+        
+        replies.forEach((reply, i) => {
+            setTimeout(() => {
+                const aiMsg = document.createElement('div');
+                aiMsg.style.cssText = 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px 12px 12px 0; border: 1px solid #e2e8f0; max-width: 85%;';
+                aiMsg.innerHTML = `
+                    <p style="margin: 0; color: #334155; font-size: 0.95rem;">${reply}</p>
+                    <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 5px;">Shannon • Just now</span>
+                `;
+                container.appendChild(aiMsg);
+                container.scrollTop = container.scrollHeight;
+            }, i * 800); // Delay between messages for natural feel
+        });
+        
+    } catch (error) {
+        typing.remove();
+        console.error('Chat error:', error);
+        const errorMsg = document.createElement('div');
+        errorMsg.style.cssText = 'align-self: flex-start; background: #fef2f2; padding: 12px 16px; border-radius: 12px; border: 1px solid #fecaca;';
+        errorMsg.innerHTML = '<p style="margin: 0; color: #b91c1c; font-size: 0.9rem;">Oops! Connection issue. Try again?</p>';
+        container.appendChild(errorMsg);
+    }
+}
+
+// Community chat (similar but different chatType)
+async function sendCommunityMessage() {
+    const input = document.getElementById('community-input');
+    const container = document.getElementById('community-messages');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    const userMsg = document.createElement('div');
+    userMsg.style.cssText = 'align-self: flex-end; background: var(--secondary); color: white; padding: 12px 16px; border-radius: 12px 12px 0 12px; max-width: 85%;';
+    userMsg.innerHTML = `<p style="margin: 0; font-size: 0.95rem;">${message}</p>`;
+    container.appendChild(userMsg);
+    input.value = '';
+    container.scrollTop = container.scrollHeight;
+    
+    const typing = document.createElement('div');
+    typing.id = 'community-typing';
+    typing.style.cssText = 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0;';
+    typing.innerHTML = '<p style="margin: 0; color: #94a3b8;">Community AI is typing...</p>';
+    container.appendChild(typing);
+    
+    try {
+        const response = await fetch('/.netlify/functions/ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message, chatType: 'community' })
+        });
+        
+        const data = await response.json();
+        typing.remove();
+        
+        const aiMsg = document.createElement('div');
+        aiMsg.style.cssText = 'align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px; border: 1px solid #e2e8f0; max-width: 85%;';
+        aiMsg.innerHTML = `<p style="margin: 0; color: #334155; font-size: 0.95rem;">${data.reply}</p>`;
+        container.appendChild(aiMsg);
+        container.scrollTop = container.scrollHeight;
+        
+    } catch (error) {
+        typing.remove();
+        console.error('Community chat error:', error);
+    }
+}
+
+// Allow Enter key to send
+document.addEventListener('DOMContentLoaded', () => {
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChatMessage();
+        });
+    }
+    
+    const communityInput = document.getElementById('community-input');
+    if (communityInput) {
+        communityInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendCommunityMessage();
+        });
+    }
+});
 </script>
 </body>
 </html>
