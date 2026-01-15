@@ -9358,28 +9358,130 @@ window.triggerCoachResponse = function(userMsg) {
         }, 1000);
         return;
     }
-    fetch('/.netlify/functions/ai-chat', {
+// === AI API HELPER ===
+function getGoogleAPIKey() {
+    let key = localStorage.getItem('google_api_key');
+    if (!key) {
+        key = prompt("Please enter your Google Gemini API Key to enable the AI Coach:");
+        if (key) {
+            localStorage.setItem('google_api_key', key.trim());
+        }
+    }
+    return key;
+}
 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            mode: 'coach',
-            message: userMsg,
-            contextData: context,
-            chatHistory: history,
-            conversationStatus: isContinuing ? 'continuing' : 'new'
-        })
-    })
-    .then(res => {
-        if(!res.ok) throw new Error('AI Connection Issue');
-        return res.json();
-    })
-    .then(data => {
-        if(typeof removeTypingIndicator === 'function') removeTypingIndicator();
+// === COACH CHAT (Client-Side Gemini) ===
+window.triggerCoachResponse = async function(userMsg) {
+    const apiKey = getGoogleAPIKey();
+    if (!apiKey) {
+        appendCoachMessage("I need an API key to think! Please refresh and enter one.");
+        return;
+    }
+
+    // 1. UI: Typing Indicator
+    const container = document.getElementById('chat-messages-container');
+    const typingDiv = document.createElement('div');
+    typingDiv.id = 'coach-typing';
+    typingDiv.style.cssText = "display: flex; align-items: center; margin-bottom: 20px; margin-left:10px;";
+    typingDiv.innerHTML = `
+        <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both;"></div>
+        <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; margin: 0 4px; animation: bounce 1.4s infinite ease-in-out both 0.16s;"></div>
+        <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both 0.32s;"></div>
+    `;
+    if(container) {
+        container.appendChild(typingDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    const removeTypingIndicator = () => {
+        const el = document.getElementById('coach-typing');
+        if(el) el.remove();
+    };
+
+    // 2. Gather Context
+    let context = {};
+    if(typeof gatherContext === 'function') context = gatherContext();
+    const history = getChatHistory().map(m => ({ 
+        role: m.role === 'user' ? 'user' : 'model', 
+        parts: [{ text: m.text }] 
+    }));
+    
+    // Limit history to last 10 messages for prompt efficiency
+    const recentHistory = history.slice(-10);
+
+    // 3. Build System Persona
+    const systemInstruction = `You are Shannon, a warm, empathetic, and highly knowledgeable plant-based nutrition coach & exercise scientist.
+      You are a 34-year-old Male.
+      You are coaching a client through a hormone-balancing reset program (Plant-Based Balance).
+      
+      YOUR BACKSTORY (Use these details to build rapport where natural):
+      - Personal: 34 years old, Male.
+      - Current Location: Currently living in a caravan out the back of Dad's place in Lowood (Ipswich area). Planning to move back to the Gold Coast (Tugun) in March.
+      - Origin: From the Gold Coast, Australia. Grew up in Tamborine Mountain.
+      - Career: Owned a gym in Melbourne for 5 years. Worked as a PT for 15 years.
+      - Education: Bachelor of Exercise Science, Masters in Nutrition. Specialized in Female Hormone Regulation.
+      - Past Life: Was a Youth Pastor from age 16-20.
+      - Personal Journey: Was overweight growing up (lost weight at 17-18, heaped it back on, then got into fitness). Vegetarian whole life (tried veganism, went back to vegetarian).
+      - Pets: You have a rabbit named "Sunshine" (5 years old). You previously had a rabbit named "Coco" (named your gym after him).
+      - Interests: You LOVE science, neuroscience, physics, and biology. HUGE fan of the "Predictive Brain" principle (Lisa Feldman Barrett) and the "Free Energy Principle" (Karl Friston). You read scientific papers for fun.
+      
+      Client Context:
+      - Name: ${context.name || "Client"}
+      - Profile: ${context.profile || "General"}
+      - Sleep: ${context.sleep || "Unknown"}
+      - Energy: ${context.energy || "Unknown"}
+      
+      CURRENT SITUATION:
+      - Current Date/Time: ${new Date().toLocaleString()}
+      
+      RESPONSE FORMAT (CRITICAL - MULTI-MESSAGE):
+      - Humans often send multiple short texts instead of one long block.
+      - TO DO THIS: Separate your thoughts with the delimiter "|||".
+      - EXAMPLE: "Hey mate ||| How did the workout go? ||| keen to hear about it"
+      - Use this freely to control the pacing. If you are explaining something, break it up.
+      
+      Coaching Guidelines:
+      - TONE: Super chill, laid back, Australian casual. "Hey mate", "No worries", "Sweet".
+      - STYLE: Write like you are texting a mate. Short, punchy, relaxed grammar.
+      - Don't use perfect capitalization if it feels too formal. 
+      - Be encouraging but keep it grounded. Use "we" language.
+      - Anti-Robot: NEVER say "I understand" or "As an AI". Just talk.
+      `;
+
+    // 4. Construct Payload
+    // Text-only model often performs better with system prompt prepended to user message or history
+    let fullPrompt = systemInstruction + "\n\nRECENT CHAT HISTORY:\n";
+    recentHistory.forEach(h => {
+        fullPrompt += `${h.role === 'user' ? 'User' : 'You'}: ${h.parts[0].text}\n`;
+    });
+    fullPrompt += `\nUser Message: ${userMsg}\n\nResponse:`;
+
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: fullPrompt }]
+                }]
+            })
+        });
+
+        const data = await response.json();
+        removeTypingIndicator();
+
+        if (!response.ok) {
+            console.error("Gemini API Error", data);
+            throw new Error(data.error?.message || "API Error");
+        }
+
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
         
-        if(data.reply && typeof appendCoachMessage === 'function') {
-            // Support for multi-message responses separated by '|||'
-            const parts = data.reply.split('|||').map(s => s.trim()).filter(s => s);
+        if (reply) {
+             // Support for multi-message responses separated by '|||'
+            const parts = reply.split('|||').map(s => s.trim()).filter(s => s);
             
             if (parts.length === 1) {
                 appendCoachMessage(parts[0]);
@@ -9395,14 +9497,64 @@ window.triggerCoachResponse = function(userMsg) {
                 });
             }
         }
-    })
-    .catch(err => {
-        console.error("AI Error:", err);
-        if(typeof removeTypingIndicator === 'function') removeTypingIndicator();
-    });
+    } catch (err) {
+        console.error("AI Request Failed", err);
+        removeTypingIndicator(); // Ensure it's removed
+        appendCoachMessage("Thinking... (Check console for API errors if this persists)");
+    }
 };
 
+// === COMMUNITY AI (Client-Side Gemini) ===
+async function triggerAICommunityResponse(userMsg) {
+    const apiKey = getGoogleAPIKey();
+    if(!apiKey) return; 
 
+    // Simple persona for community
+    const systemPrompt = `You are a member of a plant-based health community. 
+    You are supportive, enthusiastic, and brief.
+    Replying to: "${userMsg}"
+    Keep it under 20 words. Use emojis.`;
+
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    setTimeout(async () => {
+        try {
+            const response = await fetch(apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: systemPrompt }] }]
+                })
+            });
+            
+            const data = await response.json();
+            const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (reply) {
+                const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+                // Pick a random persona
+                const personas = [
+                    { name: 'Sarah J.', id: 'p1', avatar: 'SJ' },
+                    { name: 'Mike T.', id: 'p2', avatar: 'MT' },
+                    { name: 'Emma W.', id: 'p3', avatar: 'EW' }
+                ];
+                const persona = personas[Math.floor(Math.random() * personas.length)];
+                
+                messages.push({ 
+                    authorId: persona.id, 
+                    authorName: persona.name,
+                    authorAvatar: persona.avatar,
+                    text: reply, 
+                    timestamp: Date.now() 
+                });
+                localStorage.setItem('community_chat_history', JSON.stringify(messages));
+                if(typeof renderChat === 'function') renderChat(messages);
+            }
+        } catch (e) {
+            console.log("Community AI skipped", e);
+        }
+    }, 4000); 
+}
 
 // 5. OPEN AS CLIENT (with Return Ticket)
 window.openAsClient = function() {
@@ -9416,7 +9568,6 @@ window.openAsClient = function() {
     btn.style.cssText = 'position:fixed; bottom:90px; right:20px; background:#1e293b; color:white; padding:12px 20px; border-radius:50px; font-weight:bold; box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:10000; cursor:pointer; animation:fadeIn 0.5s; font-size:0.9rem;';
     btn.onclick = function() {
         toggleCoachMode(true);
-        // It will remove itself in toggleCoachMode
     };
     document.body.appendChild(btn);
 };
