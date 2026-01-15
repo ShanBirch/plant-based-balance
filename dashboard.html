@@ -6479,7 +6479,12 @@
         <!-- Dynamic Hero Container -->
         <div id="movement-hero-container"></div>
 
-        <h3 style="margin: 0 0 20px 0;">Other Options</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+    <h3 style="margin:0;">Other Options</h3>
+    <button onclick="openWorkoutBuilder()" style="background:var(--primary); color:white; border:none; padding:8px 16px; border-radius:20px; font-weight:700; font-size:0.8rem; display:flex; align-items:center; gap:5px;">
+        <span>+</span> Build Custom
+    </button>
+</div>
 
         <!-- Dynamic Grid Container -->
         <div id="movement-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
@@ -6499,39 +6504,263 @@
     </div>
 </div>
 
-<!-- ACTIVE WORKOUT PLAYER VIEW -->
-<div id="view-active-workout" class="app-view" style="display:none; height: 100vh; background: white; z-index: 2000; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
-    
-    <!-- Video Header Sticky -->
-    <!-- Top Nav Bar -->
-    <div style="position: sticky; top: 0; z-index: 100; background: white; border-bottom: 1px solid #f1f5f9; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;">
-        <div onclick="quitWorkout()" style="width: 40px; height: 40px; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--text-main);"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-        </div>
-        <div style="font-weight: 700; color: var(--text-main);">Active Workout</div>
-        <div style="width: 40px;"></div> <!-- Spacer for centering -->
+<!-- WORKOUT BUILDER VIEW -->
+<div id="view-workout-builder" class="app-view" style="display:none; padding-bottom: 100px;">
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-weight: 700; font-size: 1.2rem;">Build Workout</div>
+        <div onclick="switchAppTab('movement-tab')" style="cursor:pointer; color:var(--text-muted); font-weight:600;">Close</div>
     </div>
 
-    <div style="padding: 25px; padding-bottom: 100px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
-            <div>
-                <h1 id="workout-player-title" style="margin: 0; font-size: 1.5rem; line-height: 1.2;">Workout Title</h1>
-                <div style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;">Week 1  Cortisol Recovery</div>
+    <div style="padding: 20px;">
+        <div style="position:relative; margin-bottom: 20px;">
+            <input type="text" id="builder-search" placeholder="Search 1800+ exercises..." onkeyup="filterExerciseLibrary(this.value)" 
+                   style="width:100%; padding:15px 15px 15px 45px; border-radius:16px; border:1px solid #e2e8f0; font-size:1rem; background: #f8fafc;">
+            <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#94a3b8; position:absolute; left:15px; top:50%; transform:translateY(-50%);"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        </div>
+        
+        <div id="builder-library-list" style="display:flex; flex-direction:column; gap:10px;">
+            <!-- Dynamic Content -->
+        </div>
+    </div>
+    
+    <div id="builder-floating-action" style="position:fixed; bottom:20px; left:0; width:100%; padding:20px; display:none; z-index: 101;">
+        <button onclick="startCustomBuilderWorkout()" style="width:100%; background:var(--primary); color:white; padding:18px; border-radius:50px; font-weight:800; border:none; box-shadow:0 10px 25px rgba(4,106,56,0.3); font-size: 1.1rem;">
+            START SESSION (<span id="builder-count">0</span>)
+        </button>
+    </div>
+</div>
+
+<script>
+let customWorkoutSelection = [];
+
+function openWorkoutBuilder() {
+    customWorkoutSelection = []; // Reset on open
+    document.getElementById('builder-search').value = '';
+    filterExerciseLibrary('');
+    updateBuilderUI();
+    hideAllAppViews();
+    document.getElementById('view-workout-builder').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
+}
+
+function filterExerciseLibrary(query) {
+    const list = document.getElementById('builder-library-list');
+    list.innerHTML = '';
+    
+    const terms = query.toLowerCase().split(' ');
+    let matches = 0;
+    const maxItems = 50; // Rendering limit
+    
+    const allKeys = Object.keys(EXERCISE_VIDEOS); // Ensure this is available
+    
+    for (let key of allKeys) {
+        let match = true;
+        const keyLower = key.toLowerCase();
+        for (let term of terms) {
+            if (!keyLower.includes(term)) { match = false; break; }
+        }
+        
+        if (match) {
+            matches++;
+            if (matches > maxItems && query.length < 2) break; // Optimization for empty search
+            
+            const isSelected = customWorkoutSelection.includes(key);
+            
+            const div = document.createElement('div');
+            div.className = isSelected ? 'builder-item selected' : 'builder-item';
+            div.style.cssText = `background:white; border:1px solid ${isSelected ? 'var(--primary)' : '#f1f5f9'}; padding:15px; border-radius:16px; display:flex; justify-content:space-between; align-items:center; transition: all 0.2s;`;
+            if(isSelected) div.style.background = '#f0fdf4';
+            
+            div.innerHTML = `
+                <div style="font-weight:600; font-size:0.95rem; color:var(--text-main); flex:1; padding-right:10px;">${key}</div>
+                <button onclick="toggleBuilderItem(this, '${key.replace(/'/g, "\\'")}')" style="width:32px; height:32px; border-radius:50%; border:none; background:${isSelected ? 'var(--primary)' : '#f1f5f9'}; color:${isSelected ? 'white' : '#94a3b8'}; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                    ${isSelected ? '?' : '+'}
+                </button>
+            `;
+            list.appendChild(div);
+        }
+    }
+    
+    if (matches === 0) {
+        list.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">No exercises found</div>';
+    }
+}
+
+function toggleBuilderItem(btn, key) {
+    const index = customWorkoutSelection.indexOf(key);
+    const parent = btn.parentElement;
+    
+    if (index > -1) {
+        customWorkoutSelection.splice(index, 1);
+        parent.style.borderColor = '#f1f5f9';
+        parent.style.background = 'white';
+        btn.style.background = '#f1f5f9';
+        btn.style.color = '#94a3b8';
+        btn.innerHTML = '+';
+    } else {
+        customWorkoutSelection.push(key);
+        parent.style.borderColor = 'var(--primary)';
+        parent.style.background = '#f0fdf4';
+        btn.style.background = 'var(--primary)';
+        btn.style.color = 'white';
+        btn.innerHTML = '?';
+    }
+    updateBuilderUI();
+}
+
+function updateBuilderUI() {
+    const floatAction = document.getElementById('builder-floating-action');
+    const countSpan = document.getElementById('builder-count');
+    
+    if (customWorkoutSelection.length > 0) {
+        floatAction.style.display = 'block';
+        countSpan.innerText = customWorkoutSelection.length;
+    } else {
+        floatAction.style.display = 'none';
+    }
+}
+
+function startCustomBuilderWorkout() {
+    if (customWorkoutSelection.length === 0) return;
+    
+    // Construct a dynamic workout object
+    const customWorkout = {
+        title: 'Custom Session',
+        name: 'Custom Builder',
+        description: 'Your personalized session',
+        exercises: customWorkoutSelection.map(key => ({
+            name: key,
+            sets: 3,
+            reps: '12',
+            videoUrl: '', // Will be looked up
+            desc: ''
+        }))
+    };
+    
+    // Hijack the player
+    document.getElementById('workout-player-title').innerText = customWorkout.title;
+    document.getElementById('workout-player-goal').innerText = customWorkout.description;
+    
+    const list = document.getElementById('workout-exercises-list');
+    list.innerHTML = '';
+    
+    customWorkout.exercises.forEach((ex, idx) => {
+        const card = document.createElement('div');
+        card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
+        
+        let setsHtml = '';
+        for(let s=1; s<=ex.sets; s++) {
+            setsHtml += getSetRowHtml(ex.name, s, false);
+        }
+
+        const videoUrl = getExerciseVideoUrl(ex.name);
+
+        card.innerHTML = `
+            <div style="padding:20px; display:flex; gap:15px; align-items:center;">
+                <div onclick="openExerciseVideo('${videoUrl}', '${ex.name}')" style="width:60px; height:60px; border-radius:14px; background:#f1f5f9; overflow:hidden; flex-shrink:0; position:relative; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
+                    ${videoUrl.includes('youtube') || videoUrl.includes('drive.google.com') ? 
+                        `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:black;"><i style="color:white; font-size:1.5rem;">?</i></div>` : 
+                        `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:var(--primary); opacity:0.1;"><i class="fas fa-video" style="color:var(--primary); font-size:1.2rem;"></i></div>`
+                    }
+                    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+                        <div style="background:rgba(255,255,255,0.9); width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                            <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:var(--primary);"><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div style="flex:1;">
+                    <h3 style="margin:0 0 4px 0; font-size:1.1rem; font-weight:700; color:var(--text-main); line-height:1.2;">${ex.name}</h3>
+                    <p style="margin:0; font-size:0.8rem; color:var(--text-muted); line-height:1.3;">Custom Set</p>
+                </div>
             </div>
-            <div style="text-align: right;">
-                <div id="workout-timer" style="font-family: monospace; font-size: 1.5rem; font-weight: 700; color: var(--primary);">00:00</div>
-                <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">Duration</div>
+            <div style="display:grid; grid-template-columns: 30px 1fr 1fr 1fr 1fr; gap:12px; padding:0 15px 10px 15px; font-size:0.65rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Prev</div><div>Time</div><div>Reps</div><div>Kg</div>
+            </div>
+            <div class="sets-list-container">
+                ${setsHtml}
+            </div>
+            <div style="padding:15px; border-top:1px solid #f8fafc;">
+                <button onclick="addWorkoutSet(this, '${ex.name.replace(/'/g, "\\'")}', false)" style="width:100%; background:transparent; border:2px dashed #e2e8f0; color:#94a3b8; font-weight:700; font-size:0.8rem; padding:12px; border-radius:12px; cursor:pointer;">+ ADD SET</button>
+            </div>
+        `;
+        list.appendChild(card);
+    });
+
+    hideAllAppViews();
+    document.getElementById('view-active-workout').style.display = 'block';
+    startWorkoutTimer();
+}
+</script>
+
+<!-- WORKOUT OVERVIEW VIEW -->
+<div id="view-workout-overview" class="app-view" style="display:none; height: 100vh; background: white; z-index: 1500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;">
+        <div onclick="switchAppTab('movement-tab')" style="width: 40px; height: 40px; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--text-main);"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </div>
+        <div id="overview-header-title" style="font-weight: 700; color: var(--text-main);">Workout Overview</div>
+        <div style="width: 40px;"></div>
+    </div>
+
+    <div style="padding: 20px;">
+        <div id="overview-hero-card" style="border-radius: 20px; overflow: hidden; margin-bottom: 25px; position: relative; height: 200px; background: #f1f5f9;">
+            <img id="overview-img" src="" style="width: 100%; height: 100%; object-fit: cover;">
+            <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);"></div>
+            <div style="position: absolute; bottom: 20px; left: 20px; color: white;">
+                <h1 id="overview-title" style="margin: 0; font-size: 1.8rem;">Workout Name</h1>
+                <div id="overview-meta" style="opacity: 0.9; font-size: 0.9rem;">22 mins  6 Exercises</div>
             </div>
         </div>
+
+        <div style="margin-bottom: 30px;">
+            <h3 style="margin: 0 0 10px 0; font-size: 1.1rem;">Equipment Needed</h3>
+            <div id="overview-equipment" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <!-- Equipment Badges -->
+            </div>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+            <h3 style="margin: 0 0 10px 0; font-size: 1.1rem;">Instructions</h3>
+            <p id="overview-instructions" style="color: var(--text-muted); line-height: 1.5; font-size: 0.95rem;"></p>
+        </div>
+
+        <div>
+            <h3 style="margin: 0 0 15px 0; font-size: 1.1rem;">Exercise List</h3>
+            <div id="overview-exercise-list">
+                <!-- Exercises List -->
+            </div>
+        </div>
+        
+        <div style="height: 100px;"></div>
+    </div>
+
+    <!-- Floating Start Button -->
+    <div style="position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 101;">
+        <button id="btn-start-now" style="width: 100%; padding: 18px; background: #FFC107; color: black; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: 800; box-shadow: 0 10px 25px rgba(255, 193, 7, 0.4);">
+            START WORKOUT
+        </button>
+    </div>
+</div>
+
+<!-- ACTIVE WORKOUT PLAYER VIEW -->
+<div id="view-active-workout" class="app-view" style="display:none; height: 100vh; background: #f8fafc; z-index: 2000; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
+    
+    <!-- Top Nav Bar -->
+    <div style="position: sticky; top: 0; z-index: 100; background: black; color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;">
+        <div onclick="quitWorkout()" style="font-weight: 600; cursor: pointer; color: #FF4444;">Cancel</div>
+        <div style="text-align: center;">
+            <div id="workout-timer" style="font-family: monospace; font-size: 1.2rem; font-weight: 700; color: white;">00:00</div>
+        </div>
+        <div onclick="finishWorkout()" style="font-weight: 600; cursor: pointer; color: #44FF44;">Save</div>
+    </div>
+
+    <div style="padding: 15px; padding-bottom: 120px;">
+        <h1 id="workout-player-title" style="margin: 0 0 5px 0; font-size: 1.3rem; line-height: 1.2;">Workout Title</h1>
+        <p id="workout-player-goal" style="font-size: 0.85rem; color: var(--text-muted); margin: 0 0 20px 0; line-height: 1.4;"></p>
 
         <div id="workout-exercises-list">
             <!-- Dynamic Content Injected Here via JS -->
         </div>
-        
-        <!-- Complete Button -->
-        <button onclick="finishWorkout()" style="width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; margin-top: 30px; box-shadow: 0 4px 15px rgba(4, 106, 56, 0.3);">
-            FINISH WORKOUT
-        </button>
     </div>
 </div>
 
@@ -6545,21 +6774,29 @@
     </div>
 </div>
 
+<!-- Exercise Video Database (1700+ Google Drive Links) -->
+<script src="exercise_videos.js"></script>
 <script>
 function openExerciseVideo(url, title) {
-    if (!url) return; 
+    if (!url) {
+        alert("Video coming soon for: " + title);
+        return;
+    }
     
-    // Simple YouTube ID extractor
     let embedUrl = url;
-    if (url.includes('watch?v=')) {
+    // Drive Link Handling
+    if (url.includes('drive.google.com')) {
+        if (url.includes('/view')) {
+            embedUrl = url.replace('/view', '/preview');
+        } else if (!url.includes('/preview')) {
+            embedUrl = url; 
+        }
+    } else if (url.includes('watch?v=')) {
         const v = url.split('watch?v=')[1].split('&')[0];
         embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
     } else if (url.includes('youtu.be/')) {
         const v = url.split('youtu.be/')[1].split('?')[0];
         embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
-    } else if (url.includes('embed')) {
-         if (url.indexOf('?') > -1) embedUrl += "&autoplay=1";
-         else embedUrl += "?autoplay=1";
     }
 
     const modal = document.getElementById('video-modal');
@@ -6574,7 +6811,7 @@ function closeVideoModal() {
     const frame = document.getElementById('video-frame');
     modal.style.display = 'none';
     modal.classList.remove('active');
-    frame.src = ''; // Stop audio
+    frame.src = '';
 }
 </script>
 
@@ -7160,13 +7397,8 @@ function switchAppTab(tabName, btn) {
         // simple fallback
     }
 
-    // 2. Hide All Top Level Views
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-support', 'sleep', 'view-active-workout', 'view-workout-success', 'view-profile'];
-    views.forEach(v => {
-        const el = document.getElementById(v);
-        if(el) el.style.display = 'none';
-        if(el) el.classList.remove('active');
-    });
+    // 2. Clear All Views
+    hideAllAppViews();
 
     // 3. Show Target View
     if (tabName === 'dashboard') {
@@ -7377,143 +7609,88 @@ function toggleCard(header) {
 // --- TRAINERIZE WORKOUT LOGIC ---
 // --- TRAINERIZE WORKOUT LOGIC ---
 const WORKOUT_DB = {
+    'yoga': {
+        name: 'Somatic Yoga',
+        id: 'yoga',
+        description: 'Goal: To release the Psoas (fight/flight muscle) and switch the nervous system from "Sympathetic" (Stress) to "Parasympathetic" (Rest).',
+        estimatedTime: '22',
+        equipment: ['Body Weight', 'Mat'],
+        schedule: [
+             { 
+                title: 'Somatic Hormone Reset (Cortisol & Psoas Release)', 
+                exercises: [
+                    { name: 'Adductor Stretch with Thoracic Twist', sets: 1, reps: '3 min', videoUrl: '', desc: 'Instantly signals safety to the pelvic floor. Similar to Supta Baddha Konasana.' },
+                    { name: 'Cat to Cow', sets: 1, reps: '1 min', videoUrl: '', desc: 'Flushes the spinal fluid and regulates the nervous system.' },
+                    { name: 'Passive Lizard Stretch', sets: 2, reps: '1m 30s', videoUrl: '', desc: 'The #1 move for releasing the Psoas (the "Fight or Flight" muscle) 1 set each side' },
+                    { name: 'Happy Baby Pose', sets: 3, reps: '2 min', videoUrl: '', desc: 'True somatic reset' },
+                    { name: 'Supine Twist', sets: 2, reps: '2 min', videoUrl: '', desc: 'Wrings out tension from the adrenal area (mid-back). 1 minute per side' },
+                    { name: 'Corpse Pose', sets: 1, reps: '5 min', videoUrl: '', desc: 'Essential for memory integration and lowering cortisol.' }
+                ]
+            },
+            { 
+                title: 'The "Heart Opener" (For Anxiety & Grief)', 
+                exercises: [
+                    { name: 'Prone Chest Stretch', sets: 1, reps: '5 min', videoUrl: '', desc: 'Opens the chest and releases stored emotional tension.' },
+                    { name: 'Puppy Pose', sets: 2, reps: '2 min', videoUrl: '', desc: 'Stretches the shoulders and calms the heart rate.' },
+                    { name: "Child's Pose", sets: 1, reps: '3 min', videoUrl: '', desc: 'Grounding and safe.' }
+                ]
+            },
+            { 
+                title: 'The "Vagus Nerve Reset" (For Overwhelm & Focus)', 
+                exercises: [
+                    { name: 'Ear Massage & Pull', sets: 1, reps: '2 min', videoUrl: '', desc: 'Directly stimulates the Vagus nerve.' },
+                    { name: 'Salami Breathing', sets: 3, reps: '1 min', videoUrl: '', desc: 'Forces a physiological sigh to calm the brain.' },
+                    { name: 'Gentle Neck Circles', sets: 2, reps: '2 min', videoUrl: '', desc: 'Releases the upper cervical spine.' }
+                ]
+            }
+        ]
+    },
     'bodyweight': {
         name: 'Bodyweight Sculpt',
+        id: 'bodyweight',
+        description: 'Focus on toning and metabolism without equipment.',
+        estimatedTime: '30',
+        equipment: ['None'],
         schedule: [
-            { title: 'Full Body Tone', exercises: [
-                { name: 'Squats', sets: 3, reps: '15', videoUrl: '' },
-                { name: 'Pushups', sets: 3, reps: '10', videoUrl: '' },
-                { name: 'Lunges', sets: 3, reps: '12/leg', videoUrl: '' },
-                { name: 'Plank', sets: 3, reps: '45s', videoUrl: '' }
-            ]}, // Day 1
-            { title: 'Upper Body Focus', exercises: [
-                { name: 'Pike Pushups', sets: 3, reps: '10', videoUrl: '' },
-                { name: 'Tricep Dips', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'Superman', sets: 3, reps: '15', videoUrl: '' },
-                { name: 'Shoulder Taps', sets: 3, reps: '20', videoUrl: '' }
-            ]}, // Day 2
-            { title: 'Core & Mobility', exercises: [
-                { name: 'Dead Bug', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'Bird Dog', sets: 3, reps: '10/side', videoUrl: '' },
-                { name: 'Cat Cow', sets: 2, reps: '1 min', videoUrl: '' },
-                { name: 'Childs Pose', sets: 1, reps: '2 min', videoUrl: '' }
-            ]}, // Day 3
-            { title: 'Lower Body Blast', exercises: [
-                { name: 'Glute Bridges', sets: 3, reps: '20', videoUrl: '' },
-                { name: 'Lateral Lunges', sets: 3, reps: '12/leg', videoUrl: '' },
-                { name: 'Calf Raises', sets: 3, reps: '20', videoUrl: '' },
-                { name: 'Wall Sit', sets: 3, reps: '45s', videoUrl: '' }
-            ]}, // Day 4
-            { title: 'Active Recovery', exercises: [
-                { name: 'Light Walk', sets: 1, reps: '20 min', videoUrl: '' },
-                { name: 'Stretch Flow', sets: 1, reps: '10 min', videoUrl: '' }
-            ]}, // Day 5
-            { title: 'Full Body HIIT', exercises: [
-                { name: 'Jumping Jacks', sets: 3, reps: '30s', videoUrl: '' },
-                { name: 'High Knees', sets: 3, reps: '30s', videoUrl: '' },
-                { name: 'Mountain Climbers', sets: 3, reps: '30s', videoUrl: '' },
-                { name: 'Burpees', sets: 3, reps: '10', videoUrl: '' }
-            ]}, // Day 6
-            { title: 'Rest & Reset', exercises: [
-                { name: 'Meditation', sets: 1, reps: '10 min', videoUrl: '' },
-                { name: 'Gentle Walk', sets: 1, reps: '15 min', videoUrl: '' }
-            ]}  // Day 7
+            { title: 'Full Body Hormone Tone', exercises: [
+                { name: 'Body Weight Squat', sets: 3, reps: '15', videoUrl: '' },
+                { name: 'Bench Push Up', sets: 3, reps: '10', videoUrl: '' },
+                { name: 'Body Weight Reverse Lunge', sets: 3, reps: '12/leg', videoUrl: '' },
+                { name: 'Glute Bridge', sets: 3, reps: '45s', videoUrl: '' }
+            ]},
+            { title: 'Metabolic Flow', exercises: [
+                { name: 'Mountain Climber', sets: 3, reps: '20', videoUrl: '' },
+                { name: 'Bird Dog', sets: 3, reps: '12/side', videoUrl: '' },
+                { name: 'Side Plank', sets: 3, reps: '30s/side', videoUrl: '' }
+            ]}
         ]
     },
     'home': {
-        name: 'Home Strength',
+        name: 'Dumbbell Strength',
+        id: 'home',
+        description: 'Building lean muscle mass at home.',
+        estimatedTime: '40',
+        equipment: ['Dumbbells', 'Mat'],
         schedule: [
-            { title: 'DB Lower Body', exercises: [
-                { name: 'Goblet Squats', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'RDLs', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'Reverse Lunges', sets: 3, reps: '10/leg', videoUrl: '' }
-            ]},
-            { title: 'DB Upper Body', exercises: [
-                { name: 'DB Press', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'Bent Over Row', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'Lateral Raise', sets: 3, reps: '15', videoUrl: '' }
-            ]},
-            { title: 'Core Stability', exercises: [
-                { name: 'Plank Drag', sets: 3, reps: '10', videoUrl: '' },
-                { name: 'Russian Twist', sets: 3, reps: '20', videoUrl: '' }
-            ]},
-            { title: 'Full Body DB', exercises: [
-                { name: 'Thrusters', sets: 3, reps: '10', videoUrl: '' },
-                { name: 'Renegade Row', sets: 3, reps: '8/side', videoUrl: '' }
-            ]},
-             { title: 'Mobility', exercises: [
-                { name: 'World\'s Greatest Stretch', sets: 1, reps: '5 min', videoUrl: '' }
-            ]},
-            { title: 'Metabolic Conditioning', exercises: [
-                { name: 'DB Swings', sets: 4, reps: '15', videoUrl: '' },
-                { name: 'Step Ups', sets: 4, reps: '12', videoUrl: '' }
-            ]},
-            { title: 'Rest', exercises: [{ name: 'Rest', sets: 1, reps: 'Full Day', videoUrl: '' }] }
+            { title: 'Posterior Power', exercises: [
+                { name: 'Dumbbell Goblet Squat', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'Dumbbell Deadlift', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'Dumbbell Single Arm Bent Over Row', sets: 3, reps: '10/side', videoUrl: '' }
+            ]}
         ]
     },
     'gym': {
         name: 'Full Gym Protocol',
+        id: 'gym',
+        description: 'Maximizing strength and hormonal balance in a gym environment.',
+        estimatedTime: '55',
+        equipment: ['Full Gym'],
         schedule: [
-             { title: 'Leg Day A', exercises: [
-                { name: 'Barbell Squat', sets: 4, reps: '8', videoUrl: '' },
-                { name: 'Leg Press', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'Leg Extensions', sets: 3, reps: '15', videoUrl: '' }
-            ]},
-            { title: 'Push Day', exercises: [
-                { name: 'Bench Press', sets: 4, reps: '8', videoUrl: '' },
-                { name: 'Overhead Press', sets: 3, reps: '10', videoUrl: '' },
-                { name: 'Tricep Pushdown', sets: 3, reps: '12', videoUrl: '' }
-            ]},
-            { title: 'Pull Day', exercises: [
-                { name: 'Lat Pulldown', sets: 4, reps: '10', videoUrl: '' },
-                { name: 'Cable Row', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'Face Pulls', sets: 3, reps: '15', videoUrl: '' }
-            ]},
-            { title: 'Leg Day B', exercises: [
-                { name: 'Deadlift', sets: 3, reps: '8', videoUrl: '' },
-                { name: 'Hamstring Curl', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'Calf Raise', sets: 4, reps: '15', videoUrl: '' }
-            ]},
-            { title: 'Active Recovery', exercises: [{ name: 'Cardio', sets: 1, reps: '20 min Zone 2', videoUrl: '' }] },
-            { title: 'Upper Body Pump', exercises: [
-                { name: 'Incline DB Press', sets: 3, reps: '10', videoUrl: '' },
-                { name: 'DB Curl', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'Lateral Raise', sets: 3, reps: '15', videoUrl: '' }
-            ]},
-            { title: 'Rest', exercises: [{ name: 'Rest', sets: 1, reps: 'Full Day', videoUrl: '' }] }
-        ]
-    },
-    'yoga': {
-        name: 'Somatic Yoga',
-        schedule: [
-             { title: 'Cortisol Flush', exercises: [
-                { name: 'Cat Cow', sets: 2, reps: '2 min', videoUrl: '' },
-                { name: 'Childs Pose', sets: 1, reps: '3 min', videoUrl: '' },
-                { name: 'Legs Up Wall', sets: 1, reps: '5 min', videoUrl: '' }
-            ]}, // Day 1
-            { title: 'Hips & Emotions', exercises: [
-                { name: 'Pigeon Pose', sets: 1, reps: '3 min/side', videoUrl: '' },
-                { name: 'Butterfly', sets: 1, reps: '3 min', videoUrl: '' }
-            ]},
-            { title: 'Spinal Release', exercises: [
-                { name: 'Supine Twist', sets: 1, reps: '2 min/side', videoUrl: '' },
-                { name: 'Bridge Flow', sets: 3, reps: '1 min', videoUrl: '' }
-            ]},
-            { title: 'Grounding Flow', exercises: [
-                { name: 'Mountain Pose', sets: 1, reps: '2 min', videoUrl: '' },
-                { name: 'Tree Pose', sets: 1, reps: '1 min/side', videoUrl: '' }
-            ]},
-            { title: 'Breathwork Focus', exercises: [
-                { name: 'Box Breathing', sets: 1, reps: '5 min', videoUrl: '' },
-                { name: '4-7-8 Breath', sets: 1, reps: '5 min', videoUrl: '' }
-            ]},
-            { title: 'Gentle Opening', exercises: [
-                { name: 'Camel Pose (Supported)', sets: 2, reps: '30s', videoUrl: '' },
-                { name: 'Puppy Pose', sets: 1, reps: '2 min', videoUrl: '' }
-            ]},
-            { title: 'Deep Rest (Nidra)', exercises: [
-                { name: 'Savasana', sets: 1, reps: '10 min', videoUrl: '' },
-                { name: 'Body Scan', sets: 1, reps: '10 min', videoUrl: '' }
+             { title: 'Lower Body Strength', exercises: [
+                { name: 'Angled Machine Leg Press', sets: 4, reps: '10', videoUrl: '' },
+                { name: 'Machine Seated Leg Extension', sets: 3, reps: '15', videoUrl: '' },
+                { name: 'Machine Seated Leg Curl', sets: 3, reps: '12', videoUrl: '' },
+                { name: 'Machine Back Extension', sets: 3, reps: '15', videoUrl: '' }
             ]}
         ]
     }
@@ -7553,6 +7730,10 @@ function submitCheckIn() {
     renderMovementView();
 }
 
+function getExerciseVideoUrl(name) {
+    return EXERCISE_VIDEOS[name] || '';
+}
+
 function renderMovementView() {
     // 1. Get Date Index
     const startDate = localStorage.getItem('pbb_start_date');
@@ -7566,23 +7747,19 @@ function renderMovementView() {
         dayIndex = (currentDay - 1) % 7;
     }
 
-    // 2. Determine Suggested Workout
     const todayStr = new Date().toDateString();
     const checkin = JSON.parse(localStorage.getItem('daily_checkin_' + todayStr));
     
     let suggestedId = 'yoga'; // Default
     if (checkin) {
-        if (checkin.energy === 'low') {
-            suggestedId = 'yoga';
-        } else {
-            // High Energy
+        if (checkin.energy === 'low') suggestedId = 'yoga';
+        else {
             if (checkin.equipment === 'gym') suggestedId = 'gym';
             else if (checkin.equipment === 'dumbbells') suggestedId = 'home';
             else suggestedId = 'bodyweight';
         }
     }
 
-    // 3. Helper for Assets
     const assets = {
         'yoga': { img: '/assets/somatic_yoga_hero.png', sub: 'Recovery', color: '#F59E0B' },
         'bodyweight': { img: '/assets/bodyweight_sculpt_hero.png', sub: 'No Equipment', color: '#ec4899' },
@@ -7590,250 +7767,225 @@ function renderMovementView() {
         'gym': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' }
     };
 
-    // 4. Render Hero
+    // Render Hero
     const heroContainer = document.getElementById('movement-hero-container');
     const heroProg = WORKOUT_DB[suggestedId];
     const heroMeta = assets[suggestedId];
-    // Safe access schedule
-    const heroSched = heroProg.schedule[dayIndex >= heroProg.schedule.length ? 0 : dayIndex];
+    const heroSched = heroProg.schedule[dayIndex % heroProg.schedule.length];
 
     heroContainer.innerHTML = `
-    <div class="card" onclick="startWorkout('${suggestedId}')" style="cursor: pointer; overflow:hidden; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.15); border:none; position: relative; margin-bottom: 30px;">
-        <div style="position: relative; height: 320px;">
+    <div class="card" onclick="showWorkoutOverview('${suggestedId}')" style="cursor: pointer; overflow:hidden; border-radius:32px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); border:none; position: relative; margin-bottom: 30px;">
+        <div style="position: relative; height: 380px;">
              <img src="${heroMeta.img}" style="width:100%; height:100%; object-fit: cover;" onerror="this.src='https://placehold.co/600x800/png?text=${suggestedId}';">
-             <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0) 100%);"></div>
+             <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
              
-             <div style="position: absolute; top: 20px; left: 20px;">
-                <span style="background: ${heroMeta.color}; color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">Suggested for You</span>
+             <div style="position: absolute; top: 25px; left: 25px;">
+                <span style="background: ${heroMeta.color}; color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">Best for Today</span>
              </div>
 
-             <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 25px;">
-                 <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-                    <div style="color: ${heroMeta.color}; font-weight: 700; font-size: 0.85rem; text-transform: uppercase;">${heroMeta.sub}  ${heroProg.name}</div>
+             <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 30px;">
+                 <div style="color: ${heroMeta.color}; font-weight: 800; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 5px;">${heroProg.name}</div>
+                 <h2 style="color: white; margin: 0 0 15px 0; font-size: 2.2rem; line-height: 1.1; font-family:'Playfair Display';">${heroSched.title}</h2>
+                 <div style="display:flex; gap:15px; color:rgba(255,255,255,0.7); font-size:0.9rem; margin-bottom:20px;">
+                    <span style="display:flex; align-items:center; gap:5px;"><svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>${heroProg.estimatedTime} mins</span>
+                    <span style="display:flex; align-items:center; gap:5px;"><svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>${heroSched.exercises.length} exercises</span>
                  </div>
-                 <h2 style="color: white; margin: 0 0 10px 0; font-size: 2rem; line-height: 1.1; font-family:'Playfair Display';">${heroSched.title}</h2>
-                 <button style="width: 100%; background: white; color: var(--primary); border: none; padding: 16px; border-radius: 50px; font-weight: 800; font-size: 1rem; display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
-                    <span>START SESSION</span>
-                    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>
+                 <button style="width: 100%; background: #FFC107; color: black; border: none; padding: 18px; border-radius: 50px; font-weight: 900; font-size: 1.1rem; box-shadow: 0 10px 20px rgba(255,193,7,0.3);">
+                    START SESSION
                  </button>
              </div>
         </div>
     </div>`;
 
-    // 5. Render Grid (Others)
     const gridContainer = document.getElementById('movement-grid-container');
-    gridContainer.innerHTML = ''; // Clear
+    gridContainer.innerHTML = ''; 
     
     Object.keys(WORKOUT_DB).forEach(key => {
-        if (key === suggestedId) return; // Skip hero
-        
+        if (key === suggestedId) return;
         const prog = WORKOUT_DB[key];
         const meta = assets[key];
-        const sched = prog.schedule[dayIndex >= prog.schedule.length ? 0 : dayIndex];
+        const sched = prog.schedule[dayIndex % prog.schedule.length];
 
         const div = document.createElement('div');
-        div.className = 'card';
-        div.onclick = () => startWorkout(key);
-        div.style.cursor = 'pointer';
-        div.style.margin = '0';
-        div.style.minHeight = '140px';
-        div.style.position = 'relative';
-        div.style.overflow = 'hidden';
-        div.style.border = 'none';
-        div.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
-        
+        div.onclick = () => showWorkoutOverview(key);
+        div.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1);";
         div.innerHTML = `
             <img src="${meta.img}" style="width:100%; height:100%; object-fit: cover; position:absolute; inset:0;" onerror="this.src='https://placehold.co/300x200?text=${key}';">
-            <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.1));"></div>
-            <div style="position: absolute; bottom: 15px; left: 15px; color: white; padding-right: 10px; z-index:2;">
-                <div style="font-size: 0.7rem; text-transform: uppercase; font-weight: 700; opacity: 0.9; margin-bottom:2px;">${meta.sub}</div>
-                <div style="font-size: 1.1rem; font-weight: 800; line-height: 1.1;">${sched.title}</div>
+            <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);"></div>
+            <div style="position: absolute; bottom: 15px; left: 15px; color: white;">
+                <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.8;">${prog.name}</div>
+                <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1;">${sched.title}</div>
             </div>
         `;
         gridContainer.appendChild(div);
     });
 }
 
-
-let workoutTimerInterval;
-
-function startWorkout(id) {
+function showWorkoutOverview(id) {
     const program = WORKOUT_DB[id];
-    if(!program) return;
-
-    // 1. Calculate Day & Workout
     const startDate = localStorage.getItem('pbb_start_date');
     let dayIndex = 0;
     if (startDate) {
         const start = new Date(startDate);
-        const now = new Date();
-        const diffTime = Math.abs(now - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        const currentDay = diffDays || 1;
-        dayIndex = (currentDay - 1) % 7;
+        const dayDiff = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
+        dayIndex = (dayDiff || 1) - 1;
     }
+    const workout = program.schedule[dayIndex % program.schedule.length];
+
+    document.getElementById('overview-title').innerText = workout.title;
+    document.getElementById('overview-header-title').innerText = program.name;
+    document.getElementById('overview-meta').innerText = `${program.estimatedTime} mins  ${workout.exercises.length} Exercises`;
+    document.getElementById('overview-instructions').innerText = program.description || '';
     
-    // Fallback if array is short
-    if (dayIndex >= program.schedule.length) dayIndex = 0;
-    
-    const data = program.schedule[dayIndex];
+    // Equipment
+    const eqCont = document.getElementById('overview-equipment');
+    eqCont.innerHTML = '';
+    program.equipment.forEach(e => {
+        eqCont.innerHTML += `<span style="background:#f1f5f9; padding:8px 15px; border-radius:50px; font-size:0.85rem; font-weight:600; color:var(--text-main);">${e}</span>`;
+    });
 
-    // 2. Setup UI
-    document.getElementById('workout-player-title').innerText = data.title;
-    const list = document.getElementById('workout-exercises-list');
-    list.innerHTML = ''; // Clear
-
-    // 3. Update Title Context
-    const playerTitle = document.getElementById('workout-player-title');
-    if(playerTitle) {
-        playerTitle.innerHTML = `${data.title} <div style="font-size:0.5em; opacity:0.6; font-weight:400; margin-top:4px;">${program.name}  Day ${dayIndex + 1}</div>`;
-    }
-
-    // 4. Build Logger UI
-    data.exercises.forEach((ex, exIdx) => {
-        let rows = '';
-        for(let i=0; i<ex.sets; i++) {
-            rows += getSetRowHtml(i+1, ex.reps);
-        }
-        
-        // Add "Add Set" button container
-        const addSetBtn = `
-        <div class="add-set-container" style="padding:10px 15px; text-align:center;">
-             <button onclick="addSetRow(this, '${ex.reps}')" style="background:#f1f5f9; color:var(--text-muted); border:none; padding:8px 20px; border-radius:20px; font-size:0.8rem; font-weight:600; cursor:pointer; width:100%; transition:background 0.2s;">+ ADD SET</button>
-        </div>`;
-
-        const card = document.createElement('div');
-        card.className = 'exercise-logger-card';
-        card.style.cssText = "background:white; border-radius:12px; box-shadow:0 2px 5px rgba(0,0,0,0.05); margin-bottom:20px; border:1px solid rgba(0,0,0,0.05); overflow:hidden;";
-        
-        // Video Square Placeholder (Color derived from name hash for variety or static)
-        const thumbUrl = data.id === 'yoga' ? '/assets/somatic_yoga_hero.png' : 'https://placehold.co/100x100/png';
-        
-        card.innerHTML = `
-            <div class="exercise-header" style="background:white; padding:15px; border-bottom:1px solid #f1f5f9; display:flex; gap:15px; align-items:flex-start;">
-                <!-- Video Square -->
-                <div onclick="openExerciseVideo('${ex.videoUrl ? ex.videoUrl.replace(/'/g, "\\'") : ''}', '${ex.name.replace(/'/g, "\\'")}')" 
-                     style="width:80px; height:80px; flex-shrink:0; border-radius:8px; overflow:hidden; position:relative; background:#f1f5f9; cursor: ${ex.videoUrl ? 'pointer' : 'default'};">
-                    <img src="${thumbUrl}" style="width:100%; height:100%; object-fit:cover; opacity: ${ex.videoUrl ? '0.9' : '0.5'}" onerror="this.src='https://placehold.co/100x100/png';">
-                    <div style="position:absolute; inset:0; background:rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center;">
-                        ${ ex.videoUrl ? 
-                        `<div style="width:30px; height:30px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.3);">
-                             <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:white; margin-left:2px;"><path d="M8 5v14l11-7z"/></svg>
-                        </div>` : 
-                        `<div style="width:30px; height:30px; background:white; opacity:0.5; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                             <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:#94a3b8; margin-left:2px;"><path d="M8 5v14l11-7z"/></svg>
-                        </div>` 
-                        }
-                    </div>
+    // Exercises
+    const exList = document.getElementById('overview-exercise-list');
+    exList.innerHTML = '';
+    workout.exercises.forEach(ex => {
+        exList.innerHTML += `
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <div style="width:70px; height:70px; border-radius:12px; background:#f1f5f9; flex-shrink:0; overflow:hidden;">
+                    <img src="https://placehold.co/100x100/png?text=Preview" style="width:100%; height:100%; object-fit:cover;">
                 </div>
-
-                <!-- Info Column -->
                 <div style="flex:1;">
-                    <div style="font-weight:700; font-size:1.1rem; color:var(--text-main); margin-bottom:4px; line-height:1.2;">${ex.name}</div>
-                    
-                    <!-- Controls -->
-                    <div style="display:flex; gap:15px; align-items:center;">
-                        <div onclick="toggleDescription(this)" style="font-size:0.85rem; color:var(--primary); font-weight:600; cursor:pointer;">
-                            Read Description ?
+                    <div style="font-weight:700; font-size:1.05rem;">${ex.name}</div>
+                    <div style="color:var(--text-muted); font-size:0.85rem;">${ex.sets} sets x ${ex.reps}</div>
+                </div>
+            </div>
+        `;
+    });
+
+    document.getElementById('btn-start-now').onclick = () => startActiveWorkout(id);
+
+    // Show View
+    hideAllAppViews();
+    document.getElementById('view-workout-overview').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
+}
+
+function hideAllAppViews() {
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-support', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder'];
+    views.forEach(v => {
+        const el = document.getElementById(v);
+        if(el) {
+            el.style.display = 'none';
+            el.classList.remove('active');
+        }
+    });
+}
+
+function startActiveWorkout(id) {
+    const program = WORKOUT_DB[id];
+    const startDate = localStorage.getItem('pbb_start_date');
+    let dayIndex = 0;
+    if (startDate) {
+        const start = new Date(startDate);
+        const dayDiff = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
+        dayIndex = (dayDiff || 1) - 1;
+    }
+    const workout = program.schedule[dayIndex % program.schedule.length];
+
+    document.getElementById('workout-player-title').innerText = workout.title;
+    document.getElementById('workout-player-goal').innerText = program.description;
+    
+    const list = document.getElementById('workout-exercises-list');
+    list.innerHTML = '';
+
+    workout.exercises.forEach((ex, idx) => {
+        const card = document.createElement('div');
+        card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
+        
+        const isTimeBased = ex.reps.toLowerCase().includes('min') || ex.reps.toLowerCase().includes('s');
+        let setsHtml = '';
+        for(let s=1; s<=ex.sets; s++) {
+            setsHtml += getSetRowHtml(ex.name, s, isTimeBased);
+        }
+
+        const videoUrl = getExerciseVideoUrl(ex.name);
+
+        card.innerHTML = `
+            <div style="padding:20px; display:flex; gap:15px; align-items:center;">
+                <div onclick="openExerciseVideo('${videoUrl}', '${ex.name}')" style="width:60px; height:60px; border-radius:14px; background:#f1f5f9; overflow:hidden; flex-shrink:0; position:relative; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
+                    ${videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be') ? 
+                        `<img src="https://img.youtube.com/vi/${videoUrl.includes('embed/') ? videoUrl.split('embed/')[1].split('?')[0] : videoUrl.split('v=')[1]?.split('&')[0]}/0.jpg" style="width:100%; height:100%; object-fit:cover; opacity:0.8;">` : 
+                        `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:var(--primary); opacity:0.1;"><i class="fas fa-video" style="color:var(--primary); font-size:1.2rem;"></i></div>`
+                    }
+                    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+                        <div style="background:rgba(255,255,255,0.9); width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                            <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:var(--primary);"><path d="M8 5v14l11-7z"/></svg>
                         </div>
                     </div>
                 </div>
+                <div style="flex:1;">
+                    <h3 style="margin:0 0 4px 0; font-size:1.1rem; font-weight:700; color:var(--text-main); line-height:1.2;">${ex.name}</h3>
+                    <p style="margin:0; font-size:0.8rem; color:var(--text-muted); line-height:1.3;">${ex.desc || ''}</p>
+                </div>
             </div>
             
-            <!-- Hidden Description -->
-            <div class="exercise-description" style="display:none; padding:15px; background:#f8fafc; font-size:0.9rem; color:#64748b; border-bottom:1px solid #f1f5f9; line-height:1.5;">
-                ${ex.desc || 'No description available for this exercise.'}
+            <div style="display:grid; grid-template-columns: 30px 1fr 1fr 1fr 1fr; gap:12px; padding:0 15px 10px 15px; font-size:0.65rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Prev</div><div>Time</div><div>Reps</div><div>Kg</div>
             </div>
             
-            <div class="sets-header" style="display:flex; padding:10px 15px; border-bottom:1px solid #f1f5f9; font-size:0.7rem; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">
-                <div style="width:15%; text-align:center;">Set</div>
-                <div style="width:42.5%; text-align:center;">KG / LBS</div>
-                <div style="width:42.5%; text-align:center;">Reps</div>
+            <div class="sets-list-container">
+                ${setsHtml}
             </div>
 
-            <div class="sets-container">
-                ${rows}
-                ${addSetBtn}
+            <div style="padding:15px; border-top:1px solid #f8fafc;">
+                <button onclick="addWorkoutSet(this, '${ex.name.replace(/'/g, "\\'")}', ${isTimeBased})" style="width:100%; background:transparent; border:2px dashed #e2e8f0; color:#94a3b8; font-weight:700; font-size:0.8rem; padding:12px; border-radius:12px; cursor:pointer;">+ ADD SET</button>
             </div>
         `;
         list.appendChild(card);
     });
 
-    // 3. Switch View
-    // Hide all, show active workout
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-support', 'sleep', 'view-workout-success'];
-    views.forEach(v => {
-        const el = document.getElementById(v);
-        if(el) el.style.display = 'none';
-        if(el) el.classList.remove('active');
-    });
-    
-    // Ensure we are targeting the CORRECT player view (not the stub)
-    // We renamed duplicates, so 'view-active-workout' should be unique now.
-    const player = document.getElementById('view-active-workout');
-    if(player) {
-         player.style.display = 'block';
-         player.classList.add('active');
-    }
-    
-    // Hide Bottom Nav
-    const nav = document.querySelector('.bottom-nav');
-    if(nav) nav.style.display = 'none';
-
-    // 4. Start Timer
+    hideAllAppViews();
+    document.getElementById('view-active-workout').style.display = 'block';
     startWorkoutTimer();
 }
 
-function getSetRowHtml(setNum, defaultReps) {
-    return `
-    <div class="set-row" style="display:flex; align-items:center; padding:12px 15px; border-bottom:1px solid #f8fafc; gap:10px;">
-        <div class="set-num" style="width:15%; text-align:center; color:#cbd5e0; font-weight:700; font-size:0.9rem;">${setNum}</div>
-        <div style="width:42.5%;">
-            <input type="text" class="set-input" placeholder="-" style="background:#f1f5f9; border:1px solid transparent; border-radius:6px; text-align:center; padding:10px; width:100%; font-weight:600; color:var(--text-main); font-size:1rem;">
-        </div>
-        <div style="width:42.5%;">
-            <input type="text" class="set-input" value="${defaultReps || ''}" style="background:#f1f5f9; border:1px solid transparent; border-radius:6px; text-align:center; padding:10px; width:100%; font-weight:600; color:var(--text-main); font-size:1rem;">
-        </div>
-    </div>`;
-}
-
-function addSetRow(btn, defaultReps) {
-    const container = btn.closest('.add-set-container');
-    const setsContainer = container.parentElement;
-    
-    // Calculate next set number
-    const currentRows = setsContainer.querySelectorAll('.set-row');
-    const nextNum = currentRows.length + 1;
-    
-    // Create new row
-    const div = document.createElement('div');
-    div.innerHTML = getSetRowHtml(nextNum, defaultReps);
-    const newRow = div.firstElementChild; // Extract from wrapper
-    
-    // Insert before the button container
-    setsContainer.insertBefore(newRow, container);
-}
-
-function toggleSet(btn) {
-    btn.classList.toggle('completed');
-    // Optional: Add haptic feedback or sound
-}
-
-function toggleDescription(btn) {
-    const header = btn.closest('.exercise-header');
-    const desc = header.nextElementSibling;
-    
-    if (desc && desc.classList.contains('exercise-description')) {
-        if (desc.style.display === 'none') {
-            desc.style.display = 'block';
-            btn.innerText = 'Hide Description ?';
-        } else {
-            desc.style.display = 'none';
-            btn.innerText = 'Read Description ?';
+function getPreviousStats(name, set) {
+    const history = JSON.parse(localStorage.getItem('workout_history') || '[]');
+    for (let i = history.length - 1; i >= 0; i--) {
+        const h = history[i];
+        if (h.exercise === name && h.set === set) {
+            if (h.kg && h.kg !== '0') return `${h.kg}kg x ${h.reps}`;
+            return `${h.reps}`;
         }
     }
+    return '';
 }
 
+function getSetRowHtml(exName, setNum, isTimeBased) {
+    const prev = getPreviousStats(exName, setNum) || '-';
+    return `
+        <div class="workout-set-row" style="display:grid; grid-template-columns: 30px 1fr 1fr 1fr 1fr; gap:12px; align-items:center; padding:12px 15px; border-top:1px solid #f8fafc;">
+            <div style="font-weight:800; color:#94a3b8; font-size:0.85rem;">${setNum}</div>
+            <div style="font-size:0.75rem; color:#cbd5e0; text-align:center;">${prev}</div>
+            <div style="position:relative;">
+                <input type="text" class="input-time" placeholder="-" style="width:100%; border:none; background:#f8fafc; border-radius:10px; padding:12px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.95rem;">
+                ${isTimeBased ? '<svg viewBox="0 0 24 24" style="position:absolute; left:5px; top:50%; transform:translateY(-50%); width:14px; height:14px; fill:#94a3b8;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>' : ''}
+            </div>
+            <input type="text" class="input-reps" placeholder="Reps" style="width:100%; border:none; background:#f8fafc; border-radius:10px; padding:12px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.95rem;">
+            <input type="text" class="input-kg" placeholder="Kg" style="width:100%; border:none; background:#f8fafc; border-radius:10px; padding:12px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.95rem;">
+        </div>
+    `;
+}
+
+function addWorkoutSet(btn, exName, isTimeBased) {
+    const card = btn.closest('div[style*="background:white"]');
+    const container = card.querySelector('.sets-list-container');
+    const setNum = container.children.length + 1;
+    const div = document.createElement('div');
+    div.innerHTML = getSetRowHtml(exName, setNum, isTimeBased).trim();
+    container.appendChild(div.firstElementChild);
+}
+
+let workoutTimerInterval;
 function startWorkoutTimer() {
     let sec = 0;
     const display = document.getElementById('workout-timer');
@@ -7851,28 +8003,52 @@ function finishWorkout() {
     const duration = document.getElementById('workout-timer').innerText;
     document.getElementById('success-duration').innerText = duration;
 
-    // Show Success
-    document.getElementById('view-active-workout').style.display = 'none';
-    document.getElementById('view-workout-success').style.display = 'flex'; // flex for centering
+    // Save logic
+    const activeWorkout = document.getElementById('workout-exercises-list');
+    const history = JSON.parse(localStorage.getItem('workout_history') || '[]');
+    const date = new Date().toISOString();
 
-    // Determine return tab
-    // We stay on Success until user clicks Done
+    activeWorkout.querySelectorAll('div[style*="background:white"]').forEach(card => {
+        const name = card.querySelector('h3').innerText;
+        const container = card.querySelector('.sets-list-container');
+        if(!container) return;
+        
+        container.querySelectorAll('.workout-set-row').forEach((row, rIdx) => {
+            const time = row.querySelector('.input-time')?.value || '';
+            const reps = row.querySelector('.input-reps')?.value || '';
+            const kg = row.querySelector('.input-kg')?.value || '';
+            
+            if (time || reps || kg) {
+                history.push({
+                    date,
+                    exercise: name,
+                    set: rIdx + 1,
+                    kg: kg || '0',
+                    reps: reps || time,
+                    duration
+                });
+            }
+        });
+    });
+
+    localStorage.setItem('workout_history', JSON.stringify(history));
+
+    hideAllAppViews();
+    document.getElementById('view-workout-success').style.display = 'flex';
 }
 
 function quitWorkout() {
-    if(confirm('Exit workout? Progress will not be saved.')) {
+    if(confirm('Quit workout? Your progress won\'t be saved.')) {
         clearInterval(workoutTimerInterval);
-        closeSuccessScreen(); // Reuses logic to return to home
+        closeSuccessScreen();
     }
 }
 
 function closeSuccessScreen() {
-    // Return to Movement Studio
-    document.getElementById('view-workout-success').style.display = 'none';
-    document.getElementById('view-active-workout').style.display = 'none';
-    
+    hideAllAppViews();
+    document.getElementById('movement-tab').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'flex';
-    switchAppTab('movement-tab');
+    renderMovementView();
 }</script>
 <!-- Image Modal HTML -->
 <div class="image-modal-overlay" id="imageModal" onclick="closeImageModal()">
@@ -9036,21 +9212,21 @@ async function sendCommunityMessage() {
 // --- THEME SYSTEM ---
 const APP_THEMES = {
     'default': { 
-        name: 'Forest (Default)', 
+        name: 'Forest (Premium)', 
         colors: { 
-            '--primary': '#166534', 
-            '--primary-light': '#14532d', 
-            '--secondary': '#854d0e', 
-            '--accent-green': '#f0fdf4', 
-            '--bg': '#f9f9f7', 
+            '--primary': '#064e3b', 
+            '--primary-light': '#065f46', 
+            '--secondary': '#b45309', 
+            '--accent-green': '#ecfdf5', 
+            '--bg': '#f7fdfa', 
             '--surface': '#ffffff', 
-            '--text-main': '#1a202c', 
-            '--text-muted': '#4a5568',
-            '--chat-bg-user': '#166534',
+            '--text-main': '#064e3b', 
+            '--text-muted': '#374151',
+            '--chat-bg-user': '#064e3b',
             '--chat-text-user': '#ffffff',
-            '--chat-bg-coach': '#f1f5f9',
-            '--chat-text-coach': '#1a202c',
-            '--chat-border-coach': '#e2e8f0'
+            '--chat-bg-coach': '#f3f4f6',
+            '--chat-text-coach': '#111827',
+            '--chat-border-coach': '#e5e7eb'
         } 
     },
     'antigravity-dark': { 
