@@ -6761,55 +6761,6 @@ function startCustomBuilderWorkout() {
 
 </div>
 
-<!-- VIDEO MODAL (YouTube) -->
-<div id="video-modal" class="image-modal-overlay" style="display:none; justify-content:center; align-items:center;" onclick="closeVideoModal()">
-    <div style="position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; cursor: pointer; z-index: 10002;"></div>
-    <div style="width:90%; max-width:800px; aspect-ratio:16/9; background:black; border-radius:12px; overflow:hidden; z-index:10001; position:relative;" onclick="event.stopPropagation()">
-        <iframe id="video-frame" width="100%" height="100%" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-    </div>
-</div>
-
-<!-- Exercise Video Database (1700+ Google Drive Links) -->
-<script src="exercise_videos.js"></script>
-<script>
-function openExerciseVideo(url, title) {
-    if (!url) {
-        alert("Video coming soon for: " + title);
-        return;
-    }
-    
-    let embedUrl = url;
-    // Drive Link Handling
-    if (url.includes('drive.google.com')) {
-        if (url.includes('/view')) {
-            embedUrl = url.replace('/view', '/preview');
-        } else if (!url.includes('/preview')) {
-            embedUrl = url; 
-        }
-    } else if (url.includes('watch?v=')) {
-        const v = url.split('watch?v=')[1].split('&')[0];
-        embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
-    } else if (url.includes('youtu.be/')) {
-        const v = url.split('youtu.be/')[1].split('?')[0];
-        embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
-    }
-
-    const modal = document.getElementById('video-modal');
-    const frame = document.getElementById('video-frame');
-    frame.src = embedUrl;
-    modal.style.display = 'flex';
-    modal.classList.add('active');
-}
-
-function closeVideoModal() {
-    const modal = document.getElementById('video-modal');
-    const frame = document.getElementById('video-frame');
-    modal.style.display = 'none';
-    modal.classList.remove('active');
-    frame.src = '';
-}
-</script>
-
 <!-- WORKOUT SUCCESS VIEW -->
 <div id="view-workout-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 2000; background: var(--primary); color: white; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;">
     
