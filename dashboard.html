@@ -8843,24 +8843,7 @@ function gatherContext() {
     };
 }
 
-function getGoogleAPIKey() {
-    let key = localStorage.getItem('google_api_key');
-    if (!key) {
-        key = prompt("Please enter your Google Gemini API Key to enable the AI Coach:");
-        if (key) {
-            localStorage.setItem('google_api_key', key.trim());
-        }
-    }
-    return key;
-}
-
 window.triggerCoachResponse = async function(userMsg) {
-    const apiKey = getGoogleAPIKey();
-    if (!apiKey) {
-        appendCoachMessage("I need an API key to think! Please refresh and enter one.");
-        return;
-    }
-
     const container = document.getElementById('chat-messages-container');
     const typingDiv = document.createElement('div');
     typingDiv.id = 'coach-typing';
@@ -8883,52 +8866,30 @@ window.triggerCoachResponse = async function(userMsg) {
     let context = gatherContext();
     const history = getChatHistory().map(m => ({ 
         role: m.role === 'user' ? 'user' : 'model', 
-        parts: [{ text: m.text }] 
+        text: m.text 
     }));
-    const recentHistory = history.slice(-10);
-
-    const systemInstruction = `You are Shannon, a warm, empathetic, and highly knowledgeable plant-based nutrition coach & exercise scientist.
-      You are a 34-year-old Male.
-      You are coaching a client through a hormone-balancing reset program (Plant-Based Balance).
-      
-      YOUR BACKSTORY:
-      - Personal: 34 years old, Male.
-      - Current Location: Lowood (Ipswich area), planning to move back to the Gold Coast (Tugun) in March.
-      - Career: Owned a gym in Melbourne (Coco's Gym) for 5 years. PT for 15 years.
-      - Education: Bachelor of Exercise Science, Masters in Nutrition. Specialized in Female Hormone Regulation.
-      - Interests: Science, neuroscience, physics, biology. Fans of Lisa Feldman Barrett and Karl Friston.
-      
-      Client Context:
-      - Name: ${context.name}
-      - Profile: ${context.profile}
-      - Sleep: ${context.sleep}
-      - Energy: ${context.energy}
-      
-      RESPONSE FORMAT: Use "|||" to separate messages for a natural texting feel.
-      TONE: Chill, Australian casual ("mate", "sweet", "no worries"). Use relaxed grammar.
-      `;
-
-    let fullPrompt = systemInstruction + "\n\nRECENT HISTORY:\n";
-    recentHistory.forEach(h => fullPrompt += `${h.role === 'user' ? 'User' : 'You'}: ${h.parts[0].text}\n`);
-    fullPrompt += `\nUser: ${userMsg}\n\nYou:`;
-
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     try {
-        const response = await fetch(apiUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
+        const response = await fetch('/.netlify/functions/ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'coach',
+                message: userMsg,
+                contextData: context,
+                chatHistory: history,
+                currentDateTime: new Date().toLocaleString()
+            })
         });
 
         const data = await response.json();
         removeTypingIndicator();
 
-        if (!response.ok) throw new Error(data.error?.message || "API Error");
+        if (!response.ok) throw new Error(data.error?.message || "Connection Issue");
 
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (reply) {
-            const parts = reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
+        if (data.reply) {
+            // Support for multi-message responses separated by '|||'
+            const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
             let delay = 0;
             parts.forEach((part) => {
                 setTimeout(() => appendCoachMessage(part), delay);
@@ -8936,29 +8897,27 @@ window.triggerCoachResponse = async function(userMsg) {
             });
         }
     } catch (err) {
-        console.error("AI Error", err);
+        console.error("Coach Error", err);
         removeTypingIndicator();
-        appendCoachMessage("Sorry mate, my brain is a bit foggy. Give me a sec?");
+        // Silent fail or very subtle hint - but never "AI Error"
     }
 };
 
 async function triggerAICommunityResponse(userMsg) {
-    const apiKey = getGoogleAPIKey();
-    if(!apiKey) return; 
-
-    const systemPrompt = `You are a member of a helpful plant-based community. Reply briefly to: "${userMsg}". Under 20 words.`;
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
+    // Community AI also uses Netlify function
     setTimeout(async () => {
         try {
-            const response = await fetch(apiUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] })
+            const response = await fetch('/.netlify/functions/ai-chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'community',
+                    message: userMsg,
+                    currentDateTime: new Date().toLocaleString()
+                })
             });
             const data = await response.json();
-            const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (reply) {
+            if (data.reply) {
                 const personas = [
                     { name: 'Sarah J.', id: 'p1', avatar: 'SJ' },
                     { name: 'Mike T.', id: 'p2', avatar: 'MT' },
@@ -8966,11 +8925,11 @@ async function triggerAICommunityResponse(userMsg) {
                 ];
                 const persona = personas[Math.floor(Math.random() * personas.length)];
                 const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
-                messages.push({ authorId: persona.id, authorName: persona.name, authorAvatar: persona.avatar, text: reply, timestamp: Date.now() });
+                messages.push({ authorId: persona.id, authorName: persona.name, authorAvatar: persona.avatar, text: data.reply, timestamp: Date.now() });
                 localStorage.setItem('community_chat_history', JSON.stringify(messages));
                 if(typeof renderChat === 'function') renderChat(messages);
             }
-        } catch (e) { console.log("Comm AI Skipped", e); }
+        } catch (e) { console.log("Comm skip", e); }
     }, 4000); 
 }
 
