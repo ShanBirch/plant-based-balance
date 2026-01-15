@@ -968,6 +968,26 @@
         <h1 class="user-name">Hello, Shannon</h1>
     </div>
 
+    <!-- PWA INSTALL BANNER (Only shown if not installed) -->
+    <div id="pwa-install-banner" style="display:none; margin: 0 25px 20px 25px; background: linear-gradient(135deg, var(--primary) 0%, #034f2a 100%); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(4, 106, 56, 0.3); animation: slideDown 0.5s ease-out;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px;">
+            <div style="flex: 1;">
+                <div style="font-weight: 700; font-size: 1.1rem; color: white; margin-bottom: 5px;">📲 Install Our App</div>
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Add to home screen for quick access</div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="installPWA()" style="background: var(--secondary); color: white; border: none; padding: 10px 20px; border-radius: 50px; font-weight: 700; cursor: pointer; font-size: 0.9rem;">Install</button>
+                <button onclick="dismissInstall()" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); padding: 10px 15px; border-radius: 50px; cursor: pointer;">✕</button>
+            </div>
+        </div>
+    </div>
+    <style>
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+
     <div style="padding: 0 25px;">
         <h3 style="margin-bottom: 15px;">Today's Priority</h3>
         <!-- Quick Action Card -->
@@ -9193,6 +9213,52 @@ function openAsClient() {
             initOnboarding();
         });
     }
+</script>
+
+<script>
+// --- PWA INSTALL BANNER LOGIC ---
+let deferredPrompt;
+let installBannerDismissed = localStorage.getItem('pwa_banner_dismissed') === 'true';
+
+// Detect if running as installed PWA
+const isInstalledPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+// Only show on mobile devices
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Show banner if: mobile + not installed + not dismissed
+    if (isMobile && !isInstalledPWA && !installBannerDismissed) {
+        setTimeout(() => {
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner) banner.style.display = 'block';
+        }, 2000); // Show after 2 seconds
+    }
+});
+
+window.installPWA = async function() {
+    if (!deferredPrompt) return;
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+        console.log('PWA installed');
+    }
+    
+    deferredPrompt = null;
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.style.display = 'none';
+};
+
+window.dismissInstall = function() {
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.style.display = 'none';
+    localStorage.setItem('pwa_banner_dismissed', 'true');
+};
 </script>
 
 <script>
