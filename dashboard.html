@@ -8013,9 +8013,10 @@ function renderChat(messages) {
              avatarHtml = `<img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; flex-shrink:0; align-self:flex-end; margin-bottom:5px;">`;
         }
         
-        const bubbleStyle = isMe ? 
-            "background: var(--primary); color: white; border-radius: 18px 18px 0 18px;" : 
-            "background: #f1f5f9; color: var(--text-main); border-radius: 18px 18px 18px 0;";
+        const bBg = isMe ? 'var(--chat-bg-user)' : 'var(--chat-bg-coach)';
+        const bText = isMe ? 'var(--chat-text-user)' : 'var(--chat-text-coach)';
+        const bRadius = isMe ? '18px 18px 0 18px' : '18px 18px 18px 0';
+        const bBorder = isMe ? 'none' : '1px solid var(--chat-border-coach)';
             
         const alignStyle = isMe ? "justify-content: flex-end;" : "justify-content: flex-start;";
 
@@ -8023,8 +8024,8 @@ function renderChat(messages) {
             <div style="display:flex; ${alignStyle} margin-bottom: 12px; gap: 8px;">
                 ${!isMe ? avatarHtml : ''}
                 <div style="display:flex; flex-direction:column; max-width:75%; ${isMe ? 'align-items:flex-end;' : 'align-items:flex-start;'}">
-                    ${!isMe ? `<div style="font-size:0.7rem; color:#94a3b8; margin-left:10px; margin-bottom:2px;">${author.name}</div>` : ''}
-                    <div style="padding: 10px 15px; font-size: 0.95rem; line-height: 1.4; ${bubbleStyle} box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                    ${!isMe ? `<div style="font-size:0.7rem; color:var(--text-muted); margin-left:10px; margin-bottom:2px;">${author.name}</div>` : ''}
+                    <div style="padding: 10px 15px; font-size: 0.95rem; line-height: 1.4; background: ${bBg}; color: ${bText}; border-radius: ${bRadius}; border: ${bBorder}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
                         ${msg.text}
                     </div>
                 </div>
@@ -8100,8 +8101,8 @@ function renderSingleCommunityBubble(member, text) {
         <div style="display:flex; justify-content: flex-start; margin-bottom: 12px; gap: 8px; animation: fadeIn 0.3s ease;">
             ${avatarHtml}
             <div style="display:flex; flex-direction:column; max-width:75%; align-items:flex-start;">
-                <div style="font-size:0.7rem; color:#94a3b8; margin-left:10px; margin-bottom:2px;">${member.name}</div>
-                <div style="padding: 10px 15px; font-size: 0.95rem; line-height: 1.4; background: #f1f5f9; color: var(--text-main); border-radius: 18px 18px 18px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                <div style="font-size:0.7rem; color:var(--text-muted); margin-left:10px; margin-bottom:2px;">${member.name}</div>
+                <div style="padding: 10px 15px; font-size: 0.95rem; line-height: 1.4; background: var(--chat-bg-coach); color: var(--chat-text-coach); border: 1px solid var(--chat-border-coach); border-radius: 18px 18px 18px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
                     ${text}
                 </div>
             </div>
@@ -8950,16 +8951,15 @@ window.submitCoachMessage = function() {
     const text = input.value.trim();
     if (!text) return;
     
-    // UI
     const container = document.getElementById('chat-messages-container');
     if(container) {
         const msgDiv = document.createElement('div');
         msgDiv.style.cssText = "display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 20px; align-self: flex-end; max-width: 85%; animation: fadeIn 0.3s ease;";
         msgDiv.innerHTML = `
-            <div style="background: var(--primary); padding: 15px 20px; border-radius: 16px 0 16px 16px; color: white; box-shadow: 0 4px 10px rgba(4, 106, 56, 0.2);">
-                <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; color: white;">${text}</p>
+            <div style="background: var(--chat-bg-user); padding: 15px 20px; border-radius: 16px 0 16px 16px; color: var(--chat-text-user); box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; color: inherit;">${text}</p>
             </div>
-            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px; margin-right: 2px;">You  Just now</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; margin-right: 2px;">You  Just now</div>
         `;
         container.appendChild(msgDiv);
         container.scrollTop = container.scrollHeight;
@@ -8983,10 +8983,10 @@ window.loadChatHistory = function() {
     if (!container) return;
     const history = getChatHistory();
     container.innerHTML = `<div style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; max-width: 85%;">
-        <div style="background: #f8fafc; padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid #e2e8f0; color: var(--text-main);">
+        <div style="background: var(--chat-bg-coach); padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid var(--chat-border-coach); color: var(--chat-text-coach);">
         <p style="margin: 0; font-size: 0.95rem; line-height: 1.5;">Hey there! I'm Shannon, your reset coach. How's your progress tracking today?</p>
         </div>
-        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px; margin-left: 2px;">Shannon  Always here</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; margin-left: 2px;">Shannon  Always here</div>
     </div>`;
 
     history.forEach(msg => {
@@ -8994,10 +8994,10 @@ window.loadChatHistory = function() {
         const msgDiv = document.createElement('div');
         msgDiv.style.cssText = `display: flex; flex-direction: column; align-items: ${isUser ? 'flex-end' : 'flex-start'}; margin-bottom: 20px; align-self: ${isUser ? 'flex-end' : 'flex-start'}; max-width: 85%;`;
         msgDiv.innerHTML = `
-            <div style="background: ${isUser ? 'var(--primary)' : '#f8fafc'}; padding: 15px 20px; border-radius: ${isUser ? '16px 0 16px 16px' : '0 16px 16px 16px'}; border: ${isUser ? 'none' : '1px solid #e2e8f0'}; color: ${isUser ? 'white' : 'var(--text-main)'};">
-                <p style="margin: 0; font-size: 0.95rem; line-height: 1.5;">${msg.text}</p>
+            <div style="background: ${isUser ? 'var(--chat-bg-user)' : 'var(--chat-bg-coach)'}; padding: 15px 20px; border-radius: ${isUser ? '16px 0 16px 16px' : '0 16px 16px 16px'}; border: ${isUser ? 'none' : '1px solid var(--chat-border-coach)'}; color: ${isUser ? 'var(--chat-text-user)' : 'var(--chat-text-coach)'}; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; color: inherit;">${msg.text}</p>
             </div>
-            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px;">${isUser ? 'You' : 'Shannon'}  ${new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">${isUser ? 'You' : 'Shannon'}  ${new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
         `;
         container.appendChild(msgDiv);
     });
@@ -9010,10 +9010,10 @@ window.appendCoachMessage = function(text) {
     const msgDiv = document.createElement('div');
     msgDiv.style.cssText = "display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; max-width: 85%; animation: fadeIn 0.3s ease;";
     msgDiv.innerHTML = `
-        <div style="background: #f8fafc; padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid #e2e8f0; color: var(--text-main);">
-            <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${text}</p>
+        <div style="background: var(--chat-bg-coach); padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid var(--chat-border-coach); color: var(--chat-text-coach); box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; color: inherit; white-space: pre-wrap;">${text}</p>
         </div>
-        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px; margin-left: 2px;">Shannon ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; margin-left: 2px;">Shannon ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
     `;
     container.appendChild(msgDiv);
     container.scrollTop = container.scrollHeight;
@@ -9033,12 +9033,98 @@ async function sendCommunityMessage() {
 }
 
 // --- THEME SYSTEM ---
+// --- THEME SYSTEM ---
 const APP_THEMES = {
-    'default': { name: 'Forest (Default)', colors: { '--primary': '#046A38', '--primary-light': '#06542f', '--secondary': '#d4af37', '--accent-green': '#f0fdf4', '--bg': '#f9f9f7', '--surface': '#ffffff', '--text-main': '#1a202c', '--text-muted': '#718096' } },
-    'antigravity-dark': { name: 'Antigravity Dark', colors: { '--primary': '#7C3AED', '--primary-light': '#8B5CF6', '--secondary': '#10B981', '--accent-green': '#1f2937', '--bg': '#111827', '--surface': '#1F2937', '--text-main': '#F3F4F6', '--text-muted': '#9CA3AF' } },
-    'antigravity-light': { name: 'Antigravity Light', colors: { '--primary': '#4F46E5', '--primary-light': '#6366F1', '--secondary': '#F59E0B', '--accent-green': '#EEF2FF', '--bg': '#FFFFFF', '--surface': '#F3F4F6', '--text-main': '#111827', '--text-muted': '#6B7280' } },
-    'ocean': { name: 'Ocean Calm', colors: { '--primary': '#0284c7', '--primary-light': '#38bdf8', '--secondary': '#f472b6', '--accent-green': '#e0f2fe', '--bg': '#f0f9ff', '--surface': '#ffffff', '--text-main': '#0c4a6e', '--text-muted': '#64748b' } },
-    'sunset': { name: 'Sunset Glow', colors: { '--primary': '#be123c', '--primary-light': '#fb7185', '--secondary': '#f59e0b', '--accent-green': '#fff1f2', '--bg': '#fff1f2', '--surface': '#fff', '--text-main': '#881337', '--text-muted': '#9f1239' } }
+    'default': { 
+        name: 'Forest (Default)', 
+        colors: { 
+            '--primary': '#166534', 
+            '--primary-light': '#14532d', 
+            '--secondary': '#854d0e', 
+            '--accent-green': '#f0fdf4', 
+            '--bg': '#f9f9f7', 
+            '--surface': '#ffffff', 
+            '--text-main': '#1a202c', 
+            '--text-muted': '#4a5568',
+            '--chat-bg-user': '#166534',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#f1f5f9',
+            '--chat-text-coach': '#1a202c',
+            '--chat-border-coach': '#e2e8f0'
+        } 
+    },
+    'antigravity-dark': { 
+        name: 'Antigravity Dark', 
+        colors: { 
+            '--primary': '#6366f1', 
+            '--primary-light': '#818cf8', 
+            '--secondary': '#22d3ee', 
+            '--accent-green': '#1e1b4b', 
+            '--bg': '#0f172a', 
+            '--surface': '#1e293b', 
+            '--text-main': '#f8fafc', 
+            '--text-muted': '#94a3b8',
+            '--chat-bg-user': '#6366f1',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#334155',
+            '--chat-text-coach': '#f8fafc',
+            '--chat-border-coach': '#475569'
+        } 
+    },
+    'antigravity-light': { 
+        name: 'Antigravity Light', 
+        colors: { 
+            '--primary': '#4f46e5', 
+            '--primary-light': '#6366f1', 
+            '--secondary': '#0891b2', 
+            '--accent-green': '#eff6ff', 
+            '--bg': '#ffffff', 
+            '--surface': '#f8fafc', 
+            '--text-main': '#0f172a', 
+            '--text-muted': '#64748b',
+            '--chat-bg-user': '#4f46e5',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#f1f5f9',
+            '--chat-text-coach': '#0f172a',
+            '--chat-border-coach': '#e2e8f0'
+        } 
+    },
+    'ocean': { 
+        name: 'Ocean Calm', 
+        colors: { 
+            '--primary': '#0369a1', 
+            '--primary-light': '#0ea5e9', 
+            '--secondary': '#db2777', 
+            '--accent-green': '#f0f9ff', 
+            '--bg': '#f0f9ff', 
+            '--surface': '#ffffff', 
+            '--text-main': '#082f49', 
+            '--text-muted': '#64748b',
+            '--chat-bg-user': '#0369a1',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#f1f5f9',
+            '--chat-text-coach': '#082f49',
+            '--chat-border-coach': '#e0f2fe'
+        } 
+    },
+    'sunset': { 
+        name: 'Sunset Glow', 
+        colors: { 
+            '--primary': '#9d174d', 
+            '--primary-light': '#be123c', 
+            '--secondary': '#ea580c', 
+            '--accent-green': '#fff1f2', 
+            '--bg': '#fff1f2', 
+            '--surface': '#ffffff', 
+            '--text-main': '#500724', 
+            '--text-muted': '#9d174d',
+            '--chat-bg-user': '#9d174d',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#fff5f5',
+            '--chat-text-coach': '#500724',
+            '--chat-border-coach': '#ffe4e6'
+        } 
+    }
 };
 
 function applyAppTheme(themeKey) {
