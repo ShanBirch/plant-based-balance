@@ -6253,7 +6253,7 @@
                 <div style="height: 60px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; position: sticky; top: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); z-index: 50;">
                     <div style="text-align: center;">
                         <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Coach Shannon</div>
-                        <div style="font-size: 0.75rem; color: var(--primary); font-weight: 600;">? Online</div>
+                        <div id="coach-header-status-text" style="font-size: 0.75rem; color: var(--primary); font-weight: 600;">Active Now</div>
                     </div>
                 </div>
 
@@ -9393,6 +9393,142 @@ function closeVideoModal() {
 document.getElementById('video-modal').addEventListener('click', function(e) {
     if (e.target === this) closeVideoModal();
 });
+</script>
+<div id="coach-floating-bubble" onclick="openCoachChat()" style="position: fixed; bottom: 130px; right: 20px; z-index: 9999; cursor: pointer; transition: transform 0.2s;">
+    <div style="width: 56px; height: 56px; border-radius: 50%; background: #f1f5f9 url('https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80') no-repeat center/cover; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.15);"></div>
+    <div id="coach-bubble-dot" style="position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background: #22c55e; border: 2px solid white; border-radius: 50%;"></div>
+</div>
+
+<script>
+// --- COACH CHAT ENHANCEMENTS ---
+
+// 1. Office Hours Config (Brisbane Time)
+const COACH_CONFIG = {
+    timezone: 'Australia/Brisbane',
+    startHour: 7,    // 7 AM
+    endHour: 20,     // 8 PM
+    endMin: 30       // :30
+};
+
+function getCoachState() {
+    try {
+        const now = new Date();
+        const bneTimeStr = now.toLocaleString("en-US", {timeZone: COACH_CONFIG.timezone});
+        const bneTime = new Date(bneTimeStr);
+        
+        const totalMins = bneTime.getHours() * 60 + bneTime.getMinutes();
+        const startMins = COACH_CONFIG.startHour * 60;
+        const endMins = COACH_CONFIG.endHour * 60 + COACH_CONFIG.endMin;
+        
+        const isOnline = totalMins >= startMins && totalMins < endMins;
+        return { isOnline, totalMins };
+    } catch(e) {
+        return { isOnline: true }; // Fail-safe
+    }
+}
+
+function updateCoachUI() {
+    const { isOnline } = getCoachState();
+    const headerStatus = document.getElementById('coach-header-status-text');
+    const bubbleDot = document.getElementById('coach-bubble-dot');
+    
+    // Check Bubble Visibility (Hide if Support view is open)
+    const supportView = document.getElementById('view-support');
+    const bubble = document.getElementById('coach-floating-bubble');
+    if(bubble && supportView) {
+        const isSupportOpen = supportView.style.display !== 'none';
+        bubble.style.display = isSupportOpen ? 'none' : 'block';
+    }
+    
+    const color = isOnline ? '#22c55e' : '#94a3b8'; // Green vs Slate
+    const text = isOnline ? 'Active Now' : 'Offline (Back 7am)';
+    
+    if(headerStatus) {
+        headerStatus.innerText = text;
+        headerStatus.style.color = isOnline ? 'var(--primary)' : '#64748b'; 
+    }
+    if(bubbleDot) {
+        bubbleDot.style.background = color;
+    }
+}
+
+// 2. Override Trigger for Offline Logic
+const _originalTriggerCoach = window.triggerCoachResponse;
+
+window.triggerCoachResponse = async function(userMsg) {
+    const { isOnline } = getCoachState();
+    
+    if (!isOnline) {
+        // Coach is Offline
+        const container = document.getElementById('chat-messages-container');
+        if(container) {
+            const typing = document.createElement('div');
+            typing.id = 'coach-typing-indicator';
+            typing.style.cssText = "display: flex; align-items: center; margin-bottom: 20px; margin-left:10px;";
+            typing.innerHTML = `<div style="font-size:0.8rem; color:#94a3b8; font-style:italic;">Coach is offline...</div>`;
+            container.appendChild(typing);
+            container.scrollTop = container.scrollHeight;
+            
+            await new Promise(r => setTimeout(r, 1200));
+            typing.remove();
+        }
+        
+        appendCoachMessage("I've officially clocked off for the night! 🌙 \n\nI'll be back online at 7am Brisbane time to review your message properly. Get some rest and chat soon!");
+        return;
+    }
+    
+    // Online: Pass through
+    if(_originalTriggerCoach) await _originalTriggerCoach(userMsg);
+};
+
+// 3. Daily Greeting
+function checkCoachGreeting() {
+    const { isOnline } = getCoachState();
+    if(!isOnline) return;
+    
+    const lastDate = localStorage.getItem('coach_last_greet_date');
+    const now = new Date();
+    const bneTimeStr = now.toLocaleString("en-US", {timeZone: COACH_CONFIG.timezone});
+    const todayStr = new Date(bneTimeStr).toDateString();
+    
+    if (lastDate !== todayStr) {
+        // New Day
+        let dayNum = 1;
+        const startStr = localStorage.getItem('pbb_start_date');
+        if(startStr) {
+             const start = new Date(startStr);
+             if(!isNaN(start)) {
+                 const diff = new Date() - start;
+                 dayNum = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+                 if(dayNum < 1) dayNum = 1;
+             }
+        }
+        
+        setTimeout(() => {
+            appendCoachMessage(`Good morning Shannon! Day ${dayNum} of 28. \n\nHow are you feeling today? Ready to hit your targets?`);
+            localStorage.setItem('coach_last_greet_date', todayStr);
+        }, 1500);
+    }
+}
+
+// 4. Bubble Interaction
+function openCoachChat() {
+    switchAppTab('support');
+    const btns = document.querySelectorAll('#view-support .sub-nav .sub-btn');
+    if(btns.length > 0 && typeof showSupportTab === 'function') {
+        showSupportTab('chat', btns[0]);
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    updateCoachUI();
+    setInterval(updateCoachUI, 1000); // Check every second for visibility toggle
+    setTimeout(checkCoachGreeting, 2000);
+});
+
+// Immediate
+updateCoachUI();
 </script>
 </body>
 </html>
