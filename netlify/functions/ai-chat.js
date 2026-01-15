@@ -12,9 +12,10 @@ exports.handler = async (event) => {
   }
 
   try {
-    // Initialize Gemini
+    const { message, chatType, chatHistory, userProfile } = JSON.parse(event.body);
+    
     if (!process.env.GEMINI_API_KEY) {
-      console.error('CRITICAL: GEMINI_API_KEY is null or undefined in environment');
+      console.error('CRITICAL: GEMINI_API_KEY is missing');
       return {
         statusCode: 500,
         headers,
@@ -23,35 +24,35 @@ exports.handler = async (event) => {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    // Use gemini-1.5-flash as the most reliable high-speed model
+    // Restoration of the specific model requested
     const model = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
-
-    // ... (rest of the prompt logic remains same)
 
     // Get current time context
     const now = new Date();
+    const serverTime = now.toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' });
     const hour = now.getHours();
     const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
     const dayOfWeek = now.toLocaleDateString('en-AU', { weekday: 'long' });
 
     // Build conversation history context
     const historyContext = chatHistory && chatHistory.length > 0 
-      ? `\n\nPREVIOUS CONVERSATION:\n${chatHistory.map(msg => `${msg.sender}: ${msg.text} (${msg.time})`).join('\n')}\n`
+      ? `\n\nPREVIOUS CONVERSATION:\n${chatHistory.map(msg => `${msg.sender}: ${msg.text}`).join('\n')}\n`
       : '';
 
     // Build user profile context
     const profileContext = userProfile 
-      ? `\n\nUSER CONTEXT:\n- Email: ${userProfile.email || 'Not provided'}\n- Protocol: ${userProfile.protocol || 'Not set'}\n- Current Phase: ${userProfile.currentPhase || 'Week 1'}\n- Symptoms: ${userProfile.symptoms || 'Not specified'}\n- Goals: ${userProfile.goals || 'Health optimization'}\n`
+      ? `\n\nUSER CONTEXT:\n- Name: ${userProfile.name || 'Friend'}\n- Email: ${userProfile.email || 'Not provided'}\n- Protocol: ${userProfile.protocol || 'Not set'}\n- Current Phase: ${userProfile.currentPhase || 'Week 1'}\n`
       : '';
 
-    const coachPrompt = `You are Shannon Birch, a 34-year-old plant-based health coach from Sunshine Coast, Australia. You're texting with a client RIGHT NOW on ${dayOfWeek} ${timeOfDay}.
+    const coachPrompt = `You are Shannon Birch, a 34-year-old plant-based health coach from Sunshine Coast, Australia. You're texting with a client RIGHT NOW.
+Local Time in Aus: ${serverTime} (${dayOfWeek} ${timeOfDay}).
 
 === YOUR PERSONALITY ===
-- Super chill, casual Aussie bloke
-- Sometimes double/triple text (2-3 short messages vs one long one)
-- Use: "mate", "fkin", "gonna", "wanna", "Imma", "Ya know"
-- Natural emojis: 🤙 😅 🤷 💪
-- Real and authentic - apologize when busy, set boundaries
+- Super chill, casual Aussie bloke.
+- Use natural Aussie slang/contractions: "mate", "fkin", "gonna", "wanna", "Imma", "Ya know", "prolly", "reckon".
+- Natural emojis: 🤙 😅 🤷 💪 🥗
+- Real and authentic - prioritize the client but be yourself.
+- Sometimes double/triple text (separate your response into 2-3 short blocks vs one long paragraph).
 
 === CONVERSATION EXAMPLES ===
 "ohhh haha maybe maybe!"
@@ -62,12 +63,11 @@ exports.handler = async (event) => {
 "I'm sorry mate, you never reach out, I want to be there when you do, but I've had a huge day."
 
 === CRITICAL: SOUND 100% HUMAN ===
-1. **Multiple Messages**: MUST send 2-3 SEPARATE text bubbles (use \\n\\n to separate)
-2. **Imperfections**: Occasionally skip capital, typo (5%), incomplete thought...
-3. **Fillers**: "like", "umm", "basically", "honestly"
-4. **Time-aware**: Acknowledge if morning ("Morning!"), late ("sorry for late reply")
-5. **Casual grammar**: "gonna", "wanna", "prolly", "kinda"
-6. **Mix lengths**: One word responses ("Yeah") + longer explanations
+1. **Multiple Messages**: You MUST separate your response into 2-3 SEPARATE segments using double newlines (\\n\\n).
+2. **Imperfections**: Occasionally use lowercase at start of sentences, use the occasional typo (like "the" -> "teh"), or trailing dots...
+3. **Fillers**: Use "like", "umm", "basically", "honestly" to sound conversational.
+4. **Time-aware**: Acknowledge the time if relevant (e.g. "Morning mate" or "Bit late but wanted to reply").
+5. **No Robot Talk**: Never say "As an AI..." or "How can I help you today?". Just talk.
 
 === YOUR KNOWLEDGE ===${profileContext}${historyContext}
 
@@ -75,9 +75,9 @@ exports.handler = async (event) => {
 User: ${message}
 
 === YOUR RESPONSE ===
-Respond as Shannon would RIGHT NOW. Send 2-3 separate text messages (separated by \\n\\n). Be casual, imperfect, and 100% human:`;
+Respond as Shannon would. Send 2-3 separate segments (separated by \\n\\n). Be casual, imperfect, and 100% human.`;
 
-    const communityPrompt = `You are a supportive AI for a plant-based health community. Be friendly, encouraging, helpful.${historyContext}
+    const communityPrompt = `You are a supportive community assistant for a plant-based health group. Be encouraging and helpful.${historyContext}
 
 User: ${message}
 
@@ -86,15 +86,7 @@ Response:`;
     const prompt = chatType === 'coach' ? coachPrompt : communityPrompt;
     
     const result = await model.generateContent(prompt);
-    let response = result.response.text();
-    
-    // Add occasional typo (5% chance) to make it more human
-    if (Math.random() < 0.05 && chatType === 'coach') {
-      const typos = { 'the': 'teh', 'you': 'u', 'your': 'ur', 'probably': 'prolly' };
-      const typoKeys = Object.keys(typos);
-      const randomKey = typoKeys[Math.floor(Math.random() * typoKeys.length)];
-      response = response.replace(new RegExp(`\\b${randomKey}\\b`, 'i'), typos[randomKey]);
-    }
+    const response = result.response.text();
     
     return {
       statusCode: 200,
@@ -103,11 +95,11 @@ Response:`;
     };
     
   } catch (error) {
-    console.error('AI Error:', error);
+    console.error('AI Error Detailed:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'AI service unavailable' })
+      body: JSON.stringify({ error: error.message || 'AI service unavailable' })
     };
   }
 };
