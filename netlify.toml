@@ -26,11 +26,6 @@
   function = "track-purchase"
   path = "/.netlify/functions/track-purchase"
 
-[[edge_functions]]
-  function = "ai_chat"
-  path = "/.netlify/functions/ai-chat"
-
-
 # Ensure we redirect legacy URLs
 [[redirects]]
   from = "/quiz"

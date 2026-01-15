@@ -12,10 +12,21 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { message, chatType, chatHistory, userProfile } = JSON.parse(event.body);
-    
+    // Initialize Gemini
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('CRITICAL: GEMINI_API_KEY is null or undefined in environment');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'API Key missing on server' })
+      };
+    }
+
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
+    // Use gemini-1.5-flash as the most reliable high-speed model
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // ... (rest of the prompt logic remains same)
 
     // Get current time context
     const now = new Date();
