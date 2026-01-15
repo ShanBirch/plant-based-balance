@@ -7896,14 +7896,27 @@ function startActiveWorkout(id) {
 
 function getPreviousStats(name, set) {
     const history = JSON.parse(localStorage.getItem('workout_history') || '[]');
-    for (let i = history.length - 1; i >= 0; i--) {
-        const h = history[i];
-        if (h.exercise === name && h.set === set) {
-            if (h.kg && h.kg !== '0') return `${h.kg}kg x ${h.reps}`;
-            return `${h.reps}`;
+    // Filter history for this specific exercise
+    const exerciseHistory = history.filter(h => h.exercise === name);
+    
+    // If no history at all, return 'New'
+    if (exerciseHistory.length === 0) return 'New';
+
+    // Find the entry for this specific set number in the MOST RECENT session
+    // We assume history is chronological. We iterate backwards.
+    // We need to group by session (date) effectively, or just look for the last occurrence of this set?
+    // Implementation choice: Look for the last object matching exercise + set.
+    // NOTE: This assumes one entry per set per session.
+    
+    for (let i = exerciseHistory.length - 1; i >= 0; i--) {
+        const h = exerciseHistory[i];
+        if (h.set == set) { // Use loose equality for '1' vs 1
+             if (h.kg && h.kg !== '0' && h.kg !== '') return `${h.kg}kg x ${h.reps}`;
+             return `${h.reps}`;
         }
     }
-    return '';
+    
+    return '-'; 
 }
 
 function getSetRowHtml(exName, setNum, isTimeBased) {
@@ -7923,12 +7936,37 @@ function getSetRowHtml(exName, setNum, isTimeBased) {
 }
 
 function addWorkoutSet(btn, exName, isTimeBased) {
-    const card = btn.closest('div[style*="background:white"]');
+    // Navigate up to the card container
+    // Structure: Button -> Div -> Div (padding) -> Card
+    const card = btn.closest('.card') || btn.parentElement.parentElement.parentElement;
+    
+    // Find the sets container within this card
     const container = card.querySelector('.sets-list-container');
+    
+    if (!container) {
+        console.error("Could not find .sets-list-container");
+        return;
+    }
+
     const setNum = container.children.length + 1;
+    
+    // Create new div wrapper (since getSetRowHtml returns a string)
     const div = document.createElement('div');
     div.innerHTML = getSetRowHtml(exName, setNum, isTimeBased).trim();
-    container.appendChild(div.firstElementChild);
+    
+    // Optional: Add simple animation
+    const newRow = div.firstElementChild;
+    newRow.style.opacity = '0';
+    newRow.style.transform = 'translateY(-10px)';
+    newRow.style.transition = 'all 0.3s ease';
+    
+    container.appendChild(newRow);
+    
+    // Trigger reflow for animation
+    requestAnimationFrame(() => {
+        newRow.style.opacity = '1';
+        newRow.style.transform = 'translateY(0)';
+    });
 }
 
 let workoutTimerInterval;
