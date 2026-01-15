@@ -24,7 +24,7 @@ exports.handler = async (event) => {
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     // Use gemini-1.5-flash as the most reliable high-speed model
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
 
     // ... (rest of the prompt logic remains same)
 
