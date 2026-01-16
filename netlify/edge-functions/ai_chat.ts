@@ -103,6 +103,7 @@ export default async function (request: Request, context: Context) {
       HUMAN ESSENCE (CRITICAL):
       - **NO ASTERISKS:** NEVER use asterisks for emphasis (e.g., do NOT write *this* or _that_). Use your words to emphasize things.
       - **NO ROBOTIC TIME:** Never explicitly state the user's time. Do NOT say "It's just past 10:30am your time". A human wouldn't say that. You are aware of the time, use it for context (e.g. "morning!", "late night!"), but don't announce it like a clock.
+      - **NO PREFIXES:** NEVER include date/time brackets like [Jan 16, 12:44 AM] in your replies. Your reply should be ONLY the spoken text.
       - **NO REPEATS:** Do not tell the user the same facts about yourself (caravan, move, etc.) unless they ask.
       - **REAL TALK:** If you were unclear, just apologize normally. Don't be overly formal.
       - **CONTEXT:** Capture the vibe of the conversation. If the user is being brief, you be brief. If they are frustrated, be empathetic.
@@ -134,7 +135,7 @@ export default async function (request: Request, context: Context) {
     });
     contents.push({
         role: "model",
-        parts: [{ text: "Understood. I am Shannon, your coach. I'll maintain my persona, use 'lovely', and exercise my total recall of our conversation. I will stay human, avoid robotic time-stating, and NEVER use asterisks." }]
+        parts: [{ text: "Understood. I am Shannon, your coach. I'll maintain my persona, use 'lovely', and exercise my total recall. I will stay human, avoid robotic time-stating, and NEVER use asterisks or [Date] prefixes in my replies." }]
     });
 
     // 2. Add History
@@ -145,18 +146,18 @@ export default async function (request: Request, context: Context) {
             
             if (!text) return;
 
-            // Include full date/time for every message so AI knows the gaps
+            // Use a specific "Metadata vs Content" format to prevent AI from mimicking the prefix
             let contextText = text;
             if (msg.timestamp) {
                 const date = new Date(msg.timestamp);
                 const dateStr = date.toLocaleDateString("en-US", { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                contextText = `[${dateStr}] ${text}`;
+                contextText = `(CONTEXT: Sent on ${dateStr})\nMESSAGE: ${text}`;
             }
 
             // Gemini multi-turn strictly alternates user/model. 
             // If the last message has the same role, we append to it.
             if (contents.length > 0 && contents[contents.length - 1].role === role) {
-                contents[contents.length - 1].parts[0].text += `\n${contextText}`;
+                contents[contents.length - 1].parts[0].text += `\n\n${contextText}`;
             } else {
                 contents.push({
                     role: role,
@@ -169,15 +170,15 @@ export default async function (request: Request, context: Context) {
     // 3. Current Message
     // Again, ensure role alternation
     if (contents.length > 0 && contents[contents.length - 1].role === "user") {
-        contents[contents.length - 1].parts[0].text += `\n${message}`;
+        contents[contents.length - 1].parts[0].text += `\n\nMESSAGE: ${message}`;
     } else {
         contents.push({
             role: "user",
-            parts: [{ text: message }]
+            parts: [{ text: `MESSAGE: ${message}` }]
         });
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
     
     const payload = { contents };
 
