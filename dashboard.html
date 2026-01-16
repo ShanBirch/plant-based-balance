@@ -1911,184 +1911,7 @@
         }
     }
 
-    // --- COMMUNITY GROUP LOGIC ---
-    const personas = [
-        { name: "Maria", age: 42, color: "#BFDBFE", role: "Busy Mom" },
-        { name: "Linda", age: 55, color: "#DDD6FE", role: "Optimist" },
-        { name: "Pat", age: 68, color: "#FBCFE8", role: "The Wise One" },
-        { name: "Sarah", age: 38, color: "#BBF7D0", role: "High Energy" },
-        { name: "Diane", age: 50, color: "#FECACA", role: "Relatable" },
-        { name: "Margaret", age: 72, color: "#E5E7EB", role: "Grandma" },
-        { name: "Julie", age: 45, color: "#FED7AA", role: "Curious" },
-        { name: "Sam", age: 33, color: "#99F6E4", role: "Newbie" },
-        { name: "Donna", age: 60, color: "#C7D2FE", role: "Been There" },
-        { name: "Carol", age: 58, color: "#FDE68A", role: "Cheerleader" },
-        { name: "Rebecca", age: 40, color: "#A7F3D0", role: "Foodie" },
-        { name: "Judy", age: 65, color: "#E9D5FF", role: "Fitness" },
-        { name: "Angela", age: 36, color: "#F5D0FE", role: "Exec" },
-        { name: "Barb", age: 53, color: "#CBD5E1", role: "Direct" },
-        { name: "Susan", age: 48, color: "#FEF08A", role: "Spiritual" }
-    ];
 
-    const responses = [
-        "I totally feel that! It gets easier though.",
-        "Sending you so much love! ??",
-        "Honestly, I struggled with that last week too.",
-        "You've got this! Just take it one day at a time.",
-        "Have you tried the ginger tea? It really helped me with that.",
-        "Don't be too hard on yourself, we are all human.",
-        "Big hugs! ??",
-        "That is such a good question, I was wondering the same thing.",
-        "Keep going! The results are worth it.",
-        "I'm here for you if you need to vent!",
-        "Just breathe. This phase will pass.",
-        "Wow, that's amazing progress!",
-        "Rest is productive too, don't forget that!",
-        "Proud of you for showing up today.",
-        "We are all in this boat together!"
-    ];
-
-    let groupContext = { lastTime: 0 };
-
-    // Initialize Poller
-    setInterval(processPendingGroupMessages, 5000); // Check every 5s
-
-    window.sendGroupMessage = function() {
-        const input = document.getElementById('group-chat-input');
-        const txt = input.value.trim();
-        if(!txt) return;
-
-        addGroupMessage(txt, 'user');
-        input.value = '';
-        saveGroupToStorage(txt, 'user');
-        
-        triggerGroupResponses();
-    };
-
-    function triggerGroupResponses() {
-        // Check activity based on last message time from storage
-        const history = JSON.parse(localStorage.getItem('groupChatHistory') || '[]');
-        const lastMsg = history[history.length - 1]; // This is the user message just sent
-        // ideally look at the one BEFORE that to judge "active" state before user typed, 
-        // but looking at 'now' vs 'previous last' is better.
-        // Actually, let's just use the current session approach or simple logic:
-        
-        // We want: 
-        // Active (just chatting) -> 5s to 5 mins
-        // Closed (opening new convo) -> 3 mins to 3 hours
-        
-        // Let's look at the gap between the *previous* message and *this* user message
-        let isActive = false;
-        if (history.length > 1) {
-            const prevTime = history[history.length - 2].time;
-            const now = Date.now();
-            if ((now - prevTime) < 5 * 60 * 1000) { // If less than 5 mins gap, we are active
-                isActive = true;
-            }
-        }
-        
-        // Randomly pick 1-3 responders
-        const count = Math.floor(Math.random() * 3) + 1;
-        const pending = JSON.parse(localStorage.getItem('groupChatPending') || '[]');
-        
-        for(let i=0; i<count; i++) {
-            const persona = personas[Math.floor(Math.random() * personas.length)];
-            const response = responses[Math.floor(Math.random() * responses.length)];
-            
-            let delay;
-            if (isActive) {
-                // 5 seconds to 5 minutes
-                // 5000 to 300000
-                delay = Math.random() * (300000 - 5000) + 5000;
-            } else {
-                // 3 minutes to 3 hours
-                // 180000 to 10800000
-                delay = Math.random() * (10800000 - 180000) + 180000;
-            }
-            
-            // Stagger multiple replies slightly so they don't land same millisecond
-            delay += (i * 20000); 
-
-            pending.push({
-                text: response,
-                sender: 'bot',
-                persona: persona,
-                arriveAt: Date.now() + delay
-            });
-        }
-        
-        localStorage.setItem('groupChatPending', JSON.stringify(pending));
-    }
-
-    function processPendingGroupMessages() {
-        const pending = JSON.parse(localStorage.getItem('groupChatPending') || '[]');
-        if (pending.length === 0) return;
-
-        const now = Date.now();
-        const remaining = [];
-        let changed = false;
-
-        pending.forEach(msg => {
-            if (msg.arriveAt <= now) {
-                // Time to deliver!
-                addGroupMessage(msg.text, msg.sender, msg.persona);
-                saveGroupToStorage(msg.text, msg.sender, msg.persona);
-                changed = true;
-                
-                // Play a subtle sound? (Optional, skipping for now)
-            } else {
-                remaining.push(msg);
-            }
-        });
-
-        if (changed) {
-            localStorage.setItem('groupChatPending', JSON.stringify(remaining));
-        }
-    }
-
-    function addGroupMessage(text, sender, persona = null) {
-        const container = document.getElementById('group-chat-messages');
-        const div = document.createElement('div');
-        const isUser = sender === 'user';
-        
-        if (isUser) {
-             div.innerHTML = `
-                <div style="display:flex; justify-content:flex-end; align-items:flex-end; gap:10px;">
-                    <div style="background:var(--primary); color:white; padding:12px 18px; border-radius:18px 18px 0 18px; max-width:70%; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
-                        <p style="margin:0; font-size:0.95rem;">${text}</p>
-                        <span style="font-size:0.75rem; color:rgba(255,255,255,0.7); display:block; margin-top:5px; text-align:right;">You  Just now</span>
-                    </div>
-                </div>
-            `;
-        } else {
-             // Bot
-             // Get color for avatar
-             const initials = persona.name.substring(0,2).toUpperCase();
-             div.innerHTML = `
-                <div style="display:flex; justify-content:flex-start; align-items:flex-end; gap:10px;">
-                    <div style="width:35px; height:35px; background:${persona.color}; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; color:#334155; flex-shrink:0;">${initials}</div>
-                    <div style="background:white; border:1px solid #e2e8f0; padding:12px 18px; border-radius:18px 18px 18px 0; max-width:70%; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
-                        <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:4px; font-weight:600;">${persona.name} <span style="font-weight:400;">(${persona.age})</span></div>
-                        <p style="margin:0; color:#334155; font-size:0.95rem;">${text}</p>
-                    </div>
-                </div>
-            `;
-        }
-        
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
-    }
-
-    function saveGroupToStorage(text, sender, persona) {
-        const history = JSON.parse(localStorage.getItem('groupChatHistory') || '[]');
-        history.push({ text, sender, persona, time: Date.now() });
-        localStorage.setItem('groupChatHistory', JSON.stringify(history));
-    }
-
-    function loadGroupChat() {
-        const history = JSON.parse(localStorage.getItem('groupChatHistory') || '[]');
-        history.forEach(msg => addGroupMessage(msg.text, msg.sender, msg.persona));
-    }
 
 </script>
 
@@ -8181,26 +8004,26 @@ function showSupportTab(tab, btn) {
 // --- AI COMMUNITY CHAT LOGIC ---
 
 const AI_MEMBERS = [
-    { id: 'm1', name: 'Martha D.', age: 62, bio: 'Gardening enthusiast', color: '#EF4444' },
-    { id: 'm2', name: 'Sophie L.', age: 34, bio: 'New mom of twins', color: '#F97316' },
-    { id: 'm3', name: 'Karen T.', age: 58, bio: 'Retired nurse', color: '#84CC16' },
-    { id: 'm4', name: 'Patricia W.', age: 45, bio: 'Trying to quit sugar', color: '#06B6D4' },
-    { id: 'm5', name: 'Barb J.', age: 70, bio: 'Walking every day', color: '#8B5CF6' },
-    { id: 'm6', name: 'Helen K.', age: 65, bio: 'Loves yoga', color: '#EC4899' },
-    { id: 'm7', name: 'Diane R.', age: 55, bio: 'Menopause warrior', color: '#10B981' },
-    { id: 'm8', name: 'Sarah M.', age: 42, bio: 'Busy professional', color: '#F59E0B' },
-    { id: 'm9', name: 'Rachel G.', age: 38, bio: 'Plant-based newbie', color: '#3B82F6' },
-    { id: 'm10', name: 'Emily B.', age: 31, bio: 'Post-partum recovery', color: '#6366F1' },
-    { id: 'm11', name: 'Jessica H.', age: 48, bio: 'Dealing with hot flashes', color: '#D946EF' },
-    { id: 'm12', name: 'Lisa F.', age: 52, bio: 'Empty nester', color: '#14B8A6' },
-    { id: 'm13', name: 'Betty S.', age: 74, bio: 'Keeping active', color: '#FBBF24' },
-    { id: 'm14', name: 'Dorothy A.', age: 68, bio: 'Cooking for one', color: '#F87171' },
-    { id: 'm15', name: 'Sandra P.', age: 59, bio: 'Weight loss journey', color: '#A78BFA' },
-    { id: 'm16', name: 'Ashley C.', age: 36, bio: 'Stress reduction', color: '#34D399' },
-    { id: 'm17', name: 'Kimberly V.', age: 44, bio: 'Hormone balance', color: '#60A5FA' },
-    { id: 'm18', name: 'Donna M.', age: 61, bio: 'Grandma duty', color: '#F472B6' },
-    { id: 'm19', name: 'Carol L.', age: 54, bio: 'Better sleep goals', color: '#2DD4BF' },
-    { id: 'm20', name: 'Michelle R.', age: 49, bio: 'Finding myself again', color: '#FB923C' }
+    { id: 'm1', name: 'Sarah J.', avatar: 'SJ', age: 42, bio: 'Perimenopause warrior, yoga lover, focusing on cortisol and calm.', color: '#EF4444' },
+    { id: 'm2', name: 'Emma W.', avatar: 'EW', age: 48, bio: 'Busy professional navigating the menopause transition. Loves weights.', color: '#F97316' },
+    { id: 'm3', name: 'Mia K.', avatar: 'MK', age: 53, bio: 'Post-menopause health enthusiast, focus on bone density and joy.', color: '#84CC16' },
+    { id: 'm4', name: 'Sophie L.', avatar: 'SL', age: 36, bio: 'Early perimenopause symptoms, high stress job, trying to find balance.', color: '#06B6D4' },
+    { id: 'm5', name: 'Isabella R.', avatar: 'IR', age: 45, bio: 'Mom of three dealing with hormonal shifts and frantic schedules.', color: '#8B5CF6' },
+    { id: 'm6', name: 'Chloe M.', avatar: 'CM', age: 51, bio: 'Managing hot flashes with plant-based nutrition and cold plunges.', color: '#EC4899' },
+    { id: 'm7', name: 'Lily H.', avatar: 'LH', age: 58, bio: 'Recovering from burnout, focus on sleep quality and evening routines.', color: '#10B981' },
+    { id: 'm8', name: 'Grace B.', avatar: 'GB', age: 41, bio: 'Nutritionist dealing with her own brain fog and cycle changes.', color: '#F59E0B' },
+    { id: 'm9', name: 'Amelia P.', avatar: 'AP', age: 62, bio: 'Mature plant-based wisdom. Helping younger women stay grounded.', color: '#3B82F6' },
+    { id: 'm10', name: 'Zoe S.', avatar: 'ZS', age: 39, bio: 'Biohacker focusing on cycle tracking and stress-induced cortisol.', color: '#6366F1' },
+    { id: 'm11', name: 'Ruby G.', avatar: 'RG', age: 47, bio: 'Mood swing management through gentle movement and nature walks.', color: '#D946EF' },
+    { id: 'm12', name: 'Sienna V.', avatar: 'SV', age: 55, bio: 'Swimming through menopause. Focus on joint health and hydration.', color: '#14B8A6' },
+    { id: 'm13', name: 'Ava D.', avatar: 'AD', age: 44, bio: 'Yoga teacher resetting her own hormones after years of overtraining.', color: '#FBBF24' },
+    { id: 'm14', name: 'Charlotte O.', avatar: 'CO', age: 50, bio: 'Finding her spark again in her 50s. Creative and soulful.', color: '#F87171' },
+    { id: 'm15', name: 'Harper F.', avatar: 'HF', age: 43, bio: 'Stress management focus. Learning to slow down to speed up.', color: '#A78BFA' },
+    { id: 'm16', name: 'Ella N.', avatar: 'EN', age: 52, bio: 'Former athlete keeping lean and strong during the change.', color: '#34D399' },
+    { id: 'm17', name: 'Evie T.', avatar: 'ET', age: 46, bio: 'Data lover tracking how plant-based eating affects her hot flashes.', color: '#60A5FA' },
+    { id: 'm18', name: 'Scarlett Q.', avatar: 'SQ', age: 60, bio: 'Holistic chef focusing on anti-inflammatory meals for longevity.', color: '#F472B6' },
+    { id: 'm19', name: 'Willow J.', avatar: 'WJ', age: 49, bio: 'Spiritual focus on the mid-life transition as a rebirth.', color: '#2DD4BF' },
+    { id: 'm20', name: 'Layla B.', avatar: 'LB', age: 38, bio: 'Proactive about aging and hormonal health. Social and supportive.', color: '#FB923C' }
 ];
 
 function loadCommunityFeed() {
@@ -8238,8 +8061,8 @@ function renderChat(messages) {
         const author = !isMe ? AI_MEMBERS.find(m => m.id === msg.authorId) : null;
         
         let avatarHtml = '';
-        if(!isMe) {
-             const imgNum = author.id.replace('m', '');
+        if(!isMe && author) {
+             const imgNum = (author.id || 'm1').replace('m', '');
              const avatarSrc = `https://randomuser.me/api/portraits/women/${imgNum}.jpg`;
              avatarHtml = `<img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; flex-shrink:0; align-self:flex-end; margin-bottom:5px;">`;
         }
@@ -9170,28 +8993,7 @@ async function triggerAICommunityResponse(userMsg) {
     // Community AI also uses Netlify function
     setTimeout(async () => {
         try {
-            const personas = [
-                { name: 'Sarah J.', id: 'p1', avatar: 'SJ', age: 32, bio: 'High-energy yoga instructor, loves green smoothies and morning sunlight.' },
-                { name: 'Emma W.', id: 'p2', avatar: 'EW', age: 28, bio: 'Busy lawyer, struggling with stress, loves hiking with her rescue dog.' },
-                { name: 'Mia K.', id: 'p3', avatar: 'MK', age: 35, bio: 'Holistic nutritionist, uses scientific terms, very evidence-based.' },
-                { name: 'Sophie L.', id: 'p4', avatar: 'SL', age: 24, bio: 'Recent grad, new to plant-based, enthusiastic but confused about protein.' },
-                { name: 'Isabella R.', id: 'p5', avatar: 'IR', age: 41, bio: 'Mom of three, master of meal prep and practical family advice.' },
-                { name: 'Chloe M.', id: 'p6', avatar: 'CM', age: 29, bio: 'Fitness vibe, uses lots of emojis, very encouraging and positive.' },
-                { name: 'Lily H.', id: 'p7', avatar: 'LH', age: 33, bio: 'Recovering coffee addict, focuses on sleep and morning routines.' },
-                { name: 'Grace B.', id: 'p8', avatar: 'GB', age: 38, bio: 'Long-term vegan, ethical focus but very friendly and inclusive.' },
-                { name: 'Amelia P.', id: 'p9', avatar: 'AP', age: 45, bio: 'Calm and motherly, focused on hormonal health for women over 40.' },
-                { name: 'Zoe S.', id: 'p10', avatar: 'ZS', age: 27, bio: 'Digital nomad, tips for eating healthy while traveling and working.' },
-                { name: 'Ruby G.', id: 'p11', avatar: 'RG', age: 31, bio: 'Outdoor lover, focuses on energy for hiking and active weekends.' },
-                { name: 'Sienna V.', id: 'p12', avatar: 'SV', age: 22, bio: 'Student, budget-friendly meal ideas, master of bean-based cooking.' },
-                { name: 'Ava D.', id: 'p13', avatar: 'AD', age: 36, bio: 'Crossfit enthusiast, focuses on high protein plant-based recovery.' },
-                { name: 'Charlotte O.', id: 'p14', avatar: 'CO', age: 30, bio: 'Artist, focuses on mindful eating and the colors of nutrition.' },
-                { name: 'Harper F.', id: 'p15', avatar: 'HF', age: 26, bio: 'Recovering from burnout, focuses on slow living and gentle movement.' },
-                { name: 'Ella N.', id: 'p16', avatar: 'EN', age: 34, bio: 'Former athlete, focuses on recovery and inflammation management.' },
-                { name: 'Evie T.', id: 'p17', avatar: 'ET', age: 25, bio: 'Biohacker vibe, tracks everything, loves data and gadget tips.' },
-                { name: 'Scarlett Q.', id: 'p18', avatar: 'SQ', age: 39, bio: 'Holistic chef, focuses on flavor and amazing herbal infusions.' },
-                { name: 'Willow J.', id: 'p19', avatar: 'WJ', age: 30, bio: 'Spiritual focus, connection between the gut and mental clarity.' },
-                { name: 'Layla B.', id: 'p20', avatar: 'LB', age: 23, bio: 'Social and fun, always sharing "hacks" for easier plant-based living.' }
-            ];
+            const personas = AI_MEMBERS;
             
             // Pick a random persona for this response
             const persona = personas[Math.floor(Math.random() * personas.length)];
