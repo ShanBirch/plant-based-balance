@@ -6216,9 +6216,14 @@
         <!-- Dynamic Hero Container -->
         <div id="movement-hero-container"></div>
 
-<div style="margin-bottom: 20px;">
-    <h3 style="margin:0;">Other Options</h3>
-</div>
+        <div id="saved-workouts-container" style="display:none; margin-bottom:30px;">
+            <h3 style="margin-bottom:15px;">Your Saved Workouts</h3>
+            <div id="saved-workouts-list" style="display:flex; gap:15px; overflow-x:auto; padding-bottom:10px; scrollbar-width: none;"></div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h3 style="margin:0;">Browse Programs</h3>
+        </div>
 
         <!-- Dynamic Grid Container -->
         <div id="movement-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
@@ -7476,6 +7481,26 @@ function renderMovementView() {
              </div>
         </div>
     </div>`;
+    
+    // Render Saved Workouts
+    const savedContainer = document.getElementById('saved-workouts-container');
+    const savedList = document.getElementById('saved-workouts-list');
+    const savedWorkouts = JSON.parse(localStorage.getItem('saved_custom_workouts') || '[]');
+    
+    if (savedWorkouts.length > 0) {
+        savedContainer.style.display = 'block';
+        savedList.innerHTML = savedWorkouts.map(w => `
+            <div onclick="startSavedWorkout('${w.id}')" style="min-width: 160px; background:white; border-radius:16px; padding:15px; border:1px solid #f1f5f9; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+                <div style="width:40px; height:40px; background:#f0fdf4; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:10px; color:var(--primary); font-weight:bold;">${w.name.charAt(0)}</div>
+                <div style="font-weight:700; color:var(--text-main); font-size:0.9rem; margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${w.name}</div>
+                <div style="font-size:0.75rem; color:var(--text-muted);">${w.exercises.length} exercises</div>
+            </div>
+        `).join('') + `
+            <div onclick="openWorkoutBuilder()" style="min-width: 60px; display:flex; align-items:center; justify-content:center; background:#f8fafc; border-radius:16px; border:2px dashed #cbd5e1; cursor:pointer; color:#cbd5e1; font-weight:bold; font-size:1.5rem;">+</div>
+        `;
+    } else {
+         savedContainer.style.display = 'none';
+    }
 
     const gridContainer = document.getElementById('movement-grid-container');
     gridContainer.innerHTML = ''; 
@@ -9585,11 +9610,110 @@ updateCoachUI();
     </div>
     
     <div id="builder-floating-action" style="position:fixed; bottom:20px; left:0; width:100%; padding:20px; display:none; z-index: 101;">
-        <button onclick="startCustomBuilderWorkout()" style="width:100%; background:var(--primary); color:white; padding:18px; border-radius:50px; font-weight:800; border:none; box-shadow:0 10px 25px rgba(4,106,56,0.3); font-size: 1.1rem;">
-            START SESSION (<span id="builder-count">0</span>)
-        </button>
+        <div style="display:flex; gap:10px;">
+            <button onclick="saveCustomBuilderWorkout()" style="flex:1; background:white; color:var(--primary); border:2px solid var(--primary); padding:18px; border-radius:50px; font-weight:800; box-shadow:0 10px 25px rgba(0,0,0,0.05); font-size: 1.1rem; cursor:pointer;">
+                SAVE
+            </button>
+            <button onclick="startCustomBuilderWorkout()" style="flex:2; background:var(--primary); color:white; padding:18px; border-radius:50px; font-weight:800; border:none; box-shadow:0 10px 25px rgba(4,106,56,0.3); font-size: 1.1rem; cursor:pointer;">
+                START (<span id="builder-count">0</span>)
+            </button>
+        </div>
     </div>
+    
+    <script>
+    function saveCustomBuilderWorkout() {
+        if (customWorkoutSelection.length === 0) return;
+        const name = prompt("Name your workout:");
+        if(!name) return;
+        
+        const savedWorkouts = JSON.parse(localStorage.getItem('saved_custom_workouts') || '[]');
+        savedWorkouts.push({
+            id: 'mw-' + Date.now(),
+            name: name,
+            exercises: customWorkoutSelection,
+            date: new Date().toISOString()
+        });
+        localStorage.setItem('saved_custom_workouts', JSON.stringify(savedWorkouts));
+        alert("Workout saved! You can find it in the Movement tab.");
+        switchAppTab('movement-tab');
+    }
+    </script>
 </div>
+<script>
+    function startSavedWorkout(id) {
+        const saved = JSON.parse(localStorage.getItem('saved_custom_workouts') || '[]');
+        const workout = saved.find(w => w.id === id);
+        if(!workout) return;
+        
+        // Re-use builder logic but with loaded data
+        const customWorkout = {
+            title: workout.name,
+            name: workout.name,
+            description: 'Saved Session • ' + new Date(workout.date).toLocaleDateString(),
+            exercises: workout.exercises.map(key => ({
+                name: key,
+                sets: 3,
+                reps: '12',
+                videoUrl: '', 
+                desc: ''
+            }))
+        };
+        
+        // Hijack the player
+        document.getElementById('workout-player-title').innerText = customWorkout.title;
+        document.getElementById('workout-player-goal').innerText = customWorkout.description;
+        
+        const list = document.getElementById('workout-exercises-list');
+        list.innerHTML = '';
+        
+        customWorkout.exercises.forEach((ex, idx) => {
+            const card = document.createElement('div');
+            card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
+            const videoUrl = typeof getExerciseVideoUrl === 'function' ? getExerciseVideoUrl(ex.name) : '';
+            
+            // Re-render card content
+            card.innerHTML = `
+            <div style="padding:20px; display:flex; gap:15px; align-items:center;">
+                <div onclick="openExerciseVideo('${videoUrl}', '${ex.name.replace(/'/g, "\\'")}')" style="width:60px; height:60px; border-radius:14px; background:#f1f5f9; overflow:hidden; flex-shrink:0; position:relative; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
+                     ${videoUrl.includes('youtube') || videoUrl.includes('youtu.be') || videoUrl.includes('backblazeb2') ? 
+                        (videoUrl.includes('youtube') ? `<img src="https://img.youtube.com/vi/${videoUrl.includes('embed/') ? videoUrl.split('embed/')[1].split('?')[0] : videoUrl.split('v=')[1]?.split('&')[0]}/0.jpg" style="width:100%; height:100%; object-fit:cover; opacity:0.8;">` :
+                        `<div style="width:100%; height:100%; background:black; display:flex; align-items:center; justify-content:center; color:white;">▶</div>`) : 
+                        `<div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg, #1e293b, #0f172a);">
+                            <div style="width:24px; height:24px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:2px; box-shadow:0 4px 6px rgba(0,0,0,0.2);">
+                                <svg viewBox="0 0 24 24" style="width:12px; height:12px; fill:black; margin-left:2px;"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                            <span style="color:rgba(255,255,255,0.9); font-size:0.55rem; font-weight:700; text-transform:uppercase;">Watch</span>
+                        </div>`
+                    }
+                </div>
+                <div style="flex:1;">
+                    <h3 style="margin:0 0 5px 0; font-size:1rem; color:var(--text-main);">${ex.name}</h3>
+                    <div style="font-size:0.8rem; color:var(--text-muted);">Target: 3 Sets x 12 Reps</div>
+                </div>
+            </div>
+            
+            <!-- Sets Container -->
+            <div style="background:#f8fafc; padding:0 20px 20px 20px;" id="sets-container-${idx}">
+                <div style="display:flex; padding:10px 0; font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid #e2e8f0; margin-bottom:10px;">
+                    <div style="width:40px; text-align:center;">Set</div>
+                    <div style="flex:1; text-align:center;">kg</div>
+                    <div style="flex:1; text-align:center;">Reps</div>
+                    <div style="width:40px;"></div>
+                </div>
+                ${ [1,2,3].map(s => getSetRowHtml(ex.name, s, false)).join('') }
+                
+                 <button onclick="addSetRow('${ex.name.replace(/'/g, "\\'")}', ${idx})" style="width:100%; padding:12px; background:white; border:2px dashed #e2e8f0; border-radius:12px; color:var(--primary); font-weight:600; font-size:0.85rem; margin-top:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>+ Add Set</span>
+                </button>
+            </div>`;
+            list.appendChild(card);
+        });
+        
+        hideAllAppViews();
+        document.getElementById('view-active-workout').style.display = 'block';
+        window.activeWorkoutSessions = customWorkout; 
+    }
+</script>
 </body>
 </html>
 
