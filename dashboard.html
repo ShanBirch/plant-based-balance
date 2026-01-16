@@ -9277,8 +9277,11 @@ document.addEventListener('DOMContentLoaded', () => {
     <div style="width:100%; max-width:900px; position:relative; padding: 20px;">
         <div style="background:black; width:100%; aspect-ratio:16/9; border-radius:24px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); position:relative;">
             
-            <!-- Iframe (Initially Hidden) -->
+            <!-- Iframe (YouTube) -->
             <iframe id="video-frame" style="width:100%; height:100%; border:none; display:none;" allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer" playsinline allowfullscreen></iframe>
+            
+            <!-- Native Video (Drive Direct) -->
+            <video id="video-direct" style="width:100%; height:100%; display:none; object-fit:cover;" controls playsinline></video>
             
             <!-- Poster Overlay -->
             <div id="video-poster" onclick="playVideo()" style="position:absolute; inset:0; background-size:cover; background-position:center; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:10; background-color: #0f172a;">
@@ -9328,9 +9331,19 @@ let pendingVideoUrl = '';
 
 function playVideo() {
     const frame = document.getElementById('video-frame');
+    const direct = document.getElementById('video-direct');
     const poster = document.getElementById('video-poster');
+    
     if(poster) poster.style.display = 'none';
-    if(frame) {
+    
+    // Check which player is active based on pending type
+    if (window.pendingVideoType === 'drive' && direct) {
+        direct.style.display = 'block';
+        if(pendingVideoUrl) {
+            direct.src = pendingVideoUrl;
+            direct.play().catch(e => console.log("Play error", e));
+        }
+    } else if (frame) {
         frame.style.display = 'block';
         if(pendingVideoUrl) frame.src = pendingVideoUrl;
     }
@@ -9352,9 +9365,11 @@ function openExerciseVideo(url, title) {
     let embedUrl = url;
     let viewUrl = url;
     let posterImage = '';
+    let type = 'youtube'; // or 'drive'
 
     // 2. Robust Embed Transformations
     if (url.includes('drive.google.com')) {
+        type = 'drive';
         let fileId = null;
         if (url.includes('/file/d/')) {
             fileId = url.split('/file/d/')[1].split('/')[0];
@@ -9363,11 +9378,13 @@ function openExerciseVideo(url, title) {
         }
 
         if (fileId) {
-            embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+            // DIRECT STREAM LINK
+            embedUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
             viewUrl = `https://drive.google.com/file/d/${fileId}/view`;
             posterImage = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
         } else {
-            // Fallback
+             // Fallback to iframe if ID parse fails
+             type = 'iframe-fallback';
              if (!url.includes('/preview')) {
                  if (url.includes('/view')) embedUrl = url.replace('/view', '/preview');
                  else embedUrl = url.replace(/\/$/, '') + '/preview';
@@ -9388,17 +9405,19 @@ function openExerciseVideo(url, title) {
     // 3. Setup Modal State
     currentVideoUrl = viewUrl; 
     pendingVideoUrl = embedUrl;
+    window.pendingVideoType = type;
 
     const modal = document.getElementById('video-modal');
     const frame = document.getElementById('video-frame');
+    const direct = document.getElementById('video-direct'); // Native Video
     const poster = document.getElementById('video-poster');
     const titleEl = document.getElementById('video-modal-title');
     
     if(titleEl) titleEl.innerText = title;
     
-    // Reset Frame
-    frame.src = ''; 
-    frame.style.display = 'none';
+    // Reset Players
+    if(frame) { frame.src = ''; frame.style.display = 'none'; }
+    if(direct) { direct.src = ''; direct.style.display = 'none'; }
 
     // Show Poster
     if(poster) {
