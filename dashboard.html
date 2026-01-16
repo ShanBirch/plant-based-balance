@@ -8608,14 +8608,29 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 // Force check on load - Show banner if not installed (even if prompt not ready yet)
+// Force check on load - Show banner if not installed (even if prompt not ready yet)
 window.addEventListener('load', () => {
+    // Only show if not installed and not dismissed and NOT iOS (since iOS can't "one-click" install)
+    // Actually user wants "Click -> Download". If iOS, we can't do that. 
+    // We will show transparency.
+    
     if (!isInstalledPWA && !installBannerDismissed) {
-        document.getElementById('pwa-install-banner').style.display = 'flex';
+        showPwaBanner();
     }
     
     // Make Coach Bubble Draggable
     initDraggableBubble();
 });
+
+function showPwaBanner() {
+    const banner = document.getElementById('pwa-install-banner');
+    if(banner) {
+        banner.style.display = 'flex';
+        // Push body content down to avoid overlap
+        document.body.style.transition = 'padding-top 0.3s ease';
+        document.body.style.paddingTop = banner.offsetHeight + 'px';
+    }
+}
 
 function initDraggableBubble() {
     const bubble = document.getElementById('coach-floating-btn');
@@ -8685,24 +8700,26 @@ window.installPWA = async function() {
         }
         deferredPrompt = null;
     } else {
-        // Fallback instructions
-        alert("To install: Tap the Share button (iOS) or Menu (Android) and select 'Add to Home Screen'.");
+        // User requested "No instructions, just download".
+        // If we are here, the browser hasn't fired the event yet or doesn't support it (iOS).
+        // specific check for iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+             alert("On iOS, please tap 'Share' then 'Add to Home Screen' manually."); 
+        } else {
+             console.log("Install prompt not ready yet.");
+             // Try to force it? No API for that.
+             alert("App installation is getting ready. Please try again in a moment.");
+        }
     }
-    
-    // Hide banner after attempt
-    /*
-    const banners = document.querySelectorAll('[id="pwa-install-banner"]');
-    banners.forEach(banner => {
-        if (banner) banner.style.display = 'none';
-    });
-    */
 };
 
 window.dismissInstall = function() {
-    const banners = document.querySelectorAll('[id="pwa-install-banner"]');
-    banners.forEach(banner => {
-        if (banner) banner.style.display = 'none';
-    });
+    const banner = document.getElementById('pwa-install-banner');
+    if(banner) {
+        banner.style.display = 'none';
+        document.body.style.paddingTop = '0';
+    }
     localStorage.setItem('pwa_banner_dismissed_v2', 'true');
 };
 </script>
