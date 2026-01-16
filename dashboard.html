@@ -6040,14 +6040,7 @@
     <!-- Duplicate movement view removed -->
 
     <!-- INSTALL APP BANNER (Hidden by default) -->
-    <div id="pwa-install-banner" style="display:none; background: linear-gradient(135deg, #046A38 0%, #06542f 100%); color:white; padding: 12px 20px; margin: 0; box-shadow: 0 4px 10px rgba(4,106,56,0.25); align-items:center;">
-        <div style="flex:1;">
-            <div style="font-weight:700; font-size:1rem; margin-bottom:2px;">Install App</div>
-            <div style="font-size:0.85rem; opacity:0.9;">Add to home screen</div>
-        </div>
-        <button onclick="installPWA()" style="background:white; color:var(--primary); border:none; padding:8px 16px; border-radius:30px; font-weight:700; cursor:pointer; margin-left:15px; white-space:nowrap; font-size: 0.9rem;">Install</button>
-        <button onclick="dismissInstall()" style="background:transparent; color:white; border:none; padding:10px; cursor:pointer; margin-left:5px;">?</button>
-    </div>
+    <!-- INSTALL APP BANNER MOVED TO FOOTER FOR FIXED POSITIONING -->
 
 
     <!-- SUPPORT VIEW (Coach & Community) -->
@@ -8662,19 +8655,19 @@ let installBannerDismissed = localStorage.getItem('pwa_banner_dismissed') === 't
 // Detect if running as installed PWA
 const isInstalledPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-// Only show on mobile devices
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+// Only show on mobile devices - REMOVED RESTRICTION
+const isMobile = true; // Force true for testing/availability on all devices
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     
-    // Show banner if: mobile + not installed + not dismissed
-    if (isMobile && !isInstalledPWA && !installBannerDismissed) {
+    // Show banner if: not installed + not dismissed (Removed isMobile check)
+    if (!isInstalledPWA && !installBannerDismissed) {
         setTimeout(() => {
             const banners = document.querySelectorAll('[id="pwa-install-banner"]');
             banners.forEach(banner => {
-                if (banner) banner.style.display = 'block';
+                if (banner) banner.style.display = 'flex';
             });
         }, 2000); // Show after 2 seconds
     }
@@ -9243,6 +9236,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 <a href="javascript:void(0)" onclick="openVideoNewTab();" style="color:rgba(255,255,255,0.4); text-decoration:none; border-bottom:1px dotted rgba(255,255,255,0.2);">Having trouble? Watch externally</a>
              </div>
         </div>
+    </div>
+</div>
+
+<!-- PWA INSTALL BANNER (Fixed Floating) -->
+<div id="pwa-install-banner" style="display:none; position:fixed; bottom:90px; left:20px; right:20px; background: linear-gradient(135deg, #046A38 0%, #06542f 100%); color:white; padding: 16px; border-radius: 16px; box-shadow: 0 10px 25px rgba(4,106,56,0.3); align-items:center; z-index:10000; justify-content:space-between;">
+    <div style="flex:1;">
+        <div style="font-weight:700; font-size:1rem; margin-bottom:2px;">Install App</div>
+        <div style="font-size:0.85rem; opacity:0.9;">Add to home screen for better experience</div>
+    </div>
+    <div style="display:flex; align-items:center; gap: 10px;">
+        <button onclick="dismissInstall()" style="background:rgba(255,255,255,0.2); color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:0.9rem;">Close</button>
+        <button onclick="installPWA()" style="background:white; color:var(--primary); border:none; padding:10px 20px; border-radius:30px; font-weight:700; cursor:pointer; font-size: 0.9rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">Install</button>
     </div>
 </div>
 
