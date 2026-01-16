@@ -8617,13 +8617,17 @@ window.submitCoachMessage = function() {
     // 1. Render User Message Immediately
     const container = document.getElementById('chat-messages-container');
     if(container) {
-        const msgDiv = document.createElement('div');
-        msgDiv.style.cssText = "display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 20px; align-self: flex-end; max-width: 85%; animation: fadeIn 0.3s ease;";
-        msgDiv.innerHTML = `
-            <div style="background: var(--chat-bg-user); color: var(--chat-text-user); padding: 12px 18px; border-radius: 18px 18px 0 18px; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">${text}</div>
-            <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-right: 5px;">You Just now</span>
+        const rowDiv = document.createElement('div');
+        rowDiv.style.cssText = "display: flex; justify-content: flex-end; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;";
+        
+        rowDiv.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: flex-end; max-width: 80%;">
+                <div style="background: var(--chat-bg-user); color: var(--chat-text-user); padding: 12px 18px; border-radius: 18px 18px 0 18px; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">${text}</div>
+                <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-right: 5px;">You Just now</span>
+            </div>
+            <img src="https://ui-avatars.com/api/?name=You&background=cbd5e1&color=fff" style="width: 36px; height: 36px; border-radius: 50%; margin-left: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
         `;
-        container.appendChild(msgDiv);
+        container.appendChild(rowDiv);
         container.scrollTop = container.scrollHeight;
         
         // Save to LocalStorage immediately
@@ -9100,17 +9104,33 @@ window.loadChatHistory = function() {
 window.appendCoachMessage = function(text) {
     const container = document.getElementById('chat-messages-container');
     if (!container) return;
-    const msgDiv = document.createElement('div');
-    msgDiv.style.cssText = "display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; max-width: 85%; animation: fadeIn 0.3s ease;";
-    msgDiv.innerHTML = `
-        <div style="background: var(--chat-bg-coach); padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid var(--chat-border-coach); color: var(--chat-text-coach); box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-            <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; color: inherit; white-space: pre-wrap;">${text}</p>
+    
+    const rowDiv = document.createElement('div');
+    rowDiv.style.cssText = "display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;";
+    
+    const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    rowDiv.innerHTML = `
+        <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
+        <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
+            <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
+                <p style="margin: 0; white-space: pre-wrap;">${text}</p>
+            </div>
+            <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon ${timeStr}</span>
         </div>
-        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; margin-left: 2px;">Shannon ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
     `;
-    container.appendChild(msgDiv);
+
+    container.appendChild(rowDiv);
     container.scrollTop = container.scrollHeight;
-    saveToHistory('model', text);
+    
+    // Save to LocalStorage
+    const history = JSON.parse(localStorage.getItem('chat_history') || '[]');
+    history.push({
+        role: 'model', 
+        text: text, 
+        timestamp: Date.now() 
+    });
+    localStorage.setItem('chat_history', JSON.stringify(history));
 };
 
 async function sendCommunityMessage() {
