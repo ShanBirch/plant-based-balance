@@ -9400,6 +9400,11 @@ function openExerciseVideo(url, title) {
         embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
         viewUrl = `https://www.youtube.com/watch?v=${v}`;
         posterImage = `https://img.youtube.com/vi/${v}/hqdefault.jpg`;
+    } else if (url.includes('backblazeb2.com') || url.match(/\.(mp4|mov)$/i)) {
+        type = 'drive'; // Use native video player
+        embedUrl = url;
+        viewUrl = url;
+        // No auto-thumbnail for B2, utilize video tag metadata
     }
 
     // 3. Setup Modal State
