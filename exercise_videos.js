@@ -424,7 +424,7 @@ const EXERCISE_VIDEOS = {
   "Dumbbell Clean to Press": "https://drive.google.com/file/d/1QW8XVAGfWwlBGb0dKMiFVRMG0ShrfLsh/preview",
   "Dumbbell Clean and Press": "https://drive.google.com/file/d/1074M2oi9jD3xuA_RlMdvO7S66aw5ZU7y/preview",
   "Dumbbell Clean and Jerk": "https://drive.google.com/file/d/1k5Pts-4M0sVP6ecP0abWC9vR7t4q2U-x/preview",
-  "Dumbbell Bulgarian Split Squat to Single Arm Curl": "https://drive.google.com/file/d/1fpQ2ZfoovYumt_es13tTrkK8Vx84P_Pf/preview",
+  "Dumbbell Bulgarian Split Squat to Single Arm Curl": "https://f005.backblazeb2.com/file/shannonsvideos/Dumbbell%20Bulgarian%20Split%20Squat%20to%20Single%20Arm%20Curl.mp4",
   "Dumbbell B-Stance RDL to Single Arm Row": "https://f005.backblazeb2.com/file/shannonsvideos/Dumbbell%20B-Stance%20RDL%20to%20Single%20Arm%20Row.mp4",
   "Dumbbell B\u2011Stance Goblet Squat": "https://drive.google.com/file/d/1iBnZQR87quJCk5cNrkn2Ds5qM1bpLI2q/preview",
   "Dumbbell B\u2011Stance Front Squat (Double Rack)": "https://drive.google.com/file/d/1waFT_FeitChwiVS6OGhGpNdrAqkGQOjh/preview",
@@ -1351,8 +1351,8 @@ const EXERCISE_VIDEOS = {
   "Dumbbell Curl to Shoulder Press": "https://drive.google.com/file/d/1ykmzyb-WHB8ctODedsqMRIoQFbiz1Cfh/preview",
   "Dumbbell Concentration Curl": "https://drive.google.com/file/d/1ZsQY-JppYvO--RnHBTCMbWCHim090kVZ/preview",
   "Dumbbell Calf Raise": "https://drive.google.com/file/d/1ewVrmnLE_9v-MvHjVlJAGJgmXKB5wtFs/preview",
-  "Dumbbell Bulgarian Split Squat to Curl": "https://drive.google.com/file/d/1WbtSiVBz1_KNRdPxBY0yORwrZgBIHXbs/preview",
-  "Dumbbell Bulgarian Split Squat": "https://drive.google.com/file/d/14sfTGnw5N0MQT_6vvn2aKll5RHAvs0P1/preview",
+  "Dumbbell Bulgarian Split Squat to Curl": "https://f005.backblazeb2.com/file/shannonsvideos/Dumbbell%20Bulgarian%20Split%20Squat%20to%20Curl.mp4",
+  "Dumbbell Bulgarian Split Squat": "https://f005.backblazeb2.com/file/shannonsvideos/Dumbbell%20Bulgarian%20Split%20Squat.mp4",
   "Dumbbell B\u2011Stance RDL to Row": "https://drive.google.com/file/d/1XentKDqD93DZojDjLHFkFZIvu7t4viNL/preview",
   "Dumbbell Bent Over Row to Tricep Kickback": "https://f005.backblazeb2.com/file/shannonsvideos/Dumbbell%20Bent%20Over%20Row%20to%20Tricep%20Kickback.mp4",
   "Dumbbell Bent over row to Rear Fly": "https://f005.backblazeb2.com/file/shannonsvideos/Dumbbell%20Bent%20over%20row%20to%20Rear%20Fly.mp4",
@@ -1874,5 +1874,8 @@ const EXERCISE_VIDEOS = {
   "3D Lunge": "https://f005.backblazeb2.com/file/shannonsvideos/3D%20Lunge.mp4",
   "reverse 90-90 stretch": "https://drive.google.com/file/d/14O5TUpk_wSIo4gO_JVxSltHIH45bq4bB/preview",
   "12 Kneel to Lateral Bound": "https://f005.backblazeb2.com/file/shannonsvideos/12%20Kneel%20to%20Lateral%20Bound.mp4",
-  "12 Kneel to High Knee Hop": "https://f005.backblazeb2.com/file/shannonsvideos/12%20Kneel%20to%20High%20Knee%20Hop.mp4"
+  "12 Kneel to High Knee Hop": "https://f005.backblazeb2.com/file/shannonsvideos/12%20Kneel%20to%20High%20Knee%20Hop.mp4",
+  "Band Standing Y's": "https://f005.backblazeb2.com/file/shannonsvideos/Band%20Standing%20Y%27s.mp4",
+  "Bench Up & Overs": "https://f005.backblazeb2.com/file/shannonsvideos/Bench%20Up%20%26%20Overs.mp4",
+  "Child's Pose": "https://f005.backblazeb2.com/file/shannonsvideos/Child%27s%20Pose.mp4"
 };
