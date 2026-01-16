@@ -1059,65 +1059,6 @@
 <!-- START HERE -->
     <!-- Protocol Section Removed -->
 
-    <!-- Original How To Use (Collapsible) -->
-    <div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="meal-title">How to Use Your Meal Plan</div><div class="expand-icon">+</div></div>
-    <div class="card-body">
-    <div style="display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 30px;">
-    <!-- Movement Pairing (Gold Bg) -->
-    <div style="background: #fffdf0; padding: 20px; border-radius: 12px; border: 1px solid #efe5c0;">
-    <h4 style="color: #9e7f28; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">Movement Pairing</h4>
-    <p style="font-size: 0.95rem;">Pair this with <strong>low impact</strong> strength training or walking. Avoid HIIT if you are feeling wired/tired.</p>
-    </div>
-    <!-- Batch Cooking (Sage Bg) -->
-    <div style="background: #f4f8f5; padding: 20px; border-radius: 12px; border: 1px solid #dbece0;">
-    <h4 style="color: #4a7a58; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">Batch Cooking Strategy</h4>
-    <p style="font-size: 0.95rem;">To save time: <strong>cook double portions of dinner</strong>. Eat the leftovers for lunch the next day.</p>
-    </div>
-</div>
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-    <div>
-        <h3>01 Daily Flow</h3>
-        <p><strong>Morning:</strong> Hydration tonic.<br/><strong>Breakfast:</strong> Protein rich.<br/><strong>Lunch:</strong> Macro balanced.<br/><strong>Snack:</strong> Functional.<br/><strong>Dinner:</strong> Grounding.</p>
-    </div>
-    <div>
-        <h3>02 Portion Guide</h3>
-        <p>Focus on nutrient density and protein at every meal. Listen to your body's hunger signals.</p>
-    </div>
-    <div>
-        <h3>03 Protein Anchor</h3>
-        <p>At least 25g per main meal. Add one scoop (20g) plant protein if satiety dips.</p>
-    </div>
-    <div>
-        <h3>04 Hydration</h3>
-        <p>Target 2.5-3L per day. Add trace mineral drops and chlorophyll at midday to reduce hot flashes.</p>
-    </div>
-</div>
-</div>
-</div>
-
-<!-- WHY THIS PLAN WORKS -->
-    <div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="meal-title">Why This Meal Plan Works For You</div><div class="expand-icon">+</div></div>
-    <div class="card-body" id="why-works-body">
-        <div style="margin-bottom: 20px;">
-            <h4 style="color: var(--primary);">Calming Your Adrenals</h4>
-            <p>This plan specifically excludes stimulants and high-glycemic spikes that trigger cortisol release. By stabilizing your blood sugar with complex carbs and protein, we tell your body it is "safe," allowing your adrenal glands to rest and recover.</p>
-        </div>
-        <div style="margin-bottom: 20px;">
-            <h4 style="color: var(--primary);">Strategic Carb Timing</h4>
-            <p>We include specific slow-releasing carbohydrates in the evening (like sweet potatoes). This naturally lowers cortisol levels and boosts serotonin production, helping you wind down and improving sleep qualitythe foundation of hormone repair.</p>
-        </div>
-        <div style="margin-bottom: 20px;">
-            <h4 style="color: var(--primary);">Magnesium-Rich Ingredients</h4>
-            <p>High-stress burns through magnesium. This menu is packed with magnesium-rich foods like leafy greens, seeds, and cacao to actively replenish your stores, relaxing your nervous system and reducing anxiety.</p>
-        </div>
-        <div style="margin-bottom: 20px;">
-            <h4 style="color: var(--primary);">Anti-Inflammatory fats</h4>
-            <p>Healthy fats from avocados, nuts, and seeds provide the raw materials for hormone production while damping down the systemic inflammation caused by chronic stress.</p>
-        </div>
-
-
-    </div></div>
 </div>
 
 <script>
@@ -8663,32 +8604,98 @@ const isMobile = true;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    
-    // Show banner if: not installed + not dismissed
-    if (!isInstalledPWA && !installBannerDismissed) {
-        // No delay - show immediately when browser verifies installability
-        const banners = document.querySelectorAll('[id="pwa-install-banner"]');
-        banners.forEach(banner => {
-            if (banner) banner.style.display = 'flex';
-        });
-    }
+    console.log("Install Prompt Captured");
 });
 
-window.installPWA = async function() {
-    if (!deferredPrompt) return;
-    
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-        console.log('PWA installed');
+// Force check on load - Show banner if not installed (even if prompt not ready yet)
+window.addEventListener('load', () => {
+    if (!isInstalledPWA && !installBannerDismissed) {
+        document.getElementById('pwa-install-banner').style.display = 'flex';
     }
     
-    deferredPrompt = null;
+    // Make Coach Bubble Draggable
+    initDraggableBubble();
+});
+
+function initDraggableBubble() {
+    const bubble = document.getElementById('coach-floating-btn');
+    if(!bubble) return;
+    
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+    const moveThreshold = 5; // Pixels to satisfy 'drag'
+
+    const handleStart = (e) => {
+        if(e.target.closest('.notification-badge')) return; // Don't drag if clicking badge
+        isDragging = false; // Assume click first
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        startX = clientX;
+        startY = clientY;
+        
+        const rect = bubble.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        // Remove transition during drag
+        bubble.style.transition = 'none';
+    };
+
+    const handleMove = (e) => {
+        e.preventDefault(); // Prevent scrolling
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+
+        if (Math.abs(dx) > moveThreshold || Math.abs(dy) > moveThreshold) {
+            isDragging = true;
+        }
+
+        if (isDragging) {
+             bubble.style.right = 'auto';
+             bubble.style.bottom = 'auto';
+             bubble.style.left = (initialLeft + dx) + 'px';
+             bubble.style.top = (initialTop + dy) + 'px';
+        }
+    };
+
+    const handleEnd = (e) => {
+        bubble.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        // Snap to nearest edge logic could go here, but free floating is fine for now
+    };
+
+    bubble.addEventListener('mousedown', handleStart);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+    
+    bubble.addEventListener('touchstart', handleStart, {passive: false});
+    window.addEventListener('touchmove', handleMove, {passive: false});
+    window.addEventListener('touchend', handleEnd);
+}
+
+
+window.installPWA = async function() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            dismissInstall();
+        }
+        deferredPrompt = null;
+    } else {
+        // Fallback instructions
+        alert("To install: Tap the Share button (iOS) or Menu (Android) and select 'Add to Home Screen'.");
+    }
+    
+    // Hide banner after attempt
+    /*
     const banners = document.querySelectorAll('[id="pwa-install-banner"]');
     banners.forEach(banner => {
         if (banner) banner.style.display = 'none';
     });
+    */
 };
 
 window.dismissInstall = function() {
@@ -9241,14 +9248,15 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <!-- PWA INSTALL BANNER (Fixed Floating) -->
-<div id="pwa-install-banner" style="display:none; position:fixed; bottom:90px; left:20px; right:20px; background: linear-gradient(135deg, #046A38 0%, #06542f 100%); color:white; padding: 16px; border-radius: 16px; box-shadow: 0 10px 25px rgba(4,106,56,0.3); align-items:center; z-index:10000; justify-content:space-between;">
-    <div style="flex:1;">
-        <div style="font-weight:700; font-size:1rem; margin-bottom:2px;">Install App</div>
-        <div style="font-size:0.85rem; opacity:0.9;">Add to home screen for better experience</div>
+<!-- PWA INSTALL BANNER (Moved to TOP) -->
+<div id="pwa-install-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:var(--primary); color:white; font-size:0.9rem; padding:12px 20px; z-index:10000; box-shadow:0 4px 15px rgba(0,0,0,0.2); align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-size:1.2rem;">📲</span>
+        <span style="font-weight:600;">Install App for Best Experience</span>
     </div>
-    <div style="display:flex; align-items:center; gap: 10px;">
-        <button onclick="dismissInstall()" style="background:rgba(255,255,255,0.2); color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:0.9rem;">Close</button>
-        <button onclick="installPWA()" style="background:white; color:var(--primary); border:none; padding:10px 20px; border-radius:30px; font-weight:700; cursor:pointer; font-size: 0.9rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">Install</button>
+    <div style="display:flex; gap:10px;">
+        <button onclick="dismissInstall()" style="background:transparent; border:1px solid rgba(255,255,255,0.4); color:white; padding:6px 12px; border-radius:20px; font-size:70%; font-weight:600;">LATER</button>
+        <button onclick="installPWA()" style="background:white; color:var(--primary); border:none; padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:700; box-shadow:0 2px 10px rgba(0,0,0,0.1);">INSTALL</button>
     </div>
 </div>
 
