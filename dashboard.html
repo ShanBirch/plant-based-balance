@@ -9246,7 +9246,7 @@ async function initiateAutonomousConversation(isCheckIn = false) {
         if (typeof renderChat === 'function') renderChat(fullHistory);
 
         // Determine number of responses
-        const responseCount = isCheckIn ? Math.floor(Math.random() * 3) + 3 : getResponseCount(); // Check-ins get 3-5 responses
+        const responseCount = isCheckIn ? Math.floor(Math.random() * 3) + 18 : getResponseCount(); // Check-ins get 18-20 responses
 
         if (responseCount === 0) {
             console.log('Autonomous message sent with no replies');
@@ -9268,9 +9268,22 @@ async function initiateAutonomousConversation(isCheckIn = false) {
 
         // Schedule responses with realistic delays
         responders.forEach((responder, idx) => {
-            const baseDelay = isCheckIn ? 15000 : 8000; // Check-ins have longer thinking time
-            const randomDelay = baseDelay + (Math.random() * (isCheckIn ? 25000 : 15000));
-            const delay = (idx * (isCheckIn ? 20000 : 10000)) + randomDelay; // Stagger responses
+            let delay;
+            if (isCheckIn) {
+                // Spread check-ins over 3-5 hours (10,800,000 - 18,000,000 ms)
+                const minDelay = 3 * 60 * 60 * 1000; // 3 hours in ms
+                const maxDelay = 5 * 60 * 60 * 1000; // 5 hours in ms
+                const timeRange = maxDelay - minDelay;
+                // Distribute responders across the time range with some randomness
+                const basePosition = (idx / responseCount) * timeRange;
+                const randomJitter = (Math.random() - 0.5) * (timeRange / responseCount) * 2;
+                delay = minDelay + basePosition + randomJitter;
+            } else {
+                // Regular messages have shorter delays
+                const baseDelay = 8000;
+                const randomDelay = baseDelay + (Math.random() * 15000);
+                delay = (idx * 10000) + randomDelay;
+            }
 
             setTimeout(async () => {
                 try {
@@ -9343,6 +9356,19 @@ async function initiateAutonomousConversation(isCheckIn = false) {
                                         checkInHistory[responder.id].shift();
                                     }
                                     localStorage.setItem('saturday_checkin_stories', JSON.stringify(checkInHistory));
+
+                                    // 40% chance someone reacts to this check-in story
+                                    if (Math.random() < 0.4) {
+                                        // Pick someone who will respond or has already responded
+                                        const potentialReactors = responders.filter(r => r.id !== responder.id);
+                                        if (potentialReactors.length > 0) {
+                                            const reactor = getRandomItem(potentialReactors);
+                                            const reactionDelay = 5000 + Math.random() * 15000; // 5-20 seconds after story
+                                            setTimeout(() => {
+                                                triggerCheckInReaction(part, responder, reactor);
+                                            }, reactionDelay);
+                                        }
+                                    }
                                 }
                             }, totalDelay);
                             totalDelay += partDelay;
@@ -9356,6 +9382,54 @@ async function initiateAutonomousConversation(isCheckIn = false) {
 
     } catch (e) {
         console.log('Autonomous conversation skip', e);
+    }
+}
+
+// Trigger a reaction/comment to a check-in story
+async function triggerCheckInReaction(storyText, originalAuthor, reactor) {
+    try {
+        const currentHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+        const historyContext = currentHistory.slice(-20).map(m => ({
+            role: m.authorId === 'current-user' ? 'user' : 'model',
+            text: `${m.authorName || 'Member'}: ${m.text}`,
+            timestamp: m.timestamp
+        }));
+
+        // Generate a supportive reaction/comment
+        const reactionPrompt = `(${originalAuthor.name} just shared their check-in story. React to it with a brief, supportive comment. Be empathetic, relate to their experience, offer encouragement, or share how you connect with what they said. Keep it short and genuine - 1-2 sentences max. You're commenting on: "${storyText}")`;
+
+        const response = await fetch('/.netlify/functions/ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'community',
+                message: reactionPrompt,
+                memberPersona: reactor,
+                chatHistory: historyContext,
+                currentDateTime: new Date().toLocaleString(),
+                isAutonomous: true
+            })
+        });
+
+        const data = await response.json();
+        if (data.reply) {
+            // Reactions should be quick and short, no multi-part needed
+            const reactionText = data.reply.replace(/\s*\|\|\|\s*/g, ' ');
+            const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+            msgs.push({
+                authorId: reactor.id,
+                authorName: reactor.name,
+                authorAvatar: reactor.id.replace('m', ''),
+                text: reactionText,
+                timestamp: Date.now()
+            });
+            localStorage.setItem('community_chat_history', JSON.stringify(msgs));
+            if (typeof renderChat === 'function') renderChat(msgs);
+
+            console.log(`💬 ${reactor.name} reacted to ${originalAuthor.name}'s story`);
+        }
+    } catch (e) {
+        console.log('Check-in reaction skip', e);
     }
 }
 
