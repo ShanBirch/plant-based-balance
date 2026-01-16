@@ -1057,75 +1057,7 @@
         <!-- Week views will be injected/shown here -->
 
 <!-- START HERE -->
-<div class="view-section active" id="start">
-    <div class="hero-card" id="hero-card-bg" style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); color: var(--primary);">
-        <div style="font-family:'Inter'; text-transform:uppercase; color:var(--secondary); font-weight:600; letter-spacing:1px; margin-bottom:10px;">28-Day Plant Based Switch</div>
-        <div class="hero-title" id="hero-title" style="color: var(--primary); font-size: 3rem; margin-bottom: 20px;">Your Cortisol Recovery Protocol</div>
-        <div class="hero-subtitle" id="hero-subtitle" style="color: var(--primary-light); font-weight: 500; font-size: 1.1rem; margin-bottom: 20px; max-width: 700px; margin-left: auto; margin-right: auto;">
-            <strong>The "Survival Mode" Profile.</strong> Your body is stuck in fight-or-flight, holding onto belly fat. This plan powers down your adrenaline response to signal safety and shedding.
-        </div>
-    </div>
-
-    <!-- Protocol Collapsible Section -->
-    <div class="card">
-        <div class="card-header" onclick="toggleCard(this)">
-            <div class="meal-title">Your Cortisol Recovery Protocol</div>
-            <div class="expand-icon">+</div>
-        </div>
-        <div class="card-body">
-            <!-- DYNAMIC SYMPTOM SECTION -->
-            <div id="dynamic-symptom-section" style="display: none; border-bottom: 2px dashed #e2e8f0; margin-bottom: 30px; padding-bottom: 30px;">
-                <h3 style="color: var(--secondary); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">Your Personalized Focus Areas</h3>
-                <div id="symptom-content-container"></div>
-            </div>
-            <!-- Brain Consistency Box -->
-             <div class="card" style="background: #f4f6f8; border-left: 4px solid var(--primary); margin-bottom: 30px;">
-                <div class="card-body" style="max-height: none; padding: 30px; opacity: 1;">
-                    <h3 style="display:flex; align-items:center; gap:10px;">??? Consistency is Safety</h3>
-                    <p>Your brain constantly scans for threats. Erratic eating signals "famine", causing your brain to hoard fat stores and spike anxiety. <strong>We feed on a rhythm to lower adrenaline.</strong> By eating at the same times daily, we signal 'safety', allowing your body to relax and burn fat.</p>
-                </div>
-            </div>
-
-            <!-- 4 Golden Rules -->
-            <h2 style="margin: 0 0 20px 0; text-align: center;">The 4 Golden Rules</h2>
-            <div id="golden-rules-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px;">
-                <div class="card" style="margin:0;">
-                    <div class="card-header" style="background:var(--secondary); color:white;"><div class="meal-title" style="color:white;">1. Carbs at Night</div></div>
-                    <div class="card-body" style="max-height:none; opacity:1; padding:20px;">
-                        <p>Save starchy carbs (Sweet Potato/Rice) for <strong>dinner</strong>. This blunts the evening cortisol spike and boosts serotonin for deep sleep.</p>
-                    </div>
-                </div>
-                <div class="card" style="margin:0;">
-                    <div class="card-header" style="background:var(--secondary); color:white;"><div class="meal-title" style="color:white;">2. No Fasting</div></div>
-                    <div class="card-body" style="max-height:none; opacity:1; padding:20px;">
-                        <p>Eat within <strong>30 minutes</strong> of waking. Fasting spikes cortisol and keeps your body in emergency storage mode.</p>
-                    </div>
-                </div>
-                 <div class="card" style="margin:0;">
-                    <div class="card-header" style="background:var(--secondary); color:white;"><div class="meal-title" style="color:white;">3. Magnesium</div></div>
-                    <div class="card-body" style="max-height:none; opacity:1; padding:20px;">
-                        <p>Prioritize magnesium-rich foods (Spinach, Pumpkin Seeds, Dark Choc) to physically relax the nervous system.</p>
-                    </div>
-                </div>
-                <div class="card" style="margin:0;">
-                    <div class="card-header" style="background:var(--secondary); color:white;"><div class="meal-title" style="color:white;">4. 4-Hour Rhythm</div></div>
-                    <div class="card-body" style="max-height:none; opacity:1; padding:20px;">
-                        <p><strong>Never go >4 hours without food.</strong> Frequent protein feedings assure your ancient brain that you are safe from starvation.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card" style="margin-bottom: 0;">
-                <div class="card-body" id="spotlight-body" style="max-height:none; opacity:1; padding:30px; display:flex; gap:30px; align-items:center;">
-                     <img src="protocols/cortisol/images/sweet_potato_spotlight.png" style="width:150px; height:150px; object-fit:cover; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
-                     <div>
-                        <h3 style="color:var(--secondary);">Medicinal Power: The Sweet Potato</h3>
-                        <p><strong>Why simple carbs?</strong> When eaten at night, the strategic insulin release helps lower cortisol and drives Tryptophan into the brain to create <strong>Serotonin</strong>. It is your biochemistry hack for sleep and calm.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Protocol Section Removed -->
 
     <!-- Original How To Use (Collapsible) -->
     <div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="meal-title">How to Use Your Meal Plan</div><div class="expand-icon">+</div></div>
@@ -9597,7 +9529,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Immediate
 updateCoachUI();
+
+// 5. Welcome Modal Logic
+setTimeout(() => {
+    const hasSeenWelcome = localStorage.getItem('has_seen_welcome_modal_v2');
+    const isInFrame = window.self !== window.top; // Check if in iframe (optional)
+    
+    // Only show if not seen and we are on dashboard (initially visible)
+    if (!hasSeenWelcome) {
+        document.getElementById('welcome-switch-modal').style.display = 'flex';
+        localStorage.setItem('has_seen_welcome_modal_v2', 'true');
+        triggerConfetti();
+    }
+}, 1000);
+
 </script>
+
+<!-- WELCOME MODAL -->
+<div id="welcome-switch-modal" style="display:none; position:fixed; inset:0; background:rgba(4,106,56,0.95); z-index:10020; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(10px); text-align:center; padding:30px;">
+    <div style="font-size:4rem; margin-bottom:20px;">??</div>
+    <h1 style="color:white; margin-bottom:10px;">Welcome to The Switch</h1>
+    <p style="color:rgba(255,255,255,0.9); font-size:1.2rem; max-width:500px; margin-bottom:40px; line-height:1.6;">
+        Your 28-Day Cortisol Recovery Protocol is ready. <br>
+        We've customized your meal plan and movement flow to signal safety to your body.
+    </p>
+    <button onclick="document.getElementById('welcome-switch-modal').style.display='none'" style="background:white; color:var(--primary); padding:18px 40px; border-radius:50px; font-weight:800; font-size:1.1rem; border:none; cursor:pointer; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+        LET'S BEGIN
+    </button>
+</div>
 <!-- WORKOUT BUILDER VIEW -->
 <div id="view-workout-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:2000; overflow-y:auto; padding-bottom: 100px;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
