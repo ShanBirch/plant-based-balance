@@ -9722,7 +9722,17 @@ window.appendCoachMessage = function(text) {
         timestamp: Date.now() 
     });
     localStorage.setItem('chat_history', JSON.stringify(history));
-    
+
+    // Mark as unread and show notification badge
+    localStorage.setItem('coach_unread_messages', 'true');
+    const badge = document.getElementById('coach-notification-badge');
+    if (badge) {
+        badge.style.display = 'block';
+    }
+
+    // Send push notification
+    sendCoachNotification(text);
+
     // Notification Badge on App Icon
     if ('setAppBadge' in navigator && document.visibilityState === 'hidden') {
         navigator.setAppBadge(1).catch(e => console.error(e));
@@ -9731,7 +9741,14 @@ window.appendCoachMessage = function(text) {
 
 window.openCoachChat = function() {
     document.getElementById('view-support').style.display = 'block';
-    
+
+    // Clear unread flag and hide notification badge
+    localStorage.removeItem('coach_unread_messages');
+    const badge = document.getElementById('coach-notification-badge');
+    if (badge) {
+        badge.style.display = 'none';
+    }
+
     // Clear Badge
     if ('clearAppBadge' in navigator) {
         navigator.clearAppBadge().catch(e => console.error(e));
@@ -10044,6 +10061,7 @@ document.getElementById('video-modal').addEventListener('click', function(e) {
 <div id="coach-floating-bubble" onclick="openCoachChat()" style="position: fixed; bottom: 130px; right: 20px; z-index: 9999; cursor: pointer; transition: transform 0.2s;">
     <div style="width: 56px; height: 56px; border-radius: 50%; background: #f1f5f9 url('assets/coach_shannon.jpg') no-repeat center/cover; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.15);"></div>
     <div id="coach-bubble-dot" style="position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background: #22c55e; border: 2px solid white; border-radius: 50%;"></div>
+    <div id="coach-notification-badge" style="display: none; position: absolute; top: -4px; right: -4px; width: 20px; height: 20px; background: #fbbf24; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 8px rgba(251, 191, 36, 0.6);"></div>
 </div>
 
 <script>
@@ -10078,7 +10096,7 @@ function updateCoachUI() {
     const { isOnline } = getCoachState();
     const headerStatus = document.getElementById('coach-header-status-text');
     const bubbleDot = document.getElementById('coach-bubble-dot');
-    
+
     // Check Bubble Visibility (Hide if Support view is open)
     const supportView = document.getElementById('view-support');
     const bubble = document.getElementById('coach-floating-bubble');
@@ -10086,13 +10104,20 @@ function updateCoachUI() {
         const isSupportOpen = supportView.style.display !== 'none';
         bubble.style.display = isSupportOpen ? 'none' : 'block';
     }
-    
+
+    // Check for unread messages and show/hide notification badge
+    const hasUnread = localStorage.getItem('coach_unread_messages') === 'true';
+    const badge = document.getElementById('coach-notification-badge');
+    if (badge) {
+        badge.style.display = hasUnread ? 'block' : 'none';
+    }
+
     const color = isOnline ? '#22c55e' : '#94a3b8'; // Green vs Slate
     const text = isOnline ? 'Active Now' : 'Offline (Back 7am)';
-    
+
     if(headerStatus) {
         headerStatus.innerText = text;
-        headerStatus.style.color = isOnline ? 'var(--primary)' : '#64748b'; 
+        headerStatus.style.color = isOnline ? 'var(--primary)' : '#64748b';
     }
     if(bubbleDot) {
         bubbleDot.style.background = color;
@@ -10170,11 +10195,66 @@ function openCoachChat() {
     }
 }
 
+// 5. Push Notifications
+async function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+        console.log('This browser does not support notifications');
+        return;
+    }
+
+    // Check if permission already granted
+    if (Notification.permission === 'granted') {
+        return;
+    }
+
+    // Only request if not already denied
+    if (Notification.permission !== 'denied') {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            console.log('Notification permission granted');
+        }
+    }
+}
+
+async function sendCoachNotification(messageText) {
+    // Check if notifications are supported and permitted
+    if (!('Notification' in window) || Notification.permission !== 'granted') {
+        return;
+    }
+
+    // Only send notification if app is in background
+    if (document.visibilityState === 'hidden') {
+        try {
+            const registration = await navigator.serviceWorker.ready;
+
+            // Truncate long messages for notification
+            const displayText = messageText.length > 100
+                ? messageText.substring(0, 100) + '...'
+                : messageText;
+
+            await registration.showNotification('Coach Shannon', {
+                body: displayText,
+                icon: './assets/coach_shannon.jpg',
+                badge: './assets/logo_optimized.png',
+                vibrate: [200, 100, 200],
+                tag: 'coach-message',
+                requireInteraction: false,
+                data: {
+                    url: './dashboard.html'
+                }
+            });
+        } catch (error) {
+            console.error('Error sending notification:', error);
+        }
+    }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     updateCoachUI();
     setInterval(updateCoachUI, 1000); // Check every second for visibility toggle
     setTimeout(checkCoachGreeting, 2000);
+    requestNotificationPermission();
 });
 
 // Immediate
