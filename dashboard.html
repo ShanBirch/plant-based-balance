@@ -6962,6 +6962,367 @@ const COACHING_TIPS = [
     "You have successfully reset your biochemistry. This is not a diet, it's a signal of safety to your body. Well done!"
 ];
 
+// --- DAILY COACH MESSAGES (Personalized by Day) ---
+const DAILY_COACH_MESSAGES = [
+    // Day 1
+    {
+        day: 1,
+        message: (name) => `Hey ${name}! Thanks so much for signing up to Plant-Based Balance. So excited for you to join the crew. Day 1 of 28 - you're going to be feeling like a new you. Have a look around the app and let me know if you have any questions!`
+    },
+    // Day 2
+    {
+        day: 2,
+        message: (name) => `Hey ${name}, day 2! How you feeling? How did you sleep last night?`
+    },
+    // Day 3
+    {
+        day: 3,
+        message: (name) => `Day 3, ${name}! You're doing amazing. Keep showing up for yourself.`
+    },
+    // Day 4
+    {
+        day: 4,
+        message: (name) => `Hey ${name}! Day 4 vibes. How's your energy today?`
+    },
+    // Day 5
+    {
+        day: 5,
+        message: (name) => `${name}, you're already on day 5! That's almost a full week. Proud of you.`
+    },
+    // Day 6
+    {
+        day: 6,
+        message: (name) => `Day 6, ${name}. How are you finding the meal plan so far?`
+    },
+    // Day 7
+    {
+        day: 7,
+        message: (name) => `Week 1 done, ${name}! That's huge. How do you feel?`
+    },
+    // Day 8
+    {
+        day: 8,
+        message: (name) => `Starting week 2, ${name}! Let's keep this momentum going.`
+    },
+    // Day 9
+    {
+        day: 9,
+        message: (name) => `Day 9! ${name}, you're building such great habits already.`
+    },
+    // Day 10
+    {
+        day: 10,
+        message: (name) => `Double digits, ${name}! Day 10. How's your body feeling?`
+    },
+    // Day 11
+    {
+        day: 11,
+        message: (name) => `${name}, day 11. Keep trusting the process.`
+    },
+    // Day 12
+    {
+        day: 12,
+        message: (name) => `Day 12! ${name}, are you noticing any changes yet?`
+    },
+    // Day 13
+    {
+        day: 13,
+        message: (name) => `${name}, day 13. You're almost halfway there!`
+    },
+    // Day 14
+    {
+        day: 14,
+        message: (name) => `Two weeks, ${name}! Halfway through week 2. This is when the magic really starts.`
+    },
+    // Day 15
+    {
+        day: 15,
+        message: (name) => `${name}, day 15. Over halfway now. How amazing is that?`
+    },
+    // Day 16
+    {
+        day: 16,
+        message: (name) => `Day 16, ${name}. Your body is thanking you for every good choice.`
+    },
+    // Day 17
+    {
+        day: 17,
+        message: (name) => `${name}, day 17! Keep shining.`
+    },
+    // Day 18
+    {
+        day: 18,
+        message: (name) => `Day 18. ${name}, you're in the flow now.`
+    },
+    // Day 19
+    {
+        day: 19,
+        message: (name) => `${name}, day 19! How's your sleep been?`
+    },
+    // Day 20
+    {
+        day: 20,
+        message: (name) => `Day 20, ${name}. Just over a week left. You've got this!`
+    },
+    // Day 21
+    {
+        day: 21,
+        message: (name) => `Three weeks done, ${name}! Day 21. This is incredible.`
+    },
+    // Day 22
+    {
+        day: 22,
+        message: (name) => `${name}, final week starts now. Day 22. Let's finish strong!`
+    },
+    // Day 23
+    {
+        day: 23,
+        message: (name) => `Day 23! ${name}, you're so close to the finish line.`
+    },
+    // Day 24
+    {
+        day: 24,
+        message: (name) => `${name}, day 24. Can you feel the difference in your body?`
+    },
+    // Day 25
+    {
+        day: 25,
+        message: (name) => `Day 25, ${name}! Just 3 more days. You're amazing.`
+    },
+    // Day 26
+    {
+        day: 26,
+        message: (name) => `${name}, day 26. Almost there! How do you feel?`
+    },
+    // Day 27
+    {
+        day: 27,
+        message: (name) => `Day 27! ${name}, one more day after this. You've done incredible.`
+    },
+    // Day 28
+    {
+        day: 28,
+        message: (name) => `${name}, you did it! Day 28. The full reset complete. So proud of you. This is just the beginning of your new lifestyle!`
+    }
+];
+
+// --- DAILY MESSAGE DELIVERY SYSTEM ---
+function checkAndSendDailyMessage() {
+    const startDate = localStorage.getItem('pbb_start_date');
+    if (!startDate) return;
+
+    const start = new Date(startDate);
+    const now = new Date();
+    const diffTime = Math.abs(now - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    let currentDay = diffDays;
+    if (currentDay < 1) currentDay = 1;
+    if (currentDay > 28) currentDay = 28; // Cap at 28 days
+
+    // Check if we've already sent today's message
+    const todayStr = new Date().toDateString();
+    const lastMessageDate = localStorage.getItem('last_daily_message_date');
+    const lastMessageDay = parseInt(localStorage.getItem('last_daily_message_day') || '0');
+
+    // Send message if it's a new day OR if we haven't sent the message for this program day yet
+    if (lastMessageDate !== todayStr || lastMessageDay !== currentDay) {
+        sendDailyCoachMessage(currentDay);
+        localStorage.setItem('last_daily_message_date', todayStr);
+        localStorage.setItem('last_daily_message_day', currentDay.toString());
+    }
+}
+
+function sendDailyCoachMessage(day) {
+    const userName = sessionStorage.getItem('userName') || 'there';
+    const messageTemplate = DAILY_COACH_MESSAGES.find(m => m.day === day);
+
+    if (!messageTemplate) return;
+
+    const messageText = messageTemplate.message(userName);
+
+    // Add message to chat history
+    const container = document.getElementById('chat-messages-container');
+    if (container) {
+        const rowDiv = document.createElement('div');
+        rowDiv.style.cssText = "display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;";
+
+        const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        rowDiv.innerHTML = `
+            <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
+            <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
+                <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
+                    <p style="margin: 0; white-space: pre-wrap;">${messageText}</p>
+                </div>
+                <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon ${timeStr}</span>
+            </div>
+        `;
+        container.appendChild(rowDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // Save to chat history
+    const history = JSON.parse(localStorage.getItem('chat_history') || '[]');
+    history.push({
+        role: 'coach',
+        text: messageText,
+        timestamp: Date.now(),
+        isDailyMessage: true
+    });
+    localStorage.setItem('chat_history', JSON.stringify(history));
+
+    // Show notification badge on support tab
+    showNewMessageNotification();
+
+    // Show in-app notification toast
+    showInAppNotification(messageText);
+
+    // Request push notification permission and send push
+    sendPushNotification('Daily Message from Coach Shannon', messageText);
+
+    // Update the floating message bubble
+    if (typeof updateDailyMessageBubble === 'function') {
+        setTimeout(updateDailyMessageBubble, 500);
+    }
+}
+
+function showNewMessageNotification() {
+    // Add badge to support nav item
+    const supportNav = document.querySelector('.nav-item[onclick*="support"]');
+    if (supportNav && !supportNav.querySelector('.notification-badge')) {
+        const badge = document.createElement('div');
+        badge.className = 'notification-badge';
+        badge.style.cssText = `
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 10px;
+            height: 10px;
+            background: #FF4444;
+            border-radius: 50%;
+            border: 2px solid white;
+            animation: pulse 2s infinite;
+        `;
+        supportNav.style.position = 'relative';
+        supportNav.appendChild(badge);
+
+        // Remove badge when user opens support tab
+        const originalSwitchTab = window.switchAppTab;
+        window.switchAppTab = function(tabName, btn) {
+            if (tabName === 'support' && badge.parentElement) {
+                badge.remove();
+            }
+            originalSwitchTab(tabName, btn);
+        };
+    }
+}
+
+function showInAppNotification(message) {
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        color: var(--text-main);
+        padding: 15px 20px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        z-index: 99999;
+        max-width: 90%;
+        width: 350px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideDown 0.3s ease;
+        border: 2px solid var(--primary);
+    `;
+
+    toast.innerHTML = `
+        <img src="assets/coach_shannon.jpg" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+        <div style="flex: 1;">
+            <div style="font-weight: 700; font-size: 0.9rem; color: var(--primary); margin-bottom: 2px;">Coach Shannon</div>
+            <div style="font-size: 0.85rem; line-height: 1.3; color: var(--text-main);">${message.substring(0, 60)}${message.length > 60 ? '...' : ''}</div>
+        </div>
+        <button onclick="this.parentElement.remove()" style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 5px;">×</button>
+    `;
+
+    // Add CSS animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+        }
+    `;
+    if (!document.querySelector('style[data-coach-animations]')) {
+        style.setAttribute('data-coach-animations', 'true');
+        document.head.appendChild(style);
+    }
+
+    document.body.appendChild(toast);
+
+    // Make it clickable to go to support
+    toast.style.cursor = 'pointer';
+    toast.onclick = function() {
+        switchAppTab('support');
+        toast.remove();
+    };
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.animation = 'slideDown 0.3s ease reverse';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 5000);
+}
+
+async function sendPushNotification(title, body) {
+    // Check if push notifications are supported
+    if (!('Notification' in window)) return;
+
+    // Request permission if not granted
+    if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+    }
+
+    // If permission is granted, send notification
+    if (Notification.permission === 'granted') {
+        // Check if service worker is registered
+        if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.ready;
+
+            // Show notification
+            registration.showNotification(title, {
+                body: body,
+                icon: './icon-192.png',
+                badge: './icon-192.png',
+                tag: 'daily-coach-message',
+                requireInteraction: false,
+                vibrate: [200, 100, 200],
+                data: {
+                    url: './dashboard.html'
+                }
+            });
+        } else {
+            // Fallback to basic notification
+            new Notification(title, {
+                body: body,
+                icon: './icon-192.png'
+            });
+        }
+    }
+}
+
 function initProgramDate() {
     let startDate = localStorage.getItem('pbb_start_date');
     if (!startDate) {
@@ -6973,11 +7334,14 @@ function initProgramDate() {
     const now = new Date();
     const diffTime = Math.abs(now - start);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     let currentDay = diffDays;
     if (currentDay < 1) currentDay = 1;
 
     updateDailyContent(currentDay);
+
+    // Check and send daily coach message
+    checkAndSendDailyMessage();
 }
 
 function updateDailyContent(day) {
@@ -10372,9 +10736,128 @@ updateCoachUI();
         
         hideAllAppViews();
         document.getElementById('view-active-workout').style.display = 'block';
-        window.activeWorkoutSessions = customWorkout; 
+        window.activeWorkoutSessions = customWorkout;
     }
 </script>
+
+<!-- FLOATING DAILY MESSAGE BUBBLE -->
+<div id="daily-message-bubble" style="display: none; position: fixed; bottom: 100px; right: 20px; z-index: 9998; animation: bounceIn 0.5s ease;">
+    <div style="position: relative; cursor: pointer;" onclick="openDailyMessagePreview()">
+        <!-- Notification Badge -->
+        <div id="message-bubble-badge" style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: #FF4444; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: white; animation: pulse 2s infinite;">1</div>
+
+        <!-- Coach Avatar -->
+        <img src="assets/coach_shannon.jpg" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); box-shadow: 0 5px 20px rgba(0,0,0,0.2);">
+    </div>
+</div>
+
+<!-- DAILY MESSAGE PREVIEW MODAL -->
+<div id="daily-message-preview" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99999; align-items: center; justify-content: center; backdrop-filter: blur(5px); animation: fadeIn 0.3s ease;">
+    <div style="background: white; border-radius: 20px; max-width: 90%; width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: scaleIn 0.3s ease; overflow: hidden;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, var(--primary), #037a43); padding: 25px 20px; text-align: center; color: white; position: relative;">
+            <img src="assets/coach_shannon.jpg" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 4px solid white; margin-bottom: 10px;">
+            <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700;">Coach Shannon</h3>
+            <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Daily Check-in</p>
+            <button onclick="closeDailyMessagePreview()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">×</button>
+        </div>
+
+        <!-- Message Content -->
+        <div id="daily-message-content" style="padding: 25px; max-height: 300px; overflow-y: auto;">
+            <p style="margin: 0; color: var(--text-main); line-height: 1.6; font-size: 1rem;"></p>
+        </div>
+
+        <!-- Actions -->
+        <div style="padding: 20px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
+            <button onclick="closeDailyMessagePreview()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 30px; color: var(--text-main); font-weight: 600; cursor: pointer;">Dismiss</button>
+            <button onclick="replyToCoach()" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 30px; color: white; font-weight: 600; cursor: pointer;">Reply</button>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes bounceIn {
+    0% { opacity: 0; transform: scale(0.3); }
+    50% { transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+</style>
+
+<script>
+// Show daily message bubble if there's an unread daily message
+function updateDailyMessageBubble() {
+    const todayStr = new Date().toDateString();
+    const lastViewedDate = localStorage.getItem('last_daily_message_viewed');
+    const lastMessageDate = localStorage.getItem('last_daily_message_date');
+
+    const bubble = document.getElementById('daily-message-bubble');
+
+    // Show bubble if there's a message today that hasn't been viewed
+    if (lastMessageDate === todayStr && lastViewedDate !== todayStr) {
+        bubble.style.display = 'block';
+    } else {
+        bubble.style.display = 'none';
+    }
+}
+
+function openDailyMessagePreview() {
+    const modal = document.getElementById('daily-message-preview');
+    modal.style.display = 'flex';
+
+    // Get the latest daily message from chat history
+    const history = JSON.parse(localStorage.getItem('chat_history') || '[]');
+    const dailyMessages = history.filter(m => m.isDailyMessage);
+
+    if (dailyMessages.length > 0) {
+        const latestMessage = dailyMessages[dailyMessages.length - 1];
+        const content = document.querySelector('#daily-message-content p');
+        if (content) {
+            content.textContent = latestMessage.text;
+        }
+    }
+
+    // Mark as viewed
+    const todayStr = new Date().toDateString();
+    localStorage.setItem('last_daily_message_viewed', todayStr);
+
+    // Hide bubble
+    document.getElementById('daily-message-bubble').style.display = 'none';
+}
+
+function closeDailyMessagePreview() {
+    const modal = document.getElementById('daily-message-preview');
+    modal.style.display = 'none';
+}
+
+function replyToCoach() {
+    closeDailyMessagePreview();
+    switchAppTab('support');
+
+    // Focus on the chat input
+    setTimeout(() => {
+        const input = document.getElementById('coach-chat-input');
+        if (input) {
+            input.focus();
+        }
+    }, 300);
+}
+
+// Update bubble visibility on page load
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(updateDailyMessageBubble, 1000);
+});
+</script>
+
 </body>
 </html>
 
