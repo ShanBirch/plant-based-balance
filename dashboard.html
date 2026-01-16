@@ -9275,14 +9275,24 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
 
     <div style="width:100%; max-width:900px; position:relative; padding: 20px;">
-        <div style="background:black; width:100%; aspect-ratio:16/9; border-radius:24px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
-            <iframe id="video-frame" style="width:100%; height:100%; border:none;" allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer" sandbox="allow-forms allow-scripts allow-pointer-lock allow-same-origin allow-top-navigation allow-presentation" playsinline allowfullscreen></iframe>
+        <div style="background:black; width:100%; aspect-ratio:16/9; border-radius:24px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); position:relative;">
+            
+            <!-- Iframe (Initially Hidden) -->
+            <iframe id="video-frame" style="width:100%; height:100%; border:none; display:none;" allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer" sandbox="allow-forms allow-scripts allow-pointer-lock allow-same-origin allow-top-navigation allow-presentation" playsinline allowfullscreen></iframe>
+            
+            <!-- Poster Overlay -->
+            <div id="video-poster" onclick="playVideo()" style="position:absolute; inset:0; background-size:cover; background-position:center; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:10; background-color: #0f172a;">
+                 <div style="width:70px; height:70px; background:rgba(0,0,0,0.6); border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,0.8); backdrop-filter:blur(4px); transition: transform 0.2s;">
+                      <svg viewBox="0 0 24 24" style="width:34px; height:34px; fill:white; margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>
+                 </div>
+            </div>
+
         </div>
         
         <div style="margin-top:25px; text-align:center;">
              <h3 id="video-modal-title" style="color:white; margin:0; font-size:1.1rem; font-weight:600; opacity:0.9; letter-spacing: 0.5px;">Exercise Video</h3>
              <div style="margin-top:10px; font-size:0.8rem;">
-                <a href="#" onclick="openVideoNewTab(); return false;" style="color:rgba(255,255,255,0.5); text-decoration:none; border-bottom:1px dotted rgba(255,255,255,0.3);">Having trouble? Watch externally</a>
+                <a href="javascript:void(0)" onclick="openVideoNewTab();" style="color:rgba(255,255,255,0.4); text-decoration:none; border-bottom:1px dotted rgba(255,255,255,0.2);">Having trouble? Watch externally</a>
              </div>
         </div>
     </div>
@@ -9314,6 +9324,18 @@ function findVideoMatch(name) {
     return '';
 }
 
+let pendingVideoUrl = '';
+
+function playVideo() {
+    const frame = document.getElementById('video-frame');
+    const poster = document.getElementById('video-poster');
+    if(poster) poster.style.display = 'none';
+    if(frame) {
+        frame.style.display = 'block';
+        if(pendingVideoUrl) frame.src = pendingVideoUrl;
+    }
+}
+
 function openExerciseVideo(url, title) {
     console.log("Opening video for:", title);
     
@@ -9325,11 +9347,11 @@ function openExerciseVideo(url, title) {
             alert("Video coming soon for: " + title);
             return;
         }
-        console.log("Found match:", url);
     }
 
     let embedUrl = url;
     let viewUrl = url;
+    let posterImage = '';
 
     // 2. Robust Embed Transformations
     if (url.includes('drive.google.com')) {
@@ -9343,9 +9365,10 @@ function openExerciseVideo(url, title) {
         if (fileId) {
             embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
             viewUrl = `https://drive.google.com/file/d/${fileId}/view`;
+            posterImage = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
         } else {
-            // Fallback: Ensure /preview is used if no ID extraction but still Drive
-            if (!url.includes('/preview')) {
+            // Fallback
+             if (!url.includes('/preview')) {
                  if (url.includes('/view')) embedUrl = url.replace('/view', '/preview');
                  else embedUrl = url.replace(/\/$/, '') + '/preview';
             }
@@ -9354,36 +9377,36 @@ function openExerciseVideo(url, title) {
         const v = url.split('watch?v=')[1].split('&')[0];
         embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
         viewUrl = `https://www.youtube.com/watch?v=${v}`;
+        posterImage = `https://img.youtube.com/vi/${v}/hqdefault.jpg`;
     } else if (url.includes('youtu.be/')) {
         const v = url.split('youtu.be/')[1].split('?')[0];
         embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
         viewUrl = `https://www.youtube.com/watch?v=${v}`;
+        posterImage = `https://img.youtube.com/vi/${v}/hqdefault.jpg`;
     }
 
     // 3. Setup Modal State
     currentVideoUrl = viewUrl; 
+    pendingVideoUrl = embedUrl;
+
     const modal = document.getElementById('video-modal');
     const frame = document.getElementById('video-frame');
+    const poster = document.getElementById('video-poster');
     const titleEl = document.getElementById('video-modal-title');
     
     if(titleEl) titleEl.innerText = title;
     
-    // Reset first to stop old video
+    // Reset Frame
     frame.src = ''; 
-    modal.style.display = 'flex'; 
-    
-    // Add error handling
-    frame.onerror = function() {
-        console.error('Failed to load video:', embedUrl);
-        alert('Unable to load video. Opening in new tab.');
-        window.open(viewUrl, '_blank');
-        closeVideoModal();
-    };
+    frame.style.display = 'none';
 
-    // Small delay to ensure display:flex is rendered before loading iframe
-    setTimeout(() => {
-        frame.src = embedUrl;
-    }, 100);
+    // Show Poster
+    if(poster) {
+        poster.style.display = 'flex';
+        poster.style.backgroundImage = posterImage ? `url('${posterImage}')` : 'none';
+    }
+
+    modal.style.display = 'flex'; 
 }
 
 function openVideoNewTab() {
