@@ -8612,14 +8612,16 @@ window.submitCoachMessage = function() {
         const hasSeenOnboarding = localStorage.getItem('plantbased_onboarding_complete');
         
         if (!hasSeenOnboarding) {
-            // Show modal with a slight delay for effect
+            // Show modal immediately
             setTimeout(() => {
                 const overlay = document.getElementById('onboarding-overlay');
-                overlay.style.display = 'flex';
-                // Trigger reflow
-                overlay.offsetHeight;
-                overlay.classList.add('active');
-            }, 1000);
+                if(overlay) {
+                    overlay.style.display = 'flex';
+                    // Trigger reflow
+                    overlay.offsetHeight;
+                    overlay.classList.add('active');
+                }
+            }, 100); // Reduced delay for instant feel
         }
     }
 
@@ -8650,26 +8652,25 @@ window.submitCoachMessage = function() {
 <script>
 // --- PWA INSTALL BANNER LOGIC ---
 let deferredPrompt;
-let installBannerDismissed = localStorage.getItem('pwa_banner_dismissed') === 'true';
+let installBannerDismissed = localStorage.getItem('pwa_banner_dismissed_v2') === 'true'; // Reset key to force show
 
 // Detect if running as installed PWA
 const isInstalledPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
 // Only show on mobile devices - REMOVED RESTRICTION
-const isMobile = true; // Force true for testing/availability on all devices
+const isMobile = true; 
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     
-    // Show banner if: not installed + not dismissed (Removed isMobile check)
+    // Show banner if: not installed + not dismissed
     if (!isInstalledPWA && !installBannerDismissed) {
-        setTimeout(() => {
-            const banners = document.querySelectorAll('[id="pwa-install-banner"]');
-            banners.forEach(banner => {
-                if (banner) banner.style.display = 'flex';
-            });
-        }, 2000); // Show after 2 seconds
+        // No delay - show immediately when browser verifies installability
+        const banners = document.querySelectorAll('[id="pwa-install-banner"]');
+        banners.forEach(banner => {
+            if (banner) banner.style.display = 'flex';
+        });
     }
 });
 
@@ -8695,7 +8696,7 @@ window.dismissInstall = function() {
     banners.forEach(banner => {
         if (banner) banner.style.display = 'none';
     });
-    localStorage.setItem('pwa_banner_dismissed', 'true');
+    localStorage.setItem('pwa_banner_dismissed_v2', 'true');
 };
 </script>
 
@@ -9535,33 +9536,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // Immediate
 updateCoachUI();
 
-// 5. Welcome Modal Logic
-setTimeout(() => {
-    const hasSeenWelcome = localStorage.getItem('has_seen_welcome_modal_v2');
-    const isInFrame = window.self !== window.top; // Check if in iframe (optional)
-    
-    // Only show if not seen and we are on dashboard (initially visible)
-    if (!hasSeenWelcome) {
-        document.getElementById('welcome-switch-modal').style.display = 'flex';
-        localStorage.setItem('has_seen_welcome_modal_v2', 'true');
-        triggerConfetti();
-    }
-}, 1000);
-
+// 5. Welcome Modal Logic (REMOVED - Using original onboarding-modal instead)
+// setTimeout(() => { ... }, 1000);
 </script>
-
-<!-- WELCOME MODAL -->
-<div id="welcome-switch-modal" style="display:none; position:fixed; inset:0; background:rgba(4,106,56,0.95); z-index:10020; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(10px); text-align:center; padding:30px;">
-    <div style="font-size:4rem; margin-bottom:20px;">??</div>
-    <h1 style="color:white; margin-bottom:10px;">Welcome to The Switch</h1>
-    <p style="color:rgba(255,255,255,0.9); font-size:1.2rem; max-width:500px; margin-bottom:40px; line-height:1.6;">
-        Your 28-Day Cortisol Recovery Protocol is ready. <br>
-        We've customized your meal plan and movement flow to signal safety to your body.
-    </p>
-    <button onclick="document.getElementById('welcome-switch-modal').style.display='none'" style="background:white; color:var(--primary); padding:18px 40px; border-radius:50px; font-weight:800; font-size:1.1rem; border:none; cursor:pointer; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
-        LET'S BEGIN
-    </button>
-</div>
 <!-- WORKOUT BUILDER VIEW -->
 <div id="view-workout-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:2000; overflow-y:auto; padding-bottom: 100px;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
