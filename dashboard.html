@@ -9269,21 +9269,18 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- VIDEO MODAL (Ensured Existence) -->
 <!-- VIDEO MODAL (Improved) -->
 <div id="video-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:10010; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
+    <!-- Close Button (Top Right) -->
+    <div onclick="closeVideoModal()" style="position: absolute; top: 25px; right: 25px; width: 45px; height: 45px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s; z-index: 10011;">
+        <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </div>
+
     <div style="width:100%; max-width:900px; position:relative; padding: 20px;">
-        <div style="background:black; width:100%; aspect-ratio:16/9; border-radius:16px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
-            <iframe id="video-frame" style="width:100%; height:100%; border:none;" allow="autoplay; fullscreen" allowfullscreen></iframe>
+        <div style="background:black; width:100%; aspect-ratio:16/9; border-radius:24px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
+            <iframe id="video-frame" style="width:100%; height:100%; border:none;" allow="autoplay; fullscreen; picture-in-picture" playsinline allowfullscreen></iframe>
         </div>
         
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
-             <h3 id="video-modal-title" style="color:white; margin:0; font-size:1.1rem; font-weight:600;">Exercise Video</h3>
-             <div style="display:flex; gap:10px;">
-                  <button id="video-open-new-tab" onclick="openVideoNewTab()" style="background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(255,255,255,0.2); padding:10px 20px; border-radius:50px; cursor:pointer; font-size:0.85rem; transition:all 0.2s;">
-                      Open in New Tab
-                  </button>
-                  <button onclick="closeVideoModal()" style="background:white; color:black; border:none; padding:10px 25px; border-radius:50px; cursor:pointer; font-weight:700; font-size:0.85rem; box-shadow: 0 4px 12px rgba(255,255,255,0.2);">
-                      Close
-                  </button>
-             </div>
+        <div style="margin-top:25px; text-align:center;">
+             <h3 id="video-modal-title" style="color:white; margin:0; font-size:1.1rem; font-weight:600; opacity:0.9; letter-spacing: 0.5px;">Exercise Video</h3>
         </div>
     </div>
 </div>
