@@ -8833,18 +8833,42 @@ window.triggerCoachResponse = async function(userMsg) {
 };
 
 async function triggerAICommunityResponse(userMsg) {
-    // Community AI also uses Netlify function
+    const lowMsg = userMsg.toLowerCase();
+    
+    // 1. Thread Persistence & Direct Address Logic
+    let persona = null;
+    const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    
+    // A) Check for direct address (e.g., "Hey Sarah" or "Thanks Emma")
+    for (const m of AI_MEMBERS) {
+        const firstName = m.name.split(' ')[0].toLowerCase();
+        if (lowMsg.includes(firstName)) {
+            persona = m;
+            break;
+        }
+    }
+    
+    // B) If no name mentioned, check for thread persistence (replying to last speaker)
+    if (!persona && fullHistory.length > 0) {
+        const lastMsg = fullHistory[fullHistory.length - 1];
+        if (lastMsg.authorId && lastMsg.authorId !== 'current-user') {
+            const timeSinceLast = Date.now() - lastMsg.timestamp;
+            if (timeSinceLast < 10 * 60 * 1000) { // 10 minute thread window
+                persona = AI_MEMBERS.find(m => m.id === lastMsg.authorId);
+            }
+        }
+    }
+    
+    // C) Fallback to random persona
+    if (!persona) {
+        persona = AI_MEMBERS[Math.floor(Math.random() * AI_MEMBERS.length)];
+    }
+
+    // Community AI Trigger
     setTimeout(async () => {
         try {
-            const personas = AI_MEMBERS;
-            
-            // Pick a random persona for this response
-            const persona = personas[Math.floor(Math.random() * personas.length)];
-            
-            // Get last 20 messages for context
-            const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
             const historyContext = fullHistory.slice(-20).map(m => ({
-                role: m.authorId === 'current-user' ? 'user' : 'model', 
+                role: m.authorId === 'current-user' ? 'user' : 'model',
                 text: `${m.authorName || 'Member'}: ${m.text}`,
                 timestamp: m.timestamp
             }));
@@ -8862,28 +8886,74 @@ async function triggerAICommunityResponse(userMsg) {
             });
             const data = await response.json();
             if (data.reply) {
-                // Support multi-message separated by |||
                 const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
                 let delay = 0;
-                
                 parts.forEach(part => {
                     setTimeout(() => {
-                        const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
-                        messages.push({ 
+                        const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+                        msgs.push({ 
                             authorId: persona.id, 
                             authorName: persona.name, 
-                            authorAvatar: persona.avatar, 
+                            authorAvatar: (persona.id || 'm1').replace('m', ''), 
                             text: part, 
                             timestamp: Date.now() 
                         });
-                        localStorage.setItem('community_chat_history', JSON.stringify(messages));
-                        if(typeof renderChat === 'function') renderChat(messages);
+                        localStorage.setItem('community_chat_history', JSON.stringify(msgs));
+                        if(typeof renderChat === 'function') renderChat(msgs);
                     }, delay);
-                    delay += 1200 + (part.length * 20); // Natural typing delay between messages
+                    delay += 1200 + (part.length * 20);
                 });
+
+                // D) 30% Chance for someone else to "Jump In" after the main reply
+                if (Math.random() < 0.3) {
+                    const otherPersona = AI_MEMBERS.filter(m => m.id !== persona.id)[Math.floor(Math.random() * (AI_MEMBERS.length - 1))];
+                    setTimeout(() => triggerJumpInResponse(userMsg, otherPersona, fullHistory), delay + 3000);
+                }
             }
         } catch (e) { console.log("Comm skip", e); }
-    }, 3000 + Math.random() * 2000); // Random delay between 3-5 seconds
+    }, 2000 + Math.random() * 2000); // Slightly faster initial response
+}
+
+async function triggerJumpInResponse(userMsg, persona, history) {
+    try {
+        const historyContext = history.slice(-20).map(m => ({
+            role: m.authorId === 'current-user' ? 'user' : 'model',
+            text: `${m.authorName || 'Member'}: ${m.text}`,
+            timestamp: m.timestamp
+        }));
+        
+        const response = await fetch('/.netlify/functions/ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'community',
+                message: "(Jump in with a supportive or relatable comment based on the current vibe)",
+                memberPersona: persona,
+                chatHistory: historyContext,
+                currentDateTime: new Date().toLocaleString()
+            })
+        });
+        const data = await response.json();
+        if (data.reply) {
+            const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
+            let delay = 0;
+            parts.forEach(part => {
+                setTimeout(() => {
+                    const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+                    msgs.push({ 
+                        authorId: persona.id, 
+                        authorName: persona.name, 
+                        authorAvatar: (persona.id || 'm1').replace('m', ''), 
+                        text: part, 
+                        timestamp: Date.now() 
+                    });
+                    localStorage.setItem('community_chat_history', JSON.stringify(msgs));
+                    if(typeof renderChat === 'function') renderChat(msgs);
+                }, delay);
+                delay += 1200 + (part.length * 20);
+            });
+        }
+    } catch (e) { console.log("JumpIn skip", e); }
 }
 
 window.openAsClient = function() {
