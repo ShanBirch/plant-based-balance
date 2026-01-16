@@ -9178,13 +9178,18 @@ const AUTONOMOUS_TOPICS = [
     ]}
 ];
 
-// Saturday morning check-in prompts
+// Saturday morning check-in prompts (Coach Shannon initiates these)
 const SATURDAY_CHECKIN_PROMPTS = [
-    'Happy Saturday everyone! How was your week? Any wins to celebrate?',
-    'Saturday check-in time! What was your biggest challenge this week and how did you handle it?',
-    'Good morning! Let\'s do a quick weekly reflection. What are you proud of from this week?',
-    'Weekend vibes! How did everyone do with their wellness goals this week?',
-    'Saturday morning check-in! What\'s one thing you learned about yourself this week?'
+    'Morning everyone! Check-in time. How\'d your week go? I want to hear the real stuff - wins, struggles, whatever\'s on your mind.',
+    'Hey everyone, Saturday check-in. What happened this week that actually mattered to you? Big or small, I\'m curious.',
+    'Happy Saturday! Let\'s take a moment to reflect. What was the most challenging thing you dealt with this week and how did you work through it?',
+    'Morning! Weekly check-in time. What surprised you about yourself this week? I always find these reflections so revealing.',
+    'Saturday vibes! How are you all really doing? Share what\'s going on - the good, the messy, all of it.',
+    'Hey friends! Check-in time. What did you learn about your body or your patterns this week? Let\'s share.',
+    'Morning everyone. What\'s one thing from this week that you\'re still thinking about? Could be a win, a struggle, or just something that stuck with you.',
+    'Saturday check-in! How did you take care of yourself this week? And how did it actually feel doing it?',
+    'Hey all! Time for our weekly reflection. What was different about this week compared to last? Even small shifts count.',
+    'Morning! Let\'s hear your stories. What moment this week made you feel most like yourself?'
 ];
 
 // Get a random item from array
@@ -9213,9 +9218,16 @@ async function initiateAutonomousConversation(isCheckIn = false) {
     try {
         const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
 
-        // Select initiating member (exclude Coach Shannon for more natural feel)
-        const nonCoachMembers = AI_MEMBERS.filter(m => m.id !== 'm0');
-        const initiator = getRandomItem(nonCoachMembers);
+        // Select initiating member
+        let initiator;
+        if (isCheckIn) {
+            // Coach Shannon always leads Saturday check-ins
+            initiator = AI_MEMBERS.find(m => m.id === 'm0');
+        } else {
+            // For random messages, exclude Coach Shannon for more natural peer feel
+            const nonCoachMembers = AI_MEMBERS.filter(m => m.id !== 'm0');
+            initiator = getRandomItem(nonCoachMembers);
+        }
 
         // Get message content
         const messageText = isCheckIn ? getRandomItem(SATURDAY_CHECKIN_PROMPTS) : getRandomAutonomousPrompt();
@@ -9269,13 +9281,29 @@ async function initiateAutonomousConversation(isCheckIn = false) {
                         timestamp: m.timestamp
                     }));
 
+                    // Get previous check-in stories for this member to build continuity
+                    let previousStories = '';
+                    if (isCheckIn) {
+                        const checkInHistory = JSON.parse(localStorage.getItem('saturday_checkin_stories') || '{}');
+                        if (checkInHistory[responder.id] && checkInHistory[responder.id].length > 0) {
+                            const recentStories = checkInHistory[responder.id].slice(-3); // Last 3 check-ins
+                            previousStories = '\nYour previous check-in reflections: ' + recentStories.map(s => `"${s}"`).join(' | ');
+                        }
+                    }
+
+                    // Enhanced prompt for check-ins
+                    let promptMessage = messageText;
+                    if (isCheckIn) {
+                        promptMessage = `(This is your Saturday morning check-in. Shannon is asking the group to reflect on their week. Share an authentic, personal story from your week - something real and specific that happened to you. Talk about actual moments, feelings, struggles, or wins. Be vulnerable and detailed. Build on your journey over time.${previousStories} Respond to: "${messageText}")`;
+                    }
+
                     // Call AI to generate response
                     const response = await fetch('/.netlify/functions/ai-chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             mode: 'community',
-                            message: isCheckIn ? `(This is a Saturday morning check-in. Share your weekly reflection thoughtfully. Respond to: "${messageText}")` : messageText,
+                            message: promptMessage,
                             memberPersona: responder,
                             chatHistory: historyContext,
                             currentDateTime: new Date().toLocaleString(),
@@ -9288,7 +9316,7 @@ async function initiateAutonomousConversation(isCheckIn = false) {
                         const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
                         let totalDelay = 0;
 
-                        parts.forEach((part) => {
+                        parts.forEach((part, partIdx) => {
                             const partDelay = 1200 + (part.length * 20);
                             setTimeout(() => {
                                 const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
@@ -9301,6 +9329,21 @@ async function initiateAutonomousConversation(isCheckIn = false) {
                                 });
                                 localStorage.setItem('community_chat_history', JSON.stringify(msgs));
                                 if (typeof renderChat === 'function') renderChat(msgs);
+
+                                // Save check-in story for continuity (only on last part)
+                                if (isCheckIn && partIdx === parts.length - 1) {
+                                    const checkInHistory = JSON.parse(localStorage.getItem('saturday_checkin_stories') || '{}');
+                                    if (!checkInHistory[responder.id]) {
+                                        checkInHistory[responder.id] = [];
+                                    }
+                                    // Store the full response (all parts combined) for this member
+                                    checkInHistory[responder.id].push(data.reply.replace(/\s*\|\|\|\s*/g, ' '));
+                                    // Keep only last 5 check-ins per member
+                                    if (checkInHistory[responder.id].length > 5) {
+                                        checkInHistory[responder.id].shift();
+                                    }
+                                    localStorage.setItem('saturday_checkin_stories', JSON.stringify(checkInHistory));
+                                }
                             }, totalDelay);
                             totalDelay += partDelay;
                         });
@@ -9457,6 +9500,47 @@ window.getAutonomousStatus = function() {
     console.log(`Check-in already done this week: ${checkInAlreadyDone()}`);
     console.log('─────────────────────────────');
     console.log('💡 Try: testAutonomousMessage() or testSaturdayCheckIn()');
+    console.log('💡 View stories: viewCheckInStories()');
+};
+
+window.viewCheckInStories = function(memberId) {
+    const checkInHistory = JSON.parse(localStorage.getItem('saturday_checkin_stories') || '{}');
+
+    if (memberId) {
+        // Show specific member's stories
+        const member = AI_MEMBERS.find(m => m.id === memberId);
+        if (!member) {
+            console.log(`❌ Member ${memberId} not found`);
+            return;
+        }
+        console.log(`\n📖 Check-in Stories for ${member.name} (${memberId})`);
+        console.log('═══════════════════════════════════════');
+        if (checkInHistory[memberId] && checkInHistory[memberId].length > 0) {
+            checkInHistory[memberId].forEach((story, idx) => {
+                console.log(`\n[Week ${idx + 1}]:`);
+                console.log(story);
+                console.log('─────────────────────────────────────');
+            });
+        } else {
+            console.log('No stories yet for this member.');
+        }
+    } else {
+        // Show all members with stories
+        console.log('\n📚 All Saturday Check-in Story History');
+        console.log('═══════════════════════════════════════');
+        const membersWithStories = Object.keys(checkInHistory);
+        if (membersWithStories.length === 0) {
+            console.log('No check-in stories recorded yet.');
+            console.log('\n💡 Run testSaturdayCheckIn() to generate some stories!');
+        } else {
+            membersWithStories.forEach(id => {
+                const member = AI_MEMBERS.find(m => m.id === id);
+                const storyCount = checkInHistory[id].length;
+                console.log(`\n${member ? member.name : id} (${id}): ${storyCount} check-in${storyCount > 1 ? 's' : ''}`);
+                console.log(`💡 View details: viewCheckInStories('${id}')`);
+            });
+        }
+    }
 };
 
 // ========================================
