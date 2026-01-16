@@ -9318,15 +9318,18 @@ function playVideo() {
     const frame = document.getElementById('video-frame');
     const direct = document.getElementById('video-direct');
     const poster = document.getElementById('video-poster');
-    
+
     if(poster) poster.style.display = 'none';
-    
+
     // Check which player is active based on pending type
     if (window.pendingVideoType === 'drive' && direct) {
         direct.style.display = 'block';
         if(pendingVideoUrl) {
             direct.src = pendingVideoUrl;
-            direct.play().catch(e => console.log("Play error", e));
+            direct.play().catch(e => {
+                console.error("Video play error:", e);
+                alert("Unable to play video. Please try opening in a new tab.");
+            });
         }
     } else if (frame) {
         frame.style.display = 'block';
@@ -9354,7 +9357,8 @@ function openExerciseVideo(url, title) {
 
     // 2. Robust Embed Transformations
     if (url.includes('drive.google.com')) {
-        type = 'drive';
+        // Google Drive videos: Use iframe with /preview for reliable playback
+        type = 'youtube'; // Use iframe player (not native video element)
         let fileId = null;
         if (url.includes('/file/d/')) {
             fileId = url.split('/file/d/')[1].split('/')[0];
@@ -9363,16 +9367,17 @@ function openExerciseVideo(url, title) {
         }
 
         if (fileId) {
-            // DIRECT STREAM LINK
-            embedUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+            // Use /preview for iframe embedding (works reliably)
+            embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
             viewUrl = `https://drive.google.com/file/d/${fileId}/view`;
             posterImage = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
         } else {
-             // Fallback to iframe if ID parse fails
-             type = 'iframe-fallback';
+             // Fallback: ensure /preview is present
              if (!url.includes('/preview')) {
                  if (url.includes('/view')) embedUrl = url.replace('/view', '/preview');
                  else embedUrl = url.replace(/\/$/, '') + '/preview';
+            } else {
+                 embedUrl = url;
             }
         }
     } else if (url.includes('watch?v=')) {
@@ -9425,14 +9430,38 @@ function openVideoNewTab() {
 function closeVideoModal() {
     const modal = document.getElementById('video-modal');
     const frame = document.getElementById('video-frame');
+    const direct = document.getElementById('video-direct');
+
     modal.style.display = 'none';
-    frame.src = ''; // Stop video
+
+    // Stop both video players
+    if(frame) frame.src = '';
+    if(direct) {
+        direct.pause();
+        direct.src = '';
+    }
 }
 
 // Close on background click
 document.getElementById('video-modal').addEventListener('click', function(e) {
     if (e.target === this) closeVideoModal();
 });
+
+// Add error handling for native video player
+const videoElement = document.getElementById('video-direct');
+if(videoElement) {
+    videoElement.addEventListener('error', function(e) {
+        console.error("Video loading error:", e);
+        const errorMsg = "Unable to load video. ";
+        if(currentVideoUrl) {
+            if(confirm(errorMsg + "Would you like to open it in a new tab?")) {
+                window.open(currentVideoUrl, '_blank');
+            }
+        } else {
+            alert(errorMsg);
+        }
+    });
+}
 </script>
 <div id="coach-floating-bubble" onclick="openCoachChat()" style="position: fixed; bottom: 130px; right: 20px; z-index: 9999; cursor: pointer; transition: transform 0.2s;">
     <div style="width: 56px; height: 56px; border-radius: 50%; background: #f1f5f9 url('assets/coach_shannon.jpg') no-repeat center/cover; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.15);"></div>
