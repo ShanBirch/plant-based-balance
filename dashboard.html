@@ -7326,7 +7326,7 @@ function renderTodayMeals() {
     const header = document.createElement('div');
     header.className = 'today-menu-header';
     header.innerHTML = `<h2>Today's Menu</h2>
-                       <p>Week ${weekNum}  ${dayName}</p>`;
+                       <p>DAY ${currentDayNum}</p>`;
     container.appendChild(header);
 
     const cards = sourceSection.querySelectorAll('.card');
