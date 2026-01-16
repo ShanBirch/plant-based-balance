@@ -968,25 +968,7 @@
         <h1 class="user-name">Hello, Shannon</h1>
     </div>
 
-    <!-- PWA INSTALL BANNER (Only shown if not installed) -->
-    <div id="pwa-install-banner" style="display:none; margin: 0 25px 20px 25px; background: linear-gradient(135deg, var(--primary) 0%, #034f2a 100%); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(4, 106, 56, 0.3); animation: slideDown 0.5s ease-out;">
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px;">
-            <div style="flex: 1;">
-                <div style="font-weight: 700; font-size: 1.1rem; color: white; margin-bottom: 5px;">📲 Install Our App</div>
-                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Add to home screen for quick access</div>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="installPWA()" style="background: var(--secondary); color: white; border: none; padding: 10px 20px; border-radius: 50px; font-weight: 700; cursor: pointer; font-size: 0.9rem;">Install</button>
-                <button onclick="dismissInstall()" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); padding: 10px 15px; border-radius: 50px; cursor: pointer;">?</button>
-            </div>
-        </div>
-    </div>
-    <style>
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+    <!-- Duplicate Install Banner Removed -->
 
     <div style="padding: 0 25px;">
         <h3 style="margin-bottom: 15px;">Today's Priority</h3>
@@ -9266,7 +9248,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- PWA INSTALL BANNER (Fixed Floating) -->
 <!-- PWA INSTALL BANNER (Moved to TOP) -->
-<div id="pwa-install-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:var(--primary); color:white; font-size:0.9rem; padding:12px 20px; z-index:10000; box-shadow:0 4px 15px rgba(0,0,0,0.2); align-items:center; justify-content:space-between;">
+<div id="pwa-install-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:#046A38 !important; color:white; font-size:0.9rem; padding:12px 20px; z-index:99999; box-shadow:0 4px 15px rgba(0,0,0,0.2); align-items:center; justify-content:space-between;">
     <div style="display:flex; align-items:center; gap:12px;">
         <span style="font-size:1.2rem;">📲</span>
         <span style="font-weight:600;">Install App for Best Experience</span>
