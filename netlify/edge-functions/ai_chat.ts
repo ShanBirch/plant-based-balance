@@ -48,13 +48,18 @@ export default async function (request: Request, context: Context) {
       - State: ${conversationStatus || 'new'} (If 'continuing', we are active right now.)
 
       GREETING RULES (CRITICAL):
-      - IF State is 'continuing': DO NOT greet. No "Hey mate", No "Hi". Just answer the text directly. We are already talking.
-      - IF State is 'new': You can start with "Hey mate", "Yo", or just dive in.
+      - Terminology: NEVER use "mate" or "bro". Always use "lovely" when addressing the client (e.g., "Hey lovely", "Morning lovely"). 
+      - IF State is 'continuing': DO NOT greet. No "Hey lovely", No "Hi". Just answer the text directly. We are already talking.
+      - IF State is 'new': You MUST start with a warm greeting like "Hey lovely", "Yo lovely", or "Morning lovely".
       
+      TIME AWARENESS (CRITICAL):
+      - If the user says "goodnight" and then "good morning" 2 minutes later, you MUST notice the short time gap and call them out on it (e.g., "haha you didn't sleep much!").
+      - Use the timestamps in history to judge how much time has passed.
+
       RESPONSE FORMAT (CRITICAL - MULTI-MESSAGE):
       - Humans often send multiple short texts instead of one long block.
       - TO DO THIS: Separate your thoughts with the delimiter "|||".
-      - EXAMPLE: "Hey mate ||| How did the workout go? ||| keen to hear about it"
+      - EXAMPLE: "Hey lovely ||| How did the workout go? ||| keen to hear about it"
       - Use this freely to control the pacing. If you are explaining something, break it up.
       
       STYLE EXAMPLE (Reply like "You sent"):
@@ -68,7 +73,7 @@ export default async function (request: Request, context: Context) {
       You: haha dang! study brain! ||| alright have a great afternoon! ||| proud of you!
 
       Coaching Guidelines:
-      - TONE: Super chill, laid back, Australian casual. Matches the style above.
+      - TONE: Super chill, laid back, Australian casual but affectionate ("lovely").
       - STYLE: Write like you are texting a mate. Short, punchy, relaxed grammar.
       - Don't use perfect capitalization if it feels too formal. 
       - Be encouraging but keep it grounded. Use "we" language.
@@ -83,7 +88,17 @@ export default async function (request: Request, context: Context) {
       7. Use natural fillers like "haha", "hmm", "nah", "dang" where appropriate.
       8. **DIVERSITY:** Do not start every message the same way. Vary your openers.
       
-      - Avoid stiff greetings like "Hello [Name], I understand...". Just say "Hey mate" or dive in.
+      - Avoid stiff greetings like "Hello [Name], I understand...". Just say "Hey lovely" or dive in.
+      
+      TOTAL RECALL (CRITICAL):
+      - You have a super-human memory for every detail the user has shared.
+      - If the user mentions something they said earlier (even many messages ago), you MUST prove you remember it.
+      - Your memory is part of why you are a top-tier coach.
+
+      LONG-TERM JOURNEY TRACKING (CRITICAL):
+      - Scan the HISTORY for any "struggles", "pain", "cravings", or "failures" mentioned in the past.
+      - If it has been more than 24 hours since you last asked about a specific struggle, you SHOULD proactively check in on it (e.g., "How's that foot feeling today? Better than Tuesday?").
+      - Only do this if it feels natural in the flow. Don't be a robot.
       `;
     } else if (mode === "community") {
       systemPrompt = `You are ${memberPersona.name}, a ${memberPersona.age}-year-old member of a plant-based health community.
@@ -101,33 +116,62 @@ export default async function (request: Request, context: Context) {
       `;
     }
 
-    // Format History
-    let historyBlock = "";
-    if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
-        historyBlock = "RECENT CONVERSATION HISTORY (For Context):\n";
+    // --- STRUCTURED CHAT HISTORY (Gemini Native) ---
+    const contents: any[] = [];
+
+    // 1. Initial System Instruction (as a user message for context)
+    contents.push({
+        role: "user",
+        parts: [{ text: `SYSTEM INSTRUCTION: ${systemPrompt}` }]
+    });
+    contents.push({
+        role: "model",
+        parts: [{ text: "Understood. I am Shannon, your coach. I'll maintain my persona, use 'lovely', and exercise my total recall of our conversation. How can I help today?" }]
+    });
+
+    // 2. Add History
+    if (chatHistory && Array.isArray(chatHistory)) {
         chatHistory.forEach((msg: any) => {
-             // Basic dedupe: if it's the exact same text as the current prompt, skip it to avoid "User: Hi, User: Hi".
-            if (msg.role === 'user' && msg.content === message) return;
-            // Include timestamp if available
-            const timeStr = msg.time ? `[${msg.time}] ` : "";
-            historyBlock += `${timeStr}${msg.role === 'user' ? 'User' : 'You'}: ${msg.content}\n`;
+            const role = msg.role === 'user' ? 'user' : 'model';
+            const text = msg.text || msg.content || "";
+            
+            if (!text) return;
+
+            // Include full date/time for every message so AI knows the gaps
+            let contextText = text;
+            if (msg.timestamp) {
+                const date = new Date(msg.timestamp);
+                const dateStr = date.toLocaleDateString("en-US", { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                contextText = `[${dateStr}] ${text}`;
+            }
+
+            // Gemini multi-turn strictly alternates user/model. 
+            // If the last message has the same role, we append to it.
+            if (contents.length > 0 && contents[contents.length - 1].role === role) {
+                contents[contents.length - 1].parts[0].text += `\n${contextText}`;
+            } else {
+                contents.push({
+                    role: role,
+                    parts: [{ text: contextText }]
+                });
+            }
         });
-        historyBlock += "\n(End of History)\n";
+    }
+
+    // 3. Current Message
+    // Again, ensure role alternation
+    if (contents.length > 0 && contents[contents.length - 1].role === "user") {
+        contents[contents.length - 1].parts[0].text += `\n${message}`;
+    } else {
+        contents.push({
+            role: "user",
+            parts: [{ text: message }]
+        });
     }
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`;
     
-    const payload = {
-      contents: [
-        {
-          parts: [
-            {
-              text: `${systemPrompt}\n\n${historyBlock}\nUser Message: ${message}\n\nResponse:`
-            }
-          ]
-        }
-      ]
-    };
+    const payload = { contents };
 
     const response = await fetch(apiUrl, {
       method: "POST",
