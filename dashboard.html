@@ -6827,142 +6827,7 @@ function startCustomBuilderWorkout() {
 
 </div>
 
-<!-- VIDEO MODAL (YouTube) -->
-<div id="video-modal" class="image-modal-overlay" style="display:none; justify-content:center; align-items:center;" onclick="closeVideoModal()">
-    <div style="width:90%; max-width:800px; background:black; border-radius:12px; overflow:hidden; z-index:10001; position:relative;" onclick="event.stopPropagation()">
-        <button onclick="closeVideoModal()" style="position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.9); border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; z-index:10002; display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:#333; box-shadow:0 2px 8px rgba(0,0,0,0.3); transition:all 0.2s;" onmouseover="this.style.background='white'" onmouseout="this.style.background='rgba(255,255,255,0.9)'">×</button>
-        <button id="open-in-drive-btn" onclick="openVideoInNewTab()" style="position:absolute; top:60px; right:10px; background:rgba(255,255,255,0.9); border:none; padding:8px 12px; border-radius:8px; cursor:pointer; z-index:10002; font-size:0.85rem; color:#333; box-shadow:0 2px 8px rgba(0,0,0,0.3); transition:all 0.2s; font-weight:600;" onmouseover="this.style.background='white'" onmouseout="this.style.background='rgba(255,255,255,0.9)'">Open in Drive</button>
-        <div style="width:100%; aspect-ratio:16/9; background:black; position:relative;">
-            <iframe id="video-frame" width="100%" height="100%" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="eager"></iframe>
-            <div id="video-loading-indicator" style="position:absolute; inset:0; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; color:white; font-size:1rem;">
-                <div style="text-align:center;">
-                    <div style="margin-bottom:10px;">Loading video...</div>
-                    <div style="font-size:0.85rem; opacity:0.7;">If video doesn't load, click "Open in Drive"</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Exercise Video Database (1700+ Google Drive Links) -->
-<script src="exercise_videos.js"></script>
-<script>
-let currentVideoUrl = '';
-
-function openExerciseVideo(url, title) {
-    if (!url) {
-        alert("Video coming soon for: " + title);
-        return;
-    }
-
-    let embedUrl = url;
-    let viewUrl = url; // URL for opening in new tab
-
-    // Drive Link Handling - Extract file ID and create proper embed URL
-    if (url.includes('drive.google.com')) {
-        // Extract file ID from various Google Drive URL formats
-        let fileId = null;
-
-        if (url.includes('/file/d/')) {
-            // Format: https://drive.google.com/file/d/FILE_ID/preview or /view
-            fileId = url.split('/file/d/')[1].split('/')[0];
-        } else if (url.includes('id=')) {
-            // Format: https://drive.google.com/open?id=FILE_ID
-            fileId = url.split('id=')[1].split('&')[0];
-        }
-
-        if (fileId) {
-            // Use preview format for embedding
-            embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-            // Use view format for opening in new tab
-            viewUrl = `https://drive.google.com/file/d/${fileId}/view`;
-        } else {
-            embedUrl = url;
-            viewUrl = url;
-        }
-    } else if (url.includes('watch?v=')) {
-        const v = url.split('watch?v=')[1].split('&')[0];
-        embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
-        viewUrl = `https://www.youtube.com/watch?v=${v}`;
-    } else if (url.includes('youtu.be/')) {
-        const v = url.split('youtu.be/')[1].split('?')[0];
-        embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
-        viewUrl = `https://www.youtube.com/watch?v=${v}`;
-    }
-
-    // Store the current video URL for the "Open in Drive" button
-    currentVideoUrl = viewUrl;
-
-    const modal = document.getElementById('video-modal');
-    const frame = document.getElementById('video-frame');
-    const loadingIndicator = document.getElementById('video-loading-indicator');
-
-    // Show loading indicator
-    if (loadingIndicator) {
-        loadingIndicator.style.display = 'flex';
-    }
-
-    // Clear the iframe first to ensure fresh load
-    frame.src = '';
-
-    // Small delay to ensure the iframe is cleared before loading new content
-    setTimeout(() => {
-        frame.src = embedUrl;
-        console.log('Loading video:', embedUrl);
-
-        // Hide loading indicator after a short delay (video should start loading)
-        setTimeout(() => {
-            if (loadingIndicator) {
-                loadingIndicator.style.display = 'none';
-            }
-        }, 2000);
-    }, 50);
-
-    modal.style.display = 'flex';
-    modal.classList.add('active');
-
-    // Add load event listener
-    frame.onload = function() {
-        console.log('Video iframe loaded successfully');
-        if (loadingIndicator) {
-            loadingIndicator.style.display = 'none';
-        }
-    };
-
-    // Add error handling for iframe load failures
-    frame.onerror = function() {
-        console.error('Failed to load video:', embedUrl);
-        if (loadingIndicator) {
-            loadingIndicator.style.display = 'none';
-        }
-        alert('Unable to load video. Click OK to open in a new tab.');
-        window.open(viewUrl, '_blank');
-        closeVideoModal();
-    };
-}
-
-function openVideoInNewTab() {
-    if (currentVideoUrl) {
-        window.open(currentVideoUrl, '_blank');
-    }
-}
-
-function closeVideoModal() {
-    const modal = document.getElementById('video-modal');
-    const frame = document.getElementById('video-frame');
-    const loadingIndicator = document.getElementById('video-loading-indicator');
-
-    modal.style.display = 'none';
-    modal.classList.remove('active');
-    frame.src = '';
-    currentVideoUrl = '';
-
-    // Reset loading indicator
-    if (loadingIndicator) {
-        loadingIndicator.style.display = 'flex';
-    }
-}
-</script>
 
 
 <!-- WORKOUT SUCCESS VIEW -->
@@ -9621,35 +9486,58 @@ function openExerciseVideo(url, title) {
         console.log("Found match:", url);
     }
 
-    // 2. Setup Modal State
-    currentVideoUrl = url; 
-    const titleEl = document.getElementById('video-modal-title');
-    if(titleEl) titleEl.innerText = title;
-    
     let embedUrl = url;
-    
-    // 3. Robust Embed Transformations
+    let viewUrl = url;
+
+    // 2. Robust Embed Transformations
     if (url.includes('drive.google.com')) {
-        // Ensure /preview is used
-        if (!url.includes('/preview')) {
-             if (url.includes('/view')) embedUrl = url.replace('/view', '/preview');
-             else embedUrl = url.replace(/\/$/, '') + '/preview';
+        let fileId = null;
+        if (url.includes('/file/d/')) {
+            fileId = url.split('/file/d/')[1].split('/')[0];
+        } else if (url.includes('id=')) {
+            fileId = url.split('id=')[1].split('&')[0];
+        }
+
+        if (fileId) {
+            embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+            viewUrl = `https://drive.google.com/file/d/${fileId}/view`;
+        } else {
+            // Fallback: Ensure /preview is used if no ID extraction but still Drive
+            if (!url.includes('/preview')) {
+                 if (url.includes('/view')) embedUrl = url.replace('/view', '/preview');
+                 else embedUrl = url.replace(/\/$/, '') + '/preview';
+            }
         }
     } else if (url.includes('watch?v=')) {
         const v = url.split('watch?v=')[1].split('&')[0];
         embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
+        viewUrl = `https://www.youtube.com/watch?v=${v}`;
     } else if (url.includes('youtu.be/')) {
         const v = url.split('youtu.be/')[1].split('?')[0];
         embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
+        viewUrl = `https://www.youtube.com/watch?v=${v}`;
     }
 
+    // 3. Setup Modal State
+    currentVideoUrl = viewUrl; 
     const modal = document.getElementById('video-modal');
     const frame = document.getElementById('video-frame');
+    const titleEl = document.getElementById('video-modal-title');
+    
+    if(titleEl) titleEl.innerText = title;
     
     // Reset first to stop old video
     frame.src = ''; 
     modal.style.display = 'flex'; 
     
+    // Add error handling
+    frame.onerror = function() {
+        console.error('Failed to load video:', embedUrl);
+        alert('Unable to load video. Opening in new tab.');
+        window.open(viewUrl, '_blank');
+        closeVideoModal();
+    };
+
     // Small delay to ensure display:flex is rendered before loading iframe
     setTimeout(() => {
         frame.src = embedUrl;
