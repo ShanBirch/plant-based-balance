@@ -7803,8 +7803,9 @@ function getPreviousStats(name, set) {
     for (let i = exerciseHistory.length - 1; i >= 0; i--) {
         const h = exerciseHistory[i];
         if (h.set == set) { // Use loose equality for '1' vs 1
-             if (h.kg && h.kg !== '0' && h.kg !== '') return `${h.kg}kg x ${h.reps}`;
-             return `${h.reps}`;
+             const val = h.reps || h.time;
+             if (h.kg && h.kg !== '0' && h.kg !== '') return `${h.kg}kg x ${val}`;
+             return `${val}`;
         }
     }
     
@@ -7884,28 +7885,34 @@ function finishWorkout() {
     const history = JSON.parse(localStorage.getItem('workout_history') || '[]');
     const date = new Date().toISOString();
 
-    activeWorkout.querySelectorAll('div[style*="background:white"]').forEach(card => {
-        const name = card.querySelector('h3').innerText;
-        const container = card.querySelector('.sets-list-container');
-        if(!container) return;
-        
-        container.querySelectorAll('.workout-set-row').forEach((row, rIdx) => {
-            const time = row.querySelector('.input-time')?.value || '';
-            const reps = row.querySelector('.input-reps')?.value || '';
-            const kg = row.querySelector('.input-kg')?.value || '';
+    if(activeWorkout) {
+        Array.from(activeWorkout.children).forEach(card => {
+            const nameEl = card.querySelector('h3');
+            if(!nameEl) return; // Skip if not a card
+            const name = nameEl.innerText;
             
-            if (time || reps || kg) {
-                history.push({
-                    date,
-                    exercise: name,
-                    set: rIdx + 1,
-                    kg: kg || '0',
-                    reps: reps || time,
-                    duration
-                });
-            }
+            const container = card.querySelector('.sets-list-container');
+            if(!container) return;
+            
+            container.querySelectorAll('.workout-set-row').forEach((row, rIdx) => {
+                const time = row.querySelector('.input-time')?.value || '';
+                const reps = row.querySelector('.input-reps')?.value || '';
+                const kg = row.querySelector('.input-kg')?.value || '';
+                
+                // Only save if at least one field is filled
+                if (time || reps || kg) {
+                    history.push({
+                        date,
+                        exercise: name,
+                        set: rIdx + 1,
+                        reps: reps,
+                        time: time,
+                        kg: kg
+                    });
+                }
+            });
         });
-    });
+    }
 
     localStorage.setItem('workout_history', JSON.stringify(history));
 
