@@ -8053,9 +8053,14 @@ function renderChat(messages) {
         
         let avatarHtml = '';
         if(!isMe && author) {
-             const imgNum = (author.id || 'm1').replace('m', '');
-             const avatarSrc = `https://randomuser.me/api/portraits/women/${imgNum}.jpg`;
-             avatarHtml = `<img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; flex-shrink:0; align-self:flex-end; margin-bottom:5px;">`;
+             let avatarSrc;
+             if (author.id === 'm0') {
+                 avatarSrc = 'assets/coach_shannon.jpg';
+             } else {
+                 const imgNum = (author.id || 'm1').replace('m', '');
+                 avatarSrc = `https://randomuser.me/api/portraits/women/${imgNum}.jpg`;
+             }
+             avatarHtml = `<img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; flex-shrink:0; align-self:flex-end; margin-bottom:5px; object-fit:cover;">`;
         }
         
         const bBg = isMe ? 'var(--chat-bg-user)' : 'var(--chat-bg-coach)';
@@ -9380,7 +9385,7 @@ document.getElementById('video-modal').addEventListener('click', function(e) {
 });
 </script>
 <div id="coach-floating-bubble" onclick="openCoachChat()" style="position: fixed; bottom: 130px; right: 20px; z-index: 9999; cursor: pointer; transition: transform 0.2s;">
-    <div style="width: 56px; height: 56px; border-radius: 50%; background: #f1f5f9 url('https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80') no-repeat center/cover; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.15);"></div>
+    <div style="width: 56px; height: 56px; border-radius: 50%; background: #f1f5f9 url('assets/coach_shannon.jpg') no-repeat center/cover; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.15);"></div>
     <div id="coach-bubble-dot" style="position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background: #22c55e; border: 2px solid white; border-radius: 50%;"></div>
 </div>
 
