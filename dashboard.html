@@ -786,11 +786,12 @@
         box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     }
     /* Simple CSS Icons using Emojis or content chars for simplicity/reliability without SVG bloat here */
-    .timeline-item:nth-child(1) .timeline-content::after { content: '?'; position: absolute; left: -11px; top: 8px; font-size: 1.2rem; z-index: 2; }
-    .timeline-item:nth-child(2) .timeline-content::after { content: '???'; position: absolute; left: -11px; top: 8px; font-size: 1.2rem; z-index: 2; }
-    .timeline-item:nth-child(3) .timeline-content::after { content: '??'; position: absolute; left: -11px; top: 8px; font-size: 1.2rem; z-index: 2; }
-    .timeline-item:nth-child(4) .timeline-content::after { content: '??'; position: absolute; left: -11px; top: 8px; font-size: 1.2rem; z-index: 2; }
-    .timeline-item:nth-child(5) .timeline-content::after { content: '??'; position: absolute; left: -11px; top: 8px; font-size: 1.2rem; z-index: 2; }
+    /* Simple CSS Icons using Emojis or content chars for simplicity/reliability without SVG bloat here */
+    .timeline-item:nth-child(1) .timeline-content::after { content: '🌙'; position: absolute; left: -14px; top: 6px; font-size: 1.2rem; z-index: 2; }
+    .timeline-item:nth-child(2) .timeline-content::after { content: '🍵'; position: absolute; left: -14px; top: 6px; font-size: 1.2rem; z-index: 2; }
+    .timeline-item:nth-child(3) .timeline-content::after { content: '🧘'; position: absolute; left: -14px; top: 6px; font-size: 1.2rem; z-index: 2; }
+    .timeline-item:nth-child(4) .timeline-content::after { content: '📵'; position: absolute; left: -14px; top: 6px; font-size: 1.2rem; z-index: 2; }
+    .timeline-item:nth-child(5) .timeline-content::after { content: '🛌'; position: absolute; left: -14px; top: 6px; font-size: 1.2rem; z-index: 2; }
 
     /* Sleep Hero */
     .sleep-hero {
@@ -8589,8 +8590,9 @@ window.addEventListener('beforeinstallprompt', (e) => {
     console.log("Install Prompt Captured");
 });
 
-// Force check on load - Show banner if not installed (even if prompt not ready yet)
-// Force check on load - Show banner if not installed (even if prompt not ready yet)
+// Force check on load - Show banner if not installed
+// (Duplicate logic removed)
+
 window.addEventListener('load', () => {
     // Only show if not installed and not dismissed and NOT iOS (since iOS can't "one-click" install)
     // Actually user wants "Click -> Download". If iOS, we can't do that. 
@@ -9057,7 +9059,7 @@ window.appendCoachMessage = function(text) {
         <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
         <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
             <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
-                <p style="margin: 0; white-space: pre-wrap;">${text}</p>
+                <p style="margin: 0; white-space: pre-wrap;">${text.replace(/\*\*/g, '').replace(/\*/g, '')}</p>
             </div>
             <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon ${timeStr}</span>
         </div>
