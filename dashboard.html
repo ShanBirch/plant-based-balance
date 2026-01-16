@@ -993,7 +993,7 @@
 
          <!-- Your Workout Actions -->
          <h3 style="margin: 30px 0 15px 0;">Your Workout</h3>
-         <div class="card" style="border-left: 5px solid var(--secondary);">
+         <div class="card" onclick="switchAppTab('movement', this);" style="cursor: pointer; border-left: 5px solid var(--secondary);">
             <div class="card-body" style="max-height: none; padding: 25px; opacity: 1; display: flex; align-items: center; gap: 20px;">
                 <div style="background: var(--accent-green); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🧘‍♀️</div>
                 <div>
@@ -1477,14 +1477,14 @@
                         <div>Set</div>
                         <div>kg / lbs</div>
                         <div>Reps</div>
-                        <div>?</div>
+                        <div></div>
                     </div>
                     ${Array(ex.sets || 3).fill(0).map((_, i) => `
                         <div style="display:grid; grid-template-columns: 40px 1fr 1fr 40px; gap:10px; margin-bottom:8px; align-items:center;">
                             <div style="text-align:center; color:#94a3b8; font-weight:600; font-size:0.9rem;">${i + 1}</div>
                             <input type="number" placeholder="0" style="width:100%; padding:8px; border:1px solid #cbd5e0; border-radius:6px; text-align:center; background:#f8fafc;">
                             <input type="number" placeholder="0" style="width:100%; padding:8px; border:1px solid #cbd5e0; border-radius:6px; text-align:center; background:#f8fafc;">
-                            <div class="check-circle" onclick="this.classList.toggle('completed')" style="width:32px; height:32px; border:2px solid #e2e8f0; border-radius:50%; margin:0 auto; cursor:pointer; display:flex; align-items:center; justify-content:center; color:white; transition:all 0.2s;">?</div>
+                            <div class="check-circle" onclick="this.classList.toggle('completed')" style="width:32px; height:32px; border:2px solid #e2e8f0; border-radius:50%; margin:0 auto; cursor:pointer; display:flex; align-items:center; justify-content:center; color:white; transition:all 0.2s;">✓</div>
                         </div>
                     `).join('')}
                 </div>
@@ -2974,6 +2974,7 @@
 <button class="sub-btn active" onclick="switchDay('week2', 'overview')">Overview</button>
 <button class="sub-btn" onclick="switchDay('week2', 'Monday')">Mon</button><button class="sub-btn" onclick="switchDay('week2', 'Tuesday')">Tue</button><button class="sub-btn" onclick="switchDay('week2', 'Wednesday')">Wed</button><button class="sub-btn" onclick="switchDay('week2', 'Thursday')">Thu</button><button class="sub-btn" onclick="switchDay('week2', 'Friday')">Fri</button><button class="sub-btn" onclick="switchDay('week2', 'Saturday')">Sat</button><button class="sub-btn" onclick="switchDay('week2', 'Sunday')">Sun</button>
 </div>
+<div class="day-view active" id="week2-overview">
 <div class="hero-card" style="padding: 40px; text-align: left; background: var(--surface); border: 1px solid var(--chat-border-coach);">
 <div style="font-family:'Inter'; text-transform:uppercase; color:var(--secondary); font-weight:600; letter-spacing:1px; margin-bottom:10px;">Week 2</div>
 <h1 style="margin-bottom: 15px;">Strength &amp; Blood Sugar</h1>
@@ -6055,7 +6056,7 @@
     <div id="view-active-workout-stub" class="app-view" style="display:none; background: #fff; padding-bottom: 0;">
         <!-- Workout Header -->
         <div style="position: sticky; top:0; z-index:100; background:white; border-bottom:1px solid #eee; padding: 15px 20px; display:flex; justify-content:space-between; align-items:center;">
-            <div onclick="quitWorkout()" style="cursor:pointer; color:var(--text-muted);">?</div>
+            <div onclick="quitWorkout()" style="cursor:pointer; color:var(--text-muted);">✕</div>
             <div style="font-weight:700;" id="stub-workout-player-title">Workout</div>
             <div style="font-family:monospace; font-size:1.1rem; color:var(--primary);" id="stub-workout-timer">00:00</div>
         </div>
@@ -6063,7 +6064,7 @@
         <!-- Video Player Stub -->
         <div style="width:100%; height:220px; background:black; display:flex; align-items:center; justify-content:center; position:relative;">
             <div id="stub-workout-video-placeholder" style="color:white; text-align:center;">
-                <div style="font-size:3rem;">?</div>
+                <div style="font-size:3rem;">▶</div>
                 <div>Play Video Tutorial</div>
             </div>
             <!-- In real app, proper video tag here -->
@@ -6082,7 +6083,7 @@
 
     <!-- WORKOUT SUCCESS SCREEN -->
     <div id="view-workout-success-stub" class="app-view" style="display:none; background: var(--primary); color:white; text-align:center; flex-direction:column; align-items:center; justify-content:center; height:100%;">
-        <div style="font-size: 5rem; margin-bottom: 20px;">?</div>
+        <div style="font-size: 5rem; margin-bottom: 20px;">🎉</div>
         <h1 style="font-family: 'Playfair Display'; font-size: 3rem; margin-bottom: 10px;">High Five!</h1>
         <p style="font-size: 1.2rem; opacity: 0.9;">Workout Complete</p>
         <div style="margin-top: 40px; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px;">
@@ -6842,7 +6843,6 @@ function startCustomBuilderWorkout() {
                  <div>Color Theme</div>
                  <select id="theme-selector" onchange="applyAppTheme(this.value)" style="border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; color:var(--primary); font-weight:600; outline:none; background:transparent; font-family: 'Inter', sans-serif; cursor: pointer;">
                      <option value="default">Forest (Default)</option>
-                     <option value="antigravity-dark">Antigravity Dark</option>
                      <option value="antigravity-light">Antigravity Light</option>
                      <option value="ocean">Ocean Calm</option>
                      <option value="sunset">Sunset Glow</option>
@@ -6850,7 +6850,7 @@ function startCustomBuilderWorkout() {
              </div>
              <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                  <div>Units</div>
-                 <div style="font-size:0.9rem; font-weight:700; color:var(--primary); cursor:pointer;" onclick="alert('Units toggled (Simulation)')">Metric (kg) ?</div>
+                 <div style="font-size:0.9rem; font-weight:700; color:var(--primary); cursor:pointer;" onclick="alert('Units toggled (Simulation)')">Metric (kg)</div>
              </div>
              <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                  <div>Notifications</div>
@@ -9775,24 +9775,6 @@ const APP_THEMES = {
             '--chat-border-coach': '#e5e7eb'
         } 
     },
-    'antigravity-dark': { 
-        name: 'Antigravity Dark', 
-        colors: { 
-            '--primary': '#818cf8', 
-            '--primary-light': '#a5b4fc', 
-            '--secondary': '#22d3ee', 
-            '--accent-green': '#1e1b4b', 
-            '--bg': '#020617', 
-            '--surface': '#0f172a', 
-            '--text-main': '#f1f5f9', 
-            '--text-muted': '#94a3b8',
-            '--chat-bg-user': '#6366f1',
-            '--chat-text-user': '#ffffff',
-            '--chat-bg-coach': '#1e293b',
-            '--chat-text-coach': '#e2e8f0',
-            '--chat-border-coach': '#334155'
-        } 
-    },
     'antigravity-light': { 
         name: 'Antigravity Light', 
         colors: { 
@@ -9856,6 +9838,20 @@ function applyAppTheme(themeKey) {
     localStorage.setItem('userThemePreference', themeKey);
     const selector = document.getElementById('theme-selector');
     if(selector) selector.value = themeKey;
+
+    // Update dashboard-welcome background - keep green gradient for default, white for others
+    const welcomeSection = document.querySelector('.dashboard-welcome');
+    if(welcomeSection) {
+        if(themeKey === 'default') {
+            // Original green gradient
+            welcomeSection.style.background = 'linear-gradient(135deg, #064e3b 0%, #034f2a 100%)';
+            welcomeSection.style.color = 'white';
+        } else {
+            // White background with themed text color
+            welcomeSection.style.background = '#ffffff';
+            welcomeSection.style.color = 'var(--text-main)';
+        }
+    }
 }
 
 // --- INITIALIZATION ---
