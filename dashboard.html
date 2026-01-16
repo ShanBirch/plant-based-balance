@@ -7212,6 +7212,9 @@ function switchAppTab(tabName, btn) {
         // simple fallback
     }
 
+    // 1.5. Restore bottom navigation visibility for normal tabs
+    document.querySelector('.bottom-nav').style.display = 'flex';
+
     // 2. Clear All Views
     hideAllAppViews();
 
