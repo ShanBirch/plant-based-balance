@@ -9076,6 +9076,23 @@ window.appendCoachMessage = function(text) {
         timestamp: Date.now() 
     });
     localStorage.setItem('chat_history', JSON.stringify(history));
+    
+    // Notification Badge on App Icon
+    if ('setAppBadge' in navigator && document.visibilityState === 'hidden') {
+        navigator.setAppBadge(1).catch(e => console.error(e));
+    }
+};
+
+window.openCoachChat = function() {
+    document.getElementById('view-support').style.display = 'block';
+    
+    // Clear Badge
+    if ('clearAppBadge' in navigator) {
+        navigator.clearAppBadge().catch(e => console.error(e));
+    }
+    if ('setAppBadge' in navigator) {
+        navigator.setAppBadge(0).catch(e => console.error(e));
+    }
 };
 
 async function sendCommunityMessage() {
