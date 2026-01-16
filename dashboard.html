@@ -9032,42 +9032,7 @@ window.openAsClient = function() {
     document.body.appendChild(btn);
 };
 
-window.submitCoachMessage = function() {
-    const input = document.getElementById('coach-chat-input');
-    if(!input) return;
-    const text = input.value.trim();
-    if (!text) return;
-    
-    const container = document.getElementById('chat-messages-container');
-    if(container) {
-        const msgDiv = document.createElement('div');
-        msgDiv.style.cssText = "display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 20px; align-self: flex-end; max-width: 85%; animation: fadeIn 0.3s ease;";
-        msgDiv.innerHTML = `
-            <div style="background: var(--chat-bg-user); padding: 15px 20px; border-radius: 16px 0 16px 16px; color: var(--chat-text-user); box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; color: inherit;">${text}</p>
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; margin-right: 2px;">You  Just now</div>
-        `;
-        container.appendChild(msgDiv);
-        container.scrollTop = container.scrollHeight;
-    }
-
-    saveToHistory('user', text);
-    input.value = '';
-
-    // Message Buffering Logic
-    if (!window._coachMessageBuffer) window._coachMessageBuffer = [];
-    window._coachMessageBuffer.push(text);
-    
-    if (window._coachBufferTimeout) clearTimeout(window._coachBufferTimeout);
-    
-    window._coachBufferTimeout = setTimeout(() => {
-        const combinedMsg = window._coachMessageBuffer.join(" ");
-        window._lastBufferedCount = [...window._coachMessageBuffer]; // Store for context slicing
-        window._coachMessageBuffer = [];
-        triggerCoachResponse(combinedMsg);
-    }, 2000); // 2 second buffer
-};
+// Old submitCoachMessage removed as it is now defined earlier in the file.
 
 function getChatHistory() { return JSON.parse(localStorage.getItem('shannon_chat_history') || '[]'); }
 function saveToHistory(role, text) {
