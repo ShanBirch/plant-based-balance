@@ -9248,13 +9248,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <div style="width:100%; max-width:900px; position:relative; padding: 20px;">
         <div style="background:black; width:100%; aspect-ratio:16/9; border-radius:24px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); position:relative;">
-            
-            <!-- Iframe (YouTube) -->
-            <iframe id="video-frame" style="width:100%; height:100%; border:none; display:none;" allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer" playsinline allowfullscreen></iframe>
-            
-            <!-- Native Video (Drive Direct) -->
-            <video id="video-direct" style="width:100%; height:100%; display:none; object-fit:cover;" controls playsinline></video>
-            
+
+            <!-- Native Video (Backblaze B2) -->
+            <video id="video-direct" style="width:100%; height:100%; display:none; object-fit:cover;" controls playsinline crossorigin="anonymous"></video>
+
             <!-- Poster Overlay -->
             <div id="video-poster" onclick="playVideo()" style="position:absolute; inset:0; background-size:cover; background-position:center; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:10; background-color: #0f172a;">
                  <div style="width:70px; height:70px; background:rgba(0,0,0,0.6); border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,0.8); backdrop-filter:blur(4px); transition: transform 0.2s;">
@@ -9315,31 +9312,25 @@ function findVideoMatch(name) {
 let pendingVideoUrl = '';
 
 function playVideo() {
-    const frame = document.getElementById('video-frame');
     const direct = document.getElementById('video-direct');
     const poster = document.getElementById('video-poster');
 
     if(poster) poster.style.display = 'none';
 
-    // Check which player is active based on pending type
-    if (window.pendingVideoType === 'drive' && direct) {
+    // Play Backblaze B2 video in native player
+    if (direct && pendingVideoUrl) {
         direct.style.display = 'block';
-        if(pendingVideoUrl) {
-            direct.src = pendingVideoUrl;
-            direct.play().catch(e => {
-                console.error("Video play error:", e);
-                alert("Unable to play video. Please try opening in a new tab.");
-            });
-        }
-    } else if (frame) {
-        frame.style.display = 'block';
-        if(pendingVideoUrl) frame.src = pendingVideoUrl;
+        direct.src = pendingVideoUrl;
+        direct.play().catch(e => {
+            console.error("Video play error:", e);
+            alert("Unable to play video. The video file may not be accessible.");
+        });
     }
 }
 
 function openExerciseVideo(url, title) {
     console.log("Opening video for:", title);
-    
+
     // 1. Resolve URL if missing
     if (!url) {
         url = findVideoMatch(title);
@@ -9350,74 +9341,48 @@ function openExerciseVideo(url, title) {
         }
     }
 
-    let embedUrl = url;
-    let viewUrl = url;
-    let posterImage = '';
-    let type = 'youtube'; // or 'drive'
-
-    // 2. Robust Embed Transformations
+    // 2. Check if this is a Google Drive video (not yet migrated)
     if (url.includes('drive.google.com')) {
-        // Google Drive videos: Use iframe with /preview for reliable playback
-        type = 'youtube'; // Use iframe player (not native video element)
-        let fileId = null;
-        if (url.includes('/file/d/')) {
-            fileId = url.split('/file/d/')[1].split('/')[0];
-        } else if (url.includes('id=')) {
-            fileId = url.split('id=')[1].split('&')[0];
-        }
-
-        if (fileId) {
-            // Use /preview for iframe embedding (works reliably)
-            embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-            viewUrl = `https://drive.google.com/file/d/${fileId}/view`;
-            posterImage = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
-        } else {
-             // Fallback: ensure /preview is present
-             if (!url.includes('/preview')) {
-                 if (url.includes('/view')) embedUrl = url.replace('/view', '/preview');
-                 else embedUrl = url.replace(/\/$/, '') + '/preview';
-            } else {
-                 embedUrl = url;
-            }
-        }
-    } else if (url.includes('watch?v=')) {
-        const v = url.split('watch?v=')[1].split('&')[0];
-        embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
-        viewUrl = `https://www.youtube.com/watch?v=${v}`;
-        posterImage = `https://img.youtube.com/vi/${v}/hqdefault.jpg`;
-    } else if (url.includes('youtu.be/')) {
-        const v = url.split('youtu.be/')[1].split('?')[0];
-        embedUrl = `https://www.youtube.com/embed/${v}?autoplay=1`;
-        viewUrl = `https://www.youtube.com/watch?v=${v}`;
-        posterImage = `https://img.youtube.com/vi/${v}/hqdefault.jpg`;
-    } else if (url.includes('backblazeb2.com') || url.match(/\.(mp4|mov)$/i)) {
-        type = 'drive'; // Use native video player
-        embedUrl = url;
-        viewUrl = url;
-        // No auto-thumbnail for B2, utilize video tag metadata
+        alert(`This video hasn't been migrated yet.\n\n"${title}" is still on Google Drive and needs to be uploaded to Backblaze B2.\n\nPlease check the migration list.`);
+        console.log("Google Drive video not migrated:", title, url);
+        return;
     }
 
-    // 3. Setup Modal State
-    currentVideoUrl = viewUrl; 
+    // 3. Only support Backblaze B2 and direct video files
+    if (!url.includes('backblazeb2.com') && !url.match(/\.(mp4|mov|webm)$/i)) {
+        alert(`Unsupported video format.\n\nOnly Backblaze B2 videos are supported. This video needs to be migrated: "${title}"`);
+        console.log("Unsupported video format:", title, url);
+        return;
+    }
+
+    // 4. Setup video for Backblaze B2
+    let embedUrl = url;
+    let viewUrl = url;
+    let type = 'b2'; // Backblaze B2 native video
+
+    // 5. Setup Modal State
+    currentVideoUrl = viewUrl;
     pendingVideoUrl = embedUrl;
     window.pendingVideoType = type;
 
+    // 6. Setup Modal
     const modal = document.getElementById('video-modal');
-    const frame = document.getElementById('video-frame');
-    const direct = document.getElementById('video-direct'); // Native Video
+    const direct = document.getElementById('video-direct');
     const poster = document.getElementById('video-poster');
     const titleEl = document.getElementById('video-modal-title');
-    
-    if(titleEl) titleEl.innerText = title;
-    
-    // Reset Players
-    if(frame) { frame.src = ''; frame.style.display = 'none'; }
-    if(direct) { direct.src = ''; direct.style.display = 'none'; }
 
-    // Show Poster
+    if(titleEl) titleEl.innerText = title;
+
+    // Reset video player
+    if(direct) {
+        direct.src = '';
+        direct.style.display = 'none';
+    }
+
+    // Show poster with play button
     if(poster) {
         poster.style.display = 'flex';
-        poster.style.backgroundImage = posterImage ? `url('${posterImage}')` : 'none';
+        poster.style.backgroundImage = 'none'; // B2 videos don't have thumbnails
     }
 
     modal.style.display = 'flex'; 
@@ -9429,13 +9394,11 @@ function openVideoNewTab() {
 
 function closeVideoModal() {
     const modal = document.getElementById('video-modal');
-    const frame = document.getElementById('video-frame');
     const direct = document.getElementById('video-direct');
 
     modal.style.display = 'none';
 
-    // Stop both video players
-    if(frame) frame.src = '';
+    // Stop video player
     if(direct) {
         direct.pause();
         direct.src = '';
@@ -9446,22 +9409,6 @@ function closeVideoModal() {
 document.getElementById('video-modal').addEventListener('click', function(e) {
     if (e.target === this) closeVideoModal();
 });
-
-// Add error handling for native video player
-const videoElement = document.getElementById('video-direct');
-if(videoElement) {
-    videoElement.addEventListener('error', function(e) {
-        console.error("Video loading error:", e);
-        const errorMsg = "Unable to load video. ";
-        if(currentVideoUrl) {
-            if(confirm(errorMsg + "Would you like to open it in a new tab?")) {
-                window.open(currentVideoUrl, '_blank');
-            }
-        } else {
-            alert(errorMsg);
-        }
-    });
-}
 </script>
 <div id="coach-floating-bubble" onclick="openCoachChat()" style="position: fixed; bottom: 130px; right: 20px; z-index: 9999; cursor: pointer; transition: transform 0.2s;">
     <div style="width: 56px; height: 56px; border-radius: 50%; background: #f1f5f9 url('assets/coach_shannon.jpg') no-repeat center/cover; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.15);"></div>
