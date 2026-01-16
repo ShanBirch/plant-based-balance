@@ -6262,6 +6262,127 @@ function openWorkoutBuilder() {
     document.querySelector('.bottom-nav').style.display = 'none';
 }
 
+// Initialize filter state
+if (typeof window.activeFilters === 'undefined') {
+    window.activeFilters = {
+        workoutType: [],
+        equipment: [],
+        muscle: []
+    };
+}
+
+// Toggle filter chip
+function toggleFilter(category, value) {
+    const filters = window.activeFilters[category];
+    const index = filters.indexOf(value);
+
+    // Find the button element
+    const btn = document.querySelector(`.filter-chip[data-category="${category}"][data-value="${value}"]`);
+
+    if (index > -1) {
+        // Remove filter
+        filters.splice(index, 1);
+        btn.style.background = 'white';
+        btn.style.color = '#64748b';
+        btn.style.borderColor = '#e2e8f0';
+    } else {
+        // Add filter
+        filters.push(value);
+        btn.style.background = 'var(--primary)';
+        btn.style.color = 'white';
+        btn.style.borderColor = 'var(--primary)';
+    }
+
+    // Show/hide clear button
+    const hasActiveFilters = Object.values(window.activeFilters).some(arr => arr.length > 0);
+    document.getElementById('clear-filters-btn').style.display = hasActiveFilters ? 'block' : 'none';
+
+    // Re-run filter
+    filterExerciseLibrary(document.getElementById('builder-search').value);
+}
+
+// Clear all filters
+function clearAllFilters() {
+    window.activeFilters = {
+        workoutType: [],
+        equipment: [],
+        muscle: []
+    };
+
+    // Reset all filter chip styles
+    document.querySelectorAll('.filter-chip').forEach(btn => {
+        btn.style.background = 'white';
+        btn.style.color = '#64748b';
+        btn.style.borderColor = '#e2e8f0';
+    });
+
+    // Hide clear button
+    document.getElementById('clear-filters-btn').style.display = 'none';
+
+    // Re-run filter
+    filterExerciseLibrary(document.getElementById('builder-search').value);
+}
+
+// Check if exercise matches category filter
+function matchesFilter(exerciseName) {
+    const nameLower = exerciseName.toLowerCase();
+
+    // Check workout type filters
+    if (window.activeFilters.workoutType.length > 0) {
+        const matchesWorkoutType = window.activeFilters.workoutType.some(type => {
+            if (type === 'yoga') return nameLower.includes('yoga');
+            if (type === 'pilates') return nameLower.includes('pilates');
+            if (type === 'cardio') return nameLower.includes('sprint') || nameLower.includes('run') || nameLower.includes('jump') || nameLower.includes('hop') || nameLower.includes('burpee');
+            if (type === 'stretch') return nameLower.includes('stretch') || nameLower.includes('foam roller');
+            return false;
+        });
+        if (!matchesWorkoutType) return false;
+    }
+
+    // Check equipment filters
+    if (window.activeFilters.equipment.length > 0) {
+        const matchesEquipment = window.activeFilters.equipment.some(equip => {
+            if (equip === 'dumbbell') return nameLower.includes('dumbbell');
+            if (equip === 'barbell') return nameLower.includes('barbell');
+            if (equip === 'cable') return nameLower.includes('cable');
+            if (equip === 'band') return nameLower.includes('band') || nameLower.includes('miniband');
+            if (equip === 'kettlebell') return nameLower.includes('kettlebell');
+            if (equip === 'machine') return nameLower.includes('machine');
+            if (equip === 'bodyweight') {
+                // Bodyweight = doesn't contain any equipment keywords
+                return !nameLower.includes('dumbbell') &&
+                       !nameLower.includes('barbell') &&
+                       !nameLower.includes('cable') &&
+                       !nameLower.includes('band') &&
+                       !nameLower.includes('kettlebell') &&
+                       !nameLower.includes('machine') &&
+                       !nameLower.includes('ball') &&
+                       !nameLower.includes('trx') &&
+                       !nameLower.includes('sled');
+            }
+            return false;
+        });
+        if (!matchesEquipment) return false;
+    }
+
+    // Check muscle group filters
+    if (window.activeFilters.muscle.length > 0) {
+        const matchesMuscle = window.activeFilters.muscle.some(muscle => {
+            if (muscle === 'chest') return nameLower.includes('chest') || nameLower.includes('pec') || (nameLower.includes('press') && (nameLower.includes('bench') || nameLower.includes('floor')));
+            if (muscle === 'back') return nameLower.includes('back') || nameLower.includes('lat') || nameLower.includes('row') || nameLower.includes('pull up') || nameLower.includes('pullup');
+            if (muscle === 'shoulders') return nameLower.includes('shoulder') || nameLower.includes('delt') || nameLower.includes('raise') || nameLower.includes('overhead press');
+            if (muscle === 'arms') return nameLower.includes('bicep') || nameLower.includes('tricep') || nameLower.includes('curl') || nameLower.includes('extension') && !nameLower.includes('leg') && !nameLower.includes('back');
+            if (muscle === 'core') return nameLower.includes('ab') || nameLower.includes('core') || nameLower.includes('crunch') || nameLower.includes('plank') || nameLower.includes('oblique');
+            if (muscle === 'legs') return nameLower.includes('squat') || nameLower.includes('lunge') || nameLower.includes('leg') || nameLower.includes('quad') || nameLower.includes('hamstring') || nameLower.includes('calf');
+            if (muscle === 'glutes') return nameLower.includes('glute') || nameLower.includes('hip') || nameLower.includes('kickback');
+            return false;
+        });
+        if (!matchesMuscle) return false;
+    }
+
+    return true;
+}
+
 function filterExerciseLibrary(query) {
     const list = document.getElementById('builder-library-list');
     if (!list) {
@@ -6269,7 +6390,7 @@ function filterExerciseLibrary(query) {
         return;
     }
     list.innerHTML = '';
-    
+
     // Safety check for library loading
     if (typeof EXERCISE_VIDEOS === 'undefined') {
         list.innerHTML = `
@@ -6282,54 +6403,64 @@ function filterExerciseLibrary(query) {
 
     // Global or scoped state for pagination
     if(typeof window.builderLimit === 'undefined') window.builderLimit = 50;
-    
-    // Reset limit if query changed significantly (handled by caller? No, caller passes query)
-    // We'll rely on global builderLimit which we reset in openWorkoutBuilder/onInput
-    
-    const terms = query.toLowerCase().split(' ');
-    
+
+    const terms = query.toLowerCase().split(' ').filter(t => t);
+
     const allKeys = Object.keys(EXERCISE_VIDEOS);
     if (allKeys.length === 0) {
         list.innerHTML = '<div style="padding:20px; text-align:center;">Library is empty.</div>';
         return;
     }
-    
-    // 1. Gather Matches
+
+    // 1. Gather Matches (search query + category filters)
     const matchedKeys = [];
     for (let key of allKeys) {
-        let match = true;
         const keyLower = key.toLowerCase();
-        for (let term of terms) {
-            if (!keyLower.includes(term)) { match = false; break; }
+
+        // Check search query
+        let matchesQuery = true;
+        if (terms.length > 0) {
+            for (let term of terms) {
+                if (!keyLower.includes(term)) {
+                    matchesQuery = false;
+                    break;
+                }
+            }
         }
-        if (match) matchedKeys.push(key);
+
+        // Check category filters
+        const matchesCategories = matchesFilter(key);
+
+        if (matchesQuery && matchesCategories) {
+            matchedKeys.push(key);
+        }
     }
-    
+
     // 2. Render Selection
     const keysToRender = matchedKeys.slice(0, window.builderLimit);
-    
+
     keysToRender.forEach(key => {
         const isSelected = customWorkoutSelection.includes(key);
         const div = document.createElement('div');
         div.style.cssText = `background:white; border:1px solid ${isSelected ? 'var(--primary)' : '#f1f5f9'}; padding:15px; border-radius:16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; min-height:60px;`;
         if(isSelected) div.style.background = '#f0fdf4';
-        
+
         div.innerHTML = `
             <div style="font-weight:600; font-size:0.95rem; color:var(--text-main); flex:1; padding-right:10px;">${key}</div>
             <button onclick="toggleBuilderItem(this, '${key.replace(/'/g, "\\'")}')" style="width:32px; height:32px; border-radius:50%; border:none; background:${isSelected ? 'var(--primary)' : '#f1f5f9'}; color:${isSelected ? 'white' : '#94a3b8'}; display:flex; align-items:center; justify-content:center; cursor:pointer;">
-                ${isSelected ? '?' : '+'}
+                ${isSelected ? '✓' : '+'}
             </button>
         `;
         list.appendChild(div);
     });
-    
+
     // 3. Load More Button
     if (matchedKeys.length > window.builderLimit) {
         const moreDiv = document.createElement('div');
         moreDiv.innerHTML = `<button onclick="window.builderLimit += 50; filterExerciseLibrary(document.getElementById('builder-search').value)" style="width:100%; padding:15px; border:none; background:#f1f5f9; color:var(--text-muted); font-weight:600; border-radius:12px; cursor:pointer;">Load More (${matchedKeys.length - window.builderLimit} remaining)</button>`;
         list.appendChild(moreDiv);
     }
-    
+
     if (matchedKeys.length === 0) {
         list.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">No exercises found</div>';
     }
@@ -9558,11 +9689,58 @@ updateCoachUI();
 
     <div style="padding: 20px;">
         <div style="position:relative; margin-bottom: 20px;">
-            <input type="text" id="builder-search" placeholder="Search 1800+ exercises..." onkeyup="filterExerciseLibrary(this.value)" 
+            <input type="text" id="builder-search" placeholder="Search 1800+ exercises..." onkeyup="filterExerciseLibrary(this.value)"
                    style="width:100%; padding:15px 15px 15px 45px; border-radius:16px; border:1px solid #e2e8f0; font-size:1rem; background: #f8fafc;">
             <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#94a3b8; position:absolute; left:15px; top:50%; transform:translateY(-50%);"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
         </div>
-        
+
+        <!-- Exercise Filters -->
+        <div style="margin-bottom: 20px;">
+            <!-- Workout Type Filter -->
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Workout Type</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <button onclick="toggleFilter('workoutType', 'yoga')" class="filter-chip" data-category="workoutType" data-value="yoga" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Yoga</button>
+                    <button onclick="toggleFilter('workoutType', 'pilates')" class="filter-chip" data-category="workoutType" data-value="pilates" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Pilates</button>
+                    <button onclick="toggleFilter('workoutType', 'cardio')" class="filter-chip" data-category="workoutType" data-value="cardio" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cardio</button>
+                    <button onclick="toggleFilter('workoutType', 'stretch')" class="filter-chip" data-category="workoutType" data-value="stretch" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Stretch</button>
+                </div>
+            </div>
+
+            <!-- Equipment Filter -->
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Equipment</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <button onclick="toggleFilter('equipment', 'bodyweight')" class="filter-chip" data-category="equipment" data-value="bodyweight" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Bodyweight</button>
+                    <button onclick="toggleFilter('equipment', 'dumbbell')" class="filter-chip" data-category="equipment" data-value="dumbbell" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Dumbbell</button>
+                    <button onclick="toggleFilter('equipment', 'barbell')" class="filter-chip" data-category="equipment" data-value="barbell" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Barbell</button>
+                    <button onclick="toggleFilter('equipment', 'cable')" class="filter-chip" data-category="equipment" data-value="cable" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cable</button>
+                    <button onclick="toggleFilter('equipment', 'band')" class="filter-chip" data-category="equipment" data-value="band" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Band</button>
+                    <button onclick="toggleFilter('equipment', 'kettlebell')" class="filter-chip" data-category="equipment" data-value="kettlebell" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Kettlebell</button>
+                    <button onclick="toggleFilter('equipment', 'machine')" class="filter-chip" data-category="equipment" data-value="machine" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Machine</button>
+                </div>
+            </div>
+
+            <!-- Muscle Group Filter -->
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Muscle Group</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <button onclick="toggleFilter('muscle', 'chest')" class="filter-chip" data-category="muscle" data-value="chest" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Chest</button>
+                    <button onclick="toggleFilter('muscle', 'back')" class="filter-chip" data-category="muscle" data-value="back" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Back</button>
+                    <button onclick="toggleFilter('muscle', 'shoulders')" class="filter-chip" data-category="muscle" data-value="shoulders" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Shoulders</button>
+                    <button onclick="toggleFilter('muscle', 'arms')" class="filter-chip" data-category="muscle" data-value="arms" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Arms</button>
+                    <button onclick="toggleFilter('muscle', 'core')" class="filter-chip" data-category="muscle" data-value="core" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Core</button>
+                    <button onclick="toggleFilter('muscle', 'legs')" class="filter-chip" data-category="muscle" data-value="legs" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Legs</button>
+                    <button onclick="toggleFilter('muscle', 'glutes')" class="filter-chip" data-category="muscle" data-value="glutes" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Glutes</button>
+                </div>
+            </div>
+
+            <!-- Clear Filters Button -->
+            <div id="clear-filters-btn" style="display: none; margin-top: 12px;">
+                <button onclick="clearAllFilters()" style="width: 100%; padding: 10px; border-radius: 12px; border: 1.5px solid #ef4444; background: #fef2f2; color: #ef4444; font-size: 0.85rem; font-weight: 700; cursor: pointer;">Clear All Filters</button>
+            </div>
+        </div>
+
         <div id="builder-library-list" style="display:flex; flex-direction:column; gap:10px;">
             <!-- Dynamic Content -->
         </div>
