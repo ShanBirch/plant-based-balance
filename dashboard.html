@@ -8599,14 +8599,53 @@ function openAsClient() {
             <div class="onboarding-step">
                 <div class="step-icon">🛒</div>
                 <div class="step-text">
-                    <h4>Shopping List</h4>
-                    <p>Access your weekly <strong>Shopping List</strong> in the Meal Plan tab.</p>
-                </div>
-            </div>
-            <button class="onboarding-btn" onclick="completeOnboarding()">Let's Get Started</button>
-        </div>
-    </div>
-</div>
+// --- COACH CHAT DEBOUNCE LOGIC ---
+let coachMessageBuffer = [];
+let coachDebounceTimer = null;
+
+window.submitCoachMessage = function() {
+    const input = document.getElementById('coach-chat-input');
+    if(!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+    
+    // 1. Render User Message Immediately
+    const container = document.getElementById('chat-messages-container');
+    if(container) {
+        const msgDiv = document.createElement('div');
+        msgDiv.style.cssText = "display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 20px; align-self: flex-end; max-width: 85%; animation: fadeIn 0.3s ease;";
+        msgDiv.innerHTML = `
+            <div style="background: var(--chat-bg-user); color: var(--chat-text-user); padding: 12px 18px; border-radius: 18px 18px 0 18px; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">${text}</div>
+            <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-right: 5px;">You Just now</span>
+        `;
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
+        
+        // Save to LocalStorage immediately
+        const history = JSON.parse(localStorage.getItem('chat_history') || '[]');
+        history.push({
+            role: 'user', 
+            text: text, 
+            timestamp: Date.now() 
+        });
+        localStorage.setItem('chat_history', JSON.stringify(history));
+    }
+    
+    input.value = '';
+
+    // 2. Buffer the Message
+    coachMessageBuffer.push(text);
+
+    // 3. Clear existing timer
+    if (coachDebounceTimer) clearTimeout(coachDebounceTimer);
+
+    // 4. Set Logic to Fire
+    coachDebounceTimer = setTimeout(() => {
+        const combinedText = coachMessageBuffer.join('\n');
+        coachMessageBuffer = []; // Clear buffer
+        triggerCoachResponse(combinedText);
+    }, 2500); // 2.5s wait
+};
 
 <script>
     // Initialize Onboarding
