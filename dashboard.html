@@ -8678,7 +8678,7 @@ window.submitCoachMessage = function() {
         const combinedText = coachMessageBuffer.join('\n');
         coachMessageBuffer = []; // Clear buffer
         triggerCoachResponse(combinedText);
-    }, 2500); // 2.5s wait
+    }, 15000); // 15s wait - gives user time to send multiple messages
 };
 </script>
 
