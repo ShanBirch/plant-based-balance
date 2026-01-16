@@ -17,3 +17,41 @@ self.addEventListener('fetch', (e) => {
     caches.match(e.request).then((response) => response || fetch(e.request))
   );
 });
+
+// Handle push notifications
+self.addEventListener('push', (e) => {
+  let data = { title: 'Coach Shannon', body: 'New message from your coach!' };
+
+  if (e.data) {
+    try {
+      data = e.data.json();
+    } catch (err) {
+      data.body = e.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: './assets/coach_shannon.jpg',
+    badge: './assets/logo_optimized.png',
+    vibrate: [200, 100, 200],
+    tag: 'coach-message',
+    requireInteraction: false,
+    data: {
+      url: './dashboard.html'
+    }
+  };
+
+  e.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+
+  e.waitUntil(
+    clients.openWindow(e.notification.data.url || './dashboard.html')
+  );
+});
