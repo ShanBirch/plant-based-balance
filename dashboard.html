@@ -8832,14 +8832,14 @@ window.triggerCoachResponse = async function(userMsg) {
     }
 };
 
-async function triggerAICommunityResponse(userMsg) {
+async function triggerAICommunityResponse(userMsg, chainCount = 0) {
     const lowMsg = userMsg.toLowerCase();
     
     // 1. Thread Persistence & Direct Address Logic
     let persona = null;
     const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
     
-    // A) Check for direct address (e.g., "Hey Sarah" or "Thanks Emma")
+    // A) Check for direct address
     for (const m of AI_MEMBERS) {
         const firstName = m.name.split(' ')[0].toLowerCase();
         if (lowMsg.includes(firstName)) {
@@ -8848,23 +8848,21 @@ async function triggerAICommunityResponse(userMsg) {
         }
     }
     
-    // B) If no name mentioned, check for thread persistence (replying to last speaker)
+    // B) Thread persistence
     if (!persona && fullHistory.length > 0) {
         const lastMsg = fullHistory[fullHistory.length - 1];
         if (lastMsg.authorId && lastMsg.authorId !== 'current-user') {
             const timeSinceLast = Date.now() - lastMsg.timestamp;
-            if (timeSinceLast < 10 * 60 * 1000) { // 10 minute thread window
+            if (timeSinceLast < 10 * 60 * 1000) {
                 persona = AI_MEMBERS.find(m => m.id === lastMsg.authorId);
             }
         }
     }
     
-    // C) Fallback to random persona
     if (!persona) {
         persona = AI_MEMBERS[Math.floor(Math.random() * AI_MEMBERS.length)];
     }
 
-    // Community AI Trigger
     setTimeout(async () => {
         try {
             const historyContext = fullHistory.slice(-20).map(m => ({
@@ -8887,8 +8885,9 @@ async function triggerAICommunityResponse(userMsg) {
             const data = await response.json();
             if (data.reply) {
                 const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
-                let delay = 0;
-                parts.forEach(part => {
+                let totalDelay = 0;
+                parts.forEach((part, idx) => {
+                    const partDelay = 1200 + (part.length * 20);
                     setTimeout(() => {
                         const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
                         msgs.push({ 
@@ -8900,23 +8899,31 @@ async function triggerAICommunityResponse(userMsg) {
                         });
                         localStorage.setItem('community_chat_history', JSON.stringify(msgs));
                         if(typeof renderChat === 'function') renderChat(msgs);
-                    }, delay);
-                    delay += 1200 + (part.length * 20);
+                        
+                        // If it's the last part, consider triggering a peer response or jump-in
+                        if (idx === parts.length - 1) {
+                            if (chainCount < 2 && Math.random() < 0.4) {
+                                // Peer Response (AI to AI)
+                                const peerPersona = AI_MEMBERS.filter(m => m.id !== persona.id)[Math.floor(Math.random() * (AI_MEMBERS.length - 1))];
+                                setTimeout(() => triggerJumpInResponse(part, peerPersona, chainCount + 1), 3000 + Math.random() * 2000);
+                            } else if (chainCount === 0 && Math.random() < 0.3) {
+                                // Classic Jump-in
+                                const jumpPersona = AI_MEMBERS.filter(m => m.id !== persona.id)[Math.floor(Math.random() * (AI_MEMBERS.length - 1))];
+                                setTimeout(() => triggerJumpInResponse(userMsg, jumpPersona, chainCount + 1), 5000 + Math.random() * 2000);
+                            }
+                        }
+                    }, totalDelay);
+                    totalDelay += partDelay;
                 });
-
-                // D) 30% Chance for someone else to "Jump In" after the main reply
-                if (Math.random() < 0.3) {
-                    const otherPersona = AI_MEMBERS.filter(m => m.id !== persona.id)[Math.floor(Math.random() * (AI_MEMBERS.length - 1))];
-                    setTimeout(() => triggerJumpInResponse(userMsg, otherPersona, fullHistory), delay + 3000);
-                }
             }
         } catch (e) { console.log("Comm skip", e); }
-    }, 2000 + Math.random() * 2000); // Slightly faster initial response
+    }, 2000 + Math.random() * 2000);
 }
 
-async function triggerJumpInResponse(userMsg, persona, history) {
+async function triggerJumpInResponse(prevContext, persona, chainCount) {
     try {
-        const historyContext = history.slice(-20).map(m => ({
+        const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+        const historyContext = fullHistory.slice(-20).map(m => ({
             role: m.authorId === 'current-user' ? 'user' : 'model',
             text: `${m.authorName || 'Member'}: ${m.text}`,
             timestamp: m.timestamp
@@ -8927,7 +8934,7 @@ async function triggerJumpInResponse(userMsg, persona, history) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 mode: 'community',
-                message: "(Jump in with a supportive or relatable comment based on the current vibe)",
+                message: `(Respond to: "${prevContext}")`,
                 memberPersona: persona,
                 chatHistory: historyContext,
                 currentDateTime: new Date().toLocaleString()
@@ -8936,8 +8943,9 @@ async function triggerJumpInResponse(userMsg, persona, history) {
         const data = await response.json();
         if (data.reply) {
             const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
-            let delay = 0;
-            parts.forEach(part => {
+            let totalDelay = 0;
+            parts.forEach((part, idx) => {
+                const partDelay = 1200 + (part.length * 20);
                 setTimeout(() => {
                     const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
                     msgs.push({ 
@@ -8949,8 +8957,14 @@ async function triggerJumpInResponse(userMsg, persona, history) {
                     });
                     localStorage.setItem('community_chat_history', JSON.stringify(msgs));
                     if(typeof renderChat === 'function') renderChat(msgs);
-                }, delay);
-                delay += 1200 + (part.length * 20);
+
+                    // Chain limit check
+                    if (idx === parts.length - 1 && chainCount < 2 && Math.random() < 0.3) {
+                         const nextPersona = AI_MEMBERS.filter(m => m.id !== persona.id)[Math.floor(Math.random() * (AI_MEMBERS.length - 1))];
+                         setTimeout(() => triggerJumpInResponse(part, nextPersona, chainCount + 1), 4000 + Math.random() * 2000);
+                    }
+                }, totalDelay);
+                totalDelay += partDelay;
             });
         }
     } catch (e) { console.log("JumpIn skip", e); }
