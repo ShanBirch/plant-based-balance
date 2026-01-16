@@ -7305,8 +7305,9 @@ function renderTodayMeals() {
     if (currentDayNum > 28) currentDayNum = 28; // Cap at 28
 
     const weekNum = Math.ceil(currentDayNum / 7);
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const dayName = days[now.getDay()];
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const dayIndex = (currentDayNum - 1) % 7; // Calculate which day in the program cycle (0-6)
+    const dayName = days[dayIndex];
     
     const targetDayId = `week${weekNum}-${dayName}`;
     const sourceSection = document.getElementById(targetDayId);
