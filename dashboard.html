@@ -6361,17 +6361,14 @@
                 <div style="color:var(--text-muted); font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;" id="movement-today-date">Day 1</div>
                 <h1 style="color:var(--primary); margin:0; font-size:2rem; letter-spacing:-1px;">Today's Schedule</h1>
             </div>
-            <button onclick="openCheckInModal()" style="background: white; border: 1px solid var(--primary); color: var(--primary); padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Regenerate Suggestion</button>
+            <!-- Button Removed -->
         </div>
 
         <!-- Dynamic Hero Container -->
         <div id="movement-hero-container"></div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+<div style="margin-bottom: 20px;">
     <h3 style="margin:0;">Other Options</h3>
-    <button onclick="openWorkoutBuilder()" style="background:var(--primary); color:white; border:none; padding:8px 16px; border-radius:20px; font-weight:700; font-size:0.8rem; display:flex; align-items:center; gap:5px;">
-        <span>+</span> Build Custom
-    </button>
 </div>
 
         <!-- Dynamic Grid Container -->
@@ -7259,12 +7256,8 @@ function switchAppTab(tabName, btn) {
             const todayStr = new Date().toDateString();
             const lastAuto = localStorage.getItem('last_auto_checkin_date');
             
-            if (lastAuto !== todayStr) {
-                setTimeout(() => {
-                    openCheckInModal();
-                    localStorage.setItem('last_auto_checkin_date', todayStr);
-                }, 500); // Small delay for smooth transition
-            }
+            // Auto check-in disabled per user request
+            // if (lastAuto !== todayStr) { ... }
         }
     } else if (tabName === 'support') {
         const el = document.getElementById('view-support'); // Default to Coach/Chat logic
@@ -7637,6 +7630,19 @@ function renderMovementView() {
 
     const gridContainer = document.getElementById('movement-grid-container');
     gridContainer.innerHTML = ''; 
+
+    // Add 'Build Custom' Card as first item
+    const buildDiv = document.createElement('div');
+    buildDiv.onclick = () => openWorkoutBuilder();
+    buildDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: #f1f5f9; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; border: 2px dashed #cbd5e1;";
+    buildDiv.innerHTML = `
+        <div style="width:50px; height:50px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+            <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:var(--primary);"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+        <div style="font-weight:800; color:var(--text-main); font-size:1.1rem;">Build Custom</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Create your own flow</div>
+    `;
+    gridContainer.appendChild(buildDiv); 
     
     Object.keys(WORKOUT_DB).forEach(key => {
         if (key === suggestedId) return;
