@@ -9170,30 +9170,75 @@ async function triggerAICommunityResponse(userMsg) {
     // Community AI also uses Netlify function
     setTimeout(async () => {
         try {
+            const personas = [
+                { name: 'Sarah J.', id: 'p1', avatar: 'SJ', age: 32, bio: 'High-energy yoga instructor, loves green smoothies and morning sunlight.' },
+                { name: 'Emma W.', id: 'p2', avatar: 'EW', age: 28, bio: 'Busy lawyer, struggling with stress, loves hiking with her rescue dog.' },
+                { name: 'Mia K.', id: 'p3', avatar: 'MK', age: 35, bio: 'Holistic nutritionist, uses scientific terms, very evidence-based.' },
+                { name: 'Sophie L.', id: 'p4', avatar: 'SL', age: 24, bio: 'Recent grad, new to plant-based, enthusiastic but confused about protein.' },
+                { name: 'Isabella R.', id: 'p5', avatar: 'IR', age: 41, bio: 'Mom of three, master of meal prep and practical family advice.' },
+                { name: 'Chloe M.', id: 'p6', avatar: 'CM', age: 29, bio: 'Fitness vibe, uses lots of emojis, very encouraging and positive.' },
+                { name: 'Lily H.', id: 'p7', avatar: 'LH', age: 33, bio: 'Recovering coffee addict, focuses on sleep and morning routines.' },
+                { name: 'Grace B.', id: 'p8', avatar: 'GB', age: 38, bio: 'Long-term vegan, ethical focus but very friendly and inclusive.' },
+                { name: 'Amelia P.', id: 'p9', avatar: 'AP', age: 45, bio: 'Calm and motherly, focused on hormonal health for women over 40.' },
+                { name: 'Zoe S.', id: 'p10', avatar: 'ZS', age: 27, bio: 'Digital nomad, tips for eating healthy while traveling and working.' },
+                { name: 'Ruby G.', id: 'p11', avatar: 'RG', age: 31, bio: 'Outdoor lover, focuses on energy for hiking and active weekends.' },
+                { name: 'Sienna V.', id: 'p12', avatar: 'SV', age: 22, bio: 'Student, budget-friendly meal ideas, master of bean-based cooking.' },
+                { name: 'Ava D.', id: 'p13', avatar: 'AD', age: 36, bio: 'Crossfit enthusiast, focuses on high protein plant-based recovery.' },
+                { name: 'Charlotte O.', id: 'p14', avatar: 'CO', age: 30, bio: 'Artist, focuses on mindful eating and the colors of nutrition.' },
+                { name: 'Harper F.', id: 'p15', avatar: 'HF', age: 26, bio: 'Recovering from burnout, focuses on slow living and gentle movement.' },
+                { name: 'Ella N.', id: 'p16', avatar: 'EN', age: 34, bio: 'Former athlete, focuses on recovery and inflammation management.' },
+                { name: 'Evie T.', id: 'p17', avatar: 'ET', age: 25, bio: 'Biohacker vibe, tracks everything, loves data and gadget tips.' },
+                { name: 'Scarlett Q.', id: 'p18', avatar: 'SQ', age: 39, bio: 'Holistic chef, focuses on flavor and amazing herbal infusions.' },
+                { name: 'Willow J.', id: 'p19', avatar: 'WJ', age: 30, bio: 'Spiritual focus, connection between the gut and mental clarity.' },
+                { name: 'Layla B.', id: 'p20', avatar: 'LB', age: 23, bio: 'Social and fun, always sharing "hacks" for easier plant-based living.' }
+            ];
+            
+            // Pick a random persona for this response
+            const persona = personas[Math.floor(Math.random() * personas.length)];
+            
+            // Get last 20 messages for context
+            const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+            const historyContext = fullHistory.slice(-20).map(m => ({
+                role: m.authorId === 'current-user' ? 'user' : 'model', // Map user message to 'user' role
+                text: `${m.authorName}: ${m.text}`,
+                timestamp: m.timestamp
+            }));
+            
             const response = await fetch('/.netlify/functions/ai-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     mode: 'community',
                     message: userMsg,
+                    memberPersona: persona,
+                    chatHistory: historyContext,
                     currentDateTime: new Date().toLocaleString()
                 })
             });
             const data = await response.json();
             if (data.reply) {
-                const personas = [
-                    { name: 'Sarah J.', id: 'p1', avatar: 'SJ' },
-                    { name: 'Mike T.', id: 'p2', avatar: 'MT' },
-                    { name: 'Emma W.', id: 'p3', avatar: 'EW' }
-                ];
-                const persona = personas[Math.floor(Math.random() * personas.length)];
-                const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
-                messages.push({ authorId: persona.id, authorName: persona.name, authorAvatar: persona.avatar, text: data.reply, timestamp: Date.now() });
-                localStorage.setItem('community_chat_history', JSON.stringify(messages));
-                if(typeof renderChat === 'function') renderChat(messages);
+                // Support multi-message separated by |||
+                const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
+                let delay = 0;
+                
+                parts.forEach(part => {
+                    setTimeout(() => {
+                        const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+                        messages.push({ 
+                            authorId: persona.id, 
+                            authorName: persona.name, 
+                            authorAvatar: persona.avatar, 
+                            text: part, 
+                            timestamp: Date.now() 
+                        });
+                        localStorage.setItem('community_chat_history', JSON.stringify(messages));
+                        if(typeof renderChat === 'function') renderChat(messages);
+                    }, delay);
+                    delay += 1200 + (part.length * 20); // Natural typing delay between messages
+                });
             }
         } catch (e) { console.log("Comm skip", e); }
-    }, 4000); 
+    }, 3000 + Math.random() * 2000); // Random delay between 3-5 seconds
 }
 
 window.openAsClient = function() {
