@@ -6323,6 +6323,20 @@ function clearAllFilters() {
     filterExerciseLibrary(document.getElementById('builder-search').value);
 }
 
+// Toggle filter section expand/collapse
+function toggleFilterSection(sectionId) {
+    const content = document.getElementById(`filter-content-${sectionId}`);
+    const chevron = document.getElementById(`chevron-${sectionId}`);
+
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        chevron.style.transform = 'rotate(180deg)';
+    } else {
+        content.style.display = 'none';
+        chevron.style.transform = 'rotate(0deg)';
+    }
+}
+
 // Check if exercise matches category filter
 function matchesFilter(exerciseName) {
     const nameLower = exerciseName.toLowerCase();
@@ -9697,41 +9711,62 @@ updateCoachUI();
         <!-- Exercise Filters -->
         <div style="margin-bottom: 20px;">
             <!-- Workout Type Filter -->
-            <div style="margin-bottom: 12px;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Workout Type</div>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                    <button onclick="toggleFilter('workoutType', 'yoga')" class="filter-chip" data-category="workoutType" data-value="yoga" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Yoga</button>
-                    <button onclick="toggleFilter('workoutType', 'pilates')" class="filter-chip" data-category="workoutType" data-value="pilates" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Pilates</button>
-                    <button onclick="toggleFilter('workoutType', 'cardio')" class="filter-chip" data-category="workoutType" data-value="cardio" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cardio</button>
-                    <button onclick="toggleFilter('workoutType', 'stretch')" class="filter-chip" data-category="workoutType" data-value="stretch" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Stretch</button>
+            <div style="margin-bottom: 8px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
+                <div onclick="toggleFilterSection('workoutType')" style="padding: 12px 16px; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #334155;">Workout Type</div>
+                    <svg id="chevron-workoutType" viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #64748b; transition: transform 0.2s;">
+                        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                    </svg>
+                </div>
+                <div id="filter-content-workoutType" style="display: none; padding: 12px; background: white;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <button onclick="toggleFilter('workoutType', 'yoga')" class="filter-chip" data-category="workoutType" data-value="yoga" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Yoga</button>
+                        <button onclick="toggleFilter('workoutType', 'pilates')" class="filter-chip" data-category="workoutType" data-value="pilates" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Pilates</button>
+                        <button onclick="toggleFilter('workoutType', 'cardio')" class="filter-chip" data-category="workoutType" data-value="cardio" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cardio</button>
+                        <button onclick="toggleFilter('workoutType', 'stretch')" class="filter-chip" data-category="workoutType" data-value="stretch" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Stretch</button>
+                    </div>
                 </div>
             </div>
 
             <!-- Equipment Filter -->
-            <div style="margin-bottom: 12px;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Equipment</div>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                    <button onclick="toggleFilter('equipment', 'bodyweight')" class="filter-chip" data-category="equipment" data-value="bodyweight" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Bodyweight</button>
-                    <button onclick="toggleFilter('equipment', 'dumbbell')" class="filter-chip" data-category="equipment" data-value="dumbbell" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Dumbbell</button>
-                    <button onclick="toggleFilter('equipment', 'barbell')" class="filter-chip" data-category="equipment" data-value="barbell" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Barbell</button>
-                    <button onclick="toggleFilter('equipment', 'cable')" class="filter-chip" data-category="equipment" data-value="cable" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cable</button>
-                    <button onclick="toggleFilter('equipment', 'band')" class="filter-chip" data-category="equipment" data-value="band" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Band</button>
-                    <button onclick="toggleFilter('equipment', 'kettlebell')" class="filter-chip" data-category="equipment" data-value="kettlebell" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Kettlebell</button>
-                    <button onclick="toggleFilter('equipment', 'machine')" class="filter-chip" data-category="equipment" data-value="machine" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Machine</button>
+            <div style="margin-bottom: 8px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
+                <div onclick="toggleFilterSection('equipment')" style="padding: 12px 16px; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #334155;">Equipment</div>
+                    <svg id="chevron-equipment" viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #64748b; transition: transform 0.2s;">
+                        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                    </svg>
+                </div>
+                <div id="filter-content-equipment" style="display: none; padding: 12px; background: white;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <button onclick="toggleFilter('equipment', 'bodyweight')" class="filter-chip" data-category="equipment" data-value="bodyweight" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Bodyweight</button>
+                        <button onclick="toggleFilter('equipment', 'dumbbell')" class="filter-chip" data-category="equipment" data-value="dumbbell" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Dumbbell</button>
+                        <button onclick="toggleFilter('equipment', 'barbell')" class="filter-chip" data-category="equipment" data-value="barbell" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Barbell</button>
+                        <button onclick="toggleFilter('equipment', 'cable')" class="filter-chip" data-category="equipment" data-value="cable" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cable</button>
+                        <button onclick="toggleFilter('equipment', 'band')" class="filter-chip" data-category="equipment" data-value="band" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Band</button>
+                        <button onclick="toggleFilter('equipment', 'kettlebell')" class="filter-chip" data-category="equipment" data-value="kettlebell" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Kettlebell</button>
+                        <button onclick="toggleFilter('equipment', 'machine')" class="filter-chip" data-category="equipment" data-value="machine" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Machine</button>
+                    </div>
                 </div>
             </div>
 
             <!-- Muscle Group Filter -->
-            <div style="margin-bottom: 12px;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Muscle Group</div>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                    <button onclick="toggleFilter('muscle', 'chest')" class="filter-chip" data-category="muscle" data-value="chest" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Chest</button>
-                    <button onclick="toggleFilter('muscle', 'back')" class="filter-chip" data-category="muscle" data-value="back" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Back</button>
-                    <button onclick="toggleFilter('muscle', 'shoulders')" class="filter-chip" data-category="muscle" data-value="shoulders" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Shoulders</button>
-                    <button onclick="toggleFilter('muscle', 'arms')" class="filter-chip" data-category="muscle" data-value="arms" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Arms</button>
-                    <button onclick="toggleFilter('muscle', 'core')" class="filter-chip" data-category="muscle" data-value="core" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Core</button>
-                    <button onclick="toggleFilter('muscle', 'legs')" class="filter-chip" data-category="muscle" data-value="legs" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Legs</button>
-                    <button onclick="toggleFilter('muscle', 'glutes')" class="filter-chip" data-category="muscle" data-value="glutes" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Glutes</button>
+            <div style="margin-bottom: 8px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
+                <div onclick="toggleFilterSection('muscle')" style="padding: 12px 16px; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #334155;">Muscle Group</div>
+                    <svg id="chevron-muscle" viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #64748b; transition: transform 0.2s;">
+                        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                    </svg>
+                </div>
+                <div id="filter-content-muscle" style="display: none; padding: 12px; background: white;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <button onclick="toggleFilter('muscle', 'chest')" class="filter-chip" data-category="muscle" data-value="chest" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Chest</button>
+                        <button onclick="toggleFilter('muscle', 'back')" class="filter-chip" data-category="muscle" data-value="back" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Back</button>
+                        <button onclick="toggleFilter('muscle', 'shoulders')" class="filter-chip" data-category="muscle" data-value="shoulders" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Shoulders</button>
+                        <button onclick="toggleFilter('muscle', 'arms')" class="filter-chip" data-category="muscle" data-value="arms" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Arms</button>
+                        <button onclick="toggleFilter('muscle', 'core')" class="filter-chip" data-category="muscle" data-value="core" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Core</button>
+                        <button onclick="toggleFilter('muscle', 'legs')" class="filter-chip" data-category="muscle" data-value="legs" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Legs</button>
+                        <button onclick="toggleFilter('muscle', 'glutes')" class="filter-chip" data-category="muscle" data-value="glutes" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Glutes</button>
+                    </div>
                 </div>
             </div>
 
