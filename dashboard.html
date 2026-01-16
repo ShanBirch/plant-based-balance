@@ -6507,7 +6507,7 @@ function toggleBuilderItem(btn, key) {
         parent.style.background = '#f0fdf4';
         btn.style.background = 'var(--primary)';
         btn.style.color = 'white';
-        btn.innerHTML = '?';
+        btn.innerHTML = '✓';
     }
     updateBuilderUI();
 }
@@ -10266,12 +10266,12 @@ updateCoachUI();
         </div>
     </div>
     
-    <div id="builder-floating-action" style="position:fixed; bottom:20px; left:0; width:100%; padding:20px; display:none; z-index: 10015;">
-        <div style="display:flex; gap:10px;">
-            <button onclick="saveCustomBuilderWorkout()" style="flex:1; background:white; color:var(--primary); border:2px solid var(--primary); padding:18px; border-radius:50px; font-weight:800; box-shadow:0 10px 25px rgba(0,0,0,0.05); font-size: 1.1rem; cursor:pointer;">
+    <div id="builder-floating-action" style="position:fixed; bottom:0; left:0; right:0; width:100%; padding:20px; display:none; z-index: 10015; background: linear-gradient(to top, white 0%, white 85%, rgba(255,255,255,0.95) 95%, transparent 100%); pointer-events: none;">
+        <div style="display:flex; gap:10px; pointer-events: auto;">
+            <button onclick="saveCustomBuilderWorkout()" style="flex:1; background:white; color:var(--primary); border:2px solid var(--primary); padding:18px; border-radius:50px; font-weight:800; box-shadow:0 10px 25px rgba(0,0,0,0.05); font-size: 1.1rem; cursor:pointer; min-height:56px; touch-action: manipulation;">
                 SAVE
             </button>
-            <button onclick="startCustomBuilderWorkout()" style="flex:2; background:var(--primary); color:white; padding:18px; border-radius:50px; font-weight:800; border:none; box-shadow:0 10px 25px rgba(4,106,56,0.3); font-size: 1.1rem; cursor:pointer;">
+            <button onclick="startCustomBuilderWorkout()" style="flex:2; background:var(--primary); color:white; padding:18px; border-radius:50px; font-weight:800; border:none; box-shadow:0 10px 25px rgba(4,106,56,0.3); font-size: 1.1rem; cursor:pointer; min-height:56px; touch-action: manipulation;">
                 START (<span id="builder-count">0</span>)
             </button>
         </div>
