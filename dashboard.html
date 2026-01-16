@@ -9257,20 +9257,6 @@ window.triggerCoachResponse = async function(userMsg) {
 
     // Determine how many messages are in the current buffer to avoid sending them twice
     // (since they were already pushed to history in submitCoachMessage)
-    const bufferSize = userMsg.split(/\s+/).filter(w => w).length > 0 ? (coachMessageBuffer.length + 1) : 0; 
-    // Actually, submitCoachMessage clears the buffer *after* calling triggerCoachResponse 
-    // Wait, the buffer logic I wrote:
-    // coachBufferTimeout = setTimeout(() => {
-    //    const combinedMsg = coachMessageBuffer.join(" ");
-    //    coachMessageBuffer = [];
-    //    triggerCoachResponse(combinedMsg);
-    // }, 2000);
-    //
-    // Any message added to history *before* this timeout will be in the history array.
-    // If the user sent 3 messages, history has 3 new entries.
-    // userMsg is "msg1 msg2 msg3".
-    // We should send history MINUS those 3 entries as the "context", and "userMsg" as the target.
-    
     const messagesToSlice = Array.isArray(window._lastBufferedCount) ? window._lastBufferedCount.length : 0;
     const historyContext = history.slice(0, history.length - messagesToSlice);
 
@@ -9383,9 +9369,9 @@ window.submitCoachMessage = function() {
     if (!window._coachMessageBuffer) window._coachMessageBuffer = [];
     window._coachMessageBuffer.push(text);
     
-    if (coachBufferTimeout) clearTimeout(coachBufferTimeout);
+    if (window._coachBufferTimeout) clearTimeout(window._coachBufferTimeout);
     
-    coachBufferTimeout = setTimeout(() => {
+    window._coachBufferTimeout = setTimeout(() => {
         const combinedMsg = window._coachMessageBuffer.join(" ");
         window._lastBufferedCount = [...window._coachMessageBuffer]; // Store for context slicing
         window._coachMessageBuffer = [];
