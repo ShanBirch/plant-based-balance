@@ -9130,6 +9130,339 @@ async function triggerJumpInResponse(prevContext, persona, chainCount) {
     } catch (e) { console.log("JumpIn skip", e); }
 }
 
+// ========================================
+// AUTONOMOUS COMMUNITY MESSAGING SYSTEM
+// ========================================
+
+// Autonomous message topics for random conversations
+const AUTONOMOUS_TOPICS = [
+    { type: 'workout', prompts: [
+        'Just finished an amazing morning walk! The fresh air really helps clear my head. Anyone else moving today?',
+        'Did a gentle yoga flow this morning and feeling so much better. How do you all prefer to move?',
+        'Trying to stay consistent with strength training but some days are harder than others. Anyone else struggling with motivation this week?',
+        'That new workout in the Build section was challenging! How did everyone else find it?',
+        'Taking a rest day today and trying not to feel guilty about it. Self-compassion is hard sometimes!',
+        'Swimming has been such a game-changer for my joint pain. What movement makes you feel best?'
+    ]},
+    { type: 'nutrition', prompts: [
+        'Made the most delicious plant-based Buddha bowl for lunch! Feeling so nourished. What\'s everyone eating today?',
+        'Anyone else notice their cravings change throughout their cycle? I\'m craving all the green things this week.',
+        'Finally nailed a good protein smoothie recipe. The key is frozen banana and a pinch of cinnamon!',
+        'Struggling with meal prep this week. Life got busy. Anyone have quick go-to meals?',
+        'My hot flashes have been better since I cut back on spicy foods. Anyone else notice food triggers?',
+        'Just meal prepped for the week and feeling so organized! How do you all stay on track?'
+    ]},
+    { type: 'wellness', prompts: [
+        'Had the best sleep last night after doing that evening wind-down routine. Game changer!',
+        'Brain fog is real today. Anyone else? How do you cope when you\'re feeling scattered?',
+        'Trying to be more mindful about my stress levels. Noticed my shoulders are always tense!',
+        'The guided meditation in the resources section has been so helpful. Anyone else trying meditation?',
+        'Feeling really grateful for this community today. It helps knowing we\'re all in this together.',
+        'Energy levels have been all over the place this week. Hormones are wild! How\'s everyone feeling?'
+    ]},
+    { type: 'progress', prompts: [
+        'Finally feeling like my cortisol is balancing out. The changes are subtle but they\'re there!',
+        'Tracking my symptoms has been so eye-opening. Highly recommend if you haven\'t started yet.',
+        'Hit a milestone today - 30 days of consistent movement! Never thought I\'d get here.',
+        'Some days feel like steps backward, but trying to trust the process. Anyone else feel this way?',
+        'My mood has been so much more stable lately. Plant-based eating is really making a difference.',
+        'Noticing improvements in my sleep quality. It\'s the small wins that keep me going!'
+    ]},
+    { type: 'support', prompts: [
+        'Having a tough day today. Just needed to share that with people who understand.',
+        'This journey isn\'t linear and that\'s okay. Being gentle with myself today.',
+        'Anyone else find perimenopause harder than they expected? Some days I feel lost.',
+        'The support in this group means everything. Thank you for being here.',
+        'Reminder to drink water! I always forget and then wonder why I feel terrible.',
+        'How is everyone\'s week going? Really curious to hear how you\'re all doing.'
+    ]}
+];
+
+// Saturday morning check-in prompts
+const SATURDAY_CHECKIN_PROMPTS = [
+    'Happy Saturday everyone! How was your week? Any wins to celebrate?',
+    'Saturday check-in time! What was your biggest challenge this week and how did you handle it?',
+    'Good morning! Let\'s do a quick weekly reflection. What are you proud of from this week?',
+    'Weekend vibes! How did everyone do with their wellness goals this week?',
+    'Saturday morning check-in! What\'s one thing you learned about yourself this week?'
+];
+
+// Get a random item from array
+function getRandomItem(array) {
+    return array[Math.floor(Math.random() * array.length)];
+}
+
+// Get random autonomous message prompt
+function getRandomAutonomousPrompt() {
+    const topic = getRandomItem(AUTONOMOUS_TOPICS);
+    return getRandomItem(topic.prompts);
+}
+
+// Determine number of responses based on probability
+function getResponseCount() {
+    const rand = Math.random() * 100;
+    if (rand < 10) return 0;      // 10% - no replies
+    if (rand < 40) return 1;      // 30% - one reply
+    if (rand < 75) return 2;      // 35% - two replies
+    if (rand < 90) return 3;      // 15% - three replies
+    return 4;                     // 10% - four replies
+}
+
+// Initiate autonomous community conversation
+async function initiateAutonomousConversation(isCheckIn = false) {
+    try {
+        const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+
+        // Select initiating member (exclude Coach Shannon for more natural feel)
+        const nonCoachMembers = AI_MEMBERS.filter(m => m.id !== 'm0');
+        const initiator = getRandomItem(nonCoachMembers);
+
+        // Get message content
+        const messageText = isCheckIn ? getRandomItem(SATURDAY_CHECKIN_PROMPTS) : getRandomAutonomousPrompt();
+
+        // Add initiator message to chat
+        const initiatorMsg = {
+            authorId: initiator.id,
+            authorName: initiator.name,
+            authorAvatar: initiator.id.replace('m', ''),
+            text: messageText,
+            timestamp: Date.now()
+        };
+
+        fullHistory.push(initiatorMsg);
+        localStorage.setItem('community_chat_history', JSON.stringify(fullHistory));
+        if (typeof renderChat === 'function') renderChat(fullHistory);
+
+        // Determine number of responses
+        const responseCount = isCheckIn ? Math.floor(Math.random() * 3) + 3 : getResponseCount(); // Check-ins get 3-5 responses
+
+        if (responseCount === 0) {
+            console.log('Autonomous message sent with no replies');
+            return;
+        }
+
+        // Generate responses with varying delays
+        const availableResponders = AI_MEMBERS.filter(m => m.id !== initiator.id);
+        const responders = [];
+
+        // Select unique responders
+        for (let i = 0; i < responseCount && responders.length < availableResponders.length; i++) {
+            let responder;
+            do {
+                responder = getRandomItem(availableResponders);
+            } while (responders.find(r => r.id === responder.id));
+            responders.push(responder);
+        }
+
+        // Schedule responses with realistic delays
+        responders.forEach((responder, idx) => {
+            const baseDelay = isCheckIn ? 15000 : 8000; // Check-ins have longer thinking time
+            const randomDelay = baseDelay + (Math.random() * (isCheckIn ? 25000 : 15000));
+            const delay = (idx * (isCheckIn ? 20000 : 10000)) + randomDelay; // Stagger responses
+
+            setTimeout(async () => {
+                try {
+                    const currentHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+                    const historyContext = currentHistory.slice(-20).map(m => ({
+                        role: m.authorId === 'current-user' ? 'user' : 'model',
+                        text: `${m.authorName || 'Member'}: ${m.text}`,
+                        timestamp: m.timestamp
+                    }));
+
+                    // Call AI to generate response
+                    const response = await fetch('/.netlify/functions/ai-chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            mode: 'community',
+                            message: isCheckIn ? `(This is a Saturday morning check-in. Share your weekly reflection thoughtfully. Respond to: "${messageText}")` : messageText,
+                            memberPersona: responder,
+                            chatHistory: historyContext,
+                            currentDateTime: new Date().toLocaleString(),
+                            isAutonomous: true
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.reply) {
+                        const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
+                        let totalDelay = 0;
+
+                        parts.forEach((part) => {
+                            const partDelay = 1200 + (part.length * 20);
+                            setTimeout(() => {
+                                const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+                                msgs.push({
+                                    authorId: responder.id,
+                                    authorName: responder.name,
+                                    authorAvatar: responder.id.replace('m', ''),
+                                    text: part,
+                                    timestamp: Date.now()
+                                });
+                                localStorage.setItem('community_chat_history', JSON.stringify(msgs));
+                                if (typeof renderChat === 'function') renderChat(msgs);
+                            }, totalDelay);
+                            totalDelay += partDelay;
+                        });
+                    }
+                } catch (e) {
+                    console.log('Autonomous response skip', e);
+                }
+            }, delay);
+        });
+
+    } catch (e) {
+        console.log('Autonomous conversation skip', e);
+    }
+}
+
+// Check if it's Saturday morning (7-9 AM Brisbane time)
+function isSaturdayMorning() {
+    const now = new Date();
+
+    // Convert to Brisbane time (AEST/AEDT UTC+10/+11)
+    const brisbaneTime = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Brisbane' }));
+    const day = brisbaneTime.getDay();
+    const hour = brisbaneTime.getHours();
+
+    return day === 6 && hour >= 7 && hour < 9;
+}
+
+// Get last check-in date
+function getLastCheckInDate() {
+    const lastCheckIn = localStorage.getItem('last_saturday_checkin');
+    return lastCheckIn ? new Date(lastCheckIn) : null;
+}
+
+// Check if check-in already happened this week
+function checkInAlreadyDone() {
+    const lastCheckIn = getLastCheckInDate();
+    if (!lastCheckIn) return false;
+
+    const now = new Date();
+    const daysSinceLastCheckIn = (now - lastCheckIn) / (1000 * 60 * 60 * 24);
+
+    // If less than 6 days since last check-in, it already happened this week
+    return daysSinceLastCheckIn < 6;
+}
+
+// Trigger Saturday morning check-in
+function triggerSaturdayCheckIn() {
+    if (checkInAlreadyDone()) {
+        console.log('Saturday check-in already done this week');
+        return;
+    }
+
+    console.log('Initiating Saturday morning check-in...');
+    localStorage.setItem('last_saturday_checkin', new Date().toISOString());
+    initiateAutonomousConversation(true);
+}
+
+// Get last autonomous message time
+function getLastAutonomousMessageTime() {
+    const lastTime = localStorage.getItem('last_autonomous_message');
+    return lastTime ? parseInt(lastTime) : 0;
+}
+
+// Check if it's time for autonomous message
+function shouldTriggerAutonomousMessage() {
+    const lastTime = getLastAutonomousMessageTime();
+    const now = Date.now();
+    const timeSinceLast = now - lastTime;
+
+    // Random interval between 1-2 hours (3600000-7200000 ms)
+    const minInterval = 60 * 60 * 1000; // 1 hour
+    const maxInterval = 2 * 60 * 60 * 1000; // 2 hours
+    const randomInterval = minInterval + Math.random() * (maxInterval - minInterval);
+
+    return timeSinceLast > randomInterval;
+}
+
+// Trigger random autonomous message
+function triggerAutonomousMessage() {
+    console.log('Initiating autonomous community message...');
+    localStorage.setItem('last_autonomous_message', Date.now().toString());
+    initiateAutonomousConversation(false);
+}
+
+// Main autonomous system controller
+function checkAutonomousActivity() {
+    // Check for Saturday morning check-in first
+    if (isSaturdayMorning()) {
+        triggerSaturdayCheckIn();
+        return; // Don't do random messages during check-in window
+    }
+
+    // Check for random autonomous messages
+    if (shouldTriggerAutonomousMessage()) {
+        triggerAutonomousMessage();
+    }
+}
+
+// Initialize autonomous system
+function initializeAutonomousSystem() {
+    console.log('Autonomous community messaging system initialized');
+
+    // Check immediately on load
+    setTimeout(() => {
+        checkAutonomousActivity();
+    }, 5000); // Wait 5 seconds after page load
+
+    // Check every 30 minutes
+    setInterval(() => {
+        checkAutonomousActivity();
+    }, 30 * 60 * 1000);
+}
+
+// Start autonomous system when page loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAutonomousSystem);
+} else {
+    initializeAutonomousSystem();
+}
+
+// ========================================
+// TESTING & DEBUG FUNCTIONS
+// ========================================
+
+// Manual triggers for testing (accessible via browser console)
+window.testAutonomousMessage = function() {
+    console.log('🧪 Testing autonomous message...');
+    initiateAutonomousConversation(false);
+};
+
+window.testSaturdayCheckIn = function() {
+    console.log('🧪 Testing Saturday check-in...');
+    initiateAutonomousConversation(true);
+};
+
+window.resetAutonomousTimers = function() {
+    console.log('🔄 Resetting autonomous timers...');
+    localStorage.removeItem('last_autonomous_message');
+    localStorage.removeItem('last_saturday_checkin');
+    console.log('✅ Timers reset! Next check will trigger new messages.');
+};
+
+window.getAutonomousStatus = function() {
+    const lastMsg = getLastAutonomousMessageTime();
+    const lastCheckIn = getLastCheckInDate();
+    const nextMsgIn = lastMsg ? Math.max(0, (60 * 60 * 1000) - (Date.now() - lastMsg)) : 0;
+
+    console.log('📊 Autonomous System Status:');
+    console.log('─────────────────────────────');
+    console.log(`Last autonomous message: ${lastMsg ? new Date(lastMsg).toLocaleString() : 'Never'}`);
+    console.log(`Next message in: ${Math.floor(nextMsgIn / 60000)} minutes (approximately)`);
+    console.log(`Last Saturday check-in: ${lastCheckIn ? lastCheckIn.toLocaleString() : 'Never'}`);
+    console.log(`Is Saturday morning now: ${isSaturdayMorning()}`);
+    console.log(`Check-in already done this week: ${checkInAlreadyDone()}`);
+    console.log('─────────────────────────────');
+    console.log('💡 Try: testAutonomousMessage() or testSaturdayCheckIn()');
+};
+
+// ========================================
+// END AUTONOMOUS COMMUNITY MESSAGING
+// ========================================
+
 window.openAsClient = function() {
     toggleCoachMode(false);
     if(typeof switchAppTab === 'function') switchAppTab('dashboard');
