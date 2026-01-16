@@ -1540,8 +1540,8 @@
     function renderLibraryResults(list) {
         const grid = document.getElementById('library-results');
         grid.innerHTML = list.map(item => `
-            <div class="card" style="margin:0; text-align:center; padding:10px; cursor:pointer; transition:all 0.2s;" onclick="addToWorkout('${item.name.replace(/'/g, "\\'")}', '${item.gifUrl}')">
-                <img src="${item.gifUrl}" style="width:100%; height:120px; object-fit:contain; mix-blend-mode:multiply; margin-bottom:10px;">
+            <div class="card" style="margin:0; text-align:center; padding:10px; cursor:pointer; transition:all 0.2s; touch-action: manipulation; user-select: none;" onclick="addToWorkout('${item.name.replace(/'/g, "\\'")}', '${item.gifUrl}')">
+                <img src="${item.gifUrl}" style="width:100%; height:120px; object-fit:contain; mix-blend-mode:multiply; margin-bottom:10px; pointer-events: none;">
                 <h5 style="margin:0 0 5px 0; font-size:0.85rem; color:var(--primary);">${item.name}</h5>
                 <small style="color:#64748b; text-transform:uppercase; font-size:0.7rem;">${item.bodyPart || item.target}</small>
                 <div style="margin-top:10px; color:var(--secondary); font-size:0.8rem; font-weight:600;">+ Add</div>
@@ -1991,7 +1991,7 @@
                 <!-- Exercises injected here -->
             </div>
             
-            <button onclick="switchTrackerView('library')" style="width:100%; padding:15px; border:2px dashed #cbd5e0; color:#64748b; background:transparent; border-radius:12px; font-weight:600; cursor:pointer; margin-top:20px; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary)'; this.style.color='var(--primary)'" onmouseout="this.style.borderColor='#cbd5e0'; this.style.color='#64748b'">
+            <button onclick="switchTrackerView('library')" style="width:100%; padding:15px; border:2px dashed #cbd5e0; color:#64748b; background:transparent; border-radius:12px; font-weight:600; cursor:pointer; margin-top:20px; transition:all 0.2s; touch-action: manipulation; user-select: none; min-height: 50px;" onmouseover="this.style.borderColor='var(--primary)'; this.style.color='var(--primary)'" onmouseout="this.style.borderColor='#cbd5e0'; this.style.color='#64748b'">
                 + Add Exercise
             </button>
         </div>
@@ -6076,8 +6076,8 @@
         </div>
 
         <!-- Finish Bar -->
-        <div style="position: fixed; bottom:0; left:0; width:100%; padding: 20px; background:white; border-top:1px solid #eee; box-shadow: 0 -5px 20px rgba(0,0,0,0.05);">
-            <button onclick="finishWorkout()" class="btn-primary" style="width:100%; border-radius:30px;">FINISH WORKOUT</button>
+        <div style="position: fixed; bottom:0; left:0; width:100%; padding: 20px; background:white; border-top:1px solid #eee; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 50;">
+            <button onclick="finishWorkout()" class="btn-primary" style="width:100%; border-radius:30px; touch-action: manipulation; user-select: none; min-height: 56px; cursor: pointer;">FINISH WORKOUT</button>
         </div>
     </div>
 
@@ -6598,7 +6598,7 @@ function startCustomBuilderWorkout() {
 </script>
 
 <!-- WORKOUT OVERVIEW VIEW -->
-<div id="view-workout-overview" class="app-view" style="display:none; height: 100vh; background: white; z-index: 1500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
+<div id="view-workout-overview" class="app-view" style="display:none; height: 100vh; background: white; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;">
         <div onclick="switchAppTab('movement-tab')" style="width: 40px; height: 40px; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; cursor: pointer;">
              <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--text-main);"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -6640,23 +6640,23 @@ function startCustomBuilderWorkout() {
     </div>
 
     <!-- Floating Start Button -->
-    <div style="position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 101;">
-        <button id="btn-start-now" style="width: 100%; padding: 18px; background: #FFC107; color: black; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: 800; box-shadow: 0 10px 25px rgba(255, 193, 7, 0.4);">
+    <div style="position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 100;">
+        <button id="btn-start-now" style="width: 100%; padding: 18px; background: #FFC107; color: black; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: 800; box-shadow: 0 10px 25px rgba(255, 193, 7, 0.4); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(255, 193, 7, 0.3); user-select: none; min-height: 56px;">
             START WORKOUT
         </button>
     </div>
 </div>
 
 <!-- ACTIVE WORKOUT PLAYER VIEW -->
-<div id="view-active-workout" class="app-view" style="display:none; height: 100vh; background: #f8fafc; z-index: 2000; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
+<div id="view-active-workout" class="app-view" style="display:none; height: 100vh; background: #f8fafc; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
     
     <!-- Top Nav Bar -->
     <div style="position: sticky; top: 0; z-index: 100; background: black; color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;">
-        <div onclick="quitWorkout()" style="font-weight: 600; cursor: pointer; color: #FF4444;">Cancel</div>
+        <div onclick="quitWorkout()" style="font-weight: 600; cursor: pointer; color: #FF4444; padding: 10px; touch-action: manipulation; user-select: none;">Cancel</div>
         <div style="text-align: center;">
             <div id="workout-timer" style="font-family: monospace; font-size: 1.2rem; font-weight: 700; color: white;">00:00</div>
         </div>
-        <div onclick="finishWorkout()" style="font-weight: 600; cursor: pointer; color: #44FF44;">Save</div>
+        <div onclick="finishWorkout()" style="font-weight: 600; cursor: pointer; color: #44FF44; padding: 10px; touch-action: manipulation; user-select: none;">Save</div>
     </div>
 
     <div style="padding: 15px; padding-bottom: 120px;">
@@ -6675,7 +6675,7 @@ function startCustomBuilderWorkout() {
 
 
 <!-- WORKOUT SUCCESS VIEW -->
-<div id="view-workout-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 2000; background: var(--primary); color: white; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;">
+<div id="view-workout-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: var(--primary); color: white; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;">
     
     <div style="font-size: 5rem; margin-bottom: 20px;">?</div> 
     <!-- High Five Emoji or similar graphic -->
@@ -10183,7 +10183,7 @@ updateCoachUI();
 // setTimeout(() => { ... }, 1000);
 </script>
 <!-- WORKOUT BUILDER VIEW -->
-<div id="view-workout-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:2000; overflow-y:auto; padding-bottom: 100px;">
+<div id="view-workout-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:500; overflow-y:auto; padding-bottom: 100px;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
         <div style="font-weight: 700; font-size: 1.2rem;">Build Workout</div>
         <div onclick="switchAppTab('movement-tab')" style="cursor:pointer; color:var(--text-muted); font-weight:600;">Close</div>
@@ -10269,12 +10269,12 @@ updateCoachUI();
         </div>
     </div>
     
-    <div id="builder-floating-action" style="position:fixed; bottom:0; left:0; right:0; width:100%; padding:20px; display:none; z-index: 10015; background: linear-gradient(to top, white 0%, white 85%, rgba(255,255,255,0.95) 95%, transparent 100%); pointer-events: none;">
-        <div style="display:flex; gap:10px; pointer-events: auto;">
-            <button onclick="saveCustomBuilderWorkout()" style="flex:1; background:white; color:var(--primary); border:2px solid var(--primary); padding:18px; border-radius:50px; font-weight:800; box-shadow:0 10px 25px rgba(0,0,0,0.05); font-size: 1.1rem; cursor:pointer; min-height:56px; touch-action: manipulation;">
+    <div id="builder-floating-action" style="position:fixed; bottom:0; left:0; right:0; width:100%; padding:20px; display:none; z-index: 100; background: white; box-shadow: 0 -4px 20px rgba(0,0,0,0.1);">
+        <div style="display:flex; gap:10px;">
+            <button onclick="saveCustomBuilderWorkout()" style="flex:1; background:white; color:var(--primary); border:2px solid var(--primary); padding:18px; border-radius:50px; font-weight:800; box-shadow:0 10px 25px rgba(0,0,0,0.05); font-size: 1.1rem; cursor:pointer; min-height:56px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); user-select: none;">
                 SAVE
             </button>
-            <button onclick="startCustomBuilderWorkout()" style="flex:2; background:var(--primary); color:white; padding:18px; border-radius:50px; font-weight:800; border:none; box-shadow:0 10px 25px rgba(4,106,56,0.3); font-size: 1.1rem; cursor:pointer; min-height:56px; touch-action: manipulation;">
+            <button onclick="startCustomBuilderWorkout()" style="flex:2; background:var(--primary); color:white; padding:18px; border-radius:50px; font-weight:800; border:none; box-shadow:0 10px 25px rgba(4,106,56,0.3); font-size: 1.1rem; cursor:pointer; min-height:56px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); user-select: none;">
                 START (<span id="builder-count">0</span>)
             </button>
         </div>
