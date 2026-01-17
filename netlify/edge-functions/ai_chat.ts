@@ -8,7 +8,7 @@ export default async function (request: Request, context: Context) {
   }
 
   try {
-    const { message, mode, contextData, memberPersona, conversationStatus, localTime, chatHistory, currentDateTime } = await request.json();
+    const { message, mode, contextData, memberPersona, conversationStatus, localTime, chatHistory, currentDateTime, brisbaneTime } = await request.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!apiKey) {
@@ -46,8 +46,9 @@ export default async function (request: Request, context: Context) {
       - Energy: ${contextData?.energy || "Unknown"}
       
       CURRENT SITUATION:
-      - Current Date/Time: ${currentDateTime || localTime || "Unknown"}
-      - State: ${conversationStatus || 'new'} (If 'continuing', we are active right now.)
+      - Current Brisbane Time: ${brisbaneTime || currentDateTime || localTime || "Unknown"}
+      - Conversation State: ${conversationStatus || 'new'} (If 'continuing', we are mid-conversation right now.)
+      - IMPORTANT: Each message in the chat history includes a 'brisbaneTime' field showing when it was sent in Brisbane time. Use these timestamps to understand time gaps and context.
 
       GREETING RULES (CRITICAL):
       - Terminology: NEVER use "mate" or "bro". Always use "lovely" when addressing the client (e.g., "Hey lovely", "Morning lovely"). 
@@ -233,12 +234,16 @@ export default async function (request: Request, context: Context) {
         chatHistory.forEach((msg: any) => {
             const role = msg.role === 'user' ? 'user' : 'model';
             const text = msg.text || msg.content || "";
-            
+
             if (!text) return;
 
             // Use a specific "Metadata vs Content" format to prevent AI from mimicking the prefix
             let contextText = text;
-            if (msg.timestamp) {
+            if (msg.brisbaneTime) {
+                // Use the Brisbane time from the frontend
+                contextText = `(CONTEXT: Sent ${msg.brisbaneTime} Brisbane time)\nMESSAGE: ${text}`;
+            } else if (msg.timestamp) {
+                // Fallback to timestamp if brisbaneTime not available
                 const date = new Date(msg.timestamp);
                 const dateStr = date.toLocaleDateString("en-US", { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                 contextText = `(CONTEXT: Sent on ${dateStr})\nMESSAGE: ${text}`;
