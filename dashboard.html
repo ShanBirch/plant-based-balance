@@ -9068,10 +9068,10 @@ window.triggerCoachResponse = async function(userMsg) {
             let delay = 0;
             parts.forEach((part) => {
                 setTimeout(() => appendCoachMessage(part), delay);
-                // 7-15 second delay between messages to feel more human and realistic
-                const baseDelay = 7000; // 7 seconds
-                const randomVariation = Math.random() * 8000; // 0-8 seconds random
-                const typingSimulation = part.length * 15; // Simulate typing time
+                // 3-6 second delay between messages for quick texting feel (messages are usually short)
+                const baseDelay = 3000; // 3 seconds
+                const randomVariation = Math.random() * 3000; // 0-3 seconds random
+                const typingSimulation = part.length * 10; // Simulate typing time (10ms per character)
                 delay += baseDelay + randomVariation + typingSimulation;
             });
         }
