@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Test</title>
+</head>
+<body>
+    <h1>Testing Supabase Connection...</h1>
+    <div id="status">Loading...</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/lib/supabase.js"></script>
+    <script>
+        const status = document.getElementById('status');
+
+        setTimeout(() => {
+            if (typeof window.supabase === 'undefined') {
+                status.innerHTML = '❌ Supabase library NOT loaded';
+            } else if (typeof window.authHelpers === 'undefined') {
+                status.innerHTML = '❌ authHelpers NOT defined (supabase.js not loaded)';
+            } else {
+                status.innerHTML = '✅ Everything working! authHelpers is defined.<br>You can use the login page now!';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
