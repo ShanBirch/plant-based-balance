@@ -8063,11 +8063,11 @@ function renderChat(messages) {
     const container = document.getElementById('community-chat-stream');
     if(!container) return;
     container.innerHTML = '';
-    
-    messages.forEach(msg => {
+
+    messages.forEach((msg, msgIndex) => {
         const isMe = !msg.authorId || msg.authorId === 'current-user';
         const author = !isMe ? AI_MEMBERS.find(m => m.id === msg.authorId) : null;
-        
+
         let avatarHtml = '';
         if(!isMe && author) {
              let avatarSrc;
@@ -8079,25 +8079,56 @@ function renderChat(messages) {
              }
              avatarHtml = `<img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; flex-shrink:0; align-self:flex-end; margin-bottom:5px; object-fit:cover;">`;
         }
-        
+
         const bBg = isMe ? 'var(--chat-bg-user)' : 'var(--chat-bg-coach)';
         const bText = isMe ? 'var(--chat-text-user)' : 'var(--chat-text-coach)';
         const bRadius = isMe ? '18px 18px 0 18px' : '18px 18px 18px 0';
         const bBorder = isMe ? 'none' : '1px solid var(--chat-border-coach)';
         const alignStyle = isMe ? "justify-content: flex-end;" : "justify-content: flex-start;";
 
+        // Emoji reactions
+        let reactionsHtml = '';
+        if (msg.reactions && msg.reactions.length > 0) {
+            const reactionCounts = {};
+            msg.reactions.forEach(r => {
+                reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
+            });
+            reactionsHtml = '<div style="display:flex; gap:4px; margin-top:4px; margin-left:10px; flex-wrap:wrap;">';
+            Object.entries(reactionCounts).forEach(([emoji, count]) => {
+                reactionsHtml += `<span style="font-size:0.85rem; background:#f1f5f9; padding:2px 6px; border-radius:10px; border:1px solid #e2e8f0;">${emoji} ${count > 1 ? count : ''}</span>`;
+            });
+            reactionsHtml += '</div>';
+        }
+
+        // Read receipts (only for user messages)
+        let readReceiptsHtml = '';
+        if (isMe && msg.readBy && msg.readBy.length > 0) {
+            const readerNames = msg.readBy.map(id => {
+                const member = AI_MEMBERS.find(m => m.id === id);
+                return member ? member.name.split(' ')[0] : '';
+            }).filter(n => n).slice(0, 3);
+            if (readerNames.length > 0) {
+                const moreCount = msg.readBy.length - 3;
+                readReceiptsHtml = `<div style="font-size:0.65rem; color:#94a3b8; margin-top:2px; margin-right:10px;">Seen by ${readerNames.join(', ')}${moreCount > 0 ? ` +${moreCount}` : ''}</div>`;
+            }
+        }
+
         const html = `
             <div style="display:flex; ${alignStyle} margin-bottom: 12px; gap: 8px;">
                 ${(!isMe && author) ? avatarHtml : ''}
                 <div style="display:flex; flex-direction:column; max-width:75%; ${isMe ? 'align-items:flex-end;' : 'align-items:flex-start;'}">
                     ${(!isMe && author) ? `<div style="font-size:0.7rem; color:var(--text-muted); margin-left:10px; margin-bottom:2px;">${author.name} (${author.age})</div>` : ''}
-                    <div style="padding: 10px 15px; font-size: 0.95rem; line-height: 1.4; background: ${bBg}; color: ${bText}; border-radius: ${bRadius}; border: ${bBorder}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                        ${msg.text}
+                    <div>
+                        <div style="padding: 10px 15px; font-size: 0.95rem; line-height: 1.4; background: ${bBg}; color: ${bText}; border-radius: ${bRadius}; border: ${bBorder}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                            ${msg.text}
+                        </div>
+                        ${reactionsHtml}
+                        ${readReceiptsHtml}
                     </div>
                 </div>
             </div>
         `;
-        
+
         if (msg.isSystem) {
             container.innerHTML += `<div style="text-align:center; margin: 20px 0; color:#94a3b8; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:1px;">${msg.text}</div>`;
         } else {
@@ -9114,6 +9145,10 @@ window.triggerCoachResponse = async function(userMsg) {
     }
 };
 
+// ==========================================
+// COMMUNITY CHAT HELPER FUNCTIONS
+// ==========================================
+
 // Helper: Add typing indicator for community member
 function addCommunityTypingIndicator(personaName) {
     const container = document.getElementById('community-messages-container');
@@ -9121,6 +9156,7 @@ function addCommunityTypingIndicator(personaName) {
 
     const typingDiv = document.createElement('div');
     typingDiv.className = 'community-typing-indicator';
+    typingDiv.dataset.persona = personaName;
     typingDiv.style.cssText = "display: flex; align-items: center; margin-bottom: 12px; margin-left:10px;";
     typingDiv.innerHTML = `
         <div style="font-size: 0.75rem; color: #94a3b8; margin-right: 8px;">${personaName} is typing</div>
@@ -9132,18 +9168,122 @@ function addCommunityTypingIndicator(personaName) {
     container.scrollTop = container.scrollHeight;
 }
 
-// Helper: Remove all typing indicators
-function removeCommunityTypingIndicators() {
-    const indicators = document.querySelectorAll('.community-typing-indicator');
-    indicators.forEach(ind => ind.remove());
+// Helper: Remove all typing indicators (or specific one)
+function removeCommunityTypingIndicators(personaName = null) {
+    if (personaName) {
+        const indicators = document.querySelectorAll(`.community-typing-indicator[data-persona="${personaName}"]`);
+        indicators.forEach(ind => ind.remove());
+    } else {
+        const indicators = document.querySelectorAll('.community-typing-indicator');
+        indicators.forEach(ind => ind.remove());
+    }
+}
+
+// Helper: Add emoji reaction to a message
+function addEmojiReaction(messageIndex, emoji, reactorId) {
+    const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    if (messageIndex >= 0 && messageIndex < messages.length) {
+        if (!messages[messageIndex].reactions) {
+            messages[messageIndex].reactions = [];
+        }
+        messages[messageIndex].reactions.push({ emoji, reactorId });
+        localStorage.setItem('community_chat_history', JSON.stringify(messages));
+        renderChat(messages);
+    }
+}
+
+// Helper: Mark message as read by member
+function markMessageAsRead(messageIndex, memberId) {
+    const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    if (messageIndex >= 0 && messageIndex < messages.length) {
+        if (!messages[messageIndex].readBy) {
+            messages[messageIndex].readBy = [];
+        }
+        if (!messages[messageIndex].readBy.includes(memberId)) {
+            messages[messageIndex].readBy.push(memberId);
+        }
+        localStorage.setItem('community_chat_history', JSON.stringify(messages));
+    }
+}
+
+// Helper: Get member online status based on time of day (Brisbane time)
+function getMemberOnlineStatus() {
+    const now = new Date();
+    const bneTime = new Date(now.toLocaleString("en-US", {timeZone: "Australia/Brisbane"}));
+    const hour = bneTime.getHours();
+
+    // Online status based on time of day
+    // Peak activity: 7am-10am, 12pm-2pm, 6pm-10pm
+    // Low activity: 10pm-7am
+    const onlineMembers = [];
+
+    AI_MEMBERS.forEach(member => {
+        let onlineChance = 0.3; // Base 30% chance
+
+        if (hour >= 7 && hour < 10) onlineChance = 0.7; // Morning peak
+        else if (hour >= 12 && hour < 14) onlineChance = 0.6; // Lunch peak
+        else if (hour >= 18 && hour < 22) onlineChance = 0.8; // Evening peak (highest)
+        else if (hour >= 22 || hour < 7) onlineChance = 0.1; // Night/early morning
+
+        if (Math.random() < onlineChance) {
+            onlineMembers.push(member.id);
+        }
+    });
+
+    return onlineMembers;
+}
+
+// Helper: Check if should respond to message (not every message gets a response)
+function shouldRespondToMessage() {
+    const rand = Math.random();
+    if (rand < 0.3) return false; // 30% chance of no response (dead air)
+    if (rand < 0.5) return 'emoji'; // 20% chance of just emoji reaction
+    return 'text'; // 50% chance of text response
 }
 
 async function triggerAICommunityResponse(userMsg, chainCount = 0) {
     const lowMsg = userMsg.toLowerCase();
+    const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+
+    // Mark user's message as read by some members
+    const lastMsgIndex = fullHistory.length - 1;
+    if (lastMsgIndex >= 0 && fullHistory[lastMsgIndex].authorId === 'current-user') {
+        const onlineMembers = getMemberOnlineStatus();
+        const readersCount = Math.floor(Math.random() * Math.min(onlineMembers.length, 8)) + 2;
+        for (let i = 0; i < readersCount; i++) {
+            const randomMember = onlineMembers[Math.floor(Math.random() * onlineMembers.length)];
+            markMessageAsRead(lastMsgIndex, randomMember);
+        }
+        renderChat(fullHistory);
+    }
+
+    // Check if should respond (30% chance of dead air, 20% emoji only, 50% text)
+    const responseType = shouldRespondToMessage();
+
+    if (responseType === false) {
+        // Dead air - no response
+        return;
+    }
+
+    if (responseType === 'emoji') {
+        // Just emoji reaction, no text
+        const emojis = ['👍', '❤️', '🎉', '😂', '💪', '🙌', '✨', '🔥', '💯', '👏'];
+        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+        const onlineMembers = getMemberOnlineStatus();
+        const randomReactor = AI_MEMBERS.find(m => onlineMembers.includes(m.id)) || AI_MEMBERS[0];
+
+        // Small delay before reaction
+        setTimeout(() => {
+            addEmojiReaction(lastMsgIndex, randomEmoji, randomReactor.id);
+        }, 1000 + Math.random() * 2000);
+        return;
+    }
+
+    // TEXT RESPONSE - Full logic
 
     // 1. Thread Persistence & Direct Address Logic
     let persona = null;
-    const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    const onlineMembers = getMemberOnlineStatus();
 
     // A) Check for direct address (highest priority)
     for (const m of AI_MEMBERS) {
@@ -9156,11 +9296,9 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
 
     // B) Active participants tracking (like real group chats!)
     if (!persona && fullHistory.length > 0) {
-        // Get last 10 messages within the last 15 minutes
         const fifteenMinsAgo = Date.now() - (15 * 60 * 1000);
         const recentMessages = fullHistory.slice(-10).filter(m => m.timestamp > fifteenMinsAgo);
 
-        // Find who's been active (appeared in recent messages, excluding current user)
         const activeParticipants = [];
         const participantCounts = {};
 
@@ -9169,18 +9307,18 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
                 if (!participantCounts[msg.authorId]) {
                     participantCounts[msg.authorId] = 0;
                     const member = AI_MEMBERS.find(m => m.id === msg.authorId);
-                    if (member) activeParticipants.push(member);
+                    if (member && onlineMembers.includes(member.id)) {
+                        activeParticipants.push(member);
+                    }
                 }
                 participantCounts[msg.authorId]++;
             }
         });
 
-        // If there are active participants, 70% chance to pick from them, 30% new person
         if (activeParticipants.length > 0) {
             const pickFromActive = Math.random() < 0.7; // 70% chance
 
             if (pickFromActive) {
-                // Pick from active participants, weighted by how many messages they've sent
                 const weighted = [];
                 activeParticipants.forEach(p => {
                     const count = participantCounts[p.id] || 1;
@@ -9193,9 +9331,22 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
         }
     }
 
-    // C) Fallback: pick someone random (new person jumping in!)
+    // C) Fallback: pick someone random who's online
     if (!persona) {
-        persona = AI_MEMBERS[Math.floor(Math.random() * AI_MEMBERS.length)];
+        const onlineAIMembers = AI_MEMBERS.filter(m => onlineMembers.includes(m.id));
+        persona = onlineAIMembers.length > 0
+            ? onlineAIMembers[Math.floor(Math.random() * onlineAIMembers.length)]
+            : AI_MEMBERS[Math.floor(Math.random() * AI_MEMBERS.length)];
+    }
+
+    // Multiple people typing at once (30% chance)
+    const multipleTyping = Math.random() < 0.3 && chainCount === 0;
+    let secondTyper = null;
+    if (multipleTyping) {
+        const otherOnlineMembers = AI_MEMBERS.filter(m => onlineMembers.includes(m.id) && m.id !== persona.id);
+        if (otherOnlineMembers.length > 0) {
+            secondTyper = otherOnlineMembers[Math.floor(Math.random() * otherOnlineMembers.length)];
+        }
     }
 
     // Variable response timing: sometimes fast (2-5s), sometimes slower (5-10s)
@@ -9205,8 +9356,11 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
         : 5000 + Math.random() * 5000; // 5-10 seconds
 
     setTimeout(async () => {
-        // Show typing indicator
+        // Show typing indicator(s)
         addCommunityTypingIndicator(persona.name.split(' ')[0]);
+        if (secondTyper) {
+            setTimeout(() => addCommunityTypingIndicator(secondTyper.name.split(' ')[0]), 500 + Math.random() * 1000);
+        }
 
         try {
             const historyContext = fullHistory.slice(-20).map(m => ({
@@ -9215,18 +9369,35 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
                 timestamp: m.timestamp
             }));
 
+            // Determine what to respond to (current message vs earlier message)
+            let contextMessage = userMsg;
+            if (fullHistory.length > 3 && Math.random() < 0.25) {
+                // 25% chance to respond to an earlier message (2-4 messages back)
+                const lookBack = Math.floor(Math.random() * 3) + 2;
+                const earlierMsg = fullHistory[fullHistory.length - lookBack];
+                if (earlierMsg) {
+                    contextMessage = `(Responding to earlier: "${earlierMsg.text}") ${userMsg}`;
+                }
+            }
+
             const response = await fetch('/.netlify/functions/ai-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     mode: 'community',
-                    message: userMsg,
+                    message: contextMessage,
                     memberPersona: persona,
                     chatHistory: historyContext,
-                    currentDateTime: new Date().toLocaleString()
+                    currentDateTime: new Date().toLocaleString(),
+                    allowShortAcknowledgments: true // New flag for AI
                 })
             });
             const data = await response.json();
+
+            // If second typer, remove their indicator after first person responds
+            if (secondTyper) {
+                setTimeout(() => removeCommunityTypingIndicators(secondTyper.name.split(' ')[0]), 1000 + Math.random() * 2000);
+            }
 
             if (data.reply) {
                 const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
@@ -9234,14 +9405,13 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
 
                 parts.forEach((part, idx) => {
                     if (idx > 0) {
-                        // Show typing indicator before subsequent messages
                         setTimeout(() => addCommunityTypingIndicator(persona.name.split(' ')[0]), totalDelay);
-                        totalDelay += 800 + Math.random() * 400; // 0.8-1.2s typing indicator
+                        totalDelay += 800 + Math.random() * 400;
                     }
 
                     const partDelay = 1200 + (part.length * 20);
                     setTimeout(() => {
-                        removeCommunityTypingIndicators();
+                        removeCommunityTypingIndicators(persona.name.split(' ')[0]);
                         const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
                         msgs.push({
                             authorId: persona.id,
@@ -9253,20 +9423,23 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
                         localStorage.setItem('community_chat_history', JSON.stringify(msgs));
                         if(typeof renderChat === 'function') renderChat(msgs);
 
+                        // If secondTyper exists, have them respond too (cross-talk!)
+                        if (idx === parts.length - 1 && secondTyper && Math.random() < 0.6) {
+                            const crossTalkDelay = 1000 + Math.random() * 2000; // 1-3s
+                            setTimeout(() => triggerCrossTalkResponse(userMsg, secondTyper), crossTalkDelay);
+                        }
+
                         // If it's the last part, consider triggering a peer response or jump-in
-                        if (idx === parts.length - 1) {
-                            if (chainCount < 2 && Math.random() < 0.4) {
-                                // Peer Response (AI to AI) - variable timing
-                                const peerPersona = AI_MEMBERS.filter(m => m.id !== persona.id)[Math.floor(Math.random() * (AI_MEMBERS.length - 1))];
-                                const peerDelay = Math.random() < 0.5
-                                    ? 2000 + Math.random() * 2000  // Fast: 2-4s
-                                    : 5000 + Math.random() * 3000; // Slower: 5-8s
-                                setTimeout(() => triggerJumpInResponse(part, peerPersona, chainCount + 1), peerDelay);
-                            } else if (chainCount === 0 && Math.random() < 0.3) {
-                                // Classic Jump-in - usually slower
-                                const jumpPersona = AI_MEMBERS.filter(m => m.id !== persona.id)[Math.floor(Math.random() * (AI_MEMBERS.length - 1))];
-                                const jumpDelay = 5000 + Math.random() * 5000; // 5-10s
-                                setTimeout(() => triggerJumpInResponse(userMsg, jumpPersona, chainCount + 1), jumpDelay);
+                        if (idx === parts.length - 1 && !secondTyper) {
+                            if (chainCount < 2 && Math.random() < 0.35) {
+                                const availableOnline = AI_MEMBERS.filter(m => onlineMembers.includes(m.id) && m.id !== persona.id);
+                                if (availableOnline.length > 0) {
+                                    const peerPersona = availableOnline[Math.floor(Math.random() * availableOnline.length)];
+                                    const peerDelay = Math.random() < 0.5
+                                        ? 2000 + Math.random() * 2000  // Fast: 2-4s
+                                        : 5000 + Math.random() * 3000; // Slower: 5-8s
+                                    setTimeout(() => triggerJumpInResponse(part, peerPersona, chainCount + 1), peerDelay);
+                                }
                             }
                         }
                     }, totalDelay);
@@ -9302,7 +9475,8 @@ async function triggerJumpInResponse(prevContext, persona, chainCount) {
                 message: `(Respond to: "${prevContext}")`,
                 memberPersona: persona,
                 chatHistory: historyContext,
-                currentDateTime: new Date().toLocaleString()
+                currentDateTime: new Date().toLocaleString(),
+                allowShortAcknowledgments: true
             })
         });
         const data = await response.json();
@@ -9320,7 +9494,7 @@ async function triggerJumpInResponse(prevContext, persona, chainCount) {
 
                 const partDelay = 1200 + (part.length * 20);
                 setTimeout(() => {
-                    removeCommunityTypingIndicators();
+                    removeCommunityTypingIndicators(persona.name.split(' ')[0]);
                     const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
                     msgs.push({
                         authorId: persona.id,
@@ -9332,23 +9506,93 @@ async function triggerJumpInResponse(prevContext, persona, chainCount) {
                     localStorage.setItem('community_chat_history', JSON.stringify(msgs));
                     if(typeof renderChat === 'function') renderChat(msgs);
 
-                    // Chain limit check with variable timing
+                    // Chain limit check with variable timing (only for online members)
                     if (idx === parts.length - 1 && chainCount < 2 && Math.random() < 0.3) {
-                        const nextPersona = AI_MEMBERS.filter(m => m.id !== persona.id)[Math.floor(Math.random() * (AI_MEMBERS.length - 1))];
-                        const nextDelay = Math.random() < 0.5
-                            ? 2000 + Math.random() * 2000  // Fast: 2-4s
-                            : 4000 + Math.random() * 4000; // Slower: 4-8s
-                        setTimeout(() => triggerJumpInResponse(part, nextPersona, chainCount + 1), nextDelay);
+                        const onlineMembers = getMemberOnlineStatus();
+                        const availableNext = AI_MEMBERS.filter(m => m.id !== persona.id && onlineMembers.includes(m.id));
+                        if (availableNext.length > 0) {
+                            const nextPersona = availableNext[Math.floor(Math.random() * availableNext.length)];
+                            const nextDelay = Math.random() < 0.5
+                                ? 2000 + Math.random() * 2000  // Fast: 2-4s
+                                : 4000 + Math.random() * 4000; // Slower: 4-8s
+                            setTimeout(() => triggerJumpInResponse(part, nextPersona, chainCount + 1), nextDelay);
+                        }
                     }
                 }, totalDelay);
                 totalDelay += partDelay;
             });
         } else {
-            removeCommunityTypingIndicators();
+            removeCommunityTypingIndicators(persona.name.split(' ')[0]);
         }
     } catch (e) {
-        removeCommunityTypingIndicators();
+        removeCommunityTypingIndicators(persona.name.split(' ')[0]);
         console.log("JumpIn skip", e);
+    }
+}
+
+// Cross-talk: Second person responds with their own take
+async function triggerCrossTalkResponse(originalMsg, persona) {
+    try {
+        // Short delay, then show typing
+        setTimeout(() => {
+            addCommunityTypingIndicator(persona.name.split(' ')[0]);
+        }, 200);
+
+        const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+        const historyContext = fullHistory.slice(-20).map(m => ({
+            role: m.authorId === 'current-user' ? 'user' : 'model',
+            text: `${m.authorName || 'Member'}: ${m.text}`,
+            timestamp: m.timestamp
+        }));
+
+        // Cross-talk often responds with short acknowledgments or different perspectives
+        const response = await fetch('/.netlify/functions/ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'community',
+                message: originalMsg,
+                memberPersona: persona,
+                chatHistory: historyContext,
+                currentDateTime: new Date().toLocaleString(),
+                allowShortAcknowledgments: true,
+                crossTalk: true // Flag for potentially shorter, different-angle response
+            })
+        });
+        const data = await response.json();
+
+        if (data.reply) {
+            const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
+            let totalDelay = 0;
+
+            parts.forEach((part, idx) => {
+                if (idx > 0) {
+                    setTimeout(() => addCommunityTypingIndicator(persona.name.split(' ')[0]), totalDelay);
+                    totalDelay += 800 + Math.random() * 400;
+                }
+
+                const partDelay = 1200 + (part.length * 20);
+                setTimeout(() => {
+                    removeCommunityTypingIndicators(persona.name.split(' ')[0]);
+                    const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+                    msgs.push({
+                        authorId: persona.id,
+                        authorName: persona.name,
+                        authorAvatar: (persona.id || 'm1').replace('m', ''),
+                        text: part,
+                        timestamp: Date.now()
+                    });
+                    localStorage.setItem('community_chat_history', JSON.stringify(msgs));
+                    if(typeof renderChat === 'function') renderChat(msgs);
+                }, totalDelay);
+                totalDelay += partDelay;
+            });
+        } else {
+            removeCommunityTypingIndicators(persona.name.split(' ')[0]);
+        }
+    } catch (e) {
+        removeCommunityTypingIndicators(persona.name.split(' ')[0]);
+        console.log("CrossTalk skip", e);
     }
 }
 
