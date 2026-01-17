@@ -249,25 +249,13 @@
                     const { data, error } = await supabase.auth.signUp({
                         email,
                         password,
-                        options: { data: userData }
+                        options: {
+                            data: userData,
+                            emailRedirectTo: `${window.location.origin}/login.html`
+                        }
                     });
                     if (error) throw error;
-
-                    // Create user profile in public.users table
-                    if (data.user) {
-                        const { error: profileError } = await supabase
-                            .from('users')
-                            .insert([{
-                                id: data.user.id,
-                                email: email,
-                                name: userData.name || null
-                            }]);
-
-                        if (profileError) {
-                            console.error('Failed to create user profile:', profileError);
-                        }
-                    }
-
+                    // User creation in public.users is now handled by a database trigger (see database/auth_trigger.sql)
                     return data;
                 },
 
