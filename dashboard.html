@@ -1772,6 +1772,25 @@
     }
 
     // ==========================================
+    // USER PROFILE AVATAR HELPERS
+    // ==========================================
+
+    // Get user's avatar HTML - returns either profile photo or initial letter
+    function getUserAvatarHtml(size = '36px') {
+        const profilePhoto = localStorage.getItem('profile_photo');
+        const userName = sessionStorage.getItem('userName') || localStorage.getItem('userName') || 'User';
+        const userInitial = userName.charAt(0).toUpperCase();
+
+        if (profilePhoto) {
+            // Has uploaded photo
+            return `<img src="${profilePhoto}" style="width:${size}; height:${size}; border-radius:50%; flex-shrink:0; object-fit:cover; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">`;
+        } else {
+            // Show initial letter
+            return `<div style="width:${size}; height:${size}; border-radius:50%; background:var(--accent-green); color:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:1.1rem; flex-shrink:0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">${userInitial}</div>`;
+        }
+    }
+
+    // ==========================================
     // REFLECTIONS DIARY SYSTEM
     // ==========================================
 
@@ -8270,6 +8289,9 @@ function renderChat(messages) {
                  avatarSrc = `https://randomuser.me/api/portraits/women/${imgNum}.jpg`;
              }
              avatarHtml = `<img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; flex-shrink:0; align-self:flex-end; margin-bottom:5px; object-fit:cover;">`;
+        } else if (isMe) {
+             // User's own message - show their profile avatar
+             avatarHtml = getUserAvatarHtml('32px');
         }
 
         const bBg = isMe ? 'var(--chat-bg-user)' : 'var(--chat-bg-coach)';
@@ -8307,7 +8329,7 @@ function renderChat(messages) {
 
         const html = `
             <div style="display:flex; ${alignStyle} margin-bottom: 12px; gap: 8px;">
-                ${(!isMe && author) ? avatarHtml : ''}
+                ${!isMe ? avatarHtml : ''}
                 <div style="display:flex; flex-direction:column; max-width:75%; ${isMe ? 'align-items:flex-end;' : 'align-items:flex-start;'}">
                     ${(!isMe && author) ? `<div style="font-size:0.7rem; color:var(--text-muted); margin-left:10px; margin-bottom:2px;">${author.name} (${author.age})</div>` : ''}
                     <div>
@@ -8318,6 +8340,7 @@ function renderChat(messages) {
                         ${readReceiptsHtml}
                     </div>
                 </div>
+                ${isMe ? avatarHtml : ''}
             </div>
         `;
 
@@ -8863,19 +8886,19 @@ window.submitCoachMessage = function() {
     if(!input) return;
     const text = input.value.trim();
     if (!text) return;
-    
+
     // 1. Render User Message Immediately
     const container = document.getElementById('chat-messages-container');
     if(container) {
         const rowDiv = document.createElement('div');
         rowDiv.style.cssText = "display: flex; justify-content: flex-end; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;";
-        
+
         rowDiv.innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: flex-end; max-width: 80%;">
                 <div style="background: var(--chat-bg-user); color: var(--chat-text-user); padding: 12px 18px; border-radius: 18px 18px 0 18px; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">${text}</div>
                 <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-right: 5px;">You Just now</span>
             </div>
-            <img src="https://ui-avatars.com/api/?name=You&background=cbd5e1&color=fff" style="width: 36px; height: 36px; border-radius: 50%; margin-left: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            ${getUserAvatarHtml('36px')}
         `;
         container.appendChild(rowDiv);
         container.scrollTop = container.scrollHeight;
@@ -10389,7 +10412,7 @@ How's your day so far?</p>
                     <div style="background: var(--chat-bg-user); color: var(--chat-text-user); padding: 12px 18px; border-radius: 18px 18px 0 18px; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">${msg.text}</div>
                     <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-right: 5px;">You ${timeStr}</span>
                 </div>
-                <img src="https://ui-avatars.com/api/?name=You&background=cbd5e1&color=fff" style="width: 36px; height: 36px; border-radius: 50%; margin-left: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                ${getUserAvatarHtml('36px')}
             `;
         } else {
              rowDiv.innerHTML = `
