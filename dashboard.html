@@ -9084,12 +9084,12 @@ window.triggerCoachResponse = async function(userMsg) {
 
 async function triggerAICommunityResponse(userMsg, chainCount = 0) {
     const lowMsg = userMsg.toLowerCase();
-    
+
     // 1. Thread Persistence & Direct Address Logic
     let persona = null;
     const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
-    
-    // A) Check for direct address
+
+    // A) Check for direct address (highest priority)
     for (const m of AI_MEMBERS) {
         const firstName = m.name.split(' ')[0].toLowerCase();
         if (lowMsg.includes(firstName)) {
@@ -9097,18 +9097,47 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
             break;
         }
     }
-    
-    // B) Thread persistence
+
+    // B) Active participants tracking (like real group chats!)
     if (!persona && fullHistory.length > 0) {
-        const lastMsg = fullHistory[fullHistory.length - 1];
-        if (lastMsg.authorId && lastMsg.authorId !== 'current-user') {
-            const timeSinceLast = Date.now() - lastMsg.timestamp;
-            if (timeSinceLast < 10 * 60 * 1000) {
-                persona = AI_MEMBERS.find(m => m.id === lastMsg.authorId);
+        // Get last 10 messages within the last 15 minutes
+        const fifteenMinsAgo = Date.now() - (15 * 60 * 1000);
+        const recentMessages = fullHistory.slice(-10).filter(m => m.timestamp > fifteenMinsAgo);
+
+        // Find who's been active (appeared in recent messages, excluding current user)
+        const activeParticipants = [];
+        const participantCounts = {};
+
+        recentMessages.forEach(msg => {
+            if (msg.authorId && msg.authorId !== 'current-user') {
+                if (!participantCounts[msg.authorId]) {
+                    participantCounts[msg.authorId] = 0;
+                    const member = AI_MEMBERS.find(m => m.id === msg.authorId);
+                    if (member) activeParticipants.push(member);
+                }
+                participantCounts[msg.authorId]++;
+            }
+        });
+
+        // If there are active participants, 70% chance to pick from them, 30% new person
+        if (activeParticipants.length > 0) {
+            const pickFromActive = Math.random() < 0.7; // 70% chance
+
+            if (pickFromActive) {
+                // Pick from active participants, weighted by how many messages they've sent
+                const weighted = [];
+                activeParticipants.forEach(p => {
+                    const count = participantCounts[p.id] || 1;
+                    for (let i = 0; i < count; i++) {
+                        weighted.push(p);
+                    }
+                });
+                persona = weighted[Math.floor(Math.random() * weighted.length)];
             }
         }
     }
-    
+
+    // C) Fallback: pick someone random (new person jumping in!)
     if (!persona) {
         persona = AI_MEMBERS[Math.floor(Math.random() * AI_MEMBERS.length)];
     }
