@@ -252,6 +252,22 @@
                         options: { data: userData }
                     });
                     if (error) throw error;
+
+                    // Create user profile in public.users table
+                    if (data.user) {
+                        const { error: profileError } = await supabase
+                            .from('users')
+                            .insert([{
+                                id: data.user.id,
+                                email: email,
+                                name: userData.name || null
+                            }]);
+
+                        if (profileError) {
+                            console.error('Failed to create user profile:', profileError);
+                        }
+                    }
+
                     return data;
                 },
 
