@@ -5988,10 +5988,10 @@
 
             <!-- CHAT VIEW CONTAINER -->
             <!-- CHAT VIEW CONTAINER (Messenger Style Match) -->
-            <div id="support-chat" style="display: flex; flex-direction: column; height: 100vh; background: #fff; position: relative; padding-bottom: 0;">
-                
+            <div id="support-chat" style="display: flex; flex-direction: column; height: 100vh; background: #fff; position: relative; padding-bottom: 0; overflow: hidden;">
+
                 <!-- Fixed Header (Matches Community) -->
-                <div style="height: 60px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; position: sticky; top: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); z-index: 50;">
+                <div style="height: 60px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); z-index: 50;">
                     <div style="text-align: center;">
                         <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Coach Shannon</div>
                         <div id="coach-header-status-text" style="font-size: 0.75rem; color: var(--primary); font-weight: 600;">Active Now</div>
@@ -5999,7 +5999,7 @@
                 </div>
 
                 <!-- Chat Stream -->
-                <div id="chat-messages-container" style="padding: 15px; padding-bottom: 140px; overflow-y: scroll; -webkit-overflow-scrolling: touch; height: calc(100vh - 130px); display: block;">
+                <div id="chat-messages-container" style="padding: 15px; padding-bottom: 140px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; display: block;">
                     <!-- Intro Message (re-added here as static first item, or handled by JS history load) -->
                     <div style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; max-width: 85%;">
                         <div style="background: #f8fafc; padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid #e2e8f0; color: var(--text-main);">
@@ -6023,9 +6023,9 @@
 
             <!-- COMMUNITY INTERFACE (Hidden by default) -->
             <!-- COMMUNITY INTERFACE (Messenger Style) -->
-            <div id="support-community" style="display: none; height: 100vh; background: #fff; position: relative; padding-bottom: 0;">
+            <div id="support-community" style="display: none; flex-direction: column; height: 100vh; background: #fff; position: relative; padding-bottom: 0; overflow: hidden;">
                 <!-- Fixed Chat Header -->
-                <div style="height: 60px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; position: sticky; top: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); z-index: 50;">
+                <div style="height: 60px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); z-index: 50;">
                     <div style="text-align: center;">
                         <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Inner Circle Group</div>
                         <div style="font-size: 0.75rem; color: #94a3b8;">20 members  Active now</div>
@@ -6033,7 +6033,7 @@
                 </div>
 
                 <!-- Chat Stream -->
-                <div id="community-chat-stream" style="padding: 15px; padding-bottom: 140px; overflow-y: scroll; -webkit-overflow-scrolling: touch; height: calc(100vh - 130px);">
+                <div id="community-chat-stream" style="padding: 15px; padding-bottom: 140px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1;">
                     <!-- Messages injected here -->
                 </div>
 
@@ -8002,13 +8002,13 @@ function showSupportTab(tab, btn) {
     // 2. Toggle Content
     const chat = document.getElementById('support-chat');
     const comm = document.getElementById('support-community');
-    
+
     if (tab === 'chat') {
         chat.style.display = 'flex';
         comm.style.display = 'none';
     } else {
         chat.style.display = 'none';
-        comm.style.display = 'block';
+        comm.style.display = 'flex';
         loadCommunityFeed(); // Refresh feed when opening
     }
 }
