@@ -9058,22 +9058,54 @@ window.triggerCoachResponse = async function(userMsg) {
         });
 
         const data = await response.json();
-        removeTypingIndicator();
 
-        if (!response.ok) throw new Error(data.error?.message || "Connection Issue");
+        if (!response.ok) {
+            removeTypingIndicator();
+            throw new Error(data.error?.message || "Connection Issue");
+        }
 
         if (data.reply) {
             // Support for multi-message responses separated by '|||'
             const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
             let delay = 0;
-            parts.forEach((part) => {
-                setTimeout(() => appendCoachMessage(part), delay);
-                // 3-6 second delay between messages for quick texting feel (messages are usually short)
+
+            parts.forEach((part, index) => {
+                if (index > 0) {
+                    // For messages after the first, show typing indicator first
+                    setTimeout(() => {
+                        const container = document.getElementById('chat-messages-container');
+                        if (container) {
+                            const typingDiv = document.createElement('div');
+                            typingDiv.id = 'coach-typing';
+                            typingDiv.style.cssText = "display: flex; align-items: center; margin-bottom: 20px; margin-left:10px;";
+                            typingDiv.innerHTML = `
+                                <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both;"></div>
+                                <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; margin: 0 4px; animation: bounce 1.4s infinite ease-in-out both 0.16s;"></div>
+                                <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both 0.32s;"></div>
+                            `;
+                            container.appendChild(typingDiv);
+                            container.scrollTop = container.scrollHeight;
+                        }
+                    }, delay);
+
+                    // Add time for typing indicator to show (1-1.5 seconds)
+                    delay += 1000 + (Math.random() * 500);
+                }
+
+                // Then remove typing indicator and show the message
+                setTimeout(() => {
+                    removeTypingIndicator();
+                    appendCoachMessage(part);
+                }, delay);
+
+                // 3-6 second delay before next message
                 const baseDelay = 3000; // 3 seconds
                 const randomVariation = Math.random() * 3000; // 0-3 seconds random
                 const typingSimulation = part.length * 10; // Simulate typing time (10ms per character)
                 delay += baseDelay + randomVariation + typingSimulation;
             });
+        } else {
+            removeTypingIndicator();
         }
     } catch (err) {
         console.error("Coach Error", err);
