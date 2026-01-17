@@ -8,9 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
         body {
             background: #f8fafc;
@@ -233,7 +230,11 @@
         </div>
     </div>
 
-    <script src="/lib/supabase.js"></script>
+    <!-- Load Supabase library first -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Then load our supabase helpers -->
+    <script src="lib/supabase.js"></script>
+    <!-- Then run our page code -->
     <script>
         // Check if already logged in
         (async function checkAuth() {
