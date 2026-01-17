@@ -16,6 +16,13 @@
       .catch(err => console.log('SW Failed:', err));
   }
 </script>
+
+<!-- Supabase & Auth Guard -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="lib/supabase.js"></script>
+<script src="lib/auth-guard.js"></script>
+<script src="lib/migrate-localstorage.js"></script>
+
 <style>
     :root {
         /* Premium Green & Gold Palette */
@@ -7715,16 +7722,28 @@ function selectEquipment(type) {
     document.getElementById('btn-eq-' + type).classList.add('selected');
 }
 
-function submitCheckIn() {
+async function submitCheckIn() {
     if(!selectedEnergy || !selectedEquipment) {
         alert("Please select both energy level and equipment access.");
         return;
     }
-    const todayStr = new Date().toDateString();
-    localStorage.setItem('daily_checkin_' + todayStr, JSON.stringify({
-        energy: selectedEnergy,
-        equipment: selectedEquipment
-    }));
+
+    try {
+        const user = window.currentUser;
+        if (user) {
+            const dateStr = new Date().toISOString().split('T')[0];
+            await dbHelpers.checkins.upsert(user.id, dateStr, {
+                energy: selectedEnergy,
+                equipment: selectedEquipment
+            });
+            console.log('✅ Check-in saved to DB');
+        }
+    } catch (e) {
+        console.error('Failed to save check-in:', e);
+        alert('Failed to save check-in. Please try again.');
+        return;
+    }
+
     document.getElementById('checkin-modal').style.display = 'none';
     renderMovementView();
 }
@@ -7733,9 +7752,14 @@ function getExerciseVideoUrl(name) {
     return EXERCISE_VIDEOS[name] || '';
 }
 
-function renderMovementView() {
-    // 1. Get Date Index
-    const startDate = localStorage.getItem('pbb_start_date');
+async function renderMovementView() {
+    const user = window.currentUser;
+    if (!user) return;
+
+    // 1. Get Date Index & Profile
+    const profile = await window.getUserProfile();
+    const startDate = profile?.program_start_date;
+    
     let dayIndex = 0;
     if (startDate) {
         const start = new Date(startDate);
@@ -7744,10 +7768,15 @@ function renderMovementView() {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const currentDay = diffDays || 1;
         dayIndex = (currentDay - 1) % 7;
+        
+        // Update header date
+        const dateEl = document.getElementById('movement-today-date');
+        if(dateEl) dateEl.innerText = `Day ${currentDay}`;
     }
 
-    const todayStr = new Date().toDateString();
-    const checkin = JSON.parse(localStorage.getItem('daily_checkin_' + todayStr));
+    // 2. Get Check-in
+    const dateStr = new Date().toISOString().split('T')[0];
+    const checkin = await dbHelpers.checkins.get(user.id, dateStr);
     
     let suggestedId = 'yoga'; // Default
     if (checkin) {
@@ -7796,24 +7825,33 @@ function renderMovementView() {
         </div>
     </div>`;
     
-    // Render Saved Workouts
+    // Render Saved Workouts (DB)
     const savedContainer = document.getElementById('saved-workouts-container');
     const savedList = document.getElementById('saved-workouts-list');
-    const savedWorkouts = JSON.parse(localStorage.getItem('saved_custom_workouts') || '[]');
     
-    if (savedWorkouts.length > 0) {
-        savedContainer.style.display = 'block';
-        savedList.innerHTML = savedWorkouts.map(w => `
-            <div onclick="startSavedWorkout('${w.id}')" style="min-width: 160px; background:white; border-radius:16px; padding:15px; border:1px solid #f1f5f9; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
-                <div style="width:40px; height:40px; background:#f0fdf4; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:10px; color:var(--primary); font-weight:bold;">${w.name.charAt(0)}</div>
-                <div style="font-weight:700; color:var(--text-main); font-size:0.9rem; margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${w.name}</div>
-                <div style="font-size:0.75rem; color:var(--text-muted);">${w.exercises.length} exercises</div>
-            </div>
-        `).join('') + `
-            <div onclick="openWorkoutBuilder()" style="min-width: 60px; display:flex; align-items:center; justify-content:center; background:#f8fafc; border-radius:16px; border:2px dashed #cbd5e1; cursor:pointer; color:#cbd5e1; font-weight:bold; font-size:1.5rem;">+</div>
-        `;
-    } else {
-         savedContainer.style.display = 'none';
+    try {
+        const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
+        window.savedWorkoutsCache = savedWorkouts; // Cache for player
+
+        if (savedWorkouts.length > 0) {
+            savedContainer.style.display = 'block';
+            savedList.innerHTML = savedWorkouts.map(w => {
+                const name = w.template_name || 'Untitled Workout';
+                const exercises = w.template_data?.exercises || [];
+                return `
+                <div onclick="startSavedWorkout('${w.id}')" style="min-width: 160px; background:white; border-radius:16px; padding:15px; border:1px solid #f1f5f9; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+                    <div style="width:40px; height:40px; background:#f0fdf4; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:10px; color:var(--primary); font-weight:bold;">${name.charAt(0)}</div>
+                    <div style="font-weight:700; color:var(--text-main); font-size:0.9rem; margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">${exercises.length} exercises</div>
+                </div>
+            `}).join('') + `
+                <div onclick="openWorkoutBuilder()" style="min-width: 60px; display:flex; align-items:center; justify-content:center; background:#f8fafc; border-radius:16px; border:2px dashed #cbd5e1; cursor:pointer; color:#cbd5e1; font-weight:bold; font-size:1.5rem;">+</div>
+            `;
+        } else {
+             savedContainer.style.display = 'none';
+        }
+    } catch(err) {
+        console.error('Failed to load saved workouts:', err);
     }
 
     const gridContainer = document.getElementById('movement-grid-container');
@@ -7912,15 +7950,28 @@ function hideAllAppViews() {
     });
 }
 
-function startActiveWorkout(id) {
+async function startActiveWorkout(id) {
     const program = WORKOUT_DB[id];
-    const startDate = localStorage.getItem('pbb_start_date');
+    
+    // Get correct day schedule & Preload History
+    const user = window.currentUser;
     let dayIndex = 0;
-    if (startDate) {
-        const start = new Date(startDate);
-        const dayDiff = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
-        dayIndex = (dayDiff || 1) - 1;
+    
+    if (user) {
+        // Preload history
+        try {
+            window.workoutHistoryCache = await dbHelpers.workouts.getHistory(user.id);
+        } catch(e) { console.error("Failed to load history", e); }
+        
+        const profile = await window.getUserProfile();
+        const startDate = profile?.program_start_date;
+        if (startDate) {
+            const start = new Date(startDate);
+            const dayDiff = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
+            dayIndex = (dayDiff || 1) - 1;
+        }
     }
+
     const workout = program.schedule[dayIndex % program.schedule.length];
 
     document.getElementById('workout-player-title').innerText = workout.title;
@@ -7981,28 +8032,23 @@ function startActiveWorkout(id) {
 }
 
 function getPreviousStats(name, set) {
-    const history = JSON.parse(localStorage.getItem('workout_history') || '[]');
+    // Use cached history from DB
+    const history = window.workoutHistoryCache || [];
+    
     // Filter history for this specific exercise
     const exerciseHistory = history.filter(h => h.exercise === name);
     
-    // If no history at all, return 'New'
     if (exerciseHistory.length === 0) return 'New';
 
-    // Find the entry for this specific set number in the MOST RECENT session
-    // We assume history is chronological. We iterate backwards.
-    // We need to group by session (date) effectively, or just look for the last occurrence of this set?
-    // Implementation choice: Look for the last object matching exercise + set.
-    // NOTE: This assumes one entry per set per session.
-    
+    // Reverse iterate to find most recent
     for (let i = exerciseHistory.length - 1; i >= 0; i--) {
         const h = exerciseHistory[i];
-        if (h.set == set) { // Use loose equality for '1' vs 1
+        if (h.set == set) { 
              const val = h.reps || h.time;
              if (h.kg && h.kg !== '0' && h.kg !== '') return `${h.kg}kg x ${val}`;
              return `${val}`;
         }
     }
-    
     return '-'; 
 }
 
@@ -8069,20 +8115,20 @@ function startWorkoutTimer() {
     }, 1000);
 }
 
-function finishWorkout() {
+async function finishWorkout() {
     clearInterval(workoutTimerInterval);
     const duration = document.getElementById('workout-timer').innerText;
     document.getElementById('success-duration').innerText = duration;
 
     // Save logic
     const activeWorkout = document.getElementById('workout-exercises-list');
-    const history = JSON.parse(localStorage.getItem('workout_history') || '[]');
     const date = new Date().toISOString();
+    const setsToSave = [];
 
     if(activeWorkout) {
         Array.from(activeWorkout.children).forEach(card => {
             const nameEl = card.querySelector('h3');
-            if(!nameEl) return; // Skip if not a card
+            if(!nameEl) return;
             const name = nameEl.innerText;
             
             const container = card.querySelector('.sets-list-container');
@@ -8095,7 +8141,7 @@ function finishWorkout() {
                 
                 // Only save if at least one field is filled
                 if (time || reps || kg) {
-                    history.push({
+                    setsToSave.push({
                         date,
                         exercise: name,
                         set: rIdx + 1,
@@ -8108,7 +8154,22 @@ function finishWorkout() {
         });
     }
 
-    localStorage.setItem('workout_history', JSON.stringify(history));
+    try {
+        const user = window.currentUser;
+        if(user && setsToSave.length > 0) {
+             await Promise.all(setsToSave.map(s => dbHelpers.workouts.createHistory(user.id, s)));
+             console.log("✅ Workout saved to DB");
+             
+             // Update cache if it exists
+             if (window.workoutHistoryCache) {
+                 window.workoutHistoryCache.push(...setsToSave);
+             }
+        }
+    } catch(e) {
+        console.error("Failed to save workout to DB:", e);
+        alert("Failed to save workout. Please try again.");
+        return; // Don't close screen if failed?
+    }
 
     hideAllAppViews();
     document.getElementById('view-workout-success').style.display = 'flex';
@@ -8858,7 +8919,7 @@ function openAsClient() {
 let coachMessageBuffer = [];
 let coachDebounceTimer = null;
 
-window.submitCoachMessage = function() {
+window.submitCoachMessage = async function() {
     const input = document.getElementById('coach-chat-input');
     if(!input) return;
     const text = input.value.trim();
@@ -8867,9 +8928,9 @@ window.submitCoachMessage = function() {
     // 1. Render User Message Immediately
     const container = document.getElementById('chat-messages-container');
     if(container) {
+        // ... (Rendering logic identical) ...
         const rowDiv = document.createElement('div');
         rowDiv.style.cssText = "display: flex; justify-content: flex-end; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;";
-        
         rowDiv.innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: flex-end; max-width: 80%;">
                 <div style="background: var(--chat-bg-user); color: var(--chat-text-user); padding: 12px 18px; border-radius: 18px 18px 0 18px; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">${text}</div>
@@ -8880,14 +8941,8 @@ window.submitCoachMessage = function() {
         container.appendChild(rowDiv);
         container.scrollTop = container.scrollHeight;
 
-        // Save to LocalStorage immediately
-        const history = JSON.parse(localStorage.getItem('shannon_chat_history') || '[]');
-        history.push({
-            role: 'user',
-            text: text,
-            timestamp: Date.now()
-        });
-        localStorage.setItem('shannon_chat_history', JSON.stringify(history));
+        // Save to DB immediately
+        await saveToHistory('user', text);
     }
     
     input.value = '';
@@ -8905,8 +8960,26 @@ window.submitCoachMessage = function() {
         window._lastBufferedCount = coachMessageBuffer.length;
         coachMessageBuffer = []; // Clear buffer
         triggerCoachResponse(combinedText);
-    }, 15000); // 15s wait - gives user time to send multiple messages
+    }, 15000); // 15s wait
 };
+</script>
+
+<script>
+    // ... (Onboarding script skipped in replacement context, assuming only replacing target lines) ...
+    // Wait, I can't skip lines if I target a range.
+    // I need to target specifically submitCoachMessage to triggerCoachResponse.
+    // But they are far apart (8922 vs 9245).
+    // I should do two separate replacements.
+    
+    // Replacement 1: submitCoachMessage
+    // Replacement 2: triggerCoachResponse
+    
+    // I will return logic for just Replacement 1 for now.
+    
+    // Wait, the tool validates TargetContent.
+    // I will just Refactor submitCoachMessage first.
+    
+
 </script>
 
 <script>
@@ -9120,21 +9193,14 @@ window.toggleCoachMode = function(show) {
 };
 
 // User fact tracking - remembers key details across sessions
-function getUserFacts() {
-    const factsStr = localStorage.getItem('user_facts');
-    if (!factsStr) {
-        return {
-            location: '',
-            struggles: [],
-            preferences: [],
-            health_notes: [],
-            personal_details: [],
-            goals: []
-        };
-    }
+// User fact tracking - remembers key details across sessions
+async function getUserFacts() {
+    const user = window.currentUser;
+    if (!user) return {};
+    
     try {
-        return JSON.parse(factsStr);
-    } catch (e) {
+        const facts = await dbHelpers.userFacts.get(user.id);
+        if (facts) return facts;
         return {
             location: '',
             struggles: [],
@@ -9143,41 +9209,72 @@ function getUserFacts() {
             personal_details: [],
             goals: []
         };
+    } catch (e) {
+        console.error("Error fetching user facts", e);
+        return {};
     }
 }
 
-function saveUserFact(category, fact) {
-    const facts = getUserFacts();
-    if (category === 'location') {
-        facts.location = fact;
-    } else if (facts[category] && Array.isArray(facts[category])) {
-        // Avoid duplicates
-        if (!facts[category].includes(fact)) {
-            facts[category].push(fact);
+async function saveUserFact(category, fact) {
+    const user = window.currentUser;
+    if (!user) return;
+
+    try {
+        const facts = await getUserFacts();
+        if (category === 'location') {
+            facts.location = fact;
+        } else if (Array.isArray(facts[category])) {
+            // Avoid duplicates
+            if (!facts[category].includes(fact)) {
+                facts[category].push(fact);
+            }
+        } else {
+             // Create array if missing
+             facts[category] = [fact];
         }
+        await dbHelpers.userFacts.upsert(user.id, facts);
+    } catch(e) {
+        console.error("Error saving user fact", e);
     }
-    localStorage.setItem('user_facts', JSON.stringify(facts));
 }
 
-function gatherContext() {
+async function gatherContext() {
     let dayNum = 1;
-    const startStr = localStorage.getItem('pbb_start_date');
-    if(startStr) {
-         const start = new Date(startStr);
+    const profile = await window.getUserProfile();
+    
+    if(profile && profile.program_start_date) {
+         const start = new Date(profile.program_start_date);
          if(!isNaN(start)) {
              const diff = new Date() - start;
              dayNum = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
              if(dayNum < 1) dayNum = 1;
          }
     }
+    
+    // Get latest check-in for energy/sleep
+    let energy = 'Unknown';
+    let sleep = 'Unknown';
+    try {
+        const user = window.currentUser;
+        if(user) {
+            const today = new Date().toISOString().split('T')[0];
+            const checkin = await dbHelpers.checkins.get(user.id, today);
+            if(checkin) {
+                energy = checkin.energy;
+                sleep = checkin.sleep;
+            }
+        }
+    } catch(e) {}
+
+    const facts = await getUserFacts();
 
     return {
-        name: localStorage.getItem('userName') || "Friend",
-        profile: (sessionStorage.getItem('userResult') || 'CORTISOL').toUpperCase(),
-        sleep: localStorage.getItem('sleep_quality') || 'Unknown',
-        energy: localStorage.getItem('energy_level') || 'Unknown',
+        name: profile?.name || "Friend",
+        profile: (profile?.result || 'CORTISOL').toUpperCase(),
+        sleep: sleep,
+        energy: energy,
         challengeDay: dayNum,
-        userFacts: getUserFacts()
+        userFacts: facts
     };
 }
 
@@ -9201,8 +9298,8 @@ window.triggerCoachResponse = async function(userMsg) {
         if(el) el.remove();
     };
 
-    let context = gatherContext();
-    const history = getChatHistory();
+    let context = await gatherContext();
+    const history = await getChatHistory();
 
     // Determine Conversation Status (New vs Continuing)
     // Check the last COACH message, not the last user message
@@ -9651,16 +9748,7 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
                     const partDelay = 1200 + (part.length * 20);
                     setTimeout(() => {
                         removeCommunityTypingIndicators(persona.name.split(' ')[0]);
-                        const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
-                        msgs.push({
-                            authorId: persona.id,
-                            authorName: persona.name,
-                            authorAvatar: (persona.id || 'm1').replace('m', ''),
-                            text: part,
-                            timestamp: Date.now()
-                        });
-                        localStorage.setItem('community_chat_history', JSON.stringify(msgs));
-                        if(typeof renderChat === 'function') renderChat(msgs);
+                        saveCommunityMessage(persona, part);
 
                         // If secondTyper exists, have them respond too (cross-talk!)
                         if (idx === parts.length - 1 && secondTyper && Math.random() < 0.6) {
@@ -9734,16 +9822,7 @@ async function triggerJumpInResponse(prevContext, persona, chainCount) {
                 const partDelay = 1200 + (part.length * 20);
                 setTimeout(() => {
                     removeCommunityTypingIndicators(persona.name.split(' ')[0]);
-                    const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
-                    msgs.push({
-                        authorId: persona.id,
-                        authorName: persona.name,
-                        authorAvatar: (persona.id || 'm1').replace('m', ''),
-                        text: part,
-                        timestamp: Date.now()
-                    });
-                    localStorage.setItem('community_chat_history', JSON.stringify(msgs));
-                    if(typeof renderChat === 'function') renderChat(msgs);
+                    saveCommunityMessage(persona, part);
 
                     // Chain limit check with variable timing (only for online members)
                     if (idx === parts.length - 1 && chainCount < 2 && Math.random() < 0.3) {
@@ -9813,16 +9892,7 @@ async function triggerCrossTalkResponse(originalMsg, persona) {
                 const partDelay = 1200 + (part.length * 20);
                 setTimeout(() => {
                     removeCommunityTypingIndicators(persona.name.split(' ')[0]);
-                    const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
-                    msgs.push({
-                        authorId: persona.id,
-                        authorName: persona.name,
-                        authorAvatar: (persona.id || 'm1').replace('m', ''),
-                        text: part,
-                        timestamp: Date.now()
-                    });
-                    localStorage.setItem('community_chat_history', JSON.stringify(msgs));
-                    if(typeof renderChat === 'function') renderChat(msgs);
+                    saveCommunityMessage(persona, part);
                 }, totalDelay);
                 totalDelay += partDelay;
             });
@@ -9938,17 +10008,7 @@ async function initiateAutonomousConversation(isCheckIn = false) {
         const messageText = isCheckIn ? getRandomItem(SATURDAY_CHECKIN_PROMPTS) : getRandomAutonomousPrompt();
 
         // Add initiator message to chat
-        const initiatorMsg = {
-            authorId: initiator.id,
-            authorName: initiator.name,
-            authorAvatar: initiator.id.replace('m', ''),
-            text: messageText,
-            timestamp: Date.now()
-        };
-
-        fullHistory.push(initiatorMsg);
-        localStorage.setItem('community_chat_history', JSON.stringify(fullHistory));
-        if (typeof renderChat === 'function') renderChat(fullHistory);
+        saveCommunityMessage(initiator, messageText);
 
         // Determine number of responses
         const responseCount = isCheckIn ? Math.floor(Math.random() * 3) + 18 : getResponseCount(); // Check-ins get 18-20 responses
@@ -10120,17 +10180,8 @@ async function triggerCheckInReaction(storyText, originalAuthor, reactor) {
         if (data.reply) {
             // Reactions should be quick and short, no multi-part needed
             const reactionText = data.reply.replace(/\s*\|\|\|\s*/g, ' ');
-            const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
-            msgs.push({
-                authorId: reactor.id,
-                authorName: reactor.name,
-                authorAvatar: reactor.id.replace('m', ''),
-                text: reactionText,
-                timestamp: Date.now()
-            });
-            localStorage.setItem('community_chat_history', JSON.stringify(msgs));
-            if (typeof renderChat === 'function') renderChat(msgs);
-
+            saveCommunityMessage(reactor, reactionText);
+            
             console.log(`💬 ${reactor.name} reacted to ${originalAuthor.name}'s story`);
         }
     } catch (e) {
@@ -10339,22 +10390,29 @@ window.openAsClient = function() {
 
 // Old submitCoachMessage removed as it is now defined earlier in the file.
 
-function getChatHistory() { return JSON.parse(localStorage.getItem('shannon_chat_history') || '[]'); }
-function saveToHistory(role, text) {
-    const history = getChatHistory();
-    history.push({ role, text, timestamp: Date.now() });
-    if (history.length > 150) history.shift(); // Increased to 150
-    localStorage.setItem('shannon_chat_history', JSON.stringify(history));
+async function getChatHistory() { 
+    if(!window.currentUser) return [];
+    return await dbHelpers.conversations.getHistory(window.currentUser.id, 'coach'); 
 }
 
-window.loadChatHistory = function() {
+async function saveToHistory(role, text) {
+    if(!window.currentUser) return;
+    await dbHelpers.conversations.create(window.currentUser.id, 'coach', role, text);
+}
+
+window.loadChatHistory = async function() {
     const container = document.getElementById('chat-messages-container');
     if (!container) return;
-    const history = getChatHistory();
+    
+    // Clear waiting for load
+    container.innerHTML = ''; 
+
+    const history = await getChatHistory();
 
     // Only show default welcome message if there's no chat history
     if (history.length === 0) {
-        const userName = sessionStorage.getItem('userName') || '';
+        const profile = await window.getUserProfile();
+        const userName = profile?.name || '';
         const greeting = userName ? `Hey ${userName}!` : 'Hey there!';
         container.innerHTML = `
             <div style="display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;">
@@ -10372,8 +10430,6 @@ How's your day so far?</p>
                      <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon  Always here</span>
                  </div>
             </div>`;
-    } else {
-        container.innerHTML = '';
     }
 
     history.forEach(msg => {
@@ -10381,12 +10437,14 @@ How's your day so far?</p>
         const rowDiv = document.createElement('div');
         rowDiv.style.cssText = `display: flex; justify-content: ${isUser ? 'flex-end' : 'flex-start'}; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;`;
         
-        const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        
+        const timestamp = msg.timestamp || msg.created_at || Date.now();
+        const timeStr = new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const msgText = msg.message_text || msg.text || '';
+
         if (isUser) {
              rowDiv.innerHTML = `
                 <div style="display: flex; flex-direction: column; align-items: flex-end; max-width: 80%;">
-                    <div style="background: var(--chat-bg-user); color: var(--chat-text-user); padding: 12px 18px; border-radius: 18px 18px 0 18px; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">${msg.text}</div>
+                    <div style="background: var(--chat-bg-user); color: var(--chat-text-user); padding: 12px 18px; border-radius: 18px 18px 0 18px; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">${msgText}</div>
                     <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-right: 5px;">You ${timeStr}</span>
                 </div>
                 <img src="https://ui-avatars.com/api/?name=You&background=cbd5e1&color=fff" style="width: 36px; height: 36px; border-radius: 50%; margin-left: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
@@ -10396,7 +10454,7 @@ How's your day so far?</p>
                 <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
                 <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
                     <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
-                        <p style="margin: 0; white-space: pre-wrap;">${msg.text}</p>
+                        <p style="margin: 0; white-space: pre-wrap;">${msgText.replace(/\*\*/g, '').replace(/\*/g, '')}</p>
                     </div>
                     <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon ${timeStr}</span>
                 </div>
@@ -10407,7 +10465,7 @@ How's your day so far?</p>
     container.scrollTop = container.scrollHeight;
 };
 
-window.appendCoachMessage = function(text) {
+window.appendCoachMessage = async function(text) {
     const container = document.getElementById('chat-messages-container');
     if (!container) return;
     
@@ -10429,16 +10487,10 @@ window.appendCoachMessage = function(text) {
     container.appendChild(rowDiv);
     container.scrollTop = container.scrollHeight;
 
-    // Save to LocalStorage
-    const history = JSON.parse(localStorage.getItem('shannon_chat_history') || '[]');
-    history.push({
-        role: 'model',
-        text: text,
-        timestamp: Date.now()
-    });
-    localStorage.setItem('shannon_chat_history', JSON.stringify(history));
+    // Save to DB
+    await saveToHistory('model', text);
 
-    // Mark as unread and show notification badge
+    // Mark as unread and show notification badge (Local state is fine for UI flags for now)
     localStorage.setItem('coach_unread_messages', 'true');
     const badge = document.getElementById('coach-notification-badge');
     if (badge) {
@@ -10446,7 +10498,7 @@ window.appendCoachMessage = function(text) {
     }
 
     // Send push notification
-    sendCoachNotification(text);
+    if(typeof sendCoachNotification === 'function') sendCoachNotification(text);
 
     // Notification Badge on App Icon
     if ('setAppBadge' in navigator && document.visibilityState === 'hidden') {
@@ -10473,20 +10525,97 @@ window.openCoachChat = function() {
     }
 };
 
+// Helper to save AI community messages to DB and Local Cache
+async function saveCommunityMessage(persona, text) {
+    // 1. Save to DB (Fire and forget to avoid blocking UI too much, or await if needed)
+    const user = window.currentUser;
+    if(user) {
+        // We do not await this to keep UI snappy for animations, or we catch errors
+        dbHelpers.conversations.create(user.id, 'community', 'model', text, persona.name).catch(e => console.error("DB Save Error", e));
+    }
+
+    // 2. Update Local Cache (for immediate UI and autonomous logic)
+    const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    msgs.push({
+        authorId: persona.id,
+        authorName: persona.name,
+        authorAvatar: (persona.id || 'm1').replace('m', ''),
+        text: text,
+        timestamp: Date.now()
+    });
+    localStorage.setItem('community_chat_history', JSON.stringify(msgs));
+    
+    // 3. Render
+    if(typeof renderChat === 'function') renderChat(msgs);
+}
+
+window.loadCommunityFeed = async function() {
+    if(!window.currentUser) return;
+    const dbMessages = await dbHelpers.conversations.getHistory(window.currentUser.id, 'community');
+    
+    // Map DB messages to UI format
+    // We try to find matching AI member by author_name to get avatar/id
+    const messages = dbMessages.map(m => {
+        let authorId = 'current-user';
+        let authorAvatar = '';
+        let authorName = m.author_name || 'Member';
+        
+        if (m.role === 'model' || m.role === 'assistant') {
+            const aiMember = AI_MEMBERS.find(mem => mem.name === authorName);
+            if(aiMember) {
+                authorId = aiMember.id;
+                authorAvatar = (aiMember.id || 'm1').replace('m', '');
+            } else {
+                authorId = 'm1'; // Default Fallback
+                authorAvatar = '1';
+            }
+        } else {
+            // User
+            authorId = 'current-user';
+        }
+
+        return {
+            authorId: authorId,
+            authorName: authorName,
+            authorAvatar: authorAvatar,
+            text: m.message_text || m.text,
+            timestamp: m.timestamp || new Date(m.created_at).getTime(),
+            reactions: m.reactions || [], // Assuming we might add reactions to DB later, otherwise empty
+            readBy: m.read_by || []
+        };
+    });
+    
+    // Cache for autonomous logic references
+    localStorage.setItem('community_chat_history', JSON.stringify(messages));
+    
+    if(typeof renderChat === 'function') renderChat(messages);
+};
+
 async function sendCommunityMessage() {
     const input = document.getElementById('community-chat-input');
     const text = input.value?.trim();
     if(!text) return;
-    const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
-    messages.push({ 
+    
+    input.value = '';
+    
+    // Optimistic UI Update
+    const user = window.currentUser || {};
+    const userName = (await window.getUserProfile())?.name || 'Friend';
+    
+    const tempMsg = { 
         authorId: 'current-user', 
-        authorName: localStorage.getItem('userName') || 'Friend',
+        authorName: userName,
         text, 
         timestamp: Date.now() 
-    });
-    localStorage.setItem('community_chat_history', JSON.stringify(messages));
-    input.value = '';
-    renderChat(messages);
+    };
+    
+    const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    messages.push(tempMsg);
+    renderChat(messages); // Render immediately
+    
+    // Save to DB
+    await dbHelpers.conversations.create(user.id, 'community', 'user', text, userName);
+    
     triggerAICommunityResponse(text);
 }
 
@@ -10869,11 +10998,11 @@ window.triggerCoachResponse = async function(userMsg) {
 };
 
 // 3. Daily Greeting
-function checkCoachGreeting() {
+async function checkCoachGreeting() {
     const { isOnline } = getCoachState();
     if(!isOnline) return;
 
-    const history = getChatHistory();
+    const history = await getChatHistory();
     const lastDate = localStorage.getItem('coach_last_greet_date');
     const now = new Date();
     const bneTimeStr = now.toLocaleString("en-US", {timeZone: COACH_CONFIG.timezone});
@@ -10888,9 +11017,10 @@ function checkCoachGreeting() {
     if (lastDate !== todayStr) {
         // New Day
         let dayNum = 1;
-        const startStr = localStorage.getItem('pbb_start_date');
-        if(startStr) {
-             const start = new Date(startStr);
+        const profile = await window.getUserProfile();
+        
+        if(profile && profile.program_start_date) {
+             const start = new Date(profile.program_start_date);
              if(!isNaN(start)) {
                  const diff = new Date() - start;
                  dayNum = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
@@ -10899,7 +11029,7 @@ function checkCoachGreeting() {
         }
 
         setTimeout(() => {
-            const userName = sessionStorage.getItem('userName') || 'Friend';
+            const userName = profile?.name || 'Friend';
             appendCoachMessage(`Good morning ${userName}! Ready for Day ${dayNum}? \n\nHow did you sleep?`);
             // Save to history so it persists
             saveToHistory('assistant', `Good morning ${userName}! Day ${dayNum}`);
@@ -11084,36 +11214,45 @@ updateCoachUI();
     </div>
     
     <script>
-    function saveCustomBuilderWorkout() {
+    async function saveCustomBuilderWorkout() {
         if (customWorkoutSelection.length === 0) return;
         const name = prompt("Name your workout:");
         if(!name) return;
         
-        const savedWorkouts = JSON.parse(localStorage.getItem('saved_custom_workouts') || '[]');
-        savedWorkouts.push({
-            id: 'mw-' + Date.now(),
-            name: name,
-            exercises: customWorkoutSelection,
-            date: new Date().toISOString()
-        });
-        localStorage.setItem('saved_custom_workouts', JSON.stringify(savedWorkouts));
-        alert("Workout saved! You can find it in the Movement tab.");
-        switchAppTab('movement-tab');
+        try {
+            const user = window.currentUser;
+            if(user) {
+                 await dbHelpers.workouts.saveCustomWorkout(user.id, name, { 
+                     exercises: customWorkoutSelection,
+                     date: new Date().toISOString()
+                 });
+                 alert("Workout saved! You can find it in the Movement tab.");
+                 switchAppTab('movement-tab');
+                 renderMovementView(); // refresh list
+            }
+        } catch(e) {
+            console.error("Failed to save workout:", e);
+            alert("Failed to save workout. Please try again.");
+        }
     }
     </script>
 </div>
 <script>
     function startSavedWorkout(id) {
-        const saved = JSON.parse(localStorage.getItem('saved_custom_workouts') || '[]');
+        // Use cache populated by renderMovementView
+        const saved = window.savedWorkoutsCache || [];
         const workout = saved.find(w => w.id === id);
         if(!workout) return;
         
-        // Re-use builder logic but with loaded data
+        // Map DB format to Player format
+        // workout.template_data.exercises is array of strings (names)
+        const exerciseNames = workout.template_data?.exercises || [];
+        
         const customWorkout = {
-            title: workout.name,
-            name: workout.name,
-            description: 'Saved Session • ' + new Date(workout.date).toLocaleDateString(),
-            exercises: workout.exercises.map(key => ({
+            title: workout.template_name || 'Custom Workout',
+            name: workout.template_name || 'Custom Workout',
+            description: 'Saved Session • ' + new Date(workout.created_at || new Date()).toLocaleDateString(),
+            exercises: exerciseNames.map(key => ({
                 name: key,
                 sets: 3,
                 reps: '12',
