@@ -9114,6 +9114,30 @@ window.triggerCoachResponse = async function(userMsg) {
     }
 };
 
+// Helper: Add typing indicator for community member
+function addCommunityTypingIndicator(personaName) {
+    const container = document.getElementById('community-messages-container');
+    if (!container) return;
+
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'community-typing-indicator';
+    typingDiv.style.cssText = "display: flex; align-items: center; margin-bottom: 12px; margin-left:10px;";
+    typingDiv.innerHTML = `
+        <div style="font-size: 0.75rem; color: #94a3b8; margin-right: 8px;">${personaName} is typing</div>
+        <div style="width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both;"></div>
+        <div style="width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; margin: 0 3px; animation: bounce 1.4s infinite ease-in-out both 0.16s;"></div>
+        <div style="width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both 0.32s;"></div>
+    `;
+    container.appendChild(typingDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+// Helper: Remove all typing indicators
+function removeCommunityTypingIndicators() {
+    const indicators = document.querySelectorAll('.community-typing-indicator');
+    indicators.forEach(ind => ind.remove());
+}
+
 async function triggerAICommunityResponse(userMsg, chainCount = 0) {
     const lowMsg = userMsg.toLowerCase();
 
@@ -9174,14 +9198,23 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
         persona = AI_MEMBERS[Math.floor(Math.random() * AI_MEMBERS.length)];
     }
 
+    // Variable response timing: sometimes fast (2-5s), sometimes slower (5-10s)
+    const isFastResponse = Math.random() < 0.6; // 60% chance of fast response
+    const initialDelay = isFastResponse
+        ? 2000 + Math.random() * 3000  // 2-5 seconds
+        : 5000 + Math.random() * 5000; // 5-10 seconds
+
     setTimeout(async () => {
+        // Show typing indicator
+        addCommunityTypingIndicator(persona.name.split(' ')[0]);
+
         try {
             const historyContext = fullHistory.slice(-20).map(m => ({
                 role: m.authorId === 'current-user' ? 'user' : 'model',
                 text: `${m.authorName || 'Member'}: ${m.text}`,
                 timestamp: m.timestamp
             }));
-            
+
             const response = await fetch('/.netlify/functions/ai-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -9194,52 +9227,73 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
                 })
             });
             const data = await response.json();
+
             if (data.reply) {
                 const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
                 let totalDelay = 0;
+
                 parts.forEach((part, idx) => {
+                    if (idx > 0) {
+                        // Show typing indicator before subsequent messages
+                        setTimeout(() => addCommunityTypingIndicator(persona.name.split(' ')[0]), totalDelay);
+                        totalDelay += 800 + Math.random() * 400; // 0.8-1.2s typing indicator
+                    }
+
                     const partDelay = 1200 + (part.length * 20);
                     setTimeout(() => {
+                        removeCommunityTypingIndicators();
                         const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
-                        msgs.push({ 
-                            authorId: persona.id, 
-                            authorName: persona.name, 
-                            authorAvatar: (persona.id || 'm1').replace('m', ''), 
-                            text: part, 
-                            timestamp: Date.now() 
+                        msgs.push({
+                            authorId: persona.id,
+                            authorName: persona.name,
+                            authorAvatar: (persona.id || 'm1').replace('m', ''),
+                            text: part,
+                            timestamp: Date.now()
                         });
                         localStorage.setItem('community_chat_history', JSON.stringify(msgs));
                         if(typeof renderChat === 'function') renderChat(msgs);
-                        
+
                         // If it's the last part, consider triggering a peer response or jump-in
                         if (idx === parts.length - 1) {
                             if (chainCount < 2 && Math.random() < 0.4) {
-                                // Peer Response (AI to AI)
+                                // Peer Response (AI to AI) - variable timing
                                 const peerPersona = AI_MEMBERS.filter(m => m.id !== persona.id)[Math.floor(Math.random() * (AI_MEMBERS.length - 1))];
-                                setTimeout(() => triggerJumpInResponse(part, peerPersona, chainCount + 1), 3000 + Math.random() * 2000);
+                                const peerDelay = Math.random() < 0.5
+                                    ? 2000 + Math.random() * 2000  // Fast: 2-4s
+                                    : 5000 + Math.random() * 3000; // Slower: 5-8s
+                                setTimeout(() => triggerJumpInResponse(part, peerPersona, chainCount + 1), peerDelay);
                             } else if (chainCount === 0 && Math.random() < 0.3) {
-                                // Classic Jump-in
+                                // Classic Jump-in - usually slower
                                 const jumpPersona = AI_MEMBERS.filter(m => m.id !== persona.id)[Math.floor(Math.random() * (AI_MEMBERS.length - 1))];
-                                setTimeout(() => triggerJumpInResponse(userMsg, jumpPersona, chainCount + 1), 5000 + Math.random() * 2000);
+                                const jumpDelay = 5000 + Math.random() * 5000; // 5-10s
+                                setTimeout(() => triggerJumpInResponse(userMsg, jumpPersona, chainCount + 1), jumpDelay);
                             }
                         }
                     }, totalDelay);
                     totalDelay += partDelay;
                 });
+            } else {
+                removeCommunityTypingIndicators();
             }
-        } catch (e) { console.log("Comm skip", e); }
-    }, 2000 + Math.random() * 2000);
+        } catch (e) {
+            removeCommunityTypingIndicators();
+            console.log("Comm skip", e);
+        }
+    }, initialDelay);
 }
 
 async function triggerJumpInResponse(prevContext, persona, chainCount) {
     try {
+        // Show typing indicator first
+        addCommunityTypingIndicator(persona.name.split(' ')[0]);
+
         const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
         const historyContext = fullHistory.slice(-20).map(m => ({
             role: m.authorId === 'current-user' ? 'user' : 'model',
             text: `${m.authorName || 'Member'}: ${m.text}`,
             timestamp: m.timestamp
         }));
-        
+
         const response = await fetch('/.netlify/functions/ai-chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -9252,33 +9306,50 @@ async function triggerJumpInResponse(prevContext, persona, chainCount) {
             })
         });
         const data = await response.json();
+
         if (data.reply) {
             const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
             let totalDelay = 0;
+
             parts.forEach((part, idx) => {
+                if (idx > 0) {
+                    // Show typing indicator before subsequent messages
+                    setTimeout(() => addCommunityTypingIndicator(persona.name.split(' ')[0]), totalDelay);
+                    totalDelay += 800 + Math.random() * 400; // 0.8-1.2s typing indicator
+                }
+
                 const partDelay = 1200 + (part.length * 20);
                 setTimeout(() => {
+                    removeCommunityTypingIndicators();
                     const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
-                    msgs.push({ 
-                        authorId: persona.id, 
-                        authorName: persona.name, 
-                        authorAvatar: (persona.id || 'm1').replace('m', ''), 
-                        text: part, 
-                        timestamp: Date.now() 
+                    msgs.push({
+                        authorId: persona.id,
+                        authorName: persona.name,
+                        authorAvatar: (persona.id || 'm1').replace('m', ''),
+                        text: part,
+                        timestamp: Date.now()
                     });
                     localStorage.setItem('community_chat_history', JSON.stringify(msgs));
                     if(typeof renderChat === 'function') renderChat(msgs);
 
-                    // Chain limit check
+                    // Chain limit check with variable timing
                     if (idx === parts.length - 1 && chainCount < 2 && Math.random() < 0.3) {
-                         const nextPersona = AI_MEMBERS.filter(m => m.id !== persona.id)[Math.floor(Math.random() * (AI_MEMBERS.length - 1))];
-                         setTimeout(() => triggerJumpInResponse(part, nextPersona, chainCount + 1), 4000 + Math.random() * 2000);
+                        const nextPersona = AI_MEMBERS.filter(m => m.id !== persona.id)[Math.floor(Math.random() * (AI_MEMBERS.length - 1))];
+                        const nextDelay = Math.random() < 0.5
+                            ? 2000 + Math.random() * 2000  // Fast: 2-4s
+                            : 4000 + Math.random() * 4000; // Slower: 4-8s
+                        setTimeout(() => triggerJumpInResponse(part, nextPersona, chainCount + 1), nextDelay);
                     }
                 }, totalDelay);
                 totalDelay += partDelay;
             });
+        } else {
+            removeCommunityTypingIndicators();
         }
-    } catch (e) { console.log("JumpIn skip", e); }
+    } catch (e) {
+        removeCommunityTypingIndicators();
+        console.log("JumpIn skip", e);
+    }
 }
 
 // ========================================
