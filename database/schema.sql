@@ -325,7 +325,16 @@ CREATE POLICY "Users can view own quiz results" ON public.quiz_results
   FOR ALL USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can view own conversations" ON public.conversations
-  FOR ALL USING (auth.uid() = user_id);
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own conversations" ON public.conversations
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own conversations" ON public.conversations
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own conversations" ON public.conversations
+  FOR DELETE USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can view own workouts" ON public.workouts
   FOR ALL USING (auth.uid() = user_id);
