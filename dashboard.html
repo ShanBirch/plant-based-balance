@@ -8942,7 +8942,12 @@ window.submitCoachMessage = async function() {
         container.scrollTop = container.scrollHeight;
 
         // Save to DB immediately
-        await saveToHistory('user', text);
+        try {
+            await saveToHistory('user', text);
+        } catch (dbError) {
+            console.error("❌ Failed to save user message to DB:", dbError);
+            alert("Warning: Message may not have been saved. Check console.");
+        }
     }
     
     input.value = '';
