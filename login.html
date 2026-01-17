@@ -230,20 +230,74 @@
         </div>
     </div>
 
-    <!-- Load Supabase library first -->
+    <!-- Load Supabase library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Then load our supabase helpers -->
-    <script src="/lib/supabase.js"></script>
-    <!-- Then run our page code -->
-    <script>
-        // Wait for scripts to load
-        window.addEventListener('load', async function() {
-            // Check if already logged in
-            if (typeof authHelpers === 'undefined') {
-                showError('Loading error. Please refresh the page.');
-                return;
-            }
 
+    <!-- Initialize Supabase inline -->
+    <script>
+        // Wait for Supabase library to load
+        window.addEventListener('load', function() {
+            // Initialize Supabase
+            const SUPABASE_URL = 'https://hzapaorxqboevxnumxkv.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6YXBhb3J4cWJvZXZ4bnVteGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NjA3MTYsImV4cCI6MjA4NDIzNjcxNn0.L8ZuxevbB1pNx2nXtIiiQ-6dZSeqfdGuiEvscljOxq0';
+
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            // Create authHelpers
+            window.authHelpers = {
+                async signUp(email, password, userData = {}) {
+                    const { data, error } = await supabase.auth.signUp({
+                        email,
+                        password,
+                        options: { data: userData }
+                    });
+                    if (error) throw error;
+                    return data;
+                },
+
+                async signIn(email, password) {
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+                    if (error) throw error;
+                    return data;
+                },
+
+                async signOut() {
+                    const { error } = await supabase.auth.signOut();
+                    if (error) throw error;
+                },
+
+                async getSession() {
+                    const { data, error } = await supabase.auth.getSession();
+                    if (error) throw error;
+                    return data.session;
+                },
+
+                async getUser() {
+                    const { data, error } = await supabase.auth.getUser();
+                    if (error) throw error;
+                    return data.user;
+                },
+
+                async resetPassword(email) {
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: `${window.location.origin}/reset-password.html`
+                    });
+                    if (error) throw error;
+                }
+            };
+
+            // Initialize the page
+            initializePage();
+        });
+    </script>
+
+    <!-- Page code -->
+    <script>
+        async function initializePage() {
+            // Check if already logged in
             const session = await authHelpers.getSession();
             if (session) {
                 // Already logged in - redirect to dashboard
@@ -251,7 +305,7 @@
                 const redirect = urlParams.get('redirect') || '/dashboard.html';
                 window.location.href = redirect;
             }
-        });
+        }
 
         // Toggle between login and signup forms
         function showSignup() {
