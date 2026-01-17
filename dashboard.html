@@ -1746,7 +1746,7 @@
 
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         const weeks = ['week1', 'week2', 'week3', 'week4'];
-        
+
         let hasEntries = false;
 
         weeks.forEach(week => {
@@ -1768,6 +1768,167 @@
 
         if (!hasEntries) {
             journalContainer.innerHTML = '<p style="font-style: italic; color: var(--text-muted);">No journal entries yet. Start writing your daily reflections!</p>';
+        }
+    }
+
+    // ==========================================
+    // REFLECTIONS DIARY SYSTEM
+    // ==========================================
+
+    // Load all reflections (meal plan + standalone) and display chronologically
+    function loadAllReflections() {
+        const container = document.getElementById('reflections-list');
+        if (!container) return;
+
+        const reflections = [];
+
+        // 1. Load meal plan reflections
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const weeks = ['week1', 'week2', 'week3', 'week4'];
+
+        weeks.forEach(week => {
+            days.forEach(day => {
+                const id = `${week}-${day}`;
+                const savedReflection = localStorage.getItem('reflection_' + id);
+                if (savedReflection) {
+                    reflections.push({
+                        type: 'mealplan',
+                        id: id,
+                        title: `${week.charAt(0).toUpperCase() + week.slice(1)} - ${day}`,
+                        text: savedReflection,
+                        timestamp: 0 // Meal plan reflections don't have timestamps, will show at bottom
+                    });
+                }
+            });
+        });
+
+        // 2. Load standalone reflections
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('standalone_reflection_')) {
+                const data = JSON.parse(localStorage.getItem(key));
+                reflections.push({
+                    type: 'standalone',
+                    id: key,
+                    title: formatReflectionDate(data.timestamp),
+                    text: data.text,
+                    timestamp: data.timestamp
+                });
+            }
+        }
+
+        // 3. Sort by timestamp (newest first, meal plan at bottom)
+        reflections.sort((a, b) => b.timestamp - a.timestamp);
+
+        // 4. Render
+        if (reflections.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; color: #94a3b8;">
+                    <div style="font-size: 3rem; margin-bottom: 10px;">📔</div>
+                    <p style="margin: 0; font-size: 1rem; font-weight: 500;">No reflections yet</p>
+                    <p style="margin: 5px 0 0 0; font-size: 0.875rem;">Start by adding your first reflection or complete a meal plan day</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = '';
+            reflections.forEach(r => {
+                const entryDiv = document.createElement('div');
+                entryDiv.style.cssText = 'margin-bottom: 15px; padding: 18px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;';
+                entryDiv.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                        <div style="font-size: 0.85rem; font-weight: 600; color: var(--primary);">${r.title}</div>
+                        ${r.type === 'standalone' ? `<button onclick="deleteReflection('${r.id}')" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 0; font-size: 1.2rem; line-height: 1;">&times;</button>` : ''}
+                    </div>
+                    <div style="font-size: 0.95rem; color: #1e293b; line-height: 1.6; white-space: pre-wrap;">${r.text}</div>
+                `;
+                container.appendChild(entryDiv);
+            });
+        }
+    }
+
+    // Format timestamp to readable date
+    function formatReflectionDate(timestamp) {
+        if (!timestamp) return 'Meal Plan Entry';
+        const date = new Date(timestamp);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        // Check if today
+        if (date.toDateString() === today.toDateString()) {
+            return 'Today, ' + date.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Check if yesterday
+        if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday, ' + date.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Otherwise show full date
+        return date.toLocaleDateString('en-AU', {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    // Open modal to add new reflection
+    window.openNewReflectionModal = function() {
+        const modal = document.createElement('div');
+        modal.id = 'reflection-modal';
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 12px; max-width: 500px; width: 100%; padding: 25px; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0; font-size: 1.3rem; color: var(--text-main);">New Reflection</h3>
+                    <button onclick="closeReflectionModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+                </div>
+                <p style="margin: 0 0 15px 0; font-size: 0.9rem; color: #64748b;">How are you feeling? Any wins or challenges today?</p>
+                <textarea id="new-reflection-text" placeholder="Write your thoughts..." style="width: 100%; height: 200px; padding: 15px; border: 1px solid #cbd5e0; border-radius: 8px; font-family: 'Inter'; font-size: 1rem; resize: vertical; margin-bottom: 20px;"></textarea>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="closeReflectionModal()" style="flex: 1; background: #f1f5f9; color: #64748b; border: none; padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;">Cancel</button>
+                    <button onclick="saveNewReflection()" style="flex: 1; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;">Save</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Focus textarea
+        setTimeout(() => {
+            document.getElementById('new-reflection-text').focus();
+        }, 100);
+    }
+
+    // Close modal
+    window.closeReflectionModal = function() {
+        const modal = document.getElementById('reflection-modal');
+        if (modal) modal.remove();
+    }
+
+    // Save new standalone reflection
+    window.saveNewReflection = function() {
+        const text = document.getElementById('new-reflection-text').value.trim();
+        if (!text) return;
+
+        const timestamp = Date.now();
+        const id = `standalone_reflection_${timestamp}`;
+
+        localStorage.setItem(id, JSON.stringify({
+            text: text,
+            timestamp: timestamp
+        }));
+
+        closeReflectionModal();
+        loadAllReflections();
+    }
+
+    // Delete a standalone reflection
+    window.deleteReflection = function(id) {
+        if (confirm('Delete this reflection?')) {
+            localStorage.removeItem(id);
+            loadAllReflections();
         }
     }
 
@@ -5984,6 +6145,7 @@
             <div style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px; margin-bottom: 25px;">
                 <button class="sub-btn active" style="flex:1; border:none; box-shadow:none; background:white; color:var(--primary); font-weight: 600;" onclick="showSupportTab('chat', this)">Coach Chat</button>
                 <button class="sub-btn" style="flex:1; border:none; box-shadow:none; background:transparent; color:#64748b;" onclick="showSupportTab('community', this)">Community</button>
+                <button class="sub-btn" style="flex:1; border:none; box-shadow:none; background:transparent; color:#64748b;" onclick="showSupportTab('reflections', this)">Reflections</button>
             </div>
 
             <!-- CHAT VIEW CONTAINER -->
@@ -6047,6 +6209,28 @@
                         </div>
                         <button type="submit" style="display:none;"></button>
                     </form>
+                </div>
+            </div>
+
+            <!-- REFLECTIONS INTERFACE (Hidden by default) -->
+            <div id="support-reflections" style="display: none; flex-direction: column; height: 100vh; background: #fff; position: relative; padding-bottom: 70px; overflow: hidden;">
+
+                <!-- Header -->
+                <div style="padding: 20px 20px 15px 20px; border-bottom: 1px solid #f1f5f9;">
+                    <h2 style="margin: 0 0 5px 0; font-size: 1.5rem; color: var(--text-main);">Your Reflections</h2>
+                    <p style="margin: 0; font-size: 0.875rem; color: #64748b;">Daily journal entries and end-of-day reflections</p>
+                </div>
+
+                <!-- Add New Reflection Button -->
+                <div style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9;">
+                    <button onclick="openNewReflectionModal()" style="width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span style="font-size: 1.2rem;">+</span> Add Reflection
+                    </button>
+                </div>
+
+                <!-- Reflections List -->
+                <div id="reflections-list" style="flex: 1; overflow-y: auto; padding: 20px;">
+                    <!-- Reflections will be injected here -->
                 </div>
             </div>
         </div>
@@ -8002,14 +8186,22 @@ function showSupportTab(tab, btn) {
     // 2. Toggle Content
     const chat = document.getElementById('support-chat');
     const comm = document.getElementById('support-community');
+    const refl = document.getElementById('support-reflections');
 
     if (tab === 'chat') {
         chat.style.display = 'flex';
         comm.style.display = 'none';
-    } else {
+        refl.style.display = 'none';
+    } else if (tab === 'community') {
         chat.style.display = 'none';
         comm.style.display = 'flex';
+        refl.style.display = 'none';
         loadCommunityFeed(); // Refresh feed when opening
+    } else if (tab === 'reflections') {
+        chat.style.display = 'none';
+        comm.style.display = 'none';
+        refl.style.display = 'flex';
+        loadAllReflections(); // Load reflections when opening
     }
 }
 
