@@ -9213,7 +9213,7 @@ function getMemberOnlineStatus() {
     const hour = bneTime.getHours();
 
     // Online status based on time of day
-    // Peak activity: 7am-10am, 12pm-2pm, 6pm-10pm
+    // Peak activity: 7am-10am, 12pm-2pm, 2pm-6pm, 6pm-10pm
     // Low activity: 10pm-7am
     const onlineMembers = [];
 
@@ -9222,6 +9222,7 @@ function getMemberOnlineStatus() {
 
         if (hour >= 7 && hour < 10) onlineChance = 0.7; // Morning peak
         else if (hour >= 12 && hour < 14) onlineChance = 0.6; // Lunch peak
+        else if (hour >= 14 && hour < 18) onlineChance = 0.5; // Afternoon moderate
         else if (hour >= 18 && hour < 22) onlineChance = 0.8; // Evening peak (highest)
         else if (hour >= 22 || hour < 7) onlineChance = 0.1; // Night/early morning
 
@@ -9233,17 +9234,47 @@ function getMemberOnlineStatus() {
     return onlineMembers;
 }
 
-// Helper: Check if should respond to message (not every message gets a response)
+// Helper: Check if should respond to message and when
 function shouldRespondToMessage() {
     const rand = Math.random();
-    if (rand < 0.3) return false; // 30% chance of no response (dead air)
-    if (rand < 0.5) return 'emoji'; // 20% chance of just emoji reaction
-    return 'text'; // 50% chance of text response
+
+    // 10% - No response (dead air)
+    if (rand < 0.10) return { type: false };
+
+    // 40% - Immediate response (2-10s)
+    if (rand < 0.50) {
+        const subRand = Math.random();
+        if (subRand < 0.3) return { type: 'emoji', delay: 0 }; // 12% emoji immediate
+        return { type: 'text', delay: 0 }; // 28% text immediate
+    }
+
+    // 25% - Quick delay (1-3 minutes)
+    if (rand < 0.75) {
+        const delay = 60000 + Math.random() * 120000; // 1-3 min
+        return { type: 'text', delay: delay };
+    }
+
+    // 15% - Medium delay (5-15 minutes)
+    if (rand < 0.90) {
+        const delay = 300000 + Math.random() * 600000; // 5-15 min
+        return { type: 'text', delay: delay };
+    }
+
+    // 10% - Long delay (30min-2 hours)
+    const delay = 1800000 + Math.random() * 5400000; // 30min-2hrs
+    return { type: 'text', delay: delay };
 }
 
 async function triggerAICommunityResponse(userMsg, chainCount = 0) {
     const lowMsg = userMsg.toLowerCase();
     const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+
+    // Check if there's been recent activity (conversation flow)
+    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+    const recentActivity = fullHistory.slice(-5).some(m =>
+        m.timestamp > fiveMinutesAgo && m.authorId !== 'current-user'
+    );
+    const isActiveConversation = recentActivity || chainCount > 0;
 
     // Mark user's message as read by some members
     const lastMsgIndex = fullHistory.length - 1;
@@ -9257,29 +9288,39 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
         renderChat(fullHistory);
     }
 
-    // Check if should respond (30% chance of dead air, 20% emoji only, 50% text)
-    const responseType = shouldRespondToMessage();
+    // Check if should respond and when
+    const response = shouldRespondToMessage();
 
-    if (responseType === false) {
+    if (response.type === false) {
         // Dead air - no response
         return;
     }
 
-    if (responseType === 'emoji') {
+    // Calculate total delay (base delay from shouldRespond + immediate response timing)
+    const baseDelay = response.delay || 0;
+
+    if (response.type === 'emoji') {
         // Just emoji reaction, no text
         const emojis = ['👍', '❤️', '🎉', '😂', '💪', '🙌', '✨', '🔥', '💯', '👏'];
         const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
         const onlineMembers = getMemberOnlineStatus();
         const randomReactor = AI_MEMBERS.find(m => onlineMembers.includes(m.id)) || AI_MEMBERS[0];
 
-        // Small delay before reaction
+        // Delay before reaction - quicker than text but still realistic
+        let emojiImmediateDelay;
+        if (isActiveConversation) {
+            emojiImmediateDelay = 5000 + Math.random() * 25000; // 5-30s during active chat
+        } else {
+            emojiImmediateDelay = 30000 + Math.random() * 90000; // 30s-2min cold start
+        }
+        const emojiDelay = baseDelay + emojiImmediateDelay;
         setTimeout(() => {
             addEmojiReaction(lastMsgIndex, randomEmoji, randomReactor.id);
-        }, 1000 + Math.random() * 2000);
+        }, emojiDelay);
         return;
     }
 
-    // TEXT RESPONSE - Full logic
+    // TEXT RESPONSE - Full logic (can be immediate or delayed)
 
     // 1. Thread Persistence & Direct Address Logic
     let persona = null;
@@ -9349,11 +9390,17 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
         }
     }
 
-    // Variable response timing: sometimes fast (2-5s), sometimes slower (5-10s)
-    const isFastResponse = Math.random() < 0.6; // 60% chance of fast response
-    const initialDelay = isFastResponse
-        ? 2000 + Math.random() * 3000  // 2-5 seconds
-        : 5000 + Math.random() * 5000; // 5-10 seconds
+    // Variable response timing based on conversation flow
+    // Plus any delay from shouldRespondToMessage (for delayed responses)
+    let immediateDelay;
+    if (isActiveConversation) {
+        // Active conversation: 15 seconds to 2 minutes
+        immediateDelay = 15000 + Math.random() * 105000; // 15s-2min
+    } else {
+        // Cold start: 2-5 minutes
+        immediateDelay = 120000 + Math.random() * 180000; // 2-5min
+    }
+    const totalDelay = baseDelay + immediateDelay;
 
     setTimeout(async () => {
         // Show typing indicator(s)
@@ -9452,7 +9499,7 @@ async function triggerAICommunityResponse(userMsg, chainCount = 0) {
             removeCommunityTypingIndicators();
             console.log("Comm skip", e);
         }
-    }, initialDelay);
+    }, totalDelay);
 }
 
 async function triggerJumpInResponse(prevContext, persona, chainCount) {
