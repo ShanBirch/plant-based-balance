@@ -236,8 +236,14 @@
     <script src="/lib/supabase.js"></script>
     <!-- Then run our page code -->
     <script>
-        // Check if already logged in
-        (async function checkAuth() {
+        // Wait for scripts to load
+        window.addEventListener('load', async function() {
+            // Check if already logged in
+            if (typeof authHelpers === 'undefined') {
+                showError('Loading error. Please refresh the page.');
+                return;
+            }
+
             const session = await authHelpers.getSession();
             if (session) {
                 // Already logged in - redirect to dashboard
@@ -245,7 +251,7 @@
                 const redirect = urlParams.get('redirect') || '/dashboard.html';
                 window.location.href = redirect;
             }
-        })();
+        });
 
         // Toggle between login and signup forms
         function showSignup() {
