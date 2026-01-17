@@ -9000,7 +9000,8 @@ window.triggerCoachResponse = async function(userMsg) {
             let delay = 0;
             parts.forEach((part) => {
                 setTimeout(() => appendCoachMessage(part), delay);
-                delay += 1000 + (part.length * 30); 
+                // 3-5 second delay between messages to feel more human
+                delay += 3000 + (part.length * 20);
             });
         }
     } catch (err) {
@@ -9667,15 +9668,16 @@ window.loadChatHistory = function() {
 
     // Only show default welcome message if there's no chat history
     if (history.length === 0) {
-        const userName = sessionStorage.getItem('userName') || 'Friend';
+        const userName = sessionStorage.getItem('userName') || '';
+        const greeting = userName ? `Hey ${userName}!` : 'Hey there!';
         container.innerHTML = `
             <div style="display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;">
                  <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
                  <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
                      <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
-                         <p style="margin: 0; white-space: pre-wrap;">Hey ${userName}! Thanks so much for joining the Plant Based Balance Reset!
+                         <p style="margin: 0; white-space: pre-wrap;">${greeting} Thanks so much for joining the Plant Based Balance Reset!
 
-I'm Shannon 🙏 here if you need anything! Plus we have a pretty lovely chat always going on if you want to share your journey!
+I'm Shannon 🙏 here if you need anything! Plus we have a pretty lively chat always going on if you want to share your journey!
 
 Generally we all share our week Saturday Morning!
 
