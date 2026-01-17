@@ -8896,6 +8896,46 @@ window.toggleCoachMode = function(show) {
     }
 };
 
+// User fact tracking - remembers key details across sessions
+function getUserFacts() {
+    const factsStr = localStorage.getItem('user_facts');
+    if (!factsStr) {
+        return {
+            location: '',
+            struggles: [],
+            preferences: [],
+            health_notes: [],
+            personal_details: [],
+            goals: []
+        };
+    }
+    try {
+        return JSON.parse(factsStr);
+    } catch (e) {
+        return {
+            location: '',
+            struggles: [],
+            preferences: [],
+            health_notes: [],
+            personal_details: [],
+            goals: []
+        };
+    }
+}
+
+function saveUserFact(category, fact) {
+    const facts = getUserFacts();
+    if (category === 'location') {
+        facts.location = fact;
+    } else if (facts[category] && Array.isArray(facts[category])) {
+        // Avoid duplicates
+        if (!facts[category].includes(fact)) {
+            facts[category].push(fact);
+        }
+    }
+    localStorage.setItem('user_facts', JSON.stringify(facts));
+}
+
 function gatherContext() {
     let dayNum = 1;
     const startStr = localStorage.getItem('pbb_start_date');
@@ -8913,7 +8953,8 @@ function gatherContext() {
         profile: (sessionStorage.getItem('userResult') || 'CORTISOL').toUpperCase(),
         sleep: localStorage.getItem('sleep_quality') || 'Unknown',
         energy: localStorage.getItem('energy_level') || 'Unknown',
-        challengeDay: dayNum
+        challengeDay: dayNum,
+        userFacts: getUserFacts()
     };
 }
 
@@ -8969,11 +9010,37 @@ window.triggerCoachResponse = async function(userMsg) {
     const messagesToSlice = (typeof window._lastBufferedCount === 'number') ? window._lastBufferedCount : 0;
     const historyContext = history.slice(0, history.length - messagesToSlice);
 
-    const payloadHistory = historyContext.map(m => ({ 
-        role: m.role === 'user' ? 'user' : 'model', 
-        text: m.text,
-        timestamp: m.timestamp
-    }));
+    // Enhanced timestamp context with Brisbane time for each message
+    const payloadHistory = historyContext.map(m => {
+        const msgDate = new Date(m.timestamp);
+        const msgBneTime = msgDate.toLocaleString("en-US", {
+            timeZone: "Australia/Brisbane",
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+        return {
+            role: m.role === 'user' ? 'user' : 'model',
+            text: m.text,
+            timestamp: m.timestamp,
+            brisbaneTime: msgBneTime
+        };
+    });
+
+    // Get current Brisbane time
+    const currentBneTime = now.toLocaleString("en-US", {
+        timeZone: "Australia/Brisbane",
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    });
 
     try {
         const response = await fetch('/.netlify/functions/ai-chat', {
@@ -8985,7 +9052,8 @@ window.triggerCoachResponse = async function(userMsg) {
                 contextData: context,
                 chatHistory: payloadHistory,
                 conversationStatus: conversationStatus,
-                currentDateTime: new Date().toLocaleString()
+                currentDateTime: currentBneTime,
+                brisbaneTime: currentBneTime
             })
         });
 
@@ -9000,8 +9068,11 @@ window.triggerCoachResponse = async function(userMsg) {
             let delay = 0;
             parts.forEach((part) => {
                 setTimeout(() => appendCoachMessage(part), delay);
-                // 3-5 second delay between messages to feel more human
-                delay += 3000 + (part.length * 20);
+                // 7-15 second delay between messages to feel more human and realistic
+                const baseDelay = 7000; // 7 seconds
+                const randomVariation = Math.random() * 8000; // 0-8 seconds random
+                const typingSimulation = part.length * 15; // Simulate typing time
+                delay += baseDelay + randomVariation + typingSimulation;
             });
         }
     } catch (err) {
