@@ -9664,18 +9664,29 @@ window.loadChatHistory = function() {
     const container = document.getElementById('chat-messages-container');
     if (!container) return;
     const history = getChatHistory();
-    
-    // Default Welcome Message with Avatar
-    container.innerHTML = `
-        <div style="display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;">
-             <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
-             <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
-                 <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
-                     <p style="margin: 0;">Hey there! I'm Shannon, your reset coach. How's your progress tracking today?</p>
+
+    // Only show default welcome message if there's no chat history
+    if (history.length === 0) {
+        const userName = sessionStorage.getItem('userName') || 'Friend';
+        container.innerHTML = `
+            <div style="display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;">
+                 <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
+                 <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
+                     <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
+                         <p style="margin: 0; white-space: pre-wrap;">Hey ${userName}! Thanks so much for joining the Plant Based Balance Reset!
+
+I'm Shannon 🙏 here if you need anything! Plus we have a pretty lovely chat always going on if you want to share your journey!
+
+Generally we all share our week Saturday Morning!
+
+How's your day so far?</p>
+                     </div>
+                     <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon  Always here</span>
                  </div>
-                 <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon  Always here</span>
-             </div>
-        </div>`;
+            </div>`;
+    } else {
+        container.innerHTML = '';
+    }
 
     history.forEach(msg => {
         const isUser = msg.role === 'user';
@@ -10173,12 +10184,19 @@ window.triggerCoachResponse = async function(userMsg) {
 function checkCoachGreeting() {
     const { isOnline } = getCoachState();
     if(!isOnline) return;
-    
+
+    const history = getChatHistory();
     const lastDate = localStorage.getItem('coach_last_greet_date');
     const now = new Date();
     const bneTimeStr = now.toLocaleString("en-US", {timeZone: COACH_CONFIG.timezone});
     const todayStr = new Date(bneTimeStr).toDateString();
-    
+
+    // Don't send daily greeting if this is the first day (no history) - the welcome message handles that
+    if (history.length === 0) {
+        localStorage.setItem('coach_last_greet_date', todayStr);
+        return;
+    }
+
     if (lastDate !== todayStr) {
         // New Day
         let dayNum = 1;
@@ -10191,7 +10209,7 @@ function checkCoachGreeting() {
                  if(dayNum < 1) dayNum = 1;
              }
         }
-        
+
         setTimeout(() => {
             const userName = sessionStorage.getItem('userName') || 'Friend';
             appendCoachMessage(`Good morning ${userName}! Ready for Day ${dayNum}? \n\nHow did you sleep?`);
