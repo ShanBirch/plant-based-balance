@@ -8656,15 +8656,15 @@ window.submitCoachMessage = function() {
         `;
         container.appendChild(rowDiv);
         container.scrollTop = container.scrollHeight;
-        
+
         // Save to LocalStorage immediately
-        const history = JSON.parse(localStorage.getItem('chat_history') || '[]');
+        const history = JSON.parse(localStorage.getItem('shannon_chat_history') || '[]');
         history.push({
-            role: 'user', 
-            text: text, 
-            timestamp: Date.now() 
+            role: 'user',
+            text: text,
+            timestamp: Date.now()
         });
-        localStorage.setItem('chat_history', JSON.stringify(history));
+        localStorage.setItem('shannon_chat_history', JSON.stringify(history));
     }
     
     input.value = '';
@@ -8678,6 +8678,8 @@ window.submitCoachMessage = function() {
     // 4. Set Logic to Fire
     coachDebounceTimer = setTimeout(() => {
         const combinedText = coachMessageBuffer.join('\n');
+        // Track how many messages are in this buffer before clearing
+        window._lastBufferedCount = coachMessageBuffer.length;
         coachMessageBuffer = []; // Clear buffer
         triggerCoachResponse(combinedText);
     }, 15000); // 15s wait - gives user time to send multiple messages
@@ -8937,20 +8939,34 @@ window.triggerCoachResponse = async function(userMsg) {
 
     let context = gatherContext();
     const history = getChatHistory();
-    
+
     // Determine Conversation Status (New vs Continuing)
+    // Check the last COACH message, not the last user message
     let conversationStatus = 'new';
-    if (history.length > 0) {
-        const lastMsg = history[history.length - 1];
-        const gap = Date.now() - lastMsg.timestamp;
-        if (gap < (60 * 60 * 1000)) { // 1 hour threshold
-            conversationStatus = 'continuing';
+
+    // If a daily greeting was already sent today, this is a continuing conversation
+    const lastGreetDate = localStorage.getItem('coach_last_greet_date');
+    const now = new Date();
+    const bneTimeStr = now.toLocaleString("en-US", {timeZone: "Australia/Brisbane"});
+    const todayStr = new Date(bneTimeStr).toDateString();
+
+    if (lastGreetDate === todayStr) {
+        // Greeting already sent today, so this is continuing
+        conversationStatus = 'continuing';
+    } else if (history.length > 0) {
+        // Find the most recent coach/model message
+        const lastCoachMsg = [...history].reverse().find(m => m.role === 'model' || m.role === 'assistant');
+        if (lastCoachMsg) {
+            const gap = Date.now() - lastCoachMsg.timestamp;
+            if (gap < (60 * 60 * 1000)) { // 1 hour threshold
+                conversationStatus = 'continuing';
+            }
         }
     }
 
     // Determine how many messages are in the current buffer to avoid sending them twice
     // (since they were already pushed to history in submitCoachMessage)
-    const messagesToSlice = Array.isArray(window._lastBufferedCount) ? window._lastBufferedCount.length : 0;
+    const messagesToSlice = (typeof window._lastBufferedCount === 'number') ? window._lastBufferedCount : 0;
     const historyContext = history.slice(0, history.length - messagesToSlice);
 
     const payloadHistory = historyContext.map(m => ({ 
@@ -9713,15 +9729,15 @@ window.appendCoachMessage = function(text) {
 
     container.appendChild(rowDiv);
     container.scrollTop = container.scrollHeight;
-    
+
     // Save to LocalStorage
-    const history = JSON.parse(localStorage.getItem('chat_history') || '[]');
+    const history = JSON.parse(localStorage.getItem('shannon_chat_history') || '[]');
     history.push({
-        role: 'model', 
-        text: text, 
-        timestamp: Date.now() 
+        role: 'model',
+        text: text,
+        timestamp: Date.now()
     });
-    localStorage.setItem('chat_history', JSON.stringify(history));
+    localStorage.setItem('shannon_chat_history', JSON.stringify(history));
 
     // Mark as unread and show notification badge
     localStorage.setItem('coach_unread_messages', 'true');
