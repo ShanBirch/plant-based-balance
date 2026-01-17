@@ -8896,6 +8896,46 @@ window.toggleCoachMode = function(show) {
     }
 };
 
+// User fact tracking - remembers key details across sessions
+function getUserFacts() {
+    const factsStr = localStorage.getItem('user_facts');
+    if (!factsStr) {
+        return {
+            location: '',
+            struggles: [],
+            preferences: [],
+            health_notes: [],
+            personal_details: [],
+            goals: []
+        };
+    }
+    try {
+        return JSON.parse(factsStr);
+    } catch (e) {
+        return {
+            location: '',
+            struggles: [],
+            preferences: [],
+            health_notes: [],
+            personal_details: [],
+            goals: []
+        };
+    }
+}
+
+function saveUserFact(category, fact) {
+    const facts = getUserFacts();
+    if (category === 'location') {
+        facts.location = fact;
+    } else if (facts[category] && Array.isArray(facts[category])) {
+        // Avoid duplicates
+        if (!facts[category].includes(fact)) {
+            facts[category].push(fact);
+        }
+    }
+    localStorage.setItem('user_facts', JSON.stringify(facts));
+}
+
 function gatherContext() {
     let dayNum = 1;
     const startStr = localStorage.getItem('pbb_start_date');
@@ -8913,7 +8953,8 @@ function gatherContext() {
         profile: (sessionStorage.getItem('userResult') || 'CORTISOL').toUpperCase(),
         sleep: localStorage.getItem('sleep_quality') || 'Unknown',
         energy: localStorage.getItem('energy_level') || 'Unknown',
-        challengeDay: dayNum
+        challengeDay: dayNum,
+        userFacts: getUserFacts()
     };
 }
 
