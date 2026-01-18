@@ -1002,7 +1002,7 @@
     <div id="stories-carousel-container" style="padding: 15px 0 15px 25px; background: transparent; overflow-x: auto; overflow-y: hidden; white-space: nowrap;">
         <div id="stories-carousel" style="display: inline-flex; gap: 15px;">
             <!-- Add Your Story Button -->
-            <div class="story-ring add-story-btn" onclick="openStoryUploadModal()" style="display: inline-block; text-align: center; cursor: pointer;">
+            <div class="story-ring add-story-btn" onclick="openStoryCamera()" style="display: inline-block; text-align: center; cursor: pointer;">
                 <div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; position: relative;">
                     <div style="width: 64px; height: 64px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center;">
                         <span style="font-size: 2rem; color: var(--primary);">+</span>
@@ -12878,7 +12878,7 @@ updateCoachUI();
             <label for="story-file-input" style="flex:1; padding:14px; background:var(--secondary); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:600; text-align:center; transition:all 0.2s;">
                 Choose Photo/Video
             </label>
-            <input type="file" id="story-file-input" accept="image/*,video/*" style="display:none;" onchange="handleStoryFileSelect(event)">
+            <input type="file" id="story-file-input" accept="image/*,video/*" capture="environment" style="display:none;" onchange="handleStoryFileSelect(event)">
 
             <button id="story-upload-button" onclick="uploadStory()" disabled style="flex:1; padding:14px; background:var(--primary); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:600; transition:all 0.2s; opacity:0.5;">
                 Share Story
