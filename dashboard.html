@@ -8038,16 +8038,34 @@ function renderWeeklyCalendar() {
     const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
     const isHighCortisol = profileType.includes('CORTISOL') || profileType.includes('ADRENAL');
 
-    // Simplified Week Workout Template
-    const WEEKLY_TEMPLATE = [
-        { day: 'Mon', type: 'Lower Body' },
-        { day: 'Tue', type: 'Upper Body' },
-        { day: 'Wed', type: 'Cardio / Rest' },
-        { day: 'Thu', type: 'Full Body' },
-        { day: 'Fri', type: 'Glutes / Core' },
-        { day: 'Sat', type: 'Somatic Yoga' },
-        { day: 'Sun', type: 'Rest' }
+    // Weekly Schedule Template - maps to WORKOUT_DB programs
+    // Each day references a program and the day index within that program's schedule
+    const WEEKLY_SCHEDULE = [
+        { day: 'Mon', program: 'bodyweight', dayIndex: 0 }, // Lower Body Power
+        { day: 'Tue', program: 'bodyweight', dayIndex: 1 }, // Upper Body Strength
+        { day: 'Wed', program: 'yoga', dayIndex: 2 },       // Spinal Mobility & Detox
+        { day: 'Thu', program: 'bodyweight', dayIndex: 3 }, // Full Body Conditioning
+        { day: 'Fri', program: 'bodyweight', dayIndex: 4 }, // Glutes & Core Focus
+        { day: 'Sat', program: 'yoga', dayIndex: 0 },       // Somatic Hormone Reset
+        { day: 'Sun', program: 'yoga', dayIndex: 6 }        // Yin & Meditation (Rest)
     ];
+
+    // Helper to get workout from WORKOUT_DB
+    function getWorkoutForDay(dayIdx) {
+        const scheduleItem = WEEKLY_SCHEDULE[dayIdx];
+        const program = window.WORKOUT_DB?.[scheduleItem.program];
+        if (program && program.schedule && program.schedule[scheduleItem.dayIndex]) {
+            const workout = program.schedule[scheduleItem.dayIndex];
+            return {
+                title: workout.title,
+                programName: program.name,
+                programId: scheduleItem.program,
+                exercises: workout.exercises
+            };
+        }
+        // Fallback
+        return { title: scheduleItem.day + ' Workout', programName: 'General', programId: 'bodyweight', exercises: [] };
+    }
 
     for (let i = 0; i < 7; i++) {
         const d = new Date(monday);
@@ -8057,7 +8075,8 @@ function renderWeeklyCalendar() {
         
         let headerColor = '';
         let phaseDotHtml = '';
-        let workoutName = WEEKLY_TEMPLATE[i].type;
+        const dayWorkout = getWorkoutForDay(i);
+        let workoutName = dayWorkout.title;
         let phase = PHASE_INFO.wellness; // Default
         let phaseKey = 'wellness';
         let currentDayLoop = 0;
@@ -8082,31 +8101,34 @@ function renderWeeklyCalendar() {
 
         // Apply Modifiers
         if (!isBaseline) {
-            // 1. Phase Modifiers
-            if (phaseKey === 'menstrual' && (workoutName.includes('HIIT') || workoutName.includes('Lower Body'))) {
-                workoutName = 'Gentle Yoga / Walk';
-            }
-            if (phaseKey === 'luteal' && workoutName.includes('HIIT')) {
-                workoutName = 'Pilates';
+            // 1. Phase Modifiers - swap to yoga on menstrual phase if doing strength
+            if (phaseKey === 'menstrual' && dayWorkout.programId === 'bodyweight') {
+                // Swap to gentle yoga
+                const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
+                if (yogaWorkout) workoutName = yogaWorkout.title;
             }
         }
         
-        // 2. High Cortisol Safety Override (Applies ALWAYS if profile matches)
-        if (isHighCortisol && (workoutName.includes('HIIT') || workoutName.includes('Cardio'))) {
-            workoutName = 'LISS Cardio / Walking';
+        // 2. High Cortisol Safety Override - encourage yoga over HIIT
+        if (isHighCortisol && dayWorkout.programId === 'bodyweight') {
+            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
+            if (yogaWorkout) workoutName = yogaWorkout.title;
         }
 
         // 3. Daily Mood/Symptoms only apply to TODAY
         if (isToday) {
             if (userCycleData.mood === 'tired') {
-                 workoutName = 'Rest / Recovery';
+                const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
+                if (yogaWorkout) workoutName = yogaWorkout.title;
             }
             if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
-                 if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
-                     workoutName = 'Cooling Breath / Restorative Yoga';
-                 } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
-                     workoutName = 'Rest / Meditation';
-                 }
+                if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
+                    const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative
+                    if (yogaWorkout) workoutName = yogaWorkout.title;
+                } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+                    const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[6]; // Yin & Meditation
+                    if (yogaWorkout) workoutName = yogaWorkout.title;
+                }
             }
         }
 
@@ -8128,7 +8150,7 @@ function renderWeeklyCalendar() {
 
         row.innerHTML = `
             <div class="cal-date-box">
-                <span class="cal-day-name">${WEEKLY_TEMPLATE[i].day}</span>
+                <span class="cal-day-name">${WEEKLY_SCHEDULE[i].day}</span>
                 <span class="cal-day-num" style="color:${isToday ? (isBaseline ? '#046A38' : headerColor) : ''}">${d.getDate()}</span>
             </div>
             <div class="cal-context">
@@ -8145,23 +8167,30 @@ function renderWeeklyCalendar() {
 // --- SHARED WORKOUT LOGIC ---
 // Returns today's recommended workout based on Calendar logic (same as renderWeeklyCalendar)
 function getTodaysWorkout() {
-    const WEEKLY_TEMPLATE = [
-        { day: 'Mon', type: 'Lower Body', icon: '🦵' },
-        { day: 'Tue', type: 'Upper Body', icon: '💪' },
-        { day: 'Wed', type: 'Cardio / Rest', icon: '🏃‍♀️' },
-        { day: 'Thu', type: 'Full Body', icon: '🔥' },
-        { day: 'Fri', type: 'Glutes / Core', icon: '🍑' },
-        { day: 'Sat', type: 'Somatic Yoga', icon: '🧘‍♀️' },
-        { day: 'Sun', type: 'Rest', icon: '💤' }
+    // Weekly Schedule Template - maps to WORKOUT_DB programs (same as calendar)
+    const WEEKLY_SCHEDULE = [
+        { day: 'Mon', program: 'bodyweight', dayIndex: 0, icon: '🦵' }, // Lower Body Power
+        { day: 'Tue', program: 'bodyweight', dayIndex: 1, icon: '💪' }, // Upper Body Strength
+        { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️' },       // Spinal Mobility & Detox
+        { day: 'Thu', program: 'bodyweight', dayIndex: 3, icon: '🔥' }, // Full Body Conditioning
+        { day: 'Fri', program: 'bodyweight', dayIndex: 4, icon: '🍑' }, // Glutes & Core Focus
+        { day: 'Sat', program: 'yoga', dayIndex: 0, icon: '🧘‍♀️' },       // Somatic Hormone Reset
+        { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤' }        // Yin & Meditation (Rest)
     ];
 
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 is Sun, 6 is Sat
     // Convert to Mon=0 index
     const dayIndex = (dayOfWeek + 6) % 7;
+    const scheduleItem = WEEKLY_SCHEDULE[dayIndex];
     
-    let workoutName = WEEKLY_TEMPLATE[dayIndex].type;
-    let workoutIcon = WEEKLY_TEMPLATE[dayIndex].icon;
+    // Get workout from WORKOUT_DB
+    const program = window.WORKOUT_DB?.[scheduleItem.program];
+    const workout = program?.schedule?.[scheduleItem.dayIndex];
+    
+    let workoutName = workout?.title || scheduleItem.day + ' Workout';
+    let workoutIcon = scheduleItem.icon;
+    let programId = scheduleItem.program;
     let phaseInfo = null;
     let currentCycleDay = 0;
     let phaseKey = 'wellness';
@@ -8182,35 +8211,46 @@ function getTodaysWorkout() {
         phaseKey = getCyclePhase(currentCycleDay, userCycleData.cycleLength);
         phaseInfo = PHASE_INFO[phaseKey];
         
-        // Apply phase modifiers
-        if (phaseKey === 'menstrual' && (workoutName.includes('HIIT') || workoutName.includes('Lower Body'))) {
-            workoutName = 'Gentle Yoga / Walk';
-            workoutIcon = '🧘‍♀️';
-        }
-        if (phaseKey === 'luteal' && workoutName.includes('HIIT')) {
-            workoutName = 'Pilates';
-            workoutIcon = '🧘‍♀️';
+        // Apply phase modifiers - swap to yoga on menstrual phase if doing strength
+        if (phaseKey === 'menstrual' && programId === 'bodyweight') {
+            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
+            if (yogaWorkout) {
+                workoutName = yogaWorkout.title;
+                workoutIcon = '🧘‍♀️';
+            }
         }
     }
     
     // Apply High Cortisol safety override
-    if (isHighCortisol && (workoutName.includes('HIIT') || workoutName.includes('Cardio'))) {
-        workoutName = 'LISS Cardio / Walking';
-        workoutIcon = '🚶‍♀️';
+    if (isHighCortisol && programId === 'bodyweight') {
+        const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
+        if (yogaWorkout) {
+            workoutName = yogaWorkout.title;
+            workoutIcon = '🧘‍♀️';
+        }
     }
     
     // Apply mood modifiers
     if (userCycleData.mood === 'tired') {
-        workoutName = 'Rest / Recovery';
-        workoutIcon = '💤';
+        const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
+        if (yogaWorkout) {
+            workoutName = yogaWorkout.title;
+            workoutIcon = '💤';
+        }
     }
     if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
         if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
-            workoutName = 'Cooling Breath / Restorative Yoga';
-            workoutIcon = '🧘‍♀️';
+            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative
+            if (yogaWorkout) {
+                workoutName = yogaWorkout.title;
+                workoutIcon = '🧘‍♀️';
+            }
         } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
-            workoutName = 'Rest / Meditation';
-            workoutIcon = '🧘‍♀️';
+            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[6]; // Yin & Meditation
+            if (yogaWorkout) {
+                workoutName = yogaWorkout.title;
+                workoutIcon = '🧘‍♀️';
+            }
         }
     }
     
@@ -8220,7 +8260,8 @@ function getTodaysWorkout() {
         phaseKey: phaseKey,
         phaseInfo: phaseInfo,
         cycleDay: currentCycleDay,
-        dayName: WEEKLY_TEMPLATE[dayIndex].day
+        dayName: WEEKLY_SCHEDULE[dayIndex].day,
+        programId: programId
     };
 }
 
@@ -8764,7 +8805,7 @@ function toggleCard(header) {
 
 // --- TRAINERIZE WORKOUT LOGIC ---
 // --- TRAINERIZE WORKOUT LOGIC ---
-const WORKOUT_DB = {
+window.WORKOUT_DB = {
     'yoga': {
         name: 'Somatic Yoga',
         id: 'yoga',
