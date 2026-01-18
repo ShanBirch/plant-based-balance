@@ -6925,7 +6925,7 @@ function startCustomBuilderWorkout() {
 }
 </style>
 
-</div> <!-- End Main Container -->
+
 
     <!-- Bottom Navigation (Moved Outside Container) -->
     <nav class="bottom-nav" style="z-index: 9999 !important; position: fixed; bottom: 0; left: 0; width: 100%;">
@@ -7005,6 +7005,11 @@ function startCustomBuilderWorkout() {
                         <label>
                              <span style="font-size: 0.85em; opacity: 0.8; color: #666;">Cycle Length</span>
                             <input type="number" id="cycle-length-input" value="28" min="21" max="40" onchange="updateCycleData()" style="color: #333; background: white; border: 1px solid #ddd;">
+                        </label>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:10px; margin-top:10px; cursor:pointer; grid-column: span 2;">
+                            <input type="checkbox" id="no-period-toggle" onchange="toggleNoPeriodMode()">
+                            <span style="font-size:0.85em; color:#666;">I don't have a period (Wellness Mode)</span>
                         </label>
                     </div>
                 </details>
@@ -7299,6 +7304,9 @@ function startCustomBuilderWorkout() {
             </div>
         </div>
     </div>
+
+    </div> 
+</div> <!-- End Main Container (Moved) -->
 
 <script>
 // PWA & Navigation Logic
@@ -7678,13 +7686,15 @@ const PHASE_INFO = {
     menstrual: { name: 'Menstrual Phase', color: '#E57373', css: 'phase-menstrual', rec: 'Rest, Walking, Yin Yoga', icon: '🩸' },
     follicular: { name: 'Follicular Phase', color: '#F06292', css: 'phase-follicular', rec: 'HIIT, Strength, Cardio', icon: '⚡' },
     ovulation: { name: 'Ovulation Phase', color: '#BA68C8', css: 'phase-ovulation', rec: 'Max Effort, PB Attempts', icon: '🥚' },
-    luteal: { name: 'Luteal Phase', color: '#FFB74D', css: 'phase-luteal', rec: 'Strength (Mod), Pilates', icon: '🌙' }
+    luteal: { name: 'Luteal Phase', color: '#FFB74D', css: 'phase-luteal', rec: 'Strength (Mod), Pilates', icon: '🌙' },
+    wellness: { name: 'Wellness Cycle', color: '#4DB6AC', css: 'phase-follicular', rec: 'Balanced Activity / Strength', icon: '🌿' }
 };
 
 let userCycleData = {
     lastPeriod: null, 
     cycleLength: 28,
-    mood: null // 'strong' or 'tired'
+    mood: null, // 'strong' or 'tired'
+    noPeriodMode: false
 };
 
 function setCycleMood(mood, btn) {
@@ -7696,6 +7706,16 @@ function setCycleMood(mood, btn) {
     // Re-render suggestions
     renderCycleStatus();
     renderWeeklyCalendar();
+}
+
+function toggleNoPeriodMode() {
+    const isChecked = document.getElementById('no-period-toggle').checked;
+    userCycleData.noPeriodMode = isChecked;
+    
+    const inputContainer = document.getElementById('last-period-input');
+    if(inputContainer) inputContainer.disabled = isChecked;
+    
+    updateCycleData();
 }
 
 async function initCalendarView() {
@@ -7713,6 +7733,11 @@ async function initCalendarView() {
                     userCycleData.cycleLength = parseInt(facts.additional_data.cycle_length);
                     document.getElementById('cycle-length-input').value = userCycleData.cycleLength;
                 }
+                if (facts.additional_data.no_period_mode) {
+                    userCycleData.noPeriodMode = true;
+                    document.getElementById('no-period-toggle').checked = true;
+                    document.getElementById('last-period-input').disabled = true;
+                }
             }
         } catch (e) {
             console.log("No existing cycle data found or error fetching", e);
@@ -7726,8 +7751,11 @@ async function initCalendarView() {
 async function updateCycleData() {
     const startInput = document.getElementById('last-period-input').value;
     const lengthInput = document.getElementById('cycle-length-input').value;
+    const noPeriod = document.getElementById('no-period-toggle').checked;
 
-    if (!startInput) return;
+    userCycleData.noPeriodMode = noPeriod;
+
+    if (!noPeriod && !startInput) return; // Wait for input if not in wellness mode
 
     userCycleData.lastPeriod = startInput;
     userCycleData.cycleLength = parseInt(lengthInput);
@@ -7748,12 +7776,12 @@ async function updateCycleData() {
                 additional: {
                     ...currentAdditional,
                     last_period_start: userCycleData.lastPeriod,
-                    cycle_length: userCycleData.cycleLength
+                    cycle_length: userCycleData.cycleLength,
+                    no_period_mode: userCycleData.noPeriodMode
                 }
             });
-            // alert('Cycle updated!');
         } catch (e) {
-            console.error("Error saving cycle data", e);
+            console.error("Error saving cycle data asds", e);
         }
     }
 
@@ -7782,6 +7810,32 @@ function getCyclePhase(dayOfCycle, cycleLen) {
 }
 
 function renderCycleStatus() {
+    if (userCycleData.noPeriodMode) {
+        // Wellness Mode View
+        const phase = PHASE_INFO['wellness'];
+        document.getElementById('cycle-phase-name').innerText = phase.name;
+        document.getElementById('cycle-phase-name').style.color = phase.color;
+        document.getElementById('cycle-day-display').innerText = "General Wellness";
+        document.getElementById('cycle-phase-desc').innerText = "Focus on a balanced routine of Strength, Cardio, and Rest.";
+        
+        const iconContainer = document.getElementById('cycle-phase-icon');
+        if(iconContainer) {
+            iconContainer.style.background = phase.color + '40';
+            iconContainer.style.color = phase.color;
+            iconContainer.innerHTML = phase.icon;
+        }
+
+        let suggestion = phase.rec;
+        if (userCycleData.mood === 'tired') suggestion = "Rest / Light Walking";
+        else if (userCycleData.mood === 'strong') suggestion = "Strength / HIIT";
+
+        document.getElementById('rec-text').innerText = suggestion;
+        const recCard = document.getElementById('today-workout-rec');
+        if(recCard) recCard.style.background = phase.color;
+        
+        return;
+    }
+
     if (!userCycleData.lastPeriod) {
         document.getElementById('cycle-phase-name').innerText = "Setup Required";
         document.getElementById('cycle-day-display').innerText = "Enter details below";
@@ -7835,7 +7889,7 @@ function renderWeeklyCalendar() {
     const grid = document.getElementById('weekly-calendar');
     grid.innerHTML = '';
 
-    if (!userCycleData.lastPeriod) {
+    if (!userCycleData.lastPeriod && !userCycleData.noPeriodMode) {
         grid.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">Enter Last Period Date to generate schedule.</div>';
         return;
     }
@@ -7850,7 +7904,7 @@ function renderWeeklyCalendar() {
     monday.setDate(today.getDate() - distToMon);
 
     const msPerDay = 24 * 60 * 60 * 1000;
-    const start = new Date(userCycleData.lastPeriod);
+    const start = userCycleData.lastPeriod ? new Date(userCycleData.lastPeriod) : new Date(); // Fallback if no period mode
 
     // Simplified Week Workout Template
     // 0=Mon, 1=Tue...
@@ -7885,11 +7939,13 @@ function renderWeeklyCalendar() {
         // Workout Logic
         let workoutName = WEEKLY_TEMPLATE[i].type;
         // Apply Phase Modifiers
-        if (phaseKey === 'menstrual' && (workoutName.includes('HIIT') || workoutName.includes('Lower Body'))) {
-            workoutName = 'Gentle Yoga / Walk';
-        }
-        if (phaseKey === 'luteal' && workoutName.includes('HIIT')) {
-            workoutName = 'Pilates';
+        if (!userCycleData.noPeriodMode) {
+            if (phaseKey === 'menstrual' && (workoutName.includes('HIIT') || workoutName.includes('Lower Body'))) {
+                workoutName = 'Gentle Yoga / Walk';
+            }
+            if (phaseKey === 'luteal' && workoutName.includes('HIIT')) {
+                workoutName = 'Pilates';
+            }
         }
 
         // Apply Mood Modifier (only to today)
@@ -7899,15 +7955,23 @@ function renderWeeklyCalendar() {
 
         const row = document.createElement('div');
         row.className = `calendar-day-row ${isToday ? 'is-today' : ''}`;
+        
+        let phaseDotHtml = '';
+        if (!userCycleData.noPeriodMode) {
+             phaseDotHtml = `<span class="cal-phase-dot" style="background:${phase.color}"></span>
+                             <span style="opacity:0.8; font-size:0.8rem;">${phase.name} (Day ${currentDayLoop})</span>`;
+        } else {
+             phaseDotHtml = `<span class="cal-phase-dot" style="background:${PHASE_INFO.wellness.color}"></span> <span style="font-size:0.8rem">Balanced</span>`;
+        }
+
         row.innerHTML = `
             <div class="cal-date-box">
                 <span class="cal-day-name">${WEEKLY_TEMPLATE[i].day}</span>
-                <span class="cal-day-num" style="color:${isToday ? phase.color : ''}">${d.getDate()}</span>
+                <span class="cal-day-num" style="color:${isToday ? (userCycleData.noPeriodMode ? PHASE_INFO.wellness.color : phase.color) : ''}">${d.getDate()}</span>
             </div>
             <div class="cal-context">
                 <div style="font-size: 0.9em; margin-bottom: 2px;">
-                    <span class="cal-phase-dot" style="background:${phase.color}"></span>
-                    <span style="opacity:0.8; font-size:0.8rem;">${phase.name} (Day ${currentDayLoop})</span>
+                    ${phaseDotHtml}
                 </div>
                 <div class="cal-workout-tag">${workoutName}</div>
             </div>
