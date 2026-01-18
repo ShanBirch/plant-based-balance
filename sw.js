@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v4'; // Bumped to force refresh (Fix Coach Mode Glitch)
+const CACHE_NAME = 'pbb-app-v5'; // Bumped for Chat Optimization & Fixes
 const ASSETS = [
   './dashboard.html',
   './icon-192.png',
