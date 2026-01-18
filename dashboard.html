@@ -1258,12 +1258,32 @@
     })();
 
     // --- NEW: Coach & Photo Logic ---
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
         injectMealPhotoUploads();
         injectReflectionsIntoDays();
-        loadChat();
-        loadJournalHistory(); // Added for journal history
+        
+        // Wait for Auth before loading user-specific data
+        const waitForAuth = () => new Promise(resolve => {
+            if(window.currentUser) return resolve(window.currentUser);
+            const check = setInterval(() => {
+                if(window.currentUser) {
+                    clearInterval(check);
+                    resolve(window.currentUser);
+                }
+            }, 100);
+            // Timeout after 5s just in case
+            setTimeout(() => { clearInterval(check); resolve(null); }, 5000);
+        });
 
+        await waitForAuth();
+        
+        if(window.currentUser) {
+            loadChat();
+            loadJournalHistory(); // Added for journal history
+            
+            // Also refresh community feed if function exists
+            if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
+        }
     });
 
     function injectMealPhotoUploads() {
