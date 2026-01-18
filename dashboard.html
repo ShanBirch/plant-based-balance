@@ -7213,6 +7213,68 @@ function startCustomBuilderWorkout() {
             </div>
         </div>
 
+        <!-- APP SETTINGS -->
+        <h3 style="padding: 0 25px; margin-bottom: 20px;">Settings</h3>
+        <div style="padding: 0 25px; margin-bottom: 30px;">
+            <div style="background:white; border-radius:12px; border:1px solid #f1f5f9; overflow:hidden;">
+                 <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                     <div>Color Theme</div>
+                     <select id="theme-selector" onchange="applyAppTheme(this.value)" style="border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; color:var(--primary); font-weight:600; outline:none; background:transparent; font-family: 'Inter', sans-serif; cursor: pointer;">
+                         <option value="default">Forest (Default)</option>
+                         <option value="antigravity-light">Antigravity Light</option>
+                         <option value="ocean">Ocean Calm</option>
+                         <option value="sunset">Sunset Glow</option>
+                     </select>
+                 </div>
+                 <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                     <div>Units</div>
+                     <div style="font-size:0.9rem; font-weight:700; color:var(--primary); cursor:pointer;" onclick="alert('Units toggled (Simulation)')">Metric (kg)</div>
+                 </div>
+                 <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                     <div>Notifications</div>
+                     <label class="toggle-switch" style="display:inline-block; width:40px; height:24px; position:relative;">
+                         <input type="checkbox" checked onchange="console.log('Notifs toggled')">
+                         <span style="position:absolute; inset:0; background:#ccc; border-radius:24px; transition:0.3s;" class="slider"></span>
+                         <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:0.3s;" class="knob"></span>
+                     </label>
+                     <!-- Inline style for slider knob behavior needs css, will add simple mock -->
+                     <style> input:checked + .slider { background: var(--primary) !important; } input:checked + .slider + .knob { transform: translateX(16px); } </style>
+                 </div>
+                  <div style="padding:15px; display:flex; justify-content:space-between; align-items:center;">
+                     <div>Hide Weight</div>
+                     <label class="toggle-switch" style="display:inline-block; width:40px; height:24px; position:relative;">
+                         <input type="checkbox" onchange="alert('Dashboard tiles Updated (Simulation)')">
+                         <span style="position:absolute; inset:0; background:#ccc; border-radius:24px; transition:0.3s;"></span>
+                         <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:0.3s; transform: translateX(0);"></span>
+                     </label>
+                 </div>
+            </div>
+        </div>
+
+        <div style="padding: 0 25px; margin-top: 30px;">
+            <button class="btn-primary" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:var(--primary);" onclick="toggleSubscriptionMenu()">
+                MANAGE SUBSCRIPTION
+            </button>
+
+            <div id="subscription-management-menu" class="subscription-menu">
+                <button class="sub-action-btn" onclick="togglePauseOptions()">
+                    <span>??</span> Pause Subscription
+                </button>
+                <div id="pause-duration-options" class="pause-options">
+                    <button class="pause-btn" onclick="handlePause(1)">1 Month</button>
+                    <button class="pause-btn" onclick="handlePause(2)">2 Months</button>
+                    <button class="pause-btn" onclick="handlePause(3)">3 Months</button>
+                </div>
+
+                <button id="btn-cancel-sub" class="sub-action-btn cancel" onclick="handleSubscriptionAction('cancel')">
+                    <span>?</span> Cancel Subscription
+                </button>
+                <div id="sub-status-msg" style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 10px;">
+                    Managed securely via Stripe
+                </div>
+            </div>
+        </div>
+
         </div>
 
     <!-- EDIT PROFILE MODAL -->
@@ -7273,73 +7335,6 @@ function startCustomBuilderWorkout() {
         document.getElementById('btn-edit-profile').style.display = 'inline-flex';
     }
     </script>
-    
-    <!-- APP SETTINGS -->
-    <h3 style="padding: 0 25px; margin-bottom: 20px;">Settings</h3>
-    <div style="padding: 0 25px; margin-bottom: 30px;">
-        <div style="background:white; border-radius:12px; border:1px solid #f1f5f9; overflow:hidden;">
-             <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
-                 <div>Color Theme</div>
-                 <select id="theme-selector" onchange="applyAppTheme(this.value)" style="border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; color:var(--primary); font-weight:600; outline:none; background:transparent; font-family: 'Inter', sans-serif; cursor: pointer;">
-                     <option value="default">Forest (Default)</option>
-                     <option value="antigravity-light">Antigravity Light</option>
-                     <option value="ocean">Ocean Calm</option>
-                     <option value="sunset">Sunset Glow</option>
-                 </select>
-             </div>
-             <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
-                 <div>Units</div>
-                 <div style="font-size:0.9rem; font-weight:700; color:var(--primary); cursor:pointer;" onclick="alert('Units toggled (Simulation)')">Metric (kg)</div>
-             </div>
-             <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
-                 <div>Notifications</div>
-                 <label class="toggle-switch" style="display:inline-block; width:40px; height:24px; position:relative;">
-                     <input type="checkbox" checked onchange="console.log('Notifs toggled')">
-                     <span style="position:absolute; inset:0; background:#ccc; border-radius:24px; transition:0.3s;" class="slider"></span>
-                     <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:0.3s;" class="knob"></span>
-                 </label>
-                 <!-- Inline style for slider knob behavior needs css, will add simple mock -->
-                 <style> input:checked + .slider { background: var(--primary) !important; } input:checked + .slider + .knob { transform: translateX(16px); } </style>
-             </div>
-              <div style="padding:15px; display:flex; justify-content:space-between; align-items:center;">
-                 <div>Hide Weight</div>
-                 <label class="toggle-switch" style="display:inline-block; width:40px; height:24px; position:relative;">
-                     <input type="checkbox" onchange="alert('Dashboard tiles Updated (Simulation)')">
-                     <span style="position:absolute; inset:0; background:#ccc; border-radius:24px; transition:0.3s;"></span>
-                     <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:0.3s; transform: translateX(0);"></span>
-                 </label>
-             </div>
-        </div>
-    </div>
-
-
-
-
-
-        <div style="padding: 0 25px; margin-top: 30px;">
-            <button class="btn-primary" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:var(--primary);" onclick="toggleSubscriptionMenu()">
-                MANAGE SUBSCRIPTION
-            </button>
-            
-            <div id="subscription-management-menu" class="subscription-menu">
-                <button class="sub-action-btn" onclick="togglePauseOptions()">
-                    <span>??</span> Pause Subscription
-                </button>
-                <div id="pause-duration-options" class="pause-options">
-                    <button class="pause-btn" onclick="handlePause(1)">1 Month</button>
-                    <button class="pause-btn" onclick="handlePause(2)">2 Months</button>
-                    <button class="pause-btn" onclick="handlePause(3)">3 Months</button>
-                </div>
-
-                <button id="btn-cancel-sub" class="sub-action-btn cancel" onclick="handleSubscriptionAction('cancel')">
-                    <span>?</span> Cancel Subscription
-                </button>
-                <div id="sub-status-msg" style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 10px;">
-                    Managed securely via Stripe
-                </div>
-            </div>
-        </div>
-    </div>
 
     </div> 
 </div> <!-- End Main Container (Moved) -->
@@ -7416,14 +7411,16 @@ async function initProgramDate() {
 
     if (!startDate) {
         startDate = new Date().toISOString();
-        localStorage.setItem('pbb_start_date', startDate);
     }
+
+    // Always ensure localStorage is synced with the current start date
+    localStorage.setItem('pbb_start_date', startDate);
 
     const start = new Date(startDate);
     const now = new Date();
     const diffTime = Math.abs(now - start);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     let currentDay = diffDays;
     if (currentDay < 1) currentDay = 1;
 
@@ -8141,13 +8138,23 @@ function switchWeek(id, btn) {
     }
 }
 
-function renderTodayMeals() {
+async function renderTodayMeals() {
     const container = document.getElementById('today-meals-content');
     if (!container) return;
 
     // 1. Calculate Day
-    const startDate = localStorage.getItem('pbb_start_date');
-    if (!startDate) return;
+    let startDate = localStorage.getItem('pbb_start_date');
+    if (!startDate) {
+        // Initialize program date if not set
+        await initProgramDate();
+        startDate = localStorage.getItem('pbb_start_date');
+        if (!startDate) {
+            container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">
+                <p>Unable to determine your program start date. Please try refreshing the page.</p>
+            </div>`;
+            return;
+        }
+    }
 
     const start = new Date(startDate);
     const now = new Date();
