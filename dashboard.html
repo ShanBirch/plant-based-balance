@@ -26,10 +26,10 @@
 <style>
     :root {
         /* Premium Green & Gold Palette */
-        --primary: #046A38; /* Forest Green */
-        --primary-light: #06542f; /* Deep Green */
-        --secondary: #d4af37; /* Gold */
-        --accent-green: #f0fdf4; /* Light Green Tint */
+        --primary: #2B3D26; /* Forest Green (Warm/Brownish Undertone) */
+        --primary-light: #3C5236; /* Lighter Warm Green */
+        --secondary: #C7B446; /* Greeny Gold */
+        --accent-green: #f2f7f4; /* Subtle Green Tint */
         
         --bg: #f9f9f7;
         --surface: #ffffff;
@@ -989,7 +989,7 @@
         </div>
         <h1 class="user-name">Hello, Shannon</h1>
         <div style="margin-top: 5px;">
-            <button onclick="document.getElementById('daily-wellness-modal').style.display='flex'" style="background:none; border:none; color:var(--text-muted); font-size:0.8rem; cursor:pointer; text-decoration:underline;">
+            <button onclick="document.getElementById('daily-wellness-modal').style.display='flex'" style="background:none; border:none; color:var(--secondary); font-size:0.8rem; cursor:pointer; text-decoration:underline;">
                 Did you check in today?
             </button>
         </div>
@@ -1224,11 +1224,11 @@
 
                 // Map symptoms to keywords/meal types
                 const mappings = {
-                    'mood': { type: 'BREAKFAST', badge: '? Brain-Fat Focus', color: '#fef3c7', text: '#92400e' },
-                    'bloating': { type: 'DINNER', badge: '?? Flora-Flush', color: '#dcfce7', text: '#166534' },
-                    'joint_pain': { type: 'SMOOTHIE', badge: '?? Structural Hydration', color: '#dbeafe', text: '#1e40af' },
-                    'anxiety': { type: 'SNACK', badge: '?? GABA-Guard', color: '#f3e8ff', text: '#6b21a8' },
-                    'weight_gain': { type: 'LUNCH', badge: '?? Metabolic Spark', color: '#ffe4e6', text: '#9f1239' }
+                    'mood': { type: 'BREAKFAST', badge: '🧠 Brain-Fat Focus', color: '#fef3c7', text: '#8a7e30' }, /* Greeny Gold Text */
+                    'bloating': { type: 'DINNER', badge: '🦠 Flora-Flush', color: '#dcfce7', text: '#166534' },
+                    'joint_pain': { type: 'SMOOTHIE', badge: '🦴 Structural Hydration', color: '#dbeafe', text: '#1e40af' },
+                    'anxiety': { type: 'SNACK', badge: '🛡️ GABA-Guard', color: '#f3e8ff', text: '#6b21a8' },
+                    'weight_gain': { type: 'LUNCH', badge: '🔥 Metabolic Spark', color: '#ffe4e6', text: '#9f1239' }
                 };
 
                 symptoms.forEach(s => {
