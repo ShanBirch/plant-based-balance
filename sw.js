@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v5'; // Bumped for Chat Optimization & Fixes
+const CACHE_NAME = 'pbb-app-v6'; // Bumped for Admin Approval System & Login Fixes
 const ASSETS = [
   './dashboard.html',
   './icon-192.png',
