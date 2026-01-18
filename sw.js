@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v3'; // Bumped to force refresh
+const CACHE_NAME = 'pbb-app-v4'; // Bumped to force refresh (Fix Coach Mode Glitch)
 const ASSETS = [
   './dashboard.html',
   './icon-192.png',
