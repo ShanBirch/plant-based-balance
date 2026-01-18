@@ -8137,8 +8137,9 @@ function checkDailyWellness(forceShow = false) {
     const today = new Date().toDateString();
 
     // Show if manually triggered (forceShow=true) OR if it hasn't been shown today
-    if (forceShow || (window.currentUser && lastCheck !== today)) {
-        document.getElementById('daily-wellness-modal').style.display = 'flex';
+    if (forceShow || lastCheck !== today) {
+        const modal = document.getElementById('daily-wellness-modal');
+        if(modal) modal.style.display = 'flex';
     }
 }
 
@@ -8533,8 +8534,13 @@ let currentWizardStep = 1;
 const totalWizardSteps = 4;
 
 function initOnboardingWizard() {
+    currentWizardStep = 1; // Reset to first step
     const modal = document.getElementById('onboarding-wizard');
-    if(modal) modal.style.display = 'flex';
+    if(modal) {
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        modal.style.opacity = '1';
+    }
     updateWizardUI();
 }
 
