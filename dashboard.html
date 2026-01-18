@@ -8550,34 +8550,16 @@ window.openCalendarWorkout = function(dayIndexFromMonday) {
          }
     }
 
-    // 4. Fetch Exercises
+    // 4. Fetch Exercises & Launch Player
     const program = window.WORKOUT_DB?.[programId];
     if (program && program.schedule && program.schedule[dayIndex]) {
-        const workout = program.schedule[dayIndex];
-        
-        if (workout.exercises) {
-            // Update Global State
-            myWorkout = workout.exercises;
-            localStorage.setItem('myCurrentWorkout', JSON.stringify(myWorkout));
-            
-            // Update UI
-            if (typeof renderWorkoutList === 'function') renderWorkoutList();
-            
-            // Switch Tab
-            if (typeof switchAppTab === 'function') {
-                const navBtn = document.querySelector('.bottom-nav .nav-item[onclick*="movement-tab"]') || document.querySelector('[onclick*="movement-tab"]');
-                switchAppTab('movement-tab', navBtn);
-            } else {
-                 document.getElementById('movement-tab').scrollIntoView();
-            }
-            
-            // Scroll to top of movement tab
-            window.scrollTo(0,0);
+        if (typeof startActiveWorkout === 'function') {
+            startActiveWorkout(programId, dayIndex);
         } else {
-            console.log("No exercises found for this workout.");
+            console.error("Workout player function not found");
         }
     } else {
-        console.log("Workout data not found.");
+        console.log("Workout data not found for program:", programId);
     }
 };
 
@@ -9949,14 +9931,16 @@ function hideAllAppViews() {
     });
 }
 
-async function startActiveWorkout(id) {
+async function startActiveWorkout(id, forcedDayIndex = null) {
     const program = WORKOUT_DB[id];
     
     // Get correct day schedule & Preload History
     const user = window.currentUser;
     let dayIndex = 0;
     
-    if (user) {
+    if (forcedDayIndex !== null) {
+        dayIndex = forcedDayIndex;
+    } else if (user) {
         // Preload history
         try {
             window.workoutHistoryCache = await dbHelpers.workouts.getHistory(user.id);
