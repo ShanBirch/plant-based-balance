@@ -26,9 +26,9 @@
 <style>
     :root {
         /* Premium Green & Gold Palette */
-        --primary: #2B3D26; /* Forest Green (Warm/Brownish Undertone) */
-        --primary-light: #3C5236; /* Lighter Warm Green */
-        --secondary: #C7B446; /* Greeny Gold */
+        --primary: #7BA883; /* Soft Sage Green (Pastel) */
+        --primary-light: #98C9A3; /* Light Mint Green (Pastel) */
+        --secondary: #E8D68E; /* Soft Golden Yellow */
         --accent-green: #f2f7f4; /* Subtle Green Tint */
         
         --bg: #f9f9f7;
@@ -328,12 +328,12 @@
     /* Dashboard Styles */
     .dashboard-welcome {
         padding: 25px;
-        background: linear-gradient(135deg, var(--primary) 0%, #034f2a 100%); /* Forest Green to Deep Green */
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
         color: white;
         border-bottom-left-radius: 30px;
         border-bottom-right-radius: 30px;
         margin-bottom: 25px;
-        box-shadow: 0 10px 30px -10px rgba(4, 106, 56, 0.4);
+        box-shadow: 0 10px 30px -10px rgba(123, 168, 131, 0.4);
         border-bottom: 5px solid var(--secondary);
     }
     .dashboard-welcome h1, 
@@ -921,7 +921,7 @@
         to { opacity: 0; }
     }
     .onboarding-header {
-        background: linear-gradient(135deg, var(--primary) 0%, #034f2a 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
         padding: 30px;
         text-align: center;
         color: white;
@@ -984,12 +984,12 @@
 <div id="view-dashboard" class="app-view">
     <div class="dashboard-welcome">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-             <span id="daily-progress-counter" class="welcome-text" style="color: var(--secondary); font-weight: 700;">Day 1 of 28</span>
+             <span id="daily-progress-counter" class="welcome-text" style="color: white; font-weight: 700;">Day 1 of 28</span>
              <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div> <!-- Placeholder User Initial -->
         </div>
         <h1 class="user-name">Hello, Shannon</h1>
         <div style="margin-top: 5px;">
-            <button onclick="openCheckInModal()" style="background:none; border:none; color:var(--secondary); font-size:0.8rem; cursor:pointer; text-decoration:underline;">
+            <button onclick="openCheckInModal()" style="background:none; border:none; color:white; font-size:0.8rem; cursor:pointer; text-decoration:underline;">
                 Did you check in today?
             </button>
         </div>
@@ -6312,9 +6312,40 @@
                 <!-- Fixed Chat Header -->
                 <div style="height: 60px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); z-index: 50;">
                     <div style="text-align: center;">
-                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Inner Circle Group</div>
-                        <div style="font-size: 0.75rem; color: #94a3b8;">20 members  Active now</div>
+                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Your Referral Network</div>
+                        <div id="referral-network-count" style="font-size: 0.75rem; color: #94a3b8;">Loading...</div>
                     </div>
+                </div>
+
+                <!-- Referral Invite Banner -->
+                <div id="referral-invite-banner" style="margin: 15px; padding: 20px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2); flex-shrink: 0;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <div style="font-size: 2rem;">🎁</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 700; font-size: 1.1rem; color: white; margin-bottom: 4px;">You BOTH Get 2 Weeks Free!</div>
+                            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Invite friends and you each get 2 weeks free when they join</div>
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div id="referral-stats" style="display: flex; gap: 12px; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.15); border-radius: 10px; backdrop-filter: blur(10px);">
+                        <div style="flex: 1; text-align: center;">
+                            <div id="referral-count" style="font-size: 1.5rem; font-weight: 700; color: white;">0</div>
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.9); text-transform: uppercase; letter-spacing: 0.5px;">Friends</div>
+                        </div>
+                        <div style="flex: 1; text-align: center;">
+                            <div id="free-days-count" style="font-size: 1.5rem; font-weight: 700; color: white;">0</div>
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.9); text-transform: uppercase; letter-spacing: 0.5px;">Days Free</div>
+                        </div>
+                    </div>
+
+                    <!-- Share Button -->
+                    <button onclick="openShareReferralModal()" style="width: 100%; background: white; color: #059669; border: none; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #059669;">
+                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
+                        </svg>
+                        Share Your Link
+                    </button>
                 </div>
 
                 <!-- Chat Stream -->
@@ -7301,11 +7332,11 @@ function startCustomBuilderWorkout() {
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                      <div>Color Theme</div>
                      <select id="theme-selector" onchange="applyAppTheme(this.value)" style="border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; color:var(--primary); font-weight:600; outline:none; background:transparent; font-family: 'Inter', sans-serif; cursor: pointer;">
-                         <option value="default">Forest (Original)</option>
+                         <option value="default" selected>Forest (Original)</option>
                          <option value="antigravity-light">Antigravity Light</option>
                          <option value="ocean">Ocean Calm</option>
                          <option value="sunset">Sunset Glow</option>
-                         <option value="cycle-pink" selected>Cycle Harmony</option>
+                         <option value="cycle-pink">Cycle Harmony</option>
                      </select>
                  </div>
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
@@ -7334,7 +7365,7 @@ function startCustomBuilderWorkout() {
         </div>
 
         <div style="padding: 0 25px; margin-top: 30px;">
-            <button class="btn-primary" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:var(--primary);" onclick="toggleSubscriptionMenu()">
+            <button class="btn-primary" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:var(--primary); color:white;" onclick="toggleSubscriptionMenu()">
                 MANAGE SUBSCRIPTION
             </button>
 
@@ -7355,6 +7386,14 @@ function startCustomBuilderWorkout() {
                     Managed securely via Stripe
                 </div>
             </div>
+        </div>
+
+        <!-- Logout Button -->
+        <div style="padding: 0 25px; margin-top: 30px; margin-bottom: 40px;">
+            <button onclick="handleLogout()" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:#ef4444; color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition: background 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                LOG OUT
+            </button>
         </div>
 
         </div>
@@ -7764,6 +7803,21 @@ async function syncQuizDataToDb() {
         }
     } catch (e) {
         console.error("Failed to sync quiz data:", e);
+    }
+}
+
+async function handleLogout() {
+    if (confirm('Are you sure you want to log out?')) {
+        try {
+            await authHelpers.signOut();
+            // Clear any cached data
+            sessionStorage.clear();
+            localStorage.removeItem('userProfile');
+            window.location.href = '/login.html';
+        } catch (error) {
+            console.error('Logout failed:', error);
+            alert('Failed to log out. Please try again.');
+        }
     }
 }
 
@@ -9647,7 +9701,7 @@ async function renderMovementView() {
         if (checkin.energy === 'low') {
             suggestedProgram = 'yoga';
             workoutDayIndex = 3; // Restorative Recovery
-            personalizationReason = 'Low Energy Mode - Gentle movement today';
+            personalizationReason = '✨ Cycle Sync: Gentle movement for low energy today';
         }
         // Override equipment based on TODAY's check-in
         else if (checkin.equipment === 'gym' && availablePrograms.includes('gym')) {
@@ -9668,16 +9722,16 @@ async function renderMovementView() {
             suggestedProgram = 'yoga';
             workoutDayIndex = 3; // Restorative Recovery
             // Fix variable scope if needed or just use string
-            personalizationReason = 'Gentle Recovery - We\'ve adjusted for your symptoms today';
+            personalizationReason = '✨ Cycle Sync: Gentle recovery for your symptoms today';
         } else if ((userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) && !isHighEnergy) {
             suggestedProgram = 'yoga';
             workoutDayIndex = 6; // Yin & Meditation
-            personalizationReason = 'Restorative Practice - Honoring how you feel today';
+            personalizationReason = '✨ Cycle Sync: Restorative practice for how you feel today';
         }
     } else if (userCycleData.mood === 'tired') {
         suggestedProgram = 'yoga';
         workoutDayIndex = 3; // Restorative Recovery
-        personalizationReason = 'Recovery & Restoration - Perfect for when you\'re feeling tired';
+        personalizationReason = '✨ Cycle Sync: Recovery & restoration for low energy';
     }
     
     // PRIORITY 4: Cycle Phase adjustments
@@ -9686,9 +9740,9 @@ async function renderMovementView() {
             // During menstrual, swap strength to gentle yoga
             suggestedProgram = 'yoga';
             workoutDayIndex = 3; // Restorative Recovery
-            personalizationReason = `${cyclePhaseInfo.icon} Menstrual Phase - Gentle movement for rest`;
+            personalizationReason = `✨ Cycle Sync: Gentle movement for menstrual phase`;
         } else {
-            personalizationReason = `${cyclePhaseInfo.icon} ${cyclePhaseInfo.name} - ${cyclePhaseInfo.rec}`;
+            personalizationReason = `✨ Cycle Sync: ${cyclePhaseInfo.rec}`;
         }
     }
     
@@ -10188,31 +10242,7 @@ function showSupportTab(tab, btn) {
 
 // Old chat logic removed.
 
-// --- AI COMMUNITY CHAT LOGIC ---
-
-const AI_MEMBERS = [
-    { id: 'm0', name: 'Coach Shannon', avatar: 'CS', age: 35, bio: 'Your guide and coach. Expert in cortisol reset and plant-based nutrition.', color: '#059669' },
-    { id: 'm1', name: 'Sarah J.', avatar: 'SJ', age: 42, bio: 'Perimenopause warrior, yoga lover, focusing on cortisol and calm.', color: '#EF4444' },
-    { id: 'm2', name: 'Emma W.', avatar: 'EW', age: 48, bio: 'Busy professional navigating the menopause transition. Loves weights.', color: '#F97316' },
-    { id: 'm3', name: 'Mia K.', avatar: 'MK', age: 53, bio: 'Post-menopause health enthusiast, focus on bone density and joy.', color: '#84CC16' },
-    { id: 'm4', name: 'Sophie L.', avatar: 'SL', age: 36, bio: 'Early perimenopause symptoms, high stress job, trying to find balance.', color: '#06B6D4' },
-    { id: 'm5', name: 'Isabella R.', avatar: 'IR', age: 45, bio: 'Mom of three dealing with hormonal shifts and frantic schedules.', color: '#8B5CF6' },
-    { id: 'm6', name: 'Chloe M.', avatar: 'CM', age: 51, bio: 'Managing hot flashes with plant-based nutrition and cold plunges.', color: '#EC4899' },
-    { id: 'm7', name: 'Lily H.', avatar: 'LH', age: 58, bio: 'Recovering from burnout, focus on sleep quality and evening routines.', color: '#10B981' },
-    { id: 'm8', name: 'Grace B.', avatar: 'GB', age: 41, bio: 'Nutritionist dealing with her own brain fog and cycle changes.', color: '#F59E0B' },
-    { id: 'm9', name: 'Amelia P.', avatar: 'AP', age: 62, bio: 'Mature plant-based wisdom. Helping younger women stay grounded.', color: '#3B82F6' },
-    { id: 'm10', name: 'Zoe S.', avatar: 'ZS', age: 39, bio: 'Biohacker focusing on cycle tracking and stress-induced cortisol.', color: '#6366F1' },
-    { id: 'm11', name: 'Ruby G.', avatar: 'RG', age: 47, bio: 'Mood swing management through gentle movement and nature walks.', color: '#D946EF' },
-    { id: 'm12', name: 'Sienna V.', avatar: 'SV', age: 55, bio: 'Swimming through menopause. Focus on joint health and hydration.', color: '#14B8A6' },
-    { id: 'm13', name: 'Ava D.', avatar: 'AD', age: 44, bio: 'Yoga teacher resetting her own hormones after years of overtraining.', color: '#FBBF24' },
-    { id: 'm14', name: 'Charlotte O.', avatar: 'CO', age: 50, bio: 'Finding her spark again in her 50s. Creative and soulful.', color: '#F87171' },
-    { id: 'm15', name: 'Harper F.', avatar: 'HF', age: 43, bio: 'Stress management focus. Learning to slow down to speed up.', color: '#A78BFA' },
-    { id: 'm16', name: 'Ella N.', avatar: 'EN', age: 52, bio: 'Former athlete keeping lean and strong during the change.', color: '#34D399' },
-    { id: 'm17', name: 'Evie T.', avatar: 'ET', age: 46, bio: 'Data lover tracking how plant-based eating affects her hot flashes.', color: '#60A5FA' },
-    { id: 'm18', name: 'Scarlett Q.', avatar: 'SQ', age: 60, bio: 'Holistic chef focusing on anti-inflammatory meals for longevity.', color: '#F472B6' },
-    { id: 'm19', name: 'Willow J.', avatar: 'WJ', age: 49, bio: 'Spiritual focus on the mid-life transition as a rebirth.', color: '#2DD4BF' },
-    { id: 'm20', name: 'Layla B.', avatar: 'LB', age: 38, bio: 'Proactive about aging and hormonal health. Social and supportive.', color: '#FB923C' }
-];
+// --- COMMUNITY CHAT LOGIC (HUMAN REFERRAL NETWORK ONLY) ---
 
 function loadCommunityFeed() {
     let messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
@@ -10232,24 +10262,25 @@ function loadCommunityFeed() {
 function renderChat(messages) {
     const container = document.getElementById('community-chat-stream');
     if(!container) return;
-    
+
     // 1. Build a single massive string instead of touching the DOM repeatedly
     let fullHtml = '';
 
     messages.forEach((msg, msgIndex) => {
         const isMe = !msg.authorId || msg.authorId === 'current-user';
-        const author = !isMe ? AI_MEMBERS.find(m => m.id === msg.authorId) : null;
 
+        // For other users, show their avatar and name
         let avatarHtml = '';
-        if(!isMe && author) {
-             let avatarSrc;
-             if (author.id === 'm0') {
-                 avatarSrc = 'assets/coach_shannon.jpg'; // Fixed string escaping
+        let authorName = '';
+        if(!isMe && msg.authorName) {
+             // Use user's profile photo if available, otherwise use initials
+             if (msg.authorAvatar) {
+                 avatarHtml = `<img src="${msg.authorAvatar}" style="width:32px; height:32px; border-radius:50%; flex-shrink:0; align-self:flex-end; margin-bottom:5px; object-fit:cover;">`;
              } else {
-                 const imgNum = (author.id || 'm1').replace('m', '');
-                 avatarSrc = `https://randomuser.me/api/portraits/women/${imgNum}.jpg`;
+                 const initials = msg.authorName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                 avatarHtml = `<div style="width:32px; height:32px; border-radius:50%; flex-shrink:0; align-self:flex-end; margin-bottom:5px; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:600;">${initials}</div>`;
              }
-             avatarHtml = `<img src="${avatarSrc}" style="width:32px; height:32px; border-radius:50%; flex-shrink:0; align-self:flex-end; margin-bottom:5px; object-fit:cover;">`;
+             authorName = msg.authorName;
         }
 
         const bBg = isMe ? 'var(--chat-bg-user)' : 'var(--chat-bg-coach)';
@@ -10258,7 +10289,7 @@ function renderChat(messages) {
         const bBorder = isMe ? 'none' : '1px solid var(--chat-border-coach)';
         const alignStyle = isMe ? "justify-content: flex-end;" : "justify-content: flex-start;";
 
-        // Emoji reactions
+        // Emoji reactions (keeping for human interactions)
         let reactionsHtml = '';
         if (msg.reactions && msg.reactions.length > 0) {
             const reactionCounts = {};
@@ -10272,39 +10303,25 @@ function renderChat(messages) {
             reactionsHtml += '</div>';
         }
 
-        // Read receipts
-        let readReceiptsHtml = '';
-        if (isMe && msg.readBy && msg.readBy.length > 0) {
-            const readerNames = msg.readBy.map(id => {
-                const member = AI_MEMBERS.find(m => m.id === id);
-                return member ? member.name.split(' ')[0] : '';
-            }).filter(n => n).slice(0, 3);
-            if (readerNames.length > 0) {
-                const moreCount = msg.readBy.length - 3;
-                readReceiptsHtml = `<div style="font-size:0.65rem; color:#94a3b8; margin-top:2px; margin-right:10px;">Seen by ${readerNames.join(', ')}${moreCount > 0 ? ` +${moreCount}` : ''}</div>`;
-            }
-        }
-
         let messageHtml = '';
         if (msg.isSystem) {
             messageHtml = `<div style="text-align:center; margin: 20px 0; color:#94a3b8; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:1px;">${msg.text}</div>`;
         } else {
             messageHtml = `
             <div style="display:flex; ${alignStyle} margin-bottom: 12px; gap: 8px;">
-                ${(!isMe && author) ? avatarHtml : ''}
+                ${(!isMe && authorName) ? avatarHtml : ''}
                 <div style="display:flex; flex-direction:column; max-width:75%; ${isMe ? 'align-items:flex-end;' : 'align-items:flex-start;'}">
-                    ${(!isMe && author) ? `<div style="font-size:0.7rem; color:var(--text-muted); margin-left:10px; margin-bottom:2px;">${author.name} (${author.age})</div>` : ''}
+                    ${(!isMe && authorName) ? `<div style="font-size:0.7rem; color:var(--text-muted); margin-left:10px; margin-bottom:2px;">${authorName}</div>` : ''}
                     <div>
                         <div style="padding: 10px 15px; font-size: 0.95rem; line-height: 1.4; background: ${bBg}; color: ${bText}; border-radius: ${bRadius}; border: ${bBorder}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
                             ${msg.text}
                         </div>
                         ${reactionsHtml}
-                        ${readReceiptsHtml}
                     </div>
                 </div>
             </div>`;
         }
-        
+
         // Append to string, NOT DOM
         fullHtml += messageHtml;
     });
@@ -12917,44 +12934,47 @@ async function saveCommunityMessage(persona, text) {
 
 window.loadCommunityFeed = async function() {
     if(!window.currentUser) return;
-    const dbMessages = await dbHelpers.conversations.getHistory(window.currentUser.id, 'community');
-    
-    // Map DB messages to UI format
-    // We try to find matching AI member by author_name to get avatar/id
-    const messages = dbMessages.map(m => {
-        let authorId = 'current-user';
-        let authorAvatar = '';
-        let authorName = m.author_name || 'Member';
-        
-        if (m.role === 'model' || m.role === 'assistant') {
-            const aiMember = AI_MEMBERS.find(mem => mem.name === authorName);
-            if(aiMember) {
-                authorId = aiMember.id;
-                authorAvatar = (aiMember.id || 'm1').replace('m', '');
-            } else {
-                authorId = 'm1'; // Default Fallback
-                authorAvatar = '1';
-            }
-        } else {
-            // User
-            authorId = 'current-user';
+
+    try {
+        // Get user's referral network (people they invited + who invited them)
+        const network = await dbHelpers.referrals.getReferralNetwork(window.currentUser.id);
+
+        // Create a Set of allowed user IDs (network + current user)
+        const allowedUserIds = new Set([window.currentUser.id]);
+        if (network && network.length > 0) {
+            network.forEach(n => allowedUserIds.add(n.network_user_id));
         }
 
-        return {
-            authorId: authorId,
-            authorName: authorName,
-            authorAvatar: authorAvatar,
-            text: m.message_text || m.text,
-            timestamp: m.timestamp || new Date(m.created_at).getTime(),
-            reactions: m.reactions || [], // Assuming we might add reactions to DB later, otherwise empty
-            readBy: m.read_by || []
-        };
-    });
-    
-    // Cache for autonomous logic references
-    localStorage.setItem('community_chat_history', JSON.stringify(messages));
-    
-    if(typeof renderChat === 'function') renderChat(messages);
+        // Get all community messages for this user
+        const dbMessages = await dbHelpers.conversations.getHistory(window.currentUser.id, 'community');
+
+        // Filter to only show messages from referral network
+        const filteredMessages = dbMessages.filter(m => allowedUserIds.has(m.user_id));
+
+        // Map DB messages to UI format for human-only chat
+        const messages = filteredMessages.map(m => {
+            const isCurrentUser = m.user_id === window.currentUser.id;
+
+            return {
+                authorId: isCurrentUser ? 'current-user' : (m.user_id || 'other-user'),
+                authorName: m.author_name || (isCurrentUser ? 'You' : 'Friend'),
+                authorAvatar: m.author_avatar || '', // Will show initials if no avatar
+                text: m.message_text || m.text,
+                timestamp: m.timestamp || new Date(m.created_at).getTime(),
+                reactions: m.reactions || []
+            };
+        });
+
+        // Cache for UI (keep last 50 messages)
+        const cachedMessages = messages.slice(-50);
+        localStorage.setItem('community_chat_history', JSON.stringify(cachedMessages));
+
+        if(typeof renderChat === 'function') renderChat(cachedMessages);
+    } catch (error) {
+        console.error('Error loading community feed:', error);
+        // Show empty chat on error
+        if(typeof renderChat === 'function') renderChat([]);
+    }
 };
 
 async function sendCommunityMessage() {
@@ -12981,30 +13001,172 @@ async function sendCommunityMessage() {
     
     // Save to DB
     await dbHelpers.conversations.create(user.id, 'community', 'user', text, userName);
-    
-    triggerAICommunityResponse(text);
+
+    // No AI responses - this is human-only referral network chat
 }
+
+// --- REFERRAL SYSTEM ---
+
+let currentReferralCode = null;
+
+// Load referral stats and update UI
+async function loadReferralStats() {
+    if (!window.currentUser) return;
+
+    try {
+        const stats = await window.dbHelpers.referrals.getStats(window.currentUser.id);
+
+        // Update stats in banner
+        document.getElementById('referral-count').textContent = stats.totalReferrals || 0;
+        document.getElementById('free-days-count').textContent = stats.freeDaysEarned || 0;
+
+        // Update network count in header
+        const networkCount = stats.totalReferrals || 0;
+        document.getElementById('referral-network-count').textContent =
+            networkCount === 0 ? 'Invite your first friend' :
+            networkCount === 1 ? '1 friend in your network' :
+            `${networkCount} friends in your network`;
+
+        // Store code for modal
+        currentReferralCode = stats.referralCode;
+
+    } catch (error) {
+        console.error('Error loading referral stats:', error);
+    }
+}
+
+// Open share modal
+function openShareReferralModal() {
+    const modal = document.getElementById('share-referral-modal');
+    if (!modal) return;
+
+    // Show modal with flex display
+    modal.style.display = 'flex';
+
+    // Load and display referral code
+    if (currentReferralCode) {
+        document.getElementById('referral-code-display').textContent = currentReferralCode;
+
+        // Generate referral link
+        const referralLink = `${window.location.origin}/signup.html?ref=${currentReferralCode}`;
+        document.getElementById('referral-link-display').value = referralLink;
+    }
+}
+
+// Close share modal
+function closeShareReferralModal() {
+    const modal = document.getElementById('share-referral-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Copy referral code
+function copyReferralCode() {
+    const codeDisplay = document.getElementById('referral-code-display');
+    const code = codeDisplay.textContent;
+
+    navigator.clipboard.writeText(code).then(() => {
+        // Show feedback
+        const originalText = codeDisplay.textContent;
+        codeDisplay.textContent = 'Copied!';
+        codeDisplay.style.color = '#22c55e';
+
+        setTimeout(() => {
+            codeDisplay.textContent = originalText;
+            codeDisplay.style.color = 'var(--primary)';
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy code. Please copy manually.');
+    });
+}
+
+// Copy referral link
+function copyReferralLink() {
+    const linkInput = document.getElementById('referral-link-display');
+
+    linkInput.select();
+    linkInput.setSelectionRange(0, 99999); // For mobile devices
+
+    navigator.clipboard.writeText(linkInput.value).then(() => {
+        // Show feedback
+        linkInput.style.borderColor = '#22c55e';
+        setTimeout(() => {
+            linkInput.style.borderColor = '#e2e8f0';
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy link. Please copy manually.');
+    });
+}
+
+// Share via WhatsApp
+function shareViaWhatsApp() {
+    const code = currentReferralCode;
+    const link = `${window.location.origin}/login.html?ref=${code}`;
+    const message = `Hey! I've been loving Plant Based Balance for hormone health. Join me and we BOTH get 2 weeks free! Use my code ${code} or click here: ${link}`;
+
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+}
+
+// Share via Facebook Messenger
+function shareViaFacebook() {
+    const code = currentReferralCode;
+    const link = `${window.location.origin}/login.html?ref=${code}`;
+    const message = `Hey! I've been loving Plant Based Balance for hormone health. Join me and we BOTH get 2 weeks free! Use my code ${code} or click: ${link}`;
+
+    // Try to open Facebook Messenger app
+    const messengerUrl = `fb-messenger://share?link=${encodeURIComponent(link)}&app_id=`;
+
+    // On mobile, this will open Messenger app
+    // On desktop, fallback to sharing dialog
+    window.location.href = messengerUrl;
+}
+
+// Share via SMS
+function shareViaSMS() {
+    const code = currentReferralCode;
+    const link = `${window.location.origin}/login.html?ref=${code}`;
+    const message = `Hey! Join me on Plant Based Balance. We BOTH get 2 weeks free! Use code ${code} or click: ${link}`;
+
+    const smsUrl = `sms:?&body=${encodeURIComponent(message)}`;
+    window.location.href = smsUrl;
+}
+
+// Load referral stats when community tab is opened
+window.addEventListener('DOMContentLoaded', () => {
+    // Attach to tab switching logic
+    const originalShowSupportTab = window.showSupportTab;
+    if (typeof originalShowSupportTab === 'function') {
+        window.showSupportTab = function(tab, element) {
+            originalShowSupportTab(tab, element);
+            if (tab === 'community') {
+                loadReferralStats();
+            }
+        };
+    }
+});
 
 // --- THEME SYSTEM ---
 // --- THEME SYSTEM ---
 const APP_THEMES = {
-    'default': { 
-        name: 'Forest (Premium)', 
-        colors: { 
-            '--primary': '#2B3D26', 
-            '--primary-light': '#3C5236', 
-            '--secondary': '#C7B446', 
-            '--accent-green': '#f2f7f4', 
-            '--bg': '#f9f9f7', 
-            '--surface': '#ffffff', 
-            '--text-main': '#1a202c', 
+    'default': {
+        name: 'Forest (Premium)',
+        colors: {
+            '--primary': '#7BA883',
+            '--primary-light': '#98C9A3',
+            '--secondary': '#E8D68E',
+            '--accent-green': '#f2f7f4',
+            '--bg': '#f9f9f7',
+            '--surface': '#ffffff',
+            '--text-main': '#1a202c',
             '--text-muted': '#718096',
-            '--chat-bg-user': '#2B3D26',
+            '--chat-bg-user': '#7BA883',
             '--chat-text-user': '#ffffff',
             '--chat-bg-coach': '#f2f7f4',
             '--chat-text-coach': '#1a202c',
             '--chat-border-coach': '#e2e8f0'
-        } 
+        }
     },
     'antigravity-light': { 
         name: 'Antigravity Light', 
@@ -13142,18 +13304,16 @@ function applyAppTheme(themeKey) {
     const selector = document.getElementById('theme-selector');
     if(selector) selector.value = themeKey;
 
-    // Update dashboard-welcome background - keep green gradient for default, white for others
+    // Update dashboard-welcome background - keep gradient for all themes
     const welcomeSection = document.querySelector('.dashboard-welcome');
     if(welcomeSection) {
         // Always use dynamic theme gradient
         welcomeSection.style.background = 'linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%)';
         welcomeSection.style.color = 'white';
-        // Ensure child elements inherit white text if needed
+        // Ensure all child elements use white text for maximum readability
         const children = welcomeSection.querySelectorAll('*');
         children.forEach(c => {
-             // Exception for specific buttons if necessary, but general rule:
-             if (c.classList.contains('welcome-text')) c.style.color = 'var(--secondary)'; // Keep secondary accent
-             else if (c.classList.contains('user-name')) c.style.color = 'white';
+             c.style.color = 'white';
         });
     }
 }
@@ -13882,6 +14042,87 @@ updateCoachUI();
         to { opacity: 1; transform: scale(1); }
     }
 </style>
+
+<!-- Share Referral Modal -->
+<div id="share-referral-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:10006; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
+    <div style="background:white; border-radius:20px; max-width:500px; width:90%; max-height:85vh; overflow-y:auto; animation:fadeInScale 0.3s ease-out; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <!-- Header -->
+        <div style="padding:24px 24px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+                <h2 style="margin:0 0 4px 0; font-size:1.5rem; color:var(--text-main);">Share Your Invite Link</h2>
+                <p style="margin:0; font-size:0.875rem; color:#64748b;">You BOTH get 2 weeks free when they join!</p>
+            </div>
+            <button onclick="closeShareReferralModal()" style="background:none; border:none; font-size:1.8rem; color:#94a3b8; cursor:pointer; padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:all 0.2s;">×</button>
+        </div>
+
+        <!-- Content -->
+        <div style="padding:24px;">
+            <!-- Referral Code Display -->
+            <div style="margin-bottom:24px;">
+                <label style="display:block; font-size:0.875rem; font-weight:600; color:var(--text-main); margin-bottom:8px;">Your Referral Code</label>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <div id="referral-code-display" style="flex:1; padding:14px; background:#f8fafc; border:2px solid #e2e8f0; border-radius:12px; font-family:monospace; font-size:1.1rem; font-weight:700; color:var(--primary); text-align:center; letter-spacing:2px;">
+                        Loading...
+                    </div>
+                    <button onclick="copyReferralCode()" style="padding:14px 20px; background:var(--primary); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:600; white-space:nowrap; transition:all 0.2s;">
+                        Copy
+                    </button>
+                </div>
+            </div>
+
+            <!-- Shareable Link -->
+            <div style="margin-bottom:24px;">
+                <label style="display:block; font-size:0.875rem; font-weight:600; color:var(--text-main); margin-bottom:8px;">Share Link</label>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="text" id="referral-link-display" readonly value="Loading..." style="flex:1; padding:12px; background:#f8fafc; border:2px solid #e2e8f0; border-radius:12px; font-size:0.9rem; color:#64748b;">
+                    <button onclick="copyReferralLink()" style="padding:12px 20px; background:#f1f5f9; color:var(--text-main); border:none; border-radius:12px; cursor:pointer; font-weight:600; white-space:nowrap; transition:all 0.2s;">
+                        Copy
+                    </button>
+                </div>
+            </div>
+
+            <!-- Share Options -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block; font-size:0.875rem; font-weight:600; color:var(--text-main); margin-bottom:12px;">Share via</label>
+                <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px;">
+                    <!-- WhatsApp -->
+                    <button onclick="shareViaWhatsApp()" style="padding:14px; background:#25D366; color:white; border:none; border-radius:12px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s;">
+                        <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                        WhatsApp
+                    </button>
+
+                    <!-- Facebook Messenger -->
+                    <button onclick="shareViaFacebook()" style="padding:14px; background:#1877F2; color:white; border:none; border-radius:12px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s;">
+                        <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        </svg>
+                        Facebook
+                    </button>
+
+                    <!-- SMS -->
+                    <button onclick="shareViaSMS()" style="padding:14px; background:#22c55e; color:white; border:none; border-radius:12px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s; grid-column:span 2;">
+                        <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;">
+                            <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z"/>
+                        </svg>
+                        SMS
+                    </button>
+                </div>
+            </div>
+
+            <!-- Info -->
+            <div style="padding:16px; background:#f0fdf4; border:2px solid #bbf7d0; border-radius:12px; margin-top:20px;">
+                <div style="display:flex; gap:12px; align-items:start;">
+                    <div style="font-size:1.5rem; flex-shrink:0;">💡</div>
+                    <div style="font-size:0.875rem; color:#15803d; line-height:1.5;">
+                        <strong>How it works:</strong> When your friend signs up using your code, you BOTH automatically get 2 weeks (14 days) free! They'll need to enter their card details but won't be charged for 2 weeks.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 // --- HORMONE HUB & SUPERBOOST ENGINE ---
