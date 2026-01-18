@@ -26,9 +26,9 @@
 <style>
     :root {
         /* Premium Green & Gold Palette */
-        --primary: #2B3D26; /* Forest Green (Warm/Brownish Undertone) */
-        --primary-light: #3C5236; /* Lighter Warm Green */
-        --secondary: #C7B446; /* Greeny Gold */
+        --primary: #7BA883; /* Soft Sage Green (Pastel) */
+        --primary-light: #98C9A3; /* Light Mint Green (Pastel) */
+        --secondary: #E8D68E; /* Soft Golden Yellow */
         --accent-green: #f2f7f4; /* Subtle Green Tint */
         
         --bg: #f9f9f7;
@@ -328,12 +328,12 @@
     /* Dashboard Styles */
     .dashboard-welcome {
         padding: 25px;
-        background: linear-gradient(135deg, var(--primary) 0%, #034f2a 100%); /* Forest Green to Deep Green */
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
         color: white;
         border-bottom-left-radius: 30px;
         border-bottom-right-radius: 30px;
         margin-bottom: 25px;
-        box-shadow: 0 10px 30px -10px rgba(4, 106, 56, 0.4);
+        box-shadow: 0 10px 30px -10px rgba(123, 168, 131, 0.4);
         border-bottom: 5px solid var(--secondary);
     }
     .dashboard-welcome h1, 
@@ -921,7 +921,7 @@
         to { opacity: 0; }
     }
     .onboarding-header {
-        background: linear-gradient(135deg, var(--primary) 0%, #034f2a 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
         padding: 30px;
         text-align: center;
         color: white;
