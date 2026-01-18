@@ -8570,26 +8570,94 @@ const WORKOUT_DB = {
     'yoga': {
         name: 'Somatic Yoga',
         id: 'yoga',
-        description: 'Goal: To release the Psoas (fight/flight muscle) and switch the nervous system from "Sympathetic" (Stress) to "Parasympathetic" (Rest).',
-        estimatedTime: '22',
+        description: 'Release the Psoas (fight/flight muscle) and switch the nervous system from "Sympathetic" (Stress) to "Parasympathetic" (Rest).',
+        estimatedTime: '25',
         equipment: ['Body Weight', 'Mat'],
         schedule: [
-             { 
-                title: 'Somatic Hormone Reset (Cortisol & Psoas Release)', 
+             // DAY 1: Cortisol & Psoas Release
+             {
+                title: 'Somatic Hormone Reset',
                 exercises: [
-                    { name: 'Adductor Stretch with Thoracic Twist', sets: 1, reps: '3 min', videoUrl: '', desc: 'Instantly signals safety to the pelvic floor. Similar to Supta Baddha Konasana.' },
-                    { name: 'Cat to Cow', sets: 1, reps: '1 min', videoUrl: '', desc: 'Flushes the spinal fluid and regulates the nervous system.' },
-                    { name: 'Yoga - Lizard Pose (Utthan Pristhasana)', sets: 2, reps: '1m 30s', videoUrl: '', desc: 'The #1 move for releasing the Psoas (the "Fight or Flight" muscle) 1 set each side' },
-                    { name: 'Yoga - Happy Baby Pose (Ananda Balasana)', sets: 3, reps: '2 min', videoUrl: '', desc: 'True somatic reset' },
-                    { name: 'Yoga - Supine Twist (Jathara Parivartanasana)', sets: 2, reps: '2 min', videoUrl: '', desc: 'Wrings out tension from the adrenal area (mid-back). 1 minute per side' },
-                    { name: 'Corpse Pose', sets: 1, reps: '5 min', videoUrl: '', desc: 'Essential for memory integration and lowering cortisol.' }
+                    { name: 'Adductor Stretch with Thoracic Twist', sets: 1, reps: '3 min', desc: 'Signals safety to the pelvic floor' },
+                    { name: 'Cat to Cow', sets: 1, reps: '1 min', desc: 'Regulates the nervous system' },
+                    { name: 'Yoga - Lizard Pose (Utthan Pristhasana)', sets: 2, reps: '90 sec/side', desc: 'Releases the Psoas (fight/flight muscle)' },
+                    { name: 'Yoga - Happy Baby Pose (Ananda Balasana)', sets: 1, reps: '2 min', desc: 'True somatic reset' },
+                    { name: 'Yoga - Supine Twist (Jathara Parivartanasana)', sets: 2, reps: '1 min/side', desc: 'Wrings tension from adrenals' },
+                    { name: 'Corpse Pose', sets: 1, reps: '5 min', desc: 'Lowers cortisol' }
                 ]
             },
-            { 
-                title: 'The "Heart Opener" (For Anxiety & Grief)', 
+            // DAY 2: Hip Opening & Grounding
+            {
+                title: 'Deep Hip Opening Flow',
                 exercises: [
-                    { name: 'Yoga - Puppy Pose (Anahatasana)', sets: 2, reps: '2 min', videoUrl: '', desc: 'Stretches the shoulders and calms the heart rate.' },
-                    { name: "Child's Pose", sets: 1, reps: '3 min', videoUrl: '', desc: 'Grounding and safe.' }
+                    { name: "Child's Pose", sets: 1, reps: '2 min', desc: 'Grounding and centering' },
+                    { name: 'Cat to Cow', sets: 1, reps: '1 min', desc: 'Spinal warm-up' },
+                    { name: 'Yoga - Pigeon Pose (Eka Pada Rajakapotasana)', sets: 2, reps: '2 min/side', desc: 'Deep hip flexor release' },
+                    { name: 'Yoga - Fire Log Pose (Agnistambhasana)', sets: 2, reps: '90 sec/side', desc: 'Hip opener' },
+                    { name: 'Yoga - Reclined Bound Angle (Supta Baddha Konasana)', sets: 1, reps: '3 min', desc: 'Pelvic floor relaxation' },
+                    { name: 'Yoga - Legs Up the Wall (Viparita Karani)', sets: 1, reps: '5 min', desc: 'Calms nervous system' }
+                ]
+            },
+            // DAY 3: Spinal Flow & Twists
+            {
+                title: 'Spinal Mobility & Detox',
+                exercises: [
+                    { name: 'Cat to Cow', sets: 1, reps: '2 min', desc: 'Spinal lubrication' },
+                    { name: 'Yoga - Thread the Needle', sets: 2, reps: '90 sec/side', desc: 'Shoulder and upper back release' },
+                    { name: 'Yoga - Seated Spinal Twist (Ardha Matsyendrasana)', sets: 2, reps: '1 min/side', desc: 'Digestive massage' },
+                    { name: 'Yoga - Supine Twist (Jathara Parivartanasana)', sets: 2, reps: '2 min/side', desc: 'Spinal detox' },
+                    { name: 'Yoga - Child Pose with Side Stretch', sets: 2, reps: '1 min/side', desc: 'Lateral body opening' },
+                    { name: 'Corpse Pose', sets: 1, reps: '5 min', desc: 'Integration' }
+                ]
+            },
+            // DAY 4: Restorative & Gentle
+            {
+                title: 'Restorative Recovery',
+                exercises: [
+                    { name: 'Yoga - Supported Fish Pose (Matsyasana)', sets: 1, reps: '3 min', desc: 'Heart opener' },
+                    { name: 'Yoga - Puppy Pose (Anahatasana)', sets: 1, reps: '2 min', desc: 'Calms heart rate' },
+                    { name: "Child's Pose", sets: 1, reps: '3 min', desc: 'Deep rest' },
+                    { name: 'Yoga - Reclined Bound Angle (Supta Baddha Konasana)', sets: 1, reps: '4 min', desc: 'Pelvic relaxation' },
+                    { name: 'Yoga - Legs Up the Wall (Viparita Karani)', sets: 1, reps: '5 min', desc: 'Lymphatic drainage' },
+                    { name: 'Corpse Pose', sets: 1, reps: '8 min', desc: 'Deep relaxation' }
+                ]
+            },
+            // DAY 5: Gentle Strength & Balance
+            {
+                title: 'Balance & Core Flow',
+                exercises: [
+                    { name: 'Yoga - Sun Salutation A (Surya Namaskar A)', sets: 3, reps: '1 round', desc: 'Full body warm-up' },
+                    { name: 'Yoga - Warrior II (Virabhadrasana II)', sets: 2, reps: '1 min/side', desc: 'Leg strength' },
+                    { name: 'Yoga - Triangle Pose (Trikonasana)', sets: 2, reps: '1 min/side', desc: 'Stability' },
+                    { name: 'Yoga - Tree Pose (Vrksasana)', sets: 2, reps: '1 min/side', desc: 'Balance practice' },
+                    { name: 'Yoga - Boat Pose (Navasana)', sets: 3, reps: '30 sec', desc: 'Core activation' },
+                    { name: 'Yoga - Seated Forward Fold (Paschimottanasana)', sets: 1, reps: '3 min', desc: 'Hamstring stretch' },
+                    { name: 'Corpse Pose', sets: 1, reps: '5 min', desc: 'Rest' }
+                ]
+            },
+            // DAY 6: Full Vinyasa Flow
+            {
+                title: 'Dynamic Flow Integration',
+                exercises: [
+                    { name: 'Cat to Cow', sets: 1, reps: '2 min', desc: 'Warm-up' },
+                    { name: 'Yoga - Sun Salutation A (Surya Namaskar A)', sets: 3, reps: '1 round', desc: 'Energy building' },
+                    { name: 'Yoga - Sun Salutation B (Surya Namaskar B)', sets: 3, reps: '1 round', desc: 'Full body activation' },
+                    { name: 'Yoga - Warrior I (Virabhadrasana I)', sets: 2, reps: '1 min/side', desc: 'Power pose' },
+                    { name: 'Yoga - Extended Side Angle Pose (Utthita Parsvakonasana)', sets: 2, reps: '1 min/side', desc: 'Side body strength' },
+                    { name: 'Yoga - Downward Dog', sets: 1, reps: '2 min', desc: 'Full body stretch' },
+                    { name: 'Yoga - Pigeon Pose (Eka Pada Rajakapotasana)', sets: 2, reps: '2 min/side', desc: 'Hip release' },
+                    { name: 'Corpse Pose', sets: 1, reps: '7 min', desc: 'Deep rest' }
+                ]
+            },
+            // DAY 7: Deep Rest & Meditation
+            {
+                title: 'Yin & Meditation',
+                exercises: [
+                    { name: "Child's Pose", sets: 1, reps: '5 min', desc: 'Surrender and release' },
+                    { name: 'Yoga - Reclined Bound Angle (Supta Baddha Konasana)', sets: 1, reps: '5 min', desc: 'Hip opening' },
+                    { name: 'Yoga - Supine Twist (Jathara Parivartanasana)', sets: 2, reps: '3 min/side', desc: 'Spinal release' },
+                    { name: 'Yoga - Legs Up the Wall (Viparita Karani)', sets: 1, reps: '7 min', desc: 'Restorative inversion' },
+                    { name: 'Corpse Pose', sets: 1, reps: '10 min', desc: 'Complete relaxation and meditation' }
                 ]
             }
         ]
@@ -8597,50 +8665,278 @@ const WORKOUT_DB = {
     'bodyweight': {
         name: 'Bodyweight Sculpt',
         id: 'bodyweight',
-        description: 'Focus on toning and metabolism without equipment.',
-        estimatedTime: '30',
+        description: 'Build strength and tone without any equipment. Perfect for home workouts.',
+        estimatedTime: '35',
         equipment: ['None'],
         schedule: [
-            { title: 'Full Body Hormone Tone', exercises: [
-                { name: 'Body Weight Squat', sets: 3, reps: '15', videoUrl: '' },
-                { name: 'Bench Push Up', sets: 3, reps: '10', videoUrl: '' },
-                { name: 'Body Weight Reverse Lunge', sets: 3, reps: '12/leg', videoUrl: '' },
-                { name: 'Glute Bridge', sets: 3, reps: '45s', videoUrl: '' }
-            ]},
-            { title: 'Metabolic Flow', exercises: [
-                { name: 'Mountain Climber', sets: 3, reps: '20', videoUrl: '' },
-                { name: 'Bird Dog', sets: 3, reps: '12/side', videoUrl: '' },
-                { name: 'Side Plank', sets: 3, reps: '30s/side', videoUrl: '' }
-            ]}
+            // DAY 1: Lower Body Push & Squat Patterns
+            {
+                title: 'Lower Body Power',
+                exercises: [
+                    { name: 'Body Weight Squat', sets: 4, reps: '15-20', desc: 'Quad and glute activation' },
+                    { name: 'Body Weight Reverse Lunge', sets: 3, reps: '12/leg', desc: 'Single leg strength' },
+                    { name: 'Glute Bridge', sets: 4, reps: '20', desc: 'Glute isolation' },
+                    { name: 'Body Weight Single Leg Deadlift', sets: 3, reps: '10/leg', desc: 'Hamstring and balance' },
+                    { name: 'Body Weight Sumo Squat', sets: 3, reps: '15', desc: 'Inner thigh and glutes' },
+                    { name: 'Wall Sit', sets: 3, reps: '45 sec', desc: 'Quad endurance' }
+                ]
+            },
+            // DAY 2: Upper Body Push
+            {
+                title: 'Upper Body Strength',
+                exercises: [
+                    { name: 'Push Up', sets: 4, reps: '10-15', desc: 'Chest, shoulders, triceps' },
+                    { name: 'Pike Push Up', sets: 3, reps: '8-12', desc: 'Shoulder focus' },
+                    { name: 'Tricep Dip', sets: 3, reps: '12-15', desc: 'Tricep isolation' },
+                    { name: 'Plank to Down Dog', sets: 3, reps: '10', desc: 'Dynamic upper body' },
+                    { name: 'Diamond Push Up', sets: 3, reps: '8-10', desc: 'Tricep emphasis' },
+                    { name: 'Plank Hold', sets: 3, reps: '45 sec', desc: 'Core stability' }
+                ]
+            },
+            // DAY 3: Core & Conditioning
+            {
+                title: 'Core & Cardio Blast',
+                exercises: [
+                    { name: 'Mountain Climber', sets: 4, reps: '30 sec', desc: 'Cardio and core' },
+                    { name: 'Bicycle Crunch', sets: 3, reps: '20', desc: 'Obliques' },
+                    { name: 'Burpee', sets: 3, reps: '10-15', desc: 'Full body conditioning' },
+                    { name: 'Plank Hip Twist', sets: 3, reps: '15/side', desc: 'Rotational core' },
+                    { name: 'High Knees', sets: 4, reps: '30 sec', desc: 'Cardio burst' },
+                    { name: 'Dead Bug', sets: 3, reps: '12/side', desc: 'Core control' }
+                ]
+            },
+            // DAY 4: Full Body Power
+            {
+                title: 'Total Body Strength',
+                exercises: [
+                    { name: 'Body Weight Squat Jump', sets: 3, reps: '12', desc: 'Explosive lower body' },
+                    { name: 'Push Up', sets: 3, reps: '12-15', desc: 'Upper body push' },
+                    { name: 'Body Weight Reverse Lunge', sets: 3, reps: '12/leg', desc: 'Lower body unilateral' },
+                    { name: 'Superman', sets: 3, reps: '15', desc: 'Posterior chain' },
+                    { name: 'Plank Alternating Arm & Leg Lift', sets: 3, reps: '10/side', desc: 'Anti-rotation' },
+                    { name: 'Glute Bridge', sets: 3, reps: '20', desc: 'Glute activation' }
+                ]
+            },
+            // DAY 5: Glutes & Legs Focus
+            {
+                title: 'Glute Sculpt',
+                exercises: [
+                    { name: 'Single Leg Glute Bridge', sets: 3, reps: '15/leg', desc: 'Glute isolation' },
+                    { name: 'Body Weight Side Lunge', sets: 3, reps: '12/side', desc: 'Lateral movement' },
+                    { name: 'Fire Hydrant', sets: 3, reps: '15/side', desc: 'Glute medius' },
+                    { name: 'Donkey Kick', sets: 3, reps: '15/leg', desc: 'Glute max activation' },
+                    { name: 'Body Weight Sumo Squat', sets: 4, reps: '20', desc: 'Inner thigh and glutes' },
+                    { name: 'Calf Raise', sets: 3, reps: '20', desc: 'Calf definition' }
+                ]
+            },
+            // DAY 6: Active Recovery & Mobility
+            {
+                title: 'Mobility & Flow',
+                exercises: [
+                    { name: 'Downward Dog', sets: 1, reps: '2 min', desc: 'Full body stretch' },
+                    { name: 'Cat to Cow', sets: 1, reps: '2 min', desc: 'Spinal mobility' },
+                    { name: 'World Greatest Stretch', sets: 2, reps: '5/side', desc: 'Full body mobility' },
+                    { name: 'Bird Dog', sets: 3, reps: '12/side', desc: 'Core stability' },
+                    { name: "Child's Pose", sets: 1, reps: '3 min', desc: 'Recovery' },
+                    { name: 'Body Weight Squat', sets: 2, reps: '15', desc: 'Active recovery' }
+                ]
+            },
+            // DAY 7: Rest or Gentle Movement
+            {
+                title: 'Rest Day',
+                exercises: [
+                    { name: 'Downward Dog', sets: 1, reps: '3 min', desc: 'Gentle stretch' },
+                    { name: "Child's Pose", sets: 1, reps: '5 min', desc: 'Rest and restore' },
+                    { name: 'Corpse Pose', sets: 1, reps: '10 min', desc: 'Complete relaxation' }
+                ]
+            }
         ]
     },
     'home': {
         name: 'Dumbbell Strength',
         id: 'home',
-        description: 'Building lean muscle mass at home.',
-        estimatedTime: '40',
+        description: 'Build lean muscle mass at home with dumbbells. Progressive strength training.',
+        estimatedTime: '45',
         equipment: ['Dumbbells', 'Mat'],
         schedule: [
-            { title: 'Posterior Power', exercises: [
-                { name: 'Dumbbell Goblet Squat', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'Dumbbell Deadlift', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'Dumbbell Single Arm Bent Over Row', sets: 3, reps: '10/side', videoUrl: '' }
-            ]}
+            // DAY 1: Lower Body (Quads & Hamstrings)
+            {
+                title: 'Lower Body Strength',
+                exercises: [
+                    { name: 'Dumbbell Goblet Squat', sets: 4, reps: '12-15', desc: 'Quad dominant compound' },
+                    { name: 'Dumbbell Romanian Deadlift', sets: 4, reps: '12', desc: 'Hamstring and glutes' },
+                    { name: 'Dumbbell Stationary Lunge', sets: 3, reps: '12/leg', desc: 'Unilateral strength' },
+                    { name: 'Dumbbell Single Leg Deadlift', sets: 3, reps: '10/leg', desc: 'Hamstring and balance' },
+                    { name: 'Dumbbell Goblet Lateral Lunge', sets: 3, reps: '10/side', desc: 'Adductors and glutes' },
+                    { name: 'Dumbbell Calf Raise', sets: 3, reps: '15-20', desc: 'Calf development' }
+                ]
+            },
+            // DAY 2: Upper Body Push (Chest, Shoulders, Triceps)
+            {
+                title: 'Push Day',
+                exercises: [
+                    { name: 'Dumbbell Bench Press', sets: 4, reps: '10-12', desc: 'Chest compound' },
+                    { name: 'Dumbbell Standing Shoulder Press', sets: 4, reps: '10-12', desc: 'Shoulder strength' },
+                    { name: 'Dumbbell Incline Chest Press', sets: 3, reps: '12', desc: 'Upper chest' },
+                    { name: 'Dumbbell Lateral Raise', sets: 3, reps: '12-15', desc: 'Shoulder width' },
+                    { name: 'Dumbbell Overhead Tricep Extension', sets: 3, reps: '12-15', desc: 'Tricep mass' },
+                    { name: 'Dumbbell Front Raise', sets: 3, reps: '12', desc: 'Anterior deltoid' }
+                ]
+            },
+            // DAY 3: Core & Conditioning
+            {
+                title: 'Core Power',
+                exercises: [
+                    { name: 'Dumbbell Russian Twist', sets: 3, reps: '20 total', desc: 'Obliques' },
+                    { name: 'Dumbbell Woodchop', sets: 3, reps: '12/side', desc: 'Rotational power' },
+                    { name: 'Plank Hold', sets: 3, reps: '60 sec', desc: 'Core stability' },
+                    { name: 'Dumbbell Side Bend', sets: 3, reps: '15/side', desc: 'Oblique strength' },
+                    { name: 'Mountain Climber', sets: 3, reps: '30 sec', desc: 'Conditioning' },
+                    { name: 'Dead Bug', sets: 3, reps: '12/side', desc: 'Anti-extension core' }
+                ]
+            },
+            // DAY 4: Full Body Compound
+            {
+                title: 'Total Body Power',
+                exercises: [
+                    { name: 'Dumbbell Squat to Press', sets: 4, reps: '12', desc: 'Full body compound' },
+                    { name: 'Dumbbell Deadlift', sets: 4, reps: '12', desc: 'Posterior chain' },
+                    { name: 'Dumbbell Bent Over Row', sets: 3, reps: '12', desc: 'Back thickness' },
+                    { name: 'Dumbbell Walking Lunge', sets: 3, reps: '10/leg', desc: 'Dynamic lower body' },
+                    { name: 'Dumbbell Push Press', sets: 3, reps: '10-12', desc: 'Explosive shoulder' },
+                    { name: 'Dumbbell Renegade Row', sets: 3, reps: '10/side', desc: 'Core and back' }
+                ]
+            },
+            // DAY 5: Lower Body (Glutes & Hamstrings)
+            {
+                title: 'Glute & Hamstring Focus',
+                exercises: [
+                    { name: 'Dumbbell Sumo Deadlift', sets: 4, reps: '12', desc: 'Glute and inner thigh' },
+                    { name: 'Dumbbell Bulgarian Split Squat', sets: 3, reps: '12/leg', desc: 'Glute dominant lunge' },
+                    { name: 'Dumbbell Single Leg Deadlift', sets: 3, reps: '12/leg', desc: 'Hamstring and glutes' },
+                    { name: 'Dumbbell Hip Thrust', sets: 4, reps: '15', desc: 'Glute isolation' },
+                    { name: 'Dumbbell Goblet Sumo Squat', sets: 3, reps: '15', desc: 'Wide stance glutes' },
+                    { name: 'Dumbbell Stiff Leg Deadlift', sets: 3, reps: '12', desc: 'Hamstring stretch-load' }
+                ]
+            },
+            // DAY 6: Upper Body Pull (Back, Biceps, Rear Delts)
+            {
+                title: 'Pull Day',
+                exercises: [
+                    { name: 'Dumbbell Bent Over Row', sets: 4, reps: '12', desc: 'Back width and thickness' },
+                    { name: 'Dumbbell Single Arm Bent Over Row', sets: 3, reps: '12/side', desc: 'Unilateral back' },
+                    { name: 'Dumbbell Reverse Fly', sets: 3, reps: '12-15', desc: 'Rear deltoid' },
+                    { name: 'Dumbbell Bicep Curl', sets: 3, reps: '12-15', desc: 'Bicep mass' },
+                    { name: 'Dumbbell Hammer Curl', sets: 3, reps: '12-15', desc: 'Brachialis and forearms' },
+                    { name: 'Dumbbell Shrug', sets: 3, reps: '15-20', desc: 'Trap development' }
+                ]
+            },
+            // DAY 7: Active Recovery or Rest
+            {
+                title: 'Active Recovery',
+                exercises: [
+                    { name: 'Dumbbell Goblet Squat', sets: 2, reps: '15', desc: 'Light movement' },
+                    { name: 'Dumbbell Romanian Deadlift', sets: 2, reps: '12', desc: 'Hamstring stretch' },
+                    { name: 'Downward Dog', sets: 1, reps: '3 min', desc: 'Full body stretch' },
+                    { name: "Child's Pose", sets: 1, reps: '5 min', desc: 'Rest' },
+                    { name: 'Corpse Pose', sets: 1, reps: '10 min', desc: 'Recovery' }
+                ]
+            }
         ]
     },
     'gym': {
         name: 'Full Gym Protocol',
         id: 'gym',
-        description: 'Maximizing strength and hormonal balance in a gym environment.',
-        estimatedTime: '55',
+        description: 'Maximize strength and hormonal balance with full gym access. Traditional bodybuilding split.',
+        estimatedTime: '60',
         equipment: ['Full Gym'],
         schedule: [
-             { title: 'Lower Body Strength', exercises: [
-                { name: 'Angled Machine Leg Press', sets: 4, reps: '10', videoUrl: '' },
-                { name: 'Machine Seated Leg Extension', sets: 3, reps: '15', videoUrl: '' },
-                { name: 'Machine Seated Leg Curl', sets: 3, reps: '12', videoUrl: '' },
-                { name: 'Machine Back Extension', sets: 3, reps: '15', videoUrl: '' }
-            ]}
+            // DAY 1: Legs (Quads Focus)
+            {
+                title: 'Leg Day - Quads',
+                exercises: [
+                    { name: 'Barbell Back Squat', sets: 4, reps: '8-10', desc: 'King of lower body' },
+                    { name: 'Angled Machine Leg Press', sets: 4, reps: '12-15', desc: 'Quad mass' },
+                    { name: 'Machine Seated Leg Extension', sets: 3, reps: '15', desc: 'Quad isolation' },
+                    { name: 'Walking Barbell Lunge', sets: 3, reps: '12/leg', desc: 'Functional strength' },
+                    { name: 'Machine Hack Squat', sets: 3, reps: '12', desc: 'Quad emphasis' },
+                    { name: 'Seated Calf Raise Machine', sets: 4, reps: '15-20', desc: 'Calf development' }
+                ]
+            },
+            // DAY 2: Chest & Triceps
+            {
+                title: 'Chest & Triceps',
+                exercises: [
+                    { name: 'Barbell Bench Press', sets: 4, reps: '8-10', desc: 'Chest compound' },
+                    { name: 'Incline Dumbbell Bench Press', sets: 4, reps: '10-12', desc: 'Upper chest' },
+                    { name: 'Machine Seated Parallel Grip Chest Press', sets: 3, reps: '12', desc: 'Chest isolation' },
+                    { name: 'Cable Standing High To Low Fly', sets: 3, reps: '12-15', desc: 'Chest definition' },
+                    { name: 'Cable Rope Tricep Extension', sets: 3, reps: '12-15', desc: 'Tricep mass' },
+                    { name: 'Cable Standing Overhead Tricep Extension', sets: 3, reps: '12-15', desc: 'Long head tricep' },
+                    { name: 'Tricep Dip', sets: 3, reps: '10-12', desc: 'Compound tricep' }
+                ]
+            },
+            // DAY 3: Back & Biceps
+            {
+                title: 'Back & Biceps',
+                exercises: [
+                    { name: 'Barbell Bent Over Row', sets: 4, reps: '8-10', desc: 'Back thickness' },
+                    { name: 'Wide Grip Lat Pulldown', sets: 4, reps: '10-12', desc: 'Lat width' },
+                    { name: 'Cable Seated Row', sets: 3, reps: '12', desc: 'Mid-back' },
+                    { name: 'Cable Single Arm Lateral Pulldown', sets: 3, reps: '12/side', desc: 'Unilateral lats' },
+                    { name: 'Machine Back Extension', sets: 3, reps: '15', desc: 'Lower back' },
+                    { name: 'Barbell Bicep Curl', sets: 3, reps: '10-12', desc: 'Bicep mass' },
+                    { name: 'Cable Single Arm Bicep Curl', sets: 3, reps: '12/side', desc: 'Bicep peak' },
+                    { name: 'Cable Hammer Curl', sets: 3, reps: '12-15', desc: 'Brachialis' }
+                ]
+            },
+            // DAY 4: Legs (Glutes & Hamstrings)
+            {
+                title: 'Leg Day - Glutes & Hamstrings',
+                exercises: [
+                    { name: 'Barbell Romanian Deadlift', sets: 4, reps: '10-12', desc: 'Hamstring and glutes' },
+                    { name: 'Barbell Hip Thrust', sets: 4, reps: '12-15', desc: 'Glute isolation' },
+                    { name: 'Machine Seated Leg Curl', sets: 4, reps: '12-15', desc: 'Hamstring isolation' },
+                    { name: 'Cable Pull-Through', sets: 3, reps: '15', desc: 'Glute activation' },
+                    { name: 'Machine Seated Hip Adduction', sets: 3, reps: '15', desc: 'Inner thigh' },
+                    { name: 'Standing Calf Raise Machine', sets: 4, reps: '15-20', desc: 'Calf mass' }
+                ]
+            },
+            // DAY 5: Shoulders & Abs
+            {
+                title: 'Shoulders & Core',
+                exercises: [
+                    { name: 'Barbell Overhead Shoulder Press', sets: 4, reps: '8-10', desc: 'Shoulder compound' },
+                    { name: 'Machine Seated Parallel Grip Shoulder Press', sets: 3, reps: '12', desc: 'Shoulder mass' },
+                    { name: 'Dumbbell Lateral Raise', sets: 4, reps: '12-15', desc: 'Lateral deltoid' },
+                    { name: 'Cable Single Arm Lateral Raise', sets: 3, reps: '12/side', desc: 'Shoulder width' },
+                    { name: 'Dumbbell Reverse Fly', sets: 3, reps: '12-15', desc: 'Rear deltoid' },
+                    { name: 'Cable Rope Face Pull', sets: 3, reps: '15', desc: 'Rear delt and traps' },
+                    { name: 'Cable Crunch', sets: 3, reps: '15-20', desc: 'Abs' },
+                    { name: 'Cable Side Bend', sets: 3, reps: '15/side', desc: 'Obliques' }
+                ]
+            },
+            // DAY 6: Full Body or Active Recovery
+            {
+                title: 'Full Body Metabolic',
+                exercises: [
+                    { name: 'Barbell Deadlift', sets: 3, reps: '8', desc: 'Full posterior chain' },
+                    { name: 'Barbell Front Squat', sets: 3, reps: '10', desc: 'Quad emphasis' },
+                    { name: 'Dumbbell Bench Press', sets: 3, reps: '12', desc: 'Chest' },
+                    { name: 'Wide Grip Lat Pulldown', sets: 3, reps: '12', desc: 'Back width' },
+                    { name: 'Cable Standing High To Low Fly', sets: 2, reps: '15', desc: 'Chest pump' },
+                    { name: 'Cable Seated Row', sets: 2, reps: '15', desc: 'Back pump' }
+                ]
+            },
+            // DAY 7: Rest
+            {
+                title: 'Rest & Recovery',
+                exercises: [
+                    { name: 'Downward Dog', sets: 1, reps: '5 min', desc: 'Full body stretch' },
+                    { name: "Child's Pose", sets: 1, reps: '5 min', desc: 'Recovery' },
+                    { name: 'Corpse Pose', sets: 1, reps: '15 min', desc: 'Complete rest' }
+                ]
+            }
         ]
     }
 };
