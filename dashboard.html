@@ -7378,6 +7378,19 @@ function startCustomBuilderWorkout() {
     function toggleProfileEditMode() {
         const isEditing = document.getElementById('btn-save-profile').style.display === 'inline-flex';
         
+        const SYMPTOMS_LIST = [
+            { val: 'bloating', label: 'Bloating / Digestive' },
+            { val: 'joint_pain', label: 'Joint Pain' },
+            { val: 'mood', label: 'Mood Swings' },
+            { val: 'fatigue', label: 'Fatigue / Crash' }, // Derived/Common
+            { val: 'anxiety', label: 'Anxiety / Worry' },
+            { val: 'hair_skin', label: 'Hair / Skin Issues' },
+            { val: 'hot_flashes', label: 'Hot Flashes' },
+            { val: 'libido', label: 'Low Libido' },
+            { val: 'weight_gain', label: 'Weight Gain' },
+            { val: 'brain_fog', label: 'Brain Fog' } // Derived
+        ];
+
         const editMap = [
              { id: 'profile-name-display', type: 'text' },
              { id: 'profile-email-display', type: 'text' },
@@ -7386,7 +7399,7 @@ function startCustomBuilderWorkout() {
              { id: 'profile-goal-display', type: 'text' },
              { id: 'profile-type-display', type: 'select', options: ['CORTISOL', 'ESTROGEN', 'ADRENAL'] },
              { id: 'profile-equipment-display', type: 'select', options: [['none', 'No Equipment'], ['dumbbells', 'Home / Dumbbells'], ['gym', 'Full Gym Access']] },
-             { id: 'profile-symptoms-display', type: 'text', placeholder: 'anxiety, fatigue, etc' }
+             { id: 'profile-symptoms-display', type: 'multiselect', options: SYMPTOMS_LIST }
         ];
         
         if (!isEditing) {
@@ -7401,6 +7414,19 @@ function startCustomBuilderWorkout() {
                 if(el.dataset.raw) currentVal = el.dataset.raw; 
 
                 el.dataset.original = currentVal;
+                
+                // Parse current array if multiselect
+                let currentArray = [];
+                if (f.type === 'multiselect') {
+                    // Start with dataset raw (array or comma string)
+                     const raw = el.dataset.raw || currentVal; 
+                     if (Array.isArray(raw)) currentArray = raw;
+                     else if (typeof raw === 'string') currentArray = raw.split(',').map(s=>s.trim().toLowerCase());
+                     else currentArray = [];
+                     
+                     // Handle "None" text case
+                     if(currentArray.length === 1 && currentArray[0] === 'none') currentArray = [];
+                }
 
                 if (f.type === 'text') {
                      const align = f.id.includes('symptoms') ? 'right' : 'center';
@@ -7414,6 +7440,22 @@ function startCustomBuilderWorkout() {
                         opts += `<option value="${val}" ${selected}>${label}</option>`;
                     });
                     el.innerHTML = `<select style="width:100%; border:1px solid var(--primary); padding:4px; border-radius:6px; font-family:inherit; font-size:inherit; background:white;">${opts}</select>`;
+                } else if (f.type === 'multiselect') {
+                    let checks = '';
+                    f.options.forEach(opt => {
+                        const isChecked = currentArray.some(s => s.includes(opt.val) || s === opt.label.toLowerCase()); // Loose match
+                        checks += `
+                            <label style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #f1f5f9; cursor:pointer;">
+                                <input type="checkbox" value="${opt.val}" ${isChecked ? 'checked' : ''} style="width:18px; height:18px; accent-color:var(--primary);">
+                                <span style="font-size:0.9rem; color:var(--text-main);">${opt.label}</span>
+                            </label>
+                        `;
+                    });
+                    el.innerHTML = `
+                        <div class="multiselect-container" style="border:1px solid var(--primary); background:white; border-radius:8px; padding:8px 12px; max-height:200px; overflow-y:auto; text-align:left;">
+                            ${checks}
+                        </div>
+                    `;
                 }
             });
             document.getElementById('btn-save-profile').style.display = 'inline-flex';
@@ -7440,20 +7482,34 @@ function startCustomBuilderWorkout() {
             const el = document.getElementById(f.id);
             if(!el) return;
             
+            // Special handling for multiselect checkboxes
+            if (f.key === 'symptoms') {
+                const checkedBoxes = el.querySelectorAll('input[type="checkbox"]:checked');
+                if (checkedBoxes.length > 0) {
+                    const vals = Array.from(checkedBoxes).map(cb => cb.value);
+                    quizData[f.key] = vals; // Save as array
+                    
+                    // Update UI Display immediately
+                    el.innerText = vals.join(', '); // Show codes or maybe map back to labels?
+                    // Better: Map back to readable labels
+                    const SYMPTOMS_LIST = { 'bloating': 'Bloating', 'joint_pain': 'Joint Pain', 'mood': 'Mood', 'fatigue': 'Fatigue', 'anxiety': 'Anxiety', 'hair_skin': 'Hair/Skin', 'hot_flashes': 'Hot Flashes', 'libido': 'Low Libido', 'weight_gain': 'Weight Gain', 'brain_fog': 'Brain Fog' };
+                    el.innerText = vals.map(v => SYMPTOMS_LIST[v] || v).join(', ');
+                } else {
+                    quizData[f.key] = [];
+                    el.innerText = 'None';
+                }
+                return; // Done for this field
+            }
+
             const input = el.querySelector('input, select');
             if(input) {
                 let val = input.value;
-                if (f.key === 'symptoms') {
-                     val = val.split(',').map(s => s.trim()).filter(s => s.length > 0);
-                }
                 quizData[f.key] = val;
                 // Update UI Display properly
                 if (f.key === 'equipment_access') {
                     const eqMap = { 'gym': 'Full Gym Access', 'dumbbells': 'Home / Dumbbells', 'none': 'No Equipment' };
                     el.innerText = eqMap[val] || 'No Equipment';
                     el.dataset.raw = val; 
-                } else if (f.key === 'symptoms') {
-                    el.innerText = Array.isArray(val) ? val.join(', ') : val;
                 } else {
                     el.innerText = val + (f.key === 'weight' ? ' kg' : '');
                 }
