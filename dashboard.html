@@ -7827,29 +7827,34 @@ async function updateCycleData() {
     userCycleData.lastPeriod = startInput;
     userCycleData.cycleLength = parseInt(lengthInput);
 
-    // Save to DB
+    // Always save to localStorage first (works for all users)
+    localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+
+    // Also save to DB if logged in (background, non-blocking)
     if (window.currentUser) {
-        try {
-            const userId = window.currentUser.id || window.currentUser.user_id;
-            // Get existing or create new additional_data
-            let existingFacts = {};
+        (async () => {
             try {
-                existingFacts = await dbHelpers.userFacts.get(userId);
-            } catch(err) { /* ignore not found */ }
-            
-            const currentAdditional = existingFacts?.additional_data || {};
-            
-            await dbHelpers.userFacts.upsert(userId, {
-                additional_data: {
-                    ...currentAdditional,
-                    last_period_start: userCycleData.lastPeriod,
-                    cycle_length: userCycleData.cycleLength,
-                    no_period_mode: userCycleData.noPeriodMode
-                }
-            });
-        } catch (e) {
-            console.error("Error saving cycle data asds", e);
-        }
+                const userId = window.currentUser.id || window.currentUser.user_id;
+                let existingFacts = {};
+                try {
+                    existingFacts = await dbHelpers.userFacts.get(userId);
+                } catch(err) { /* ignore not found */ }
+                
+                const currentAdditional = existingFacts?.additional_data || {};
+                
+                await dbHelpers.userFacts.upsert(userId, {
+                    additional_data: {
+                        ...currentAdditional,
+                        last_period_start: userCycleData.lastPeriod,
+                        cycle_length: userCycleData.cycleLength,
+                        no_period_mode: userCycleData.noPeriodMode
+                    }
+                });
+            } catch (e) {
+                // DB save failed but localStorage worked, user data is safe
+                console.warn("Cycle data saved locally. Cloud sync pending.", e.message);
+            }
+        })();
     }
 
     renderCycleStatus();
