@@ -1293,6 +1293,7 @@
         if(window.currentUser) {
             loadChat();
             loadJournalHistory(); 
+            await syncQuizDataToDb(); // Sync quiz data first
             loadProfileData(); // Ensure profile is loaded
             initProgramDate(); // Ensure program date is synced
             
@@ -7498,6 +7499,49 @@ function updateDailyContent(day) {
     }
 }
 
+async function syncQuizDataToDb() {
+    const user = window.currentUser;
+    if (!user) return;
+    
+    try {
+        const quizJson = sessionStorage.getItem('userProfile');
+        const hormoneType = sessionStorage.getItem('userResult');
+        
+        let quizData = {};
+        if (quizJson) {
+             try { quizData = JSON.parse(quizJson); } catch(e) {}
+        }
+        
+        // Add hormone type if present
+        if (hormoneType) {
+            quizData.profile = hormoneType;
+        }
+
+        // Derive symptoms from quiz answers for workout personalization
+        const derivedSymptoms = [];
+        if (quizData.keeps_awake === 'stress' || quizData.keeps_awake === 'worry') derivedSymptoms.push('anxiety');
+        if (quizData.midday_crash === 'yes' || quizData.midday_crash === 'crash') derivedSymptoms.push('fatigue');
+        if (quizData.brain_fog === 'yes' || quizData.brain_fog === 'forgetful') derivedSymptoms.push('fatigue');
+        
+        if (derivedSymptoms.length > 0) {
+            // merge with existing symptoms if any, avoiding duplicates
+            const existing = Array.isArray(quizData.symptoms) ? quizData.symptoms : [];
+            quizData.symptoms = [...new Set([...existing, ...derivedSymptoms])];
+        }
+
+        if (Object.keys(quizData).length > 0) {
+            console.log("Syncing quiz data to DB...", quizData);
+            await dbHelpers.users.upsert(user.id, quizData);
+            
+            // Update local cache
+            window.userProfile = { ...window.userProfile, ...quizData };
+            console.log("Quiz data synced successfully");
+        }
+    } catch (e) {
+        console.error("Failed to sync quiz data:", e);
+    }
+}
+
 async function loadProfileData() {
     let profile = null;
     try {
@@ -7521,6 +7565,11 @@ async function loadProfileData() {
         goal: profile?.goal_weight || profile?.goal || "Fat Loss",
         profile: profile?.profile || (sessionStorage.getItem('userResult') || 'Cortisol').toUpperCase()
     };
+
+    // Load symptoms from profile if available (from quiz)
+    if (profile?.symptoms && Array.isArray(profile.symptoms) && profile.symptoms.length > 0) {
+        userCycleData.symptoms = [...new Set([...userCycleData.symptoms, ...profile.symptoms])];
+    }
 
     if(document.getElementById('profile-name-display')) document.getElementById('profile-name-display').innerText = context.name;
     if(document.getElementById('profile-email-display')) document.getElementById('profile-email-display').innerText = context.email;
