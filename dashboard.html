@@ -1373,7 +1373,7 @@
                 const today = new Date().toDateString();
                 const lastCheck = localStorage.getItem('lastWellnessCheck');
                 if (lastCheck !== today) {
-                    const modal = document.getElementById('daily-wellness-modal');
+                    const modal = document.getElementById('check-in-modal');
                     if (modal) {
                         modal.style.display = 'flex';
                     }
@@ -13827,27 +13827,30 @@ function submitDailySuperboost() {
     // 1. Save Log
     const today = new Date().toISOString().split('T')[0];
     if(!userCycleData.logs) userCycleData.logs = {};
-    
+
     // Clone to avoid ref issues
     userCycleData.logs[today] = JSON.parse(JSON.stringify(checkInProgress));
-    
+
     // Persist
     localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
     if(window.currentUser) {
         // Sync to DB (Optional async)
         // dbHelpers.userFacts.update...
     }
-    
+
+    // Mark check-in as completed for today
+    localStorage.setItem('lastWellnessCheck', new Date().toDateString());
+
     // 2. Trigger Superboost Engine
     applySuperboost(checkInProgress);
-    
+
     // 3. Close & Refresh
     closeCheckInModal();
     initCycleView();
-    
+
     // 4. Redirect to Dashboard with Animation
     switchAppTab('dashboard');
-    
+
     // Show Toast/Banner on Dashboard?
     showSuperboostBanner();
 }
