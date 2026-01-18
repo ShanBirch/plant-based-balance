@@ -7021,9 +7021,9 @@ function startCustomBuilderWorkout() {
             <svg viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22 14.86 20.57 16.29 22 18.43 19.86 19.86 21.29 21.29 19.86l-1.43-1.43L21.29 17l-1.43-1.43L18.43 17l-3.57-3.57z"/></svg>
             <span>Movement</span>
         </button>
-        <button class="nav-item" onclick="switchAppTab('calendar', this)">
-           <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
-           <span>Calendar</span>
+        <button class="nav-item" onclick="switchAppTab('cycle', this)">
+           <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.22-7.52-3.22 3.22 7.52 3.22-7.52z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
+           <span>Cycle</span>
         </button>
         <button class="nav-item" onclick="switchAppTab('support', this)">
             <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
@@ -7032,114 +7032,91 @@ function startCustomBuilderWorkout() {
      </nav>
 
     <!-- CALENDAR / CYCLE VIEW -->
-    <div id="view-calendar" class="app-view" style="display:none; padding-bottom: 90px;">
-        <div class="dashboard-welcome" style="padding-bottom: 10px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                 <span class="welcome-text" style="color: var(--secondary); font-weight: 700;">Cycle Syncing</span>
-                 <!-- Profile Icon for consistency -->
-                 <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
+    <!-- CYCLE / HORMONE HUB VIEW -->
+    <div id="view-cycle" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc;">
+        <!-- Header -->
+        <div style="padding: 20px 25px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
+            <div>
+                <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Hormone Hub</h2>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Sync your life to your cycle</div>
             </div>
-            <h1 class="user-name" style="margin-top:5px;">Cycle & Schedule</h1>
-        </div>
-
-        <!-- Cycle Tracker Card -->
-        <div class="card" style="margin: 0 25px 25px 25px;">
-            <div class="card-body" style="max-height: none; padding: 25px; opacity: 1; display: block;">
-                
-                <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-                    <div id="cycle-phase-icon" onclick="toggleCycleSettings()" style="cursor: pointer; background: var(--accent-green); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; flex-shrink: 0;">
-                        🌸
-                    </div>
-                    <div>
-                        <h4 id="cycle-phase-name" style="margin: 0 0 5px 0; border: none; padding: 0;">Loading...</h4>
-                        <p id="cycle-day-display" style="margin: 0; font-weight: 500; color: var(--primary);">Day --</p>
-                    </div>
-                </div>
-
-                <p id="cycle-phase-desc" style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
-                    Set your last period date to sync your workouts.
-                </p>
-
-                <!-- Daily Status & Actions -->
-                <div style="margin-bottom: 25px;">
-
-
-                    <button class="action-btn-outline" onclick="logPeriodStart()">
-                        <span style="color:#E57373;">🩸</span> Log Period Started Today
-                    </button>
-                </div>
-
-                <!-- Settings Toggle -->
-                <details id="cycle-settings-details" style="background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9;">
-                    <summary style="padding: 15px; cursor: pointer; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; list-style: none; display: flex; align-items: center; justify-content: space-between;">
-                        <span>Cycle Settings</span>
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
-                    </summary>
-                    <div class="cycle-settings" style="padding: 0 15px 15px 15px; border-top: 1px solid #f1f5f9; margin-top: 0;">
-                        <label>
-                            <span style="font-size: 0.75em; text-transform:uppercase; letter-spacing:0.5px; opacity: 0.8; color: #666;">Last Period</span>
-                            <input type="date" id="last-period-input" onchange="updateCycleData()" style="color: #333; background: white; border: 1px solid #ddd;">
-                        </label>
-                        <label>
-                             <span style="font-size: 0.75em; text-transform:uppercase; letter-spacing:0.5px; opacity: 0.8; color: #666;">Length</span>
-                            <input type="number" id="cycle-length-input" value="28" min="21" max="40" onchange="updateCycleData()" style="color: #333; background: white; border: 1px solid #ddd;">
-                        </label>
-                        
-                        <div style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px dashed #e2e8f0; margin-top: 5px;">
-                            <div>
-                                <div style="font-size: 0.9rem; font-weight: 600; color: var(--primary);">Wellness Mode</div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">For non-menstruating users</div>
-                            </div>
-                            <label class="toggle-switch" style="display:inline-block; width:44px; height:24px; position:relative;">
-                                <input type="checkbox" id="no-period-toggle" onchange="toggleNoPeriodMode()">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                    </div>
-                </details>
+            <div onclick="toggleCycleSettings()" style="width: 40px; height: 40px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <span style="font-size: 1.2rem;">⚙️</span>
             </div>
         </div>
 
-        <style>
-            /* Local Toggle Styles */
-            .toggle-switch input { opacity: 0; width: 0; height: 0; }
-            .toggle-switch .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
-            .toggle-switch .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-            .toggle-switch input:checked + .slider { background-color: var(--secondary); }
-            .toggle-switch input:checked + .slider:before { transform: translateX(20px); }
+        <!-- Cycle Wheel / Hero Card -->
+        <div style="padding: 25px;">
+            <div class="card" style="background: linear-gradient(135deg, #FFF5F7 0%, #FFF0F5 100%); border: 1px solid #FBCFE8; box-shadow: 0 10px 30px -5px rgba(251, 207, 232, 0.5); overflow: visible;">
+                <div class="card-body active" style="opacity:1; max-height:none; padding: 30px 25px; text-align: center;">
+                    
+                    <!-- Phase Indicator Ring (CSS Only) -->
+                    <div style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid #FBCFE8; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; position: relative; background: white; box-shadow: 0 5px 15px rgba(251, 207, 232, 0.3);">
+                         <!-- Dynamic progress border would go here -->
+                         <div style="font-size: 2.5rem;">🌸</div>
+                         <div style="position: absolute; bottom: -10px; background: #BE185D; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">Day <span id="cycle-day-display">--</span></div>
+                    </div>
 
-            .action-btn-outline {
-                width: 100%;
-                padding: 12px;
-                border: 1px solid #e2e8f0;
-                background: white;
-                color: var(--text-main);
-                border-radius: 12px;
-                font-weight: 600;
-                font-size: 0.9rem;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-                cursor: pointer;
-                transition: all 0.2s;
-            }
-            .action-btn-outline:hover {
-                background: #f8fafc;
-                border-color: #cbd5e1;
-            }
-        </style>
+                    <h2 id="cycle-phase-name" style="color: #9D174D; margin: 0 0 10px 0; font-family: 'Playfair Display'; font-size: 1.8rem;">Loading...</h2>
+                    <p id="cycle-phase-desc" style="color: #831843; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">Tracking your cycle helps predict your energy.</p>
+                    
+                    <!-- Phase Tags -->
+                    <div id="cycle-phase-tags" style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+            </div>
 
-        <!-- Weekly Schedule -->
-        <div style="margin: 0 25px 25px 25px;">
-            <h3 style="color: var(--primary); margin-bottom: 15px; font-size: 1.1rem;">This Week's Schedule</h3>
+            <!-- Superboost Check-in Button -->
+            <div id="check-in-prompt-card" onclick="openCheckInModal()" style="margin-top: 20px; background: white; border: 1px solid var(--primary); color: var(--primary); padding: 20px; border-radius: 16px; font-weight: 600; text-align: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.2s; display: flex; align-items: center; justify-content: center; gap: 15px;">
+                <div style="font-size: 1.5rem;">✨</div>
+                <div style="text-align: left;">
+                    <div style="font-size: 1.05rem; color: var(--primary);">Daily Check-in</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 400;">Unlock your daily superboost</div>
+                </div>
+                <div style="margin-left: auto; background: var(--primary); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">→</div>
+            </div>
+            
+            <!-- Check-in Completed State (Hidden by default) -->
+            <div id="check-in-completed-card" style="display: none; margin-top: 20px; background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534; padding: 20px; border-radius: 16px; text-align: center;">
+                <div style="font-size: 1.5rem; margin-bottom: 5px;">✅</div>
+                <div style="font-weight: 700;">Superboost Active!</div>
+                <div style="font-size: 0.85rem; margin-top: 5px;">Your dashboard has been updated.</div>
+            </div>
+
+        </div>
+
+        <!-- Weekly Calendar -->
+        <div style="padding: 0 25px 25px 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="color: var(--primary); margin: 0; font-size: 1.1rem;">Your Predictions</h3>
+                <span onclick="toggleCycleSettings()" style="font-size: 0.8rem; color: var(--secondary); cursor: pointer; font-weight: 600;">Edit Dates</span>
+            </div>
+            
+            <!-- Settings Panel (Hidden) -->
+             <div id="cycle-settings-panel" style="display: none; background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase;">Last Period Start</label>
+                    <input type="date" id="last-period-input" onchange="updateCycleData()" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                </div>
+                 <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase;">Cycle Length (Days)</label>
+                    <input type="number" id="cycle-length-input" value="28" onchange="updateCycleData()" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                </div>
+                <div style="padding-top: 15px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.9rem;">Period Tracking</span>
+                    <label class="toggle-switch" style="display:inline-block; width:44px; height:24px; position:relative;">
+                        <input type="checkbox" id="no-period-toggle" onchange="toggleNoPeriodMode()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                 <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Turn off if you don't menstruate (Wellness Mode).</div>
+            </div>
+
             <div id="weekly-calendar" style="display: flex; flex-direction: column; gap: 10px;">
-                <!-- Calendar rows will be dynamically inserted here -->
+                <!-- Calendar rows inserted via JS -->
             </div>
         </div>
-
-        <!-- Today's Recommendation -->
-<!-- Today's Focus Card Removed to prevent Dashboard Glitch -->
     </div>
 
     <style>
@@ -8019,11 +7996,11 @@ function switchAppTab(tabName, btn) {
             // Decouple data loading so errors don't stop view from showing
             setTimeout(loadProfileData, 10);
         }
-    } else if (tabName === 'calendar') {
-        const el = document.getElementById('view-calendar');
+    } else if (tabName === 'cycle') {
+        const el = document.getElementById('view-cycle');
         if(el) {
             el.style.display = 'block';
-            initCalendarView();
+            if(typeof initCycleView === 'function') initCycleView();
         }
     }
     
@@ -8044,7 +8021,9 @@ let userCycleData = {
     cycleLength: 28,
     mood: null, // 'strong' or 'tired'
     noPeriodMode: false,
-    symptoms: []
+    symptoms: [],
+    logs: {}, // { "YYYY-MM-DD": { flow, symptoms:[], mood, energy } }
+    dailyCheckIn: null // { date: "YYYY-MM-DD", status: "completed" }
 };
 
 function setCycleMood(mood, btn) {
@@ -9607,6 +9586,40 @@ async function renderMovementView() {
     let personalizationReason = '';
     
     // PRIORITY 3: Daily Check-in adjustments
+    // --- SUPERBOOST OVERRIDE (Local Log) ---
+    if (userCycleData.logs && userCycleData.logs[dateStr]) {
+        const log = userCycleData.logs[dateStr];
+        
+        // Map Energy
+        if (log.energy === 'low') {
+             suggestedProgram = 'yoga';
+             workoutDayIndex = 3; 
+             personalizationReason = '✨ Superboost: Gentle flow for low energy.';
+        }
+        
+        // Map Symptoms (Cramps/Back Pain -> Yin)
+        if (log.symptoms && (log.symptoms.includes('cramps') || log.symptoms.includes('back_pain'))) {
+             suggestedProgram = 'yoga';
+             workoutDayIndex = 6; // Yin
+             personalizationReason = '✨ Superboost: Relief for your body.';
+        }
+        
+        // Map Mood
+        if (log.mood === 'anxious' || log.mood === 'sad') {
+             suggestedProgram = 'yoga';
+             workoutDayIndex = 6;
+             personalizationReason = '✨ Superboost: Calming practice for your mind.';
+        }
+        
+        // High Energy Bonus
+        if (log.energy === 'high' && suggestedProgram === 'yoga' && !cyclePhaseInfo?.name.includes('Menstrual')) {
+             suggestedProgram = 'bodyweight'; // Upgrade from Yoga
+             workoutDayIndex = 1; // Dynamic Flow
+             personalizationReason = '✨ Superboost: Matching your high energy!';
+        }
+    }
+    // --- END SUPERBOOST ---
+
     if (checkin) {
         // If low energy, always suggest yoga
         if (checkin.energy === 'low') {
@@ -13543,6 +13556,284 @@ updateCoachUI();
         document.getElementById('view-active-workout').style.display = 'block';
         window.activeWorkoutSessions = customWorkout; 
     }
+</script>
+
+<!-- SUPERBOOST CHECK-IN MODAL -->
+<div id="check-in-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:flex-end;">
+    <div class="modal-content" style="background:white; width: 100%; border-radius: 20px 20px 0 0; padding: 25px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease-out;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+            <h3 style="margin:0; font-family:'Playfair Display'; font-size: 1.5rem; color: var(--primary);">Daily Check-in</h3>
+            <div onclick="closeCheckInModal()" style="font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">✕</div>
+        </div>
+        
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px;">How are you feeling today? We'll tailor your plan instantly.</p>
+
+        <!-- Form Content -->
+        <div id="check-in-questions">
+            
+            <!-- 1. Bleeding -->
+            <div style="margin-bottom: 25px;">
+                <label style="display:block; font-weight:600; color:var(--text-main); margin-bottom:12px;">Flow Status (If Applicable)</label>
+                <div class="check-in-options" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:5px;">
+                    <div class="check-in-chip" onclick="selectCheckInOption('flow', 'none', this)" data-group="flow">None</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('flow', 'spotting', this)" data-group="flow">Spotting</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('flow', 'light', this)" data-group="flow">Light 🩸</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('flow', 'medium', this)" data-group="flow">Medium 🩸🩸</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('flow', 'heavy', this)" data-group="flow">Heavy 🩸🩸🩸</div>
+                </div>
+            </div>
+
+            <!-- 2. Physical Symptoms -->
+            <div style="margin-bottom: 25px;">
+                <label style="display:block; font-weight:600; color:var(--text-main); margin-bottom:12px;">Physical (Select all that apply)</label>
+                <div class="check-in-options" style="display:flex; flex-wrap:wrap; gap:10px;">
+                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'cramps', this)">Cramps ⚡</div>
+                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'bloating', this)">Bloating 🎈</div>
+                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'headache', this)">Headache 🤕</div>
+                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'back_pain', this)">Back Pain 🦴</div>
+                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'tender_breasts', this)">Tender Breasts 👙</div>
+                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'acne', this)">Acne / Skin 🫧</div>
+                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'digestion', this)">Digestion Issues 🤢</div>
+                </div>
+            </div>
+
+            <!-- 3. Mind & Energy -->
+            <div style="margin-bottom: 25px;">
+                <label style="display:block; font-weight:600; color:var(--text-main); margin-bottom:12px;">Energy & Mood</label>
+                <div class="check-in-options" style="display:flex; flex-wrap:wrap; gap:10px;">
+                     <div class="check-in-chip" onclick="selectCheckInOption('energy', 'high', this)" data-group="energy">High Energy ⚡</div>
+                     <div class="check-in-chip" onclick="selectCheckInOption('energy', 'medium', this)" data-group="energy">Balanced ⚖️</div>
+                     <div class="check-in-chip" onclick="selectCheckInOption('energy', 'low', this)" data-group="energy">Low / Tired 💤</div>
+                     <div style="flex-basis:100%; height:5px;"></div>
+                     <div class="check-in-chip" onclick="selectCheckInOption('mood', 'happy', this)" data-group="mood">Happy / Calm 😌</div>
+                     <div class="check-in-chip" onclick="selectCheckInOption('mood', 'anxious', this)" data-group="mood">Anxious 😰</div>
+                     <div class="check-in-chip" onclick="selectCheckInOption('mood', 'sad', this)" data-group="mood">Sad / Weepy 😢</div>
+                     <div class="check-in-chip" onclick="selectCheckInOption('mood', 'irritated', this)" data-group="mood">Irritated 😠</div>
+                </div>
+            </div>
+
+             <!-- 4. Fluid -->
+             <div style="margin-bottom: 25px;">
+                <label style="display:block; font-weight:600; color:var(--text-main); margin-bottom:12px;">Cervical Fluid</label>
+                <div class="check-in-options" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:5px;">
+                    <div class="check-in-chip" onclick="selectCheckInOption('fluid', 'dry', this)" data-group="fluid">Dry</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('fluid', 'sticky', this)" data-group="fluid">Sticky</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('fluid', 'creamy', this)" data-group="fluid">Creamy</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('fluid', 'egg_white', this)" data-group="fluid">Egg White 🥚</div>
+                </div>
+            </div>
+
+        </div>
+
+        <button onclick="submitDailySuperboost()" style="width:100%; background:var(--primary); color:white; padding:16px; border-radius:12px; border:none; font-weight:700; font-size:1.1rem; margin-top:10px; box-shadow: 0 4px 15px rgba(45, 74, 62, 0.3); cursor:pointer;">
+            ACTIVATE SUPERBOOST ✨
+        </button>
+    </div>
+</div>
+
+<style>
+    .check-in-chip {
+        padding: 8px 16px;
+        background: #f1f5f9;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        color: var(--text-main);
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .check-in-chip.selected {
+        background: var(--secondary);
+        color: white;
+        border-color: var(--secondary);
+        box-shadow: 0 2px 5px rgba(180, 155, 10, 0.2);
+    }
+    @keyframes slideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+</style>
+
+<script>
+// --- HORMONE HUB & SUPERBOOST ENGINE ---
+
+let checkInProgress = { flow:null, symptoms:[], mood:null, energy:null, fluid:null };
+
+function initCycleView() {
+    // 1. Ensure Data Loaded
+    if(typeof initCalendarView === 'function') initCalendarView(); // Legacy loader
+    
+    // 2. Render Wheel
+    renderCycleStatus();
+    
+    // 3. Render Calendar
+    if(typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
+    
+    // 4. Check Daily Log Status
+    const today = new Date().toISOString().split('T')[0];
+    const hasLog = userCycleData.logs && userCycleData.logs[today];
+    
+    const promptCard = document.getElementById('check-in-prompt-card');
+    const completeCard = document.getElementById('check-in-completed-card');
+    
+    if(promptCard && completeCard) {
+        if(hasLog) {
+            promptCard.style.display = 'none';
+            completeCard.style.display = 'block';
+        } else {
+            promptCard.style.display = 'flex';
+            completeCard.style.display = 'none';
+        }
+    }
+}
+
+function renderCycleStatus() {
+    const today = new Date();
+    // Default values
+    let dayNum = 1;
+    let phase = 'wellness';
+    
+    if (userCycleData.lastPeriod && !userCycleData.noPeriodMode) {
+        const lastP = new Date(userCycleData.lastPeriod);
+        const diff = Math.floor((today - lastP) / (1000 * 60 * 60 * 24));
+        dayNum = (diff % userCycleData.cycleLength) + 1;
+        
+        // Determine Phase
+        if (dayNum >= 1 && dayNum <= 5) phase = 'menstrual';
+        else if (dayNum <= 13) phase = 'follicular';
+        else if (dayNum <= 16) phase = 'ovulation';
+        else phase = 'luteal';
+    }
+    
+    // Update UI
+    const dayDisplay = document.getElementById('cycle-day-display');
+    const nameDisplay = document.getElementById('cycle-phase-name');
+    const descDisplay = document.getElementById('cycle-phase-desc');
+    const tagsContainer = document.getElementById('cycle-phase-tags');
+    
+    if(dayDisplay) dayDisplay.innerText = dayNum;
+    
+    const info = PHASE_INFO[phase];
+    if(nameDisplay && info) {
+        nameDisplay.innerText = info.name;
+        nameDisplay.style.color = info.color;
+    }
+    if(descDisplay && info) {
+        descDisplay.innerText = info.rec || "Listen to your body.";
+    }
+    
+    // Tags
+    if(tagsContainer && info) {
+        tagsContainer.innerHTML = `
+            <span style="background:${info.color}20; color:${info.color}; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:600;">${info.icon} ${phase.toUpperCase()}</span>
+        `;
+    }
+}
+
+function toggleCycleSettings() {
+    const panel = document.getElementById('cycle-settings-panel');
+    if(panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+// --- CHECK-IN LOGIC ---
+
+function openCheckInModal() {
+    document.getElementById('check-in-modal').style.display = 'flex';
+    // Clear previous selection visually? Or keep if re-opening?
+    // For now, keep state
+}
+
+function closeCheckInModal() {
+    document.getElementById('check-in-modal').style.display = 'none';
+}
+
+function selectCheckInOption(category, value, el) {
+    // 1. Update State
+    checkInProgress[category] = value;
+    
+    // 2. Update UI (Siblings)
+    const options = document.querySelectorAll(`.check-in-chip[data-group="${category}"]`);
+    options.forEach(opt => opt.classList.remove('selected'));
+    
+    // 3. Select Clicked
+    el.classList.add('selected');
+}
+
+function toggleCheckInOption(category, value, el) {
+    // 1. Update State (Array)
+    if(!checkInProgress[category]) checkInProgress[category] = [];
+    
+    const idx = checkInProgress[category].indexOf(value);
+    if(idx > -1) {
+        checkInProgress[category].splice(idx, 1); // Remove
+        el.classList.remove('selected');
+    } else {
+        checkInProgress[category].push(value); // Add
+        el.classList.add('selected');
+    }
+}
+
+function submitDailySuperboost() {
+    // 1. Save Log
+    const today = new Date().toISOString().split('T')[0];
+    if(!userCycleData.logs) userCycleData.logs = {};
+    
+    // Clone to avoid ref issues
+    userCycleData.logs[today] = JSON.parse(JSON.stringify(checkInProgress));
+    
+    // Persist
+    localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+    if(window.currentUser) {
+        // Sync to DB (Optional async)
+        // dbHelpers.userFacts.update...
+    }
+    
+    // 2. Trigger Superboost Engine
+    applySuperboost(checkInProgress);
+    
+    // 3. Close & Refresh
+    closeCheckInModal();
+    initCycleView();
+    
+    // 4. Redirect to Dashboard with Animation
+    switchAppTab('dashboard');
+    
+    // Show Toast/Banner on Dashboard?
+    showSuperboostBanner();
+}
+
+function applySuperboost(data) {
+    console.log("🚀 Applying Superboost:", data);
+    // This function will be called by renderDashboard to override suggestions
+    // For now, we save it to session state or global
+    window.superboostState = data;
+    
+    // Force Dashboard Refresh
+    if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
+}
+
+function showSuperboostBanner() {
+    // Create a temporary banner
+    const banner = document.createElement('div');
+    banner.innerText = "✨ Dashboard Updated with your Superboost!";
+    banner.style.cssText = "position:fixed; top:80px; left:50%; transform:translateX(-50%); background:var(--primary); color:white; padding:10px 20px; border-radius:20px; z-index:2000; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.2); animation: fadeIn 0.5s;";
+    document.body.appendChild(banner);
+    
+    setTimeout(() => {
+        banner.style.opacity = '0';
+        setTimeout(() => banner.remove(), 500);
+    }, 3000);
+}
+
+// Initial Load
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if we need to load cycle view
+    // (Existing init calls will handle this if tab is active)
+});
+
 </script>
 </body>
 </html>
