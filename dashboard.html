@@ -8886,64 +8886,9 @@ async function renderTodayMeals() {
                        <p>DAY ${currentDayNum}</p>`;
     container.appendChild(header);
 
-    // 1.5 Personalized Meal Recommendation Banner
-    let personalizedMeal = null;
-    if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
-        const SYMPTOM_MEAL_MAP = {
-            hot_flash: {
-                title: 'Cooling Support',
-                icon: '❄️',
-                mealTitle: 'Cucumber Mint Green Juice + Tofu Scramble',
-                explanation: 'Cucumber and mint are naturally cooling and help reduce hot flash intensity.'
-            },
-            dizziness: {
-                title: 'Stabilization Support',
-                icon: '🌀',
-                mealTitle: 'Stuffed Sweet Potato',
-                explanation: 'Sweet potato provides slow-release carbs to stabilize blood sugar and reduce dizziness.'
-            },
-            fatigue: {
-                title: 'Energy Support',
-                icon: '⚡',
-                mealTitle: 'Coconut Curry Red Lentil Soup',
-                explanation: 'Red lentils are rich in iron and protein to combat fatigue and boost energy.'
-            },
-            anxiety: {
-                title: 'Calm Support',
-                icon: '🥑',
-                mealTitle: 'Reishi Hot Chocolate',
-                explanation: 'Reishi mushroom and cacao are rich in magnesium, which calms the nervous system.'
-            }
-        };
+    // 1.5 Personalized Meal Recommendation Banner REMOVED per user request
+    // The green bar was appearing empty or unwanted.
 
-        // Find first matching symptom
-        let symptomFix = null;
-        for (let s of userCycleData.symptoms) {
-            if (SYMPTOM_MEAL_MAP[s]) {
-                symptomFix = SYMPTOM_MEAL_MAP[s];
-                personalizedMeal = symptomFix.mealTitle;
-                break;
-            }
-        }
-
-        if (symptomFix) {
-            const banner = document.createElement('div');
-            banner.className = 'card';
-            banner.style.cssText = 'background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #86efac; margin-bottom: 20px;';
-            banner.innerHTML = `
-                <div class="card-body" style="display:flex; gap:15px; align-items:center; padding:15px;">
-                    <div style="font-size:2rem;">${symptomFix.icon}</div>
-                    <div>
-                        <h4 style="color:#166534; margin:0 0 5px 0; font-size:1rem;">✨ ${symptomFix.title} - Personalized for You</h4>
-                        <p style="color:#15803d; margin:0; font-size:0.9rem; line-height:1.4;">
-                            We've adjusted your menu to include <strong>${symptomFix.mealTitle}</strong>. ${symptomFix.explanation}
-                        </p>
-                    </div>
-                </div>
-            `;
-            container.appendChild(banner);
-        }
-    }
 
     const cards = sourceSection.querySelectorAll('.card');
     let dinnerReplaced = false;
