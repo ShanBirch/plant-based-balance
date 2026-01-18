@@ -912,6 +912,14 @@
         from { transform: translateY(20px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
     }
+    @keyframes slideDown {
+        from { transform: translate(-50%, -20px); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+    }
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
     .onboarding-header {
         background: linear-gradient(135deg, var(--primary) 0%, #034f2a 100%);
         padding: 30px;
@@ -1296,6 +1304,18 @@
                 const homeNav = document.querySelector('.nav-item');
                 switchAppTab('dashboard', homeNav);
             }
+
+            // Auto-show Daily Wellness check-in (once per day)
+            setTimeout(() => {
+                const today = new Date().toDateString();
+                const lastCheck = localStorage.getItem('lastWellnessCheck');
+                if (lastCheck !== today) {
+                    const modal = document.getElementById('daily-wellness-modal');
+                    if (modal) {
+                        modal.style.display = 'flex';
+                    }
+                }
+            }, 500); // Small delay to ensure DOM is fully rendered
         }
     });
 
@@ -8061,18 +8081,18 @@ function submitDailyWellness() {
         symptoms.push(cb.value);
     });
     userCycleData.symptoms = symptoms;
-    
+
     // 2. Save Date
     const today = new Date().toDateString();
     localStorage.setItem('lastWellnessCheck', today);
-    
+
     // 3. Hide Modal
     document.getElementById('daily-wellness-modal').style.display = 'none';
-    
+
     // 4. Update UI
     renderCycleStatus();
     renderWeeklyCalendar();
-    
+
     // 5. Update Mood buttons in Dashboard if visible
     if(userCycleData.mood) {
         document.querySelectorAll('.mood-btn').forEach(b => {
@@ -8086,8 +8106,48 @@ function submitDailyWellness() {
         });
     }
 
-    // 6. Provide brief feedback toast/alert
-    // alert('Dashboard updated based on your wellness check-in!');
+    // 6. Refresh Personalized Content
+    renderTodayMeals(); // Re-render meals with personalization
+    renderMovementView(); // Re-render workouts with personalization
+
+    // 7. Show personalization message
+    if (userCycleData.mood || userCycleData.symptoms?.length > 0) {
+        showPersonalizationMessage();
+    }
+}
+
+function showPersonalizationMessage() {
+    // Create a temporary banner message
+    const existing = document.getElementById('personalization-banner');
+    if (existing) existing.remove();
+
+    const banner = document.createElement('div');
+    banner.id = 'personalization-banner';
+    banner.style.cssText = `
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        color: white;
+        padding: 15px 30px;
+        border-radius: 50px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-align: center;
+        animation: slideDown 0.5s ease-out, fadeOut 0.5s ease-out 3.5s;
+    `;
+    banner.innerHTML = '✨ We\'ve personalized your workout and meals for today!';
+
+    document.body.appendChild(banner);
+
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        banner.style.animation = 'fadeOut 0.5s ease-out';
+        setTimeout(() => banner.remove(), 500);
+    }, 3500);
 }
 
 // Trigger Onboarding OR Daily Check on Load
@@ -8189,48 +8249,122 @@ async function renderTodayMeals() {
                        <p>DAY ${currentDayNum}</p>`;
     container.appendChild(header);
 
-    // 1.5 Symptom Relief Banner (Nutrition Logic)
+    // 1.5 Personalized Meal Recommendation Banner
+    let personalizedMeal = null;
     if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
-        const SYMPTOM_MAP = {
-            hot_flash: { title: 'Cooling Support', icon: '❄️', rec: 'Add a <strong>Cucumber & Edamame Poke Bowl</strong> or <strong>Iced Hibiscus Tea</strong> to cool your inflammation.' },
-            dizziness: { title: 'Stabilization Support', icon: '🌀', rec: 'Ensure you hydrate (3L water) and add <strong>Sweet Potato</strong> for slow carbs.' },
-            bloating: { title: 'De-Bloat Support', icon: '🍌', rec: 'Try a <strong>Banana & Spinach Smoothie</strong> or <strong>Asparagus Salad</strong> to flush excess water.' },
-            fatigue: { title: 'Energy Support', icon: '⚡', rec: 'Boost Iron with <strong>Lentil Spinach Dhal</strong> + a squeeze of Lemon.' },
-            anxiety: { title: 'Calm Support', icon: '🥑', rec: 'Add <strong>Avocado Toast</strong> or <strong>Dark Chocolate</strong> for a Magnesium boost.' },
-            joint_pain: { title: 'Anti-Inflammatory', icon: '🍠', rec: 'Sip <strong>Golden Milk (Turmeric)</strong> or try <strong>Ginger Tofu Soup</strong>.' }
+        const SYMPTOM_MEAL_MAP = {
+            hot_flash: {
+                title: 'Cooling Support',
+                icon: '❄️',
+                mealTitle: 'Cucumber Mint Green Juice + Tofu Scramble',
+                explanation: 'Cucumber and mint are naturally cooling and help reduce hot flash intensity.'
+            },
+            dizziness: {
+                title: 'Stabilization Support',
+                icon: '🌀',
+                mealTitle: 'Stuffed Sweet Potato',
+                explanation: 'Sweet potato provides slow-release carbs to stabilize blood sugar and reduce dizziness.'
+            },
+            fatigue: {
+                title: 'Energy Support',
+                icon: '⚡',
+                mealTitle: 'Coconut Curry Red Lentil Soup',
+                explanation: 'Red lentils are rich in iron and protein to combat fatigue and boost energy.'
+            },
+            anxiety: {
+                title: 'Calm Support',
+                icon: '🥑',
+                mealTitle: 'Reishi Hot Chocolate',
+                explanation: 'Reishi mushroom and cacao are rich in magnesium, which calms the nervous system.'
+            }
         };
 
-        // Check for any matching symptom
-        let fix = null;
+        // Find first matching symptom
+        let symptomFix = null;
         for (let s of userCycleData.symptoms) {
-            if (SYMPTOM_MAP[s]) { fix = SYMPTOM_MAP[s]; break; } // Prioritize first match
+            if (SYMPTOM_MEAL_MAP[s]) {
+                symptomFix = SYMPTOM_MEAL_MAP[s];
+                personalizedMeal = symptomFix.mealTitle;
+                break;
+            }
         }
-        
-        if (fix) {
-            const symLink = document.createElement('div');
-            symLink.className = 'card';
-            symLink.style.background = '#f0fdf4';
-            symLink.style.borderColor = '#bbf7d0';
-            symLink.style.marginBottom = '20px';
-            symLink.onclick = function() { switchWeek('shopping'); }; // Link to shopping list or maybe recipe index?
-            symLink.innerHTML = `
+
+        if (symptomFix) {
+            const banner = document.createElement('div');
+            banner.className = 'card';
+            banner.style.cssText = 'background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #86efac; margin-bottom: 20px;';
+            banner.innerHTML = `
                 <div class="card-body" style="display:flex; gap:15px; align-items:center; padding:15px;">
-                    <div style="font-size:2rem;">${fix.icon}</div>
+                    <div style="font-size:2rem;">${symptomFix.icon}</div>
                     <div>
-                        <h4 style="color:#166534; margin:0 0 5px 0; font-size:1rem;">${fix.title}</h4>
-                        <p style="color:#15803d; margin:0; font-size:0.9rem; line-height:1.4;">${fix.rec}</p>
+                        <h4 style="color:#166534; margin:0 0 5px 0; font-size:1rem;">✨ ${symptomFix.title} - Personalized for You</h4>
+                        <p style="color:#15803d; margin:0; font-size:0.9rem; line-height:1.4;">
+                            We've adjusted your menu to include <strong>${symptomFix.mealTitle}</strong>. ${symptomFix.explanation}
+                        </p>
                     </div>
                 </div>
             `;
-            container.appendChild(symLink);
+            container.appendChild(banner);
         }
     }
 
     const cards = sourceSection.querySelectorAll('.card');
+    let dinnerReplaced = false;
+
     cards.forEach(card => {
         if (card.classList.contains('reflection-card')) return;
-        
+
         const clone = card.cloneNode(true);
+
+        // Check if this is a dinner meal and we need to replace it with personalized meal
+        const mealTitle = clone.querySelector('.meal-title');
+        const meta = clone.querySelector('.meta');
+
+        if (personalizedMeal && !dinnerReplaced && meta && meta.textContent.includes('Dinner')) {
+            // Find the personalized meal from the full meal database
+            const allMealCards = document.querySelectorAll('.day-view .meal-title');
+            let personalizedCard = null;
+
+            allMealCards.forEach(title => {
+                if (title.textContent.trim() === personalizedMeal) {
+                    personalizedCard = title.closest('.card');
+                }
+            });
+
+            if (personalizedCard) {
+                // Clone the personalized meal card
+                const personalizedClone = personalizedCard.cloneNode(true);
+
+                // Update the time to be dinner time
+                const newMeta = personalizedClone.querySelector('.meta');
+                if (newMeta) {
+                    newMeta.textContent = 'Dinner  6:30 PM';
+                }
+
+                // Add a personalization badge
+                const header = personalizedClone.querySelector('.card-header');
+                if (header) {
+                    const badge = document.createElement('span');
+                    badge.style.cssText = 'background: #86efac; color: #166534; padding: 3px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; margin-left: 8px;';
+                    badge.textContent = '✨ PERSONALIZED';
+                    header.appendChild(badge);
+                }
+
+                // Ensure images open modal
+                personalizedClone.querySelectorAll('img').forEach(img => {
+                    img.onclick = function() {
+                        if (typeof openImageModal === 'function') {
+                            openImageModal(this.src);
+                        }
+                    };
+                });
+
+                container.appendChild(personalizedClone);
+                dinnerReplaced = true;
+                return; // Skip adding the original dinner
+            }
+        }
+
         // Ensure images open the modal
         clone.querySelectorAll('img').forEach(img => {
             img.onclick = function() {
@@ -8582,9 +8716,30 @@ async function renderMovementView() {
     // 2. Get Check-in
     const dateStr = new Date().toISOString().split('T')[0];
     const checkin = await dbHelpers.checkins.get(user.id, dateStr);
-    
+
     let suggestedId = 'yoga'; // Default
-    if (checkin) {
+    let personalizationReason = '';
+
+    // Prioritize daily wellness mood over workout check-in
+    if (userCycleData.mood) {
+        if (userCycleData.mood === 'tired') {
+            suggestedId = 'yoga';
+            personalizationReason = 'Recovery & Restoration - Perfect for when you\'re feeling tired';
+        } else if (userCycleData.mood === 'strong') {
+            // Choose strength workout based on available equipment
+            if (checkin && checkin.equipment === 'gym') {
+                suggestedId = 'gym';
+                personalizationReason = 'High Intensity Strength - You\'re feeling strong today!';
+            } else if (checkin && checkin.equipment === 'dumbbells') {
+                suggestedId = 'home';
+                personalizationReason = 'Power Training - Channel that strong energy!';
+            } else {
+                suggestedId = 'bodyweight';
+                personalizationReason = 'Bodyweight Strength - Let\'s use that energy!';
+            }
+        }
+    } else if (checkin) {
+        // Fall back to workout check-in if no mood set
         if (checkin.energy === 'low') suggestedId = 'yoga';
         else {
             if (checkin.equipment === 'gym') suggestedId = 'gym';
@@ -8613,8 +8768,9 @@ async function renderMovementView() {
              <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
              
              <div style="position: absolute; top: 25px; left: 25px;">
-                <span style="background: ${heroMeta.color}; color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">Best for Today</span>
+                <span style="background: ${heroMeta.color}; color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">${personalizationReason ? '✨ Personalized' : 'Best for Today'}</span>
              </div>
+             ${personalizationReason ? `<div style="position: absolute; top: 75px; left: 25px; background: rgba(255,255,255,0.95); padding: 10px 15px; border-radius: 12px; max-width: calc(100% - 50px);"><p style="margin: 0; font-size: 0.85rem; color: #333; font-weight: 600;">${personalizationReason}</p></div>` : ''}
 
              <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 30px;">
                  <div style="color: ${heroMeta.color}; font-weight: 800; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 5px;">${heroProg.name}</div>
