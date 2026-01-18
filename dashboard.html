@@ -6987,7 +6987,7 @@ function startCustomBuilderWorkout() {
             <div class="card-body" style="max-height: none; padding: 25px; opacity: 1; display: block;">
                 
                 <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-                    <div id="cycle-phase-icon" style="background: var(--accent-green); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; flex-shrink: 0;">
+                    <div id="cycle-phase-icon" onclick="toggleCycleSettings()" style="cursor: pointer; background: var(--accent-green); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; flex-shrink: 0;">
                         🌸
                     </div>
                     <div>
@@ -7010,7 +7010,7 @@ function startCustomBuilderWorkout() {
                 </div>
 
                 <!-- Settings Toggle -->
-                <details style="background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9;">
+                <details id="cycle-settings-details" style="background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9;">
                     <summary style="padding: 15px; cursor: pointer; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; list-style: none; display: flex; align-items: center; justify-content: space-between;">
                         <span>Cycle Settings</span>
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
@@ -7943,8 +7943,52 @@ function renderCycleStatus() {
     if(recCard) recCard.style.background = phase.color;
 }
 
+// --- CYCLE & CALENDAR ACTIONS ---
+
+window.toggleCycleSettings = function() {
+    const details = document.getElementById('cycle-settings-details');
+    if (details) {
+        details.open = !details.open;
+        if(details.open) {
+            details.scrollIntoView({behavior: 'smooth', block: 'start'});
+        }
+    }
+};
+
+window.logPeriodStart = function() {
+    const today = new Date();
+    // Format YYYY-MM-DD local
+    const offset = today.getTimezoneOffset();
+    const local = new Date(today.getTime() - (offset*60*1000));
+    const dateStr = local.toISOString().split('T')[0];
+    
+    userCycleData.lastPeriod = dateStr;
+    localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+    
+    // Update Input if exists
+    const input = document.getElementById('last-period-input');
+    if(input) input.value = dateStr;
+    
+    // Refresh Logic
+    // If renderCycleStatus exists, call it.
+    if(typeof renderCycleStatus === 'function') renderCycleStatus();
+    renderWeeklyCalendar();
+    
+    // Visual Confirmation
+    const btn = document.querySelector('button[onclick="logPeriodStart()"]');
+    if(btn) {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span style="color:#22c55e;">✓</span> Logger!';
+        setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+    }
+    
+    // Also simulate selecting "Menstrual" mood? Or just let the cycle logic handle it.
+    // Ideally we might assume they are "Tired" or "Cramps" but let's not assume.
+};
+
 function renderWeeklyCalendar() {
     const grid = document.getElementById('weekly-calendar');
+    if(!grid) return;
     grid.innerHTML = '';
 
     // Self-healing: If variable is empty but input has value, sync it.
@@ -7953,30 +7997,27 @@ function renderWeeklyCalendar() {
         userCycleData.lastPeriod = inputVal;
     }
 
-    if (!userCycleData.lastPeriod && !userCycleData.noPeriodMode) {
-        grid.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">Enter Last Period Date to generate schedule.</div>';
-        return;
-    }
+    // Determine if we are in "Baseline" mode (no period data)
+    // If no period is set, and we haven't explicitly set "noPeriodMode", we still want to show the calendar
+    const isBaseline = !userCycleData.lastPeriod;
 
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 is Sun, 1 is Mon
-    // We want Monday - Sunday row?
     // Calculate Monday of this week.
-    // If today is Sunday (0), Mon was -6 days. if Mon (1), Mon was 0.
     const distToMon = (dayOfWeek + 6) % 7;
     const monday = new Date(today);
     monday.setDate(today.getDate() - distToMon);
 
     const msPerDay = 24 * 60 * 60 * 1000;
-
-    const start = userCycleData.lastPeriod ? new Date(userCycleData.lastPeriod) : new Date(); // Fallback if no period mode
+    
+    // Start date for cycle calc
+    const start = userCycleData.lastPeriod ? new Date(userCycleData.lastPeriod) : new Date();
 
     // Check High Cortisol Profile
     const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
     const isHighCortisol = profileType.includes('CORTISOL') || profileType.includes('ADRENAL');
 
     // Simplified Week Workout Template
-    // 0=Mon, 1=Tue...
     const WEEKLY_TEMPLATE = [
         { day: 'Mon', type: 'Lower Body' },
         { day: 'Tue', type: 'Upper Body' },
@@ -7993,18 +8034,34 @@ function renderWeeklyCalendar() {
         
         const isToday = d.toDateString() === today.toDateString();
         
-        // Cycle Phase for this day
-        const daysSinceStart = Math.floor((d - start) / msPerDay);
-        let currentDayLoop = (daysSinceStart % userCycleData.cycleLength) + 1;
-        
-        const phaseKey = getCyclePhase(currentDayLoop, userCycleData.cycleLength);
-        const phase = PHASE_INFO[phaseKey];
-
-        // Workout Logic
+        let headerColor = '';
+        let phaseDotHtml = '';
         let workoutName = WEEKLY_TEMPLATE[i].type;
+        let phase = PHASE_INFO.wellness; // Default
+        let phaseKey = 'wellness';
+        let currentDayLoop = 0;
 
-        // 1. Apply Phase Modifiers (if tracking period)
-        if (!userCycleData.noPeriodMode) {
+        if (isBaseline) {
+            // Baseline Mode: Just show standard workout, no phase info
+            if(isToday) headerColor = PHASE_INFO.wellness.color;
+
+        } else {
+            // Cycle Mode
+            const daysSinceStart = Math.floor((d - start) / msPerDay);
+            // Handle negative modulo correctly
+            let mod = daysSinceStart % userCycleData.cycleLength;
+            if (mod < 0) mod += userCycleData.cycleLength;
+            currentDayLoop = mod + 1;
+            
+            phaseKey = getCyclePhase(currentDayLoop, userCycleData.cycleLength);
+            phase = PHASE_INFO[phaseKey];
+
+            if(isToday) headerColor = phase.color;
+        }
+
+        // Apply Modifiers
+        if (!isBaseline) {
+            // 1. Phase Modifiers
             if (phaseKey === 'menstrual' && (workoutName.includes('HIIT') || workoutName.includes('Lower Body'))) {
                 workoutName = 'Gentle Yoga / Walk';
             }
@@ -8012,41 +8069,46 @@ function renderWeeklyCalendar() {
                 workoutName = 'Pilates';
             }
         }
-
+        
         // 2. High Cortisol Safety Override (Applies ALWAYS if profile matches)
         if (isHighCortisol && (workoutName.includes('HIIT') || workoutName.includes('Cardio'))) {
             workoutName = 'LISS Cardio / Walking';
         }
 
-        // 3. Apply Mood Modifier (only to today - wins over everything)
-        if (isToday && userCycleData.mood === 'tired') {
-             workoutName = 'Rest / Recovery';
-        }
-
-        // 4. Apply Symptom Modifier (Specific Perimenopause logic - wins over mood)
-        if (isToday && userCycleData.symptoms && userCycleData.symptoms.length > 0) {
-             if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
-                 workoutName = 'Cooling Breath / Restorative Yoga';
-             } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
-                 workoutName = 'Rest / Meditation';
-             }
+        // 3. Daily Mood/Symptoms only apply to TODAY
+        if (isToday) {
+            if (userCycleData.mood === 'tired') {
+                 workoutName = 'Rest / Recovery';
+            }
+            if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
+                 if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
+                     workoutName = 'Cooling Breath / Restorative Yoga';
+                 } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+                     workoutName = 'Rest / Meditation';
+                 }
+            }
         }
 
         const row = document.createElement('div');
         row.className = `calendar-day-row ${isToday ? 'is-today' : ''}`;
         
-        let phaseDotHtml = '';
-        if (!userCycleData.noPeriodMode) {
-             phaseDotHtml = `<span class="cal-phase-dot" style="background:${phase.color}"></span>
-                             <span style="opacity:0.8; font-size:0.8rem;">${phase.name} (Day ${currentDayLoop})</span>`;
+        // Construct Phase Dot HTML
+        if (isBaseline) {
+             // In baseline, maybe just show "Schedule" or nothing
+             phaseDotHtml = `<span class="cal-phase-dot" style="background:#cbd5e1"></span> <span style="font-size:0.8rem; color:#94a3b8;">Standard</span>`;
         } else {
-             phaseDotHtml = `<span class="cal-phase-dot" style="background:${PHASE_INFO.wellness.color}"></span> <span style="font-size:0.8rem">Balanced</span>`;
+             if (!userCycleData.noPeriodMode) {
+                 phaseDotHtml = `<span class="cal-phase-dot" style="background:${phase.color}"></span>
+                                 <span style="opacity:0.8; font-size:0.8rem;">${phase.name} (Day ${currentDayLoop})</span>`;
+             } else {
+                 phaseDotHtml = `<span class="cal-phase-dot" style="background:${PHASE_INFO.wellness.color}"></span> <span style="font-size:0.8rem">Balanced</span>`;
+             }
         }
 
         row.innerHTML = `
             <div class="cal-date-box">
                 <span class="cal-day-name">${WEEKLY_TEMPLATE[i].day}</span>
-                <span class="cal-day-num" style="color:${isToday ? (userCycleData.noPeriodMode ? PHASE_INFO.wellness.color : phase.color) : ''}">${d.getDate()}</span>
+                <span class="cal-day-num" style="color:${isToday ? (isBaseline ? '#046A38' : headerColor) : ''}">${d.getDate()}</span>
             </div>
             <div class="cal-context">
                 <div style="font-size: 0.9em; margin-bottom: 2px;">
