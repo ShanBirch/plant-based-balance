@@ -7737,7 +7737,8 @@ let userCycleData = {
     lastPeriod: null, 
     cycleLength: 28,
     mood: null, // 'strong' or 'tired'
-    noPeriodMode: false
+    noPeriodMode: false,
+    symptoms: []
 };
 
 function setCycleMood(mood, btn) {
@@ -8002,6 +8003,15 @@ function renderWeeklyCalendar() {
              workoutName = 'Rest / Recovery';
         }
 
+        // 4. Apply Symptom Modifier (Specific Perimenopause logic - wins over mood)
+        if (isToday && userCycleData.symptoms && userCycleData.symptoms.length > 0) {
+             if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
+                 workoutName = 'Cooling Breath / Restorative Yoga';
+             } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+                 workoutName = 'Rest / Meditation';
+             }
+        }
+
         const row = document.createElement('div');
         row.className = `calendar-day-row ${isToday ? 'is-today' : ''}`;
         
@@ -8028,6 +8038,73 @@ function renderWeeklyCalendar() {
         grid.appendChild(row);
     }
 }    
+
+// --- DAILY WELLNESS MODAL LOGIC ---
+function checkDailyWellness() {
+    const lastCheck = localStorage.getItem('lastWellnessCheck');
+    const today = new Date().toDateString();
+    
+    // Only show if authenticated (basic check)
+    if (window.currentUser && lastCheck !== today) {
+        document.getElementById('daily-wellness-modal').style.display = 'flex';
+    }
+}
+
+function selectDailyMood(mood, btn) {
+    userCycleData.mood = mood;
+    // Update local UI
+    document.querySelectorAll('.mood-check-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+}
+
+function toggleSymptom(checkbox) {
+    // Styling fallback
+    const chip = checkbox.parentElement;
+    if(checkbox.checked) chip.classList.add('checked');
+    else chip.classList.remove('checked');
+}
+
+function submitDailyWellness() {
+    // 1. Collect Symptoms
+    const symptoms = [];
+    document.querySelectorAll('#daily-wellness-modal input[type="checkbox"]:checked').forEach(cb => {
+        symptoms.push(cb.value);
+    });
+    userCycleData.symptoms = symptoms;
+    
+    // 2. Save Date
+    const today = new Date().toDateString();
+    localStorage.setItem('lastWellnessCheck', today);
+    
+    // 3. Hide Modal
+    document.getElementById('daily-wellness-modal').style.display = 'none';
+    
+    // 4. Update UI
+    renderCycleStatus();
+    renderWeeklyCalendar();
+    
+    // 5. Update Mood buttons in Dashboard if visible
+    if(userCycleData.mood) {
+        document.querySelectorAll('.mood-btn').forEach(b => {
+             // Basic match
+            if((b.innerText.toLowerCase().includes('strong') && userCycleData.mood === 'strong') ||
+               (b.innerText.toLowerCase().includes('tired') && userCycleData.mood === 'tired')) {
+                b.classList.add('active');
+            } else {
+                b.classList.remove('active');
+            }
+        });
+    }
+
+    // 6. Provide brief feedback toast/alert
+    // alert('Dashboard updated based on your wellness check-in!');
+}
+
+// Trigger Daily Check on Load
+document.addEventListener('DOMContentLoaded', () => {
+    // Small delay to ensure Auth state is settled
+    setTimeout(checkDailyWellness, 1500);
+});
 
 
 function switchWeek(id, btn) {
@@ -8511,7 +8588,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-support', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-support', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-calendar'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
@@ -9602,6 +9679,41 @@ function openAsClient() {
         <button onclick="submitCheckIn()" style="width:100%; background:var(--primary); color:white; border:none; padding:16px; border-radius:50px; font-weight:700; font-size:1rem; cursor:pointer;">Build My Workout</button>
     </div>
 </div>
+
+
+<!-- DAILY WELLNESS MODAL -->
+<div id="daily-wellness-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:11000; align-items:center; justify-content:center; backdrop-filter:blur(8px);">
+    <div style="background:white; width:90%; max-width:400px; border-radius:24px; padding:30px; position:relative; animation: slideUp 0.3s ease-out; text-align:center;">
+        <div style="font-size:3rem; margin-bottom:10px;">☀️</div>
+        <h2 style="color:var(--primary); margin:0 0 10px 0;">Good Morning</h2>
+        <p style="color:#64748b; margin-bottom:25px;">How is your body feeling today?</p>
+
+        <!-- Mood -->
+        <label style="display:block; text-align:left; font-weight:600; margin-bottom:10px; color:var(--text-main);">Energy Level</label>
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <button onclick="selectDailyMood('strong', this)" class="mood-check-btn" style="flex:1; padding:15px; border-radius:12px; border:1px solid #ddd; background:white; font-size:1rem;">💪 Strong</button>
+            <button onclick="selectDailyMood('tired', this)" class="mood-check-btn" style="flex:1; padding:15px; border-radius:12px; border:1px solid #ddd; background:white; font-size:1rem;">😴 Tired</button>
+        </div>
+
+        <!-- Symptoms -->
+        <label style="display:block; text-align:left; font-weight:600; margin-bottom:10px; color:var(--text-main);">Any Symptoms?</label>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:25px; text-align:left;">
+             <label class="symptom-chip"><input type="checkbox" value="hot_flash" onchange="toggleSymptom(this)"> Hot Flashes</label>
+             <label class="symptom-chip"><input type="checkbox" value="dizziness" onchange="toggleSymptom(this)"> Dizziness</label>
+             <label class="symptom-chip"><input type="checkbox" value="anxiety" onchange="toggleSymptom(this)"> Anxiety</label>
+             <label class="symptom-chip"><input type="checkbox" value="fatigue" onchange="toggleSymptom(this)"> Fatigue</label>
+        </div>
+
+        <button onclick="submitDailyWellness()" style="width:100%; background:var(--primary); color:white; border:none; padding:16px; border-radius:50px; font-weight:700; font-size:1rem; cursor:pointer;">Save & Start Day</button>
+    </div>
+</div>
+<style>
+.mood-check-btn.selected { background: var(--secondary) !important; color: white; border-color: var(--secondary) !important; }
+.symptom-chip { display: block; padding: 10px; border-radius: 8px; border: 1px solid #eee; cursor: pointer; font-size: 0.9rem; }
+.symptom-chip:has(input:checked) { background: #fff0f0; border-color: #ffcdd2; color: #d32f2f; }
+/* Fallback for :has support */
+.symptom-chip.checked { background: #fff0f0; border-color: #ffcdd2; color: #d32f2f; } 
+</style>
 
 <!-- Onboarding Modal -->
 <div class="onboarding-overlay" id="onboarding-overlay">
