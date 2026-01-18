@@ -6941,11 +6941,150 @@ function startCustomBuilderWorkout() {
             <svg viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22 14.86 20.57 16.29 22 18.43 19.86 19.86 21.29 21.29 19.86l-1.43-1.43L21.29 17l-1.43-1.43L18.43 17l-3.57-3.57z"/></svg>
             <span>Movement</span>
         </button>
+        <button class="nav-item" onclick="switchAppTab('calendar', this)">
+           <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+           <span>Calendar</span>
+        </button>
         <button class="nav-item" onclick="switchAppTab('support', this)">
             <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
             <span>Support</span>
         </button>
      </nav>
+
+    <!-- CALENDAR / CYCLE VIEW -->
+    <div id="view-calendar" class="app-view" style="display:none; padding-bottom: 90px;">
+        <div class="calendar-header">
+            <h3>Cycle & Schedule</h3>
+            <p class="subtitle">Sync your workouts with your body.</p>
+        </div>
+
+        <!-- Cycle Tracker Card -->
+        <div class="glass-panel" style="margin: 20px;">
+            <div class="cycle-status-header">
+                <div class="status-indicator" id="cycle-phase-indicator"></div>
+                <div>
+                    <h2 id="cycle-phase-name">Loading...</h2>
+                    <p id="cycle-day-display" style="font-size: 0.9em; opacity: 0.8;">Day -- of --</p>
+                </div>
+            </div>
+            
+            <p id="cycle-phase-desc" style="margin: 15px 0; font-size: 0.95em; line-height: 1.4;">
+                Set your cycle details to unlock cycle-synced workout recommendations.
+            </p>
+
+            <div class="cycle-settings">
+                <label>
+                    <span style="font-size: 0.85em; opacity: 0.8;">Last Period Start</span>
+                    <input type="date" id="last-period-input" onchange="updateCycleData()">
+                </label>
+                <label>
+                     <span style="font-size: 0.85em; opacity: 0.8;">Cycle Length (Days)</span>
+                    <input type="number" id="cycle-length-input" value="28" min="21" max="40" onchange="updateCycleData()">
+                </label>
+            </div>
+        </div>
+
+        <!-- Weekly Schedule -->
+        <div class="glass-panel" style="margin: 20px;">
+            <h4>This Week's Schedule</h4>
+            <div class="weekly-calendar-grid" id="weekly-calendar">
+                <!-- Javascript will populate this -->
+                <div style="text-align: center; padding: 20px;">Loading Schedule...</div>
+            </div>
+        </div>
+
+        <!-- Today's Recommendation -->
+        <div class="glass-panel" style="margin: 20px; border-left: 4px solid var(--primary-color);">
+            <h4>Target Workout for Today</h4>
+            <div id="today-workout-rec">
+                <p>Calculated based on your phase...</p>
+                <button class="primary-btn" onclick="switchAppTab('movement-tab')">Go to Movement Studio</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .calendar-header {
+            padding: 20px 20px 0 20px;
+        }
+        .cycle-status-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #ccc;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        /* Phase Colors */
+        .phase-menstrual { background: #E57373; box-shadow: 0 0 10px #E57373; }
+        .phase-follicular { background: #F06292; box-shadow: 0 0 10px #F06292; }
+        .phase-ovulation { background: #BA68C8; box-shadow: 0 0 10px #BA68C8; }
+        .phase-luteal { background: #FFB74D; box-shadow: 0 0 10px #FFB74D; }
+
+        .cycle-settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .cycle-settings input {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        .weekly-calendar-grid {
+            display: grid;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .calendar-day-row {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 8px;
+            gap: 15px;
+        }
+        .calendar-day-row.is-today {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid var(--primary-color);
+        }
+        .cal-date-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 45px;
+        }
+        .cal-day-name { font-size: 0.8em; opacity: 0.7; }
+        .cal-day-num { font-weight: bold; font-size: 1.1em; }
+        
+        .cal-context {
+            flex: 1;
+        }
+        .cal-workout-tag {
+            background: var(--primary-color);
+            color: black;
+            font-size: 0.75em;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 4px;
+        }
+        .cal-phase-dot {
+            width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px;
+        }
+    </style>
 
     <!-- PROFILE VIEW -->
     <div id="view-profile" class="app-view" style="display:none; padding-bottom: 80px;">
@@ -7487,10 +7626,231 @@ function switchAppTab(tabName, btn) {
             // Decouple data loading so errors don't stop view from showing
             setTimeout(loadProfileData, 10);
         }
+    } else if (tabName === 'calendar') {
+        const el = document.getElementById('view-calendar');
+        if(el) {
+            el.style.display = 'block';
+            initCalendarView();
+        }
     }
     
     window.scrollTo(0,0);
 }
+
+// --- CALENDAR & CYCLE LOGIC ---
+const PHASE_INFO = {
+    menstrual: { name: 'Menstrual Phase', color: '#E57373', css: 'phase-menstrual', rec: 'Rest, Walking, Yin Yoga' },
+    follicular: { name: 'Follicular Phase', color: '#F06292', css: 'phase-follicular', rec: 'HIIT, Strength, Cardio' },
+    ovulation: { name: 'Ovulation Phase', color: '#BA68C8', css: 'phase-ovulation', rec: 'max Effort, PB Attempts' },
+    luteal: { name: 'Luteal Phase', color: '#FFB74D', css: 'phase-luteal', rec: 'Strength (Mod), Pilates' }
+};
+
+let userCycleData = {
+    lastPeriod: null, 
+    cycleLength: 28
+};
+
+async function initCalendarView() {
+    // 1. Fetch Cycle Data from DB (user_facts)
+    if (window.currentUser) {
+        try {
+            const userId = window.currentUser.id || window.currentUser.user_id;
+            const facts = await dbHelpers.userFacts.get(userId);
+            if (facts && facts.additional_data) {
+                if (facts.additional_data.last_period_start) {
+                    userCycleData.lastPeriod = facts.additional_data.last_period_start;
+                    document.getElementById('last-period-input').value = userCycleData.lastPeriod;
+                }
+                if (facts.additional_data.cycle_length) {
+                    userCycleData.cycleLength = parseInt(facts.additional_data.cycle_length);
+                    document.getElementById('cycle-length-input').value = userCycleData.cycleLength;
+                }
+            }
+        } catch (e) {
+            console.log("No existing cycle data found or error fetching", e);
+        }
+    }
+
+    renderCycleStatus();
+    renderWeeklyCalendar();
+}
+
+async function updateCycleData() {
+    const startInput = document.getElementById('last-period-input').value;
+    const lengthInput = document.getElementById('cycle-length-input').value;
+
+    if (!startInput) return;
+
+    userCycleData.lastPeriod = startInput;
+    userCycleData.cycleLength = parseInt(lengthInput);
+
+    // Save to DB
+    if (window.currentUser) {
+        try {
+            const userId = window.currentUser.id || window.currentUser.user_id;
+            // Get existing or create new additional_data
+            let existingFacts = {};
+            try {
+                existingFacts = await dbHelpers.userFacts.get(userId);
+            } catch(err) { /* ignore not found */ }
+            
+            const currentAdditional = existingFacts?.additional_data || {};
+            
+            await dbHelpers.userFacts.upsert(userId, {
+                additional: {
+                    ...currentAdditional,
+                    last_period_start: userCycleData.lastPeriod,
+                    cycle_length: userCycleData.cycleLength
+                }
+            });
+            // alert('Cycle updated!');
+        } catch (e) {
+            console.error("Error saving cycle data", e);
+        }
+    }
+
+    renderCycleStatus();
+    renderWeeklyCalendar();
+}
+
+function getCyclePhase(dayOfCycle, cycleLen) {
+    // Basic Algo
+    // Day 1-5: Menstrual
+    // Day 6-13: Follicular
+    // Day 14: Ovulation (approx mid-cycle)
+    // Day 15-End: Luteal
+    
+    // Adjust for cycle length:
+    // Menstrual is usually fixed ~5
+    // Luteal is usually fixed ~14 days before end.
+    // Follicular varies.
+    
+    const ovulationDay = cycleLen - 14;
+    
+    if (dayOfCycle <= 5) return 'menstrual';
+    if (dayOfCycle < ovulationDay) return 'follicular';
+    if (dayOfCycle === ovulationDay) return 'ovulation';
+    return 'luteal';
+}
+
+function renderCycleStatus() {
+    if (!userCycleData.lastPeriod) {
+        document.getElementById('cycle-phase-name').innerText = "Setup Required";
+        document.getElementById('cycle-day-display').innerText = "Please enter your last period date.";
+        document.getElementById('cycle-phase-desc').innerText = "Enter your details above to see your cycle insights.";
+        document.getElementById('cycle-phase-indicator').className = 'status-indicator';
+        return;
+    }
+
+    const start = new Date(userCycleData.lastPeriod);
+    const today = new Date();
+    
+    // Diff in days
+    const diffTime = Math.abs(today - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    // This is total days since start. Module cycle len
+    // Note: Day 1 is the start date. so diffDays 0 = Day 1? No diffDays 0 is same day.
+    // Let's rely on standard calc:
+    // Days since epoch
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const daysSinceStart = Math.floor((today - start) / msPerDay);
+    
+    const currentDay = (daysSinceStart % userCycleData.cycleLength) + 1;
+    const phaseKey = getCyclePhase(currentDay, userCycleData.cycleLength);
+    const phase = PHASE_INFO[phaseKey];
+
+    document.getElementById('cycle-phase-name').innerText = phase.name;
+    document.getElementById('cycle-day-display').innerText = `Day ${currentDay} of ${userCycleData.cycleLength}`;
+    document.getElementById('cycle-phase-desc').innerText = `Your hormones are in the ${phase.name}. Recommended focus: ${phase.rec}.`;
+    
+    const ind = document.getElementById('cycle-phase-indicator');
+    ind.className = 'status-indicator ' + phase.css;
+
+    // Update Today's Rec
+    const recHtml = `<p><strong>${phase.rec}</strong> is best for today.</p>
+                     <button class="primary-btn" onclick="switchAppTab('movement-tab')">Go to Movement Studio</button>`;
+    document.getElementById('today-workout-rec').innerHTML = recHtml;
+}
+
+function renderWeeklyCalendar() {
+    const grid = document.getElementById('weekly-calendar');
+    grid.innerHTML = '';
+
+    if (!userCycleData.lastPeriod) {
+        grid.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">Enter Last Period Date to generate schedule.</div>';
+        return;
+    }
+
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 is Sun, 1 is Mon
+    // We want Monday - Sunday row?
+    // Calculate Monday of this week.
+    // If today is Sunday (0), Mon was -6 days. if Mon (1), Mon was 0.
+    const distToMon = (dayOfWeek + 6) % 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - distToMon);
+
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const start = new Date(userCycleData.lastPeriod);
+
+    // Simplified Week Workout Template
+    // 0=Mon, 1=Tue...
+    const WEEKLY_TEMPLATE = [
+        { day: 'Mon', type: 'Lower Body' },
+        { day: 'Tue', type: 'Upper Body' },
+        { day: 'Wed', type: 'Cardio / Rest' },
+        { day: 'Thu', type: 'Full Body' },
+        { day: 'Fri', type: 'Glutes / Core' },
+        { day: 'Sat', type: 'Somatic Yoga' },
+        { day: 'Sun', type: 'Rest' }
+    ];
+
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        
+        const isToday = d.toDateString() === today.toDateString();
+        
+        // Cycle Phase for this day
+        const daysSinceStart = Math.floor((d - start) / msPerDay);
+        // Handle future/past correctly? Modulo works for infinite repeating cycles
+        let currentDayLoop = (daysSinceStart % userCycleData.cycleLength) + 1;
+        if (daysSinceStart < 0) {
+             // If selected start date is in future? unlikely. 
+             // If historical date, daysSinceStart is positive.
+        }
+
+        const phaseKey = getCyclePhase(currentDayLoop, userCycleData.cycleLength);
+        const phase = PHASE_INFO[phaseKey];
+
+        // Workout Logic
+        let workoutName = WEEKLY_TEMPLATE[i].type;
+        // Apply Phase Modifiers
+        if (phaseKey === 'menstrual' && (workoutName.includes('HIIT') || workoutName.includes('Lower Body'))) {
+            workoutName = 'Gentle Yoga / Walk';
+        }
+        if (phaseKey === 'luteal' && workoutName.includes('HIIT')) {
+            workoutName = 'Pilates';
+        }
+
+        const row = document.createElement('div');
+        row.className = `calendar-day-row ${isToday ? 'is-today' : ''}`;
+        row.innerHTML = `
+            <div class="cal-date-box">
+                <span class="cal-day-name">${WEEKLY_TEMPLATE[i].day}</span>
+                <span class="cal-day-num">${d.getDate()}</span>
+            </div>
+            <div class="cal-context">
+                <div style="font-size: 0.9em; margin-bottom: 2px;">
+                    <span class="cal-phase-dot ${phase.css}"></span>
+                    <span style="opacity:0.8;">${phase.name} (Day ${currentDayLoop})</span>
+                </div>
+                <div class="cal-workout-tag">${workoutName}</div>
+            </div>
+        `;
+        grid.appendChild(row);
+    }
+}    
 
 
 function switchWeek(id, btn) {
