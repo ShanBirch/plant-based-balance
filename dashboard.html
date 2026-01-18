@@ -7193,6 +7193,20 @@ function startCustomBuilderWorkout() {
             <button id="btn-save-profile" onclick="saveProfileChanges()" style="background:var(--primary); color:white; border:none; padding:10px 24px; border-radius:30px; font-weight:600; font-size:0.9rem; cursor:pointer; display:none; align-items:center; gap:8px;">
                 Save Changes
             </button>
+        </div>
+
+        <!-- Manual Quiz/Check-in Triggers -->
+        <div style="margin-top:30px; padding:20px; background:#f8fafc; border-radius:12px;">
+            <h3 style="margin:0 0 15px 0; font-size:1rem; color:var(--text-main);">Health Tools</h3>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button onclick="initOnboardingWizard()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>🌸</span> Restart Onboarding Setup
+                </button>
+                <button onclick="checkDailyWellness(true)" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>☀️</span> Daily Wellness Check-in
+                </button>
+            </div>
+        </div>
 
         </div>
 
@@ -8014,12 +8028,12 @@ function renderWeeklyCalendar() {
 }    
 
 // --- DAILY WELLNESS MODAL LOGIC ---
-function checkDailyWellness() {
+function checkDailyWellness(forceShow = false) {
     const lastCheck = localStorage.getItem('lastWellnessCheck');
     const today = new Date().toDateString();
-    
-    // Only show if authenticated (basic check)
-    if (window.currentUser && lastCheck !== today) {
+
+    // Show if manually triggered (forceShow=true) OR if it hasn't been shown today
+    if (forceShow || (window.currentUser && lastCheck !== today)) {
         document.getElementById('daily-wellness-modal').style.display = 'flex';
     }
 }
@@ -8075,10 +8089,13 @@ function submitDailyWellness() {
 }
 
 // Trigger Onboarding OR Daily Check on Load
+// TEMPORARILY DISABLED: These modals were causing the homepage to freeze
+// Re-enable when modal functionality is fixed and ready for production
+/*
 document.addEventListener('DOMContentLoaded', () => {
     // Only proceed if we have a user context (simulation or real)
     const finishedOnboarding = localStorage.getItem('onboardingComplete');
-    
+
     if (!finishedOnboarding) {
         // Show Wizard First
         setTimeout(initOnboardingWizard, 1000);
@@ -8087,6 +8104,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(checkDailyWellness, 1500);
     }
 });
+*/
 
 
 function switchWeek(id, btn) {
