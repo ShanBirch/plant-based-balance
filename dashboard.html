@@ -12864,6 +12864,60 @@ const APP_THEMES = {
             '--chat-text-coach': '#500724',
             '--chat-border-coach': '#ffe4e6'
         } 
+    },
+    'midnight': {
+        name: 'Midnight Luxe',
+        colors: {
+            '--primary': '#0f172a', // Slate 900
+            '--primary-light': '#1e293b', // Slate 800
+            '--secondary': '#fbbf24', // Amber 400
+            '--accent-green': '#334155', // Slate 700
+            '--bg': '#020617', // Slate 950
+            '--surface': '#1e293b', // Slate 800
+            '--text-main': '#f8fafc', // Slate 50
+            '--text-muted': '#94a3b8', // Slate 400
+            '--chat-bg-user': '#3b82f6',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#1e293b',
+            '--chat-text-coach': '#f8fafc',
+            '--chat-border-coach': '#334155'
+        }
+    },
+    'lavender': {
+        name: 'Lavender Haze',
+        colors: {
+            '--primary': '#6b21a8', // Purple 800
+            '--primary-light': '#7e22ce', // Purple 700
+            '--secondary': '#fcd34d', // Amber 300
+            '--accent-green': '#faf5ff', // Purple 50
+            '--bg': '#faf5ff', 
+            '--surface': '#ffffff',
+            '--text-main': '#4c1d95',
+            '--text-muted': '#9333ea',
+            '--chat-bg-user': '#6b21a8',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#f3e8ff',
+            '--chat-text-coach': '#4c1d95',
+            '--chat-border-coach': '#e9d5ff'
+        }
+    },
+    'matcha': {
+        name: 'Matcha Latte',
+        colors: {
+            '--primary': '#3f6212', // Lime 800
+            '--primary-light': '#4d7c0f', // Lime 700
+            '--secondary': '#a3e635', // Lime 400
+            '--accent-green': '#f7fee7', // Lime 50
+            '--bg': '#f7fee7',
+            '--surface': '#ffffff',
+            '--text-main': '#1a2e05',
+            '--text-muted': '#4d7c0f',
+            '--chat-bg-user': '#3f6212',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#ecfccb',
+            '--chat-text-coach': '#1a2e05',
+            '--chat-border-coach': '#d9f99d'
+        }
     }
 };
 
@@ -12878,15 +12932,16 @@ function applyAppTheme(themeKey) {
     // Update dashboard-welcome background - keep green gradient for default, white for others
     const welcomeSection = document.querySelector('.dashboard-welcome');
     if(welcomeSection) {
-        if(themeKey === 'default') {
-            // Original green gradient
-            welcomeSection.style.background = 'linear-gradient(135deg, #064e3b 0%, #034f2a 100%)';
-            welcomeSection.style.color = 'white';
-        } else {
-            // White background with themed text color
-            welcomeSection.style.background = '#ffffff';
-            welcomeSection.style.color = 'var(--text-main)';
-        }
+        // Always use dynamic theme gradient
+        welcomeSection.style.background = 'linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%)';
+        welcomeSection.style.color = 'white';
+        // Ensure child elements inherit white text if needed
+        const children = welcomeSection.querySelectorAll('*');
+        children.forEach(c => {
+             // Exception for specific buttons if necessary, but general rule:
+             if (c.classList.contains('welcome-text')) c.style.color = 'var(--secondary)'; // Keep secondary accent
+             else if (c.classList.contains('user-name')) c.style.color = 'white';
+        });
     }
 }
 
