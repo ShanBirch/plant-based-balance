@@ -139,12 +139,12 @@ CREATE TABLE IF NOT EXISTS public.stories (
 
   -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-
-  -- Indexes
-  INDEX idx_stories_user_id (user_id, created_at DESC),
-  INDEX idx_stories_expires_at (expires_at)
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Create indexes separately
+CREATE INDEX IF NOT EXISTS idx_stories_user_id ON public.stories(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_stories_expires_at ON public.stories(expires_at);
 
 -- Enable RLS on stories table
 ALTER TABLE public.stories ENABLE ROW LEVEL SECURITY;
@@ -195,12 +195,12 @@ CREATE TABLE IF NOT EXISTS public.story_views (
   viewed_at TIMESTAMPTZ DEFAULT NOW(),
 
   -- Prevent duplicate views
-  UNIQUE(story_id, viewer_id),
-
-  -- Indexes
-  INDEX idx_story_views_story_id (story_id, viewed_at DESC),
-  INDEX idx_story_views_viewer_id (viewer_id, viewed_at DESC)
+  UNIQUE(story_id, viewer_id)
 );
+
+-- Create indexes separately
+CREATE INDEX IF NOT EXISTS idx_story_views_story_id ON public.story_views(story_id, viewed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_story_views_viewer_id ON public.story_views(viewer_id, viewed_at DESC);
 
 -- Enable RLS on story_views table
 ALTER TABLE public.story_views ENABLE ROW LEVEL SECURITY;
@@ -279,7 +279,7 @@ BEGIN
       SELECT 1 FROM public.story_views sv
       WHERE sv.story_id = s.id AND sv.viewer_id = user_uuid
     ) as has_viewed,
-    COUNT(*) OVER (PARTITION BY s.user_id) as story_count
+    COUNT(*) OVER (PARTITION BY s.user_id)::INTEGER as story_count
   FROM public.stories s
   JOIN public.users u ON u.id = s.user_id
   WHERE

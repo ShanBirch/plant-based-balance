@@ -1002,7 +1002,7 @@
     <div id="stories-carousel-container" style="padding: 15px 0 15px 25px; background: transparent; overflow-x: auto; overflow-y: hidden; white-space: nowrap;">
         <div id="stories-carousel" style="display: inline-flex; gap: 15px;">
             <!-- Add Your Story Button -->
-            <div class="story-ring add-story-btn" onclick="openStoryUploadModal()" style="display: inline-block; text-align: center; cursor: pointer;">
+            <div class="story-ring add-story-btn" onclick="openStoryCamera()" style="display: inline-block; text-align: center; cursor: pointer;">
                 <div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; position: relative;">
                     <div style="width: 64px; height: 64px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center;">
                         <span style="font-size: 2rem; color: var(--primary);">+</span>
@@ -14156,9 +14156,10 @@ updateCoachUI();
                 <svg viewBox="0 0 24 24" style="width:80px; height:80px; fill:var(--text-muted); margin-bottom:15px;">
                     <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
                 </svg>
-                <p style="font-size:0.9rem;">Select a photo to share</p>
+                <p style="font-size:0.9rem;">Select a photo or video to share</p>
             </div>
             <img id="story-preview-image" src="" style="display:none; max-width:100%; max-height:400px; border-radius:12px; object-fit:contain;">
+            <video id="story-preview-video" controls style="display:none; max-width:100%; max-height:400px; border-radius:12px;"></video>
         </div>
 
         <!-- Caption Input -->
@@ -14169,9 +14170,9 @@ updateCoachUI();
         <!-- Actions -->
         <div style="padding:0 20px 20px 20px; display:flex; gap:10px;">
             <label for="story-file-input" style="flex:1; padding:14px; background:var(--secondary); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:600; text-align:center; transition:all 0.2s;">
-                Choose Photo
+                Choose Photo/Video
             </label>
-            <input type="file" id="story-file-input" accept="image/*" style="display:none;" onchange="handleStoryFileSelect(event)">
+            <input type="file" id="story-file-input" accept="image/*,video/*" capture="environment" style="display:none;" onchange="handleStoryFileSelect(event)">
 
             <button id="story-upload-button" onclick="uploadStory()" disabled style="flex:1; padding:14px; background:var(--primary); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:600; transition:all 0.2s; opacity:0.5;">
                 Share Story
@@ -14211,6 +14212,7 @@ updateCoachUI();
     <!-- Story Content -->
     <div id="story-content-container" style="width:100%; max-width:500px; height:100%; display:flex; align-items:center; justify-content:center; position:relative;">
         <img id="story-image" src="" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:0;">
+        <video id="story-video" playsinline style="display:none; max-width:100%; max-height:100%; object-fit:contain; border-radius:0;"></video>
         <div id="story-caption-overlay" style="position:absolute; bottom:60px; left:0; right:0; padding:20px; background:linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%); color:white; font-size:0.9rem; text-align:center; display:none;">
         </div>
     </div>
