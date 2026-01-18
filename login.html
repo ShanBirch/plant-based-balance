@@ -304,9 +304,22 @@
             // Check if already logged in
             const session = await authHelpers.getSession();
             if (session) {
-                // Already logged in - redirect to dashboard
+                // Get user and check if admin
+                const user = await authHelpers.getUser();
+                const { data: adminCheck } = await supabaseClient
+                    .from('admin_users')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+
+                // Already logged in - redirect to appropriate dashboard
                 const urlParams = new URLSearchParams(window.location.search);
-                const redirect = urlParams.get('redirect') || '/dashboard.html';
+                let redirect = urlParams.get('redirect');
+
+                if (!redirect) {
+                    redirect = adminCheck ? '/admin-dashboard.html' : '/dashboard.html';
+                }
+
                 window.location.href = redirect;
                 return;
             }
@@ -366,13 +379,24 @@
             btn.textContent = 'LOGGING IN...';
 
             try {
-                await authHelpers.signIn(email, password);
+                const { user } = await authHelpers.signIn(email, password);
 
                 showSuccess('Login successful! Redirecting...');
 
-                // Redirect to dashboard or specified page
+                // Check if user is an admin
+                const { data: adminCheck } = await supabaseClient
+                    .from('admin_users')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+
+                // Redirect to admin dashboard if user is admin, otherwise regular dashboard
                 const urlParams = new URLSearchParams(window.location.search);
-                const redirect = urlParams.get('redirect') || '/dashboard.html';
+                let redirect = urlParams.get('redirect');
+
+                if (!redirect) {
+                    redirect = adminCheck ? '/admin-dashboard.html' : '/dashboard.html';
+                }
 
                 setTimeout(() => {
                     window.location.href = redirect;

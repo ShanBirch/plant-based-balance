@@ -11589,45 +11589,27 @@ window.triggerCoachResponse = async function(userMsg) {
         }
 
         if (data.reply) {
-            // Support for multi-message responses separated by '|||'
-            const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
-            let delay = 0;
+            removeTypingIndicator();
 
-            parts.forEach((part, index) => {
-                if (index > 0) {
-                    // For messages after the first, show typing indicator first
-                    setTimeout(() => {
-                        const container = document.getElementById('chat-messages-container');
-                        if (container) {
-                            const typingDiv = document.createElement('div');
-                            typingDiv.id = 'coach-typing';
-                            typingDiv.style.cssText = "display: flex; align-items: center; margin-bottom: 20px; margin-left:10px;";
-                            typingDiv.innerHTML = `
-                                <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both;"></div>
-                                <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; margin: 0 4px; animation: bounce 1.4s infinite ease-in-out both 0.16s;"></div>
-                                <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both 0.32s;"></div>
-                            `;
-                            container.appendChild(typingDiv);
-                            container.scrollTop = container.scrollHeight;
-                        }
-                    }, delay);
+            // APPROVAL FLOW: Save response as pending instead of displaying immediately
+            const fullResponse = data.reply;
 
-                    // Add time for typing indicator to show (1-1.5 seconds)
-                    delay += 1000 + (Math.random() * 500);
-                }
+            // Get current user ID for the pending response
+            const user = await window.supabaseClient.auth.getUser();
+            const currentUserId = user?.data?.user?.id;
 
-                // Then remove typing indicator and show the message
-                setTimeout(() => {
-                    removeTypingIndicator();
-                    appendCoachMessage(part);
-                }, delay);
+            if (currentUserId) {
+                // Save to pending_coach_responses table
+                await db.pendingResponses.create(
+                    currentUserId,
+                    fullResponse,
+                    userMsg,
+                    { context: context, conversationStatus: conversationStatus }
+                );
 
-                // 3-6 second delay before next message
-                const baseDelay = 3000; // 3 seconds
-                const randomVariation = Math.random() * 3000; // 0-3 seconds random
-                const typingSimulation = part.length * 10; // Simulate typing time (10ms per character)
-                delay += baseDelay + randomVariation + typingSimulation;
-            });
+                // Notify admin about pending response
+                await notifyAdminOfPendingResponse(currentUserId, fullResponse);
+            }
         } else {
             removeTypingIndicator();
         }
@@ -11637,6 +11619,1318 @@ window.triggerCoachResponse = async function(userMsg) {
         // Silent fail or very subtle hint - but never "AI Error"
     }
 };
+
+// ==========================================
+// APPROVAL SYSTEM FUNCTIONS
+// ==========================================
+
+/**
+ * Notify admin about pending coach response
+ */
+async function notifyAdminOfPendingResponse(userId, responseText) {
+    // Get user name for the notification
+    const profile = await window.getUserProfile();
+    const userName = profile?.name || 'A user';
+
+    const notificationTitle = 'Coach Response Pending Approval';
+    const notificationBody = `${userName}: ${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}`;
+
+    // Send push notification to admin
+    if ('Notification' in window && Notification.permission === 'granted') {
+        // Check if service worker is available
+        if ('serviceWorker' in navigator) {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                await registration.showNotification(notificationTitle, {
+                    body: notificationBody,
+                    icon: './assets/coach_shannon.jpg',
+                    badge: './assets/logo_optimized.png',
+                    vibrate: [200, 100, 200],
+                    tag: 'pending-approval',
+                    requireInteraction: true, // Keep notification visible until user interacts
+                    data: {
+                        type: 'pending_approval',
+                        userId: userId,
+                        responseText: responseText
+                    },
+                    actions: [
+                        { action: 'approve', title: 'Approve' },
+                        { action: 'edit', title: 'Edit' }
+                    ]
+                });
+            } catch (error) {
+                console.error('Error showing notification:', error);
+            }
+        }
+    }
+
+    // Also set app badge
+    if ('setAppBadge' in navigator) {
+        const pendingCount = await db.pendingResponses.getPendingCount();
+        navigator.setAppBadge(pendingCount).catch(e => console.error(e));
+    }
+}
+
+/**
+ * Open approval modal for a pending response
+ */
+window.openApprovalModal = async function(pendingId = null) {
+    let pendingResponse;
+
+    if (pendingId) {
+        // Load specific pending response
+        pendingResponse = await db.pendingResponses.getById(pendingId);
+    } else {
+        // Load the most recent pending response
+        const pending = await db.pendingResponses.getPending(1);
+        if (pending && pending.length > 0) {
+            pendingResponse = pending[0];
+        }
+    }
+
+    if (!pendingResponse) {
+        alert('No pending responses found.');
+        return;
+    }
+
+    // Store current pending response ID
+    window.currentPendingResponseId = pendingResponse.id;
+
+    // Open the approval modal
+    const modal = document.getElementById('approval-modal');
+    if (modal) {
+        // Populate modal with response data
+        const userName = pendingResponse.users?.name || 'User';
+        const userMessage = pendingResponse.user_message_text || '';
+        const responseText = pendingResponse.message_text || '';
+
+        document.getElementById('approval-user-name').textContent = userName;
+        document.getElementById('approval-user-message').textContent = userMessage;
+        document.getElementById('approval-response-text').value = responseText;
+
+        modal.style.display = 'flex';
+    }
+};
+
+/**
+ * Close approval modal
+ */
+window.closeApprovalModal = function() {
+    const modal = document.getElementById('approval-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
+/**
+ * Approve and send the response
+ */
+window.approveResponse = async function() {
+    const responseId = window.currentPendingResponseId;
+    if (!responseId) return;
+
+    try {
+        // Get the (possibly edited) response text
+        const editedText = document.getElementById('approval-response-text').value;
+
+        // Get current user (admin)
+        const user = await window.supabaseClient.auth.getUser();
+        const adminId = user?.data?.user?.id;
+
+        // Approve the response
+        const approvedResponse = await db.pendingResponses.approve(responseId, adminId, editedText);
+
+        // Send the response to the user
+        const parts = editedText.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
+        let delay = 0;
+
+        parts.forEach((part, index) => {
+            setTimeout(async () => {
+                await appendCoachMessage(part);
+            }, delay);
+
+            delay += 1000; // 1 second delay between messages
+        });
+
+        // Close the modal
+        closeApprovalModal();
+
+        // Clear app badge if no more pending
+        const pendingCount = await db.pendingResponses.getPendingCount();
+        if ('setAppBadge' in navigator) {
+            if (pendingCount === 0) {
+                navigator.clearAppBadge().catch(e => console.error(e));
+            } else {
+                navigator.setAppBadge(pendingCount).catch(e => console.error(e));
+            }
+        }
+
+        // Show success message
+        alert('Response approved and sent!');
+    } catch (error) {
+        console.error('Error approving response:', error);
+        alert('Error approving response. Please try again.');
+    }
+};
+
+/**
+ * Reject the response
+ */
+window.rejectResponse = async function() {
+    const responseId = window.currentPendingResponseId;
+    if (!responseId) return;
+
+    const reason = prompt('Why are you rejecting this response? (optional)');
+
+    try {
+        await db.pendingResponses.reject(responseId, reason || 'No reason provided');
+
+        // Close the modal
+        closeApprovalModal();
+
+        // Clear app badge if no more pending
+        const pendingCount = await db.pendingResponses.getPendingCount();
+        if ('setAppBadge' in navigator) {
+            if (pendingCount === 0) {
+                navigator.clearAppBadge().catch(e => console.error(e));
+            } else {
+                navigator.setAppBadge(pendingCount).catch(e => console.error(e));
+            }
+        }
+
+        alert('Response rejected.');
+    } catch (error) {
+        console.error('Error rejecting response:', error);
+        alert('Error rejecting response. Please try again.');
+    }
+};
+
+// ==========================================
+// COMMUNITY CHAT HELPER FUNCTIONS
+// ==========================================
+
+// Helper: Add typing indicator for community member
+function addCommunityTypingIndicator(personaName) {
+    const container = document.getElementById('community-messages-container');
+    if (!container) return;
+
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'community-typing-indicator';
+    typingDiv.dataset.persona = personaName;
+    typingDiv.style.cssText = "display: flex; align-items: center; margin-bottom: 12px; margin-left:10px;";
+    typingDiv.innerHTML = `
+        <div style="font-size: 0.75rem; color: #94a3b8; margin-right: 8px;">${personaName} is typing</div>
+        <div style="width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both;"></div>
+        <div style="width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; margin: 0 3px; animation: bounce 1.4s infinite ease-in-out both 0.16s;"></div>
+        <div style="width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both 0.32s;"></div>
+    `;
+    container.appendChild(typingDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+// Helper: Remove all typing indicators (or specific one)
+function removeCommunityTypingIndicators(personaName = null) {
+    if (personaName) {
+        const indicators = document.querySelectorAll(`.community-typing-indicator[data-persona="${personaName}"]`);
+        indicators.forEach(ind => ind.remove());
+    } else {
+        const indicators = document.querySelectorAll('.community-typing-indicator');
+        indicators.forEach(ind => ind.remove());
+    }
+}
+
+// Helper: Add emoji reaction to a message
+function addEmojiReaction(messageIndex, emoji, reactorId) {
+    const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    if (messageIndex >= 0 && messageIndex < messages.length) {
+        if (!messages[messageIndex].reactions) {
+            messages[messageIndex].reactions = [];
+        }
+        messages[messageIndex].reactions.push({ emoji, reactorId });
+        localStorage.setItem('community_chat_history', JSON.stringify(messages));
+        renderChat(messages);
+    }
+}
+
+// Helper: Mark message as read by member
+function markMessageAsRead(messageIndex, memberId) {
+    const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    if (messageIndex >= 0 && messageIndex < messages.length) {
+        if (!messages[messageIndex].readBy) {
+            messages[messageIndex].readBy = [];
+        }
+        if (!messages[messageIndex].readBy.includes(memberId)) {
+            messages[messageIndex].readBy.push(memberId);
+        }
+        localStorage.setItem('community_chat_history', JSON.stringify(messages));
+    }
+}
+
+// Helper: Get member online status based on time of day (Brisbane time)
+function getMemberOnlineStatus() {
+    const now = new Date();
+    const bneTime = new Date(now.toLocaleString("en-US", {timeZone: "Australia/Brisbane"}));
+    const hour = bneTime.getHours();
+
+    // Online status based on time of day
+    // Peak activity: 7am-10am, 12pm-2pm, 2pm-6pm, 6pm-10pm
+    // Low activity: 10pm-7am
+    const onlineMembers = [];
+
+    AI_MEMBERS.forEach(member => {
+        let onlineChance = 0.3; // Base 30% chance
+
+        if (hour >= 7 && hour < 10) onlineChance = 0.7; // Morning peak
+        else if (hour >= 12 && hour < 14) onlineChance = 0.6; // Lunch peak
+        else if (hour >= 14 && hour < 18) onlineChance = 0.5; // Afternoon moderate
+        else if (hour >= 18 && hour < 22) onlineChance = 0.8; // Evening peak (highest)
+        else if (hour >= 22 || hour < 7) onlineChance = 0.1; // Night/early morning
+
+        if (Math.random() < onlineChance) {
+            onlineMembers.push(member.id);
+        }
+    });
+
+    return onlineMembers;
+}
+
+// Helper: Check if should respond to message and when
+function shouldRespondToMessage() {
+    const rand = Math.random();
+
+    // 10% - No response (dead air)
+    if (rand < 0.10) return { type: false };
+
+    // 40% - Immediate response (2-10s)
+    if (rand < 0.50) {
+        const subRand = Math.random();
+        if (subRand < 0.3) return { type: 'emoji', delay: 0 }; // 12% emoji immediate
+        return { type: 'text', delay: 0 }; // 28% text immediate
+    }
+
+    // 25% - Quick delay (1-3 minutes)
+    if (rand < 0.75) {
+        const delay = 60000 + Math.random() * 120000; // 1-3 min
+        return { type: 'text', delay: delay };
+    }
+
+    // 15% - Medium delay (5-15 minutes)
+    if (rand < 0.90) {
+        const delay = 300000 + Math.random() * 600000; // 5-15 min
+        return { type: 'text', delay: delay };
+    }
+
+    // 10% - Long delay (30min-2 hours)
+    const delay = 1800000 + Math.random() * 5400000; // 30min-2hrs
+    return { type: 'text', delay: delay };
+}
+
+async function triggerAICommunityResponse(userMsg, chainCount = 0) {
+    const lowMsg = userMsg.toLowerCase();
+    const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+
+    // Check if there's been recent activity (conversation flow)
+    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+    const recentActivity = fullHistory.slice(-5).some(m =>
+        m.timestamp > fiveMinutesAgo && m.authorId !== 'current-user'
+    );
+    const isActiveConversation = recentActivity || chainCount > 0;
+
+    // Mark user's message as read by some members
+    const lastMsgIndex = fullHistory.length - 1;
+    if (lastMsgIndex >= 0 && fullHistory[lastMsgIndex].authorId === 'current-user') {
+        const onlineMembers = getMemberOnlineStatus();
+        const readersCount = Math.floor(Math.random() * Math.min(onlineMembers.length, 8)) + 2;
+        for (let i = 0; i < readersCount; i++) {
+            const randomMember = onlineMembers[Math.floor(Math.random() * onlineMembers.length)];
+            markMessageAsRead(lastMsgIndex, randomMember);
+        }
+        renderChat(fullHistory);
+    }
+
+    // Check if should respond and when
+    const response = shouldRespondToMessage();
+
+    if (response.type === false) {
+        // Dead air - no response
+        return;
+    }
+
+    // Calculate total delay (base delay from shouldRespond + immediate response timing)
+    const baseDelay = response.delay || 0;
+
+    if (response.type === 'emoji') {
+        // Just emoji reaction, no text
+        const emojis = ['👍', '❤️', '🎉', '😂', '💪', '🙌', '✨', '🔥', '💯', '👏'];
+        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+        const onlineMembers = getMemberOnlineStatus();
+        const randomReactor = AI_MEMBERS.find(m => onlineMembers.includes(m.id)) || AI_MEMBERS[0];
+
+        // Delay before reaction - quicker than text but still realistic
+        let emojiImmediateDelay;
+        if (isActiveConversation) {
+            emojiImmediateDelay = 5000 + Math.random() * 25000; // 5-30s during active chat
+        } else {
+            emojiImmediateDelay = 30000 + Math.random() * 90000; // 30s-2min cold start
+        }
+        const emojiDelay = baseDelay + emojiImmediateDelay;
+        setTimeout(() => {
+            addEmojiReaction(lastMsgIndex, randomEmoji, randomReactor.id);
+        }, emojiDelay);
+        return;
+    }
+
+    // TEXT RESPONSE - Full logic (can be immediate or delayed)
+
+    // 1. Thread Persistence & Direct Address Logic
+    let persona = null;
+    const onlineMembers = getMemberOnlineStatus();
+
+    // A) Check for direct address (highest priority)
+    for (const m of AI_MEMBERS) {
+        const firstName = m.name.split(' ')[0].toLowerCase();
+        if (lowMsg.includes(firstName)) {
+            persona = m;
+            break;
+        }
+    }
+
+    // B) Active participants tracking (like real group chats!)
+    if (!persona && fullHistory.length > 0) {
+        const fifteenMinsAgo = Date.now() - (15 * 60 * 1000);
+        const recentMessages = fullHistory.slice(-10).filter(m => m.timestamp > fifteenMinsAgo);
+
+        const activeParticipants = [];
+        const participantCounts = {};
+
+        recentMessages.forEach(msg => {
+            if (msg.authorId && msg.authorId !== 'current-user') {
+                if (!participantCounts[msg.authorId]) {
+                    participantCounts[msg.authorId] = 0;
+                    const member = AI_MEMBERS.find(m => m.id === msg.authorId);
+                    if (member && onlineMembers.includes(member.id)) {
+                        activeParticipants.push(member);
+                    }
+                }
+                participantCounts[msg.authorId]++;
+            }
+        });
+
+        if (activeParticipants.length > 0) {
+            const pickFromActive = Math.random() < 0.7; // 70% chance
+
+            if (pickFromActive) {
+                const weighted = [];
+                activeParticipants.forEach(p => {
+                    const count = participantCounts[p.id] || 1;
+                    for (let i = 0; i < count; i++) {
+                        weighted.push(p);
+                    }
+                });
+                persona = weighted[Math.floor(Math.random() * weighted.length)];
+            }
+        }
+    }
+
+    // C) Fallback: pick someone random who's online
+    if (!persona) {
+        const onlineAIMembers = AI_MEMBERS.filter(m => onlineMembers.includes(m.id));
+        persona = onlineAIMembers.length > 0
+            ? onlineAIMembers[Math.floor(Math.random() * onlineAIMembers.length)]
+            : AI_MEMBERS[Math.floor(Math.random() * AI_MEMBERS.length)];
+    }
+
+    // Multiple people typing at once (30% chance)
+    const multipleTyping = Math.random() < 0.3 && chainCount === 0;
+    let secondTyper = null;
+    if (multipleTyping) {
+        const otherOnlineMembers = AI_MEMBERS.filter(m => onlineMembers.includes(m.id) && m.id !== persona.id);
+        if (otherOnlineMembers.length > 0) {
+            secondTyper = otherOnlineMembers[Math.floor(Math.random() * otherOnlineMembers.length)];
+        }
+    }
+
+    // Variable response timing based on conversation flow
+    // Plus any delay from shouldRespondToMessage (for delayed responses)
+    let immediateDelay;
+    if (isActiveConversation) {
+        // Active conversation: 15 seconds to 2 minutes
+        immediateDelay = 15000 + Math.random() * 105000; // 15s-2min
+    } else {
+        // Cold start: 2-5 minutes
+        immediateDelay = 120000 + Math.random() * 180000; // 2-5min
+    }
+    const totalDelay = baseDelay + immediateDelay;
+
+    setTimeout(async () => {
+        // Show typing indicator(s)
+        addCommunityTypingIndicator(persona.name.split(' ')[0]);
+        if (secondTyper) {
+            setTimeout(() => addCommunityTypingIndicator(secondTyper.name.split(' ')[0]), 500 + Math.random() * 1000);
+        }
+
+        try {
+            const historyContext = fullHistory.slice(-20).map(m => ({
+                role: m.authorId === 'current-user' ? 'user' : 'model',
+                text: `${m.authorName || 'Member'}: ${m.text}`,
+                timestamp: m.timestamp
+            }));
+
+            // Determine what to respond to (current message vs earlier message)
+            let contextMessage = userMsg;
+            if (fullHistory.length > 3 && Math.random() < 0.25) {
+                // 25% chance to respond to an earlier message (2-4 messages back)
+                const lookBack = Math.floor(Math.random() * 3) + 2;
+                const earlierMsg = fullHistory[fullHistory.length - lookBack];
+                if (earlierMsg) {
+                    contextMessage = `(Responding to earlier: "${earlierMsg.text}") ${userMsg}`;
+                }
+            }
+
+            const response = await fetch('/.netlify/functions/ai-chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'community',
+                    message: contextMessage,
+                    memberPersona: persona,
+                    chatHistory: historyContext,
+                    currentDateTime: new Date().toLocaleString(),
+                    allowShortAcknowledgments: true // New flag for AI
+                })
+            });
+            const data = await response.json();
+
+            // If second typer, remove their indicator after first person responds
+            if (secondTyper) {
+                setTimeout(() => removeCommunityTypingIndicators(secondTyper.name.split(' ')[0]), 1000 + Math.random() * 2000);
+            }
+
+            if (data.reply) {
+                const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
+                let totalDelay = 0;
+
+                parts.forEach((part, idx) => {
+                    if (idx > 0) {
+                        setTimeout(() => addCommunityTypingIndicator(persona.name.split(' ')[0]), totalDelay);
+                        totalDelay += 800 + Math.random() * 400;
+                    }
+
+                    const partDelay = 1200 + (part.length * 20);
+                    setTimeout(() => {
+                        removeCommunityTypingIndicators(persona.name.split(' ')[0]);
+                        saveCommunityMessage(persona, part);
+
+                        // If secondTyper exists, have them respond too (cross-talk!)
+                        if (idx === parts.length - 1 && secondTyper && Math.random() < 0.6) {
+                            const crossTalkDelay = 1000 + Math.random() * 2000; // 1-3s
+                            setTimeout(() => triggerCrossTalkResponse(userMsg, secondTyper), crossTalkDelay);
+                        }
+
+                        // If it's the last part, consider triggering a peer response or jump-in
+                        if (idx === parts.length - 1 && !secondTyper) {
+                            if (chainCount < 2 && Math.random() < 0.35) {
+                                const availableOnline = AI_MEMBERS.filter(m => onlineMembers.includes(m.id) && m.id !== persona.id);
+                                if (availableOnline.length > 0) {
+                                    const peerPersona = availableOnline[Math.floor(Math.random() * availableOnline.length)];
+                                    const peerDelay = Math.random() < 0.5
+                                        ? 2000 + Math.random() * 2000  // Fast: 2-4s
+                                        : 5000 + Math.random() * 3000; // Slower: 5-8s
+                                    setTimeout(() => triggerJumpInResponse(part, peerPersona, chainCount + 1), peerDelay);
+                                }
+                            }
+                        }
+                    }, totalDelay);
+                    totalDelay += partDelay;
+                });
+            } else {
+                removeCommunityTypingIndicators();
+            }
+        } catch (e) {
+            removeCommunityTypingIndicators();
+            console.log("Comm skip", e);
+        }
+    }, totalDelay);
+}
+
+async function triggerJumpInResponse(prevContext, persona, chainCount) {
+    try {
+        // Show typing indicator first
+        addCommunityTypingIndicator(persona.name.split(' ')[0]);
+
+        const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+        const historyContext = fullHistory.slice(-20).map(m => ({
+            role: m.authorId === 'current-user' ? 'user' : 'model',
+            text: `${m.authorName || 'Member'}: ${m.text}`,
+            timestamp: m.timestamp
+        }));
+
+        const response = await fetch('/.netlify/functions/ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'community',
+                message: `(Respond to: "${prevContext}")`,
+                memberPersona: persona,
+                chatHistory: historyContext,
+                currentDateTime: new Date().toLocaleString(),
+                allowShortAcknowledgments: true
+            })
+        });
+        const data = await response.json();
+
+        if (data.reply) {
+            const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
+            let totalDelay = 0;
+
+            parts.forEach((part, idx) => {
+                if (idx > 0) {
+                    // Show typing indicator before subsequent messages
+                    setTimeout(() => addCommunityTypingIndicator(persona.name.split(' ')[0]), totalDelay);
+                    totalDelay += 800 + Math.random() * 400; // 0.8-1.2s typing indicator
+                }
+
+                const partDelay = 1200 + (part.length * 20);
+                setTimeout(() => {
+                    removeCommunityTypingIndicators(persona.name.split(' ')[0]);
+                    saveCommunityMessage(persona, part);
+
+                    // Chain limit check with variable timing (only for online members)
+                    if (idx === parts.length - 1 && chainCount < 2 && Math.random() < 0.3) {
+                        const onlineMembers = getMemberOnlineStatus();
+                        const availableNext = AI_MEMBERS.filter(m => m.id !== persona.id && onlineMembers.includes(m.id));
+                        if (availableNext.length > 0) {
+                            const nextPersona = availableNext[Math.floor(Math.random() * availableNext.length)];
+                            const nextDelay = Math.random() < 0.5
+                                ? 2000 + Math.random() * 2000  // Fast: 2-4s
+                                : 4000 + Math.random() * 4000; // Slower: 4-8s
+                            setTimeout(() => triggerJumpInResponse(part, nextPersona, chainCount + 1), nextDelay);
+                        }
+                    }
+                }, totalDelay);
+                totalDelay += partDelay;
+            });
+        } else {
+            removeCommunityTypingIndicators(persona.name.split(' ')[0]);
+        }
+    } catch (e) {
+        removeCommunityTypingIndicators(persona.name.split(' ')[0]);
+        console.log("JumpIn skip", e);
+    }
+}
+
+// Cross-talk: Second person responds with their own take
+async function triggerCrossTalkResponse(originalMsg, persona) {
+    try {
+        // Short delay, then show typing
+        setTimeout(() => {
+            addCommunityTypingIndicator(persona.name.split(' ')[0]);
+        }, 200);
+
+        const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+        const historyContext = fullHistory.slice(-20).map(m => ({
+            role: m.authorId === 'current-user' ? 'user' : 'model',
+            text: `${m.authorName || 'Member'}: ${m.text}`,
+            timestamp: m.timestamp
+        }));
+
+        // Cross-talk often responds with short acknowledgments or different perspectives
+        const response = await fetch('/.netlify/functions/ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'community',
+                message: originalMsg,
+                memberPersona: persona,
+                chatHistory: historyContext,
+                currentDateTime: new Date().toLocaleString(),
+                allowShortAcknowledgments: true,
+                crossTalk: true // Flag for potentially shorter, different-angle response
+            })
+        });
+        const data = await response.json();
+
+        if (data.reply) {
+            const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
+            let totalDelay = 0;
+
+            parts.forEach((part, idx) => {
+                if (idx > 0) {
+                    setTimeout(() => addCommunityTypingIndicator(persona.name.split(' ')[0]), totalDelay);
+                    totalDelay += 800 + Math.random() * 400;
+                }
+
+                const partDelay = 1200 + (part.length * 20);
+                setTimeout(() => {
+                    removeCommunityTypingIndicators(persona.name.split(' ')[0]);
+                    saveCommunityMessage(persona, part);
+                }, totalDelay);
+                totalDelay += partDelay;
+            });
+        } else {
+            removeCommunityTypingIndicators(persona.name.split(' ')[0]);
+        }
+    } catch (e) {
+        removeCommunityTypingIndicators(persona.name.split(' ')[0]);
+        console.log("CrossTalk skip", e);
+    }
+}
+
+// ========================================
+// AUTONOMOUS COMMUNITY MESSAGING SYSTEM
+// ========================================
+
+// Autonomous message topics for random conversations
+const AUTONOMOUS_TOPICS = [
+    { type: 'workout', prompts: [
+        'Just finished an amazing morning walk! The fresh air really helps clear my head. Anyone else moving today?',
+        'Did a gentle yoga flow this morning and feeling so much better. How do you all prefer to move?',
+        'Trying to stay consistent with strength training but some days are harder than others. Anyone else struggling with motivation this week?',
+        'That new workout in the Build section was challenging! How did everyone else find it?',
+        'Taking a rest day today and trying not to feel guilty about it. Self-compassion is hard sometimes!',
+        'Swimming has been such a game-changer for my joint pain. What movement makes you feel best?'
+    ]},
+    { type: 'nutrition', prompts: [
+        'Made the most delicious plant-based Buddha bowl for lunch! Feeling so nourished. What\'s everyone eating today?',
+        'Anyone else notice their cravings change throughout their cycle? I\'m craving all the green things this week.',
+        'Finally nailed a good protein smoothie recipe. The key is frozen banana and a pinch of cinnamon!',
+        'Struggling with meal prep this week. Life got busy. Anyone have quick go-to meals?',
+        'My hot flashes have been better since I cut back on spicy foods. Anyone else notice food triggers?',
+        'Just meal prepped for the week and feeling so organized! How do you all stay on track?'
+    ]},
+    { type: 'wellness', prompts: [
+        'Had the best sleep last night after doing that evening wind-down routine. Game changer!',
+        'Brain fog is real today. Anyone else? How do you cope when you\'re feeling scattered?',
+        'Trying to be more mindful about my stress levels. Noticed my shoulders are always tense!',
+        'The guided meditation in the resources section has been so helpful. Anyone else trying meditation?',
+        'Feeling really grateful for this community today. It helps knowing we\'re all in this together.',
+        'Energy levels have been all over the place this week. Hormones are wild! How\'s everyone feeling?'
+    ]},
+    { type: 'progress', prompts: [
+        'Finally feeling like my cortisol is balancing out. The changes are subtle but they\'re there!',
+        'Tracking my symptoms has been so eye-opening. Highly recommend if you haven\'t started yet.',
+        'Hit a milestone today - 30 days of consistent movement! Never thought I\'d get here.',
+        'Some days feel like steps backward, but trying to trust the process. Anyone else feel this way?',
+        'My mood has been so much more stable lately. Plant-based eating is really making a difference.',
+        'Noticing improvements in my sleep quality. It\'s the small wins that keep me going!'
+    ]},
+    { type: 'support', prompts: [
+        'Having a tough day today. Just needed to share that with people who understand.',
+        'This journey isn\'t linear and that\'s okay. Being gentle with myself today.',
+        'Anyone else find perimenopause harder than they expected? Some days I feel lost.',
+        'The support in this group means everything. Thank you for being here.',
+        'Reminder to drink water! I always forget and then wonder why I feel terrible.',
+        'How is everyone\'s week going? Really curious to hear how you\'re all doing.'
+    ]}
+];
+
+// Saturday morning check-in prompts (Coach Shannon initiates these)
+const SATURDAY_CHECKIN_PROMPTS = [
+    'Morning everyone! Check-in time. How\'d your week go? I want to hear the real stuff - wins, struggles, whatever\'s on your mind.',
+    'Hey everyone, Saturday check-in. What happened this week that actually mattered to you? Big or small, I\'m curious.',
+    'Happy Saturday! Let\'s take a moment to reflect. What was the most challenging thing you dealt with this week and how did you work through it?',
+    'Morning! Weekly check-in time. What surprised you about yourself this week? I always find these reflections so revealing.',
+    'Saturday vibes! How are you all really doing? Share what\'s going on - the good, the messy, all of it.',
+    'Hey friends! Check-in time. What did you learn about your body or your patterns this week? Let\'s share.',
+    'Morning everyone. What\'s one thing from this week that you\'re still thinking about? Could be a win, a struggle, or just something that stuck with you.',
+    'Saturday check-in! How did you take care of yourself this week? And how did it actually feel doing it?',
+    'Hey all! Time for our weekly reflection. What was different about this week compared to last? Even small shifts count.',
+    'Morning! Let\'s hear your stories. What moment this week made you feel most like yourself?'
+];
+
+// Get a random item from array
+function getRandomItem(array) {
+    return array[Math.floor(Math.random() * array.length)];
+}
+
+// Get random autonomous message prompt
+function getRandomAutonomousPrompt() {
+    const topic = getRandomItem(AUTONOMOUS_TOPICS);
+    return getRandomItem(topic.prompts);
+}
+
+// Determine number of responses based on probability
+function getResponseCount() {
+    const rand = Math.random() * 100;
+    if (rand < 10) return 0;      // 10% - no replies
+    if (rand < 40) return 1;      // 30% - one reply
+    if (rand < 75) return 2;      // 35% - two replies
+    if (rand < 90) return 3;      // 15% - three replies
+    return 4;                     // 10% - four replies
+}
+
+// Initiate autonomous community conversation
+async function initiateAutonomousConversation(isCheckIn = false) {
+    try {
+        const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+
+        // Select initiating member
+        let initiator;
+        if (isCheckIn) {
+            // Coach Shannon always leads Saturday check-ins
+            initiator = AI_MEMBERS.find(m => m.id === 'm0');
+        } else {
+            // For random messages, exclude Coach Shannon for more natural peer feel
+            const nonCoachMembers = AI_MEMBERS.filter(m => m.id !== 'm0');
+            initiator = getRandomItem(nonCoachMembers);
+        }
+
+        // Get message content
+        const messageText = isCheckIn ? getRandomItem(SATURDAY_CHECKIN_PROMPTS) : getRandomAutonomousPrompt();
+
+        // Add initiator message to chat
+        saveCommunityMessage(initiator, messageText);
+
+        // Determine number of responses
+        const responseCount = isCheckIn ? Math.floor(Math.random() * 3) + 18 : getResponseCount(); // Check-ins get 18-20 responses
+
+        if (responseCount === 0) {
+            console.log('Autonomous message sent with no replies');
+            return;
+        }
+
+        // Generate responses with varying delays
+        const availableResponders = AI_MEMBERS.filter(m => m.id !== initiator.id);
+        const responders = [];
+
+        // Select unique responders
+        for (let i = 0; i < responseCount && responders.length < availableResponders.length; i++) {
+            let responder;
+            do {
+                responder = getRandomItem(availableResponders);
+            } while (responders.find(r => r.id === responder.id));
+            responders.push(responder);
+        }
+
+        // Schedule responses with realistic delays
+        responders.forEach((responder, idx) => {
+            let delay;
+            if (isCheckIn) {
+                // Spread check-ins over 3-5 hours (10,800,000 - 18,000,000 ms)
+                const minDelay = 3 * 60 * 60 * 1000; // 3 hours in ms
+                const maxDelay = 5 * 60 * 60 * 1000; // 5 hours in ms
+                const timeRange = maxDelay - minDelay;
+                // Distribute responders across the time range with some randomness
+                const basePosition = (idx / responseCount) * timeRange;
+                const randomJitter = (Math.random() - 0.5) * (timeRange / responseCount) * 2;
+                delay = minDelay + basePosition + randomJitter;
+            } else {
+                // Regular messages have shorter delays
+                const baseDelay = 8000;
+                const randomDelay = baseDelay + (Math.random() * 15000);
+                delay = (idx * 10000) + randomDelay;
+            }
+
+            setTimeout(async () => {
+                try {
+                    const currentHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+                    const historyContext = currentHistory.slice(-20).map(m => ({
+                        role: m.authorId === 'current-user' ? 'user' : 'model',
+                        text: `${m.authorName || 'Member'}: ${m.text}`,
+                        timestamp: m.timestamp
+                    }));
+
+                    // Get previous check-in stories for this member to build continuity
+                    let previousStories = '';
+                    if (isCheckIn) {
+                        const checkInHistory = JSON.parse(localStorage.getItem('saturday_checkin_stories') || '{}');
+                        if (checkInHistory[responder.id] && checkInHistory[responder.id].length > 0) {
+                            const recentStories = checkInHistory[responder.id].slice(-3); // Last 3 check-ins
+                            previousStories = '\nYour previous check-in reflections: ' + recentStories.map(s => `"${s}"`).join(' | ');
+                        }
+                    }
+
+                    // Enhanced prompt for check-ins
+                    let promptMessage = messageText;
+                    if (isCheckIn) {
+                        promptMessage = `(This is your Saturday morning check-in. Shannon is asking the group to reflect on their week. Share an authentic, personal story from your week - something real and specific that happened to you. Talk about actual moments, feelings, struggles, or wins. Be vulnerable and detailed. Build on your journey over time.${previousStories} Respond to: "${messageText}")`;
+                    }
+
+                    // Call AI to generate response
+                    const response = await fetch('/.netlify/functions/ai-chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            mode: 'community',
+                            message: promptMessage,
+                            memberPersona: responder,
+                            chatHistory: historyContext,
+                            currentDateTime: new Date().toLocaleString(),
+                            isAutonomous: true
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.reply) {
+                        const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
+                        let totalDelay = 0;
+
+                        parts.forEach((part, partIdx) => {
+                            const partDelay = 1200 + (part.length * 20);
+                            setTimeout(() => {
+                                const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+                                msgs.push({
+                                    authorId: responder.id,
+                                    authorName: responder.name,
+                                    authorAvatar: responder.id.replace('m', ''),
+                                    text: part,
+                                    timestamp: Date.now()
+                                });
+                                localStorage.setItem('community_chat_history', JSON.stringify(msgs));
+                                if (typeof renderChat === 'function') renderChat(msgs);
+
+                                // Save check-in story for continuity (only on last part)
+                                if (isCheckIn && partIdx === parts.length - 1) {
+                                    const checkInHistory = JSON.parse(localStorage.getItem('saturday_checkin_stories') || '{}');
+                                    if (!checkInHistory[responder.id]) {
+                                        checkInHistory[responder.id] = [];
+                                    }
+                                    // Store the full response (all parts combined) for this member
+                                    checkInHistory[responder.id].push(data.reply.replace(/\s*\|\|\|\s*/g, ' '));
+                                    // Keep only last 5 check-ins per member
+                                    if (checkInHistory[responder.id].length > 5) {
+                                        checkInHistory[responder.id].shift();
+                                    }
+                                    localStorage.setItem('saturday_checkin_stories', JSON.stringify(checkInHistory));
+
+                                    // 40% chance someone reacts to this check-in story
+                                    if (Math.random() < 0.4) {
+                                        // Pick someone who will respond or has already responded
+                                        const potentialReactors = responders.filter(r => r.id !== responder.id);
+                                        if (potentialReactors.length > 0) {
+                                            const reactor = getRandomItem(potentialReactors);
+                                            const reactionDelay = 5000 + Math.random() * 15000; // 5-20 seconds after story
+                                            setTimeout(() => {
+                                                triggerCheckInReaction(part, responder, reactor);
+                                            }, reactionDelay);
+                                        }
+                                    }
+                                }
+                            }, totalDelay);
+                            totalDelay += partDelay;
+                        });
+                    }
+                } catch (e) {
+                    console.log('Autonomous response skip', e);
+                }
+            }, delay);
+        });
+
+    } catch (e) {
+        console.log('Autonomous conversation skip', e);
+    }
+}
+
+// Trigger a reaction/comment to a check-in story
+async function triggerCheckInReaction(storyText, originalAuthor, reactor) {
+    try {
+        const currentHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+        const historyContext = currentHistory.slice(-20).map(m => ({
+            role: m.authorId === 'current-user' ? 'user' : 'model',
+            text: `${m.authorName || 'Member'}: ${m.text}`,
+            timestamp: m.timestamp
+        }));
+
+        // Generate a supportive reaction/comment
+        const reactionPrompt = `(${originalAuthor.name} just shared their check-in story. React to it with a brief, supportive comment. Be empathetic, relate to their experience, offer encouragement, or share how you connect with what they said. Keep it short and genuine - 1-2 sentences max. You're commenting on: "${storyText}")`;
+
+        const response = await fetch('/.netlify/functions/ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'community',
+                message: reactionPrompt,
+                memberPersona: reactor,
+                chatHistory: historyContext,
+                currentDateTime: new Date().toLocaleString(),
+                isAutonomous: true
+            })
+        });
+
+        const data = await response.json();
+        if (data.reply) {
+            // Reactions should be quick and short, no multi-part needed
+            const reactionText = data.reply.replace(/\s*\|\|\|\s*/g, ' ');
+            saveCommunityMessage(reactor, reactionText);
+            
+            console.log(`💬 ${reactor.name} reacted to ${originalAuthor.name}'s story`);
+        }
+    } catch (e) {
+        console.log('Check-in reaction skip', e);
+    }
+}
+
+// Check if it's Saturday morning (7-9 AM Brisbane time)
+function isSaturdayMorning() {
+    const now = new Date();
+
+    // Convert to Brisbane time (AEST/AEDT UTC+10/+11)
+    const brisbaneTime = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Brisbane' }));
+    const day = brisbaneTime.getDay();
+    const hour = brisbaneTime.getHours();
+
+    return day === 6 && hour >= 7 && hour < 9;
+}
+
+// Get last check-in date
+function getLastCheckInDate() {
+    const lastCheckIn = localStorage.getItem('last_saturday_checkin');
+    return lastCheckIn ? new Date(lastCheckIn) : null;
+}
+
+// Check if check-in already happened this week
+function checkInAlreadyDone() {
+    const lastCheckIn = getLastCheckInDate();
+    if (!lastCheckIn) return false;
+
+    const now = new Date();
+    const daysSinceLastCheckIn = (now - lastCheckIn) / (1000 * 60 * 60 * 24);
+
+    // If less than 6 days since last check-in, it already happened this week
+    return daysSinceLastCheckIn < 6;
+}
+
+// Trigger Saturday morning check-in
+function triggerSaturdayCheckIn() {
+    if (checkInAlreadyDone()) {
+        console.log('Saturday check-in already done this week');
+        return;
+    }
+
+    console.log('Initiating Saturday morning check-in...');
+    localStorage.setItem('last_saturday_checkin', new Date().toISOString());
+    initiateAutonomousConversation(true);
+}
+
+// Get last autonomous message time
+function getLastAutonomousMessageTime() {
+    const lastTime = localStorage.getItem('last_autonomous_message');
+    return lastTime ? parseInt(lastTime) : 0;
+}
+
+// Check if it's time for autonomous message
+function shouldTriggerAutonomousMessage() {
+    const lastTime = getLastAutonomousMessageTime();
+    const now = Date.now();
+    const timeSinceLast = now - lastTime;
+
+    // Random interval between 1-2 hours (3600000-7200000 ms)
+    const minInterval = 60 * 60 * 1000; // 1 hour
+    const maxInterval = 2 * 60 * 60 * 1000; // 2 hours
+    const randomInterval = minInterval + Math.random() * (maxInterval - minInterval);
+
+    return timeSinceLast > randomInterval;
+}
+
+// Trigger random autonomous message
+function triggerAutonomousMessage() {
+    console.log('Initiating autonomous community message...');
+    localStorage.setItem('last_autonomous_message', Date.now().toString());
+    initiateAutonomousConversation(false);
+}
+
+// Main autonomous system controller
+function checkAutonomousActivity() {
+    // Check for Saturday morning check-in first
+    if (isSaturdayMorning()) {
+        triggerSaturdayCheckIn();
+        return; // Don't do random messages during check-in window
+    }
+
+    // Check for random autonomous messages
+    if (shouldTriggerAutonomousMessage()) {
+        triggerAutonomousMessage();
+    }
+}
+
+// Initialize autonomous system
+function initializeAutonomousSystem() {
+    console.log('Autonomous community messaging system initialized');
+
+    // Check immediately on load
+    setTimeout(() => {
+        checkAutonomousActivity();
+    }, 5000); // Wait 5 seconds after page load
+
+    // Check every 30 minutes
+    setInterval(() => {
+        checkAutonomousActivity();
+    }, 30 * 60 * 1000);
+}
+
+// Start autonomous system when page loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAutonomousSystem);
+} else {
+    initializeAutonomousSystem();
+}
+
+// ========================================
+// TESTING & DEBUG FUNCTIONS
+// ========================================
+
+// Manual triggers for testing (accessible via browser console)
+window.testAutonomousMessage = function() {
+    console.log('🧪 Testing autonomous message...');
+    initiateAutonomousConversation(false);
+};
+
+window.testSaturdayCheckIn = function() {
+    console.log('🧪 Testing Saturday check-in...');
+    initiateAutonomousConversation(true);
+};
+
+window.resetAutonomousTimers = function() {
+    console.log('🔄 Resetting autonomous timers...');
+    localStorage.removeItem('last_autonomous_message');
+    localStorage.removeItem('last_saturday_checkin');
+    console.log('✅ Timers reset! Next check will trigger new messages.');
+};
+
+window.getAutonomousStatus = function() {
+    const lastMsg = getLastAutonomousMessageTime();
+    const lastCheckIn = getLastCheckInDate();
+    const nextMsgIn = lastMsg ? Math.max(0, (60 * 60 * 1000) - (Date.now() - lastMsg)) : 0;
+
+    console.log('📊 Autonomous System Status:');
+    console.log('─────────────────────────────');
+    console.log(`Last autonomous message: ${lastMsg ? new Date(lastMsg).toLocaleString() : 'Never'}`);
+    console.log(`Next message in: ${Math.floor(nextMsgIn / 60000)} minutes (approximately)`);
+    console.log(`Last Saturday check-in: ${lastCheckIn ? lastCheckIn.toLocaleString() : 'Never'}`);
+    console.log(`Is Saturday morning now: ${isSaturdayMorning()}`);
+    console.log(`Check-in already done this week: ${checkInAlreadyDone()}`);
+    console.log('─────────────────────────────');
+    console.log('💡 Try: testAutonomousMessage() or testSaturdayCheckIn()');
+    console.log('💡 View stories: viewCheckInStories()');
+};
+
+window.viewCheckInStories = function(memberId) {
+    const checkInHistory = JSON.parse(localStorage.getItem('saturday_checkin_stories') || '{}');
+
+    if (memberId) {
+        // Show specific member's stories
+        const member = AI_MEMBERS.find(m => m.id === memberId);
+        if (!member) {
+            console.log(`❌ Member ${memberId} not found`);
+            return;
+        }
+        console.log(`\n📖 Check-in Stories for ${member.name} (${memberId})`);
+        console.log('═══════════════════════════════════════');
+        if (checkInHistory[memberId] && checkInHistory[memberId].length > 0) {
+            checkInHistory[memberId].forEach((story, idx) => {
+                console.log(`\n[Week ${idx + 1}]:`);
+                console.log(story);
+                console.log('─────────────────────────────────────');
+            });
+        } else {
+            console.log('No stories yet for this member.');
+        }
+    } else {
+        // Show all members with stories
+        console.log('\n📚 All Saturday Check-in Story History');
+        console.log('═══════════════════════════════════════');
+        const membersWithStories = Object.keys(checkInHistory);
+        if (membersWithStories.length === 0) {
+            console.log('No check-in stories recorded yet.');
+            console.log('\n💡 Run testSaturdayCheckIn() to generate some stories!');
+        } else {
+            membersWithStories.forEach(id => {
+                const member = AI_MEMBERS.find(m => m.id === id);
+                const storyCount = checkInHistory[id].length;
+                console.log(`\n${member ? member.name : id} (${id}): ${storyCount} check-in${storyCount > 1 ? 's' : ''}`);
+                console.log(`💡 View details: viewCheckInStories('${id}')`);
+            });
+        }
+    }
+};
+
+// ========================================
+// END AUTONOMOUS COMMUNITY MESSAGING
+// ========================================
+
+window.openAsClient = function() {
+    toggleCoachMode(false);
+    if(typeof switchAppTab === 'function') switchAppTab('dashboard');
+    const btn = document.createElement('div');
+    btn.id = 'return-to-coach-btn';
+    btn.innerHTML = '⏎ Return to Coach View';
+    btn.style.cssText = 'position:fixed; bottom:90px; right:20px; background:#1e293b; color:white; padding:12px 20px; border-radius:50px; font-weight:bold; box-shadow:0 10px 25px rgba(0,0,0,0.3); z-index:10000; cursor:pointer; font-size:0.9rem;';
+    btn.onclick = () => toggleCoachMode(true);
+    document.body.appendChild(btn);
+};
+
+// Old submitCoachMessage removed as it is now defined earlier in the file.
+
+async function getChatHistory() { 
+    if(!window.currentUser) return [];
+    return await dbHelpers.conversations.getHistory(window.currentUser.id, 'coach'); 
+}
+
+async function saveToHistory(role, text) {
+    if(!window.currentUser) return;
+    await dbHelpers.conversations.create(window.currentUser.id, 'coach', role, text);
+}
+
+window.loadChatHistory = async function() {
+    const container = document.getElementById('chat-messages-container');
+    if (!container) return;
+    
+    // Clear waiting for load
+    container.innerHTML = ''; 
+
+    const history = await getChatHistory();
+
+    // Only show default welcome message if there's no chat history
+    if (history.length === 0) {
+        const profile = await window.getUserProfile();
+        const userName = profile?.name || '';
+        const greeting = userName ? `Hey ${userName}!` : 'Hey there!';
+        container.innerHTML = `
+            <div style="display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;">
+                 <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
+                 <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
+                     <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
+                         <p style="margin: 0; white-space: pre-wrap;">${greeting} Thanks so much for joining the Plant Based Balance Reset!
+
+I'm Shannon 🙏 here if you need anything! Plus we have a pretty lively chat always going on if you want to share your journey!
+
+Generally we all share our week Saturday Morning!
+
+How's your day so far?</p>
+                     </div>
+                     <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon  Always here</span>
+                 </div>
+            </div>`;
+    }
+
+    history.forEach(msg => {
+        const isUser = msg.role === 'user';
+        const rowDiv = document.createElement('div');
+        rowDiv.style.cssText = `display: flex; justify-content: ${isUser ? 'flex-end' : 'flex-start'}; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;`;
+        
+        const timestamp = msg.timestamp || msg.created_at || Date.now();
+        const timeStr = new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const msgText = msg.message_text || msg.text || '';
+
+        if (isUser) {
+             rowDiv.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: flex-end; max-width: 80%;">
+                    <div style="background: var(--chat-bg-user); color: var(--chat-text-user); padding: 12px 18px; border-radius: 18px 18px 0 18px; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">${msgText}</div>
+                    <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-right: 5px;">You ${timeStr}</span>
+                </div>
+                <img src="https://ui-avatars.com/api/?name=You&background=cbd5e1&color=fff" style="width: 36px; height: 36px; border-radius: 50%; margin-left: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            `;
+        } else {
+             rowDiv.innerHTML = `
+                <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
+                <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
+                    <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
+                        <p style="margin: 0; white-space: pre-wrap;">${msgText.replace(/\*\*/g, '').replace(/\*/g, '')}</p>
+                    </div>
+                    <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon ${timeStr}</span>
+                </div>
+            `;
+        }
+        container.appendChild(rowDiv);
+    });
+    container.scrollTop = container.scrollHeight;
+};
+
+window.appendCoachMessage = async function(text) {
+    const container = document.getElementById('chat-messages-container');
+    if (!container) return;
+    
+    const rowDiv = document.createElement('div');
+    rowDiv.style.cssText = "display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;";
+    
+    const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    rowDiv.innerHTML = `
+        <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
+        <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
+            <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
+                <p style="margin: 0; white-space: pre-wrap;">${text.replace(/\*\*/g, '').replace(/\*/g, '')}</p>
+            </div>
+            <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon ${timeStr}</span>
+        </div>
+    `;
+
+    container.appendChild(rowDiv);
+    container.scrollTop = container.scrollHeight;
+
+    // Save to DB
+    await saveToHistory('model', text);
+
+    // Mark as unread and show notification badge (Local state is fine for UI flags for now)
+    localStorage.setItem('coach_unread_messages', 'true');
+    const badge = document.getElementById('coach-notification-badge');
+    if (badge) {
+        badge.style.display = 'block';
+    }
+
+    // Send push notification
+    if(typeof sendCoachNotification === 'function') sendCoachNotification(text);
+
+    // Notification Badge on App Icon
+    if ('setAppBadge' in navigator && document.visibilityState === 'hidden') {
+        navigator.setAppBadge(1).catch(e => console.error(e));
+    }
+};
+
+window.openCoachChat = function() {
+    document.getElementById('view-support').style.display = 'block';
+
+    // Clear unread flag and hide notification badge
+    localStorage.removeItem('coach_unread_messages');
+    const badge = document.getElementById('coach-notification-badge');
+    if (badge) {
+        badge.style.display = 'none';
+    }
+
+    // Clear Badge
+    if ('clearAppBadge' in navigator) {
+        navigator.clearAppBadge().catch(e => console.error(e));
+    }
+    if ('setAppBadge' in navigator) {
+        navigator.setAppBadge(0).catch(e => console.error(e));
+    }
+};
+
+// Helper to save AI community messages to DB and Local Cache
+async function saveCommunityMessage(persona, text) {
+    // 1. Save to DB (Fire and forget to avoid blocking UI too much, or await if needed)
+    const user = window.currentUser;
+    if(user) {
+        // We do not await this to keep UI snappy for animations, or we catch errors
+        dbHelpers.conversations.create(user.id, 'community', 'model', text, persona.name).catch(e => console.error("DB Save Error", e));
+    }
+
+    // 2. Update Local Cache (for immediate UI and autonomous logic)
+    let msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    
+    // SAFETY LIMIT: Only keep last 50 messages to prevent crash
+    if (msgs.length > 50) {
+        msgs = msgs.slice(msgs.length - 50); 
+    }
+
+    msgs.push({
+        authorId: persona.id,
+        authorName: persona.name,
+        authorAvatar: (persona.id || 'm1').replace('m', ''),
+        text: text,
+        timestamp: Date.now()
+    });
+    
+    try {
+        localStorage.setItem('community_chat_history', JSON.stringify(msgs));
+    } catch(e) {
+        console.warn("Storage full, clearing old history");
+        localStorage.removeItem('community_chat_history'); // Emergency clear
+    }
+    
+    // 3. Render
+    if(typeof renderChat === 'function') renderChat(msgs);
+}
 
 window.loadCommunityFeed = async function() {
     if(!window.currentUser) return;
@@ -13163,6 +14457,81 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
+
+<script>
+// ==========================================
+// SERVICE WORKER MESSAGE HANDLER
+// ==========================================
+// Listen for messages from service worker (e.g., notification clicks)
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'open_approval_modal') {
+            // Open the approval modal
+            window.openApprovalModal();
+        }
+    });
+}
+
+// Check URL parameters for approval modal trigger
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('openApproval') === 'true') {
+        // Wait a bit for everything to load, then open approval modal
+        setTimeout(() => {
+            window.openApprovalModal();
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }, 1000);
+    }
+});
+</script>
+
+<!-- ========================================== -->
+<!-- APPROVAL MODAL -->
+<!-- ========================================== -->
+<div id="approval-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 16px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+        <!-- Header -->
+        <div style="padding: 24px; border-bottom: 1px solid #e2e8f0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 1.5rem; color: #1e293b;">Approve Coach Response</h2>
+                <button onclick="closeApprovalModal()" style="background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 24px;">
+            <!-- User Info -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 8px;">User:</label>
+                <div id="approval-user-name" style="padding: 12px; background: #f1f5f9; border-radius: 8px; color: #1e293b;"></div>
+            </div>
+
+            <!-- User Message -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 8px;">User Message:</label>
+                <div id="approval-user-message" style="padding: 12px; background: #f1f5f9; border-radius: 8px; color: #1e293b; white-space: pre-wrap;"></div>
+            </div>
+
+            <!-- AI Response (Editable) -->
+            <div style="margin-bottom: 24px;">
+                <label for="approval-response-text" style="display: block; font-weight: 600; color: #475569; margin-bottom: 8px;">AI Response (Editable):</label>
+                <textarea id="approval-response-text" style="width: 100%; min-height: 200px; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 1rem; resize: vertical; box-sizing: border-box;" placeholder="AI response will appear here..."></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button onclick="rejectResponse()" style="padding: 12px 24px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                    Reject
+                </button>
+                <button onclick="approveResponse()" style="padding: 12px 24px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                    Approve & Send
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
 
