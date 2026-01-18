@@ -11641,8 +11641,114 @@ window.triggerCoachResponse = async function(userMsg) {
 // APPROVAL SYSTEM FUNCTIONS
 // ==========================================
 
+// VAPID Public Key for Web Push - Add VAPID_PUBLIC_KEY to Netlify env vars
+const VAPID_PUBLIC_KEY = 'BKLK5RhCjI6nWPFZvtyyzMiltGSUyyJsXAjgrw7YVWDuQ-tNtmq3ymmXsywQoqt3IBHowRy9xOr4RmWQZvotMnM';
+
 /**
- * Notify admin about pending coach response
+ * Subscribe to push notifications (for admin users)
+ */
+window.subscribeToAdminNotifications = async function() {
+    try {
+        // Check if user is admin
+        const isAdmin = await db.pushSubscriptions.isAdmin();
+        if (!isAdmin) {
+            alert('Only admins can subscribe to approval notifications');
+            return false;
+        }
+
+        // Request notification permission
+        if ('Notification' in window) {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                alert('Notification permission denied. Please enable notifications in your browser settings.');
+                return false;
+            }
+        } else {
+            alert('This browser does not support notifications');
+            return false;
+        }
+
+        // Get service worker registration
+        const registration = await navigator.serviceWorker.ready;
+
+        // Subscribe to push
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+
+        // Convert subscription to JSON
+        const subscriptionJson = subscription.toJSON();
+
+        // Save to database
+        await db.pushSubscriptions.subscribe({
+            endpoint: subscriptionJson.endpoint,
+            keys: {
+                p256dh: subscriptionJson.keys.p256dh,
+                auth: subscriptionJson.keys.auth
+            }
+        }, true); // isAdmin = true
+
+        console.log('Subscribed to admin notifications!');
+        alert('Push notifications enabled! You will now receive alerts on this device when messages need approval.');
+        return true;
+
+    } catch (error) {
+        console.error('Failed to subscribe to notifications:', error);
+        alert('Failed to enable notifications: ' + error.message);
+        return false;
+    }
+};
+
+/**
+ * Unsubscribe from push notifications
+ */
+window.unsubscribeFromNotifications = async function() {
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+
+        if (subscription) {
+            await subscription.unsubscribe();
+            await db.pushSubscriptions.unsubscribe(subscription.endpoint);
+            alert('Notifications disabled.');
+        }
+    } catch (error) {
+        console.error('Failed to unsubscribe:', error);
+    }
+};
+
+/**
+ * Check if admin is subscribed to notifications
+ */
+window.checkAdminNotificationStatus = async function() {
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        return !!subscription;
+    } catch (error) {
+        return false;
+    }
+};
+
+/**
+ * Helper: Convert VAPID key to Uint8Array
+ */
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+/**
+ * Notify admin about pending coach response via server-side push
  */
 async function notifyAdminOfPendingResponse(userId, responseText) {
     // Get user name for the notification
@@ -11652,36 +11758,29 @@ async function notifyAdminOfPendingResponse(userId, responseText) {
     const notificationTitle = 'Coach Response Pending Approval';
     const notificationBody = `${userName}: ${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}`;
 
-    // Send push notification to admin
-    if ('Notification' in window && Notification.permission === 'granted') {
-        // Check if service worker is available
-        if ('serviceWorker' in navigator) {
-            try {
-                const registration = await navigator.serviceWorker.ready;
-                await registration.showNotification(notificationTitle, {
-                    body: notificationBody,
-                    icon: './assets/coach_shannon.jpg',
-                    badge: './assets/logo_optimized.png',
-                    vibrate: [200, 100, 200],
-                    tag: 'pending-approval',
-                    requireInteraction: true, // Keep notification visible until user interacts
-                    data: {
-                        type: 'pending_approval',
-                        userId: userId,
-                        responseText: responseText
-                    },
-                    actions: [
-                        { action: 'approve', title: 'Approve' },
-                        { action: 'edit', title: 'Edit' }
-                    ]
-                });
-            } catch (error) {
-                console.error('Error showing notification:', error);
-            }
-        }
+    // Send push notification via server (reaches admin even when not on site)
+    try {
+        const response = await fetch('/.netlify/functions/send-push-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: notificationTitle,
+                body: notificationBody,
+                data: {
+                    type: 'pending_approval',
+                    userId: userId,
+                    url: '/dashboard.html'
+                }
+            })
+        });
+
+        const result = await response.json();
+        console.log('Push notification result:', result);
+    } catch (error) {
+        console.error('Error sending push notification:', error);
     }
 
-    // Also set app badge
+    // Also set app badge locally if we're on the app
     if ('setAppBadge' in navigator) {
         const pendingCount = await db.pendingResponses.getPendingCount();
         navigator.setAppBadge(pendingCount).catch(e => console.error(e));

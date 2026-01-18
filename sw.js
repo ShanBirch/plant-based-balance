@@ -53,7 +53,7 @@ self.addEventListener('fetch', (e) => {
   );
 });
 
-// Handle push notifications
+// Handle push notifications from server
 self.addEventListener('push', (e) => {
   let data = { title: 'Coach Shannon', body: 'New message from your coach!' };
 
@@ -65,17 +65,21 @@ self.addEventListener('push', (e) => {
     }
   }
 
+  // Build notification options from server payload
   const options = {
     body: data.body,
-    icon: './assets/coach_shannon.jpg',
-    badge: './assets/logo_optimized.png',
-    vibrate: [200, 100, 200],
-    tag: 'coach-message',
-    requireInteraction: false,
-    data: {
-      url: './dashboard.html'
-    }
+    icon: data.icon || './assets/coach_shannon.jpg',
+    badge: data.badge || './assets/logo_optimized.png',
+    vibrate: data.vibrate || [200, 100, 200],
+    tag: data.tag || 'coach-message',
+    requireInteraction: data.requireInteraction || false,
+    data: data.data || { url: './dashboard.html' }
   };
+
+  // Add actions if provided (for approval notifications)
+  if (data.actions) {
+    options.actions = data.actions;
+  }
 
   e.waitUntil(
     self.registration.showNotification(data.title, options)
