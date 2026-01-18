@@ -7759,7 +7759,34 @@ function toggleNoPeriodMode() {
 }
 
 async function initCalendarView() {
-    // 1. Fetch Cycle Data from DB (user_facts)
+    // 1. Try to load from localStorage first (works for non-logged-in users)
+    try {
+        const savedCycleData = localStorage.getItem('userCycleData');
+        if (savedCycleData) {
+            const parsed = JSON.parse(savedCycleData);
+            if (parsed.lastPeriod) {
+                userCycleData.lastPeriod = parsed.lastPeriod;
+                const lastPeriodInput = document.getElementById('last-period-input');
+                if (lastPeriodInput) lastPeriodInput.value = userCycleData.lastPeriod;
+            }
+            if (parsed.cycleLength) {
+                userCycleData.cycleLength = parseInt(parsed.cycleLength);
+                const cycleLengthInput = document.getElementById('cycle-length-input');
+                if (cycleLengthInput) cycleLengthInput.value = userCycleData.cycleLength;
+            }
+            if (parsed.noPeriodMode) {
+                userCycleData.noPeriodMode = true;
+                const noPeriodToggle = document.getElementById('no-period-toggle');
+                if (noPeriodToggle) noPeriodToggle.checked = true;
+                const lastPeriodInput = document.getElementById('last-period-input');
+                if (lastPeriodInput) lastPeriodInput.disabled = true;
+            }
+        }
+    } catch (e) {
+        console.log("Error loading cycle data from localStorage", e);
+    }
+
+    // 2. Fetch Cycle Data from DB (user_facts) - overrides localStorage if logged in
     if (window.currentUser) {
         try {
             const userId = window.currentUser.id || window.currentUser.user_id;
