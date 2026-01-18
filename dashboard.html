@@ -7947,6 +7947,12 @@ function renderWeeklyCalendar() {
     const grid = document.getElementById('weekly-calendar');
     grid.innerHTML = '';
 
+    // Self-healing: If variable is empty but input has value, sync it.
+    const inputVal = document.getElementById('last-period-input')?.value;
+    if (!userCycleData.lastPeriod && inputVal) {
+        userCycleData.lastPeriod = inputVal;
+    }
+
     if (!userCycleData.lastPeriod && !userCycleData.noPeriodMode) {
         grid.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">Enter Last Period Date to generate schedule.</div>';
         return;
