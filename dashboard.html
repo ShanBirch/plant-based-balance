@@ -8993,7 +8993,7 @@ function switchView(id) {
 
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
-const totalWizardSteps = 4;
+const totalWizardSteps = 5;
 
 function initOnboardingWizard() {
     currentWizardStep = 1; // Reset to first step
@@ -10971,7 +10971,7 @@ function openAsClient() {
         <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative;">
             <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
             <div class="wizard-progress" style="display:flex; justify-content:center; gap:8px; margin-bottom:15px;">
-                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
             <h2 id="wizard-title" style="margin:0; color:var(--primary);">Let's Align Your Body</h2>
         </div>
@@ -11032,7 +11032,22 @@ function openAsClient() {
             </div>
             
              <!-- SLIDE 4: READY -->
-            <div class="wizard-slide" id="slide-4" style="display:none; text-align:center;">
+            <!-- SLIDE 4: PROFILE EVOLUTION -->
+            <div class="wizard-slide" id="slide-4" style="display:none;">
+                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">⚙️</div>
+                <h3 style="text-align:center; margin-bottom:15px;">Protocol Evolves</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">
+                    Symptoms leaving or joined a gym? <br><br>
+                    <strong>Update your profile anytime.</strong><br>
+                    We'll instantly unlock harder workouts or adjust your nutrition plan.
+                </p>
+                <div style="display:flex; justify-content:center;">
+                    <span style="background:#f1f5f9; padding:8px 16px; border-radius:20px; font-size:0.85rem; color:#64748b;">Go to <strong>Settings > Edit Profile</strong></span>
+                </div>
+            </div>
+
+             <!-- SLIDE 5: READY -->
+            <div class="wizard-slide" id="slide-5" style="display:none; text-align:center;">
                  <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
                 <h3 style="margin-bottom:10px;">You're All Set!</h3>
                 <p style="color:#64748b; margin-bottom:25px;">Your custom 28-day plan is ready.</p>
