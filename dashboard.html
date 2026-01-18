@@ -8460,7 +8460,7 @@ function renderWeeklyCalendar() {
                 <span class="cal-day-name">${WEEKLY_SCHEDULE[i].day}</span>
                 <span class="cal-day-num" style="color:${isToday ? (isBaseline ? '#046A38' : headerColor) : ''}">${d.getDate()}</span>
             </div>
-            <div class="cal-context">
+            <div class="cal-context" onclick="openCalendarWorkout(${i})" style="cursor: pointer;">
                 <div style="font-size: 0.9em; margin-bottom: 2px;">
                     ${phaseDotHtml}
                 </div>
@@ -8469,7 +8469,117 @@ function renderWeeklyCalendar() {
         `;
         grid.appendChild(row);
     }
-}    
+}
+
+window.openCalendarWorkout = function(dayIndexFromMonday) {
+    // 1. Schedule Definition (Same as in renderWeeklyCalendar)
+    const WEEKLY_SCHEDULE = [
+        { day: 'Mon', program: 'bodyweight', dayIndex: 0 }, 
+        { day: 'Tue', program: 'bodyweight', dayIndex: 1 }, 
+        { day: 'Wed', program: 'yoga', dayIndex: 2 },       
+        { day: 'Thu', program: 'bodyweight', dayIndex: 3 }, 
+        { day: 'Fri', program: 'bodyweight', dayIndex: 4 }, 
+        { day: 'Sat', program: 'yoga', dayIndex: 0 },       
+        { day: 'Sun', program: 'yoga', dayIndex: 6 }        
+    ];
+    
+    if (dayIndexFromMonday < 0 || dayIndexFromMonday >= WEEKLY_SCHEDULE.length) return;
+
+    // 2. Logic Setup
+    const today = new Date();
+    const dayOfWeek = today.getDay(); 
+    const distToMon = (dayOfWeek + 6) % 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - distToMon);
+    
+    const targetDate = new Date(monday);
+    targetDate.setDate(monday.getDate() + dayIndexFromMonday);
+    
+    const scheduleItem = WEEKLY_SCHEDULE[dayIndexFromMonday];
+    
+    // Default Workout Selection
+    let programId = scheduleItem.program;
+    let dayIndex = scheduleItem.dayIndex;
+    
+    // 3. Apply Modifiers (Cycle, Cortisol, etc.)
+    const isBaseline = !userCycleData.lastPeriod;
+    const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
+    const isHighCortisol = profileType.includes('CORTISOL') || profileType.includes('ADRENAL');
+    
+    let phaseKey = 'wellness';
+    
+    if (!isBaseline && !userCycleData.noPeriodMode) {
+        const start = new Date(userCycleData.lastPeriod);
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const daysSinceStart = Math.floor((targetDate - start) / msPerDay);
+        let mod = daysSinceStart % userCycleData.cycleLength;
+        if (mod < 0) mod += userCycleData.cycleLength;
+        const currentCycleDay = mod + 1;
+        
+        if (typeof getCyclePhase === 'function') {
+            phaseKey = getCyclePhase(currentCycleDay, userCycleData.cycleLength);
+        }
+        
+        // Modifier: Menstrual -> Yoga
+        if (phaseKey === 'menstrual' && programId === 'bodyweight') {
+            programId = 'yoga';
+            dayIndex = 3; // Restorative Recovery
+        }
+    }
+    
+    // Modifier: High Cortisol -> Yoga (overrides HIIT/Bodyweight)
+    if (isHighCortisol && programId === 'bodyweight') {
+        programId = 'yoga';
+        dayIndex = 0; // Somatic Hormone Reset
+    }
+    
+    // Modifier: Mood/Symptoms (Only applies if targetDate is TODAY)
+    if (targetDate.toDateString() === today.toDateString()) {
+         if (userCycleData.mood === 'tired') {
+             programId = 'yoga';
+             dayIndex = 3;
+         }
+         if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
+             if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
+                 programId = 'yoga';
+                 dayIndex = 3;
+             } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+                 programId = 'yoga';
+                 dayIndex = 6;
+             }
+         }
+    }
+
+    // 4. Fetch Exercises
+    const program = window.WORKOUT_DB?.[programId];
+    if (program && program.schedule && program.schedule[dayIndex]) {
+        const workout = program.schedule[dayIndex];
+        
+        if (workout.exercises) {
+            // Update Global State
+            myWorkout = workout.exercises;
+            localStorage.setItem('myCurrentWorkout', JSON.stringify(myWorkout));
+            
+            // Update UI
+            if (typeof renderWorkoutList === 'function') renderWorkoutList();
+            
+            // Switch Tab
+            if (typeof switchAppTab === 'function') {
+                const navBtn = document.querySelector('.bottom-nav .nav-item[onclick*="movement-tab"]') || document.querySelector('[onclick*="movement-tab"]');
+                switchAppTab('movement-tab', navBtn);
+            } else {
+                 document.getElementById('movement-tab').scrollIntoView();
+            }
+            
+            // Scroll to top of movement tab
+            window.scrollTo(0,0);
+        } else {
+            console.log("No exercises found for this workout.");
+        }
+    } else {
+        console.log("Workout data not found.");
+    }
+};
 
 // --- SHARED WORKOUT LOGIC ---
 // Returns today's recommended workout based on Calendar logic (same as renderWeeklyCalendar)
