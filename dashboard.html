@@ -9638,12 +9638,16 @@ async function renderMovementView() {
     }
     
     // Symptoms/mood override (highest daily priority)
+    // EXCEPTION: If mood is 'strong' (High Energy), we ignore 'fatigue' and 'anxiety' overrides to allow rigorous exercise
+    const isHighEnergy = userCycleData.mood === 'strong';
+
     if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
         if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
             suggestedProgram = 'yoga';
             workoutDayIndex = 3; // Restorative Recovery
+            // Fix variable scope if needed or just use string
             personalizationReason = 'Gentle Recovery - We\'ve adjusted for your symptoms today';
-        } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+        } else if ((userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) && !isHighEnergy) {
             suggestedProgram = 'yoga';
             workoutDayIndex = 6; // Yin & Meditation
             personalizationReason = 'Restorative Practice - Honoring how you feel today';
