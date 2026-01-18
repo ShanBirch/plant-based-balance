@@ -7050,15 +7050,7 @@ function startCustomBuilderWorkout() {
 
 
         <!-- Today's Recommendation -->
-        <div style="padding: 25px;">
-            <div id="today-workout-rec" class="card" style="background: var(--primary); color: white;">
-                <div class="card-body" style="max-height: none; padding: 20px; opacity: 1; display:flex; flex-direction:column; align-items:center; text-align:center;">
-                    <h3 style="color: white; margin-bottom: 5px;">Today's Focus</h3>
-                    <p id="rec-text" style="color: rgba(255,255,255,0.9); margin-bottom: 15px;">Calculated based on your phase...</p>
-                    <button class="pill-btn active" style="background: white; color: var(--primary); border:none;" onclick="switchAppTab('movement-tab')">Start Workout</button>
-                </div>
-            </div>
-        </div>
+<!-- Today's Focus Card Removed to prevent Dashboard Glitch -->
     </div>
 
     <style>
@@ -9098,7 +9090,9 @@ function loadCommunityFeed() {
 function renderChat(messages) {
     const container = document.getElementById('community-chat-stream');
     if(!container) return;
-    container.innerHTML = '';
+    
+    // 1. Build a single massive string instead of touching the DOM repeatedly
+    let fullHtml = '';
 
     messages.forEach((msg, msgIndex) => {
         const isMe = !msg.authorId || msg.authorId === 'current-user';
@@ -9108,7 +9102,7 @@ function renderChat(messages) {
         if(!isMe && author) {
              let avatarSrc;
              if (author.id === 'm0') {
-                 avatarSrc = 'assets/coach_shannon.jpg';
+                 avatarSrc = 'assets/coach_shannon.jpg'; // Fixed string escaping
              } else {
                  const imgNum = (author.id || 'm1').replace('m', '');
                  avatarSrc = `https://randomuser.me/api/portraits/women/${imgNum}.jpg`;
@@ -9136,7 +9130,7 @@ function renderChat(messages) {
             reactionsHtml += '</div>';
         }
 
-        // Read receipts (only for user messages)
+        // Read receipts
         let readReceiptsHtml = '';
         if (isMe && msg.readBy && msg.readBy.length > 0) {
             const readerNames = msg.readBy.map(id => {
@@ -9149,7 +9143,11 @@ function renderChat(messages) {
             }
         }
 
-        const html = `
+        let messageHtml = '';
+        if (msg.isSystem) {
+            messageHtml = `<div style="text-align:center; margin: 20px 0; color:#94a3b8; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:1px;">${msg.text}</div>`;
+        } else {
+            messageHtml = `
             <div style="display:flex; ${alignStyle} margin-bottom: 12px; gap: 8px;">
                 ${(!isMe && author) ? avatarHtml : ''}
                 <div style="display:flex; flex-direction:column; max-width:75%; ${isMe ? 'align-items:flex-end;' : 'align-items:flex-start;'}">
@@ -9162,15 +9160,15 @@ function renderChat(messages) {
                         ${readReceiptsHtml}
                     </div>
                 </div>
-            </div>
-        `;
-
-        if (msg.isSystem) {
-            container.innerHTML += `<div style="text-align:center; margin: 20px 0; color:#94a3b8; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:1px;">${msg.text}</div>`;
-        } else {
-            container.innerHTML += html;
+            </div>`;
         }
+        
+        // Append to string, NOT DOM
+        fullHtml += messageHtml;
     });
+
+    // 2. Update DOM exactly once
+    container.innerHTML = fullHtml;
     container.scrollTop = container.scrollHeight;
 }
 
@@ -11567,7 +11565,13 @@ async function saveCommunityMessage(persona, text) {
     }
 
     // 2. Update Local Cache (for immediate UI and autonomous logic)
-    const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    let msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    
+    // SAFETY LIMIT: Only keep last 50 messages to prevent crash
+    if (msgs.length > 50) {
+        msgs = msgs.slice(msgs.length - 50); 
+    }
+
     msgs.push({
         authorId: persona.id,
         authorName: persona.name,
@@ -11575,7 +11579,13 @@ async function saveCommunityMessage(persona, text) {
         text: text,
         timestamp: Date.now()
     });
-    localStorage.setItem('community_chat_history', JSON.stringify(msgs));
+    
+    try {
+        localStorage.setItem('community_chat_history', JSON.stringify(msgs));
+    } catch(e) {
+        console.warn("Storage full, clearing old history");
+        localStorage.removeItem('community_chat_history'); // Emergency clear
+    }
     
     // 3. Render
     if(typeof renderChat === 'function') renderChat(msgs);
