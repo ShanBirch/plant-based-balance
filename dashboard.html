@@ -6980,39 +6980,82 @@ function startCustomBuilderWorkout() {
                     Set your last period date to sync your workouts.
                 </p>
 
-                <!-- Daily Feel Check-in -->
-                <div style="background: #f8f9fa; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-                    <p style="font-weight: 600; font-size: 0.9rem; margin-bottom: 10px; color: var(--primary);">How do you feel today?</p>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="mood-btn" onclick="setCycleMood('strong', this)">💪 Strong</button>
-                        <button class="mood-btn" onclick="setCycleMood('tired', this)">😴 Tired</button>
+                <!-- Daily Status & Actions -->
+                <div style="margin-bottom: 25px;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <button class="mood-btn" onclick="setCycleMood('strong', this)">
+                            <span style="font-size:1.2rem;">💪</span> Strong
+                        </button>
+                        <button class="mood-btn" onclick="setCycleMood('tired', this)">
+                            <span style="font-size:1.2rem;">😴</span> Tired
+                        </button>
                     </div>
+
+                    <button class="action-btn-outline" onclick="logPeriodStart()">
+                        <span style="color:#E57373;">🩸</span> Log Period Started Today
+                    </button>
                 </div>
 
-                <!-- Quick Actions -->
-                <button class="secondary-btn" onclick="logPeriodStart()" style="width:100%; margin-bottom: 15px; background: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2;">
-                    🩸 Period Started Today
-                </button>
-
                 <!-- Settings Toggle -->
-                <details>
-                    <summary style="cursor: pointer; color: var(--secondary); font-size: 0.85rem; font-weight: 600;">Edit Cycle Settings</summary>
-                    <div class="cycle-settings" style="margin-top: 15px;">
+                <details style="background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9;">
+                    <summary style="padding: 15px; cursor: pointer; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; list-style: none; display: flex; align-items: center; justify-content: space-between;">
+                        <span>Cycle Settings</span>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                    </summary>
+                    <div class="cycle-settings" style="padding: 0 15px 15px 15px; border-top: 1px solid #f1f5f9; margin-top: 0;">
                         <label>
-                            <span style="font-size: 0.85em; opacity: 0.8; color: #666;">Last Period Start</span>
+                            <span style="font-size: 0.75em; text-transform:uppercase; letter-spacing:0.5px; opacity: 0.8; color: #666;">Last Period</span>
                             <input type="date" id="last-period-input" onchange="updateCycleData()" style="color: #333; background: white; border: 1px solid #ddd;">
                         </label>
                         <label>
-                             <span style="font-size: 0.85em; opacity: 0.8; color: #666;">Cycle Length</span>
+                             <span style="font-size: 0.75em; text-transform:uppercase; letter-spacing:0.5px; opacity: 0.8; color: #666;">Length</span>
                             <input type="number" id="cycle-length-input" value="28" min="21" max="40" onchange="updateCycleData()" style="color: #333; background: white; border: 1px solid #ddd;">
                         </label>
-                        </label>
-                        <label style="display:flex; align-items:center; gap:10px; margin-top:10px; cursor:pointer; grid-column: span 2;">
-                            <input type="checkbox" id="no-period-toggle" onchange="toggleNoPeriodMode()">
-                            <span style="font-size:0.85em; color:#666;">I don't have a period (Wellness Mode)</span>
-                        </label>
+                        
+                        <div style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px dashed #e2e8f0; margin-top: 5px;">
+                            <div>
+                                <div style="font-size: 0.9rem; font-weight: 600; color: var(--primary);">Wellness Mode</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">For non-menstruating users</div>
+                            </div>
+                            <label class="toggle-switch" style="display:inline-block; width:44px; height:24px; position:relative;">
+                                <input type="checkbox" id="no-period-toggle" onchange="toggleNoPeriodMode()">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
                     </div>
                 </details>
+            </div>
+        </div>
+
+        <style>
+            /* Local Toggle Styles */
+            .toggle-switch input { opacity: 0; width: 0; height: 0; }
+            .toggle-switch .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
+            .toggle-switch .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+            .toggle-switch input:checked + .slider { background-color: var(--secondary); }
+            .toggle-switch input:checked + .slider:before { transform: translateX(20px); }
+
+            .action-btn-outline {
+                width: 100%;
+                padding: 12px;
+                border: 1px solid #e2e8f0;
+                background: white;
+                color: var(--text-main);
+                border-radius: 12px;
+                font-weight: 600;
+                font-size: 0.9rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .action-btn-outline:hover {
+                background: #f8fafc;
+                border-color: #cbd5e1;
+            }
+        </style>
             </div>
         </div>
 
@@ -7904,7 +7947,12 @@ function renderWeeklyCalendar() {
     monday.setDate(today.getDate() - distToMon);
 
     const msPerDay = 24 * 60 * 60 * 1000;
+
     const start = userCycleData.lastPeriod ? new Date(userCycleData.lastPeriod) : new Date(); // Fallback if no period mode
+
+    // Check High Cortisol Profile
+    const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
+    const isHighCortisol = profileType.includes('CORTISOL') || profileType.includes('ADRENAL');
 
     // Simplified Week Workout Template
     // 0=Mon, 1=Tue...
@@ -7926,19 +7974,15 @@ function renderWeeklyCalendar() {
         
         // Cycle Phase for this day
         const daysSinceStart = Math.floor((d - start) / msPerDay);
-        // Handle future/past correctly? Modulo works for infinite repeating cycles
         let currentDayLoop = (daysSinceStart % userCycleData.cycleLength) + 1;
-        if (daysSinceStart < 0) {
-             // If selected start date is in future? unlikely. 
-             // If historical date, daysSinceStart is positive.
-        }
-
+        
         const phaseKey = getCyclePhase(currentDayLoop, userCycleData.cycleLength);
         const phase = PHASE_INFO[phaseKey];
 
         // Workout Logic
         let workoutName = WEEKLY_TEMPLATE[i].type;
-        // Apply Phase Modifiers
+
+        // 1. Apply Phase Modifiers (if tracking period)
         if (!userCycleData.noPeriodMode) {
             if (phaseKey === 'menstrual' && (workoutName.includes('HIIT') || workoutName.includes('Lower Body'))) {
                 workoutName = 'Gentle Yoga / Walk';
@@ -7948,7 +7992,12 @@ function renderWeeklyCalendar() {
             }
         }
 
-        // Apply Mood Modifier (only to today)
+        // 2. High Cortisol Safety Override (Applies ALWAYS if profile matches)
+        if (isHighCortisol && (workoutName.includes('HIIT') || workoutName.includes('Cardio'))) {
+            workoutName = 'LISS Cardio / Walking';
+        }
+
+        // 3. Apply Mood Modifier (only to today - wins over everything)
         if (isToday && userCycleData.mood === 'tired') {
              workoutName = 'Rest / Recovery';
         }
