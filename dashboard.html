@@ -1015,11 +1015,11 @@
          <h3 style="margin: 30px 0 15px 0;">Your Workout</h3>
          <div class="card" onclick="switchAppTab('movement-tab', this);" style="cursor: pointer; border-left: 5px solid var(--secondary);">
             <div class="card-body" style="max-height: none; padding: 25px; opacity: 1; display: flex; align-items: center; gap: 20px;">
-                <div style="background: var(--accent-green); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🧘‍♀️</div>
+                <div id="dashboard-workout-icon" style="background: var(--accent-green); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🧘‍♀️</div>
                 <div>
                     <h4 style="margin: 0 0 5px 0; border: none; padding: 0;">Today's Movement</h4>
-                    <p style="margin: 0; font-weight: 500; color: var(--primary);">Somatic Yoga Flow</p>
-                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">20 Min  Restoration &rarr;</p>
+                    <p id="dashboard-workout-title" style="margin: 0; font-weight: 500; color: var(--primary);">Loading...</p>
+                    <p id="dashboard-workout-sub" style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Tap to view →</p>
                 </div>
             </div>
          </div>
@@ -1295,6 +1295,9 @@
             loadJournalHistory(); 
             loadProfileData(); // Ensure profile is loaded
             initProgramDate(); // Ensure program date is synced
+            
+            // Update dashboard workout card to show today's recommended workout
+            if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
             
             // Also refresh community feed if function exists
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
@@ -7956,6 +7959,9 @@ function renderCycleStatus() {
     
     const recCard = document.getElementById('today-workout-rec');
     if(recCard) recCard.style.background = phase.color;
+    
+    // Keep dashboard in sync
+    if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
 }
 
 // --- CYCLE & CALENDAR ACTIONS ---
@@ -8135,6 +8141,109 @@ function renderWeeklyCalendar() {
         grid.appendChild(row);
     }
 }    
+
+// --- SHARED WORKOUT LOGIC ---
+// Returns today's recommended workout based on Calendar logic (same as renderWeeklyCalendar)
+function getTodaysWorkout() {
+    const WEEKLY_TEMPLATE = [
+        { day: 'Mon', type: 'Lower Body', icon: '🦵' },
+        { day: 'Tue', type: 'Upper Body', icon: '💪' },
+        { day: 'Wed', type: 'Cardio / Rest', icon: '🏃‍♀️' },
+        { day: 'Thu', type: 'Full Body', icon: '🔥' },
+        { day: 'Fri', type: 'Glutes / Core', icon: '🍑' },
+        { day: 'Sat', type: 'Somatic Yoga', icon: '🧘‍♀️' },
+        { day: 'Sun', type: 'Rest', icon: '💤' }
+    ];
+
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 is Sun, 6 is Sat
+    // Convert to Mon=0 index
+    const dayIndex = (dayOfWeek + 6) % 7;
+    
+    let workoutName = WEEKLY_TEMPLATE[dayIndex].type;
+    let workoutIcon = WEEKLY_TEMPLATE[dayIndex].icon;
+    let phaseInfo = null;
+    let currentCycleDay = 0;
+    let phaseKey = 'wellness';
+    
+    const isBaseline = !userCycleData.lastPeriod;
+    const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
+    const isHighCortisol = profileType.includes('CORTISOL') || profileType.includes('ADRENAL');
+    
+    // Calculate phase if we have period data
+    if (!isBaseline && !userCycleData.noPeriodMode) {
+        const start = new Date(userCycleData.lastPeriod);
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const daysSinceStart = Math.floor((today - start) / msPerDay);
+        let mod = daysSinceStart % userCycleData.cycleLength;
+        if (mod < 0) mod += userCycleData.cycleLength;
+        currentCycleDay = mod + 1;
+        
+        phaseKey = getCyclePhase(currentCycleDay, userCycleData.cycleLength);
+        phaseInfo = PHASE_INFO[phaseKey];
+        
+        // Apply phase modifiers
+        if (phaseKey === 'menstrual' && (workoutName.includes('HIIT') || workoutName.includes('Lower Body'))) {
+            workoutName = 'Gentle Yoga / Walk';
+            workoutIcon = '🧘‍♀️';
+        }
+        if (phaseKey === 'luteal' && workoutName.includes('HIIT')) {
+            workoutName = 'Pilates';
+            workoutIcon = '🧘‍♀️';
+        }
+    }
+    
+    // Apply High Cortisol safety override
+    if (isHighCortisol && (workoutName.includes('HIIT') || workoutName.includes('Cardio'))) {
+        workoutName = 'LISS Cardio / Walking';
+        workoutIcon = '🚶‍♀️';
+    }
+    
+    // Apply mood modifiers
+    if (userCycleData.mood === 'tired') {
+        workoutName = 'Rest / Recovery';
+        workoutIcon = '💤';
+    }
+    if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
+        if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
+            workoutName = 'Cooling Breath / Restorative Yoga';
+            workoutIcon = '🧘‍♀️';
+        } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+            workoutName = 'Rest / Meditation';
+            workoutIcon = '🧘‍♀️';
+        }
+    }
+    
+    return {
+        name: workoutName,
+        icon: workoutIcon,
+        phaseKey: phaseKey,
+        phaseInfo: phaseInfo,
+        cycleDay: currentCycleDay,
+        dayName: WEEKLY_TEMPLATE[dayIndex].day
+    };
+}
+
+// Update Dashboard workout card
+function updateDashboardWorkoutCard() {
+    const workout = getTodaysWorkout();
+    
+    const titleEl = document.getElementById('dashboard-workout-title');
+    const subEl = document.getElementById('dashboard-workout-sub');
+    const iconEl = document.getElementById('dashboard-workout-icon');
+    
+    if (titleEl) titleEl.innerText = workout.name;
+    if (iconEl) iconEl.innerText = workout.icon;
+    
+    if (subEl) {
+        if (workout.phaseInfo && workout.cycleDay > 0) {
+            subEl.innerText = `${workout.phaseInfo.name} (Day ${workout.cycleDay}) →`;
+        } else {
+            subEl.innerText = `${workout.dayName}'s workout →`;
+        }
+    }
+}
+
 
 // --- DAILY WELLNESS MODAL LOGIC ---
 function checkDailyWellness(forceShow = false) {
