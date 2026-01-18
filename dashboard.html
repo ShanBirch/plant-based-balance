@@ -8087,10 +8087,18 @@ function submitDailyWellness() {
     // alert('Dashboard updated based on your wellness check-in!');
 }
 
-// Trigger Daily Check on Load
+// Trigger Onboarding OR Daily Check on Load
 document.addEventListener('DOMContentLoaded', () => {
-    // Small delay to ensure Auth state is settled
-    setTimeout(checkDailyWellness, 1500);
+    // Only proceed if we have a user context (simulation or real)
+    const finishedOnboarding = localStorage.getItem('onboardingComplete');
+    
+    if (!finishedOnboarding) {
+        // Show Wizard First
+        setTimeout(initOnboardingWizard, 1000);
+    } else {
+        // Standard Daily Check
+        setTimeout(checkDailyWellness, 1500);
+    }
 });
 
 
@@ -8163,6 +8171,43 @@ function renderTodayMeals() {
     header.innerHTML = `<h2>Today's Menu</h2>
                        <p>DAY ${currentDayNum}</p>`;
     container.appendChild(header);
+
+    // 1.5 Symptom Relief Banner (Nutrition Logic)
+    if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
+        const SYMPTOM_MAP = {
+            hot_flash: { title: 'Cooling Support', icon: '❄️', rec: 'Add a <strong>Cucumber & Edamame Poke Bowl</strong> or <strong>Iced Hibiscus Tea</strong> to cool your inflammation.' },
+            dizziness: { title: 'Stabilization Support', icon: '🌀', rec: 'Ensure you hydrate (3L water) and add <strong>Sweet Potato</strong> for slow carbs.' },
+            bloating: { title: 'De-Bloat Support', icon: '🍌', rec: 'Try a <strong>Banana & Spinach Smoothie</strong> or <strong>Asparagus Salad</strong> to flush excess water.' },
+            fatigue: { title: 'Energy Support', icon: '⚡', rec: 'Boost Iron with <strong>Lentil Spinach Dhal</strong> + a squeeze of Lemon.' },
+            anxiety: { title: 'Calm Support', icon: '🥑', rec: 'Add <strong>Avocado Toast</strong> or <strong>Dark Chocolate</strong> for a Magnesium boost.' },
+            joint_pain: { title: 'Anti-Inflammatory', icon: '🍠', rec: 'Sip <strong>Golden Milk (Turmeric)</strong> or try <strong>Ginger Tofu Soup</strong>.' }
+        };
+
+        // Check for any matching symptom
+        let fix = null;
+        for (let s of userCycleData.symptoms) {
+            if (SYMPTOM_MAP[s]) { fix = SYMPTOM_MAP[s]; break; } // Prioritize first match
+        }
+        
+        if (fix) {
+            const symLink = document.createElement('div');
+            symLink.className = 'card';
+            symLink.style.background = '#f0fdf4';
+            symLink.style.borderColor = '#bbf7d0';
+            symLink.style.marginBottom = '20px';
+            symLink.onclick = function() { switchWeek('shopping'); }; // Link to shopping list or maybe recipe index?
+            symLink.innerHTML = `
+                <div class="card-body" style="display:flex; gap:15px; align-items:center; padding:15px;">
+                    <div style="font-size:2rem;">${fix.icon}</div>
+                    <div>
+                        <h4 style="color:#166534; margin:0 0 5px 0; font-size:1rem;">${fix.title}</h4>
+                        <p style="color:#15803d; margin:0; font-size:0.9rem; line-height:1.4;">${fix.rec}</p>
+                    </div>
+                </div>
+            `;
+            container.appendChild(symLink);
+        }
+    }
 
     const cards = sourceSection.querySelectorAll('.card');
     cards.forEach(card => {
@@ -8248,6 +8293,107 @@ function switchDay(weekId, dayId) {
 // Backward compatibility if internal links use switchView
 function switchView(id) {
     switchWeek(id);
+}
+
+// --- ONBOARDING WIZARD LOGIC ---
+let currentWizardStep = 1;
+const totalWizardSteps = 4;
+
+function initOnboardingWizard() {
+    const modal = document.getElementById('onboarding-wizard');
+    if(modal) modal.style.display = 'flex';
+    updateWizardUI();
+}
+
+function updateWizardUI() {
+    // 1. Slides
+    for(let i=1; i<=totalWizardSteps; i++) {
+        const slide = document.getElementById('slide-' + i);
+        if(slide) slide.style.display = (i === currentWizardStep) ? 'block' : 'none';
+    }
+    
+    // 2. Dots
+    const dots = document.querySelectorAll('.wizard-progress .dot');
+    dots.forEach((d, i) => {
+        if(i < currentWizardStep) d.classList.add('active');
+        else d.classList.remove('active');
+    });
+    
+    // 3. Buttons
+    const prevBtn = document.getElementById('wizard-back');
+    const nextBtn = document.getElementById('wizard-next');
+    
+    if(prevBtn) prevBtn.style.visibility = (currentWizardStep > 1) ? 'visible' : 'hidden';
+    
+    if(nextBtn) {
+        if(currentWizardStep === totalWizardSteps) {
+            nextBtn.innerHTML = "Let's Go! 🚀";
+            nextBtn.onclick = finishOnboarding;
+        } else {
+            nextBtn.innerHTML = "Next &rarr;";
+            nextBtn.onclick = wizardNext;
+        }
+    }
+}
+
+function wizardNext() {
+    // Validation for Step 1
+    if(currentWizardStep === 1) {
+        const dateInput = document.getElementById('wizard-period-date');
+        const wellnessToggle = document.getElementById('wizard-wellness-toggle');
+        
+        if (!wellnessToggle.checked && !dateInput.value) {
+            alert("Please enter your last period date so we can sync your plan.");
+            return;
+        }
+        
+        // Save Data
+        if (wellnessToggle.checked) {
+            userCycleData.noPeriodMode = true;
+            toggleNoPeriodMode(); // Apply logic
+        } else {
+            userCycleData.noPeriodMode = false;
+            userCycleData.lastPeriod = dateInput.value;
+            // Also update the hidden Settings input
+            const settingsInput = document.getElementById('last-period-input');
+            if(settingsInput) settingsInput.value = dateInput.value;
+            
+            updateCycleData(); // Trigger calculations
+        }
+    }
+
+    if(currentWizardStep < totalWizardSteps) {
+        currentWizardStep++;
+        updateWizardUI();
+    }
+}
+
+function wizardPrev() {
+    if(currentWizardStep > 1) {
+        currentWizardStep--;
+        updateWizardUI();
+    }
+}
+
+function finishOnboarding() {
+    localStorage.setItem('onboardingComplete', 'true');
+    document.getElementById('onboarding-wizard').style.display = 'none';
+    
+    // Trigger the Daily Wellness check immediately after
+    setTimeout(checkDailyWellness, 500);
+}
+
+function toggleWizardPeriodInput() {
+    const toggle = document.getElementById('wizard-wellness-toggle');
+    const input = document.getElementById('wizard-period-date');
+    if(toggle.checked) {
+        input.disabled = true;
+        input.style.opacity = '0.5';
+        input.value = '';
+    } else {
+        input.disabled = false;
+        input.style.opacity = '1';
+    }
 }
 
 function toggleCard(header) {
@@ -9703,52 +9849,99 @@ function openAsClient() {
 </style>
 
 <!-- Onboarding Modal -->
-<div class="onboarding-overlay" id="onboarding-overlay">
-    <div class="onboarding-modal">
-        <div class="onboarding-header">
-            <h2 style="color: white; font-size: 1.8rem; margin-bottom: 10px;">Welcome to Your Switch</h2>
-            <p style="margin: 0; opacity: 0.9;">Your 28-day cortisol recovery starts now.</p>
+<!-- ONBOARDING WIZARD -->
+<div class="onboarding-overlay" id="onboarding-wizard" style="display:none; z-index:12000;">
+    <div class="onboarding-modal wizard-container" style="max-width: 450px; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+        
+        <!-- HEADER -->
+        <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center;">
+            <div class="wizard-progress" style="display:flex; justify-content:center; gap:8px; margin-bottom:15px;">
+                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+            <h2 id="wizard-title" style="margin:0; color:var(--primary);">Let's Align Your Body</h2>
         </div>
-        <div class="onboarding-content">
-            <div class="onboarding-step">
-                <div class="step-icon">👥</div>
-                <div class="step-text">
-                    <h4>Community Support</h4>
-                    <p>Chat with your group daily to share wins and stay motivated.</p>
+
+        <!-- CONTENT SLIDES -->
+        <div class="wizard-content" style="flex: 1; padding: 25px; overflow-y: auto;">
+            
+            <!-- SLIDE 1: CYCLE SETUP -->
+            <div class="wizard-slide active" id="slide-1">
+                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🌸</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Cycle Syncing</h3>
+                <p style="text-align:center; color:#666; margin-bottom:25px;">We tailor your daily movement to match your hormonal phase.</p>
+                
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">When was your last period?</label>
+                    <input type="date" id="wizard-period-date" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                </div>
+                
+                <div class="wizard-option" style="display:flex; align-items:center; gap:10px; justify-content:center;">
+                    <input type="checkbox" id="wizard-wellness-toggle" onchange="toggleWizardPeriodInput()">
+                    <label for="wizard-wellness-toggle" style="font-size:0.9rem; color:#64748b;">I don't have a period (Wellness Mode)</label>
                 </div>
             </div>
-            <div class="onboarding-step">
-                <div class="step-icon">💬</div>
-                <div class="step-text">
-                    <h4>Message Your Coach</h4>
-                    <p>Get direct guidance and answers whenever you need help.</p>
+
+            <!-- SLIDE 2: NUTRITION LOGIC -->
+            <div class="wizard-slide" id="slide-2" style="display:none;">
+                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🥑</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Food as Medicine</h3>
+                <p style="color:#475569; line-height:1.6; text-align:center;">
+                    Log symptoms like <strong>Hot Flashes</strong> or <strong>Bloating</strong> in your daily check-in.
+                </p>
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:12px; margin-top:20px;">
+                    <p style="margin:0; font-size:0.9rem; color:#166534;">
+                        <strong>✨ Smart Swap:</strong><br>
+                        If you report "Hot Flashes", we'll recommend cooling foods like <em>Overnight Soy Oats</em>.
+                    </p>
                 </div>
             </div>
-            <div class="onboarding-step">
-                <div class="step-icon">📸</div>
-                <div class="step-text">
-                    <h4>Track Your Meals</h4>
-                    <p>Snap and upload photos of your meals each day to stay accountable.</p>
+
+            <!-- SLIDE 3: ACCOUNTABILITY -->
+            <div class="wizard-slide" id="slide-3" style="display:none;">
+                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🤝</div>
+                <h3 style="text-align:center; margin-bottom:15px;">You Are Supported</h3>
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:15px;">
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">📸</span> 
+                        <div><strong>Track Meals</strong><br><span style="font-size:0.85rem; color:#666;">Snap photos for accountability.</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">💬</span> 
+                        <div><strong>Coach Chat</strong><br><span style="font-size:0.85rem; color:#666;">Ask specific questions anytime.</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">👥</span> 
+                        <div><strong>Group</strong><br><span style="font-size:0.85rem; color:#666;">Share wins with your squad.</span></div>
+                    </li>
+                </ul>
+            </div>
+            
+             <!-- SLIDE 4: READY -->
+            <div class="wizard-slide" id="slide-4" style="display:none; text-align:center;">
+                 <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
+                <h3 style="margin-bottom:10px;">You're All Set!</h3>
+                <p style="color:#64748b; margin-bottom:25px;">Your custom 28-day plan is ready.</p>
+                
+                <div style="background:var(--secondary); color:white; padding:15px; border-radius:12px; display:inline-block; font-weight:600;">
+                    Goal: Reduce Cortisol & Detox Estrogen
                 </div>
             </div>
-            <div class="onboarding-step">
-                <div class="step-icon">📝</div>
-                <div class="step-text">
-                    <h4>Daily Reflections</h4>
-                    <p>Fill out your reflections to process thoughts and feelings.</p>
-                </div>
-            </div>
-            <div class="onboarding-step">
-                <div class="step-icon">🛒</div>
-                <div class="step-text">
-                    <h4>Shopping List</h4>
-                    <p>Access your weekly <strong>Shopping List</strong> in the Meal Plan tab.</p>
-                </div>
-            </div>
-            <button class="onboarding-btn" onclick="completeOnboarding()">Let's Get Started</button>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="wizard-footer" style="padding: 25px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between;">
+            <button class="wizard-btn secondary" id="wizard-back" onclick="wizardPrev()" style="background:transparent; border:none; color:#64748b; font-weight:600; cursor:pointer; visibility:hidden;">Back</button>
+            <button class="wizard-btn primary" id="wizard-next" onclick="wizardNext()" style="background:var(--primary); color:white; border:none; padding:12px 30px; border-radius:25px; font-weight:700; cursor:pointer; box-shadow:0 4px 10px rgba(4,106,56,0.2);">Next &rarr;</button>
         </div>
     </div>
 </div>
+
+<style>
+.wizard-progress .dot { width: 8px; height: 8px; background: #e2e8f0; border-radius: 50%; transition: all 0.3s; }
+.wizard-progress .dot.active { background: var(--primary); width: 20px; border-radius: 10px; }
+.wizard-slide { animation: fadeIn 0.4s ease; }
+</style>
 
 <script>
 // --- COACH CHAT DEBOUNCE LOGIC ---
