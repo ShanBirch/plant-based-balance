@@ -7155,24 +7155,6 @@ function startCustomBuilderWorkout() {
         }
     </style>
 
-    <!-- JS LOGIC EXTENSIONS -->
-    <script>
-    // Appended logic for logPeriodStart
-    window.logPeriodStart = function() {
-        if(!confirm("Log period starting today? This will reset your cycle to Day 1.")) return;
-        
-        // Get Today in YYYY-MM-DD local time
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const todayStr = `${year}-${month}-${day}`;
-
-        document.getElementById('last-period-input').value = todayStr;
-        updateCycleData();
-    }
-    </script>
-
     <!-- PROFILE VIEW -->
     <div id="view-profile" class="app-view" style="display:none; padding-bottom: 80px;">
         <div class="app-header">
@@ -7978,7 +7960,7 @@ window.logPeriodStart = function() {
     const btn = document.querySelector('button[onclick="logPeriodStart()"]');
     if(btn) {
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<span style="color:#22c55e;">✓</span> Logger!';
+        btn.innerHTML = '<span style="color:#22c55e;">✓</span> Logged!';
         setTimeout(() => { btn.innerHTML = originalText; }, 2000);
     }
     
