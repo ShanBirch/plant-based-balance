@@ -404,7 +404,54 @@
             btn.textContent = 'CREATING ACCOUNT...';
 
             try {
-                await authHelpers.signUp(email, password, { name });
+                // Check for referral code in URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const referralCode = urlParams.get('ref');
+
+                // Create account
+                const signupResult = await authHelpers.signUp(email, password, { name });
+                const newUserId = signupResult.user?.id;
+
+                // If there's a referral code and signup was successful, process the referral
+                if (referralCode && newUserId) {
+                    try {
+                        // Find the referrer by their referral code
+                        const referrer = await dbHelpers.referrals.getUserByReferralCode(referralCode);
+
+                        if (referrer) {
+                            // Wait a moment for user to be created in public.users table
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+
+                            // Create referral record
+                            const referralRecord = await dbHelpers.referrals.create(
+                                referrer.id,
+                                newUserId,
+                                referralCode
+                            );
+
+                            // Call backend to extend referrer's subscription
+                            await fetch('/.netlify/functions/extend-subscription', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    userId: referrer.id,
+                                    daysToAdd: 14, // 2 weeks
+                                    referralId: referralRecord.id
+                                })
+                            });
+
+                            // Update the new user's referred_by_user_id
+                            await dbHelpers.users.update(newUserId, {
+                                referred_by_user_id: referrer.id
+                            });
+
+                            console.log('Referral processed successfully!');
+                        }
+                    } catch (referralError) {
+                        // Don't fail signup if referral processing fails
+                        console.error('Error processing referral:', referralError);
+                    }
+                }
 
                 showSuccess('Account created successfully! Redirecting to dashboard...');
 
