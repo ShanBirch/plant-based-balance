@@ -423,19 +423,19 @@
         <div class="sidebar" id="sidebar">
             <div class="sidebar-logo">PBB Admin</div>
 
-            <div class="nav-item active" onclick="showSection('overview')">
+            <div class="nav-item active" onclick="showSection('overview', this)">
                 <i data-lucide="layout-dashboard"></i>
                 <span>Overview</span>
             </div>
-            <div class="nav-item" onclick="showSection('users')">
+            <div class="nav-item" onclick="showSection('users', this)">
                 <i data-lucide="users"></i>
                 <span>All Users</span>
             </div>
-            <div class="nav-item" onclick="showSection('conversations')">
+            <div class="nav-item" onclick="showSection('conversations', this)">
                 <i data-lucide="message-circle"></i>
                 <span>Conversations</span>
             </div>
-            <div class="nav-item" onclick="showSection('analytics')">
+            <div class="nav-item" onclick="showSection('analytics', this)">
                 <i data-lucide="bar-chart"></i>
                 <span>Analytics</span>
             </div>
@@ -706,7 +706,11 @@
         // View user conversations
         async function viewUserConversations(userId, userName) {
             // Switch to conversations tab
-            showSection('conversations');
+            showSection('conversations', null);
+            
+            // Highlight the conversations nav item
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.nav-item')[2].classList.add('active'); // Conversations is 3rd item
 
             // Show detail view
             document.getElementById('conversation-list-view').style.display = 'none';
@@ -781,7 +785,7 @@
         }
 
         // Close sidebar when clicking a nav item on mobile
-        function showSection(sectionName) {
+        function showSection(sectionName, clickedItem) {
             // Hide all sections
             document.querySelectorAll('.section').forEach(section => {
                 section.classList.remove('active');
@@ -793,10 +797,16 @@
             });
 
             // Show selected section
-            document.getElementById(sectionName).classList.add('active');
+            const targetSection = document.getElementById(sectionName);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
 
             // Activate nav item
-            event.target.closest('.nav-item').classList.add('active');
+            if (clickedItem) {
+                const navItem = clickedItem.closest('.nav-item');
+                if (navItem) navItem.classList.add('active');
+            }
 
             currentView = sectionName;
 
