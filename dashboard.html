@@ -6989,6 +6989,11 @@ function startCustomBuilderWorkout() {
                     </div>
                 </div>
 
+                <!-- Quick Actions -->
+                <button class="secondary-btn" onclick="logPeriodStart()" style="width:100%; margin-bottom: 15px; background: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2;">
+                    🩸 Period Started Today
+                </button>
+
                 <!-- Settings Toggle -->
                 <details>
                     <summary style="cursor: pointer; color: var(--secondary); font-size: 0.85rem; font-weight: 600;">Edit Cycle Settings</summary>
@@ -7098,6 +7103,24 @@ function startCustomBuilderWorkout() {
             margin-top: 5px;
         }
     </style>
+
+    <!-- JS LOGIC EXTENSIONS -->
+    <script>
+    // Appended logic for logPeriodStart
+    window.logPeriodStart = function() {
+        if(!confirm("Log period starting today? This will reset your cycle to Day 1.")) return;
+        
+        // Get Today in YYYY-MM-DD local time
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        document.getElementById('last-period-input').value = todayStr;
+        updateCycleData();
+    }
+    </script>
 
     <!-- PROFILE VIEW -->
     <div id="view-profile" class="app-view" style="display:none; padding-bottom: 80px;">
