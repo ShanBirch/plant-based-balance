@@ -989,7 +989,7 @@
         </div>
         <h1 class="user-name">Hello, Shannon</h1>
         <div style="margin-top: 5px;">
-            <button onclick="document.getElementById('daily-wellness-modal').style.display='flex'" style="background:none; border:none; color:var(--secondary); font-size:0.8rem; cursor:pointer; text-decoration:underline;">
+            <button onclick="openCheckInModal()" style="background:none; border:none; color:var(--secondary); font-size:0.8rem; cursor:pointer; text-decoration:underline;">
                 Did you check in today?
             </button>
         </div>
@@ -1000,7 +1000,7 @@
     <div style="padding: 0 25px;">
         <h3 style="margin-bottom: 15px;">Today's Priority</h3>
         
-        <!-- Superboost Injection Container -->
+        <!-- Cycle Sync Injection Container -->
         <div id="today-meals-container"></div>
         <!-- Quick Action Card -->
          <div class="card" onclick="switchAppTab('meals', this);" style="cursor: pointer;">
@@ -7068,12 +7068,12 @@ function startCustomBuilderWorkout() {
                 </div>
             </div>
 
-            <!-- Superboost Check-in Button -->
+            <!-- Cycle Sync Check-in Button -->
             <div id="check-in-prompt-card" onclick="openCheckInModal()" style="margin-top: 20px; background: white; border: 1px solid var(--primary); color: var(--primary); padding: 20px; border-radius: 16px; font-weight: 600; text-align: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.2s; display: flex; align-items: center; justify-content: center; gap: 15px;">
                 <div style="font-size: 1.5rem;">✨</div>
                 <div style="text-align: left;">
                     <div style="font-size: 1.05rem; color: var(--primary);">Daily Check-in</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 400;">Unlock your daily superboost</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 400;">Unlock your daily cycle sync</div>
                 </div>
                 <div style="margin-left: auto; background: var(--primary); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">→</div>
             </div>
@@ -7081,7 +7081,7 @@ function startCustomBuilderWorkout() {
             <!-- Check-in Completed State (Hidden by default) -->
             <div id="check-in-completed-card" style="display: none; margin-top: 20px; background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534; padding: 20px; border-radius: 16px; text-align: center;">
                 <div style="font-size: 1.5rem; margin-bottom: 5px;">✅</div>
-                <div style="font-weight: 700;">Superboost Active!</div>
+                <div style="font-weight: 700;">Cycle Sync Active!</div>
                 <div style="font-size: 0.85rem; margin-top: 5px;">Your dashboard has been updated.</div>
             </div>
 
@@ -8009,9 +8009,9 @@ function switchAppTab(tabName, btn) {
         }
     }
     
-    // Trigger Superboost Check if entering Dashboard
-    if(tabName === 'dashboard' && typeof checkAndRenderSuperboost === 'function') {
-        checkAndRenderSuperboost();
+    // Trigger Cycle Sync Check if entering Dashboard
+    if(tabName === 'dashboard' && typeof checkAndRenderCycleSync === 'function') {
+        checkAndRenderCycleSync();
     }
     
     window.scrollTo(0,0);
@@ -8886,6 +8886,14 @@ async function renderTodayMeals() {
 
         const clone = card.cloneNode(true);
 
+        // Check if this meal matches the Cycle Sync meal
+        if (window.cycleSyncMealTitle) {
+            const mealTitleElement = clone.querySelector('.meal-title');
+            if (mealTitleElement && mealTitleElement.textContent.trim() === window.cycleSyncMealTitle) {
+                mealTitleElement.textContent = '⭐ ' + mealTitleElement.textContent;
+            }
+        }
+
         // Ensure images open the modal
         clone.querySelectorAll('img').forEach(img => {
             img.onclick = function() {
@@ -9596,7 +9604,7 @@ async function renderMovementView() {
     let personalizationReason = '';
     
     // PRIORITY 3: Daily Check-in adjustments
-    // --- SUPERBOOST OVERRIDE (Local Log) ---
+    // --- CYCLE SYNC OVERRIDE (Local Log) ---
     if (userCycleData.logs && userCycleData.logs[dateStr]) {
         const log = userCycleData.logs[dateStr];
         
@@ -9604,28 +9612,28 @@ async function renderMovementView() {
         if (log.energy === 'low') {
              suggestedProgram = 'yoga';
              workoutDayIndex = 3; 
-             personalizationReason = '✨ Superboost: Gentle flow for low energy.';
+             personalizationReason = '✨ Cycle Sync: Gentle flow for low energy.';
         }
         
         // Map Symptoms (Cramps/Back Pain -> Yin)
         if (log.symptoms && (log.symptoms.includes('cramps') || log.symptoms.includes('back_pain'))) {
              suggestedProgram = 'yoga';
              workoutDayIndex = 6; // Yin
-             personalizationReason = '✨ Superboost: Relief for your body.';
+             personalizationReason = '✨ Cycle Sync: Relief for your body.';
         }
         
         // Map Mood
         if (log.mood === 'anxious' || log.mood === 'sad') {
              suggestedProgram = 'yoga';
              workoutDayIndex = 6;
-             personalizationReason = '✨ Superboost: Calming practice for your mind.';
+             personalizationReason = '✨ Cycle Sync: Calming practice for your mind.';
         }
         
         // High Energy Bonus
         if (log.energy === 'high' && suggestedProgram === 'yoga' && !cyclePhaseInfo?.name.includes('Menstrual')) {
              suggestedProgram = 'bodyweight'; // Upgrade from Yoga
              workoutDayIndex = 1; // Dynamic Flow
-             personalizationReason = '✨ Superboost: Matching your high energy!';
+             personalizationReason = '✨ Cycle Sync: Matching your high energy!';
         }
     }
     // --- END SUPERBOOST ---
@@ -13658,7 +13666,7 @@ updateCoachUI();
 
         <!-- Footer (Fixed) -->
         <div style="padding: 20px 25px; border-top:1px solid #f1f5f9; background:white; border-radius: 0 0 24px 24px;">
-            <button onclick="submitDailySuperboost()" style="width:100%; background:var(--primary); color:white; padding:16px; border-radius:50px; border:none; font-weight:700; font-size:1.1rem; box-shadow: 0 4px 15px rgba(45, 74, 62, 0.3); cursor:pointer; transition: transform 0.1s;">
+            <button onclick="submitDailyCycleSync()" style="width:100%; background:var(--primary); color:white; padding:16px; border-radius:50px; border:none; font-weight:700; font-size:1.1rem; box-shadow: 0 4px 15px rgba(45, 74, 62, 0.3); cursor:pointer; transition: transform 0.1s;">
                 SAVE & START DAY ✨
             </button>
         </div>
@@ -13821,7 +13829,7 @@ function toggleCheckInOption(category, value, el) {
     }
 }
 
-function submitDailySuperboost() {
+function submitDailyCycleSync() {
     // 1. Save Log
     const today = new Date().toISOString().split('T')[0];
     if(!userCycleData.logs) userCycleData.logs = {};
@@ -13839,8 +13847,8 @@ function submitDailySuperboost() {
     // Mark check-in as completed for today
     localStorage.setItem('lastWellnessCheck', new Date().toDateString());
 
-    // 2. Trigger Superboost Engine
-    applySuperboost(checkInProgress);
+    // 2. Trigger Cycle Sync Engine
+    applyCycleSync(checkInProgress);
 
     // 3. Close & Refresh
     closeCheckInModal();
@@ -13850,23 +13858,23 @@ function submitDailySuperboost() {
     switchAppTab('dashboard');
 
     // Show Toast/Banner on Dashboard?
-    showSuperboostBanner();
+    showCycleSyncBanner();
 }
 
-function applySuperboost(data) {
-    console.log("🚀 Applying Superboost:", data);
+function applyCycleSync(data) {
+    console.log("🚀 Applying Cycle Sync:", data);
     // This function will be called by renderDashboard to override suggestions
     // For now, we save it to session state or global
-    window.superboostState = data;
+    window.cycleSyncState = data;
     
     // Force Dashboard Refresh
     if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
 }
 
-function showSuperboostBanner() {
+function showCycleSyncBanner() {
     // Create a temporary banner
     const banner = document.createElement('div');
-    banner.innerText = "✨ Dashboard Updated with your Superboost!";
+    banner.innerText = "✨ Dashboard Updated with your Cycle Sync!";
     banner.style.cssText = "position:fixed; top:80px; left:50%; transform:translateX(-50%); background:var(--primary); color:white; padding:10px 20px; border-radius:20px; z-index:2000; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.2); animation: fadeIn 0.5s;";
     document.body.appendChild(banner);
     
@@ -13876,8 +13884,8 @@ function showSuperboostBanner() {
     }, 3000);
 }
 
-// --- SUPERBOOST RECIPE DATABASE ---
-const SUPERBOOST_RECIPES = {
+// --- CYCLE SYNC RECIPE DATABASE ---
+const CYCLE_SYNC_RECIPES = {
     'bloating': {
         title: "Ginger Pear Smoothie",
         meta: "Anti-Bloat Elixir",
@@ -13920,15 +13928,18 @@ const SUPERBOOST_RECIPES = {
     }
 };
 
-function renderSuperboostMeal(reason, recipeKey) {
+function renderCycleSyncMeal(reason, recipeKey) {
     const container = document.getElementById('today-meals-container'); // Need to ensure this exists or find where to inject
-    const recipe = SUPERBOOST_RECIPES[recipeKey];
+    const recipe = CYCLE_SYNC_RECIPES[recipeKey];
     if(!recipe || !container) return;
-    
+
+    // Save the swapped meal title so we can mark it in the meal plan
+    window.cycleSyncMealTitle = recipe.title;
+
     const html = `
     <div style="background: linear-gradient(135deg, #fff 0%, #fefce8 100%); border: 2px solid var(--secondary); border-radius: 16px; margin-bottom: 25px; overflow: hidden; box-shadow: 0 10px 30px rgba(180, 155, 10, 0.15); animation: slideUp 0.4s ease-out;">
         <div style="background: var(--secondary); color: black; padding: 8px 15px; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; display:flex; justify-content:space-between; align-items:center;">
-             <span>✨ Superboost Meal Swap</span>
+             <span>✨ Cycle Sync Meal Swap</span>
              <span>${reason}</span>
         </div>
         <div style="display: flex; flex-direction: column; md:flex-row;">
@@ -13957,18 +13968,18 @@ function renderSuperboostMeal(reason, recipeKey) {
     `;
     
     // Insert at top of meals
-    const existing = document.getElementById('superboost-meal-card');
+    const existing = document.getElementById('cycle-sync-meal-card');
     if(existing) existing.remove();
     
     // Create wrapper if implies
     const wrapper = document.createElement('div');
-    wrapper.id = 'superboost-meal-card';
+    wrapper.id = 'cycle-sync-meal-card';
     wrapper.innerHTML = html;
     
     container.insertBefore(wrapper, container.firstChild);
 }
 
-function checkAndRenderSuperboost() {
+function checkAndRenderCycleSync() {
     // Check if we have a log for today
     if(!userCycleData || !userCycleData.logs) return;
     
@@ -14001,18 +14012,18 @@ function checkAndRenderSuperboost() {
         }
 
         if(match) {
-            renderSuperboostMeal(match.charAt(0).toUpperCase() + match.slice(1), match);
+            renderCycleSyncMeal(match.charAt(0).toUpperCase() + match.slice(1), match);
         }
     
     } else if (log && log.energy === 'low') {
-         renderSuperboostMeal('Energy Boost', 'fatigue');
+         renderCycleSyncMeal('Energy Boost', 'fatigue');
     }
 }
 
 // Initial Load
 document.addEventListener('DOMContentLoaded', () => {
-    // Check for Superboost
-    setTimeout(checkAndRenderSuperboost, 1000);
+    // Check for Cycle Sync
+    setTimeout(checkAndRenderCycleSync, 1000);
     // Check if we need to load cycle view
     // (Existing init calls will handle this if tab is active)
 });
