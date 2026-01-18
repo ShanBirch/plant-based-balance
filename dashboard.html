@@ -984,12 +984,12 @@
 <div id="view-dashboard" class="app-view">
     <div class="dashboard-welcome">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-             <span id="daily-progress-counter" class="welcome-text" style="color: var(--secondary); font-weight: 700;">Day 1 of 28</span>
+             <span id="daily-progress-counter" class="welcome-text" style="color: white; font-weight: 700;">Day 1 of 28</span>
              <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div> <!-- Placeholder User Initial -->
         </div>
         <h1 class="user-name">Hello, Shannon</h1>
         <div style="margin-top: 5px;">
-            <button onclick="openCheckInModal()" style="background:none; border:none; color:var(--secondary); font-size:0.8rem; cursor:pointer; text-decoration:underline;">
+            <button onclick="openCheckInModal()" style="background:none; border:none; color:white; font-size:0.8rem; cursor:pointer; text-decoration:underline;">
                 Did you check in today?
             </button>
         </div>
@@ -7365,7 +7365,7 @@ function startCustomBuilderWorkout() {
         </div>
 
         <div style="padding: 0 25px; margin-top: 30px;">
-            <button class="btn-primary" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:var(--primary);" onclick="toggleSubscriptionMenu()">
+            <button class="btn-primary" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:var(--primary); color:white;" onclick="toggleSubscriptionMenu()">
                 MANAGE SUBSCRIPTION
             </button>
 
@@ -11833,23 +11833,23 @@ window.addEventListener('DOMContentLoaded', () => {
 // --- THEME SYSTEM ---
 // --- THEME SYSTEM ---
 const APP_THEMES = {
-    'default': { 
-        name: 'Forest (Premium)', 
-        colors: { 
-            '--primary': '#2B3D26', 
-            '--primary-light': '#3C5236', 
-            '--secondary': '#C7B446', 
-            '--accent-green': '#f2f7f4', 
-            '--bg': '#f9f9f7', 
-            '--surface': '#ffffff', 
-            '--text-main': '#1a202c', 
+    'default': {
+        name: 'Forest (Premium)',
+        colors: {
+            '--primary': '#7BA883',
+            '--primary-light': '#98C9A3',
+            '--secondary': '#E8D68E',
+            '--accent-green': '#f2f7f4',
+            '--bg': '#f9f9f7',
+            '--surface': '#ffffff',
+            '--text-main': '#1a202c',
             '--text-muted': '#718096',
-            '--chat-bg-user': '#2B3D26',
+            '--chat-bg-user': '#7BA883',
             '--chat-text-user': '#ffffff',
             '--chat-bg-coach': '#f2f7f4',
             '--chat-text-coach': '#1a202c',
             '--chat-border-coach': '#e2e8f0'
-        } 
+        }
     },
     'antigravity-light': { 
         name: 'Antigravity Light', 
@@ -11987,18 +11987,16 @@ function applyAppTheme(themeKey) {
     const selector = document.getElementById('theme-selector');
     if(selector) selector.value = themeKey;
 
-    // Update dashboard-welcome background - keep green gradient for default, white for others
+    // Update dashboard-welcome background - keep gradient for all themes
     const welcomeSection = document.querySelector('.dashboard-welcome');
     if(welcomeSection) {
         // Always use dynamic theme gradient
         welcomeSection.style.background = 'linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%)';
         welcomeSection.style.color = 'white';
-        // Ensure child elements inherit white text if needed
+        // Ensure all child elements use white text for maximum readability
         const children = welcomeSection.querySelectorAll('*');
         children.forEach(c => {
-             // Exception for specific buttons if necessary, but general rule:
-             if (c.classList.contains('welcome-text')) c.style.color = 'var(--secondary)'; // Keep secondary accent
-             else if (c.classList.contains('user-name')) c.style.color = 'white';
+             c.style.color = 'white';
         });
     }
 }
