@@ -9701,7 +9701,7 @@ async function renderMovementView() {
         if (checkin.energy === 'low') {
             suggestedProgram = 'yoga';
             workoutDayIndex = 3; // Restorative Recovery
-            personalizationReason = 'Low Energy Mode - Gentle movement today';
+            personalizationReason = '✨ Cycle Sync: Gentle movement for low energy today';
         }
         // Override equipment based on TODAY's check-in
         else if (checkin.equipment === 'gym' && availablePrograms.includes('gym')) {
@@ -9722,16 +9722,16 @@ async function renderMovementView() {
             suggestedProgram = 'yoga';
             workoutDayIndex = 3; // Restorative Recovery
             // Fix variable scope if needed or just use string
-            personalizationReason = 'Gentle Recovery - We\'ve adjusted for your symptoms today';
+            personalizationReason = '✨ Cycle Sync: Gentle recovery for your symptoms today';
         } else if ((userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) && !isHighEnergy) {
             suggestedProgram = 'yoga';
             workoutDayIndex = 6; // Yin & Meditation
-            personalizationReason = 'Restorative Practice - Honoring how you feel today';
+            personalizationReason = '✨ Cycle Sync: Restorative practice for how you feel today';
         }
     } else if (userCycleData.mood === 'tired') {
         suggestedProgram = 'yoga';
         workoutDayIndex = 3; // Restorative Recovery
-        personalizationReason = 'Recovery & Restoration - Perfect for when you\'re feeling tired';
+        personalizationReason = '✨ Cycle Sync: Recovery & restoration for low energy';
     }
     
     // PRIORITY 4: Cycle Phase adjustments
