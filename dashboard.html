@@ -1339,13 +1339,21 @@
                         let existingFacts = {}; 
                         try { existingFacts = await dbHelpers.userFacts.get(window.currentUser.id); } catch(e){}
                         const currentDetails = existingFacts?.personal_details || {};
+                        
+                        // Force explicit symptoms to prove it works
+                        const finalFacts = { ...currentDetails, ...factUpdates };
+                        // Ensure symptoms are set
+                        finalFacts.symptoms = ['anxiety', 'bloating', 'fatigue'];
 
                         await dbHelpers.userFacts.upsert(window.currentUser.id, {
-                            personal_details: { ...currentDetails, ...factUpdates }
+                            personal_details: finalFacts
                         });
 
-                        window.userProfile = { ...window.userProfile, ...coreUpdates, ...factUpdates };
-                        console.log("✅ Test Data Injected Successfully");
+                        window.userProfile = { ...window.userProfile, ...coreUpdates, ...factUpdates, symptoms: finalFacts.symptoms };
+                        console.log("✅ Test Data Injected Successfully: ", window.userProfile);
+                        
+                        // Force UI refresh if profile view is active
+                        if(typeof loadProfileData === 'function') setTimeout(loadProfileData, 500);
                     } catch (e) {
                         console.error("❌ Failed to seed test data", e);
                     }
