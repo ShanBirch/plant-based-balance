@@ -7551,6 +7551,10 @@ function startCustomBuilderWorkout() {
             }
             
             window.userProfile = { ...window.userProfile, ...quizData }; // Update cache
+            
+            // Refresh views immediately to reflect new settings
+            if(typeof renderMovementView === 'function') setTimeout(renderMovementView, 100);
+            if(typeof loadProfileData === 'function') loadProfileData(); // Refresh profile display logic
         }
 
         document.getElementById('btn-save-profile').style.display = 'none';
@@ -9752,7 +9756,7 @@ async function renderMovementView() {
     gridContainer.appendChild(buildDiv); 
     
     Object.keys(WORKOUT_DB).forEach(key => {
-        if (key === suggestedId) return;
+        if (key === suggestedProgram) return;
         const prog = WORKOUT_DB[key];
         const meta = assets[key];
         const sched = prog.schedule[dayIndex % prog.schedule.length];
