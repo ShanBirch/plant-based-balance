@@ -1279,10 +1279,18 @@
         
         if(window.currentUser) {
             loadChat();
-            loadJournalHistory(); // Added for journal history
+            loadJournalHistory(); 
+            loadProfileData(); // Ensure profile is loaded
+            initProgramDate(); // Ensure program date is synced
             
             // Also refresh community feed if function exists
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
+            
+            // Switch to dashboard as default entry point
+            if(typeof switchAppTab === 'function') {
+                const homeNav = document.querySelector('.nav-item');
+                switchAppTab('dashboard', homeNav);
+            }
         }
     });
 
@@ -6958,7 +6966,7 @@ function startCustomBuilderWorkout() {
                 <input type="file" id="profile-photo-input" style="display:none;" onchange="handlePhotoUpload(this)">
             </div>
             <h2 class="profile-name-large" id="profile-name-display">Shannon</h2>
-            <div class="profile-email" id="profile-email-display">shannon@example.com</div>
+            <div class="profile-email" id="profile-email-display">Loading...</div>
         </div>
 
         <div class="profile-details-grid">
@@ -7031,16 +7039,20 @@ function startCustomBuilderWorkout() {
             if(input) {
                 let val = input.value;
                 el.innerText = val + (f.key === 'weight' ? ' kg' : '');
-                
-                // Save
                 quizData[f.key] = val;
-                if(f.key === 'name') sessionStorage.setItem('userName', val);
-                if(f.key === 'email') sessionStorage.setItem('userEmail', val);
             }
         });
         
-        sessionStorage.setItem('userProfile', JSON.stringify(quizData));
-        
+        // Save to Supabase
+        if (window.currentUser) {
+            dbHelpers.users.upsert(window.currentUser.id, quizData)
+                .then(() => {
+                    console.log("Profile updated in Supabase");
+                    window.userProfile = quizData; // Update cache
+                })
+                .catch(err => console.error("Failed to update profile in Supabase:", err));
+        }
+
         document.getElementById('btn-save-profile').style.display = 'none';
         document.getElementById('btn-edit-profile').style.display = 'inline-flex';
     }
@@ -7136,9 +7148,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 2. Initialize
-    initProgramDate();
-    switchAppTab('dashboard', document.querySelector('.nav-item')); // Default to Home
+    // 2. Initialize (Now handled by the consolidated listener above)
+    // initProgramDate(); 
+    // switchAppTab('dashboard', document.querySelector('.nav-item')); // Default to Home
 });
 
 // --- DAILY CONTENT LOGIC ---
@@ -7173,8 +7185,17 @@ const COACHING_TIPS = [
     "You have successfully reset your biochemistry. This is not a diet, it's a signal of safety to your body. Well done!"
 ];
 
-function initProgramDate() {
-    let startDate = localStorage.getItem('pbb_start_date');
+async function initProgramDate() {
+    let startDate = null;
+    try {
+        const profile = await window.getUserProfile();
+        startDate = profile?.program_start_date;
+    } catch(e) {}
+
+    if (!startDate) {
+        startDate = localStorage.getItem('pbb_start_date');
+    }
+
     if (!startDate) {
         startDate = new Date().toISOString();
         localStorage.setItem('pbb_start_date', startDate);
@@ -7253,30 +7274,34 @@ function updateDailyContent(day) {
     }
 }
 
-function loadProfileData() {
-    let quizData = {};
+async function loadProfileData() {
+    let profile = null;
     try {
-        quizData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        profile = await window.getUserProfile();
     } catch (e) {
-        console.warn("Profile data parse error", e);
+        console.warn("Profile fetching error", e);
     }
     
+    // Fallback if DB fetch fail
+    if (!profile) {
+        try {
+            profile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        } catch(e) {}
+    }
+
     const context = {
-        name: sessionStorage.getItem('userName') || quizData.name || "Shannon",
-        email: sessionStorage.getItem('userEmail') || quizData.email || "shannonrhysbirch@gmail.com",
-        age: quizData.age || "34",
-        weight: quizData.weight || "68 kg",
-        // Prioritize goal weight as requested
-        goal: quizData.goal_weight || quizData.goal_body_type || quizData.goalBodyType || "Fat Loss",
-        profile: (sessionStorage.getItem('userResult') || 'Cortisol').toUpperCase()
+        name: profile?.name || window.currentUser?.user_metadata?.full_name || "Shannon",
+        email: profile?.email || window.currentUser?.email || "shannon@example.com",
+        age: profile?.age || "34",
+        weight: profile?.weight || "68 kg",
+        goal: profile?.goal_weight || profile?.goal || "Fat Loss",
+        profile: profile?.profile || (sessionStorage.getItem('userResult') || 'Cortisol').toUpperCase()
     };
 
     if(document.getElementById('profile-name-display')) document.getElementById('profile-name-display').innerText = context.name;
     if(document.getElementById('profile-email-display')) document.getElementById('profile-email-display').innerText = context.email;
     if(document.getElementById('profile-age-display')) document.getElementById('profile-age-display').innerText = context.age;
     
-    // Handle weight display (avoid double units if stored with unit)
-    // Convert to string safely to prevent crashes if weight is a number
     const wStr = String(context.weight).toLowerCase();
     const weightDisplay = wStr.includes('k') || wStr.includes('l') 
         ? context.weight 
@@ -7291,7 +7316,6 @@ function loadProfileData() {
     if(savedPhoto) {
         const mainImg = document.getElementById('profile-photo-img');
         if(mainImg) mainImg.src = savedPhoto;
-        // Also update all small profile icons
         document.querySelectorAll('.profile-icon').forEach(el => {
             el.innerHTML = `<img src="${savedPhoto}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
             el.style.background = 'transparent';
@@ -7346,7 +7370,7 @@ async function handlePause(months) {
     msgEl.innerText = "Processing pause request...";
     
     try {
-        const email = sessionStorage.getItem('userEmail') || "shannon@example.com"; 
+        const email = window.currentUser?.email || sessionStorage.getItem('userEmail') || "user@example.com"; 
         
         const response = await fetch('/.netlify/functions/pause-subscription', {
             method: 'POST',
@@ -7384,7 +7408,7 @@ async function handleSubscriptionAction(action) {
         btn.disabled = true;
 
         try {
-            const email = sessionStorage.getItem('userEmail') || "shannon@example.com"; // Fallback for dev
+            const email = window.currentUser?.email || sessionStorage.getItem('userEmail') || "user@example.com"; // Fallback for dev
             
             const response = await fetch('/.netlify/functions/cancel-subscription', {
                 method: 'POST',
@@ -9194,8 +9218,11 @@ let isCoachMode = false;
 
 
 function checkUserRole() {
-    let email = sessionStorage.getItem('userEmail') || "shannonrhysbirch@gmail.com";
-    if (email.includes('plantbased-balance.org')) {
+    let email = window.currentUser?.email || sessionStorage.getItem('userEmail');
+    if (!email) return; // Wait for session
+    if (email.includes('plantbased-balance.org') || 
+        email === 'shannonrhysbirch@gmail.com' || 
+        email === 'shannonbirch@cocospersonaltraining.com') {
         console.log("Coach Identity Detected: " + email);
         if(!isCoachMode) toggleCoachMode(true);
     } else {
@@ -10748,9 +10775,20 @@ function applyAppTheme(themeKey) {
 document.addEventListener('DOMContentLoaded', () => {
     loadChatHistory();
     loadCommunityFeed();
-    setTimeout(checkUserRole, 500);
-    const savedTheme = localStorage.getItem('userThemePreference') || 'default';
-    applyAppTheme(savedTheme);
+    // Wait for Auth before high-level decisions
+    const waitForAuth = () => new Promise(resolve => {
+        if(window.currentUser) return resolve(window.currentUser);
+        const check = setInterval(() => {
+            if(window.currentUser) { clearInterval(check); resolve(window.currentUser); }
+        }, 100);
+        setTimeout(() => { clearInterval(check); resolve(null); }, 3000);
+    });
+
+    waitForAuth().then(() => {
+        checkUserRole();
+        const savedTheme = localStorage.getItem('userThemePreference') || 'default';
+        applyAppTheme(savedTheme);
+    });
 
     // Event Listeners
     document.getElementById('coach-chat-input')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') submitCoachMessage(); });
