@@ -7069,10 +7069,14 @@ function startCustomBuilderWorkout() {
                 border-color: #cbd5e1;
             }
         </style>
+
+        <!-- Weekly Schedule -->
+        <div style="margin: 0 25px 25px 25px;">
+            <h3 style="color: var(--primary); margin-bottom: 15px; font-size: 1.1rem;">This Week's Schedule</h3>
+            <div id="weekly-calendar" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Calendar rows will be dynamically inserted here -->
             </div>
         </div>
-
-
 
         <!-- Today's Recommendation -->
 <!-- Today's Focus Card Removed to prevent Dashboard Glitch -->
@@ -8717,11 +8721,38 @@ async function renderMovementView() {
     const dateStr = new Date().toISOString().split('T')[0];
     const checkin = await dbHelpers.checkins.get(user.id, dateStr);
 
+    // 3. Calculate Cycle Phase
+    let phaseKey = 'wellness';
+    let cyclePhaseInfo = null;
+    let currentCycleDay = 0;
+
+    if (userCycleData.lastPeriod && !userCycleData.noPeriodMode) {
+        const start = new Date(userCycleData.lastPeriod);
+        const now = new Date();
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const daysSinceStart = Math.floor((now - start) / msPerDay);
+        currentCycleDay = (daysSinceStart % userCycleData.cycleLength) + 1;
+        if (currentCycleDay < 1) currentCycleDay = 1;
+
+        phaseKey = getCyclePhase(currentCycleDay, userCycleData.cycleLength);
+        cyclePhaseInfo = PHASE_INFO[phaseKey];
+    }
+
     let suggestedId = 'yoga'; // Default
     let personalizationReason = '';
 
-    // Prioritize daily wellness mood over workout check-in
-    if (userCycleData.mood) {
+    // PRIORITY 1: Daily wellness symptoms (highest priority)
+    if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
+        if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
+            suggestedId = 'yoga';
+            personalizationReason = 'Gentle Recovery - We\'ve adjusted for your symptoms today';
+        } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+            suggestedId = 'yoga';
+            personalizationReason = 'Restorative Practice - Honoring how you feel today';
+        }
+    }
+    // PRIORITY 2: Daily wellness mood
+    else if (userCycleData.mood) {
         if (userCycleData.mood === 'tired') {
             suggestedId = 'yoga';
             personalizationReason = 'Recovery & Restoration - Perfect for when you\'re feeling tired';
@@ -8738,8 +8769,34 @@ async function renderMovementView() {
                 personalizationReason = 'Bodyweight Strength - Let\'s use that energy!';
             }
         }
-    } else if (checkin) {
-        // Fall back to workout check-in if no mood set
+    }
+    // PRIORITY 3: Menstrual cycle phase (if no wellness check-in)
+    else if (cyclePhaseInfo && phaseKey !== 'wellness') {
+        if (phaseKey === 'menstrual') {
+            suggestedId = 'yoga';
+            personalizationReason = `${cyclePhaseInfo.icon} ${cyclePhaseInfo.name} - Gentle movement for rest and recovery`;
+        } else if (phaseKey === 'follicular' || phaseKey === 'ovulation') {
+            // High energy phases - recommend strength
+            if (checkin && checkin.equipment === 'gym') {
+                suggestedId = 'gym';
+            } else if (checkin && checkin.equipment === 'dumbbells') {
+                suggestedId = 'home';
+            } else {
+                suggestedId = 'bodyweight';
+            }
+            personalizationReason = `${cyclePhaseInfo.icon} ${cyclePhaseInfo.name} - Perfect time for ${cyclePhaseInfo.rec}`;
+        } else if (phaseKey === 'luteal') {
+            // Moderate intensity
+            if (checkin && checkin.equipment === 'dumbbells') {
+                suggestedId = 'home';
+            } else {
+                suggestedId = 'bodyweight';
+            }
+            personalizationReason = `${cyclePhaseInfo.icon} ${cyclePhaseInfo.name} - ${cyclePhaseInfo.rec}`;
+        }
+    }
+    // PRIORITY 4: Workout check-in (equipment only)
+    else if (checkin) {
         if (checkin.energy === 'low') suggestedId = 'yoga';
         else {
             if (checkin.equipment === 'gym') suggestedId = 'gym';
