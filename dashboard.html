@@ -6858,12 +6858,7 @@ function startCustomBuilderWorkout() {
         <div style="height: 100px;"></div>
     </div>
 
-    <!-- Floating Start Button -->
-    <div style="position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 100;">
-        <button id="btn-start-now" style="width: 100%; padding: 18px; background: #FFC107; color: black; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: 800; box-shadow: 0 10px 25px rgba(255, 193, 7, 0.4); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(255, 193, 7, 0.3); user-select: none; min-height: 56px;">
-            START WORKOUT
-        </button>
-    </div>
+
 </div>
 
 <!-- ACTIVE WORKOUT PLAYER VIEW -->
@@ -8383,6 +8378,13 @@ function finishOnboarding() {
     setTimeout(checkDailyWellness, 500);
 }
 
+function closeWizardManually() {
+     document.getElementById('onboarding-wizard').style.display = 'none';
+     // Warning: if they close manually without finishing, we might show it again next time? 
+     // For now, let's assume they want to skip it.
+     localStorage.setItem('onboardingComplete', 'true');
+}
+
 function toggleWizardPeriodInput() {
     const toggle = document.getElementById('wizard-wellness-toggle');
     const input = document.getElementById('wizard-period-date');
@@ -9854,7 +9856,8 @@ function openAsClient() {
     <div class="onboarding-modal wizard-container" style="max-width: 450px; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
         
         <!-- HEADER -->
-        <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center;">
+        <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative;">
+            <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
             <div class="wizard-progress" style="display:flex; justify-content:center; gap:8px; margin-bottom:15px;">
                 <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
