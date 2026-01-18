@@ -1294,6 +1294,7 @@
             loadChat();
             loadJournalHistory(); 
             await syncQuizDataToDb(); // Sync quiz data first
+            await seedTestAccount(); // Inject fake data for test user
             loadProfileData(); // Ensure profile is loaded
             initProgramDate(); // Ensure program date is synced
             
@@ -1307,6 +1308,33 @@
             if(typeof switchAppTab === 'function') {
                 const homeNav = document.querySelector('.nav-item');
                 switchAppTab('dashboard', homeNav);
+            }
+
+            // --- TEST DATA SEEDING ---
+            async function seedTestAccount() {
+                if (window.currentUser?.email === 'shannonbirch@cocospersonaltraining.com') {
+                    console.log("🧪 Seeding Test Account Data...");
+                    const testData = {
+                        name: 'Shannon Test',
+                        profile: 'CORTISOL', // Hormone Type
+                        equipment_access: 'none', // Just a mat (Triggers: Yoga, Bodyweight only)
+                        energy_status: 'moderate',
+                        goal: 'Fat Loss',
+                        // Quiz Answers mapping to symptoms
+                        keeps_awake: 'worry',     // -> Anxiety
+                        midday_crash: 'yes',      // -> Fatigue
+                        brain_fog: 'yes',         // -> Fatigue
+                        symptoms: ['anxiety', 'fatigue'] // Explicitly set for immediate testing
+                    };
+                    
+                    try {
+                        await dbHelpers.users.upsert(window.currentUser.id, testData);
+                        window.userProfile = { ...window.userProfile, ...testData };
+                        console.log("✅ Test Data Injected Successfully");
+                    } catch (e) {
+                        console.error("❌ Failed to seed test data", e);
+                    }
+                }
             }
 
             // Auto-show Daily Wellness check-in (once per day)
