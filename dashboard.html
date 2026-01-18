@@ -1332,17 +1332,22 @@
                     };
                     
                     try {
-                        // 1. Core Profile
-                        await dbHelpers.users.upsert(window.currentUser.id, coreUpdates);
+                        // 1. Core Profile (users table)
+                        try {
+                            await dbHelpers.users.upsert(window.currentUser.id, coreUpdates);
+                        } catch (coreError) {
+                            console.warn("⚠️ Could not update core 'users' table (likely RLS). Proceeding to 'user_facts'.", coreError);
+                        }
                         
-                        // 2. Extended Facts
+                        // 2. Extended Facts (user_facts table)
                         let existingFacts = {}; 
                         try { existingFacts = await dbHelpers.userFacts.get(window.currentUser.id); } catch(e){}
                         const currentDetails = existingFacts?.personal_details || {};
                         
                         // Force explicit symptoms to prove it works
                         const finalFacts = { ...currentDetails, ...factUpdates };
-                        // Ensure symptoms are set
+                        // Ensure symptoms are set if not already present or if forceful overwrite needed
+                        // For test account, we force them.
                         finalFacts.symptoms = ['anxiety', 'bloating', 'fatigue'];
 
                         await dbHelpers.userFacts.upsert(window.currentUser.id, {
@@ -1355,7 +1360,7 @@
                         // Force UI refresh if profile view is active
                         if(typeof loadProfileData === 'function') setTimeout(loadProfileData, 500);
                     } catch (e) {
-                        console.error("❌ Failed to seed test data", e);
+                        console.error("❌ Failed to seed test data (Fatal)", e);
                     }
                 }
             }
