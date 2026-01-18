@@ -7,8 +7,8 @@ export default async (request, context) => {
 
     try {
         const body = await request.json();
-        const { priceId, isTrial, email, bump, fbc, fbp, utm_data } = body;
-        
+        const { priceId, isTrial, trialDays, referralCode, email, bump, fbc, fbp, utm_data } = body;
+
         const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
         if (!STRIPE_SECRET_KEY) throw new Error("Missing Internal Configuration");
 
@@ -18,16 +18,17 @@ export default async (request, context) => {
         });
 
         const lineItems = [{ price: priceId, quantity: 1 }];
-        
+
         // Handle Bump (One-Time Payment)
         if (bump) {
-             const ACUPRESSURE_ID = 'price_1SkOMQCGCyRUsOfKlgfmqUsP'; 
+             const ACUPRESSURE_ID = 'price_1SkOMQCGCyRUsOfKlgfmqUsP';
              lineItems.push({ price: ACUPRESSURE_ID, quantity: 1 });
         }
 
         const subscriptionData = {};
         if (isTrial) {
-            subscriptionData.trial_period_days = 7;
+            // Use provided trial days (14 for referrals, 7 for 6-month default)
+            subscriptionData.trial_period_days = trialDays || 7;
         }
 
         // Apply Discount Coupon (rjrlOEdm)
@@ -46,7 +47,9 @@ export default async (request, context) => {
                 fbc: fbc || "",
                 fbp: fbp || "",
                 ...utm_data,
-                is_trial: isTrial ? "true" : "false"
+                is_trial: isTrial ? "true" : "false",
+                trial_days: trialDays ? trialDays.toString() : "0",
+                referral_code: referralCode || ""
             }
         });
 

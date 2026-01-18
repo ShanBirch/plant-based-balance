@@ -6322,8 +6322,8 @@
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                         <div style="font-size: 2rem;">🎁</div>
                         <div style="flex: 1;">
-                            <div style="font-weight: 700; font-size: 1.1rem; color: white; margin-bottom: 4px;">Invite Friends, Get 2 Weeks Free!</div>
-                            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Share your link and earn free time for every friend who joins</div>
+                            <div style="font-weight: 700; font-size: 1.1rem; color: white; margin-bottom: 4px;">You BOTH Get 2 Weeks Free!</div>
+                            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Invite friends and you each get 2 weeks free when they join</div>
                         </div>
                     </div>
 
@@ -11785,28 +11785,56 @@ function copyReferralLink() {
 // Share via WhatsApp
 function shareViaWhatsApp() {
     const code = currentReferralCode;
-    const link = `${window.location.origin}/signup.html?ref=${code}`;
-    const message = `Hey! I've been loving Plant Based Balance for hormone health. Join me and we both get 2 weeks free! Use my code ${code} or click here: ${link}`;
+    const link = `${window.location.origin}/login.html?ref=${code}`;
+    const message = `Hey! I've been loving Plant Based Balance for hormone health. Join me and we BOTH get 2 weeks free! Use my code ${code} or click here: ${link}`;
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
 }
 
-// Share via Facebook
+// Share via Facebook Messenger
 function shareViaFacebook() {
-    const link = `${window.location.origin}/signup.html?ref=${currentReferralCode}`;
-    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
-    window.open(facebookUrl, '_blank', 'width=600,height=400');
+    const code = currentReferralCode;
+    const link = `${window.location.origin}/login.html?ref=${code}`;
+    const message = `Hey! I've been loving Plant Based Balance for hormone health. Join me and we BOTH get 2 weeks free! Use my code ${code} or click: ${link}`;
+
+    // Try to open Facebook Messenger app, fallback to web
+    const messengerAppUrl = `fb-messenger://share?link=${encodeURIComponent(link)}&quote=${encodeURIComponent(message)}`;
+
+    // Try app first
+    window.location.href = messengerAppUrl;
+
+    // Fallback to web after short delay if app doesn't open
+    setTimeout(() => {
+        // Copy message to clipboard
+        navigator.clipboard.writeText(message).then(() => {
+            // Open Messenger web
+            window.open('https://www.messenger.com/', '_blank', 'width=600,height=700');
+            alert('✅ Message copied!\n\nPaste it in Facebook Messenger to share with friends 💬');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            window.open('https://www.messenger.com/', '_blank', 'width=600,height=700');
+        });
+    }, 1000);
 }
 
-// Copy for Instagram (Instagram doesn't support direct sharing from web)
+// Copy for Instagram DMs
 function copyForInstagram() {
     const code = currentReferralCode;
-    const link = `${window.location.origin}/signup.html?ref=${code}`;
-    const message = `Join me on Plant Based Balance! 🌱 We both get 2 weeks free.\n\nUse code: ${code}\nOr visit: ${link}`;
+    const link = `${window.location.origin}/login.html?ref=${code}`;
+    const message = `Hey! 🌱 Join me on Plant Based Balance - we BOTH get 2 weeks free!\n\nUse code: ${code}\nOr visit: ${link}\n\n#PlantBasedBalance #HormoneHealth`;
 
     navigator.clipboard.writeText(message).then(() => {
-        alert('Message copied! Paste it in your Instagram DM or story 📱');
+        // Try to open Instagram app (works on mobile)
+        try {
+            window.location.href = 'instagram://';
+        } catch (e) {
+            // Ignore if it doesn't work
+        }
+
+        setTimeout(() => {
+            alert('✅ Message copied!\n\nOpen Instagram and paste this in your DM or story 📱');
+        }, 500);
     }).catch(err => {
         console.error('Failed to copy:', err);
         alert('Failed to copy message.');
@@ -11816,8 +11844,8 @@ function copyForInstagram() {
 // Share via SMS
 function shareViaSMS() {
     const code = currentReferralCode;
-    const link = `${window.location.origin}/signup.html?ref=${code}`;
-    const message = `Hey! Join me on Plant Based Balance. We both get 2 weeks free! Use code ${code} or click: ${link}`;
+    const link = `${window.location.origin}/login.html?ref=${code}`;
+    const message = `Hey! Join me on Plant Based Balance. We BOTH get 2 weeks free! Use code ${code} or click: ${link}`;
 
     const smsUrl = `sms:?&body=${encodeURIComponent(message)}`;
     window.location.href = smsUrl;
@@ -12742,7 +12770,7 @@ updateCoachUI();
         <div style="padding:24px 24px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between;">
             <div>
                 <h2 style="margin:0 0 4px 0; font-size:1.5rem; color:var(--text-main);">Share Your Invite Link</h2>
-                <p style="margin:0; font-size:0.875rem; color:#64748b;">Invite friends and earn 2 weeks free per referral</p>
+                <p style="margin:0; font-size:0.875rem; color:#64748b;">You BOTH get 2 weeks free when they join!</p>
             </div>
             <button onclick="closeShareReferralModal()" style="background:none; border:none; font-size:1.8rem; color:#94a3b8; cursor:pointer; padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:all 0.2s;">×</button>
         </div>
@@ -12816,7 +12844,7 @@ updateCoachUI();
                 <div style="display:flex; gap:12px; align-items:start;">
                     <div style="font-size:1.5rem; flex-shrink:0;">💡</div>
                     <div style="font-size:0.875rem; color:#15803d; line-height:1.5;">
-                        <strong>How it works:</strong> When your friend signs up using your code, you'll automatically get 2 weeks (14 days) added to your subscription!
+                        <strong>How it works:</strong> When your friend signs up using your code, you BOTH automatically get 2 weeks (14 days) free! They'll need to enter their card details but won't be charged for 2 weeks.
                     </div>
                 </div>
             </div>

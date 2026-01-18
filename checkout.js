@@ -5,6 +5,14 @@ console.log(`
 `, 'font-weight: bold; color: #48864B; font-size: 14px;');
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Store referral code from URL if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const referralCode = urlParams.get('ref');
+    if (referralCode) {
+        sessionStorage.setItem('referralCode', referralCode);
+        console.log('Referral code stored:', referralCode);
+    }
+
     // 1. Initialize Stripe
     const stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
 
@@ -213,9 +221,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const priceId = PRICES[plan];
             if (!priceId) return;
 
+            // Check for referral code - if present, give 14-day trial
+            const urlParams = new URLSearchParams(window.location.search);
+            const referralCode = urlParams.get('ref') || sessionStorage.getItem('referralCode');
+            const hasReferral = !!referralCode;
+
             // NEW: 6-Month Plan uses Backend Session (for Trial)
-            if (plan === '6-month') {
-                btn.innerText = "Launching Trial...";
+            // OR any plan with referral code gets trial
+            if (plan === '6-month' || hasReferral) {
+                btn.innerText = hasReferral ? "Launching 2 Week Trial..." : "Launching Trial...";
                 try {
                     const response = await fetch('/.netlify/functions/create-checkout-session', {
                         method: 'POST',
@@ -223,6 +237,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({
                             priceId: priceId,
                             isTrial: true,
+                            trialDays: hasReferral ? 14 : 7, // 2 weeks for referrals, 1 week for 6-month
+                            referralCode: referralCode || null,
                             email: sessionStorage.getItem('userEmail'),
                             bump: isBumpChecked,
                             utm_data: utmData,
