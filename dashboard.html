@@ -1314,8 +1314,12 @@
             async function seedTestAccount() {
                 if (window.currentUser?.email === 'shannonbirch@cocospersonaltraining.com') {
                     console.log("🧪 Seeding Test Account Data...");
-                    const testData = {
-                        name: 'Shannon Test',
+                    
+                    const coreUpdates = {
+                        name: 'Shannon Test'
+                    };
+
+                    const factUpdates = {
                         profile: 'CORTISOL', // Hormone Type
                         equipment_access: 'none', // Just a mat (Triggers: Yoga, Bodyweight only)
                         energy_status: 'moderate',
@@ -1328,8 +1332,19 @@
                     };
                     
                     try {
-                        await dbHelpers.users.upsert(window.currentUser.id, testData);
-                        window.userProfile = { ...window.userProfile, ...testData };
+                        // 1. Core Profile
+                        await dbHelpers.users.upsert(window.currentUser.id, coreUpdates);
+                        
+                        // 2. Extended Facts
+                        let existingFacts = {}; 
+                        try { existingFacts = await dbHelpers.userFacts.get(window.currentUser.id); } catch(e){}
+                        const currentDetails = existingFacts?.personal_details || {};
+
+                        await dbHelpers.userFacts.upsert(window.currentUser.id, {
+                            personal_details: { ...currentDetails, ...factUpdates }
+                        });
+
+                        window.userProfile = { ...window.userProfile, ...coreUpdates, ...factUpdates };
                         console.log("✅ Test Data Injected Successfully");
                     } catch (e) {
                         console.error("❌ Failed to seed test data", e);
@@ -7359,14 +7374,36 @@ function startCustomBuilderWorkout() {
             }
         });
         
-        // Save to Supabase
+        // Save to Supabase (Split Logic)
         if (window.currentUser) {
-            dbHelpers.users.upsert(window.currentUser.id, quizData)
-                .then(() => {
-                    console.log("Profile updated in Supabase");
-                    window.userProfile = quizData; // Update cache
-                })
-                .catch(err => console.error("Failed to update profile in Supabase:", err));
+            const userColumns = ['name', 'email'];
+            const coreData = {};
+            const factsData = {};
+
+            Object.keys(quizData).forEach(k => {
+                if (userColumns.includes(k)) coreData[k] = quizData[k];
+                else factsData[k] = quizData[k];
+            });
+
+            // 1. Core
+            if (Object.keys(coreData).length > 0) {
+                 dbHelpers.users.upsert(window.currentUser.id, coreData).catch(console.error);
+            }
+
+            // 2. Facts
+            if (Object.keys(factsData).length > 0) {
+                (async () => {
+                    let existingFacts = {}; 
+                    try { existingFacts = await dbHelpers.userFacts.get(window.currentUser.id); } catch(e){}
+                    const currentDetails = existingFacts?.personal_details || {};
+                    
+                    await dbHelpers.userFacts.upsert(window.currentUser.id, {
+                        personal_details: { ...currentDetails, ...factsData }
+                    });
+                })();
+            }
+            
+            window.userProfile = { ...window.userProfile, ...quizData }; // Update cache
         }
 
         document.getElementById('btn-save-profile').style.display = 'none';
@@ -7559,7 +7596,34 @@ async function syncQuizDataToDb() {
 
         if (Object.keys(quizData).length > 0) {
             console.log("Syncing quiz data to DB...", quizData);
-            await dbHelpers.users.upsert(user.id, quizData);
+            
+            // SPLIT DATA: Users table vs User Facts (personal_details)
+            const userColumns = ['name', 'email', 'profile_photo', 'program_start_date', 'theme_preference', 'location'];
+            const coreData = {};
+            const factsData = {};
+            
+            Object.keys(quizData).forEach(k => {
+                if (userColumns.includes(k)) coreData[k] = quizData[k];
+                else factsData[k] = quizData[k];
+            });
+
+            // 1. Update Core User Data
+            if (Object.keys(coreData).length > 0) {
+                await dbHelpers.users.upsert(user.id, coreData);
+            }
+
+            // 2. Update Extension Data (User Facts)
+            if (Object.keys(factsData).length > 0) {
+                // Get existing facts first to merge
+                let existingFacts = {}; 
+                try { existingFacts = await dbHelpers.userFacts.get(user.id); } catch(e){}
+                
+                const currentDetails = existingFacts?.personal_details || {};
+                
+                await dbHelpers.userFacts.upsert(user.id, {
+                    personal_details: { ...currentDetails, ...factsData }
+                });
+            }
             
             // Update local cache
             window.userProfile = { ...window.userProfile, ...quizData };
