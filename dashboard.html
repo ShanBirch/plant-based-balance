@@ -9273,71 +9273,96 @@ async function renderMovementView() {
         cyclePhaseInfo = PHASE_INFO[phaseKey];
     }
 
-    let suggestedId = 'yoga'; // Default
+    // === PRIORITY-BASED WORKOUT SELECTION ===
+    // Priority 1: Quiz/Profile Equipment (highest) - What equipment do they have access to?
+    // Priority 2: WORKOUT_DB Schedules - Use actual pre-built workouts
+    // Priority 3: Daily Check-in - Energy, mood, symptoms
+    // Priority 4: Cycle Phase (lowest) - Adjust based on menstrual phase
+    
+    // profile is already loaded above at line 9238
+    
+    // PRIORITY 1: Determine available programs based on quiz/profile equipment
+    // Check if user has gym access from their profile
+    const hasGymAccess = profile?.equipment_access === 'gym' || profile?.gym_access === true;
+    const hasDumbbells = profile?.equipment_access === 'dumbbells' || profile?.equipment_access === 'home' || hasGymAccess;
+    
+    // Default available programs based on equipment
+    let availablePrograms = ['yoga', 'bodyweight']; // Always available
+    if (hasDumbbells) availablePrograms.push('home');
+    if (hasGymAccess) availablePrograms.push('gym');
+    
+    // PRIORITY 2: Weekly Schedule using WORKOUT_DB
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const calDayIndex = (dayOfWeek + 6) % 7; // Mon=0 index
+    
+    // Weekly Schedule - maps each day to a program and workout
+    const WEEKLY_SCHEDULE = [
+        { day: 'Mon', program: 'bodyweight', dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 }, // Lower Body Power / Balance & Core
+        { day: 'Tue', program: 'bodyweight', dayIndex: 1, fallback: 'yoga', fallbackIdx: 5 }, // Upper Body / Dynamic Flow
+        { day: 'Wed', program: 'yoga', dayIndex: 2, fallback: 'yoga', fallbackIdx: 2 },       // Spinal Mobility
+        { day: 'Thu', program: 'bodyweight', dayIndex: 3, fallback: 'yoga', fallbackIdx: 4 }, // Full Body / Balance & Core
+        { day: 'Fri', program: 'bodyweight', dayIndex: 4, fallback: 'yoga', fallbackIdx: 4 }, // Glutes & Core
+        { day: 'Sat', program: 'yoga', dayIndex: 0, fallback: 'yoga', fallbackIdx: 0 },       // Somatic Hormone Reset
+        { day: 'Sun', program: 'yoga', dayIndex: 6, fallback: 'yoga', fallbackIdx: 6 }        // Yin & Meditation
+    ];
+    
+    const scheduleItem = WEEKLY_SCHEDULE[calDayIndex];
+    let suggestedProgram = scheduleItem.program;
+    let workoutDayIndex = scheduleItem.dayIndex;
     let personalizationReason = '';
-
-    // PRIORITY 1: Daily wellness symptoms (highest priority)
+    
+    // PRIORITY 3: Daily Check-in adjustments
+    if (checkin) {
+        // If low energy, always suggest yoga
+        if (checkin.energy === 'low') {
+            suggestedProgram = 'yoga';
+            workoutDayIndex = 3; // Restorative Recovery
+            personalizationReason = 'Low Energy Mode - Gentle movement today';
+        }
+        // Override equipment based on TODAY's check-in
+        else if (checkin.equipment === 'gym' && availablePrograms.includes('gym')) {
+            suggestedProgram = 'gym';
+            workoutDayIndex = calDayIndex % 7;
+        } else if (checkin.equipment === 'dumbbells' && availablePrograms.includes('home')) {
+            suggestedProgram = 'home';
+            workoutDayIndex = calDayIndex % 7;
+        }
+    }
+    
+    // Symptoms/mood override (highest daily priority)
     if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
         if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
-            suggestedId = 'yoga';
+            suggestedProgram = 'yoga';
+            workoutDayIndex = 3; // Restorative Recovery
             personalizationReason = 'Gentle Recovery - We\'ve adjusted for your symptoms today';
         } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
-            suggestedId = 'yoga';
+            suggestedProgram = 'yoga';
+            workoutDayIndex = 6; // Yin & Meditation
             personalizationReason = 'Restorative Practice - Honoring how you feel today';
         }
+    } else if (userCycleData.mood === 'tired') {
+        suggestedProgram = 'yoga';
+        workoutDayIndex = 3; // Restorative Recovery
+        personalizationReason = 'Recovery & Restoration - Perfect for when you\'re feeling tired';
     }
-    // PRIORITY 2: Daily wellness mood
-    else if (userCycleData.mood) {
-        if (userCycleData.mood === 'tired') {
-            suggestedId = 'yoga';
-            personalizationReason = 'Recovery & Restoration - Perfect for when you\'re feeling tired';
-        } else if (userCycleData.mood === 'strong') {
-            // Choose strength workout based on available equipment
-            if (checkin && checkin.equipment === 'gym') {
-                suggestedId = 'gym';
-                personalizationReason = 'High Intensity Strength - You\'re feeling strong today!';
-            } else if (checkin && checkin.equipment === 'dumbbells') {
-                suggestedId = 'home';
-                personalizationReason = 'Power Training - Channel that strong energy!';
-            } else {
-                suggestedId = 'bodyweight';
-                personalizationReason = 'Bodyweight Strength - Let\'s use that energy!';
-            }
-        }
-    }
-    // PRIORITY 3: Menstrual cycle phase (if no wellness check-in)
-    else if (cyclePhaseInfo && phaseKey !== 'wellness') {
-        if (phaseKey === 'menstrual') {
-            suggestedId = 'yoga';
-            personalizationReason = `${cyclePhaseInfo.icon} ${cyclePhaseInfo.name} - Gentle movement for rest and recovery`;
-        } else if (phaseKey === 'follicular' || phaseKey === 'ovulation') {
-            // High energy phases - recommend strength
-            if (checkin && checkin.equipment === 'gym') {
-                suggestedId = 'gym';
-            } else if (checkin && checkin.equipment === 'dumbbells') {
-                suggestedId = 'home';
-            } else {
-                suggestedId = 'bodyweight';
-            }
-            personalizationReason = `${cyclePhaseInfo.icon} ${cyclePhaseInfo.name} - Perfect time for ${cyclePhaseInfo.rec}`;
-        } else if (phaseKey === 'luteal') {
-            // Moderate intensity
-            if (checkin && checkin.equipment === 'dumbbells') {
-                suggestedId = 'home';
-            } else {
-                suggestedId = 'bodyweight';
-            }
+    
+    // PRIORITY 4: Cycle Phase adjustments
+    if (!personalizationReason && cyclePhaseInfo && phaseKey !== 'wellness') {
+        if (phaseKey === 'menstrual' && suggestedProgram === 'bodyweight') {
+            // During menstrual, swap strength to gentle yoga
+            suggestedProgram = 'yoga';
+            workoutDayIndex = 3; // Restorative Recovery
+            personalizationReason = `${cyclePhaseInfo.icon} Menstrual Phase - Gentle movement for rest`;
+        } else {
             personalizationReason = `${cyclePhaseInfo.icon} ${cyclePhaseInfo.name} - ${cyclePhaseInfo.rec}`;
         }
     }
-    // PRIORITY 4: Workout check-in (equipment only)
-    else if (checkin) {
-        if (checkin.energy === 'low') suggestedId = 'yoga';
-        else {
-            if (checkin.equipment === 'gym') suggestedId = 'gym';
-            else if (checkin.equipment === 'dumbbells') suggestedId = 'home';
-            else suggestedId = 'bodyweight';
-        }
+    
+    // Ensure program is available based on equipment
+    if (!availablePrograms.includes(suggestedProgram)) {
+        suggestedProgram = scheduleItem.fallback;
+        workoutDayIndex = scheduleItem.fallbackIdx;
     }
 
     const assets = {
@@ -9349,14 +9374,14 @@ async function renderMovementView() {
 
     // Render Hero
     const heroContainer = document.getElementById('movement-hero-container');
-    const heroProg = WORKOUT_DB[suggestedId];
-    const heroMeta = assets[suggestedId];
-    const heroSched = heroProg.schedule[dayIndex % heroProg.schedule.length];
+    const heroProg = window.WORKOUT_DB[suggestedProgram];
+    const heroMeta = assets[suggestedProgram];
+    const heroSched = heroProg.schedule[workoutDayIndex % heroProg.schedule.length];
 
     heroContainer.innerHTML = `
-    <div class="card" onclick="startActiveWorkout('${suggestedId}')" style="cursor: pointer; overflow:hidden; border-radius:32px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); border:none; position: relative; margin-bottom: 30px;">
+    <div class="card" onclick="startActiveWorkout('${suggestedProgram}')" style="cursor: pointer; overflow:hidden; border-radius:32px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); border:none; position: relative; margin-bottom: 30px;">
         <div style="position: relative; height: 380px;">
-             <img src="${heroMeta.img}" style="width:100%; height:100%; object-fit: cover;" onerror="this.src='https://placehold.co/600x800/png?text=${suggestedId}';">
+             <img src="${heroMeta.img}" style="width:100%; height:100%; object-fit: cover;" onerror="this.src='https://placehold.co/600x800/png?text=${suggestedProgram}';">
              <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
              
              <div style="position: absolute; top: 25px; left: 25px;">
@@ -9371,7 +9396,7 @@ async function renderMovementView() {
                     <span style="display:flex; align-items:center; gap:5px;"><svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>${heroProg.estimatedTime} mins</span>
                     <span style="display:flex; align-items:center; gap:5px;"><svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>${heroSched.exercises.length} exercises</span>
                  </div>
-                 <button onclick="event.stopPropagation(); startActiveWorkout('${suggestedId}')" style="width: 100%; background: #FFC107; color: black; border: none; padding: 18px; border-radius: 50px; font-weight: 900; font-size: 1.1rem; box-shadow: 0 10px 20px rgba(255,193,7,0.3);">
+                 <button onclick="event.stopPropagation(); startActiveWorkout('${suggestedProgram}')" style="width: 100%; background: #FFC107; color: black; border: none; padding: 18px; border-radius: 50px; font-weight: 900; font-size: 1.1rem; box-shadow: 0 10px 20px rgba(255,193,7,0.3);">
                     START SESSION
                  </button>
              </div>
