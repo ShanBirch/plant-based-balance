@@ -7945,8 +7945,9 @@ function renderCycleStatus() {
 
     document.getElementById('cycle-phase-desc').innerText = `You are in ${phase.name}. Usual focus: ${phase.rec}.`;
     
-    // Update Today's Rec Card
-    document.getElementById('rec-text').innerText = suggestion;
+    // Update Today's Rec Card (if it exists)
+    const recText = document.getElementById('rec-text');
+    if(recText) recText.innerText = suggestion;
     
     const recCard = document.getElementById('today-workout-rec');
     if(recCard) recCard.style.background = phase.color;
