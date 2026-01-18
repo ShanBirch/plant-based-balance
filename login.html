@@ -241,7 +241,9 @@
             const SUPABASE_URL = 'https://hzapaorxqboevxnumxkv.supabase.co';
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6YXBhb3J4cWJvZXZ4bnVteGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NjA3MTYsImV4cCI6MjA4NDIzNjcxNn0.L8ZuxevbB1pNx2nXtIiiQ-6dZSeqfdGuiEvscljOxq0';
 
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            // Make supabase client globally accessible
+            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const supabase = window.supabaseClient;
 
             // Create authHelpers
             window.authHelpers = {
@@ -306,7 +308,7 @@
             if (session) {
                 // Get user and check if admin
                 const user = await authHelpers.getUser();
-                const { data: adminCheck } = await supabase
+                const { data: adminCheck } = await window.supabaseClient
                     .from('admin_users')
                     .select('id')
                     .eq('user_id', user.id)
@@ -384,7 +386,7 @@
                 showSuccess('Login successful! Redirecting...');
 
                 // Check if user is an admin
-                const { data: adminCheck } = await supabase
+                const { data: adminCheck } = await window.supabaseClient
                     .from('admin_users')
                     .select('id')
                     .eq('user_id', user.id)
