@@ -198,7 +198,7 @@
             <a class="forgot-pass" onclick="handleForgotPassword()">Forgot your password?</a>
 
             <div class="signup-prompt">
-                Don't have an account? <span class="toggle-form" onclick="showSignup()">Sign up here</span>
+                Don't have an account? <a href="index.html" style="color: #48864B; text-decoration: none; font-weight: 700;">Join the Protocol</a>
             </div>
         </div>
 
@@ -308,6 +308,13 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const redirect = urlParams.get('redirect') || '/dashboard.html';
                 window.location.href = redirect;
+                return;
+            }
+
+            // Check for signup action (from Stripe redirect)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('action') === 'signup') {
+                showSignup();
             }
         }
 
