@@ -10206,17 +10206,9 @@ let isCoachMode = false;
 
 
 function checkUserRole() {
-    let email = window.currentUser?.email || sessionStorage.getItem('userEmail');
-    if (!email) return; // Wait for session
-    if (email.includes('plantbased-balance.org') || 
-        email === 'shannonrhysbirch@gmail.com' || 
-        email === 'shannonbirch@cocospersonaltraining.com') {
-        console.log("Coach Identity Detected: " + email);
-        if(!isCoachMode) toggleCoachMode(true);
-    } else {
-        console.log("User Identity Detected: " + email);
-        if(isCoachMode) toggleCoachMode(false);
-    }
+    // DISABLED: Coach Mode is replaced by admin-dashboard.html
+    // All users should see the normal dashboard.
+    return;
 }
 
 window.toggleCoachMode = function(show) {
