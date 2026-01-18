@@ -21,6 +21,30 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="lib/supabase.js"></script>
 <script src="lib/auth-guard.js"></script>
+<script>
+// Redirect admins to admin dashboard
+(async function() {
+    // Wait for auth-guard to set currentUser
+    while (!window.currentUser) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    try {
+        const { data: adminCheck } = await window.supabaseClient
+            .from('admin_users')
+            .select('id')
+            .eq('user_id', window.currentUser.id)
+            .maybeSingle();
+
+        if (adminCheck && !window.location.pathname.includes('admin-dashboard')) {
+            window.location.href = '/admin-dashboard.html';
+        }
+    } catch (error) {
+        console.log('Admin check error (non-fatal):', error);
+        // Continue loading dashboard if check fails
+    }
+})();
+</script>
 <script src="lib/migrate-localstorage.js"></script>
 
 <style>

@@ -306,22 +306,9 @@
             // Check if already logged in
             const session = await authHelpers.getSession();
             if (session) {
-                // Get user and check if admin
-                const user = await authHelpers.getUser();
-                const { data: adminCheck } = await window.supabaseClient
-                    .from('admin_users')
-                    .select('id')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-
-                // Already logged in - redirect to appropriate dashboard
+                // Already logged in - redirect to dashboard
                 const urlParams = new URLSearchParams(window.location.search);
-                let redirect = urlParams.get('redirect');
-
-                if (!redirect) {
-                    redirect = adminCheck ? '/admin-dashboard.html' : '/dashboard.html';
-                }
-
+                const redirect = urlParams.get('redirect') || '/dashboard.html';
                 window.location.href = redirect;
                 return;
             }
@@ -381,24 +368,13 @@
             btn.textContent = 'LOGGING IN...';
 
             try {
-                const { user } = await authHelpers.signIn(email, password);
+                await authHelpers.signIn(email, password);
 
                 showSuccess('Login successful! Redirecting...');
 
-                // Check if user is an admin
-                const { data: adminCheck } = await window.supabaseClient
-                    .from('admin_users')
-                    .select('id')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-
-                // Redirect to admin dashboard if user is admin, otherwise regular dashboard
+                // Redirect to dashboard
                 const urlParams = new URLSearchParams(window.location.search);
-                let redirect = urlParams.get('redirect');
-
-                if (!redirect) {
-                    redirect = adminCheck ? '/admin-dashboard.html' : '/dashboard.html';
-                }
+                const redirect = urlParams.get('redirect') || '/dashboard.html';
 
                 setTimeout(() => {
                     window.location.href = redirect;
