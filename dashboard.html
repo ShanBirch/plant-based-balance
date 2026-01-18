@@ -11572,45 +11572,27 @@ window.triggerCoachResponse = async function(userMsg) {
         }
 
         if (data.reply) {
-            // Support for multi-message responses separated by '|||'
-            const parts = data.reply.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
-            let delay = 0;
+            removeTypingIndicator();
 
-            parts.forEach((part, index) => {
-                if (index > 0) {
-                    // For messages after the first, show typing indicator first
-                    setTimeout(() => {
-                        const container = document.getElementById('chat-messages-container');
-                        if (container) {
-                            const typingDiv = document.createElement('div');
-                            typingDiv.id = 'coach-typing';
-                            typingDiv.style.cssText = "display: flex; align-items: center; margin-bottom: 20px; margin-left:10px;";
-                            typingDiv.innerHTML = `
-                                <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both;"></div>
-                                <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; margin: 0 4px; animation: bounce 1.4s infinite ease-in-out both 0.16s;"></div>
-                                <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both 0.32s;"></div>
-                            `;
-                            container.appendChild(typingDiv);
-                            container.scrollTop = container.scrollHeight;
-                        }
-                    }, delay);
+            // APPROVAL FLOW: Save response as pending instead of displaying immediately
+            const fullResponse = data.reply;
 
-                    // Add time for typing indicator to show (1-1.5 seconds)
-                    delay += 1000 + (Math.random() * 500);
-                }
+            // Get current user ID for the pending response
+            const user = await window.supabaseClient.auth.getUser();
+            const currentUserId = user?.data?.user?.id;
 
-                // Then remove typing indicator and show the message
-                setTimeout(() => {
-                    removeTypingIndicator();
-                    appendCoachMessage(part);
-                }, delay);
+            if (currentUserId) {
+                // Save to pending_coach_responses table
+                await db.pendingResponses.create(
+                    currentUserId,
+                    fullResponse,
+                    userMsg,
+                    { context: context, conversationStatus: conversationStatus }
+                );
 
-                // 3-6 second delay before next message
-                const baseDelay = 3000; // 3 seconds
-                const randomVariation = Math.random() * 3000; // 0-3 seconds random
-                const typingSimulation = part.length * 10; // Simulate typing time (10ms per character)
-                delay += baseDelay + randomVariation + typingSimulation;
-            });
+                // Notify admin about pending response
+                await notifyAdminOfPendingResponse(currentUserId, fullResponse);
+            }
         } else {
             removeTypingIndicator();
         }
@@ -11618,6 +11600,191 @@ window.triggerCoachResponse = async function(userMsg) {
         console.error("Coach Error", err);
         removeTypingIndicator();
         // Silent fail or very subtle hint - but never "AI Error"
+    }
+};
+
+// ==========================================
+// APPROVAL SYSTEM FUNCTIONS
+// ==========================================
+
+/**
+ * Notify admin about pending coach response
+ */
+async function notifyAdminOfPendingResponse(userId, responseText) {
+    // Get user name for the notification
+    const profile = await window.getUserProfile();
+    const userName = profile?.name || 'A user';
+
+    const notificationTitle = 'Coach Response Pending Approval';
+    const notificationBody = `${userName}: ${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}`;
+
+    // Send push notification to admin
+    if ('Notification' in window && Notification.permission === 'granted') {
+        // Check if service worker is available
+        if ('serviceWorker' in navigator) {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                await registration.showNotification(notificationTitle, {
+                    body: notificationBody,
+                    icon: './assets/coach_shannon.jpg',
+                    badge: './assets/logo_optimized.png',
+                    vibrate: [200, 100, 200],
+                    tag: 'pending-approval',
+                    requireInteraction: true, // Keep notification visible until user interacts
+                    data: {
+                        type: 'pending_approval',
+                        userId: userId,
+                        responseText: responseText
+                    },
+                    actions: [
+                        { action: 'approve', title: 'Approve' },
+                        { action: 'edit', title: 'Edit' }
+                    ]
+                });
+            } catch (error) {
+                console.error('Error showing notification:', error);
+            }
+        }
+    }
+
+    // Also set app badge
+    if ('setAppBadge' in navigator) {
+        const pendingCount = await db.pendingResponses.getPendingCount();
+        navigator.setAppBadge(pendingCount).catch(e => console.error(e));
+    }
+}
+
+/**
+ * Open approval modal for a pending response
+ */
+window.openApprovalModal = async function(pendingId = null) {
+    let pendingResponse;
+
+    if (pendingId) {
+        // Load specific pending response
+        pendingResponse = await db.pendingResponses.getById(pendingId);
+    } else {
+        // Load the most recent pending response
+        const pending = await db.pendingResponses.getPending(1);
+        if (pending && pending.length > 0) {
+            pendingResponse = pending[0];
+        }
+    }
+
+    if (!pendingResponse) {
+        alert('No pending responses found.');
+        return;
+    }
+
+    // Store current pending response ID
+    window.currentPendingResponseId = pendingResponse.id;
+
+    // Open the approval modal
+    const modal = document.getElementById('approval-modal');
+    if (modal) {
+        // Populate modal with response data
+        const userName = pendingResponse.users?.name || 'User';
+        const userMessage = pendingResponse.user_message_text || '';
+        const responseText = pendingResponse.message_text || '';
+
+        document.getElementById('approval-user-name').textContent = userName;
+        document.getElementById('approval-user-message').textContent = userMessage;
+        document.getElementById('approval-response-text').value = responseText;
+
+        modal.style.display = 'flex';
+    }
+};
+
+/**
+ * Close approval modal
+ */
+window.closeApprovalModal = function() {
+    const modal = document.getElementById('approval-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
+/**
+ * Approve and send the response
+ */
+window.approveResponse = async function() {
+    const responseId = window.currentPendingResponseId;
+    if (!responseId) return;
+
+    try {
+        // Get the (possibly edited) response text
+        const editedText = document.getElementById('approval-response-text').value;
+
+        // Get current user (admin)
+        const user = await window.supabaseClient.auth.getUser();
+        const adminId = user?.data?.user?.id;
+
+        // Approve the response
+        const approvedResponse = await db.pendingResponses.approve(responseId, adminId, editedText);
+
+        // Send the response to the user
+        const parts = editedText.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
+        let delay = 0;
+
+        parts.forEach((part, index) => {
+            setTimeout(async () => {
+                await appendCoachMessage(part);
+            }, delay);
+
+            delay += 1000; // 1 second delay between messages
+        });
+
+        // Close the modal
+        closeApprovalModal();
+
+        // Clear app badge if no more pending
+        const pendingCount = await db.pendingResponses.getPendingCount();
+        if ('setAppBadge' in navigator) {
+            if (pendingCount === 0) {
+                navigator.clearAppBadge().catch(e => console.error(e));
+            } else {
+                navigator.setAppBadge(pendingCount).catch(e => console.error(e));
+            }
+        }
+
+        // Show success message
+        alert('Response approved and sent!');
+    } catch (error) {
+        console.error('Error approving response:', error);
+        alert('Error approving response. Please try again.');
+    }
+};
+
+/**
+ * Reject the response
+ */
+window.rejectResponse = async function() {
+    const responseId = window.currentPendingResponseId;
+    if (!responseId) return;
+
+    const reason = prompt('Why are you rejecting this response? (optional)');
+
+    try {
+        await db.pendingResponses.reject(responseId, reason || 'No reason provided');
+
+        // Close the modal
+        closeApprovalModal();
+
+        // Clear app badge if no more pending
+        const pendingCount = await db.pendingResponses.getPendingCount();
+        if ('setAppBadge' in navigator) {
+            if (pendingCount === 0) {
+                navigator.clearAppBadge().catch(e => console.error(e));
+            } else {
+                navigator.setAppBadge(pendingCount).catch(e => console.error(e));
+            }
+        }
+
+        alert('Response rejected.');
+    } catch (error) {
+        console.error('Error rejecting response:', error);
+        alert('Error rejecting response. Please try again.');
     }
 };
 
@@ -14049,6 +14216,81 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
+
+<script>
+// ==========================================
+// SERVICE WORKER MESSAGE HANDLER
+// ==========================================
+// Listen for messages from service worker (e.g., notification clicks)
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'open_approval_modal') {
+            // Open the approval modal
+            window.openApprovalModal();
+        }
+    });
+}
+
+// Check URL parameters for approval modal trigger
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('openApproval') === 'true') {
+        // Wait a bit for everything to load, then open approval modal
+        setTimeout(() => {
+            window.openApprovalModal();
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }, 1000);
+    }
+});
+</script>
+
+<!-- ========================================== -->
+<!-- APPROVAL MODAL -->
+<!-- ========================================== -->
+<div id="approval-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 16px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+        <!-- Header -->
+        <div style="padding: 24px; border-bottom: 1px solid #e2e8f0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 1.5rem; color: #1e293b;">Approve Coach Response</h2>
+                <button onclick="closeApprovalModal()" style="background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 24px;">
+            <!-- User Info -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 8px;">User:</label>
+                <div id="approval-user-name" style="padding: 12px; background: #f1f5f9; border-radius: 8px; color: #1e293b;"></div>
+            </div>
+
+            <!-- User Message -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 8px;">User Message:</label>
+                <div id="approval-user-message" style="padding: 12px; background: #f1f5f9; border-radius: 8px; color: #1e293b; white-space: pre-wrap;"></div>
+            </div>
+
+            <!-- AI Response (Editable) -->
+            <div style="margin-bottom: 24px;">
+                <label for="approval-response-text" style="display: block; font-weight: 600; color: #475569; margin-bottom: 8px;">AI Response (Editable):</label>
+                <textarea id="approval-response-text" style="width: 100%; min-height: 200px; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 1rem; resize: vertical; box-sizing: border-box;" placeholder="AI response will appear here..."></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button onclick="rejectResponse()" style="padding: 12px 24px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                    Reject
+                </button>
+                <button onclick="approveResponse()" style="padding: 12px 24px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                    Approve & Send
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
 

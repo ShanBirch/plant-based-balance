@@ -86,7 +86,36 @@ self.addEventListener('push', (e) => {
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
 
+  const notificationData = e.notification.data || {};
+  const action = e.action; // 'approve' or 'edit' from notification actions
+
   e.waitUntil(
-    clients.openWindow(e.notification.data.url || './dashboard.html')
+    clients.matchAll({ type: 'window', includeUnmatched: true }).then(clientList => {
+      // Check if notification is for pending approval
+      if (notificationData.type === 'pending_approval') {
+        // Try to focus existing window
+        for (let client of clientList) {
+          if (client.url.includes('dashboard.html') && 'focus' in client) {
+            return client.focus().then(client => {
+              // Send message to open approval modal
+              client.postMessage({
+                type: 'open_approval_modal',
+                action: action,
+                data: notificationData
+              });
+              return client;
+            });
+          }
+        }
+
+        // If no window exists, open new one with approval modal trigger
+        if (clients.openWindow) {
+          return clients.openWindow('./dashboard.html?openApproval=true');
+        }
+      } else {
+        // Regular notification - just open dashboard
+        return clients.openWindow(notificationData.url || './dashboard.html');
+      }
+    })
   );
 });
