@@ -7048,18 +7048,18 @@ function startCustomBuilderWorkout() {
 
         <!-- Cycle Wheel / Hero Card -->
         <div style="padding: 25px;">
-            <div class="card" style="background: linear-gradient(135deg, #FFF5F7 0%, #FFF0F5 100%); border: 1px solid #FBCFE8; box-shadow: 0 10px 30px -5px rgba(251, 207, 232, 0.5); overflow: visible;">
+            <div class="card" style="background: linear-gradient(135deg, var(--bg) 0%, var(--accent-green) 100%); border: 1px solid var(--secondary); box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1); overflow: visible;">
                 <div class="card-body active" style="opacity:1; max-height:none; padding: 30px 25px; text-align: center;">
-                    
+
                     <!-- Phase Indicator Ring (CSS Only) -->
-                    <div style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid #FBCFE8; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; position: relative; background: white; box-shadow: 0 5px 15px rgba(251, 207, 232, 0.3);">
+                    <div style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--secondary); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; position: relative; background: white; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);">
                          <!-- Dynamic progress border would go here -->
                          <div style="font-size: 2.5rem;">🌸</div>
-                         <div style="position: absolute; bottom: -10px; background: #BE185D; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">Day <span id="cycle-day-display">--</span></div>
+                         <div style="position: absolute; bottom: -10px; background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">Day <span id="cycle-day-display">--</span></div>
                     </div>
 
-                    <h2 id="cycle-phase-name" style="color: #9D174D; margin: 0 0 10px 0; font-family: 'Playfair Display'; font-size: 1.8rem;">Loading...</h2>
-                    <p id="cycle-phase-desc" style="color: #831843; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">Tracking your cycle helps predict your energy.</p>
+                    <h2 id="cycle-phase-name" style="color: var(--primary); margin: 0 0 10px 0; font-family: 'Playfair Display'; font-size: 1.8rem;">Loading...</h2>
+                    <p id="cycle-phase-desc" style="color: var(--text-main); font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">Tracking your cycle helps predict your energy.</p>
                     
                     <!-- Phase Tags -->
                     <div id="cycle-phase-tags" style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
@@ -12877,23 +12877,23 @@ const APP_THEMES = {
             '--chat-border-coach': '#ffe4e6'
         } 
     },
-    'cycle-pink': { 
-        name: 'Cycle Harmony', 
-        colors: { 
-            '--primary': '#9D174D', 
-            '--primary-light': '#BE185D', 
-            '--secondary': '#F472B6', 
-            '--accent-green': '#FFF5F7', 
-            '--bg': '#FFF5F7', 
-            '--surface': '#ffffff', 
-            '--text-main': '#831843', 
-            '--text-muted': '#9D174D',
-            '--chat-bg-user': '#BE185D',
+    'cycle-pink': {
+        name: 'Cycle Harmony',
+        colors: {
+            '--primary': '#D81B60',
+            '--primary-light': '#F06292',
+            '--secondary': '#AB47BC',
+            '--accent-green': '#FCE4EC',
+            '--bg': '#FCE4EC',
+            '--surface': '#ffffff',
+            '--text-main': '#880E4F',
+            '--text-muted': '#AD1457',
+            '--chat-bg-user': '#D81B60',
             '--chat-text-user': '#ffffff',
-            '--chat-bg-coach': '#FFF0F5',
-            '--chat-text-coach': '#831843',
-            '--chat-border-coach': '#FBCFE8'
-        } 
+            '--chat-bg-coach': '#F8BBD0',
+            '--chat-text-coach': '#880E4F',
+            '--chat-border-coach': '#F48FB1'
+        }
     },
     'midnight': {
         name: 'Midnight Luxe',
