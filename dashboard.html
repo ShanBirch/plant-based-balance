@@ -7128,8 +7128,7 @@ function startCustomBuilderWorkout() {
 <script>
 // PWA & Navigation Logic
 document.addEventListener('DOMContentLoaded', () => {
-    // 0. Load Chat History
-    loadChatHistory();
+    // 0. Chat History now loaded in consolidated auth-aware block
 
     // 1. Move Sections out of Meals Container
     // We want Movement and Support to be top-level app views, not sub-views of Meals
@@ -10773,9 +10772,7 @@ function applyAppTheme(themeKey) {
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
-    loadChatHistory();
-    loadCommunityFeed();
-    // Wait for Auth before high-level decisions
+    // Wait for Auth before loading user-specific data
     const waitForAuth = () => new Promise(resolve => {
         if(window.currentUser) return resolve(window.currentUser);
         const check = setInterval(() => {
@@ -10785,13 +10782,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     waitForAuth().then(() => {
+        // Only load user-specific data after auth is confirmed
+        if(window.currentUser) {
+            loadChatHistory();
+            loadCommunityFeed();
+        }
         checkUserRole();
         const savedTheme = localStorage.getItem('userThemePreference') || 'default';
         applyAppTheme(savedTheme);
     });
 
-    // Event Listeners
-    document.getElementById('coach-chat-input')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') submitCoachMessage(); });
+    // Event Listeners (Community only - Coach uses form onsubmit)
     document.getElementById('community-chat-input')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendCommunityMessage(); });
 });
 </script>
