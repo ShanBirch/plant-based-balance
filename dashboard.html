@@ -7840,7 +7840,7 @@ async function updateCycleData() {
             const currentAdditional = existingFacts?.additional_data || {};
             
             await dbHelpers.userFacts.upsert(userId, {
-                additional: {
+                additional_data: {
                     ...currentAdditional,
                     last_period_start: userCycleData.lastPeriod,
                     cycle_length: userCycleData.cycleLength,
