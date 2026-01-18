@@ -8080,6 +8080,10 @@ async function initCalendarView() {
                 const lastPeriodInput = document.getElementById('last-period-input');
                 if (lastPeriodInput) lastPeriodInput.disabled = true;
             }
+            // Load logs for Cycle Sync
+            if (parsed.logs) {
+                userCycleData.logs = parsed.logs;
+            }
         }
     } catch (e) {
         console.log("Error loading cycle data from localStorage", e);
@@ -9707,16 +9711,20 @@ async function renderMovementView() {
     const heroMeta = assets[suggestedProgram];
     const heroSched = heroProg.schedule[workoutDayIndex % heroProg.schedule.length];
 
+    // Check if this is a Cycle Sync personalization
+    const isCycleSync = personalizationReason && personalizationReason.startsWith('✨ Cycle Sync:');
+    const badgeText = isCycleSync ? '⭐ Cycle Sync' : (personalizationReason ? '✨ Personalized' : 'Best for Today');
+
     heroContainer.innerHTML = `
     <div class="card" onclick="startActiveWorkout('${suggestedProgram}')" style="cursor: pointer; overflow:hidden; border-radius:32px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); border:none; position: relative; margin-bottom: 30px;">
         <div style="position: relative; height: 380px;">
              <img src="${heroMeta.img}" style="width:100%; height:100%; object-fit: cover;" onerror="this.src='https://placehold.co/600x800/png?text=${suggestedProgram}';">
              <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
-             
+
              <div style="position: absolute; top: 25px; left: 25px;">
-                <span style="background: ${heroMeta.color}; color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">${personalizationReason ? '✨ Personalized' : 'Best for Today'}</span>
+                <span style="background: ${heroMeta.color}; color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">${badgeText}</span>
              </div>
-             ${personalizationReason ? `<div style="position: absolute; top: 75px; left: 25px; background: rgba(255,255,255,0.95); padding: 10px 15px; border-radius: 12px; max-width: calc(100% - 50px);"><p style="margin: 0; font-size: 0.85rem; color: #333; font-weight: 600;">${personalizationReason}</p></div>` : ''}
+             ${(personalizationReason && !isCycleSync) ? `<div style="position: absolute; top: 75px; left: 25px; background: rgba(255,255,255,0.95); padding: 10px 15px; border-radius: 12px; max-width: calc(100% - 50px);"><p style="margin: 0; font-size: 0.85rem; color: #333; font-weight: 600;">${personalizationReason}</p></div>` : ''}
 
              <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 30px;">
                  <div style="color: ${heroMeta.color}; font-weight: 800; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 5px;">${heroProg.name}</div>
@@ -14022,8 +14030,20 @@ function checkAndRenderCycleSync() {
 
 // Initial Load
 document.addEventListener('DOMContentLoaded', () => {
-    // Check for Cycle Sync
-    setTimeout(checkAndRenderCycleSync, 1000);
+    // Load cycle data from localStorage first
+    if(typeof initCalendarView === 'function') {
+        initCalendarView().then(() => {
+            // After data is loaded, check for Cycle Sync
+            checkAndRenderCycleSync();
+        }).catch(err => {
+            console.log('Error loading calendar view:', err);
+            // Still try to check Cycle Sync even if there was an error
+            checkAndRenderCycleSync();
+        });
+    } else {
+        // Fallback if initCalendarView doesn't exist
+        setTimeout(checkAndRenderCycleSync, 1000);
+    }
     // Check if we need to load cycle view
     // (Existing init calls will handle this if tab is active)
 });
