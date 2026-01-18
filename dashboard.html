@@ -8891,61 +8891,11 @@ async function renderTodayMeals() {
 
 
     const cards = sourceSection.querySelectorAll('.card');
-    let dinnerReplaced = false;
 
     cards.forEach(card => {
         if (card.classList.contains('reflection-card')) return;
 
         const clone = card.cloneNode(true);
-
-        // Check if this is a dinner meal and we need to replace it with personalized meal
-        const mealTitle = clone.querySelector('.meal-title');
-        const meta = clone.querySelector('.meta');
-
-        if (personalizedMeal && !dinnerReplaced && meta && meta.textContent.includes('Dinner')) {
-            // Find the personalized meal from the full meal database
-            const allMealCards = document.querySelectorAll('.day-view .meal-title');
-            let personalizedCard = null;
-
-            allMealCards.forEach(title => {
-                if (title.textContent.trim() === personalizedMeal) {
-                    personalizedCard = title.closest('.card');
-                }
-            });
-
-            if (personalizedCard) {
-                // Clone the personalized meal card
-                const personalizedClone = personalizedCard.cloneNode(true);
-
-                // Update the time to be dinner time
-                const newMeta = personalizedClone.querySelector('.meta');
-                if (newMeta) {
-                    newMeta.textContent = 'Dinner  6:30 PM';
-                }
-
-                // Add a personalization badge
-                const header = personalizedClone.querySelector('.card-header');
-                if (header) {
-                    const badge = document.createElement('span');
-                    badge.style.cssText = 'background: #86efac; color: #166534; padding: 3px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; margin-left: 8px;';
-                    badge.textContent = '✨ PERSONALIZED';
-                    header.appendChild(badge);
-                }
-
-                // Ensure images open modal
-                personalizedClone.querySelectorAll('img').forEach(img => {
-                    img.onclick = function() {
-                        if (typeof openImageModal === 'function') {
-                            openImageModal(this.src);
-                        }
-                    };
-                });
-
-                container.appendChild(personalizedClone);
-                dinnerReplaced = true;
-                return; // Skip adding the original dinner
-            }
-        }
 
         // Ensure images open the modal
         clone.querySelectorAll('img').forEach(img => {
