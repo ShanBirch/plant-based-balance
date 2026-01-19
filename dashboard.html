@@ -16673,7 +16673,8 @@ async function useMealPhoto() {
 
     // Check if we failed after all attempts
     if (!success) {
-        showMealAnalysisError("Sorry, couldn't analyze that photo. Could you try taking the photo again? Make sure the food is clearly visible and well-lit.");
+        const errorDetails = lastError?.message || "Unknown error";
+        showMealAnalysisError(`Failed after ${maxAttempts} attempts. Error: ${errorDetails}`);
         return;
     }
 
@@ -16766,7 +16767,8 @@ async function handleMealPhotoSelect(event) {
 
     // Check if we failed after all attempts
     if (!success) {
-        showMealAnalysisError("Sorry, couldn't analyze that photo. Could you try taking the photo again? Make sure the food is clearly visible and well-lit.");
+        const errorDetails = lastError?.message || "Unknown error";
+        showMealAnalysisError(`Failed after ${maxAttempts} attempts. Error: ${errorDetails}`);
         // Reset file input
         event.target.value = '';
         return;
