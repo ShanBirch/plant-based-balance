@@ -15730,39 +15730,25 @@ updateCoachUI();
     </button>
 </div>
 
-<!-- Meal Camera Modal (For Calorie Tracker) -->
-<div id="meal-camera-modal" style="display:none; position:fixed; inset:0; background:black; z-index:10009; flex-direction:column; align-items:center; justify-content:center;">
-    <!-- Camera Preview -->
-    <video id="meal-camera-preview" autoplay playsinline style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;"></video>
-
-    <!-- Captured Preview (shown after capture) -->
-    <div id="meal-captured-preview" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:11;">
-        <img id="meal-captured-photo" style="width:100%; height:100%; object-fit:cover;">
-    </div>
+<!-- Meal Photo Preview Modal (After Native Camera Capture) -->
+<div id="meal-preview-modal" style="display:none; position:fixed; inset:0; background:black; z-index:10012; flex-direction:column; align-items:center; justify-content:center;">
+    <!-- Photo Preview -->
+    <img id="meal-preview-photo" style="width:100%; height:100%; object-fit:contain; position:absolute; top:0; left:0;">
 
     <!-- Close Button -->
-    <button onclick="closeMealCameraModal()" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:12;">
+    <button onclick="closeMealPreviewModal()" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:13; backdrop-filter:blur(10px);">
         &times;
     </button>
 
-    <!-- Use Photo Button (shown after capture) -->
-    <button id="use-meal-photo-btn" onclick="useMealPhoto()" style="display:none; position:absolute; bottom:40px; right:30px; background:var(--primary); color:white; padding:12px 30px; border:none; border-radius:25px; font-weight:600; font-size:1rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.5); z-index:12;">
+    <!-- Analyze Button -->
+    <button onclick="useMealPhoto()" style="position:absolute; bottom:40px; right:30px; background:var(--primary); color:white; padding:14px 35px; border:none; border-radius:25px; font-weight:600; font-size:1.1rem; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.6); z-index:13; transition:transform 0.2s;">
         Analyze Meal
     </button>
 
-    <!-- Retake Button (shown after capture) -->
-    <button id="meal-retake-btn" onclick="retakeMealPhoto()" style="display:none; position:absolute; bottom:40px; left:30px; background:rgba(255,255,255,0.2); color:white; padding:12px 24px; border:none; border-radius:25px; font-weight:600; font-size:1rem; cursor:pointer; backdrop-filter:blur(10px); z-index:12;">
+    <!-- Retake Button -->
+    <button onclick="retakeMealPhotoFromPreview()" style="position:absolute; bottom:40px; left:30px; background:rgba(255,255,255,0.2); color:white; padding:14px 28px; border:none; border-radius:25px; font-weight:600; font-size:1.1rem; cursor:pointer; backdrop-filter:blur(10px); z-index:13; transition:transform 0.2s;">
         Retake
     </button>
-
-    <!-- Camera Controls -->
-    <div id="meal-camera-controls" style="position:absolute; bottom:40px; left:0; right:0; display:flex; justify-content:center; align-items:center; z-index:10;">
-        <!-- Capture Button -->
-        <button id="meal-capture-btn"
-                onclick="captureMealPhoto()"
-                style="width:70px; height:70px; background:white; border:5px solid rgba(255,255,255,0.8); border-radius:50%; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3); transition:all 0.2s;">
-        </button>
-    </div>
 </div>
 
 <!-- Story Upload Modal -->
@@ -16197,153 +16183,133 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 
 let mealCameraSource = 'widget'; // Track where camera was opened from
-let mealCameraStream = null; // Camera stream for meal photos
+let mealCameraStream = null; // Camera stream (legacy, no longer used)
 let capturedMealFile = null; // Captured meal photo file
 
-// Open meal camera with direct getUserMedia API (reliable approach)
-async function openMealCamera(source) {
+// Open native camera for meal photos (best quality and reliability)
+function openMealCamera(source) {
     console.log('openMealCamera called from:', source);
     mealCameraSource = source || 'widget';
 
-    const cameraModal = document.getElementById('meal-camera-modal');
-    const videoElement = document.getElementById('meal-camera-preview');
+    // Create file input to trigger native camera
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.capture = 'environment'; // Opens native camera app
+    fileInput.style.display = 'none';
 
-    if (!cameraModal || !videoElement) {
-        console.error('Meal camera modal elements not found');
-        alert('Camera not available. Please refresh the page.');
+    let hasProcessedFile = false;
+
+    fileInput.onchange = function(e) {
+        if (hasProcessedFile) return; // Prevent double-processing
+        hasProcessedFile = true;
+
+        const file = e.target.files[0];
+        if (!file) {
+            console.log('No photo selected from camera');
+            cleanup();
+            return;
+        }
+
+        console.log('Meal photo captured:', file.name, file.type, 'Size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+
+        // Validate it's an image
+        if (!file.type.startsWith('image/')) {
+            alert('Invalid file type. Please take a photo.');
+            cleanup();
+            return;
+        }
+
+        // Set as captured meal file
+        capturedMealFile = file;
+
+        // Show preview in modal
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            showMealPhotoPreview(e.target.result);
+        };
+        reader.onerror = function(error) {
+            console.error('FileReader error:', error);
+            alert('Failed to load photo. Please try again.');
+            cleanup();
+        };
+        reader.readAsDataURL(file);
+
+        // Clean up after processing
+        setTimeout(cleanup, 500);
+    };
+
+    function cleanup() {
+        try {
+            if (fileInput && fileInput.parentNode) {
+                fileInput.parentNode.removeChild(fileInput);
+            }
+        } catch (e) {
+            console.log('Cleanup error (non-critical):', e);
+        }
+    }
+
+    // Handle cancel
+    fileInput.addEventListener('cancel', function() {
+        console.log('Camera cancelled by user');
+        cleanup();
+    });
+
+    // Fallback cleanup after 2 minutes
+    setTimeout(() => {
+        if (!hasProcessedFile) {
+            console.log('Camera timeout - cleaning up');
+            cleanup();
+        }
+    }, 120000);
+
+    // Add to DOM and trigger
+    document.body.appendChild(fileInput);
+
+    // Small delay to ensure proper triggering on all devices
+    setTimeout(() => {
+        try {
+            fileInput.click();
+        } catch (error) {
+            console.error('Failed to trigger camera:', error);
+            alert('Camera unavailable. Please check your browser permissions.');
+            cleanup();
+        }
+    }, 100);
+}
+
+// Show meal photo preview in modal
+function showMealPhotoPreview(dataUrl) {
+    const previewModal = document.getElementById('meal-preview-modal');
+    const previewPhoto = document.getElementById('meal-preview-photo');
+
+    if (!previewModal || !previewPhoto) {
+        console.error('Preview modal elements not found');
         return;
     }
 
-    try {
-        // Request camera access using direct getUserMedia API
-        mealCameraStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' }, // Back camera on mobile
-            audio: false // No audio needed for meal photos
-        });
-
-        // Show camera modal
-        cameraModal.style.display = 'flex';
-        videoElement.srcObject = mealCameraStream;
-        videoElement.play();
-
-        console.log('Meal camera opened successfully');
-
-    } catch (error) {
-        console.error('Camera access denied or unavailable:', error);
-
-        // Fallback to file input if camera access fails
-        const fileInput = document.getElementById('meal-camera-input');
-        if (fileInput) {
-            fileInput.click();
-        } else {
-            alert('Unable to access camera. Please ensure camera permissions are granted and try again.');
-        }
-    }
+    // Show modal with preview
+    previewPhoto.src = dataUrl;
+    previewModal.style.display = 'flex';
 }
 
-// Close meal camera modal
-function closeMealCameraModal() {
-    const cameraModal = document.getElementById('meal-camera-modal');
-    const videoElement = document.getElementById('meal-camera-preview');
-    const capturedPreview = document.getElementById('meal-captured-preview');
-    const cameraControls = document.getElementById('meal-camera-controls');
-    const usePhotoBtn = document.getElementById('use-meal-photo-btn');
-    const retakeBtn = document.getElementById('meal-retake-btn');
-
-    // Stop camera stream
-    if (mealCameraStream) {
-        mealCameraStream.getTracks().forEach(track => track.stop());
-        mealCameraStream = null;
+// Close meal preview modal
+function closeMealPreviewModal() {
+    const previewModal = document.getElementById('meal-preview-modal');
+    if (previewModal) {
+        previewModal.style.display = 'none';
     }
-
-    // Reset video
-    if (videoElement) {
-        videoElement.srcObject = null;
-    }
-
-    // Hide modal
-    if (cameraModal) {
-        cameraModal.style.display = 'none';
-    }
-
-    // Reset preview state
-    if (capturedPreview) capturedPreview.style.display = 'none';
-    if (cameraControls) cameraControls.style.display = 'flex';
-    if (usePhotoBtn) usePhotoBtn.style.display = 'none';
-    if (retakeBtn) retakeBtn.style.display = 'none';
-
-    // Clear captured file
     capturedMealFile = null;
 }
 
-// Capture photo from meal camera
-function captureMealPhoto() {
-    const videoElement = document.getElementById('meal-camera-preview');
-    if (!videoElement) return;
-
-    // Create canvas to capture frame
-    const canvas = document.createElement('canvas');
-    canvas.width = videoElement.videoWidth;
-    canvas.height = videoElement.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(videoElement, 0, 0);
-
-    // Convert to blob
-    canvas.toBlob(function(blob) {
-        console.log('Meal photo captured, blob size:', blob.size);
-
-        // Create file from blob
-        capturedMealFile = new File([blob], 'meal-photo.jpg', { type: 'image/jpeg' });
-
-        // Show preview
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            showMealCapturedPreview(e.target.result);
-        };
-        reader.readAsDataURL(capturedMealFile);
-    }, 'image/jpeg', 0.95);
+// Retake meal photo from preview
+function retakeMealPhotoFromPreview() {
+    closeMealPreviewModal();
+    // Reopen camera with same source
+    openMealCamera(mealCameraSource);
 }
 
-// Show captured meal photo preview
-function showMealCapturedPreview(dataUrl) {
-    const capturedPreview = document.getElementById('meal-captured-preview');
-    const capturedPhoto = document.getElementById('meal-captured-photo');
-    const cameraControls = document.getElementById('meal-camera-controls');
-    const usePhotoBtn = document.getElementById('use-meal-photo-btn');
-    const retakeBtn = document.getElementById('meal-retake-btn');
-
-    // Hide camera controls
-    if (cameraControls) cameraControls.style.display = 'none';
-
-    // Show captured preview
-    if (capturedPreview) capturedPreview.style.display = 'block';
-    if (capturedPhoto) capturedPhoto.src = dataUrl;
-
-    // Show action buttons
-    if (usePhotoBtn) usePhotoBtn.style.display = 'block';
-    if (retakeBtn) retakeBtn.style.display = 'block';
-}
-
-// Retake meal photo
-function retakeMealPhoto() {
-    const capturedPreview = document.getElementById('meal-captured-preview');
-    const cameraControls = document.getElementById('meal-camera-controls');
-    const usePhotoBtn = document.getElementById('use-meal-photo-btn');
-    const retakeBtn = document.getElementById('meal-retake-btn');
-
-    // Hide preview
-    if (capturedPreview) capturedPreview.style.display = 'none';
-
-    // Show camera controls again
-    if (cameraControls) cameraControls.style.display = 'flex';
-
-    // Hide action buttons
-    if (usePhotoBtn) usePhotoBtn.style.display = 'none';
-    if (retakeBtn) retakeBtn.style.display = 'none';
-
-    // Clear captured file
-    capturedMealFile = null;
-}
+// Legacy functions - no longer needed with native camera
 
 // Use captured meal photo for analysis
 async function useMealPhoto() {
@@ -16352,8 +16318,8 @@ async function useMealPhoto() {
         return;
     }
 
-    // Close camera modal
-    closeMealCameraModal();
+    // Close preview modal
+    closeMealPreviewModal();
 
     // Show loading state
     showMealAnalysisLoading();
