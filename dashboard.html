@@ -977,6 +977,442 @@
         transform: translateY(-2px);
         background: #bfa64d; /* Darker gold */
     }
+
+    /* ========================================== */
+    /* CALORIE TRACKER STYLES */
+    /* ========================================== */
+
+    /* Calorie Widget Card (Dashboard) */
+    .calorie-widget-card {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .calorie-widget-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .camera-btn-widget {
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(123, 168, 131, 0.3);
+    }
+
+    .camera-btn-widget:hover {
+        background: var(--primary-light);
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(123, 168, 131, 0.4);
+    }
+
+    .camera-btn-widget:active {
+        transform: scale(0.95);
+    }
+
+    /* Calorie Progress */
+    .calorie-progress-main {
+        margin-bottom: 20px;
+    }
+
+    .calorie-numbers {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        margin-bottom: 12px;
+        gap: 4px;
+    }
+
+    .calorie-current {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .calorie-separator {
+        font-size: 1.5rem;
+        color: var(--text-muted);
+        margin: 0 4px;
+    }
+
+    .calorie-goal {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .calorie-unit {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-left: 4px;
+    }
+
+    /* Progress Bars */
+    .progress-bar {
+        height: 12px;
+        background: #f0f0f0;
+        border-radius: 6px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--primary-light));
+        border-radius: 6px;
+        transition: width 0.5s ease;
+    }
+
+    .progress-bar-small {
+        height: 6px;
+        background: #f0f0f0;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 6px;
+    }
+
+    .progress-fill-protein {
+        height: 100%;
+        background: linear-gradient(90deg, #7BA883, #98C9A3);
+        border-radius: 3px;
+        transition: width 0.5s ease;
+    }
+
+    .progress-fill-carbs {
+        height: 100%;
+        background: linear-gradient(90deg, #E8D68E, #f2e8b0);
+        border-radius: 3px;
+        transition: width 0.5s ease;
+    }
+
+    .progress-fill-fat {
+        height: 100%;
+        background: linear-gradient(90deg, #d4a574, #e6c29a);
+        border-radius: 3px;
+        transition: width 0.5s ease;
+    }
+
+    .progress-fill-fiber {
+        height: 100%;
+        background: linear-gradient(90deg, #9b8dab, #b5a9c2);
+        border-radius: 3px;
+        transition: width 0.5s ease;
+    }
+
+    /* Macros Grid */
+    .macros-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .macro-item {
+        text-align: center;
+    }
+
+    .macro-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .macro-value {
+        font-size: 0.85rem;
+        color: var(--text-main);
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    /* Widget Footer */
+    .calorie-widget-footer {
+        margin-top: 16px;
+        text-align: center;
+    }
+
+    .view-details-btn {
+        background: none;
+        border: none;
+        color: var(--primary);
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 8px 16px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .view-details-btn:hover {
+        background: var(--accent-green);
+    }
+
+    /* Calorie Tracker Summary (Full View) */
+    .calorie-tracker-summary {
+        background: white;
+        border-radius: 16px;
+        padding: 30px 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Circular Progress */
+    .calorie-progress-large {
+        display: flex;
+        justify-content: center;
+        margin: 30px 0;
+    }
+
+    .calorie-circle {
+        position: relative;
+        width: 200px;
+        height: 200px;
+    }
+
+    .calorie-circle-svg {
+        width: 100%;
+        height: 100%;
+    }
+
+    .calorie-circle-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+
+    .calorie-circle-current {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        line-height: 1;
+    }
+
+    .calorie-circle-separator {
+        font-size: 1.2rem;
+        color: var(--text-muted);
+        margin: 0 2px;
+    }
+
+    .calorie-circle-goal {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .calorie-circle-label {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Macros Detail Grid */
+    .macros-detail-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-top: 30px;
+    }
+
+    .macro-detail-item {
+        background: #f9f9f7;
+        padding: 12px 16px;
+        border-radius: 12px;
+    }
+
+    .macro-detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .macro-detail-name {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--text-main);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .macro-detail-value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .progress-bar-medium {
+        height: 10px;
+        background: #e5e5e5;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    /* Camera Button Large */
+    .camera-btn-large {
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 16px;
+        padding: 16px 32px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(123, 168, 131, 0.3);
+    }
+
+    .camera-btn-large:hover {
+        background: var(--primary-light);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(123, 168, 131, 0.4);
+    }
+
+    .camera-btn-large:active {
+        transform: translateY(0);
+    }
+
+    /* Meals Log List */
+    #meals-log-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .meal-log-card {
+        background: white;
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        gap: 12px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+
+    .meal-log-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .meal-log-image {
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        background-size: cover;
+        background-position: center;
+        background-color: #f0f0f0;
+        flex-shrink: 0;
+    }
+
+    .meal-log-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .meal-log-time {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+    .meal-log-foods {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 6px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .meal-log-macros {
+        display: flex;
+        gap: 10px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .meal-log-macros span {
+        white-space: nowrap;
+    }
+
+    .meal-log-delete {
+        background: none;
+        border: none;
+        color: #ef4444;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .meal-log-delete:hover {
+        background: #fee2e2;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 480px) {
+        .macros-grid {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .calorie-circle {
+            width: 160px;
+            height: 160px;
+        }
+
+        .calorie-circle-current {
+            font-size: 2rem;
+        }
+
+        .calorie-circle-goal {
+            font-size: 1.2rem;
+        }
+
+        .meal-log-image {
+            width: 60px;
+            height: 60px;
+        }
+
+        .meal-log-macros {
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+    }
+
     </style>
 </head>
 <body>
@@ -1011,12 +1447,72 @@
                 <p style="margin: 5px 0 0 0; font-size: 0.75rem; color: var(--text-muted); white-space: normal; width: 70px;">Your Story</p>
             </div>
             <input type="file" id="story-camera-input" accept="image/*,video/*" capture style="display:none;" onchange="handleStoryFileSelect(event)">
+            <input type="file" id="meal-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleMealPhotoSelect(event)">
             <!-- Story rings will be injected here -->
         </div>
     </div>
 
     <div style="padding: 0 25px;">
-        <h3 style="margin-bottom: 15px;">Today's Priority</h3>
+        <!-- Calorie Counter Widget -->
+        <div class="calorie-widget-card">
+            <div class="calorie-widget-header">
+                <h3 style="margin: 0; font-size: 1.1rem;">Today's Nutrition</h3>
+                <button class="camera-btn-widget" onclick="openMealCamera('widget')" title="Log a meal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                        <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="calorie-widget-content">
+                <!-- Calories Progress -->
+                <div class="calorie-progress-main">
+                    <div class="calorie-numbers">
+                        <span class="calorie-current" id="widget-calories-current">0</span>
+                        <span class="calorie-separator">/</span>
+                        <span class="calorie-goal" id="widget-calories-goal">2000</span>
+                        <span class="calorie-unit">kcal</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="widget-calories-bar" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- Macros Grid -->
+                <div class="macros-grid">
+                    <div class="macro-item">
+                        <div class="macro-label">Protein</div>
+                        <div class="macro-value"><span id="widget-protein">0</span>g / <span id="widget-protein-goal">50</span>g</div>
+                        <div class="progress-bar-small">
+                            <div class="progress-fill-protein" id="widget-protein-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="macro-item">
+                        <div class="macro-label">Carbs</div>
+                        <div class="macro-value"><span id="widget-carbs">0</span>g / <span id="widget-carbs-goal">250</span>g</div>
+                        <div class="progress-bar-small">
+                            <div class="progress-fill-carbs" id="widget-carbs-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="macro-item">
+                        <div class="macro-label">Fat</div>
+                        <div class="macro-value"><span id="widget-fat">0</span>g / <span id="widget-fat-goal">70</span>g</div>
+                        <div class="progress-bar-small">
+                            <div class="progress-fill-fat" id="widget-fat-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="calorie-widget-footer">
+                    <button class="view-details-btn" onclick="switchAppTab('meals', this); setTimeout(() => switchWeek('calorie-tracker', document.querySelector('.pill-btn')), 100)">
+                        View Details →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 15px; margin-top: 30px;">Today's Priority</h3>
         
         <!-- Cycle Sync Injection Container -->
         <div id="today-meals-container"></div>
@@ -1064,6 +1560,7 @@
     <!-- Week Pills Navigation -->
     <div class="week-scroller" id="meals-nav-pills">
         <button class="pill-btn active" onclick="switchWeek('today', this)">Today</button>
+        <button class="pill-btn" onclick="switchWeek('calorie-tracker', this)" style="background: var(--accent-green); color: var(--primary); font-weight: 600; border-color: rgba(4, 106, 56, 0.2);">📸 Calorie Tracker</button>
         <button class="pill-btn" onclick="switchWeek('week1', this)">Week 1</button>
         <button class="pill-btn" onclick="switchWeek('week2', this)">Week 2</button>
         <button class="pill-btn" onclick="switchWeek('week3', this)">Week 3</button>
@@ -1080,6 +1577,98 @@
                 <!-- Current day's meals will be injected here -->
                 <div style="text-align:center; padding:40px; color:var(--text-muted);">
                     <p>Loading your meals for today...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calorie Tracker View -->
+        <div class="view-section" id="calorie-tracker" style="display:none;">
+            <div style="padding: 25px;">
+                <!-- Daily Summary Card -->
+                <div class="calorie-tracker-summary">
+                    <h2 style="margin: 0 0 20px 0; font-size: 1.5rem; color: var(--text-main);">Daily Nutrition Tracker</h2>
+
+                    <!-- Calorie Progress Large -->
+                    <div class="calorie-progress-large">
+                        <div class="calorie-circle">
+                            <svg class="calorie-circle-svg" viewBox="0 0 200 200">
+                                <circle class="calorie-circle-bg" cx="100" cy="100" r="90" fill="none" stroke="#f0f0f0" stroke-width="12"/>
+                                <circle class="calorie-circle-progress" id="calorie-circle-progress" cx="100" cy="100" r="90" fill="none" stroke="var(--primary)" stroke-width="12" stroke-linecap="round"
+                                    style="stroke-dasharray: 565; stroke-dashoffset: 565; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 0.5s ease;"/>
+                            </svg>
+                            <div class="calorie-circle-text">
+                                <div class="calorie-circle-current" id="tracker-calories-current">0</div>
+                                <div class="calorie-circle-separator">/</div>
+                                <div class="calorie-circle-goal" id="tracker-calories-goal">2000</div>
+                                <div class="calorie-circle-label">calories</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Macros Progress Bars -->
+                    <div class="macros-detail-grid">
+                        <div class="macro-detail-item">
+                            <div class="macro-detail-header">
+                                <span class="macro-detail-name">Protein</span>
+                                <span class="macro-detail-value"><span id="tracker-protein">0</span> / <span id="tracker-protein-goal">50</span>g</span>
+                            </div>
+                            <div class="progress-bar-medium">
+                                <div class="progress-fill-protein" id="tracker-protein-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="macro-detail-item">
+                            <div class="macro-detail-header">
+                                <span class="macro-detail-name">Carbs</span>
+                                <span class="macro-detail-value"><span id="tracker-carbs">0</span> / <span id="tracker-carbs-goal">250</span>g</span>
+                            </div>
+                            <div class="progress-bar-medium">
+                                <div class="progress-fill-carbs" id="tracker-carbs-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="macro-detail-item">
+                            <div class="macro-detail-header">
+                                <span class="macro-detail-name">Fat</span>
+                                <span class="macro-detail-value"><span id="tracker-fat">0</span> / <span id="tracker-fat-goal">70</span>g</span>
+                            </div>
+                            <div class="progress-bar-medium">
+                                <div class="progress-fill-fat" id="tracker-fat-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="macro-detail-item">
+                            <div class="macro-detail-header">
+                                <span class="macro-detail-name">Fiber</span>
+                                <span class="macro-detail-value"><span id="tracker-fiber">0</span> / <span id="tracker-fiber-goal">25</span>g</span>
+                            </div>
+                            <div class="progress-bar-medium">
+                                <div class="progress-fill-fiber" id="tracker-fiber-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Camera Button -->
+                <div style="text-align: center; margin: 30px 0;">
+                    <button class="camera-btn-large" onclick="openMealCamera('tracker')">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                        <span>Log a Meal</span>
+                    </button>
+                </div>
+
+                <!-- Today's Meals List -->
+                <h3 style="margin: 30px 0 15px 0;">Today's Meals</h3>
+                <div id="meals-log-list">
+                    <div class="empty-state">
+                        <p style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+                            📸 No meals logged yet today.<br>
+                            <span style="font-size: 0.9rem;">Take a photo of your meal to get started!</span>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -15357,6 +15946,423 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // Check if we need to load cycle view
     // (Existing init calls will handle this if tab is active)
+});
+
+</script>
+
+<script>
+// ==========================================
+// CALORIE TRACKER FUNCTIONS
+// ==========================================
+
+let mealCameraSource = 'widget'; // Track where camera was opened from
+
+// Open meal camera
+function openMealCamera(source) {
+    mealCameraSource = source || 'widget';
+    const input = document.getElementById('meal-camera-input');
+    if (input) {
+        input.click();
+    }
+}
+
+// Handle meal photo selection
+async function handleMealPhotoSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Show loading state
+    showMealAnalysisLoading();
+
+    try {
+        // Convert to base64
+        const base64 = await fileToBase64(file);
+        const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+
+        // Call Gemini API via edge function
+        console.log('Analyzing food photo...');
+        const response = await fetch('/.netlify/functions/analyze-food', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                imageBase64: base64Data,
+                mimeType: file.type
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to analyze food photo');
+        }
+
+        const result = await response.json();
+
+        if (!result.success || !result.data) {
+            throw new Error('Invalid response from analysis');
+        }
+
+        const nutritionData = result.data;
+        console.log('Food analysis complete:', nutritionData);
+
+        // Upload photo to Supabase Storage
+        const photoUrl = await uploadMealPhoto(file);
+
+        // Save meal log to database
+        await saveMealLog({
+            photoUrl,
+            foodItems: nutritionData.foodItems,
+            totals: nutritionData.totals,
+            micronutrients: nutritionData.micronutrients,
+            confidence: nutritionData.confidence,
+            notes: nutritionData.notes
+        });
+
+        // Refresh display
+        await loadTodayNutrition();
+
+        // Show success message
+        showMealAnalysisSuccess(nutritionData);
+
+    } catch (error) {
+        console.error('Error analyzing meal:', error);
+        showMealAnalysisError(error.message);
+    } finally {
+        // Reset file input
+        event.target.value = '';
+    }
+}
+
+// Convert file to base64
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// Upload meal photo to Supabase Storage
+async function uploadMealPhoto(file) {
+    const user = supabase.auth.getUser ? await supabase.auth.getUser() : await supabase.auth.user();
+    const userId = user?.data?.user?.id || user?.id;
+
+    if (!userId) {
+        throw new Error('User not authenticated');
+    }
+
+    const timestamp = Date.now();
+    const fileName = `${userId}/${timestamp}_${file.name}`;
+
+    const { data, error } = await supabase.storage
+        .from('meal-photos')
+        .upload(fileName, file);
+
+    if (error) {
+        console.error('Error uploading photo:', error);
+        throw error;
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+        .from('meal-photos')
+        .getPublicUrl(fileName);
+
+    return urlData.publicUrl;
+}
+
+// Save meal log to database
+async function saveMealLog(mealData) {
+    const user = supabase.auth.getUser ? await supabase.auth.getUser() : await supabase.auth.user();
+    const userId = user?.data?.user?.id || user?.id;
+
+    if (!userId) {
+        throw new Error('User not authenticated');
+    }
+
+    const now = new Date();
+    const mealDate = now.toISOString().split('T')[0];
+    const mealTime = now.toTimeString().split(' ')[0];
+
+    const { data, error } = await supabase
+        .from('meal_logs')
+        .insert({
+            user_id: userId,
+            meal_date: mealDate,
+            meal_time: mealTime,
+            photo_url: mealData.photoUrl,
+            storage_path: mealData.photoUrl,
+            food_items: mealData.foodItems,
+            calories: mealData.totals.calories,
+            protein_g: mealData.totals.protein_g,
+            carbs_g: mealData.totals.carbs_g,
+            fat_g: mealData.totals.fat_g,
+            fiber_g: mealData.totals.fiber_g,
+            micronutrients: mealData.micronutrients,
+            notes: mealData.notes,
+            ai_confidence: mealData.confidence,
+            analysis_timestamp: new Date().toISOString()
+        })
+        .select();
+
+    if (error) {
+        console.error('Error saving meal log:', error);
+        throw error;
+    }
+
+    return data;
+}
+
+// Load today's nutrition data
+async function loadTodayNutrition() {
+    try {
+        const user = supabase.auth.getUser ? await supabase.auth.getUser() : await supabase.auth.user();
+        const userId = user?.data?.user?.id || user?.id;
+
+        if (!userId) {
+            console.log('User not authenticated');
+            return;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+
+        // Load daily nutrition summary
+        const { data: dailyData, error: dailyError } = await supabase
+            .from('daily_nutrition')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('nutrition_date', today)
+            .single();
+
+        if (dailyError && dailyError.code !== 'PGRST116') { // PGRST116 is "not found"
+            console.error('Error loading daily nutrition:', dailyError);
+        }
+
+        // Load individual meals
+        const { data: mealsData, error: mealsError } = await supabase
+            .from('meal_logs')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('meal_date', today)
+            .order('meal_time', { ascending: true });
+
+        if (mealsError) {
+            console.error('Error loading meals:', mealsError);
+        }
+
+        // Update UI
+        updateNutritionUI(dailyData, mealsData);
+
+    } catch (error) {
+        console.error('Error in loadTodayNutrition:', error);
+    }
+}
+
+// Update nutrition UI with data
+function updateNutritionUI(dailyData, mealsData) {
+    const defaults = {
+        total_calories: 0,
+        total_protein_g: 0,
+        total_carbs_g: 0,
+        total_fat_g: 0,
+        total_fiber_g: 0,
+        calorie_goal: 2000,
+        protein_goal_g: 50,
+        carbs_goal_g: 250,
+        fat_goal_g: 70
+    };
+
+    const data = dailyData || defaults;
+
+    // Update widget (dashboard)
+    updateElement('widget-calories-current', Math.round(data.total_calories || 0));
+    updateElement('widget-calories-goal', data.calorie_goal || 2000);
+    updateElement('widget-protein', Math.round(data.total_protein_g || 0));
+    updateElement('widget-protein-goal', data.protein_goal_g || 50);
+    updateElement('widget-carbs', Math.round(data.total_carbs_g || 0));
+    updateElement('widget-carbs-goal', data.carbs_goal_g || 250);
+    updateElement('widget-fat', Math.round(data.total_fat_g || 0));
+    updateElement('widget-fat-goal', data.fat_goal_g || 70);
+
+    // Update progress bars (widget)
+    updateProgressBar('widget-calories-bar', data.total_calories, data.calorie_goal);
+    updateProgressBar('widget-protein-bar', data.total_protein_g, data.protein_goal_g);
+    updateProgressBar('widget-carbs-bar', data.total_carbs_g, data.carbs_goal_g);
+    updateProgressBar('widget-fat-bar', data.total_fat_g, data.fat_goal_g);
+
+    // Update tracker (full view)
+    updateElement('tracker-calories-current', Math.round(data.total_calories || 0));
+    updateElement('tracker-calories-goal', data.calorie_goal || 2000);
+    updateElement('tracker-protein', Math.round(data.total_protein_g || 0));
+    updateElement('tracker-protein-goal', data.protein_goal_g || 50);
+    updateElement('tracker-carbs', Math.round(data.total_carbs_g || 0));
+    updateElement('tracker-carbs-goal', data.carbs_goal_g || 250);
+    updateElement('tracker-fat', Math.round(data.total_fat_g || 0));
+    updateElement('tracker-fat-goal', data.fat_goal_g || 70);
+    updateElement('tracker-fiber', Math.round(data.total_fiber_g || 0));
+    updateElement('tracker-fiber-goal', 25);
+
+    // Update progress bars (tracker)
+    updateProgressBar('tracker-protein-bar', data.total_protein_g, data.protein_goal_g);
+    updateProgressBar('tracker-carbs-bar', data.total_carbs_g, data.carbs_goal_g);
+    updateProgressBar('tracker-fat-bar', data.total_fat_g, data.fat_goal_g);
+    updateProgressBar('tracker-fiber-bar', data.total_fiber_g, 25);
+
+    // Update circular progress
+    updateCircularProgress(data.total_calories, data.calorie_goal);
+
+    // Update meals list
+    if (mealsData && mealsData.length > 0) {
+        renderMealsList(mealsData);
+    }
+}
+
+// Helper function to update element text
+function updateElement(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.textContent = value;
+    }
+}
+
+// Helper function to update progress bar
+function updateProgressBar(id, current, goal) {
+    const el = document.getElementById(id);
+    if (el && goal > 0) {
+        const percent = Math.min((current / goal) * 100, 100);
+        el.style.width = percent + '%';
+    }
+}
+
+// Update circular progress (for calorie circle)
+function updateCircularProgress(current, goal) {
+    const circle = document.getElementById('calorie-circle-progress');
+    if (circle && goal > 0) {
+        const percent = Math.min(current / goal, 1);
+        const circumference = 2 * Math.PI * 90; // radius is 90
+        const offset = circumference * (1 - percent);
+        circle.style.strokeDashoffset = offset;
+    }
+}
+
+// Render meals list
+function renderMealsList(meals) {
+    const container = document.getElementById('meals-log-list');
+    if (!container) return;
+
+    if (!meals || meals.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <p style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+                    📸 No meals logged yet today.<br>
+                    <span style="font-size: 0.9rem;">Take a photo of your meal to get started!</span>
+                </p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    meals.forEach(meal => {
+        const time = new Date(`2000-01-01T${meal.meal_time}`).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+
+        const foodItemsText = Array.isArray(meal.food_items)
+            ? meal.food_items.map(item => item.name).join(', ')
+            : 'Food';
+
+        html += `
+            <div class="meal-log-card">
+                <div class="meal-log-image" style="background-image: url('${meal.photo_url}')"></div>
+                <div class="meal-log-content">
+                    <div class="meal-log-time">${time}</div>
+                    <div class="meal-log-foods">${foodItemsText}</div>
+                    <div class="meal-log-macros">
+                        <span>${Math.round(meal.calories)} cal</span>
+                        <span>P: ${Math.round(meal.protein_g)}g</span>
+                        <span>C: ${Math.round(meal.carbs_g)}g</span>
+                        <span>F: ${Math.round(meal.fat_g)}g</span>
+                    </div>
+                </div>
+                <button class="meal-log-delete" onclick="deleteMealLog('${meal.id}')" title="Delete meal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// Delete meal log
+async function deleteMealLog(mealId) {
+    if (!confirm('Are you sure you want to delete this meal?')) {
+        return;
+    }
+
+    try {
+        const { error } = await supabase
+            .from('meal_logs')
+            .delete()
+            .eq('id', mealId);
+
+        if (error) {
+            console.error('Error deleting meal:', error);
+            alert('Failed to delete meal. Please try again.');
+            return;
+        }
+
+        // Reload data
+        await loadTodayNutrition();
+    } catch (error) {
+        console.error('Error deleting meal:', error);
+        alert('Failed to delete meal. Please try again.');
+    }
+}
+
+// Show loading state
+function showMealAnalysisLoading() {
+    // Could add a modal or toast here
+    console.log('Analyzing meal...');
+}
+
+// Show success message
+function showMealAnalysisSuccess(data) {
+    const message = `Meal logged! ${Math.round(data.totals.calories)} calories added.`;
+
+    // Simple alert for now - could be replaced with a toast notification
+    if (typeof showToast === 'function') {
+        showToast(message, 'success');
+    } else {
+        console.log(message);
+    }
+}
+
+// Show error message
+function showMealAnalysisError(message) {
+    const errorMsg = `Failed to analyze meal: ${message}`;
+
+    // Simple alert for now - could be replaced with a toast notification
+    if (typeof showToast === 'function') {
+        showToast(errorMsg, 'error');
+    } else {
+        alert(errorMsg);
+    }
+}
+
+// Initialize calorie tracker when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Load nutrition data after a short delay to ensure auth is ready
+    setTimeout(() => {
+        loadTodayNutrition();
+    }, 1000);
 });
 
 </script>

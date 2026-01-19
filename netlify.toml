@@ -31,6 +31,10 @@
   function = "ai_chat"
   path = "/.netlify/functions/ai-chat"
 
+[[edge_functions]]
+  function = "analyze_food"
+  path = "/.netlify/functions/analyze-food"
+
 # Ensure we redirect legacy URLs
 [[redirects]]
   from = "/quiz"
