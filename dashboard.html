@@ -6956,9 +6956,7 @@ function startCustomBuilderWorkout() {
 <!-- WORKOUT OVERVIEW VIEW -->
 <div id="view-workout-overview" class="app-view" style="display:none; height: 100vh; background: white; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;">
-        <div onclick="switchAppTab('movement-tab')" style="width: 40px; height: 40px; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--text-main);"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        </div>
+        <div style="width: 40px;"></div>
         <div id="overview-header-title" style="font-weight: 700; color: var(--text-main);">Workout Overview</div>
         <div style="width: 40px;"></div>
     </div>
@@ -7076,9 +7074,7 @@ function startCustomBuilderWorkout() {
 <!-- WORKOUT LIBRARY CATEGORIES VIEW -->
 <div id="view-workout-library" class="app-view" style="display:none; height: 100vh; background: white; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-        <div onclick="switchAppTab('movement-tab')" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
-             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-        </div>
+        <div style="width: 40px;"></div>
         <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Workout Library</div>
         <div style="width: 40px;"></div>
     </div>
@@ -7097,9 +7093,7 @@ function startCustomBuilderWorkout() {
 <!-- WORKOUT LIBRARY SUBCATEGORIES VIEW -->
 <div id="view-workout-subcategories" class="app-view" style="display:none; height: 100vh; background: white; z-index: 501; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-        <div onclick="closeWorkoutSubcategories()" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
-             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-        </div>
+        <div style="width: 40px;"></div>
         <div id="subcategory-header-title" style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Category</div>
         <div style="width: 40px;"></div>
     </div>
@@ -7116,9 +7110,7 @@ function startCustomBuilderWorkout() {
 <!-- WORKOUT LIBRARY WORKOUTS LIST VIEW -->
 <div id="view-workout-list" class="app-view" style="display:none; height: 100vh; background: white; z-index: 502; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-        <div onclick="closeWorkoutList()" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
-             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-        </div>
+        <div style="width: 40px;"></div>
         <div id="workout-list-header-title" style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Workouts</div>
         <div style="width: 40px;"></div>
     </div>
@@ -10451,6 +10443,147 @@ function closeSuccessScreen() {
     document.querySelector('.bottom-nav').style.display = 'flex';
     renderMovementView();
 }
+
+// ===========================
+// SWIPE BACK NAVIGATION SYSTEM
+// ===========================
+
+function enableSwipeBackNavigation(viewId, backHandler) {
+    const view = document.getElementById(viewId);
+    if (!view) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    let isDragging = false;
+    let overlayEl = null;
+
+    const handleTouchStart = (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+        isDragging = false;
+    };
+
+    const handleTouchMove = (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = Math.abs(e.changedTouches[0].screenY - touchStartY);
+
+        // Only trigger if swipe starts from left edge (within 50px) and is mostly horizontal
+        if (touchStartX < 50 && deltaX > 30 && deltaY < 100) {
+            isDragging = true;
+
+            // Create visual feedback overlay
+            if (!overlayEl) {
+                overlayEl = document.createElement('div');
+                overlayEl.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.1);
+                    pointer-events: none;
+                    z-index: 9998;
+                    opacity: 0;
+                    transition: opacity 0.1s;
+                `;
+                document.body.appendChild(overlayEl);
+            }
+
+            // Transform the view based on swipe distance
+            const progress = Math.min(deltaX / 200, 1);
+            view.style.transform = `translateX(${deltaX}px)`;
+            view.style.transition = 'none';
+            overlayEl.style.opacity = progress * 0.3;
+        }
+    };
+
+    const handleTouchEnd = (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = Math.abs(touchEndY - touchStartY);
+
+        // Swipe right from left edge - check if swipe was far enough
+        if (touchStartX < 50 && deltaX > 100 && deltaY < 100 && isDragging) {
+            // Animate out
+            view.style.transition = 'transform 0.3s ease-out';
+            view.style.transform = 'translateX(100%)';
+
+            // Call back handler after animation
+            setTimeout(() => {
+                backHandler();
+                view.style.transform = '';
+                view.style.transition = '';
+                if (overlayEl) {
+                    overlayEl.remove();
+                    overlayEl = null;
+                }
+            }, 300);
+        } else if (isDragging) {
+            // Reset position if swipe wasn't far enough
+            view.style.transition = 'transform 0.3s ease-out';
+            view.style.transform = '';
+            setTimeout(() => {
+                view.style.transition = '';
+                if (overlayEl) {
+                    overlayEl.remove();
+                    overlayEl = null;
+                }
+            }, 300);
+        }
+
+        isDragging = false;
+    };
+
+    // Remove existing listeners to avoid duplicates
+    view.removeEventListener('touchstart', handleTouchStart);
+    view.removeEventListener('touchmove', handleTouchMove);
+    view.removeEventListener('touchend', handleTouchEnd);
+
+    // Add touch listeners
+    view.addEventListener('touchstart', handleTouchStart, { passive: true });
+    view.addEventListener('touchmove', handleTouchMove, { passive: true });
+    view.addEventListener('touchend', handleTouchEnd, { passive: true });
+}
+
+// Initialize swipe-back navigation for all movement views
+function initializeMovementSwipeNavigation() {
+    // Main movement views
+    enableSwipeBackNavigation('view-workout-library', () => {
+        switchAppTab('movement-tab');
+    });
+
+    enableSwipeBackNavigation('view-workout-subcategories', () => {
+        closeWorkoutSubcategories();
+    });
+
+    enableSwipeBackNavigation('view-workout-list', () => {
+        closeWorkoutList();
+    });
+
+    enableSwipeBackNavigation('view-workout-overview', () => {
+        switchAppTab('movement-tab');
+    });
+
+    enableSwipeBackNavigation('view-active-workout', () => {
+        quitWorkout();
+    });
+
+    enableSwipeBackNavigation('view-workout-success', () => {
+        closeSuccessScreen();
+    });
+}
+
+// Initialize swipe navigation when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    initializeMovementSwipeNavigation();
+});
 
 // ===========================
 // WORKOUT LIBRARY FUNCTIONS
