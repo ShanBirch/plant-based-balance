@@ -6582,7 +6582,7 @@
         </div>
 
         <div style="margin-bottom: 20px;">
-            <h3 style="margin:0;">Browse Programs</h3>
+            <h3 style="margin:0;">Get Started</h3>
         </div>
 
         <!-- Dynamic Grid Container -->
@@ -10017,25 +10017,26 @@ async function renderMovementView() {
     `;
     gridContainer.appendChild(libraryDiv);
 
-    Object.keys(WORKOUT_DB).forEach(key => {
-        if (key === suggestedProgram) return;
-        const prog = WORKOUT_DB[key];
-        const meta = assets[key];
-        const sched = prog.schedule[dayIndex % prog.schedule.length];
+    // Removed other workout cards - users now browse via Workout Library
+    // Object.keys(WORKOUT_DB).forEach(key => {
+    //     if (key === suggestedProgram) return;
+    //     const prog = WORKOUT_DB[key];
+    //     const meta = assets[key];
+    //     const sched = prog.schedule[dayIndex % prog.schedule.length];
 
-        const div = document.createElement('div');
-        div.onclick = () => startActiveWorkout(key);
-        div.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1);";
-        div.innerHTML = `
-            <img src="${meta.img}" style="width:100%; height:100%; object-fit: cover; position:absolute; inset:0;" onerror="this.src='https://placehold.co/300x200?text=${key}';">
-            <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);"></div>
-            <div style="position: absolute; bottom: 15px; left: 15px; color: white;">
-                <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.8;">${prog.name}</div>
-                <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1;">${sched.title}</div>
-            </div>
-        `;
-        gridContainer.appendChild(div);
-    });
+    //     const div = document.createElement('div');
+    //     div.onclick = () => startActiveWorkout(key);
+    //     div.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1);";
+    //     div.innerHTML = `
+    //         <img src="${meta.img}" style="width:100%; height:100%; object-fit: cover; position:absolute; inset:0;" onerror="this.src='https://placehold.co/300x200?text=${key}';">
+    //         <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);"></div>
+    //         <div style="position: absolute; bottom: 15px; left: 15px; color: white;">
+    //             <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.8;">${prog.name}</div>
+    //             <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1;">${sched.title}</div>
+    //         </div>
+    //     `;
+    //     gridContainer.appendChild(div);
+    // });
 }
 
 function showWorkoutOverview(id) {
