@@ -16016,7 +16016,7 @@ updateCoachUI();
     </button>
 
     <!-- Meal Description Input -->
-    <div style="position:absolute; top:80px; left:20px; right:20px; z-index:13;">
+    <div style="position:absolute; bottom:110px; left:20px; right:20px; z-index:13;">
         <textarea id="meal-description-input" placeholder="Add a description (optional)..." style="width:100%; max-width:500px; margin:0 auto; display:block; background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.3); border-radius:15px; color:white; padding:12px 15px; font-size:1rem; resize:none; height:60px; backdrop-filter:blur(10px); font-family:inherit;" maxlength="200"></textarea>
     </div>
 
@@ -16631,7 +16631,8 @@ async function useMealPhoto() {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to analyze food photo');
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
+            throw new Error(errorData.error || `Failed to analyze food photo (${response.status})`);
         }
 
         const result = await response.json();
@@ -16688,7 +16689,8 @@ async function handleMealPhotoSelect(event) {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to analyze food photo');
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
+            throw new Error(errorData.error || `Failed to analyze food photo (${response.status})`);
         }
 
         const result = await response.json();
