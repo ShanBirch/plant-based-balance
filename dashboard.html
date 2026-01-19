@@ -8038,45 +8038,10 @@ function startCustomBuilderWorkout() {
             </div>
         </div>
 
-        <!-- Cycle Settings -->
-        <div class="settings-card" style="margin: 0 25px 25px 25px; background: white; border-radius: 16px; border: 1px solid #f1f5f9; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-            <div style="background: #f8fafc; padding: 15px 20px; border-bottom: 1px solid #e2e8f0;">
-                <h3 style="margin:0; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-                    <span>🌸</span> Cycle Tracking
-                </h3>
-            </div>
-            <div style="padding: 0;">
-                <!-- Last Period Start -->
-                <div class="setting-row" style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9;">
-                    <div style="margin-bottom: 8px;">
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Last Period Start</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">Track your cycle phase and predictions</div>
-                    </div>
-                    <input type="date" id="last-period-input-profile" onchange="updateCycleData()" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter', sans-serif;">
-                </div>
-
-                <!-- Cycle Length -->
-                <div class="setting-row" style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9;">
-                    <div style="margin-bottom: 8px;">
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Cycle Length (Days)</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">Average days between periods</div>
-                    </div>
-                    <input type="number" id="cycle-length-input-profile" value="28" onchange="updateCycleData()" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter', sans-serif;">
-                </div>
-
-                <!-- Period Tracking Toggle -->
-                <div class="setting-row" style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Period Tracking</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">Turn off if you don't menstruate (Wellness Mode)</div>
-                    </div>
-                    <label class="toggle-switch" style="display:inline-block; width:44px; height:24px; position:relative;">
-                        <input type="checkbox" id="no-period-toggle-profile" onchange="toggleNoPeriodMode()">
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
+        <!-- Hidden inputs for cycle tracking (used by existing JavaScript) -->
+        <input type="date" id="last-period-input-profile" style="display:none;">
+        <input type="number" id="cycle-length-input-profile" value="28" style="display:none;">
+        <input type="checkbox" id="no-period-toggle-profile" style="display:none;">
 
         <div style="text-align:center; margin-top:20px;">
             <button id="btn-edit-profile" onclick="toggleProfileEditMode()" style="background:#f1f5f9; color:var(--text-main); border:none; padding:10px 24px; border-radius:30px; font-weight:600; font-size:0.9rem; cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
@@ -8097,6 +8062,9 @@ function startCustomBuilderWorkout() {
                 </button>
                 <button onclick="openCheckInModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>☀️</span> Daily Wellness Check-in
+                </button>
+                <button onclick="openCycleTrackingModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>🌸</span> Cycle Tracking
                 </button>
             </div>
         </div>
@@ -10364,6 +10332,68 @@ async function submitCheckIn() {
     renderMovementView();
 }
 
+// Cycle Tracking Modal Functions
+function openCycleTrackingModal() {
+    // Populate modal with current data
+    const modal = document.getElementById('cycle-tracking-modal');
+    const periodDateInput = document.getElementById('cycle-modal-period-date');
+    const cycleLengthInput = document.getElementById('cycle-modal-cycle-length');
+    const wellnessToggle = document.getElementById('cycle-modal-wellness-toggle');
+
+    // Load from userCycleData or hidden inputs
+    if (userCycleData.lastPeriod) {
+        periodDateInput.value = userCycleData.lastPeriod;
+    }
+    cycleLengthInput.value = userCycleData.cycleLength || 28;
+    wellnessToggle.checked = userCycleData.noPeriodMode || false;
+
+    // Show/hide period date input based on wellness mode
+    const updatePeriodVisibility = () => {
+        const periodContainer = periodDateInput.parentElement;
+        periodContainer.style.display = wellnessToggle.checked ? 'none' : 'block';
+    };
+
+    wellnessToggle.onchange = updatePeriodVisibility;
+    updatePeriodVisibility();
+
+    modal.style.display = 'flex';
+}
+
+function closeCycleTrackingModal() {
+    document.getElementById('cycle-tracking-modal').style.display = 'none';
+}
+
+function saveCycleTrackingData() {
+    const periodDateInput = document.getElementById('cycle-modal-period-date');
+    const cycleLengthInput = document.getElementById('cycle-modal-cycle-length');
+    const wellnessToggle = document.getElementById('cycle-modal-wellness-toggle');
+
+    // Validate input
+    if (!wellnessToggle.checked && !periodDateInput.value) {
+        alert("Please enter your last period date or enable Wellness Mode.");
+        return;
+    }
+
+    // Update userCycleData
+    userCycleData.noPeriodMode = wellnessToggle.checked;
+    userCycleData.lastPeriod = wellnessToggle.checked ? null : periodDateInput.value;
+    userCycleData.cycleLength = parseInt(cycleLengthInput.value) || 28;
+
+    // Sync to hidden inputs (for backward compatibility)
+    document.getElementById('last-period-input-profile').value = periodDateInput.value || '';
+    document.getElementById('cycle-length-input-profile').value = cycleLengthInput.value;
+    document.getElementById('no-period-toggle-profile').checked = wellnessToggle.checked;
+
+    // Save to storage using existing function
+    updateCycleData();
+
+    // Close modal
+    closeCycleTrackingModal();
+
+    // Show success message
+    alert('Cycle tracking settings saved successfully!');
+}
+
 function getExerciseVideoUrl(name) {
     return EXERCISE_VIDEOS[name] || '';
 }
@@ -12318,6 +12348,42 @@ function openAsClient() {
 /* Fallback for :has support */
 .symptom-chip.checked { background: #fff0f0; border-color: #ffcdd2; color: #d32f2f; } 
 </style>
+
+<!-- Cycle Tracking Modal -->
+<div class="onboarding-overlay" id="cycle-tracking-modal" style="display:none; z-index:12000;">
+    <div class="onboarding-modal" style="max-width: 450px; padding: 0; overflow: hidden;">
+
+        <!-- HEADER -->
+        <div style="padding: 25px 25px 0 25px; text-align: center; position:relative;">
+            <div onclick="closeCycleTrackingModal()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
+            <h2 style="margin:0; color:var(--primary);">Cycle Tracking</h2>
+        </div>
+
+        <!-- CONTENT -->
+        <div style="padding: 25px;">
+            <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🌸</div>
+            <h3 style="text-align:center; margin-bottom:10px;">Cycle Syncing</h3>
+            <p style="text-align:center; color:#666; margin-bottom:25px;">We tailor your daily movement to match your hormonal phase.</p>
+
+            <div style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">When was your last period?</label>
+                <input type="date" id="cycle-modal-period-date" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+            </div>
+
+            <div style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Cycle Length (Days)</label>
+                <input type="number" id="cycle-modal-cycle-length" value="28" min="21" max="35" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+            </div>
+
+            <div style="display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:20px;">
+                <input type="checkbox" id="cycle-modal-wellness-toggle">
+                <label for="cycle-modal-wellness-toggle" style="font-size:0.9rem; color:#64748b;">I don't have a period (Wellness Mode)</label>
+            </div>
+
+            <button onclick="saveCycleTrackingData()" style="width:100%; background:var(--primary); color:white; border:none; padding:16px; border-radius:50px; font-weight:700; font-size:1rem; cursor:pointer;">Save Changes</button>
+        </div>
+    </div>
+</div>
 
 <!-- Onboarding Modal -->
 <!-- ONBOARDING WIZARD -->
