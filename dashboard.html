@@ -16615,12 +16615,14 @@ async function useMealPhoto() {
     const base64 = await fileToBase64(fileToAnalyze);
     const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
 
-    // Retry logic - keep trying until success
+    // Retry logic - try up to 5 times
+    const maxAttempts = 5;
     let attempt = 1;
     let success = false;
     let nutritionData = null;
+    let lastError = null;
 
-    while (!success) {
+    while (!success && attempt <= maxAttempts) {
         try {
             // Update loading message with retry attempt
             if (attempt > 1) {
@@ -16657,13 +16659,22 @@ async function useMealPhoto() {
 
         } catch (error) {
             console.error(`Error analyzing meal (attempt ${attempt}):`, error);
+            lastError = error;
 
-            // Wait before retrying (exponential backoff)
-            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10 seconds
-            console.log(`Retrying in ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            // If not the last attempt, wait before retrying (exponential backoff)
+            if (attempt < maxAttempts) {
+                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10 seconds
+                console.log(`Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
             attempt++;
         }
+    }
+
+    // Check if we failed after all attempts
+    if (!success) {
+        showMealAnalysisError("Sorry, couldn't analyze that photo. Could you try taking the photo again? Make sure the food is clearly visible and well-lit.");
+        return;
     }
 
     // Success - log meal to database
@@ -16697,12 +16708,14 @@ async function handleMealPhotoSelect(event) {
     const base64 = await fileToBase64(file);
     const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
 
-    // Retry logic - keep trying until success
+    // Retry logic - try up to 5 times
+    const maxAttempts = 5;
     let attempt = 1;
     let success = false;
     let nutritionData = null;
+    let lastError = null;
 
-    while (!success) {
+    while (!success && attempt <= maxAttempts) {
         try {
             // Update loading message with retry attempt
             if (attempt > 1) {
@@ -16739,13 +16752,24 @@ async function handleMealPhotoSelect(event) {
 
         } catch (error) {
             console.error(`Error analyzing meal (attempt ${attempt}):`, error);
+            lastError = error;
 
-            // Wait before retrying (exponential backoff)
-            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10 seconds
-            console.log(`Retrying in ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            // If not the last attempt, wait before retrying (exponential backoff)
+            if (attempt < maxAttempts) {
+                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10 seconds
+                console.log(`Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
             attempt++;
         }
+    }
+
+    // Check if we failed after all attempts
+    if (!success) {
+        showMealAnalysisError("Sorry, couldn't analyze that photo. Could you try taking the photo again? Make sure the food is clearly visible and well-lit.");
+        // Reset file input
+        event.target.value = '';
+        return;
     }
 
     // Success - save meal to database
