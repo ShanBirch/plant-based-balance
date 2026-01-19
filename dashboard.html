@@ -7378,6 +7378,18 @@ function startCustomBuilderWorkout() {
                          <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:0.3s; transform: translateX(0);"></span>
                      </label>
                  </div>
+                <!-- Admin Notifications (only visible to admins) -->
+                <div id="admin-notifications-setting" style="padding:15px; border-top:1px solid #f1f5f9; display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div>Coach Notifications</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">Get notified when users message</div>
+                        </div>
+                        <button id="admin-notif-btn" onclick="toggleAdminNotifications()" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer;">
+                            Enable
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -11730,6 +11742,64 @@ window.checkAdminNotificationStatus = async function() {
         return false;
     }
 };
+
+/**
+ * Toggle admin notifications (called from settings button)
+ */
+window.toggleAdminNotifications = async function() {
+    const btn = document.getElementById('admin-notif-btn');
+    const isSubscribed = await checkAdminNotificationStatus();
+
+    if (isSubscribed) {
+        // Unsubscribe
+        await unsubscribeFromNotifications();
+        btn.textContent = 'Enable';
+        btn.style.background = 'var(--primary)';
+    } else {
+        // Subscribe
+        btn.textContent = 'Enabling...';
+        btn.disabled = true;
+        const success = await subscribeToAdminNotifications();
+        btn.disabled = false;
+        if (success) {
+            btn.textContent = 'Disable';
+            btn.style.background = '#ef4444';
+        } else {
+            btn.textContent = 'Enable';
+        }
+    }
+};
+
+/**
+ * Initialize admin settings on page load
+ */
+async function initAdminSettings() {
+    try {
+        const isAdmin = await db.pushSubscriptions.isAdmin();
+        if (isAdmin) {
+            // Show the admin notifications setting
+            const setting = document.getElementById('admin-notifications-setting');
+            if (setting) {
+                setting.style.display = 'block';
+            }
+
+            // Update button state
+            const isSubscribed = await checkAdminNotificationStatus();
+            const btn = document.getElementById('admin-notif-btn');
+            if (btn && isSubscribed) {
+                btn.textContent = 'Disable';
+                btn.style.background = '#ef4444';
+            }
+        }
+    } catch (error) {
+        console.log('Not admin or error checking:', error);
+    }
+}
+
+// Call on page load
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initAdminSettings, 1000); // Delay to ensure auth is ready
+});
 
 /**
  * Helper: Convert VAPID key to Uint8Array
