@@ -15676,6 +15676,41 @@ updateCoachUI();
     </div>
 </div>
 
+<!-- Meal Camera Modal (For Calorie Tracker) -->
+<div id="meal-camera-modal" style="display:none; position:fixed; inset:0; background:black; z-index:10009; flex-direction:column; align-items:center; justify-content:center;">
+    <!-- Camera Preview -->
+    <video id="meal-camera-preview" autoplay playsinline style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;"></video>
+
+    <!-- Captured Preview (shown after capture) -->
+    <div id="meal-captured-preview" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:11;">
+        <img id="meal-captured-photo" style="width:100%; height:100%; object-fit:cover;">
+    </div>
+
+    <!-- Close Button -->
+    <button onclick="closeMealCameraModal()" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:12;">
+        &times;
+    </button>
+
+    <!-- Use Photo Button (shown after capture) -->
+    <button id="use-meal-photo-btn" onclick="useMealPhoto()" style="display:none; position:absolute; bottom:40px; right:30px; background:var(--primary); color:white; padding:12px 30px; border:none; border-radius:25px; font-weight:600; font-size:1rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.5); z-index:12;">
+        Analyze Meal
+    </button>
+
+    <!-- Retake Button (shown after capture) -->
+    <button id="meal-retake-btn" onclick="retakeMealPhoto()" style="display:none; position:absolute; bottom:40px; left:30px; background:rgba(255,255,255,0.2); color:white; padding:12px 24px; border:none; border-radius:25px; font-weight:600; font-size:1rem; cursor:pointer; backdrop-filter:blur(10px); z-index:12;">
+        Retake
+    </button>
+
+    <!-- Camera Controls -->
+    <div id="meal-camera-controls" style="position:absolute; bottom:40px; left:0; right:0; display:flex; justify-content:center; align-items:center; z-index:10;">
+        <!-- Capture Button -->
+        <button id="meal-capture-btn"
+                onclick="captureMealPhoto()"
+                style="width:70px; height:70px; background:white; border:5px solid rgba(255,255,255,0.8); border-radius:50%; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3); transition:all 0.2s;">
+        </button>
+    </div>
+</div>
+
 <!-- Story Upload Modal -->
 <div id="story-upload-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10007; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
     <div style="width:90%; max-width:500px; background:white; border-radius:20px; overflow:hidden;">
@@ -16108,25 +16143,213 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 
 let mealCameraSource = 'widget'; // Track where camera was opened from
+let mealCameraStream = null; // Camera stream for meal photos
+let capturedMealFile = null; // Captured meal photo file
 
-// Open meal camera
-function openMealCamera(source) {
+// Open meal camera with direct getUserMedia API (reliable approach)
+async function openMealCamera(source) {
     console.log('openMealCamera called from:', source);
     mealCameraSource = source || 'widget';
-    const input = document.getElementById('meal-camera-input');
 
-    if (!input) {
-        console.error('meal-camera-input element not found');
-        alert('Camera input not available. Please refresh the page.');
+    const cameraModal = document.getElementById('meal-camera-modal');
+    const videoElement = document.getElementById('meal-camera-preview');
+
+    if (!cameraModal || !videoElement) {
+        console.error('Meal camera modal elements not found');
+        alert('Camera not available. Please refresh the page.');
         return;
     }
 
-    console.log('Triggering file input click');
     try {
-        input.click();
+        // Request camera access using direct getUserMedia API
+        mealCameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }, // Back camera on mobile
+            audio: false // No audio needed for meal photos
+        });
+
+        // Show camera modal
+        cameraModal.style.display = 'flex';
+        videoElement.srcObject = mealCameraStream;
+        videoElement.play();
+
+        console.log('Meal camera opened successfully');
+
     } catch (error) {
-        console.error('Error triggering camera input:', error);
-        alert('Unable to open camera. Please try again.');
+        console.error('Camera access denied or unavailable:', error);
+
+        // Fallback to file input if camera access fails
+        const fileInput = document.getElementById('meal-camera-input');
+        if (fileInput) {
+            fileInput.click();
+        } else {
+            alert('Unable to access camera. Please ensure camera permissions are granted and try again.');
+        }
+    }
+}
+
+// Close meal camera modal
+function closeMealCameraModal() {
+    const cameraModal = document.getElementById('meal-camera-modal');
+    const videoElement = document.getElementById('meal-camera-preview');
+    const capturedPreview = document.getElementById('meal-captured-preview');
+    const cameraControls = document.getElementById('meal-camera-controls');
+    const usePhotoBtn = document.getElementById('use-meal-photo-btn');
+    const retakeBtn = document.getElementById('meal-retake-btn');
+
+    // Stop camera stream
+    if (mealCameraStream) {
+        mealCameraStream.getTracks().forEach(track => track.stop());
+        mealCameraStream = null;
+    }
+
+    // Reset video
+    if (videoElement) {
+        videoElement.srcObject = null;
+    }
+
+    // Hide modal
+    if (cameraModal) {
+        cameraModal.style.display = 'none';
+    }
+
+    // Reset preview state
+    if (capturedPreview) capturedPreview.style.display = 'none';
+    if (cameraControls) cameraControls.style.display = 'flex';
+    if (usePhotoBtn) usePhotoBtn.style.display = 'none';
+    if (retakeBtn) retakeBtn.style.display = 'none';
+
+    // Clear captured file
+    capturedMealFile = null;
+}
+
+// Capture photo from meal camera
+function captureMealPhoto() {
+    const videoElement = document.getElementById('meal-camera-preview');
+    if (!videoElement) return;
+
+    // Create canvas to capture frame
+    const canvas = document.createElement('canvas');
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(videoElement, 0, 0);
+
+    // Convert to blob
+    canvas.toBlob(function(blob) {
+        console.log('Meal photo captured, blob size:', blob.size);
+
+        // Create file from blob
+        capturedMealFile = new File([blob], 'meal-photo.jpg', { type: 'image/jpeg' });
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            showMealCapturedPreview(e.target.result);
+        };
+        reader.readAsDataURL(capturedMealFile);
+    }, 'image/jpeg', 0.95);
+}
+
+// Show captured meal photo preview
+function showMealCapturedPreview(dataUrl) {
+    const capturedPreview = document.getElementById('meal-captured-preview');
+    const capturedPhoto = document.getElementById('meal-captured-photo');
+    const cameraControls = document.getElementById('meal-camera-controls');
+    const usePhotoBtn = document.getElementById('use-meal-photo-btn');
+    const retakeBtn = document.getElementById('meal-retake-btn');
+
+    // Hide camera controls
+    if (cameraControls) cameraControls.style.display = 'none';
+
+    // Show captured preview
+    if (capturedPreview) capturedPreview.style.display = 'block';
+    if (capturedPhoto) capturedPhoto.src = dataUrl;
+
+    // Show action buttons
+    if (usePhotoBtn) usePhotoBtn.style.display = 'block';
+    if (retakeBtn) retakeBtn.style.display = 'block';
+}
+
+// Retake meal photo
+function retakeMealPhoto() {
+    const capturedPreview = document.getElementById('meal-captured-preview');
+    const cameraControls = document.getElementById('meal-camera-controls');
+    const usePhotoBtn = document.getElementById('use-meal-photo-btn');
+    const retakeBtn = document.getElementById('meal-retake-btn');
+
+    // Hide preview
+    if (capturedPreview) capturedPreview.style.display = 'none';
+
+    // Show camera controls again
+    if (cameraControls) cameraControls.style.display = 'flex';
+
+    // Hide action buttons
+    if (usePhotoBtn) usePhotoBtn.style.display = 'none';
+    if (retakeBtn) retakeBtn.style.display = 'none';
+
+    // Clear captured file
+    capturedMealFile = null;
+}
+
+// Use captured meal photo for analysis
+async function useMealPhoto() {
+    if (!capturedMealFile) {
+        alert('No photo captured. Please try again.');
+        return;
+    }
+
+    // Close camera modal
+    closeMealCameraModal();
+
+    // Show loading state
+    showMealAnalysisLoading();
+
+    try {
+        // Convert to base64
+        const base64 = await fileToBase64(capturedMealFile);
+        const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+
+        // Call Gemini API via edge function
+        console.log('Analyzing food photo...');
+        const response = await fetch('/.netlify/functions/analyze-food', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                imageBase64: base64Data,
+                mimeType: capturedMealFile.type
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to analyze food photo');
+        }
+
+        const result = await response.json();
+
+        if (!result.success || !result.data) {
+            throw new Error('Invalid response from analysis');
+        }
+
+        const nutritionData = result.data;
+
+        // Log meal to database
+        if (window.currentUser) {
+            await dbHelpers.meals.log(window.currentUser.id, nutritionData);
+        }
+
+        // Display result
+        showMealAnalysisResult(nutritionData);
+
+        // Reload calorie widget
+        if (typeof loadCalorieWidget === 'function') {
+            await loadCalorieWidget();
+        }
+
+    } catch (error) {
+        console.error('Error analyzing meal:', error);
+        showMealAnalysisError(error.message);
     }
 }
 
