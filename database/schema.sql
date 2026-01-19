@@ -83,7 +83,18 @@ CREATE TABLE IF NOT EXISTS public.quiz_results (
 
   -- User info at time of quiz
   age INTEGER,
-  weight NUMERIC,
+  height NUMERIC, -- in cm
+  weight NUMERIC, -- in kg
+  goal_weight NUMERIC, -- in kg
+  sex TEXT, -- 'female' or 'male' (for BMR calculation)
+
+  -- Calculated nutrition goals
+  bmr NUMERIC, -- Basal Metabolic Rate
+  tdee NUMERIC, -- Total Daily Energy Expenditure
+  calorie_goal NUMERIC,
+  protein_goal_g NUMERIC,
+  carbs_goal_g NUMERIC,
+  fat_goal_g NUMERIC,
 
   -- Timestamps
   taken_at TIMESTAMPTZ DEFAULT NOW(),
