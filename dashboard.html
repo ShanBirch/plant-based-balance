@@ -11254,43 +11254,47 @@ function openWorkoutList(categoryKey, subcategoryKey) {
     document.getElementById('workout-list-header-title').textContent = subcategory.name;
     document.getElementById('workout-list-description').textContent = subcategory.description;
 
-    // Render workouts - build HTML string first for better performance
+    // Render workouts
     const list = document.getElementById('workouts-list');
-    let html = '';
+    list.innerHTML = '';
 
     subcategory.workouts.forEach(workout => {
         const difficultyClass = `difficulty-${workout.difficulty.toLowerCase()}`;
 
-        html += `
-            <div class="workout-card" data-category="${categoryKey}" data-subcategory="${subcategoryKey}" data-workout-id="${workout.id}">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                    <div style="flex: 1;">
-                        <h3 style="margin: 0 0 8px 0; font-size: 1.1rem;">${workout.name}</h3>
-                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                            <span class="workout-difficulty-badge ${difficultyClass}">${workout.difficulty}</span>
-                            <span style="color: var(--text-muted); font-size: 0.85rem;">⏱ ${workout.duration}</span>
-                            <span style="color: var(--text-muted); font-size: 0.85rem;">📝 ${workout.exercises.length} exercises</span>
-                        </div>
+        // Create card element
+        const card = document.createElement('div');
+        card.className = 'workout-card';
+        card.style.cssText = 'cursor: pointer; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: rgba(4, 106, 56, 0.1);';
+
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                <div style="flex: 1;">
+                    <h3 style="margin: 0 0 8px 0; font-size: 1.1rem;">${workout.name}</h3>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <span class="workout-difficulty-badge ${difficultyClass}">${workout.difficulty}</span>
+                        <span style="color: var(--text-muted); font-size: 0.85rem;">⏱ ${workout.duration}</span>
+                        <span style="color: var(--text-muted); font-size: 0.85rem;">📝 ${workout.exercises.length} exercises</span>
                     </div>
                 </div>
-                <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">
-                    <strong>Equipment:</strong> ${workout.equipment.join(', ')}
-                </div>
+            </div>
+            <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">
+                <strong>Equipment:</strong> ${workout.equipment.join(', ')}
             </div>
         `;
-    });
 
-    list.innerHTML = html;
-
-    // Add event listeners to workout cards using event delegation
-    list.querySelectorAll('.workout-card').forEach(card => {
-        card.style.cursor = 'pointer';
-        card.addEventListener('click', function() {
-            const categoryKey = this.getAttribute('data-category');
-            const subcategoryKey = this.getAttribute('data-subcategory');
-            const workoutId = this.getAttribute('data-workout-id');
-            openLibraryWorkoutOverview(categoryKey, subcategoryKey, workoutId);
+        // Add click handler
+        card.addEventListener('click', () => {
+            openLibraryWorkoutOverview(categoryKey, subcategoryKey, workout.id);
         });
+
+        // Also add touchend for better mobile responsiveness
+        card.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            openLibraryWorkoutOverview(categoryKey, subcategoryKey, workout.id);
+        });
+
+        // Append to list
+        list.appendChild(card);
     });
 
     // Show view
