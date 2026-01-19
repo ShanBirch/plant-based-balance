@@ -17445,6 +17445,8 @@ async function recalculateDailyNutrition() {
 
         const today = new Date().toISOString().split('T')[0];
 
+        console.log('Recalculating nutrition for user:', userId, 'date:', today);
+
         // Get all meals for today
         const { data: meals, error: mealsError } = await window.supabaseClient
             .from('meal_logs')
@@ -17456,6 +17458,8 @@ async function recalculateDailyNutrition() {
             console.error('Error fetching meals for recalculation:', mealsError);
             return;
         }
+
+        console.log('Found meals:', meals?.length || 0, meals);
 
         // Calculate totals
         const totals = {
@@ -17478,6 +17482,8 @@ async function recalculateDailyNutrition() {
             totals.meal_count = meals.length;
         }
 
+        console.log('Calculated totals:', totals);
+
         // Get existing goals or use defaults
         const { data: existingData } = await window.supabaseClient
             .from('daily_nutrition')
@@ -17486,31 +17492,37 @@ async function recalculateDailyNutrition() {
             .eq('nutrition_date', today)
             .single();
 
+        console.log('Existing goals:', existingData);
+
+        // Prepare upsert data
+        const upsertData = {
+            user_id: userId,
+            nutrition_date: today,
+            total_calories: totals.total_calories,
+            total_protein_g: totals.total_protein_g,
+            total_carbs_g: totals.total_carbs_g,
+            total_fat_g: totals.total_fat_g,
+            total_fiber_g: totals.total_fiber_g,
+            meal_count: totals.meal_count,
+            // Preserve existing goals or use defaults
+            calorie_goal: existingData?.calorie_goal || 2000,
+            protein_goal_g: existingData?.protein_goal_g || 50,
+            carbs_goal_g: existingData?.carbs_goal_g || 250,
+            fat_goal_g: existingData?.fat_goal_g || 70
+        };
+
+        console.log('Upserting data:', upsertData);
+
         // Upsert into daily_nutrition
-        const { error: upsertError } = await window.supabaseClient
+        const { data: upsertResult, error: upsertError } = await window.supabaseClient
             .from('daily_nutrition')
-            .upsert({
-                user_id: userId,
-                nutrition_date: today,
-                total_calories: totals.total_calories,
-                total_protein_g: totals.total_protein_g,
-                total_carbs_g: totals.total_carbs_g,
-                total_fat_g: totals.total_fat_g,
-                total_fiber_g: totals.total_fiber_g,
-                meal_count: totals.meal_count,
-                // Preserve existing goals or use defaults
-                calorie_goal: existingData?.calorie_goal || 2000,
-                protein_goal_g: existingData?.protein_goal_g || 50,
-                carbs_goal_g: existingData?.carbs_goal_g || 250,
-                fat_goal_g: existingData?.fat_goal_g || 70
-            }, {
-                onConflict: 'user_id,nutrition_date'
-            });
+            .upsert(upsertData)
+            .select();
 
         if (upsertError) {
             console.error('Error updating daily nutrition:', upsertError);
         } else {
-            console.log('Daily nutrition updated successfully:', totals);
+            console.log('Daily nutrition updated successfully:', upsertResult);
         }
 
     } catch (error) {
