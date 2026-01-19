@@ -9889,7 +9889,11 @@ function switchWeek(id, btn) {
         if (id === 'today') {
             renderTodayMeals();
         } else if (id === 'calorie-tracker') {
-            loadTodayNutrition();
+            // Recalculate and load nutrition data
+            (async () => {
+                await recalculateDailyNutrition();
+                loadTodayNutrition();
+            })();
         }
     }
     
@@ -17185,6 +17189,9 @@ async function useMealPhoto() {
             notes: nutritionData.notes
         });
 
+        // Recalculate daily nutrition totals
+        await recalculateDailyNutrition();
+
         // Refresh display
         await loadTodayNutrition();
 
@@ -17311,6 +17318,9 @@ async function handleMealPhotoSelect(event) {
             }
         }
 
+        // Recalculate daily nutrition totals
+        await recalculateDailyNutrition();
+
         // Refresh display
         await loadTodayNutrition();
 
@@ -17405,6 +17415,92 @@ async function saveMealLog(mealData) {
     }
 
     return data;
+}
+
+// Manually recalculate and update daily nutrition totals
+async function recalculateDailyNutrition() {
+    try {
+        const user = await window.supabaseClient.auth.getUser();
+        const userId = user?.data?.user?.id;
+
+        if (!userId) {
+            console.log('User not authenticated');
+            return;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+
+        // Get all meals for today
+        const { data: meals, error: mealsError } = await window.supabaseClient
+            .from('meal_logs')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('meal_date', today);
+
+        if (mealsError) {
+            console.error('Error fetching meals for recalculation:', mealsError);
+            return;
+        }
+
+        // Calculate totals
+        const totals = {
+            total_calories: 0,
+            total_protein_g: 0,
+            total_carbs_g: 0,
+            total_fat_g: 0,
+            total_fiber_g: 0,
+            meal_count: 0
+        };
+
+        if (meals && meals.length > 0) {
+            meals.forEach(meal => {
+                totals.total_calories += parseFloat(meal.calories) || 0;
+                totals.total_protein_g += parseFloat(meal.protein_g) || 0;
+                totals.total_carbs_g += parseFloat(meal.carbs_g) || 0;
+                totals.total_fat_g += parseFloat(meal.fat_g) || 0;
+                totals.total_fiber_g += parseFloat(meal.fiber_g) || 0;
+            });
+            totals.meal_count = meals.length;
+        }
+
+        // Get existing goals or use defaults
+        const { data: existingData } = await window.supabaseClient
+            .from('daily_nutrition')
+            .select('calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g')
+            .eq('user_id', userId)
+            .eq('nutrition_date', today)
+            .single();
+
+        // Upsert into daily_nutrition
+        const { error: upsertError } = await window.supabaseClient
+            .from('daily_nutrition')
+            .upsert({
+                user_id: userId,
+                nutrition_date: today,
+                total_calories: totals.total_calories,
+                total_protein_g: totals.total_protein_g,
+                total_carbs_g: totals.total_carbs_g,
+                total_fat_g: totals.total_fat_g,
+                total_fiber_g: totals.total_fiber_g,
+                meal_count: totals.meal_count,
+                // Preserve existing goals or use defaults
+                calorie_goal: existingData?.calorie_goal || 2000,
+                protein_goal_g: existingData?.protein_goal_g || 50,
+                carbs_goal_g: existingData?.carbs_goal_g || 250,
+                fat_goal_g: existingData?.fat_goal_g || 70
+            }, {
+                onConflict: 'user_id,nutrition_date'
+            });
+
+        if (upsertError) {
+            console.error('Error updating daily nutrition:', upsertError);
+        } else {
+            console.log('Daily nutrition updated successfully:', totals);
+        }
+
+    } catch (error) {
+        console.error('Error in recalculateDailyNutrition:', error);
+    }
 }
 
 // Load today's nutrition data
@@ -17601,7 +17697,7 @@ async function deleteMealLog(mealId) {
     }
 
     try {
-        const { error } = await supabase
+        const { error } = await window.supabaseClient
             .from('meal_logs')
             .delete()
             .eq('id', mealId);
@@ -17611,6 +17707,9 @@ async function deleteMealLog(mealId) {
             alert('Failed to delete meal. Please try again.');
             return;
         }
+
+        // Recalculate daily nutrition totals
+        await recalculateDailyNutrition();
 
         // Reload data
         await loadTodayNutrition();
@@ -17656,7 +17755,10 @@ function showMealAnalysisError(message) {
 // Initialize calorie tracker when page loads
 document.addEventListener('DOMContentLoaded', () => {
     // Load nutrition data after a short delay to ensure auth is ready
-    setTimeout(() => {
+    setTimeout(async () => {
+        // Recalculate to ensure data is in sync
+        await recalculateDailyNutrition();
+        // Then load and display
         loadTodayNutrition();
     }, 1000);
 });
