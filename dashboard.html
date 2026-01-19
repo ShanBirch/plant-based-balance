@@ -10918,22 +10918,38 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
 function getPreviousStats(name, set) {
     // Use cached history from DB
     const history = window.workoutHistoryCache || [];
-    
+
     // Filter history for this specific exercise
     const exerciseHistory = history.filter(h => h.exercise === name);
-    
+
     if (exerciseHistory.length === 0) return 'New';
 
     // Reverse iterate to find most recent
     for (let i = exerciseHistory.length - 1; i >= 0; i--) {
         const h = exerciseHistory[i];
-        if (h.set == set) { 
+        if (h.set == set) {
              const val = h.reps || h.time;
              if (h.kg && h.kg !== '0' && h.kg !== '') return `${h.kg}kg x ${val}`;
              return `${val}`;
         }
     }
-    return '-'; 
+    return '-';
+}
+
+function findPreviousSetData(name) {
+    // Use cached history from DB to find most recent data for this exercise
+    const history = window.workoutHistoryCache || [];
+    const exerciseHistory = history.filter(h => h.exercise === name);
+
+    if (exerciseHistory.length === 0) return null;
+
+    // Get most recent entry
+    const recent = exerciseHistory[exerciseHistory.length - 1];
+    const val = recent.reps || recent.time;
+    if (recent.kg && recent.kg !== '0' && recent.kg !== '') {
+        return `${recent.kg}kg x ${val}`;
+    }
+    return val ? `${val}` : null;
 }
 
 function getSetRowHtml(exName, setNum, isTimeBased) {
