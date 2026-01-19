@@ -5,7 +5,10 @@
 ALTER TABLE public.stories
 ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
 
--- Update the get_network_active_stories function to include thumbnail_url
+-- Drop existing function first (required when changing return type)
+DROP FUNCTION IF EXISTS get_network_active_stories(uuid);
+
+-- Recreate the get_network_active_stories function to include thumbnail_url
 CREATE OR REPLACE FUNCTION get_network_active_stories(user_uuid UUID)
 RETURNS TABLE(
   story_id UUID,
