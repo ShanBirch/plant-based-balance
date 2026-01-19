@@ -17313,8 +17313,8 @@ function fileToBase64(file) {
 
 // Upload meal photo to Supabase Storage
 async function uploadMealPhoto(file) {
-    const user = supabase.auth.getUser ? await supabase.auth.getUser() : await supabase.auth.user();
-    const userId = user?.data?.user?.id || user?.id;
+    const user = await window.supabaseClient.auth.getUser();
+    const userId = user?.data?.user?.id;
 
     if (!userId) {
         throw new Error('User not authenticated');
@@ -17323,7 +17323,7 @@ async function uploadMealPhoto(file) {
     const timestamp = Date.now();
     const fileName = `${userId}/${timestamp}_${file.name}`;
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await window.supabaseClient.storage
         .from('meal-photos')
         .upload(fileName, file);
 
@@ -17333,7 +17333,7 @@ async function uploadMealPhoto(file) {
     }
 
     // Get public URL
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = window.supabaseClient.storage
         .from('meal-photos')
         .getPublicUrl(fileName);
 
@@ -17342,8 +17342,8 @@ async function uploadMealPhoto(file) {
 
 // Save meal log to database
 async function saveMealLog(mealData) {
-    const user = supabase.auth.getUser ? await supabase.auth.getUser() : await supabase.auth.user();
-    const userId = user?.data?.user?.id || user?.id;
+    const user = await window.supabaseClient.auth.getUser();
+    const userId = user?.data?.user?.id;
 
     if (!userId) {
         throw new Error('User not authenticated');
@@ -17353,7 +17353,7 @@ async function saveMealLog(mealData) {
     const mealDate = now.toISOString().split('T')[0];
     const mealTime = now.toTimeString().split(' ')[0];
 
-    const { data, error } = await supabase
+    const { data, error } = await window.supabaseClient
         .from('meal_logs')
         .insert({
             user_id: userId,
@@ -17385,8 +17385,8 @@ async function saveMealLog(mealData) {
 // Load today's nutrition data
 async function loadTodayNutrition() {
     try {
-        const user = supabase.auth.getUser ? await supabase.auth.getUser() : await supabase.auth.user();
-        const userId = user?.data?.user?.id || user?.id;
+        const user = await window.supabaseClient.auth.getUser();
+        const userId = user?.data?.user?.id;
 
         if (!userId) {
             console.log('User not authenticated');
@@ -17396,7 +17396,7 @@ async function loadTodayNutrition() {
         const today = new Date().toISOString().split('T')[0];
 
         // Load daily nutrition summary
-        const { data: dailyData, error: dailyError } = await supabase
+        const { data: dailyData, error: dailyError } = await window.supabaseClient
             .from('daily_nutrition')
             .select('*')
             .eq('user_id', userId)
