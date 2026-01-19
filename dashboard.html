@@ -16680,19 +16680,27 @@ async function useMealPhoto() {
         return;
     }
 
-    // Success - log meal to database
+    // Success - save meal to database
     try {
-        if (window.currentUser) {
-            await dbHelpers.meals.log(window.currentUser.id, nutritionData);
-        }
+        // Upload photo to Supabase Storage
+        const photoUrl = await uploadMealPhoto(fileToAnalyze);
 
-        // Display result
-        showMealAnalysisResult(nutritionData);
+        // Save meal log to database
+        await saveMealLog({
+            photoUrl,
+            foodItems: nutritionData.foodItems,
+            totals: nutritionData.totals,
+            micronutrients: nutritionData.micronutrients,
+            confidence: nutritionData.confidence,
+            notes: nutritionData.notes
+        });
 
-        // Reload calorie widget
-        if (typeof loadCalorieWidget === 'function') {
-            await loadCalorieWidget();
-        }
+        // Refresh display
+        await loadTodayNutrition();
+
+        // Show success message
+        showMealAnalysisSuccess(nutritionData);
+
     } catch (error) {
         console.error('Error saving meal:', error);
         showMealAnalysisError(error.message);
