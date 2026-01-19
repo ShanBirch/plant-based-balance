@@ -1626,7 +1626,7 @@
 
     <div style="padding: 0 25px;">
         <!-- Points Rewards Widget -->
-        <div id="points-widget" class="points-widget" style="display: none;">
+        <div id="points-widget" class="points-widget">
             <div class="points-widget-header">
                 <div class="points-balance">
                     <span class="points-number" id="points-current">0</span>
@@ -16665,25 +16665,31 @@ const POINTS_FOR_FREE_WEEK = 200;
 
 // Load and display user's points data
 async function loadPointsWidget() {
+    // Always show the widget (even with default values)
+    const widget = document.getElementById('points-widget');
+    if (widget) {
+        widget.style.display = 'block';
+    }
+
     try {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) {
-            console.log('No user session, hiding points widget');
+            console.log('No user session, showing default points widget');
+            updatePointsDisplay({ current_points: 0, current_streak: 0 });
             return;
         }
 
         const userId = session.user.id;
-        const pointsData = await window.db?.points?.getPoints(userId);
 
-        if (!pointsData) {
-            console.log('No points data found');
-            return;
-        }
-
-        // Show the widget
-        const widget = document.getElementById('points-widget');
-        if (widget) {
-            widget.style.display = 'block';
+        // Try to get points data, fall back to defaults if table doesn't exist
+        let pointsData = { current_points: 0, current_streak: 0 };
+        try {
+            const data = await window.db?.points?.getPoints(userId);
+            if (data) {
+                pointsData = data;
+            }
+        } catch (dbError) {
+            console.log('Points table not set up yet, using defaults');
         }
 
         // Update points display
@@ -16691,6 +16697,8 @@ async function loadPointsWidget() {
 
     } catch (error) {
         console.error('Error loading points widget:', error);
+        // Still show with defaults
+        updatePointsDisplay({ current_points: 0, current_streak: 0 });
     }
 }
 
