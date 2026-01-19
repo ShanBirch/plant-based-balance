@@ -166,6 +166,197 @@
         .form-container.active {
             display: block;
         }
+
+        /* Biometric Login Styles */
+        .biometric-section {
+            margin-bottom: 25px;
+            display: none;
+        }
+
+        .biometric-section.visible {
+            display: block;
+        }
+
+        .biometric-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #48864B 0%, #3a6346 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(72,134,75,0.3);
+        }
+
+        .biometric-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(72,134,75,0.4);
+        }
+
+        .biometric-btn:active {
+            transform: scale(0.98);
+        }
+
+        .biometric-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .biometric-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+
+        .biometric-divider::before,
+        .biometric-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .biometric-divider span {
+            padding: 0 15px;
+        }
+
+        .biometric-user {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        .biometric-user strong {
+            color: #1a4d2e;
+        }
+
+        .switch-account {
+            color: #48864B;
+            font-size: 0.75rem;
+            cursor: pointer;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        .switch-account:hover {
+            text-decoration: underline;
+        }
+
+        /* Biometric setup modal */
+        .biometric-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .biometric-modal.visible {
+            display: flex;
+        }
+
+        .biometric-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 360px;
+            width: 100%;
+            text-align: center;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .biometric-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .biometric-icon svg {
+            width: 40px;
+            height: 40px;
+            color: #48864B;
+        }
+
+        .biometric-modal h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.25rem;
+            color: #1a4d2e;
+            margin-bottom: 10px;
+        }
+
+        .biometric-modal p {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+        }
+
+        .biometric-modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .biometric-modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-enable {
+            background: #48864B;
+            color: white;
+            border: none;
+        }
+
+        .btn-enable:hover {
+            background: #3a6346;
+        }
+
+        .btn-skip {
+            background: white;
+            color: #64748b;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-skip:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
     </style>
 </head>
 <body>
@@ -181,6 +372,21 @@
         <div id="login-form" class="form-container active">
             <h1>Welcome Back</h1>
             <p>Log in to access your personalized protocol and dashboard.</p>
+
+            <!-- Biometric Login Section -->
+            <div id="biometric-section" class="biometric-section">
+                <button type="button" class="biometric-btn" onclick="handleBiometricLogin()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/>
+                    </svg>
+                    <span>Sign in with Biometrics</span>
+                </button>
+                <div class="biometric-user">
+                    Signing in as <strong id="biometric-email"></strong>
+                </div>
+                <span class="switch-account" onclick="switchAccount()">Use different account</span>
+                <div class="biometric-divider"><span>or use password</span></div>
+            </div>
 
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group">
@@ -383,7 +589,7 @@
             try {
                 const { user } = await authHelpers.signIn(email, password);
 
-                showSuccess('Login successful! Redirecting...');
+                showSuccess('Login successful!');
 
                 // Check if user is an admin
                 const { data: adminCheck } = await window.supabaseClient
@@ -400,9 +606,21 @@
                     redirect = adminCheck ? '/admin-dashboard.html' : '/dashboard.html';
                 }
 
-                setTimeout(() => {
-                    window.location.href = redirect;
-                }, 1000);
+                // Check if we should offer biometric setup
+                const biometricAvailable = await BiometricAuth.isAvailable();
+                const hasCredentials = BiometricAuth.hasCredentials();
+                const declinedBiometric = sessionStorage.getItem('pbb_biometric_declined');
+
+                if (biometricAvailable && !hasCredentials && !declinedBiometric) {
+                    // Offer biometric setup
+                    showBiometricSetup(user, redirect);
+                } else {
+                    // Just redirect
+                    showSuccess('Login successful! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = redirect;
+                    }, 1000);
+                }
             } catch (error) {
                 console.error('Login error:', error);
                 showError(error.message || 'Invalid email or password. Please try again.');
@@ -514,6 +732,177 @@
         }
 
         lucide.createIcons();
+    </script>
+
+    <!-- Biometric Setup Modal -->
+    <div id="biometric-modal" class="biometric-modal">
+        <div class="biometric-modal-content">
+            <div class="biometric-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/>
+                </svg>
+            </div>
+            <h3>Enable Quick Login?</h3>
+            <p>Use your fingerprint or face to sign in instantly next time. Fast, secure, and convenient.</p>
+            <div class="biometric-modal-buttons">
+                <button class="btn-skip" onclick="skipBiometricSetup()">Not Now</button>
+                <button class="btn-enable" onclick="enableBiometric()">Enable</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biometric Auth Library -->
+    <script src="/lib/biometric-auth.js"></script>
+
+    <!-- Biometric Login Logic -->
+    <script>
+        // Store pending login data for biometric setup
+        let pendingLoginUser = null;
+        let pendingRedirect = null;
+
+        // Initialize biometric section on page load
+        async function initBiometric() {
+            // Check if biometrics are available and user has credentials
+            const available = await BiometricAuth.isAvailable();
+            const hasCredentials = BiometricAuth.hasCredentials();
+
+            if (available && hasCredentials) {
+                const email = BiometricAuth.getStoredEmail();
+                document.getElementById('biometric-email').textContent = email;
+                document.getElementById('biometric-section').classList.add('visible');
+
+                // Auto-trigger biometric prompt after a short delay
+                setTimeout(() => {
+                    handleBiometricLogin();
+                }, 500);
+            }
+        }
+
+        // Handle biometric login
+        async function handleBiometricLogin() {
+            clearMessages();
+
+            try {
+                // Authenticate with biometrics
+                const email = await BiometricAuth.authenticate();
+
+                showSuccess('Authenticated! Signing you in...');
+
+                // Get the stored password from secure storage (we'll use a session token approach)
+                // For now, we need to sign in with the stored session
+                // The biometric verification proves the user is who they say they are
+                // We'll refresh the session using Supabase's session management
+
+                const session = await authHelpers.getSession();
+
+                if (session) {
+                    // Session still valid, redirect
+                    redirectAfterLogin(session.user);
+                } else {
+                    // Session expired - need password login
+                    showError('Session expired. Please enter your password.');
+                    document.getElementById('login-email').value = email;
+                    document.getElementById('login-password').focus();
+                }
+            } catch (error) {
+                console.error('Biometric login error:', error);
+
+                if (error.name === 'NotAllowedError') {
+                    // User cancelled or biometric failed
+                    showError('Biometric verification cancelled or failed. Please use your password.');
+                } else {
+                    showError('Biometric login failed. Please use your password.');
+                }
+            }
+        }
+
+        // Switch to different account (clear biometric and show password form)
+        function switchAccount() {
+            BiometricAuth.clear();
+            document.getElementById('biometric-section').classList.remove('visible');
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-password').value = '';
+        }
+
+        // Show biometric setup modal
+        function showBiometricSetup(user, redirect) {
+            pendingLoginUser = user;
+            pendingRedirect = redirect;
+            document.getElementById('biometric-modal').classList.add('visible');
+        }
+
+        // Enable biometric after login
+        async function enableBiometric() {
+            const modal = document.getElementById('biometric-modal');
+            const enableBtn = modal.querySelector('.btn-enable');
+
+            enableBtn.textContent = 'Setting up...';
+            enableBtn.disabled = true;
+
+            try {
+                await BiometricAuth.register(pendingLoginUser.email, pendingLoginUser.id);
+                modal.classList.remove('visible');
+                showSuccess('Biometric login enabled! Redirecting...');
+
+                setTimeout(() => {
+                    window.location.href = pendingRedirect;
+                }, 1000);
+            } catch (error) {
+                console.error('Biometric setup error:', error);
+                modal.classList.remove('visible');
+
+                // Still redirect even if biometric setup fails
+                showSuccess('Login successful! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = pendingRedirect;
+                }, 1000);
+            }
+        }
+
+        // Skip biometric setup
+        function skipBiometricSetup() {
+            document.getElementById('biometric-modal').classList.remove('visible');
+
+            // Mark that user declined biometric setup (don't ask again this session)
+            sessionStorage.setItem('pbb_biometric_declined', 'true');
+
+            showSuccess('Login successful! Redirecting...');
+            setTimeout(() => {
+                window.location.href = pendingRedirect;
+            }, 1000);
+        }
+
+        // Redirect after successful login
+        async function redirectAfterLogin(user) {
+            // Check if user is an admin
+            const { data: adminCheck } = await window.supabaseClient
+                .from('admin_users')
+                .select('id')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            // Determine redirect URL
+            const urlParams = new URLSearchParams(window.location.search);
+            let redirect = urlParams.get('redirect');
+
+            if (!redirect) {
+                redirect = adminCheck ? '/admin-dashboard.html' : '/dashboard.html';
+            }
+
+            window.location.href = redirect;
+        }
+
+        // Initialize biometric on page load (after Supabase is ready)
+        const originalInitializePage = initializePage;
+        initializePage = async function() {
+            await originalInitializePage();
+
+            // Only init biometric if we're not already redirecting
+            const session = await authHelpers.getSession();
+            if (!session) {
+                initBiometric();
+            }
+        };
     </script>
 </body>
 </html>
