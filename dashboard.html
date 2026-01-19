@@ -9093,16 +9093,6 @@ function renderCycleStatus() {
 
 // --- CYCLE & CALENDAR ACTIONS ---
 
-window.toggleCycleSettings = function() {
-    const details = document.getElementById('cycle-settings-details');
-    if (details) {
-        details.open = !details.open;
-        if(details.open) {
-            details.scrollIntoView({behavior: 'smooth', block: 'start'});
-        }
-    }
-};
-
 window.logPeriodStart = function() {
     const today = new Date();
     // Format YYYY-MM-DD local
