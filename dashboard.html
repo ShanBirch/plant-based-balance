@@ -7540,6 +7540,9 @@ function startCustomBuilderWorkout() {
     hideAllAppViews();
     document.getElementById('view-active-workout').style.display = 'block';
     startWorkoutTimer();
+
+    // Push navigation state for Android back button
+    pushNavigationState('view-active-workout', () => quitWorkout());
 }
 </script>
 
@@ -8834,6 +8837,11 @@ function switchAppTab(tabName, btn) {
 
     // 1.5. Restore bottom navigation visibility for normal tabs
     document.querySelector('.bottom-nav').style.display = 'flex';
+
+    // 1.6. Clear Android navigation stack when switching to main tabs
+    if (typeof clearNavigationStack === 'function') {
+        clearNavigationStack();
+    }
 
     // 2. Clear All Views
     hideAllAppViews();
@@ -10902,6 +10910,9 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
     hideAllAppViews();
     document.getElementById('view-active-workout').style.display = 'block';
     startWorkoutTimer();
+
+    // Push navigation state for Android back button
+    pushNavigationState('view-active-workout', () => quitWorkout());
 }
 
 function getPreviousStats(name, set) {
@@ -11056,6 +11067,8 @@ async function finishWorkout() {
         } else {
             hideAllAppViews();
             document.getElementById('view-workout-success').style.display = 'flex';
+            // Push navigation state for Android back button
+            pushNavigationState('view-workout-success', () => closeSuccessScreen());
         }
     } catch(e) {
         console.error("Failed to save workout to DB:", e);
@@ -11128,6 +11141,9 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
     }
 
     document.getElementById('view-workout-success').style.display = 'flex';
+
+    // Push navigation state for Android back button
+    pushNavigationState('view-workout-success', () => closeSuccessScreen());
 }
 
 function quitWorkout() {
@@ -11150,6 +11166,27 @@ function closeSuccessScreen() {
 // SWIPE BACK NAVIGATION SYSTEM
 // ===========================
 
+// Platform detection for adaptive navigation
+function getPlatform() {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+    // iOS detection
+    if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+        return 'ios';
+    }
+
+    // Android detection
+    if (/android/i.test(userAgent)) {
+        return 'android';
+    }
+
+    // Default to iOS-style for other platforms (web browsers, etc.)
+    return 'ios';
+}
+
+// Store platform once at startup for consistent behavior
+const devicePlatform = getPlatform();
+
 function enableSwipeBackNavigation(viewId, backHandler) {
     const view = document.getElementById(viewId);
     if (!view) return;
@@ -11160,6 +11197,12 @@ function enableSwipeBackNavigation(viewId, backHandler) {
     let touchEndY = 0;
     let isDragging = false;
     let overlayEl = null;
+
+    const screenWidth = window.innerWidth;
+    const isAndroid = devicePlatform === 'android';
+
+    // Edge zone: 50px from the appropriate edge
+    const edgeThreshold = 50;
 
     const handleTouchStart = (e) => {
         touchStartX = e.changedTouches[0].screenX;
@@ -11174,8 +11217,16 @@ function enableSwipeBackNavigation(viewId, backHandler) {
         const deltaX = touchEndX - touchStartX;
         const deltaY = Math.abs(e.changedTouches[0].screenY - touchStartY);
 
-        // Only trigger if swipe starts from left edge (within 50px) and is mostly horizontal
-        if (touchStartX < 50 && deltaX > 30 && deltaY < 100) {
+        // Platform-adaptive edge detection:
+        // iOS: Swipe from LEFT edge, moving RIGHT (deltaX > 0)
+        // Android: Swipe from RIGHT edge, moving LEFT (deltaX < 0)
+        const isFromCorrectEdge = isAndroid
+            ? (touchStartX > screenWidth - edgeThreshold && deltaX < -30)  // Right edge, swipe left
+            : (touchStartX < edgeThreshold && deltaX > 30);                 // Left edge, swipe right
+
+        const absDeltaX = Math.abs(deltaX);
+
+        if (isFromCorrectEdge && deltaY < 100) {
             isDragging = true;
 
             // Create visual feedback overlay
@@ -11197,8 +11248,10 @@ function enableSwipeBackNavigation(viewId, backHandler) {
             }
 
             // Transform the view based on swipe distance
-            const progress = Math.min(deltaX / 200, 1);
-            view.style.transform = `translateX(${deltaX}px)`;
+            // iOS: slide right (positive), Android: slide left (negative)
+            const progress = Math.min(absDeltaX / 200, 1);
+            const translateX = isAndroid ? deltaX : deltaX;
+            view.style.transform = `translateX(${translateX}px)`;
             view.style.transition = 'none';
             overlayEl.style.opacity = progress * 0.3;
         }
@@ -11210,12 +11263,18 @@ function enableSwipeBackNavigation(viewId, backHandler) {
 
         const deltaX = touchEndX - touchStartX;
         const deltaY = Math.abs(touchEndY - touchStartY);
+        const absDeltaX = Math.abs(deltaX);
 
-        // Swipe right from left edge - check if swipe was far enough
-        if (touchStartX < 50 && deltaX > 100 && deltaY < 100 && isDragging) {
-            // Animate out
+        // Platform-adaptive completion check
+        const isValidSwipe = isAndroid
+            ? (touchStartX > screenWidth - edgeThreshold && deltaX < -100)  // Right edge, swiped left enough
+            : (touchStartX < edgeThreshold && deltaX > 100);                 // Left edge, swiped right enough
+
+        if (isValidSwipe && deltaY < 100 && isDragging) {
+            // Animate out in the appropriate direction
+            const exitDirection = isAndroid ? '-100%' : '100%';
             view.style.transition = 'transform 0.3s ease-out';
-            view.style.transform = 'translateX(100%)';
+            view.style.transform = `translateX(${exitDirection})`;
 
             // Call back handler after animation
             setTimeout(() => {
@@ -11285,7 +11344,51 @@ function initializeMovementSwipeNavigation() {
 // Initialize swipe navigation when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     initializeMovementSwipeNavigation();
+    initializeAndroidBackNavigation();
 });
+
+// ===========================
+// ANDROID HARDWARE BACK BUTTON SUPPORT
+// ===========================
+
+// Navigation stack for Android back button
+const navigationStack = [];
+
+function pushNavigationState(viewId, backHandler) {
+    // Only use history-based navigation on Android
+    if (devicePlatform !== 'android') return;
+
+    const state = { viewId, timestamp: Date.now() };
+    navigationStack.push({ viewId, backHandler });
+    history.pushState(state, '', window.location.href);
+}
+
+function popNavigationState() {
+    return navigationStack.pop();
+}
+
+function clearNavigationStack() {
+    navigationStack.length = 0;
+}
+
+function initializeAndroidBackNavigation() {
+    // Only set up on Android
+    if (devicePlatform !== 'android') return;
+
+    // Handle browser/hardware back button via popstate
+    window.addEventListener('popstate', (event) => {
+        const navItem = popNavigationState();
+        if (navItem && navItem.backHandler) {
+            // Execute the back handler
+            navItem.backHandler();
+        }
+    });
+}
+
+// Helper to navigate to a view with back support (Android)
+function navigateToView(viewId, backHandler) {
+    pushNavigationState(viewId, backHandler);
+}
 
 // ===========================
 // WORKOUT LIBRARY FUNCTIONS
@@ -11296,6 +11399,9 @@ function openWorkoutLibrary() {
     hideAllAppViews();
     document.getElementById('view-workout-library').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
+
+    // Push navigation state for Android back button
+    pushNavigationState('view-workout-library', () => switchAppTab('movement-tab'));
 }
 
 function renderWorkoutLibraryCategories() {
@@ -11351,6 +11457,9 @@ function openWorkoutSubcategories(categoryKey) {
 
     // Show view
     document.getElementById('view-workout-subcategories').style.display = 'block';
+
+    // Push navigation state for Android back button
+    pushNavigationState('view-workout-subcategories', () => closeWorkoutSubcategories());
 }
 
 function closeWorkoutSubcategories() {
@@ -11410,6 +11519,9 @@ function openWorkoutList(categoryKey, subcategoryKey) {
 
     // Show view
     document.getElementById('view-workout-list').style.display = 'block';
+
+    // Push navigation state for Android back button
+    pushNavigationState('view-workout-list', () => closeWorkoutList());
 }
 
 function closeWorkoutList() {
@@ -11473,6 +11585,9 @@ function openLibraryWorkoutOverview(categoryKey, subcategoryKey, workoutId) {
     hideAllAppViews();
     document.getElementById('view-workout-overview').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
+
+    // Push navigation state for Android back button
+    pushNavigationState('view-workout-overview', () => switchAppTab('movement-tab'));
 }
 
 async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
@@ -11554,6 +11669,9 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
     hideAllAppViews();
     document.getElementById('view-active-workout').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
+
+    // Push navigation state for Android back button
+    pushNavigationState('view-active-workout', () => quitWorkout());
 }
 
 // Update hideAllAppViews to include new views
