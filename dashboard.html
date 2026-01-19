@@ -8842,11 +8842,13 @@ function switchAppTab(tabName, btn) {
         if(el) { el.classList.add('active'); el.style.display='block'; }
     } else if (tabName === 'profile') {
         const el = document.getElementById('view-profile');
-        if(el) { 
-            el.classList.add('active'); 
-            el.style.display='block'; 
+        if(el) {
+            el.classList.add('active');
+            el.style.display='block';
             // Decouple data loading so errors don't stop view from showing
             setTimeout(loadProfileData, 10);
+            // Initialize cycle settings on profile page
+            setTimeout(loadCycleSettingsInProfile, 10);
         }
     } else if (tabName === 'cycle') {
         const el = document.getElementById('view-cycle');
@@ -8967,6 +8969,59 @@ async function initCalendarView() {
 
     renderCycleStatus();
     renderWeeklyCalendar();
+}
+
+async function loadCycleSettingsInProfile() {
+    // Load cycle data into profile page inputs
+    // 1. Try localStorage first
+    try {
+        const savedCycleData = localStorage.getItem('userCycleData');
+        if (savedCycleData) {
+            const parsed = JSON.parse(savedCycleData);
+            if (parsed.lastPeriod) {
+                const lastPeriodInput = document.getElementById('last-period-input-profile');
+                if (lastPeriodInput) lastPeriodInput.value = parsed.lastPeriod;
+            }
+            if (parsed.cycleLength) {
+                const cycleLengthInput = document.getElementById('cycle-length-input-profile');
+                if (cycleLengthInput) cycleLengthInput.value = parsed.cycleLength;
+            }
+            if (parsed.noPeriodMode) {
+                const noPeriodToggle = document.getElementById('no-period-toggle-profile');
+                if (noPeriodToggle) noPeriodToggle.checked = true;
+                const lastPeriodInput = document.getElementById('last-period-input-profile');
+                if (lastPeriodInput) lastPeriodInput.disabled = true;
+            }
+        }
+    } catch (e) {
+        console.log("Error loading cycle data into profile", e);
+    }
+
+    // 2. Fetch from DB if logged in (overrides localStorage)
+    if (window.currentUser) {
+        try {
+            const userId = window.currentUser.id || window.currentUser.user_id;
+            const facts = await dbHelpers.userFacts.get(userId);
+            if (facts && facts.additional_data) {
+                if (facts.additional_data.last_period_start) {
+                    const lastPeriodInput = document.getElementById('last-period-input-profile');
+                    if (lastPeriodInput) lastPeriodInput.value = facts.additional_data.last_period_start;
+                }
+                if (facts.additional_data.cycle_length) {
+                    const cycleLengthInput = document.getElementById('cycle-length-input-profile');
+                    if (cycleLengthInput) cycleLengthInput.value = facts.additional_data.cycle_length;
+                }
+                if (facts.additional_data.no_period_mode) {
+                    const noPeriodToggle = document.getElementById('no-period-toggle-profile');
+                    if (noPeriodToggle) noPeriodToggle.checked = true;
+                    const lastPeriodInput = document.getElementById('last-period-input-profile');
+                    if (lastPeriodInput) lastPeriodInput.disabled = true;
+                }
+            }
+        } catch (e) {
+            console.log("No cycle data in DB or error fetching", e);
+        }
+    }
 }
 
 async function updateCycleData() {
