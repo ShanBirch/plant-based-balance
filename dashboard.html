@@ -8060,7 +8060,7 @@ function startCustomBuilderWorkout() {
                 <button onclick="initOnboardingWizard()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🌸</span> Restart Onboarding Setup
                 </button>
-                <button onclick="openCheckInModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <button onclick="checkDailyWellness(true)" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>☀️</span> Daily Wellness Check-in
                 </button>
                 <button onclick="openCycleTrackingModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
@@ -10356,11 +10356,21 @@ function openCycleTrackingModal() {
     wellnessToggle.onchange = updatePeriodVisibility;
     updatePeriodVisibility();
 
-    modal.style.display = 'flex';
+    // Show modal with proper animation (match onboarding wizard pattern)
+    if(modal) {
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        modal.style.opacity = '1';
+    }
 }
 
 function closeCycleTrackingModal() {
-    document.getElementById('cycle-tracking-modal').style.display = 'none';
+    const modal = document.getElementById('cycle-tracking-modal');
+    if(modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        modal.style.opacity = '0';
+    }
 }
 
 function saveCycleTrackingData() {
