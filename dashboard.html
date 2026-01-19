@@ -12859,15 +12859,21 @@ updateCoachUI();
     </button>
 
     <!-- Camera Controls -->
-    <div style="position:absolute; bottom:40px; left:0; right:0; display:flex; justify-content:center; align-items:center; gap:20px; z-index:10;">
-        <!-- Record Video Button -->
-        <button id="record-video-btn" onclick="toggleVideoRecording()" style="padding:15px 30px; background:#ef4444; color:white; border:none; border-radius:50px; font-weight:600; font-size:1rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
-            ⏺️ Record
+    <div style="position:absolute; bottom:40px; left:0; right:0; display:flex; justify-content:center; align-items:center; z-index:10;">
+        <!-- Single Capture Button (Tap = Photo, Hold = Video) -->
+        <button id="camera-capture-btn"
+                onmousedown="handleCameraButtonDown()"
+                onmouseup="handleCameraButtonUp()"
+                onmouseleave="handleCameraButtonUp()"
+                ontouchstart="handleCameraButtonDown()"
+                ontouchend="handleCameraButtonUp()"
+                style="width:70px; height:70px; background:white; border:5px solid rgba(255,255,255,0.8); border-radius:50%; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3); transition:all 0.2s;">
         </button>
+    </div>
 
-        <!-- Capture Photo Button -->
-        <button onclick="capturePhoto()" style="width:70px; height:70px; background:white; border:5px solid rgba(255,255,255,0.8); border-radius:50%; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3); transition:transform 0.1s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'">
-        </button>
+    <!-- Recording Indicator -->
+    <div id="recording-indicator" style="position:absolute; top:20px; left:20px; background:rgba(239,68,68,0.9); color:white; padding:8px 16px; border-radius:20px; font-weight:600; display:none; z-index:10;">
+        ⏺ Recording...
     </div>
 </div>
 
