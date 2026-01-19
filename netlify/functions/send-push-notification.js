@@ -5,9 +5,9 @@ const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@plantbasedbalance.com';
 
-// Supabase config
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Supabase config - try multiple env var names
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hzapaorxqboevxnumxkv.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
 exports.handler = async (event) => {
     // Only accept POST
@@ -20,10 +20,19 @@ exports.handler = async (event) => {
 
     // Check VAPID keys
     if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-        console.error('Missing VAPID keys');
+        console.error('Missing VAPID keys. VAPID_PUBLIC_KEY:', !!VAPID_PUBLIC_KEY, 'VAPID_PRIVATE_KEY:', !!VAPID_PRIVATE_KEY);
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'Server configuration error: Missing VAPID keys' })
+        };
+    }
+
+    // Check Supabase service key
+    if (!SUPABASE_SERVICE_KEY) {
+        console.error('Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY env var');
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: 'Server configuration error: Missing Supabase service key' })
         };
     }
 
