@@ -12969,11 +12969,23 @@ async function saveToHistory(role, text) {
 window.loadChatHistory = async function() {
     const container = document.getElementById('chat-messages-container');
     if (!container) return;
-    
+
     // Clear waiting for load
-    container.innerHTML = ''; 
+    container.innerHTML = '';
+
+    // Initialize the shown message IDs set for realtime deduplication
+    window._shownMessageIds = window._shownMessageIds || new Set();
 
     const history = await getChatHistory();
+
+    // Track all loaded message IDs to prevent realtime duplicates
+    history.forEach(msg => {
+        if (msg.id) {
+            window._shownMessageIds.add(msg.id);
+        }
+    });
+
+    console.log('Chat history loaded:', history.length, 'messages. Tracking', window._shownMessageIds.size, 'message IDs');
 
     // Only show default welcome message if there's no chat history
     if (history.length === 0) {
@@ -13080,10 +13092,15 @@ window.appendCoachMessage = async function(text) {
  * This allows messages to appear instantly when approved by admin
  */
 window.subscribeToCoachMessages = function(userId) {
-    if (!userId || !window.supabaseClient) return;
+    if (!userId || !window.supabaseClient) {
+        console.warn('Realtime: Cannot subscribe - missing userId or supabaseClient');
+        return;
+    }
 
     // Track message IDs we've already shown to avoid duplicates
     window._shownMessageIds = window._shownMessageIds || new Set();
+
+    console.log('Realtime: Setting up subscription for user:', userId);
 
     const channel = window.supabaseClient
         .channel('coach-messages-' + userId)
@@ -13096,26 +13113,41 @@ window.subscribeToCoachMessages = function(userId) {
                 filter: `user_id=eq.${userId}`
             },
             (payload) => {
+                console.log('Realtime: Received INSERT event:', payload);
                 const newMessage = payload.new;
 
                 // Only show assistant/coach messages, not user messages
                 if (newMessage.role === 'assistant' || newMessage.role === 'model') {
                     // Avoid duplicates
-                    if (window._shownMessageIds.has(newMessage.id)) return;
+                    if (window._shownMessageIds.has(newMessage.id)) {
+                        console.log('Realtime: Skipping duplicate message ID:', newMessage.id);
+                        return;
+                    }
                     window._shownMessageIds.add(newMessage.id);
 
                     // Skip the save since it's already in the DB
                     window._skipCoachMessageSave = true;
 
                     // Display the message
+                    console.log('Realtime: Displaying new coach message:', newMessage.message_text?.substring(0, 50) + '...');
                     appendCoachMessage(newMessage.message_text);
 
-                    console.log('Realtime: New coach message received!');
+                    console.log('Realtime: New coach message displayed successfully!');
+                } else {
+                    console.log('Realtime: Ignoring non-assistant message with role:', newMessage.role);
                 }
             }
         )
-        .subscribe((status) => {
+        .subscribe((status, err) => {
             console.log('Realtime subscription status:', status);
+            if (err) {
+                console.error('Realtime subscription error:', err);
+            }
+            if (status === 'SUBSCRIBED') {
+                console.log('Realtime: Successfully subscribed to coach messages for user:', userId);
+            } else if (status === 'CHANNEL_ERROR') {
+                console.error('Realtime: Channel error - make sure Realtime is enabled on conversations table in Supabase Dashboard');
+            }
         });
 
     // Store channel reference for cleanup
