@@ -23,6 +23,7 @@
 <script src="lib/auth-guard.js?v=3"></script>
 <script src="lib/migrate-localstorage.js"></script>
 <script src="lib/stories.js"></script>
+<script src="lib/nutrition-calculator.js"></script>
 
 <style>
     :root {
@@ -8500,16 +8501,16 @@ function updateDailyContent(day) {
 async function syncQuizDataToDb() {
     const user = window.currentUser;
     if (!user) return;
-    
+
     try {
         const quizJson = sessionStorage.getItem('userProfile');
         const hormoneType = sessionStorage.getItem('userResult');
-        
+
         let quizData = {};
         if (quizJson) {
              try { quizData = JSON.parse(quizJson); } catch(e) {}
         }
-        
+
         // Add hormone type if present
         if (hormoneType) {
             quizData.profile = hormoneType;
@@ -8520,7 +8521,7 @@ async function syncQuizDataToDb() {
         if (quizData.keeps_awake === 'stress' || quizData.keeps_awake === 'worry') derivedSymptoms.push('anxiety');
         if (quizData.midday_crash === 'yes' || quizData.midday_crash === 'crash') derivedSymptoms.push('fatigue');
         if (quizData.brain_fog === 'yes' || quizData.brain_fog === 'forgetful') derivedSymptoms.push('fatigue');
-        
+
         if (derivedSymptoms.length > 0) {
             // merge with existing symptoms if any, avoiding duplicates
             const existing = Array.isArray(quizData.symptoms) ? quizData.symptoms : [];
@@ -8529,12 +8530,12 @@ async function syncQuizDataToDb() {
 
         if (Object.keys(quizData).length > 0) {
             console.log("Syncing quiz data to DB...", quizData);
-            
+
             // SPLIT DATA: Users table vs User Facts (personal_details)
             const userColumns = ['name', 'email', 'profile_photo', 'program_start_date', 'theme_preference', 'location'];
             const coreData = {};
             const factsData = {};
-            
+
             Object.keys(quizData).forEach(k => {
                 if (userColumns.includes(k)) coreData[k] = quizData[k];
                 else factsData[k] = quizData[k];
@@ -8548,16 +8549,72 @@ async function syncQuizDataToDb() {
             // 2. Update Extension Data (User Facts)
             if (Object.keys(factsData).length > 0) {
                 // Get existing facts first to merge
-                let existingFacts = {}; 
+                let existingFacts = {};
                 try { existingFacts = await dbHelpers.userFacts.get(user.id); } catch(e){}
-                
+
                 const currentDetails = existingFacts?.personal_details || {};
-                
+
                 await dbHelpers.userFacts.upsert(user.id, {
                     personal_details: { ...currentDetails, ...factsData }
                 });
             }
-            
+
+            // 3. Calculate and Save Nutrition Goals if we have the required data
+            if (quizData.age && quizData.height && quizData.weight && quizData.goal_weight && quizData.activity_level && quizData.goalBodyType) {
+                try {
+                    // Convert quiz data to metric units
+                    const metricData = convertQuizDataToMetric(quizData);
+
+                    // Calculate nutrition goals
+                    const nutritionGoals = calculateNutritionGoals(metricData);
+
+                    if (nutritionGoals) {
+                        console.log("Calculated nutrition goals:", nutritionGoals);
+
+                        // Save to quiz_results table
+                        const quizResultData = {
+                            menopause_status: quizData.menopause_status,
+                            cycle_description: quizData.cycle_desc,
+                            activity_level: quizData.activity_level,
+                            weight_storage_location: quizData.weight_gain_location,
+                            goal_body_type: quizData.goalBodyType,
+                            sleep_hours: quizData.sleep_hours,
+                            sleep_quality: quizData.wake_feel,
+                            energy_level: quizData.energy_status,
+                            energy_crashes: quizData.midday_crash,
+                            caffeine_relationship: quizData.caffeine,
+                            hormone_profile: hormoneType,
+                            age: metricData.age,
+                            height: metricData.height,
+                            weight: metricData.weight,
+                            goal_weight: metricData.goal_weight,
+                            sex: metricData.sex,
+                            bmr: nutritionGoals.bmr,
+                            tdee: nutritionGoals.tdee,
+                            calorie_goal: nutritionGoals.calorie_goal,
+                            protein_goal_g: nutritionGoals.protein_goal_g,
+                            carbs_goal_g: nutritionGoals.carbs_goal_g,
+                            fat_goal_g: nutritionGoals.fat_goal_g
+                        };
+
+                        await dbHelpers.quizResults.create(user.id, quizResultData);
+                        console.log("Quiz results with nutrition goals saved to database");
+
+                        // Update daily_nutrition goals for today
+                        const today = new Date().toISOString().split('T')[0];
+                        await dbHelpers.nutrition.updateGoals(user.id, today, {
+                            calorie_goal: nutritionGoals.calorie_goal,
+                            protein_goal_g: nutritionGoals.protein_goal_g,
+                            carbs_goal_g: nutritionGoals.carbs_goal_g,
+                            fat_goal_g: nutritionGoals.fat_goal_g
+                        });
+                        console.log("Daily nutrition goals updated");
+                    }
+                } catch (nutritionError) {
+                    console.error("Failed to calculate/save nutrition goals:", nutritionError);
+                }
+            }
+
             // Update local cache
             window.userProfile = { ...window.userProfile, ...quizData };
             console.log("Quiz data synced successfully");
