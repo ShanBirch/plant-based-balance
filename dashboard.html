@@ -7048,15 +7048,15 @@ function startCustomBuilderWorkout() {
 
 <!-- WORKOUT LIBRARY CATEGORIES VIEW -->
 <div id="view-workout-library" class="app-view" style="display:none; height: 100vh; background: white; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9;">
-        <div onclick="switchAppTab('movement-tab')" style="width: 40px; height: 40px; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--text-main);"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div onclick="switchAppTab('movement-tab')" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
         </div>
         <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Workout Library</div>
         <div style="width: 40px;"></div>
     </div>
 
-    <div style="padding: 25px;">
+    <div style="padding: 25px; padding-bottom: 100px;">
         <p style="color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;">
             Choose your workout style and browse our complete library of professionally designed workouts.
         </p>
@@ -7069,15 +7069,15 @@ function startCustomBuilderWorkout() {
 
 <!-- WORKOUT LIBRARY SUBCATEGORIES VIEW -->
 <div id="view-workout-subcategories" class="app-view" style="display:none; height: 100vh; background: white; z-index: 501; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9;">
-        <div onclick="closeWorkoutSubcategories()" style="width: 40px; height: 40px; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--text-main);"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div onclick="closeWorkoutSubcategories()" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
         </div>
         <div id="subcategory-header-title" style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Category</div>
         <div style="width: 40px;"></div>
     </div>
 
-    <div style="padding: 25px;">
+    <div style="padding: 25px; padding-bottom: 100px;">
         <p id="subcategory-description" style="color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;"></p>
 
         <div id="subcategories-grid" style="display: grid; gap: 15px;">
@@ -7088,15 +7088,15 @@ function startCustomBuilderWorkout() {
 
 <!-- WORKOUT LIBRARY WORKOUTS LIST VIEW -->
 <div id="view-workout-list" class="app-view" style="display:none; height: 100vh; background: white; z-index: 502; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9;">
-        <div onclick="closeWorkoutList()" style="width: 40px; height: 40px; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--text-main);"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div onclick="closeWorkoutList()" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
         </div>
         <div id="workout-list-header-title" style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Workouts</div>
         <div style="width: 40px;"></div>
     </div>
 
-    <div style="padding: 25px;">
+    <div style="padding: 25px; padding-bottom: 100px;">
         <p id="workout-list-description" style="color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;"></p>
 
         <div id="workouts-list" style="display: flex; flex-direction: column; gap: 15px;">
