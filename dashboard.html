@@ -11393,9 +11393,9 @@ function openWorkoutList(categoryKey, subcategoryKey) {
             </div>
         `;
 
-        // Add click handler (touch-action: manipulation already handles mobile responsiveness)
+        // Add click handler - directly start the workout (touch-action: manipulation already handles mobile responsiveness)
         card.addEventListener('click', () => {
-            openLibraryWorkoutOverview(categoryKey, subcategoryKey, workout.id);
+            startLibraryWorkout(categoryKey, subcategoryKey, workout.id);
         });
 
         // Append to list
