@@ -1002,14 +1002,15 @@
     <div id="stories-carousel-container" style="padding: 15px 0 15px 25px; background: transparent; overflow-x: auto; overflow-y: hidden; white-space: nowrap;">
         <div id="stories-carousel" style="display: inline-flex; gap: 15px;">
             <!-- Add Your Story Button -->
-            <div class="story-ring add-story-btn" onclick="openStoryCamera()" style="display: inline-block; text-align: center; cursor: pointer;">
+            <label for="story-camera-input" class="story-ring add-story-btn" style="display: inline-block; text-align: center; cursor: pointer;">
                 <div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; position: relative;">
                     <div style="width: 64px; height: 64px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center;">
                         <span style="font-size: 2rem; color: var(--primary);">+</span>
                     </div>
                 </div>
                 <p style="margin: 5px 0 0 0; font-size: 0.75rem; color: var(--text-muted); white-space: normal; width: 70px;">Your Story</p>
-            </div>
+            </label>
+            <input type="file" id="story-camera-input" accept="image/*,video/*" capture="environment" style="display:none;" onchange="handleStoryFileSelect(event)">
             <!-- Story rings will be injected here -->
         </div>
     </div>
