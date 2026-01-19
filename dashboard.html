@@ -12853,13 +12853,29 @@ updateCoachUI();
     <!-- Camera Preview -->
     <video id="camera-preview" autoplay playsinline style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;"></video>
 
+    <!-- Captured Preview (shown after capture) -->
+    <div id="captured-preview" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:11;">
+        <img id="captured-photo" style="width:100%; height:100%; object-fit:cover; display:none;">
+        <video id="captured-video" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover; display:none;"></video>
+    </div>
+
     <!-- Close Button -->
-    <button onclick="closeCameraModal()" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:10;">
+    <button onclick="closeCameraModal()" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:12;">
         &times;
     </button>
 
+    <!-- Post Button (shown after capture) -->
+    <button id="post-story-btn" onclick="postCapturedStory()" style="display:none; position:absolute; bottom:40px; right:30px; background:var(--primary); color:white; padding:12px 30px; border:none; border-radius:25px; font-weight:600; font-size:1rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.5); z-index:12;">
+        Post
+    </button>
+
+    <!-- Retake Button (shown after capture) -->
+    <button id="retake-btn" onclick="retakePhoto()" style="display:none; position:absolute; bottom:40px; left:30px; background:rgba(255,255,255,0.2); color:white; padding:12px 24px; border:none; border-radius:25px; font-weight:600; font-size:1rem; cursor:pointer; backdrop-filter:blur(10px); z-index:12;">
+        Retake
+    </button>
+
     <!-- Camera Controls -->
-    <div style="position:absolute; bottom:40px; left:0; right:0; display:flex; justify-content:center; align-items:center; z-index:10;">
+    <div id="camera-controls" style="position:absolute; bottom:40px; left:0; right:0; display:flex; justify-content:center; align-items:center; z-index:10;">
         <!-- Single Capture Button (Tap = Photo, Hold = Video) -->
         <button id="camera-capture-btn"
                 onmousedown="handleCameraButtonDown()"
