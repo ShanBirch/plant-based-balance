@@ -7026,25 +7026,52 @@ function startCustomBuilderWorkout() {
 
 
 <!-- WORKOUT SUCCESS VIEW -->
-<div id="view-workout-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: var(--primary); color: white; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;">
-    
-    <div style="font-size: 5rem; margin-bottom: 20px;">?</div> 
-    <!-- High Five Emoji or similar graphic -->
-    
-    <h1 style="font-family: 'Playfair Display'; font-size: 3rem; margin: 0; color: white;">High Five!</h1>
-    <p style="font-size: 1.2rem; opacity: 0.9; margin-top: 10px;">Workout Completed</p>
-    
-    <div style="margin: 40px 0; background: rgba(255,255,255,0.1); padding: 20px 40px; border-radius: 16px; backdrop-filter: blur(10px);">
-        <div style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Duration</div>
-        <div id="success-duration" style="font-size: 3rem; font-weight: 700; font-family: monospace;">00:00</div>
+<div id="view-workout-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: var(--primary); color: white; overflow-y: auto;">
+    <div style="padding: 40px 20px; text-align: center; max-width: 600px; margin: 0 auto;">
+
+        <div style="font-size: 5rem; margin-bottom: 20px;">🙌</div>
+
+        <h1 style="font-family: 'Playfair Display'; font-size: 2.5rem; margin: 0; color: white;">High Five!</h1>
+        <p style="font-size: 1.2rem; opacity: 0.9; margin-top: 10px;">Workout Completed</p>
+
+        <!-- Milestones Container -->
+        <div id="success-milestones" style="display: none; margin: 30px 0;"></div>
+
+        <!-- Duration -->
+        <div style="margin: 30px 0; background: rgba(255,255,255,0.1); padding: 20px 40px; border-radius: 16px; backdrop-filter: blur(10px);">
+            <div style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Duration</div>
+            <div id="success-duration" style="font-size: 3rem; font-weight: 700; font-family: monospace;">00:00</div>
+        </div>
+
+        <!-- Workout Count -->
+        <div id="success-workout-count-container" style="display: none; margin: 20px 0; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 16px;">
+            <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Total Workouts</div>
+            <div id="success-workout-count" style="font-size: 2rem; font-weight: 700; margin-top: 5px;">0</div>
+        </div>
+
+        <!-- Improvements Container -->
+        <div id="success-improvements" style="display: none; margin: 30px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px;"></div>
+
+        <p style="max-width: 300px; margin: 30px auto 40px; line-height: 1.6; opacity: 0.9;">Great job signaling safety to your body. Your cortisol levels are thanking you.</p>
+
+        <button onclick="closeSuccessScreen()" style="background: white; color: var(--primary); border: none; padding: 15px 50px; border-radius: 50px; font-size: 1.1rem; font-weight: 600; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.2); margin-bottom: 40px;">
+            DONE
+        </button>
     </div>
-    
-    <p style="max-width: 300px; margin-bottom: 40px; line-height: 1.6; opacity: 0.9;">Great job signaling safety to your body. Your cortisol levels are thanking you.</p>
-    
-    <button onclick="closeSuccessScreen()" style="background: white; color: var(--primary); border: none; padding: 15px 50px; border-radius: 50px; font-size: 1.1rem; font-weight: 600; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.2);">
-        DONE
-    </button>
 </div>
+
+<style>
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
 
 <!-- WORKOUT LIBRARY CATEGORIES VIEW -->
 <div id="view-workout-library" class="app-view" style="display:none; height: 100vh; background: white; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
@@ -10274,7 +10301,7 @@ async function finishWorkout() {
 
     // Save logic
     const activeWorkout = document.getElementById('workout-exercises-list');
-    const date = new Date().toISOString();
+    const date = new Date().toISOString().split('T')[0];
     const setsToSave = [];
 
     if(activeWorkout) {
@@ -10282,15 +10309,15 @@ async function finishWorkout() {
             const nameEl = card.querySelector('h3');
             if(!nameEl) return;
             const name = nameEl.innerText;
-            
+
             const container = card.querySelector('.sets-list-container');
             if(!container) return;
-            
+
             container.querySelectorAll('.workout-set-row').forEach((row, rIdx) => {
                 const time = row.querySelector('.input-time')?.value || '';
                 const reps = row.querySelector('.input-reps')?.value || '';
                 const kg = row.querySelector('.input-kg')?.value || '';
-                
+
                 // Only save if at least one field is filled
                 if (time || reps || kg) {
                     setsToSave.push({
@@ -10309,21 +10336,103 @@ async function finishWorkout() {
     try {
         const user = window.currentUser;
         if(user && setsToSave.length > 0) {
+             // Save workout data
              await Promise.all(setsToSave.map(s => dbHelpers.workouts.createHistory(user.id, s)));
              console.log("✅ Workout saved to DB");
-             
+
              // Update cache if it exists
              if (window.workoutHistoryCache) {
                  window.workoutHistoryCache.push(...setsToSave);
              }
+
+             // Check for improvements and milestones
+             try {
+                 const [improvements, milestones] = await Promise.all([
+                     dbHelpers.workouts.getWorkoutImprovements(user.id, setsToSave),
+                     dbHelpers.milestones.checkAndRecordMilestones(user.id)
+                 ]);
+
+                 // Display success screen with progress data
+                 await showWorkoutSuccessScreen(duration, improvements, milestones, setsToSave);
+             } catch(progressError) {
+                 console.error("Error calculating progress:", progressError);
+                 // Still show success screen, just without progress data
+                 await showWorkoutSuccessScreen(duration, [], [], setsToSave);
+             }
+        } else {
+            hideAllAppViews();
+            document.getElementById('view-workout-success').style.display = 'flex';
         }
     } catch(e) {
         console.error("Failed to save workout to DB:", e);
         alert("Failed to save workout. Please try again.");
-        return; // Don't close screen if failed?
+        return;
+    }
+}
+
+async function showWorkoutSuccessScreen(duration, improvements, milestones, workoutData) {
+    hideAllAppViews();
+
+    // Update duration
+    document.getElementById('success-duration').innerText = duration;
+
+    // Show milestones if any
+    const milestonesContainer = document.getElementById('success-milestones');
+    if (milestones && milestones.length > 0) {
+        milestonesContainer.style.display = 'block';
+        milestonesContainer.innerHTML = milestones.map(m => `
+            <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin-bottom: 15px; animation: slideInUp 0.5s ease;">
+                <div style="font-size: 2.5rem; margin-bottom: 10px;">${m.milestone_value === 1 ? '🎉' : m.milestone_value >= 100 ? '👑' : m.milestone_value >= 50 ? '🏆' : m.milestone_value >= 25 ? '🌟' : m.milestone_value >= 10 ? '🔥' : '💪'}</div>
+                <div style="font-size: 1.3rem; font-weight: 700; margin-bottom: 5px;">Milestone Achieved!</div>
+                <div style="font-size: 1rem; opacity: 0.95;">${m.message}</div>
+            </div>
+        `).join('');
+    } else {
+        milestonesContainer.style.display = 'none';
     }
 
-    hideAllAppViews();
+    // Show improvements if any
+    const improvementsContainer = document.getElementById('success-improvements');
+    if (improvements && improvements.length > 0) {
+        improvementsContainer.style.display = 'block';
+        improvementsContainer.innerHTML = `
+            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 15px; opacity: 0.95;">💪 Your Progress</div>
+            ${improvements.map(imp => {
+                let improvementText = '';
+                if (imp.weightIncrease > 0 && imp.repsIncrease > 0) {
+                    improvementText = `+${imp.weightIncrease}kg and +${imp.repsIncrease} reps`;
+                } else if (imp.weightIncrease > 0) {
+                    improvementText = `+${imp.weightIncrease}kg`;
+                } else if (imp.repsIncrease > 0) {
+                    improvementText = `+${imp.repsIncrease} reps`;
+                }
+
+                return `
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; margin-bottom: 10px; text-align: left;">
+                        <div style="font-weight: 600; font-size: 0.95rem;">${imp.exercise}</div>
+                        <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 5px;">
+                            ${imp.previousWeight > 0 ? `${imp.previousWeight}kg` : ''} ${imp.previousReps > 0 ? `x ${imp.previousReps}` : ''}
+                            →
+                            ${imp.currentWeight > 0 ? `${imp.currentWeight}kg` : ''} ${imp.currentReps > 0 ? `x ${imp.currentReps}` : ''}
+                            <span style="color: #4ade80; font-weight: 700; margin-left: 8px;">${improvementText}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        `;
+    } else {
+        improvementsContainer.style.display = 'none';
+    }
+
+    // Get workout count for display
+    try {
+        const workoutCount = await dbHelpers.workouts.getWorkoutCount(window.currentUser.id);
+        document.getElementById('success-workout-count').innerText = workoutCount;
+        document.getElementById('success-workout-count-container').style.display = 'block';
+    } catch(e) {
+        document.getElementById('success-workout-count-container').style.display = 'none';
+    }
+
     document.getElementById('view-workout-success').style.display = 'flex';
 }
 
