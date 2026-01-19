@@ -7087,7 +7087,7 @@
                 </div>
 
                 <!-- Chat Stream -->
-                <div id="chat-messages-container" style="padding: 15px; padding-bottom: 140px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; display: block;">
+                <div id="chat-messages-container" style="padding: 15px; padding-bottom: 170px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; display: block;">
                     <!-- Intro Message (re-added here as static first item, or handled by JS history load) -->
                     <div style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; max-width: 85%;">
                         <div style="background: #f8fafc; padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid #e2e8f0; color: var(--text-main);">
@@ -7098,7 +7098,7 @@
                 </div>
 
                 <!-- Input Area (Fixed above bottom nav) -->
-                <div style="position: fixed; bottom: 70px; left: 0; width: 100%; background: white; padding: 10px 15px; border-top: 1px solid #f1f5f9; z-index: 60; box-shadow: 0 -2px 10px rgba(0,0,0,0.02);">
+                <div style="position: fixed; bottom: 90px; left: 0; width: 100%; background: white; padding: 10px 15px; border-top: 1px solid #f1f5f9; z-index: 60; box-shadow: 0 -2px 10px rgba(0,0,0,0.02);">
                     <form onsubmit="event.preventDefault(); submitCoachMessage();" style="display: flex; align-items: center; gap: 10px; width: 100%; margin: 0;">
                         <input type="text" id="coach-chat-input" placeholder="Ask your coach..." style="flex: 1; background: #f1f5f9; border: none; padding: 12px 15px; border-radius: 20px; font-size: 1rem; outline: none; color: var(--text-main);">
                         <div onclick="submitCoachMessage()" style="width: 40px; height: 40px; border: none; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; flex-shrink: 0;">
@@ -7152,12 +7152,12 @@
                 </div>
 
                 <!-- Chat Stream -->
-                <div id="community-chat-stream" style="padding: 15px; padding-bottom: 140px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1;">
+                <div id="community-chat-stream" style="padding: 15px; padding-bottom: 170px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1;">
                     <!-- Messages injected here -->
                 </div>
 
                 <!-- Input Area (Fixed above bottom nav) -->
-                <div style="position: fixed; bottom: 70px; left: 0; width: 100%; background: white; padding: 10px 15px; border-top: 1px solid #f1f5f9; z-index: 60; box-shadow: 0 -2px 10px rgba(0,0,0,0.02);">
+                <div style="position: fixed; bottom: 90px; left: 0; width: 100%; background: white; padding: 10px 15px; border-top: 1px solid #f1f5f9; z-index: 60; box-shadow: 0 -2px 10px rgba(0,0,0,0.02);">
                     <form onsubmit="event.preventDefault(); sendCommunityMessage();" style="display: flex; align-items: center; gap: 10px; width: 100%; margin: 0;">
                         <input type="text" id="community-chat-input" placeholder="Message..." style="flex: 1; background: #f1f5f9; border: none; padding: 12px 15px; border-radius: 20px; font-size: 1rem; outline: none; color: var(--text-main);">
                         <!-- Clickable container or specific button logic -->
@@ -9067,7 +9067,17 @@ function switchAppTab(tabName, btn) {
         }
     } else if (tabName === 'support') {
         const el = document.getElementById('view-support'); // Default to Coach/Chat logic
-        if(el) { el.classList.add('active'); el.style.display='block'; }
+        if(el) {
+            el.classList.add('active');
+            el.style.display='block';
+            // Scroll chat to bottom after a short delay
+            setTimeout(() => {
+                const chatContainer = document.getElementById('chat-messages-container');
+                if (chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            }, 100);
+        }
     } else if (tabName === 'profile') {
         const el = document.getElementById('view-profile');
         if(el) { 
@@ -11967,6 +11977,13 @@ function showSupportTab(tab, btn) {
         chat.style.display = 'flex';
         comm.style.display = 'none';
         refl.style.display = 'none';
+        // Scroll to bottom after a short delay to ensure content is rendered
+        setTimeout(() => {
+            const chatContainer = document.getElementById('chat-messages-container');
+            if (chatContainer) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }, 100);
     } else if (tab === 'community') {
         chat.style.display = 'none';
         comm.style.display = 'flex';
