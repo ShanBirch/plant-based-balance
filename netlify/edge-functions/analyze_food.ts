@@ -27,7 +27,7 @@ export default async function (request: Request, context: Context) {
     }
 
     // Prepare the Gemini API request
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
     const systemPrompt = `You are a nutrition analysis AI. Analyze the food in this image and provide detailed nutritional information.
 ${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : ''}
