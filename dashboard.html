@@ -11119,15 +11119,15 @@ function openWorkoutList(categoryKey, subcategoryKey) {
     document.getElementById('workout-list-header-title').textContent = subcategory.name;
     document.getElementById('workout-list-description').textContent = subcategory.description;
 
-    // Render workouts
+    // Render workouts - build HTML string first for better performance
     const list = document.getElementById('workouts-list');
-    list.innerHTML = '';
+    let html = '';
 
     subcategory.workouts.forEach(workout => {
         const difficultyClass = `difficulty-${workout.difficulty.toLowerCase()}`;
 
-        list.innerHTML += `
-            <div class="workout-card" onclick="openLibraryWorkoutOverview('${categoryKey}', '${subcategoryKey}', '${workout.id}')">
+        html += `
+            <div class="workout-card" data-category="${categoryKey}" data-subcategory="${subcategoryKey}" data-workout-id="${workout.id}">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                     <div style="flex: 1;">
                         <h3 style="margin: 0 0 8px 0; font-size: 1.1rem;">${workout.name}</h3>
@@ -11143,6 +11143,19 @@ function openWorkoutList(categoryKey, subcategoryKey) {
                 </div>
             </div>
         `;
+    });
+
+    list.innerHTML = html;
+
+    // Add event listeners to workout cards using event delegation
+    list.querySelectorAll('.workout-card').forEach(card => {
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', function() {
+            const categoryKey = this.getAttribute('data-category');
+            const subcategoryKey = this.getAttribute('data-subcategory');
+            const workoutId = this.getAttribute('data-workout-id');
+            openLibraryWorkoutOverview(categoryKey, subcategoryKey, workoutId);
+        });
     });
 
     // Show view
