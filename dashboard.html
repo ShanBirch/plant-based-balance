@@ -7833,7 +7833,7 @@ function startCustomBuilderWorkout() {
                 <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Hormone Hub</h2>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Sync your life to your cycle</div>
             </div>
-            <div class="profile-icon" onclick="toggleCycleSettings()">S</div>
+            <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
         </div>
 
         <!-- Cycle Wheel / Hero Card -->
@@ -7881,27 +7881,7 @@ function startCustomBuilderWorkout() {
         <div style="padding: 0 25px 25px 25px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h3 style="color: var(--primary); margin: 0; font-size: 1.1rem;">Your Predictions</h3>
-                <span onclick="toggleCycleSettings()" style="font-size: 0.8rem; color: var(--secondary); cursor: pointer; font-weight: 600;">Edit Dates</span>
-            </div>
-            
-            <!-- Settings Panel (Hidden) -->
-             <div id="cycle-settings-panel" style="display: none; background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase;">Last Period Start</label>
-                    <input type="date" id="last-period-input" onchange="updateCycleData()" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
-                </div>
-                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase;">Cycle Length (Days)</label>
-                    <input type="number" id="cycle-length-input" value="28" onchange="updateCycleData()" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
-                </div>
-                <div style="padding-top: 15px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 0.9rem;">Period Tracking</span>
-                    <label class="toggle-switch" style="display:inline-block; width:44px; height:24px; position:relative;">
-                        <input type="checkbox" id="no-period-toggle" onchange="toggleNoPeriodMode()">
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                 <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Turn off if you don't menstruate (Wellness Mode).</div>
+                <span onclick="switchAppTab('profile')" style="font-size: 0.8rem; color: var(--secondary); cursor: pointer; font-weight: 600;">Edit Dates</span>
             </div>
 
             <div id="weekly-calendar" style="display: flex; flex-direction: column; gap: 10px;">
@@ -8054,6 +8034,46 @@ function startCustomBuilderWorkout() {
                         <div style="font-size: 0.8rem; color: var(--text-muted);">Adjusts daily recommendations</div>
                     </div>
                     <div id="profile-symptoms-display" style="font-weight: 700; color: var(--primary); max-width: 50%; text-align: right; font-size: 0.9rem;">None</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cycle Settings -->
+        <div class="settings-card" style="margin: 0 25px 25px 25px; background: white; border-radius: 16px; border: 1px solid #f1f5f9; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+            <div style="background: #f8fafc; padding: 15px 20px; border-bottom: 1px solid #e2e8f0;">
+                <h3 style="margin:0; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <span>🌸</span> Cycle Tracking
+                </h3>
+            </div>
+            <div style="padding: 0;">
+                <!-- Last Period Start -->
+                <div class="setting-row" style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9;">
+                    <div style="margin-bottom: 8px;">
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Last Period Start</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Track your cycle phase and predictions</div>
+                    </div>
+                    <input type="date" id="last-period-input-profile" onchange="updateCycleData()" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter', sans-serif;">
+                </div>
+
+                <!-- Cycle Length -->
+                <div class="setting-row" style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9;">
+                    <div style="margin-bottom: 8px;">
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Cycle Length (Days)</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Average days between periods</div>
+                    </div>
+                    <input type="number" id="cycle-length-input-profile" value="28" onchange="updateCycleData()" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter', sans-serif;">
+                </div>
+
+                <!-- Period Tracking Toggle -->
+                <div class="setting-row" style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Period Tracking</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Turn off if you don't menstruate (Wellness Mode)</div>
+                    </div>
+                    <label class="toggle-switch" style="display:inline-block; width:44px; height:24px; position:relative;">
+                        <input type="checkbox" id="no-period-toggle-profile" onchange="toggleNoPeriodMode()">
+                        <span class="slider round"></span>
+                    </label>
                 </div>
             </div>
         </div>
@@ -8875,12 +8895,12 @@ function setCycleMood(mood, btn) {
 }
 
 function toggleNoPeriodMode() {
-    const isChecked = document.getElementById('no-period-toggle').checked;
+    const isChecked = document.getElementById('no-period-toggle-profile').checked;
     userCycleData.noPeriodMode = isChecked;
-    
-    const inputContainer = document.getElementById('last-period-input');
+
+    const inputContainer = document.getElementById('last-period-input-profile');
     if(inputContainer) inputContainer.disabled = isChecked;
-    
+
     updateCycleData();
 }
 
@@ -8892,19 +8912,19 @@ async function initCalendarView() {
             const parsed = JSON.parse(savedCycleData);
             if (parsed.lastPeriod) {
                 userCycleData.lastPeriod = parsed.lastPeriod;
-                const lastPeriodInput = document.getElementById('last-period-input');
+                const lastPeriodInput = document.getElementById('last-period-input-profile');
                 if (lastPeriodInput) lastPeriodInput.value = userCycleData.lastPeriod;
             }
             if (parsed.cycleLength) {
                 userCycleData.cycleLength = parseInt(parsed.cycleLength);
-                const cycleLengthInput = document.getElementById('cycle-length-input');
+                const cycleLengthInput = document.getElementById('cycle-length-input-profile');
                 if (cycleLengthInput) cycleLengthInput.value = userCycleData.cycleLength;
             }
             if (parsed.noPeriodMode) {
                 userCycleData.noPeriodMode = true;
-                const noPeriodToggle = document.getElementById('no-period-toggle');
+                const noPeriodToggle = document.getElementById('no-period-toggle-profile');
                 if (noPeriodToggle) noPeriodToggle.checked = true;
-                const lastPeriodInput = document.getElementById('last-period-input');
+                const lastPeriodInput = document.getElementById('last-period-input-profile');
                 if (lastPeriodInput) lastPeriodInput.disabled = true;
             }
             // Load logs for Cycle Sync
@@ -8924,16 +8944,20 @@ async function initCalendarView() {
             if (facts && facts.additional_data) {
                 if (facts.additional_data.last_period_start) {
                     userCycleData.lastPeriod = facts.additional_data.last_period_start;
-                    document.getElementById('last-period-input').value = userCycleData.lastPeriod;
+                    const lastPeriodInput = document.getElementById('last-period-input-profile');
+                    if (lastPeriodInput) lastPeriodInput.value = userCycleData.lastPeriod;
                 }
                 if (facts.additional_data.cycle_length) {
                     userCycleData.cycleLength = parseInt(facts.additional_data.cycle_length);
-                    document.getElementById('cycle-length-input').value = userCycleData.cycleLength;
+                    const cycleLengthInput = document.getElementById('cycle-length-input-profile');
+                    if (cycleLengthInput) cycleLengthInput.value = userCycleData.cycleLength;
                 }
                 if (facts.additional_data.no_period_mode) {
                     userCycleData.noPeriodMode = true;
-                    document.getElementById('no-period-toggle').checked = true;
-                    document.getElementById('last-period-input').disabled = true;
+                    const noPeriodToggle = document.getElementById('no-period-toggle-profile');
+                    if (noPeriodToggle) noPeriodToggle.checked = true;
+                    const lastPeriodInput = document.getElementById('last-period-input-profile');
+                    if (lastPeriodInput) lastPeriodInput.disabled = true;
                 }
             }
         } catch (e) {
@@ -8946,9 +8970,9 @@ async function initCalendarView() {
 }
 
 async function updateCycleData() {
-    const startInput = document.getElementById('last-period-input').value;
-    const lengthInput = document.getElementById('cycle-length-input').value;
-    const noPeriod = document.getElementById('no-period-toggle').checked;
+    const startInput = document.getElementById('last-period-input-profile').value;
+    const lengthInput = document.getElementById('cycle-length-input-profile').value;
+    const noPeriod = document.getElementById('no-period-toggle-profile').checked;
 
     userCycleData.noPeriodMode = noPeriod;
 
@@ -9102,9 +9126,9 @@ window.logPeriodStart = function() {
     
     userCycleData.lastPeriod = dateStr;
     localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
-    
+
     // Update Input if exists
-    const input = document.getElementById('last-period-input');
+    const input = document.getElementById('last-period-input-profile');
     if(input) input.value = dateStr;
     
     // Refresh Logic
@@ -9130,7 +9154,7 @@ function renderWeeklyCalendar() {
     grid.innerHTML = '';
 
     // Self-healing: If variable is empty but input has value, sync it.
-    const inputVal = document.getElementById('last-period-input')?.value;
+    const inputVal = document.getElementById('last-period-input-profile')?.value;
     if (!userCycleData.lastPeriod && inputVal) {
         userCycleData.lastPeriod = inputVal;
     }
@@ -9862,10 +9886,10 @@ function wizardNext() {
         } else {
             userCycleData.noPeriodMode = false;
             userCycleData.lastPeriod = dateInput.value;
-            // Also update the hidden Settings input
-            const settingsInput = document.getElementById('last-period-input');
+            // Also update the Settings input in profile
+            const settingsInput = document.getElementById('last-period-input-profile');
             if(settingsInput) settingsInput.value = dateInput.value;
-            
+
             updateCycleData(); // Trigger calculations
         }
     }
@@ -15906,13 +15930,6 @@ function renderCycleStatus() {
         tagsContainer.innerHTML = `
             <span style="background:${info.color}20; color:${info.color}; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:600;">${info.icon} ${phase.toUpperCase()}</span>
         `;
-    }
-}
-
-function toggleCycleSettings() {
-    const panel = document.getElementById('cycle-settings-panel');
-    if(panel) {
-        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     }
 }
 
