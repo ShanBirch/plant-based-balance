@@ -9,6 +9,16 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <!-- PWA Setup -->
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('SW Registered!', reg))
+                .catch(err => console.log('SW Failed:', err));
+        }
+    </script>
+
     <style>
         * {
             margin: 0;
@@ -818,6 +828,79 @@
 
         // Initialize icons
         lucide.createIcons();
+    </script>
+
+    <!-- PWA Install Banner -->
+    <div id="pwa-install-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:#046A38; color:white; font-size:0.9rem; padding:12px 20px; z-index:99999; box-shadow:0 4px 15px rgba(0,0,0,0.2); align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <span style="font-size:1.2rem;">📲</span>
+            <span style="font-weight:600;">Install App for Best Experience</span>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button onclick="dismissInstall()" style="background:transparent; border:1px solid rgba(255,255,255,0.4); color:white; padding:6px 12px; border-radius:20px; font-size:70%; font-weight:600; cursor:pointer;">LATER</button>
+            <button onclick="installPWA()" style="background:white; color:#046A38; border:none; padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:700; box-shadow:0 2px 10px rgba(0,0,0,0.1); cursor:pointer;">INSTALL</button>
+        </div>
+    </div>
+
+    <script>
+        // PWA Install Logic
+        let deferredPrompt;
+        let installBannerDismissed = localStorage.getItem('pwa_banner_dismissed_v2') === 'true';
+        const isInstalledPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log("Install Prompt Captured");
+            // Show banner immediately when prompt is available
+            if (!isInstalledPWA && !installBannerDismissed) {
+                showPwaBanner();
+            }
+        });
+
+        window.addEventListener('load', () => {
+            if (!isInstalledPWA && !installBannerDismissed) {
+                showPwaBanner();
+            }
+        });
+
+        function showPwaBanner() {
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner) {
+                banner.style.display = 'flex';
+            }
+        }
+
+        window.installPWA = async function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    dismissInstall();
+                }
+                deferredPrompt = null;
+            } else {
+                alert('To install: tap your browser menu and select "Add to Home Screen" or "Install App"');
+            }
+        };
+
+        window.dismissInstall = function() {
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner) {
+                banner.style.display = 'none';
+            }
+            localStorage.setItem('pwa_banner_dismissed_v2', 'true');
+        };
+
+        // Request notification permission
+        async function requestNotificationPermission() {
+            if (!('Notification' in window)) return;
+            if (Notification.permission === 'granted') return;
+            if (Notification.permission !== 'denied') {
+                await Notification.requestPermission();
+            }
+        }
+        requestNotificationPermission();
     </script>
 </body>
 </html>
