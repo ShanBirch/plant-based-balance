@@ -1002,15 +1002,15 @@
     <div id="stories-carousel-container" style="padding: 15px 0 15px 25px; background: transparent; overflow-x: auto; overflow-y: hidden; white-space: nowrap;">
         <div id="stories-carousel" style="display: inline-flex; gap: 15px;">
             <!-- Add Your Story Button -->
-            <label for="story-camera-input" class="story-ring add-story-btn" style="display: inline-block; text-align: center; cursor: pointer;">
+            <div class="story-ring add-story-btn" onclick="openStoryCamera()" style="display: inline-block; text-align: center; cursor: pointer;">
                 <div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; position: relative;">
                     <div style="width: 64px; height: 64px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center;">
                         <span style="font-size: 2rem; color: var(--primary);">+</span>
                     </div>
                 </div>
                 <p style="margin: 5px 0 0 0; font-size: 0.75rem; color: var(--text-muted); white-space: normal; width: 70px;">Your Story</p>
-            </label>
-            <input type="file" id="story-camera-input" accept="image/*,video/*" capture="environment" style="display:none;" onchange="handleStoryFileSelect(event)">
+            </div>
+            <input type="file" id="story-camera-input" accept="image/*,video/*" capture style="display:none;" onchange="handleStoryFileSelect(event)">
             <!-- Story rings will be injected here -->
         </div>
     </div>
@@ -14308,6 +14308,29 @@ updateCoachUI();
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Story Camera Modal (Instagram-style) -->
+<div id="story-camera-modal" style="display:none; position:fixed; inset:0; background:black; z-index:10008; flex-direction:column; align-items:center; justify-content:center;">
+    <!-- Camera Preview -->
+    <video id="camera-preview" autoplay playsinline style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;"></video>
+
+    <!-- Close Button -->
+    <button onclick="closeCameraModal()" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:10;">
+        &times;
+    </button>
+
+    <!-- Camera Controls -->
+    <div style="position:absolute; bottom:40px; left:0; right:0; display:flex; justify-content:center; align-items:center; gap:20px; z-index:10;">
+        <!-- Record Video Button -->
+        <button id="record-video-btn" onclick="toggleVideoRecording()" style="padding:15px 30px; background:#ef4444; color:white; border:none; border-radius:50px; font-weight:600; font-size:1rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+            ⏺️ Record
+        </button>
+
+        <!-- Capture Photo Button -->
+        <button onclick="capturePhoto()" style="width:70px; height:70px; background:white; border:5px solid rgba(255,255,255,0.8); border-radius:50%; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3); transition:transform 0.1s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'">
+        </button>
     </div>
 </div>
 
