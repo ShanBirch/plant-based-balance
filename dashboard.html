@@ -7068,7 +7068,7 @@
         <div style="padding: 20px; min-height: calc(100vh - 160px); display: flex; flex-direction: column;">
             
             <!-- Tab Switcher for Support -->
-            <div style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px; margin-bottom: 25px;">
+            <div style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px; margin-bottom: 25px; position: sticky; top: 60px; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                 <button class="sub-btn active" style="flex:1; border:none; box-shadow:none; background:white; color:var(--primary); font-weight: 600;" onclick="showSupportTab('chat', this)">Coach Chat</button>
                 <button class="sub-btn" style="flex:1; border:none; box-shadow:none; background:transparent; color:#64748b;" onclick="showSupportTab('community', this)">Community</button>
                 <button class="sub-btn" style="flex:1; border:none; box-shadow:none; background:transparent; color:#64748b;" onclick="showSupportTab('reflections', this)">Reflections</button>
@@ -9072,10 +9072,7 @@ function switchAppTab(tabName, btn) {
             el.style.display='block';
             // Scroll chat to bottom after a short delay
             setTimeout(() => {
-                const chatContainer = document.getElementById('chat-messages-container');
-                if (chatContainer) {
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                }
+                scrollToBottomOfChat();
             }, 100);
         }
     } else if (tabName === 'profile') {
@@ -11977,11 +11974,16 @@ function showSupportTab(tab, btn) {
         chat.style.display = 'flex';
         comm.style.display = 'none';
         refl.style.display = 'none';
-        // Scroll to bottom after a short delay to ensure content is rendered
+        // Scroll to bottom of chat messages after a short delay to ensure content is rendered
         setTimeout(() => {
             const chatContainer = document.getElementById('chat-messages-container');
             if (chatContainer) {
-                chatContainer.scrollTop = chatContainer.scrollHeight;
+                const rect = chatContainer.getBoundingClientRect();
+                const absoluteBottom = rect.bottom + window.pageYOffset;
+                window.scrollTo({
+                    top: absoluteBottom - window.innerHeight + 100, // 100px buffer for input box
+                    behavior: 'smooth'
+                });
             }
         }, 100);
     } else if (tab === 'community') {
@@ -11994,6 +11996,19 @@ function showSupportTab(tab, btn) {
         comm.style.display = 'none';
         refl.style.display = 'flex';
         loadAllReflections(); // Load reflections when opening
+    }
+}
+
+// Helper function to scroll to bottom of chat messages (for single page scroll)
+function scrollToBottomOfChat() {
+    const chatContainer = document.getElementById('chat-messages-container');
+    if (chatContainer) {
+        const rect = chatContainer.getBoundingClientRect();
+        const absoluteBottom = rect.bottom + window.pageYOffset;
+        window.scrollTo({
+            top: absoluteBottom - window.innerHeight + 100,
+            behavior: 'smooth'
+        });
     }
 }
 
@@ -12939,7 +12954,7 @@ window.submitCoachMessage = async function() {
             <img src="https://ui-avatars.com/api/?name=You&background=cbd5e1&color=fff" style="width: 36px; height: 36px; border-radius: 50%; margin-left: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
         `;
         container.appendChild(rowDiv);
-        container.scrollTop = container.scrollHeight;
+        scrollToBottomOfChat();
 
         // Save to DB immediately
         try {
@@ -13290,7 +13305,7 @@ window.triggerCoachResponse = async function(userMsg) {
     `;
     if(container) {
         container.appendChild(typingDiv);
-        container.scrollTop = container.scrollHeight;
+        scrollToBottomOfChat();
     }
 
     const removeTypingIndicator = () => {
@@ -14777,7 +14792,7 @@ window.loadChatHistory = async function() {
         }
         container.appendChild(rowDiv);
     });
-    container.scrollTop = container.scrollHeight;
+    scrollToBottomOfChat();
 };
 
 window.appendCoachMessage = async function(text) {
@@ -14800,7 +14815,7 @@ window.appendCoachMessage = async function(text) {
     `;
 
     container.appendChild(rowDiv);
-    container.scrollTop = container.scrollHeight;
+    scrollToBottomOfChat();
 
     // Save to DB (skip if already saved - e.g., from realtime subscription)
     if (!window._skipCoachMessageSave) {
@@ -15593,7 +15608,7 @@ window.triggerCoachResponse = async function(userMsg) {
             typing.style.cssText = "display: flex; align-items: center; margin-bottom: 20px; margin-left:10px;";
             typing.innerHTML = `<div style="font-size:0.8rem; color:#94a3b8; font-style:italic;">Coach is offline...</div>`;
             container.appendChild(typing);
-            container.scrollTop = container.scrollHeight;
+            scrollToBottomOfChat();
             
             await new Promise(r => setTimeout(r, 1200));
             typing.remove();
