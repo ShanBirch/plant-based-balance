@@ -17336,7 +17336,7 @@ function fileToBase64(file) {
     });
 }
 
-// Upload meal photo to Supabase Storage
+// Upload meal photo to Backblaze B2
 async function uploadMealPhoto(file) {
     const user = await window.supabaseClient.auth.getUser();
     const userId = user?.data?.user?.id;
@@ -17345,24 +17345,24 @@ async function uploadMealPhoto(file) {
         throw new Error('User not authenticated');
     }
 
-    const timestamp = Date.now();
-    const fileName = `${userId}/${timestamp}_${file.name}`;
+    // Create form data
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('userId', userId);
 
-    const { data, error } = await window.supabaseClient.storage
-        .from('meal-photos')
-        .upload(fileName, file);
+    // Upload to B2 via edge function
+    const response = await fetch('/api/upload-meal-photo', {
+        method: 'POST',
+        body: formData
+    });
 
-    if (error) {
-        console.error('Error uploading photo:', error);
-        throw error;
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload photo');
     }
 
-    // Get public URL
-    const { data: urlData } = window.supabaseClient.storage
-        .from('meal-photos')
-        .getPublicUrl(fileName);
-
-    return urlData.publicUrl;
+    const data = await response.json();
+    return data.url;
 }
 
 // Save meal log to database
