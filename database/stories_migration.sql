@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS public.stories (
   -- Story content
   media_type TEXT NOT NULL CHECK (media_type IN ('image', 'video')),
   media_url TEXT NOT NULL,  -- Base64 or Supabase Storage URL
+  thumbnail_url TEXT,  -- Thumbnail for video preview or profile photo fallback
   caption TEXT,
 
   -- Story metadata
@@ -250,6 +251,7 @@ RETURNS TABLE(
   profile_photo TEXT,
   media_type TEXT,
   media_url TEXT,
+  thumbnail_url TEXT,
   caption TEXT,
   duration INTEGER,
   background_color TEXT,
@@ -269,6 +271,7 @@ BEGIN
     u.profile_photo,
     s.media_type,
     s.media_url,
+    s.thumbnail_url,
     s.caption,
     s.duration,
     s.background_color,
