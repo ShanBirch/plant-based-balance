@@ -16611,39 +16611,63 @@ async function useMealPhoto() {
     // Show loading state
     showMealAnalysisLoading();
 
+    // Convert to base64 once
+    const base64 = await fileToBase64(fileToAnalyze);
+    const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+
+    // Retry logic - keep trying until success
+    let attempt = 1;
+    let success = false;
+    let nutritionData = null;
+
+    while (!success) {
+        try {
+            // Update loading message with retry attempt
+            if (attempt > 1) {
+                showMealAnalysisLoading(`Analyzing meal... (attempt ${attempt})`);
+            }
+
+            // Call Gemini API via edge function
+            console.log(`Analyzing food photo (attempt ${attempt})...`);
+            const response = await fetch('/.netlify/functions/analyze-food', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    imageBase64: base64Data,
+                    mimeType: fileToAnalyze.type,
+                    description: mealDescription
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
+                throw new Error(errorData.error || `Failed to analyze food photo (${response.status})`);
+            }
+
+            const result = await response.json();
+
+            if (!result.success || !result.data) {
+                throw new Error('Invalid response from analysis');
+            }
+
+            nutritionData = result.data;
+            success = true;
+
+        } catch (error) {
+            console.error(`Error analyzing meal (attempt ${attempt}):`, error);
+
+            // Wait before retrying (exponential backoff)
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10 seconds
+            console.log(`Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            attempt++;
+        }
+    }
+
+    // Success - log meal to database
     try {
-        // Convert to base64
-        const base64 = await fileToBase64(fileToAnalyze);
-        const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
-
-        // Call Gemini API via edge function
-        console.log('Analyzing food photo...');
-        const response = await fetch('/.netlify/functions/analyze-food', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                imageBase64: base64Data,
-                mimeType: fileToAnalyze.type,
-                description: mealDescription
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
-            throw new Error(errorData.error || `Failed to analyze food photo (${response.status})`);
-        }
-
-        const result = await response.json();
-
-        if (!result.success || !result.data) {
-            throw new Error('Invalid response from analysis');
-        }
-
-        const nutritionData = result.data;
-
-        // Log meal to database
         if (window.currentUser) {
             await dbHelpers.meals.log(window.currentUser.id, nutritionData);
         }
@@ -16655,9 +16679,8 @@ async function useMealPhoto() {
         if (typeof loadCalorieWidget === 'function') {
             await loadCalorieWidget();
         }
-
     } catch (error) {
-        console.error('Error analyzing meal:', error);
+        console.error('Error saving meal:', error);
         showMealAnalysisError(error.message);
     }
 }
@@ -16670,38 +16693,63 @@ async function handleMealPhotoSelect(event) {
     // Show loading state
     showMealAnalysisLoading();
 
+    // Convert to base64 once
+    const base64 = await fileToBase64(file);
+    const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+
+    // Retry logic - keep trying until success
+    let attempt = 1;
+    let success = false;
+    let nutritionData = null;
+
+    while (!success) {
+        try {
+            // Update loading message with retry attempt
+            if (attempt > 1) {
+                showMealAnalysisLoading(`Analyzing meal... (attempt ${attempt})`);
+            }
+
+            // Call Gemini API via edge function
+            console.log(`Analyzing food photo (attempt ${attempt})...`);
+            const response = await fetch('/.netlify/functions/analyze-food', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    imageBase64: base64Data,
+                    mimeType: file.type
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
+                throw new Error(errorData.error || `Failed to analyze food photo (${response.status})`);
+            }
+
+            const result = await response.json();
+
+            if (!result.success || !result.data) {
+                throw new Error('Invalid response from analysis');
+            }
+
+            nutritionData = result.data;
+            success = true;
+            console.log('Food analysis complete:', nutritionData);
+
+        } catch (error) {
+            console.error(`Error analyzing meal (attempt ${attempt}):`, error);
+
+            // Wait before retrying (exponential backoff)
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10 seconds
+            console.log(`Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            attempt++;
+        }
+    }
+
+    // Success - save meal to database
     try {
-        // Convert to base64
-        const base64 = await fileToBase64(file);
-        const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
-
-        // Call Gemini API via edge function
-        console.log('Analyzing food photo...');
-        const response = await fetch('/.netlify/functions/analyze-food', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                imageBase64: base64Data,
-                mimeType: file.type
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
-            throw new Error(errorData.error || `Failed to analyze food photo (${response.status})`);
-        }
-
-        const result = await response.json();
-
-        if (!result.success || !result.data) {
-            throw new Error('Invalid response from analysis');
-        }
-
-        const nutritionData = result.data;
-        console.log('Food analysis complete:', nutritionData);
-
         // Upload photo to Supabase Storage
         const photoUrl = await uploadMealPhoto(file);
 
@@ -16722,7 +16770,7 @@ async function handleMealPhotoSelect(event) {
         showMealAnalysisSuccess(nutritionData);
 
     } catch (error) {
-        console.error('Error analyzing meal:', error);
+        console.error('Error saving meal:', error);
         showMealAnalysisError(error.message);
     } finally {
         // Reset file input
@@ -17025,9 +17073,12 @@ async function deleteMealLog(mealId) {
 }
 
 // Show loading state
-function showMealAnalysisLoading() {
+function showMealAnalysisLoading(message = 'Analyzing meal...') {
     // Could add a modal or toast here
-    console.log('Analyzing meal...');
+    console.log(message);
+    if (typeof showToast === 'function') {
+        showToast(message, 'info');
+    }
 }
 
 // Show success message
