@@ -38,10 +38,11 @@ CREATE TABLE IF NOT EXISTS public.meal_logs (
 
   -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-
-  INDEX idx_meal_logs_user_date (user_id, meal_date DESC)
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Create index for meal_logs
+CREATE INDEX IF NOT EXISTS idx_meal_logs_user_date ON public.meal_logs (user_id, meal_date DESC);
 
 -- ============================================================
 -- DAILY NUTRITION TABLE (aggregated daily totals)
@@ -73,9 +74,11 @@ CREATE TABLE IF NOT EXISTS public.daily_nutrition (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
 
-  UNIQUE(user_id, nutrition_date),
-  INDEX idx_daily_nutrition_user_date (user_id, nutrition_date DESC)
+  UNIQUE(user_id, nutrition_date)
 );
+
+-- Create index for daily_nutrition
+CREATE INDEX IF NOT EXISTS idx_daily_nutrition_user_date ON public.daily_nutrition (user_id, nutrition_date DESC);
 
 -- ============================================================
 -- ROW LEVEL SECURITY POLICIES
