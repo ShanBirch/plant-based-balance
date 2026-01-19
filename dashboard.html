@@ -15676,6 +15676,60 @@ updateCoachUI();
     </div>
 </div>
 
+<!-- Story Choice Modal (Photo or Video?) -->
+<div id="story-choice-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10010; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
+    <div style="width:90%; max-width:400px; background:white; border-radius:20px; overflow:hidden; text-align:center;">
+        <!-- Header -->
+        <div style="padding:30px 20px 20px 20px;">
+            <h3 style="margin:0 0 10px 0; color:var(--primary); font-size:1.5rem;">Create Your Story</h3>
+            <p style="margin:0; color:var(--text-muted); font-size:0.9rem;">Choose what you'd like to share</p>
+        </div>
+
+        <!-- Choice Buttons -->
+        <div style="padding:0 20px 30px 20px; display:flex; flex-direction:column; gap:12px;">
+            <button onclick="openNativeCamera('photo')" style="width:100%; padding:20px; background:linear-gradient(135deg, var(--primary), var(--secondary)); color:white; border:none; border-radius:15px; font-weight:600; font-size:1.1rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.15); transition:transform 0.2s; display:flex; align-items:center; justify-content:center; gap:10px;">
+                <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:white;">
+                    <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                </svg>
+                Take Photo
+            </button>
+
+            <button onclick="openNativeCamera('video')" style="width:100%; padding:20px; background:linear-gradient(135deg, #8b5cf6, #ec4899); color:white; border:none; border-radius:15px; font-weight:600; font-size:1.1rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.15); transition:transform 0.2s; display:flex; align-items:center; justify-content:center; gap:10px;">
+                <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:white;">
+                    <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                </svg>
+                Record Video
+            </button>
+
+            <button onclick="closeChoiceModal()" style="width:100%; padding:16px; background:rgba(0,0,0,0.05); color:var(--text-muted); border:none; border-radius:15px; font-weight:600; font-size:1rem; cursor:pointer; transition:background 0.2s;">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Story Preview Modal (After Native Camera Capture) -->
+<div id="story-preview-modal" style="display:none; position:fixed; inset:0; background:black; z-index:10011; flex-direction:column; align-items:center; justify-content:center;">
+    <!-- Preview Content -->
+    <img id="story-preview-photo" style="width:100%; height:100%; object-fit:contain; display:none; position:absolute; top:0; left:0;">
+    <video id="story-preview-video-player" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:contain; display:none; position:absolute; top:0; left:0;"></video>
+
+    <!-- Close Button -->
+    <button onclick="closePreviewModal()" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:12; backdrop-filter:blur(10px);">
+        &times;
+    </button>
+
+    <!-- Post Button -->
+    <button id="preview-post-btn" onclick="postCapturedStory()" style="position:absolute; bottom:40px; right:30px; background:var(--primary); color:white; padding:14px 35px; border:none; border-radius:25px; font-weight:600; font-size:1.1rem; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.6); z-index:12; transition:transform 0.2s;">
+        Post
+    </button>
+
+    <!-- Retake Button -->
+    <button onclick="retakeFromPreview()" style="position:absolute; bottom:40px; left:30px; background:rgba(255,255,255,0.2); color:white; padding:14px 28px; border:none; border-radius:25px; font-weight:600; font-size:1.1rem; cursor:pointer; backdrop-filter:blur(10px); z-index:12; transition:transform 0.2s;">
+        Retake
+    </button>
+</div>
+
 <!-- Meal Camera Modal (For Calorie Tracker) -->
 <div id="meal-camera-modal" style="display:none; position:fixed; inset:0; background:black; z-index:10009; flex-direction:column; align-items:center; justify-content:center;">
     <!-- Camera Preview -->
