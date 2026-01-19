@@ -110,9 +110,23 @@ IMPORTANT:
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
-      console.error("Gemini API error:", errorText);
-      return new Response(JSON.stringify({ error: "Failed to analyze image", details: errorText }), {
-        status: 500,
+      console.error("Gemini API error (Status:", geminiResponse.status, "):", errorText);
+
+      let userMessage = "Failed to analyze image";
+      if (geminiResponse.status === 400) {
+        userMessage = "Invalid image format. Please try another photo.";
+      } else if (geminiResponse.status === 403) {
+        userMessage = "API key error. Please check your Gemini API key is valid and active.";
+      } else if (geminiResponse.status === 429) {
+        userMessage = "API rate limit exceeded. Please try again in a few moments.";
+      }
+
+      return new Response(JSON.stringify({
+        error: userMessage,
+        status: geminiResponse.status,
+        details: errorText
+      }), {
+        status: geminiResponse.status,
         headers: { "Content-Type": "application/json" },
       });
     }
@@ -124,7 +138,11 @@ IMPORTANT:
     const aiText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!aiText) {
-      return new Response(JSON.stringify({ error: "No response from AI" }), {
+      console.error("No AI text in response. Full response:", JSON.stringify(geminiData));
+      return new Response(JSON.stringify({
+        error: "The AI couldn't analyze this image. Please try a clearer photo of the food.",
+        geminiResponse: geminiData
+      }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
@@ -138,9 +156,11 @@ IMPORTANT:
       nutritionData = JSON.parse(cleanedText);
     } catch (parseError) {
       console.error("Failed to parse AI response as JSON:", aiText);
+      console.error("Parse error:", parseError);
       return new Response(JSON.stringify({
-        error: "Failed to parse nutrition data",
-        rawResponse: aiText
+        error: "The AI's response couldn't be processed. Retrying might help.",
+        parseError: parseError.message,
+        rawResponse: aiText.substring(0, 500) // Limit to first 500 chars
       }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
