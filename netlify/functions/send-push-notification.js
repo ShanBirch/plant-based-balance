@@ -110,7 +110,12 @@ exports.handler = async (event) => {
                     await webpush.sendNotification(pushSubscription, notificationPayload);
                     return { success: true, endpoint: sub.endpoint };
                 } catch (error) {
-                    console.error(`Failed to send to ${sub.endpoint}:`, error.message);
+                    // Log full error details for debugging
+                    console.error(`Failed to send to ${sub.endpoint}:`);
+                    console.error('  Status code:', error.statusCode);
+                    console.error('  Message:', error.message);
+                    console.error('  Body:', error.body);
+                    console.error('  Headers:', JSON.stringify(error.headers));
 
                     // If subscription is invalid (410 Gone), delete it
                     if (error.statusCode === 410) {
@@ -126,7 +131,7 @@ exports.handler = async (event) => {
                         );
                     }
 
-                    return { success: false, endpoint: sub.endpoint, error: error.message };
+                    return { success: false, endpoint: sub.endpoint, error: error.message, statusCode: error.statusCode };
                 }
             })
         );
