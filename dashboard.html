@@ -17140,23 +17140,32 @@ async function useMealPhoto() {
 
     // Check if we failed after all attempts
     if (!success) {
-        showMealAnalysisError("Sorry, couldn't analyze that photo. Could you try taking the photo again? Make sure the food is clearly visible and well-lit.");
+        const errorDetails = lastError?.message || "Unknown error";
+        showMealAnalysisError(`Failed after ${maxAttempts} attempts. Error: ${errorDetails}`);
         return;
     }
 
-    // Success - log meal to database
+    // Success - save meal to database
     try {
-        if (window.currentUser) {
-            await dbHelpers.meals.log(window.currentUser.id, nutritionData);
-        }
+        // Upload photo to Supabase Storage
+        const photoUrl = await uploadMealPhoto(fileToAnalyze);
 
-        // Display result
-        showMealAnalysisResult(nutritionData);
+        // Save meal log to database
+        await saveMealLog({
+            photoUrl,
+            foodItems: nutritionData.foodItems,
+            totals: nutritionData.totals,
+            micronutrients: nutritionData.micronutrients,
+            confidence: nutritionData.confidence,
+            notes: nutritionData.notes
+        });
 
-        // Reload calorie widget
-        if (typeof loadCalorieWidget === 'function') {
-            await loadCalorieWidget();
-        }
+        // Refresh display
+        await loadTodayNutrition();
+
+        // Show success message
+        showMealAnalysisSuccess(nutritionData);
+
     } catch (error) {
         console.error('Error saving meal:', error);
         showMealAnalysisError(error.message);
@@ -17233,7 +17242,8 @@ async function handleMealPhotoSelect(event) {
 
     // Check if we failed after all attempts
     if (!success) {
-        showMealAnalysisError("Sorry, couldn't analyze that photo. Could you try taking the photo again? Make sure the food is clearly visible and well-lit.");
+        const errorDetails = lastError?.message || "Unknown error";
+        showMealAnalysisError(`Failed after ${maxAttempts} attempts. Error: ${errorDetails}`);
         // Reset file input
         event.target.value = '';
         return;
