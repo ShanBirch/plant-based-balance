@@ -13051,8 +13051,11 @@ window.appendCoachMessage = async function(text) {
     container.appendChild(rowDiv);
     container.scrollTop = container.scrollHeight;
 
-    // Save to DB
-    await saveToHistory('model', text);
+    // Save to DB (skip if already saved - e.g., from realtime subscription)
+    if (!window._skipCoachMessageSave) {
+        await saveToHistory('model', text);
+    }
+    window._skipCoachMessageSave = false;
 
     // Mark as unread and show notification badge (Local state is fine for UI flags for now)
     localStorage.setItem('coach_unread_messages', 'true');
@@ -13068,6 +13071,53 @@ window.appendCoachMessage = async function(text) {
     if ('setAppBadge' in navigator && document.visibilityState === 'hidden') {
         navigator.setAppBadge(1).catch(e => console.error(e));
     }
+};
+
+/**
+ * Subscribe to Supabase Realtime for new coach messages
+ * This allows messages to appear instantly when approved by admin
+ */
+window.subscribeToCoachMessages = function(userId) {
+    if (!userId || !window.supabaseClient) return;
+
+    // Track message IDs we've already shown to avoid duplicates
+    window._shownMessageIds = window._shownMessageIds || new Set();
+
+    const channel = window.supabaseClient
+        .channel('coach-messages-' + userId)
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'conversations',
+                filter: `user_id=eq.${userId}`
+            },
+            (payload) => {
+                const newMessage = payload.new;
+
+                // Only show assistant/coach messages, not user messages
+                if (newMessage.role === 'assistant' || newMessage.role === 'model') {
+                    // Avoid duplicates
+                    if (window._shownMessageIds.has(newMessage.id)) return;
+                    window._shownMessageIds.add(newMessage.id);
+
+                    // Skip the save since it's already in the DB
+                    window._skipCoachMessageSave = true;
+
+                    // Display the message
+                    appendCoachMessage(newMessage.message_text);
+
+                    console.log('Realtime: New coach message received!');
+                }
+            }
+        )
+        .subscribe((status) => {
+            console.log('Realtime subscription status:', status);
+        });
+
+    // Store channel reference for cleanup
+    window._coachMessagesChannel = channel;
 };
 
 window.openCoachChat = function() {
@@ -13527,6 +13577,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.currentUser) {
             loadChatHistory();
             loadCommunityFeed();
+
+            // Subscribe to Realtime updates for new coach messages
+            subscribeToCoachMessages(window.currentUser.id);
         }
         checkUserRole();
         const savedTheme = localStorage.getItem('userThemePreference') || 'default';
