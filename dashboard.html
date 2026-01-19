@@ -11954,19 +11954,10 @@ window.triggerCoachResponse = async function(userMsg) {
     const history = await getChatHistory();
 
     // Determine Conversation Status (New vs Continuing)
-    // Check the last COACH message, not the last user message
+    // Simplified: check if there's been a recent coach message
     let conversationStatus = 'new';
 
-    // If a daily greeting was already sent today, this is a continuing conversation
-    const lastGreetDate = localStorage.getItem('coach_last_greet_date');
-    const now = new Date();
-    const bneTimeStr = now.toLocaleString("en-US", {timeZone: "Australia/Brisbane"});
-    const todayStr = new Date(bneTimeStr).toDateString();
-
-    if (lastGreetDate === todayStr) {
-        // Greeting already sent today, so this is continuing
-        conversationStatus = 'continuing';
-    } else if (history.length > 0) {
+    if (history.length > 0) {
         // Find the most recent coach/model message
         const lastCoachMsg = [...history].reverse().find(m => m.role === 'model' || m.role === 'assistant');
         if (lastCoachMsg) {
@@ -13395,19 +13386,13 @@ window.loadChatHistory = async function() {
     if (history.length === 0) {
         const profile = await window.getUserProfile();
         const userName = profile?.name || '';
-        const greeting = userName ? `Hey ${userName}!` : 'Hey there!';
+        const greeting = userName ? `Hey ${userName}!` : 'Hey!';
         container.innerHTML = `
             <div style="display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;">
                  <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
                  <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
                      <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
-                         <p style="margin: 0; white-space: pre-wrap;">${greeting} Thanks so much for joining the Plant Based Balance Reset!
-
-I'm Shannon 🙏 here if you need anything! Plus we have a pretty lively chat always going on if you want to share your journey!
-
-Generally we all share our week Saturday Morning!
-
-How's your day so far?</p>
+                         <p style="margin: 0; white-space: pre-wrap;">${greeting} Shannon here. Thanks so much for joining the app! If you need anything or have ideas for new features, just let me know and I'll see what I can do.</p>
                      </div>
                      <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon  Always here</span>
                  </div>
@@ -14275,44 +14260,10 @@ window.triggerCoachResponse = async function(userMsg) {
 };
 
 // 3. Daily Greeting
+// Daily greeting removed - coach now responds only when user messages
 async function checkCoachGreeting() {
-    const { isOnline } = getCoachState();
-    if(!isOnline) return;
-
-    const history = await getChatHistory();
-    const lastDate = localStorage.getItem('coach_last_greet_date');
-    const now = new Date();
-    const bneTimeStr = now.toLocaleString("en-US", {timeZone: COACH_CONFIG.timezone});
-    const todayStr = new Date(bneTimeStr).toDateString();
-
-    // Don't send daily greeting if this is the first day (no history) - the welcome message handles that
-    if (history.length === 0) {
-        localStorage.setItem('coach_last_greet_date', todayStr);
-        return;
-    }
-
-    if (lastDate !== todayStr) {
-        // New Day
-        let dayNum = 1;
-        const profile = await window.getUserProfile();
-        
-        if(profile && profile.program_start_date) {
-             const start = new Date(profile.program_start_date);
-             if(!isNaN(start)) {
-                 const diff = new Date() - start;
-                 dayNum = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
-                 if(dayNum < 1) dayNum = 1;
-             }
-        }
-
-        setTimeout(() => {
-            const userName = profile?.name || 'Friend';
-            appendCoachMessage(`Good morning ${userName}! Ready for Day ${dayNum}? \n\nHow did you sleep?`);
-            // Save to history so it persists
-            saveToHistory('assistant', `Good morning ${userName}! Day ${dayNum}`);
-            localStorage.setItem('coach_last_greet_date', todayStr);
-        }, 1500);
-    }
+    // Function kept for compatibility but no longer sends automated greetings
+    return;
 }
 
 // 4. Bubble Interaction
@@ -14422,7 +14373,7 @@ async function sendCoachNotification(messageText) {
 document.addEventListener('DOMContentLoaded', () => {
     updateCoachUI();
     setInterval(updateCoachUI, 1000); // Check every second for visibility toggle
-    setTimeout(checkCoachGreeting, 2000);
+    // Removed: setTimeout(checkCoachGreeting, 2000); - no more automated greetings
     requestNotificationPermission();
     initUserNotificationToggle();
 });
