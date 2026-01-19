@@ -1,11 +1,13 @@
-const CACHE_NAME = 'pbb-app-v7'; // Bumped to force fresh supabase.js load
+const CACHE_NAME = 'pbb-app-v8'; // Added biometric auth support
 const ASSETS = [
   './dashboard.html',
   './icon-192.png',
   './icon-512.png',
   './index.html',
   './lib/supabase.js',
-  './lib/auth-guard.js'
+  './lib/auth-guard.js',
+  './lib/biometric-auth.js',
+  './login.html'
 ];
 
 // Install - cache assets
