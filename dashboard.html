@@ -15999,6 +15999,11 @@ updateCoachUI();
         &times;
     </button>
 
+    <!-- Meal Description Input -->
+    <div style="position:absolute; top:80px; left:20px; right:20px; z-index:13;">
+        <textarea id="meal-description-input" placeholder="Add a description (optional)..." style="width:100%; max-width:500px; margin:0 auto; display:block; background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.3); border-radius:15px; color:white; padding:12px 15px; font-size:1rem; resize:none; height:60px; backdrop-filter:blur(10px); font-family:inherit;" maxlength="200"></textarea>
+    </div>
+
     <!-- Analyze Button -->
     <button onclick="useMealPhoto()" style="position:absolute; bottom:40px; right:30px; background:var(--primary); color:white; padding:14px 35px; border:none; border-radius:25px; font-weight:600; font-size:1.1rem; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.6); z-index:13; transition:transform 0.2s;">
         Analyze Meal
@@ -16551,6 +16556,13 @@ function closeMealPreviewModal() {
     if (previewModal) {
         previewModal.style.display = 'none';
     }
+
+    // Clear description input
+    const descriptionInput = document.getElementById('meal-description-input');
+    if (descriptionInput) {
+        descriptionInput.value = '';
+    }
+
     capturedMealFile = null;
 }
 
@@ -16570,6 +16582,13 @@ async function useMealPhoto() {
         return;
     }
 
+    // Store file reference before closing modal (modal clears capturedMealFile)
+    const fileToAnalyze = capturedMealFile;
+
+    // Get meal description if provided
+    const descriptionInput = document.getElementById('meal-description-input');
+    const mealDescription = descriptionInput ? descriptionInput.value.trim() : '';
+
     // Close preview modal
     closeMealPreviewModal();
 
@@ -16578,7 +16597,7 @@ async function useMealPhoto() {
 
     try {
         // Convert to base64
-        const base64 = await fileToBase64(capturedMealFile);
+        const base64 = await fileToBase64(fileToAnalyze);
         const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
 
         // Call Gemini API via edge function
@@ -16590,7 +16609,8 @@ async function useMealPhoto() {
             },
             body: JSON.stringify({
                 imageBase64: base64Data,
-                mimeType: capturedMealFile.type
+                mimeType: fileToAnalyze.type,
+                description: mealDescription
             })
         });
 
