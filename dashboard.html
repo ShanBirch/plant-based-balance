@@ -9629,13 +9629,15 @@ document.addEventListener('DOMContentLoaded', () => {
 function switchWeek(id, btn) {
     // Hide all internal meal sections
     document.querySelectorAll('#meals-content-container .view-section').forEach(el => el.classList.remove('active'));
-    
+
     // Show target
     const target = document.getElementById(id);
     if(target) {
         target.classList.add('active');
         if (id === 'today') {
             renderTodayMeals();
+        } else if (id === 'calorie-tracker') {
+            loadTodayNutrition();
         }
     }
     
@@ -16105,10 +16107,22 @@ let mealCameraSource = 'widget'; // Track where camera was opened from
 
 // Open meal camera
 function openMealCamera(source) {
+    console.log('openMealCamera called from:', source);
     mealCameraSource = source || 'widget';
     const input = document.getElementById('meal-camera-input');
-    if (input) {
+
+    if (!input) {
+        console.error('meal-camera-input element not found');
+        alert('Camera input not available. Please refresh the page.');
+        return;
+    }
+
+    console.log('Triggering file input click');
+    try {
         input.click();
+    } catch (error) {
+        console.error('Error triggering camera input:', error);
+        alert('Unable to open camera. Please try again.');
     }
 }
 
