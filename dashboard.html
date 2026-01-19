@@ -16919,7 +16919,7 @@ async function loadTodayNutrition() {
         }
 
         // Load individual meals
-        const { data: mealsData, error: mealsError } = await supabase
+        const { data: mealsData, error: mealsError } = await window.supabaseClient
             .from('meal_logs')
             .select('*')
             .eq('user_id', userId)
