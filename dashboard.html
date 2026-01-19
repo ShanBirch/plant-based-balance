@@ -7362,13 +7362,15 @@ function startCustomBuilderWorkout() {
                      <div style="font-size:0.9rem; font-weight:700; color:var(--primary); cursor:pointer;" onclick="alert('Units toggled (Simulation)')">Metric (kg)</div>
                  </div>
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
-                     <div>Notifications</div>
+                     <div>
+                         <div>Notifications</div>
+                         <div style="font-size:0.75rem; color:var(--text-muted);">Coach message alerts</div>
+                     </div>
                      <label class="toggle-switch" style="display:inline-block; width:40px; height:24px; position:relative;">
-                         <input type="checkbox" checked onchange="console.log('Notifs toggled')">
+                         <input type="checkbox" id="user-notifications-toggle" checked onchange="toggleUserNotifications(this.checked)">
                          <span style="position:absolute; inset:0; background:#ccc; border-radius:24px; transition:0.3s;" class="slider"></span>
                          <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:0.3s;" class="knob"></span>
                      </label>
-                     <!-- Inline style for slider knob behavior needs css, will add simple mock -->
                      <style> input:checked + .slider { background: var(--primary) !important; } input:checked + .slider + .knob { transform: translateX(16px); } </style>
                  </div>
                   <div style="padding:15px; display:flex; justify-content:space-between; align-items:center;">
@@ -11924,20 +11926,26 @@ window.approveResponse = async function() {
         const user = await window.supabaseClient.auth.getUser();
         const adminId = user?.data?.user?.id;
 
-        // Approve the response
-        const approvedResponse = await db.pendingResponses.approve(responseId, adminId, editedText);
+        // Get the pending response to find the original user_id
+        const pendingResponse = await db.pendingResponses.getById(responseId);
+        const originalUserId = pendingResponse.user_id;
 
-        // Send the response to the user
+        // Approve the response in pending_coach_responses table
+        await db.pendingResponses.approve(responseId, adminId, editedText);
+
+        // Save the approved message to the conversations table for the ORIGINAL USER
+        // Split by ||| for multi-part messages
         const parts = editedText.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
-        let delay = 0;
 
-        parts.forEach((part, index) => {
-            setTimeout(async () => {
-                await appendCoachMessage(part);
-            }, delay);
-
-            delay += 1000; // 1 second delay between messages
-        });
+        for (const part of parts) {
+            await db.conversations.create(
+                originalUserId,  // The user who asked the question
+                'shannon',       // chat_type
+                'assistant',     // role
+                part,           // message text
+                'Coach Shannon'  // author name
+            );
+        }
 
         // Close the modal
         closeApprovalModal();
@@ -11953,10 +11961,10 @@ window.approveResponse = async function() {
         }
 
         // Show success message
-        alert('Response approved and sent!');
+        alert('Response approved and sent to user!');
     } catch (error) {
         console.error('Error approving response:', error);
-        alert('Error approving response. Please try again.');
+        alert('Error approving response: ' + error.message);
     }
 };
 
@@ -13045,8 +13053,11 @@ window.appendCoachMessage = async function(text) {
     container.appendChild(rowDiv);
     container.scrollTop = container.scrollHeight;
 
-    // Save to DB
-    await saveToHistory('model', text);
+    // Save to DB (skip if already saved - e.g., from realtime subscription)
+    if (!window._skipCoachMessageSave) {
+        await saveToHistory('model', text);
+    }
+    window._skipCoachMessageSave = false;
 
     // Mark as unread and show notification badge (Local state is fine for UI flags for now)
     localStorage.setItem('coach_unread_messages', 'true');
@@ -13062,6 +13073,53 @@ window.appendCoachMessage = async function(text) {
     if ('setAppBadge' in navigator && document.visibilityState === 'hidden') {
         navigator.setAppBadge(1).catch(e => console.error(e));
     }
+};
+
+/**
+ * Subscribe to Supabase Realtime for new coach messages
+ * This allows messages to appear instantly when approved by admin
+ */
+window.subscribeToCoachMessages = function(userId) {
+    if (!userId || !window.supabaseClient) return;
+
+    // Track message IDs we've already shown to avoid duplicates
+    window._shownMessageIds = window._shownMessageIds || new Set();
+
+    const channel = window.supabaseClient
+        .channel('coach-messages-' + userId)
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'conversations',
+                filter: `user_id=eq.${userId}`
+            },
+            (payload) => {
+                const newMessage = payload.new;
+
+                // Only show assistant/coach messages, not user messages
+                if (newMessage.role === 'assistant' || newMessage.role === 'model') {
+                    // Avoid duplicates
+                    if (window._shownMessageIds.has(newMessage.id)) return;
+                    window._shownMessageIds.add(newMessage.id);
+
+                    // Skip the save since it's already in the DB
+                    window._skipCoachMessageSave = true;
+
+                    // Display the message
+                    appendCoachMessage(newMessage.message_text);
+
+                    console.log('Realtime: New coach message received!');
+                }
+            }
+        )
+        .subscribe((status) => {
+            console.log('Realtime subscription status:', status);
+        });
+
+    // Store channel reference for cleanup
+    window._coachMessagesChannel = channel;
 };
 
 window.openCoachChat = function() {
@@ -13521,6 +13579,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.currentUser) {
             loadChatHistory();
             loadCommunityFeed();
+
+            // Subscribe to Realtime updates for new coach messages
+            subscribeToCoachMessages(window.currentUser.id);
         }
         checkUserRole();
         const savedTheme = localStorage.getItem('userThemePreference') || 'default';
@@ -13867,7 +13928,47 @@ async function requestNotificationPermission() {
     }
 }
 
+/**
+ * Toggle user notifications preference
+ */
+window.toggleUserNotifications = async function(enabled) {
+    localStorage.setItem('user_notifications_enabled', enabled ? 'true' : 'false');
+
+    if (enabled) {
+        // Request permission if enabling
+        if ('Notification' in window && Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                // Revert toggle if permission denied
+                const toggle = document.getElementById('user-notifications-toggle');
+                if (toggle) toggle.checked = false;
+                localStorage.setItem('user_notifications_enabled', 'false');
+                alert('Please enable notifications in your browser settings to receive coach message alerts.');
+                return;
+            }
+        }
+    }
+
+    console.log('User notifications:', enabled ? 'enabled' : 'disabled');
+};
+
+/**
+ * Initialize user notification toggle state
+ */
+function initUserNotificationToggle() {
+    const toggle = document.getElementById('user-notifications-toggle');
+    if (toggle) {
+        const enabled = localStorage.getItem('user_notifications_enabled') !== 'false'; // Default to true
+        toggle.checked = enabled;
+    }
+}
+
 async function sendCoachNotification(messageText) {
+    // Check if user has disabled notifications
+    if (localStorage.getItem('user_notifications_enabled') === 'false') {
+        return;
+    }
+
     // Check if notifications are supported and permitted
     if (!('Notification' in window) || Notification.permission !== 'granted') {
         return;
@@ -13906,6 +14007,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateCoachUI, 1000); // Check every second for visibility toggle
     setTimeout(checkCoachGreeting, 2000);
     requestNotificationPermission();
+    initUserNotificationToggle();
 });
 
 // Immediate
