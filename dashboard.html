@@ -11924,20 +11924,26 @@ window.approveResponse = async function() {
         const user = await window.supabaseClient.auth.getUser();
         const adminId = user?.data?.user?.id;
 
-        // Approve the response
-        const approvedResponse = await db.pendingResponses.approve(responseId, adminId, editedText);
+        // Get the pending response to find the original user_id
+        const pendingResponse = await db.pendingResponses.getById(responseId);
+        const originalUserId = pendingResponse.user_id;
 
-        // Send the response to the user
+        // Approve the response in pending_coach_responses table
+        await db.pendingResponses.approve(responseId, adminId, editedText);
+
+        // Save the approved message to the conversations table for the ORIGINAL USER
+        // Split by ||| for multi-part messages
         const parts = editedText.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
-        let delay = 0;
 
-        parts.forEach((part, index) => {
-            setTimeout(async () => {
-                await appendCoachMessage(part);
-            }, delay);
-
-            delay += 1000; // 1 second delay between messages
-        });
+        for (const part of parts) {
+            await db.conversations.create(
+                originalUserId,  // The user who asked the question
+                'shannon',       // chat_type
+                'assistant',     // role
+                part,           // message text
+                'Coach Shannon'  // author name
+            );
+        }
 
         // Close the modal
         closeApprovalModal();
@@ -11953,10 +11959,10 @@ window.approveResponse = async function() {
         }
 
         // Show success message
-        alert('Response approved and sent!');
+        alert('Response approved and sent to user!');
     } catch (error) {
         console.error('Error approving response:', error);
-        alert('Error approving response. Please try again.');
+        alert('Error approving response: ' + error.message);
     }
 };
 
