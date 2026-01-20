@@ -17195,7 +17195,7 @@ async function useMealPhoto() {
         const photoUrl = await uploadMealPhoto(fileToAnalyze);
 
         // Save meal log to database
-        await saveMealLog({
+        const savedMeal = await saveMealLog({
             photoUrl,
             foodItems: nutritionData.foodItems,
             totals: nutritionData.totals,
@@ -17203,6 +17203,28 @@ async function useMealPhoto() {
             confidence: nutritionData.confidence,
             notes: nutritionData.notes
         });
+
+        // Award points for the meal (with anti-cheat data)
+        if (savedMeal && savedMeal[0]?.id) {
+            try {
+                // Get photo timestamp from file
+                const photoTimestamp = fileToAnalyze.lastModified ? new Date(fileToAnalyze.lastModified).toISOString() : null;
+
+                // Generate photo hash for duplicate detection
+                const photoHash = await window.db?.points?.generatePhotoHash(base64);
+
+                // Award points
+                await awardPointsForMeal(
+                    savedMeal[0].id,
+                    photoTimestamp,
+                    nutritionData.confidence,
+                    photoHash
+                );
+            } catch (pointsError) {
+                console.error('Error awarding points (meal still saved):', pointsError);
+                // Don't throw - meal was saved successfully, points are bonus
+            }
+        }
 
         // Recalculate daily nutrition totals
         await recalculateDailyNutrition();
