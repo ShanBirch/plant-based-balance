@@ -14104,16 +14104,16 @@ function openAsClient() {
     z-index: 1;
 }
 
-.dbz-gohan-corner {
+.dbz-character-corner {
     position: fixed;
-    bottom: 80px;
-    right: 10px;
-    width: 90px;
-    height: 90px;
-    opacity: 0.9;
+    bottom: 75px;
+    right: 8px;
+    width: 110px;
+    height: 130px;
+    opacity: 0.95;
     z-index: 100;
     animation: dbzFloat 3s ease-in-out infinite;
-    filter: drop-shadow(0 4px 8px rgba(255, 107, 0, 0.3));
+    filter: drop-shadow(0 6px 12px rgba(255, 107, 0, 0.4));
 }
 
 .dbz-lightning-left {
@@ -14171,25 +14171,40 @@ body.dbz-theme-active .dashboard-welcome {
     overflow: hidden;
 }
 
-body.dbz-theme-active .dashboard-welcome::before {
+/* Goku theme (Super Saiyan) - orange/gold gradient with Goku silhouette */
+body.dbz-goku-theme .dashboard-welcome::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: url('assets/gohan-ssj2-mini.svg') no-repeat right 10px bottom 10px;
-    background-size: 70px;
-    opacity: 0.3;
+    background: url('assets/goku-ssj.svg') no-repeat right 5px bottom 5px;
+    background-size: 80px;
+    opacity: 0.25;
+    pointer-events: none;
+}
+
+/* Vegeta theme (Saiyan Prince) - blue/gold gradient with Vegeta silhouette */
+body.dbz-vegeta-theme .dashboard-welcome::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('assets/vegeta-ssj.svg') no-repeat right 5px bottom 5px;
+    background-size: 80px;
+    opacity: 0.25;
     pointer-events: none;
 }
 
 /* Mobile responsive adjustments */
 @media (max-width: 480px) {
-    .dbz-gohan-corner {
-        width: 70px;
-        height: 70px;
-        bottom: 75px;
+    .dbz-character-corner {
+        width: 85px;
+        height: 100px;
+        bottom: 70px;
         right: 5px;
     }
     .dbz-lightning-left,
@@ -16913,16 +16928,34 @@ function applyAppTheme(themeKey) {
     // Handle DBZ theme decorations (male users only)
     const isDbzTheme = themeKey.startsWith('dbz-');
     const dbzDecorations = document.getElementById('dbz-decorations');
+    const gokuImg = document.getElementById('dbz-goku');
+    const vegetaImg = document.getElementById('dbz-vegeta');
 
     if (dbzDecorations) {
         dbzDecorations.style.display = (isDbzTheme && isMale) ? 'block' : 'none';
+
+        // Show the correct character based on theme
+        if (gokuImg && vegetaImg) {
+            if (themeKey === 'dbz-warrior') {
+                // Super Saiyan theme - show Goku
+                gokuImg.style.display = 'block';
+                vegetaImg.style.display = 'none';
+            } else if (themeKey === 'dbz-vegeta') {
+                // Saiyan Prince theme - show Vegeta
+                gokuImg.style.display = 'none';
+                vegetaImg.style.display = 'block';
+            }
+        }
     }
 
     // Toggle DBZ body class for additional styling
     if (isDbzTheme && isMale) {
         document.body.classList.add('dbz-theme-active');
+        // Add specific class for each character's theme
+        document.body.classList.remove('dbz-goku-theme', 'dbz-vegeta-theme');
+        document.body.classList.add(themeKey === 'dbz-warrior' ? 'dbz-goku-theme' : 'dbz-vegeta-theme');
     } else {
-        document.body.classList.remove('dbz-theme-active');
+        document.body.classList.remove('dbz-theme-active', 'dbz-goku-theme', 'dbz-vegeta-theme');
     }
 }
 
@@ -16986,7 +17019,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- DBZ Character Decorations (Male Only) -->
 <div id="dbz-decorations" style="display:none;">
-    <img src="assets/gohan-ssj2.svg" alt="Gohan SSJ2" class="dbz-gohan-corner" />
+    <img src="assets/goku-ssj.svg" alt="Goku Super Saiyan" class="dbz-character-corner" id="dbz-goku" />
+    <img src="assets/vegeta-ssj.svg" alt="Vegeta Super Saiyan" class="dbz-character-corner" id="dbz-vegeta" style="display:none;" />
     <img src="assets/dbz-lightning.svg" alt="Lightning" class="dbz-lightning-left" />
     <img src="assets/dbz-lightning.svg" alt="Lightning" class="dbz-lightning-right" />
     <img src="assets/dbz-ki-blast.svg" alt="Ki Blast" class="dbz-ki-blast" />
