@@ -20755,6 +20755,15 @@ async function uploadMealPhoto(file) {
     return data.url;
 }
 
+// Helper function to get local date in YYYY-MM-DD format
+// This ensures the date is based on user's local timezone, not UTC
+function getLocalDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // Save meal log to database
 async function saveMealLog(mealData) {
     const user = await window.supabaseClient.auth.getUser();
@@ -20765,7 +20774,7 @@ async function saveMealLog(mealData) {
     }
 
     const now = new Date();
-    const mealDate = now.toISOString().split('T')[0];
+    const mealDate = getLocalDateString(now);
     const mealTime = now.toTimeString().split(' ')[0];
 
     const { data, error } = await window.supabaseClient
@@ -20808,7 +20817,7 @@ async function recalculateDailyNutrition() {
             return;
         }
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
 
         console.log('Recalculating nutrition for user:', userId, 'date:', today);
 
@@ -20897,7 +20906,7 @@ async function recalculateDailyNutrition() {
 
 // Check if it's a new day and reset if needed
 function checkAndResetNewDay() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const lastDate = localStorage.getItem('lastCalorieTrackerDate');
 
     if (lastDate !== today) {
@@ -20921,8 +20930,8 @@ async function loadWeeklyMetrics(userId) {
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // Last 7 days including today
 
-        const startDate = sevenDaysAgo.toISOString().split('T')[0];
-        const endDate = today.toISOString().split('T')[0];
+        const startDate = getLocalDateString(sevenDaysAgo);
+        const endDate = getLocalDateString(today);
 
         console.log('Loading weekly metrics from', startDate, 'to', endDate);
 
@@ -20995,7 +21004,7 @@ async function loadTodayNutrition() {
             return;
         }
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
 
         // Load daily nutrition summary
         const { data: dailyData, error: dailyError } = await window.supabaseClient
@@ -21272,7 +21281,7 @@ function showMealAnalysisError(message) {
 // Initialize calorie tracker when page loads
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize the last date tracker
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     if (!localStorage.getItem('lastCalorieTrackerDate')) {
         localStorage.setItem('lastCalorieTrackerDate', today);
     }
