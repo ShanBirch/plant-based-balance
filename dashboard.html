@@ -1457,6 +1457,34 @@
         border-radius: 12px;
     }
 
+    /* Weekly Metrics Styles */
+    .weekly-day-item {
+        margin-bottom: 12px;
+    }
+
+    .weekly-day-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .weekly-day-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+
+    .weekly-day-name {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .weekly-day-calories {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-muted);
+    }
+
     .macro-detail-header {
         display: flex;
         justify-content: space-between;
@@ -1891,6 +1919,37 @@
                             <div class="progress-bar-medium">
                                 <div class="progress-fill-fiber" id="tracker-fiber-bar" style="width: 0%;"></div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weekly Metrics Section -->
+                <div class="weekly-metrics-card" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; border: 1px solid #dee2e6;">
+                    <h3 style="margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                        📊 Weekly Summary
+                    </h3>
+
+                    <!-- Weekly Stats Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Total Calories</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);"><span id="weekly-total-calories">0</span></div>
+                        </div>
+                        <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Daily Average</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);"><span id="weekly-avg-calories">0</span></div>
+                        </div>
+                        <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Days Logged</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);"><span id="weekly-days-logged">0</span>/7</div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Breakdown -->
+                    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">Last 7 Days</div>
+                        <div id="weekly-daily-breakdown">
+                            <p style="text-align: center; color: var(--text-muted); padding: 20px 0;">Loading weekly data...</p>
                         </div>
                     </div>
                 </div>
@@ -20087,9 +20146,98 @@ async function recalculateDailyNutrition() {
     }
 }
 
+// Check if it's a new day and reset if needed
+function checkAndResetNewDay() {
+    const today = new Date().toISOString().split('T')[0];
+    const lastDate = localStorage.getItem('lastCalorieTrackerDate');
+
+    if (lastDate !== today) {
+        console.log('New day detected, resetting calorie tracker data');
+        localStorage.setItem('lastCalorieTrackerDate', today);
+        // Clear any cached data
+        return true;
+    }
+    return false;
+}
+
+// Load weekly metrics (last 7 days)
+async function loadWeeklyMetrics(userId) {
+    try {
+        if (!userId) {
+            console.log('User not authenticated');
+            return;
+        }
+
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // Last 7 days including today
+
+        const startDate = sevenDaysAgo.toISOString().split('T')[0];
+        const endDate = today.toISOString().split('T')[0];
+
+        console.log('Loading weekly metrics from', startDate, 'to', endDate);
+
+        // Fetch last 7 days of nutrition data
+        const { data: weeklyData, error: weeklyError } = await window.supabaseClient
+            .from('daily_nutrition')
+            .select('*')
+            .eq('user_id', userId)
+            .gte('nutrition_date', startDate)
+            .lte('nutrition_date', endDate)
+            .order('nutrition_date', { ascending: true });
+
+        if (weeklyError) {
+            console.error('Error loading weekly metrics:', weeklyError);
+            return;
+        }
+
+        console.log('Weekly data loaded:', weeklyData);
+
+        // Calculate weekly totals and averages
+        let totalCalories = 0;
+        let totalProtein = 0;
+        let totalCarbs = 0;
+        let totalFat = 0;
+        let daysWithData = 0;
+
+        if (weeklyData && weeklyData.length > 0) {
+            weeklyData.forEach(day => {
+                if (day.total_calories > 0) {
+                    totalCalories += day.total_calories || 0;
+                    totalProtein += day.total_protein_g || 0;
+                    totalCarbs += day.total_carbs_g || 0;
+                    totalFat += day.total_fat_g || 0;
+                    daysWithData++;
+                }
+            });
+        }
+
+        const weeklyMetrics = {
+            totalCalories: Math.round(totalCalories),
+            avgCalories: daysWithData > 0 ? Math.round(totalCalories / daysWithData) : 0,
+            totalProtein: Math.round(totalProtein),
+            totalCarbs: Math.round(totalCarbs),
+            totalFat: Math.round(totalFat),
+            daysWithData,
+            dailyData: weeklyData || []
+        };
+
+        console.log('Weekly metrics calculated:', weeklyMetrics);
+
+        // Update weekly metrics UI
+        updateWeeklyMetricsUI(weeklyMetrics);
+
+    } catch (error) {
+        console.error('Error in loadWeeklyMetrics:', error);
+    }
+}
+
 // Load today's nutrition data
 async function loadTodayNutrition() {
     try {
+        // Check if it's a new day
+        checkAndResetNewDay();
+
         const user = await window.supabaseClient.auth.getUser();
         const userId = user?.data?.user?.id;
 
@@ -20124,11 +20272,47 @@ async function loadTodayNutrition() {
             console.error('Error loading meals:', mealsError);
         }
 
+        // Load weekly metrics
+        await loadWeeklyMetrics(userId);
+
         // Update UI
         updateNutritionUI(dailyData, mealsData);
 
     } catch (error) {
         console.error('Error in loadTodayNutrition:', error);
+    }
+}
+
+// Update weekly metrics UI
+function updateWeeklyMetricsUI(metrics) {
+    // Update total weekly calories
+    updateElement('weekly-total-calories', metrics.totalCalories);
+    updateElement('weekly-avg-calories', metrics.avgCalories);
+    updateElement('weekly-days-logged', metrics.daysWithData);
+
+    // Update daily breakdown if elements exist
+    const dailyBreakdownContainer = document.getElementById('weekly-daily-breakdown');
+    if (dailyBreakdownContainer && metrics.dailyData.length > 0) {
+        let html = '';
+        metrics.dailyData.forEach(day => {
+            const date = new Date(day.nutrition_date);
+            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+            const calories = Math.round(day.total_calories || 0);
+            const percentage = day.calorie_goal > 0 ? Math.min((calories / day.calorie_goal) * 100, 100) : 0;
+
+            html += `
+                <div class="weekly-day-item">
+                    <div class="weekly-day-header">
+                        <span class="weekly-day-name">${dayName}</span>
+                        <span class="weekly-day-calories">${calories} cal</span>
+                    </div>
+                    <div class="progress-bar-small">
+                        <div class="progress-fill" style="width: ${percentage}%; background: var(--primary);"></div>
+                    </div>
+                </div>
+            `;
+        });
+        dailyBreakdownContainer.innerHTML = html;
     }
 }
 
@@ -20338,8 +20522,16 @@ function showMealAnalysisError(message) {
 
 // Initialize calorie tracker when page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize the last date tracker
+    const today = new Date().toISOString().split('T')[0];
+    if (!localStorage.getItem('lastCalorieTrackerDate')) {
+        localStorage.setItem('lastCalorieTrackerDate', today);
+    }
+
     // Load nutrition data after a short delay to ensure auth is ready
     setTimeout(async () => {
+        // Check for daily reset
+        checkAndResetNewDay();
         // Recalculate to ensure data is in sync
         await recalculateDailyNutrition();
         // Then load and display
