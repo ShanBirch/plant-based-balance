@@ -16939,7 +16939,7 @@ function applyAppTheme(themeKey) {
                 // Show the Easter egg video after a short delay to let theme apply
                 setTimeout(() => {
                     if (typeof openExerciseVideo === 'function') {
-                        openExerciseVideo(videoUrl, videoTitle);
+                        openExerciseVideo(videoUrl, videoTitle, true); // autoplay = true
                     }
                 }, 300);
             }
@@ -17197,7 +17197,7 @@ function playVideo() {
     }
 }
 
-function openExerciseVideo(url, title) {
+function openExerciseVideo(url, title, autoplay = false) {
     console.log("Opening video for:", title);
 
     // 1. Resolve URL if missing
@@ -17254,7 +17254,22 @@ function openExerciseVideo(url, title) {
         poster.style.backgroundImage = 'none'; // B2 videos don't have thumbnails
     }
 
-    modal.style.display = 'flex'; 
+    modal.style.display = 'flex';
+
+    // Autoplay and auto-close for Easter egg videos
+    if (autoplay && direct) {
+        // Auto-play the video after a short delay
+        setTimeout(() => {
+            playVideo();
+
+            // Add event listener to close modal when video ends
+            const handleVideoEnd = () => {
+                closeVideoModal();
+                direct.removeEventListener('ended', handleVideoEnd);
+            };
+            direct.addEventListener('ended', handleVideoEnd);
+        }, 500);
+    }
 }
 
 function openVideoNewTab() {
