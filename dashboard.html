@@ -10719,6 +10719,15 @@ function applyGenderTheme() {
         document.body.classList.add('female-theme');
         document.body.classList.remove('male-theme');
         selectedGender = 'female';
+
+        // Reset DBZ theme if female user has it selected (male-only themes)
+        const currentTheme = localStorage.getItem('userThemePreference');
+        if (currentTheme && currentTheme.startsWith('dbz-')) {
+            localStorage.setItem('userThemePreference', 'default');
+            if (typeof applyAppTheme === 'function') {
+                applyAppTheme('default');
+            }
+        }
     }
 
     // Apply gender-specific UI changes
@@ -16763,6 +16772,22 @@ const APP_THEMES = {
 function applyAppTheme(themeKey) {
     const theme = APP_THEMES[themeKey];
     if(!theme) return;
+
+    // DBZ themes are restricted to male users only
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+    if (theme.maleOnly && !isMale) {
+        // Non-male user trying to use male-only theme - fall back to default
+        themeKey = 'default';
+        const defaultTheme = APP_THEMES['default'];
+        for (const [key, value] of Object.entries(defaultTheme.colors)) {
+            document.documentElement.style.setProperty(key, value);
+        }
+        localStorage.setItem('userThemePreference', 'default');
+        const selector = document.getElementById('theme-selector');
+        if(selector) selector.value = 'default';
+        return;
+    }
+
     for (const [key, value] of Object.entries(theme.colors)) { document.documentElement.style.setProperty(key, value); }
     localStorage.setItem('userThemePreference', themeKey);
     const selector = document.getElementById('theme-selector');
