@@ -158,6 +158,32 @@ CREATE TABLE IF NOT EXISTS public.workouts (
 );
 
 -- ============================================================
+-- WORKOUT CUSTOMIZATIONS TABLE (user-added/removed exercises per workout)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.workout_customizations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+
+  -- Workout identifier (format: "category/subcategory/workoutId" for library workouts)
+  workout_key TEXT NOT NULL,
+
+  -- Added exercises (JSONB array of exercise objects)
+  -- Format: [{ name: string, sets: number, reps: string, desc: string }]
+  added_exercises JSONB DEFAULT '[]',
+
+  -- Removed exercises (JSONB array of exercise names to hide)
+  removed_exercises JSONB DEFAULT '[]',
+
+  -- Timestamps
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  -- Each user can only have one customization per workout
+  UNIQUE(user_id, workout_key),
+  INDEX idx_workout_customizations_user (user_id)
+);
+
+-- ============================================================
 -- DAILY CHECK-INS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.daily_checkins (
