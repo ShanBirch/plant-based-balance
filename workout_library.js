@@ -1319,6 +1319,590 @@ const WORKOUT_LIBRARY = {
         ]
       },
 
+      // ARMS WORKOUTS
+      "arms": {
+        name: "Arms",
+        description: "Build powerful arms with dedicated bicep and tricep training",
+        workouts: [
+          {
+            id: "gym-arms-1",
+            name: "Arms 1",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Barbell", "Cable", "Dumbbells"],
+            exercises: [
+              { name: "Barbell Close Grip Bench Press", sets: 4, reps: "8-10", desc: "Tricep compound" },
+              { name: "Barbell Bicep Curl", sets: 4, reps: "10-12", desc: "Bicep mass builder" },
+              { name: "Cable Rope Tricep Extension", sets: 4, reps: "10-12", desc: "Tricep isolation" },
+              { name: "Cable Bicep Curl", sets: 4, reps: "12-15", desc: "Bicep pump" },
+              { name: "Dumbbell Hammer Curl", sets: 4, reps: "12-15", desc: "Brachialis and forearms" }
+            ]
+          },
+          {
+            id: "gym-arms-2",
+            name: "Arms 2",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Barbell", "Dumbbells", "Cable"],
+            exercises: [
+              { name: "Barbell Skull Crusher", sets: 4, reps: "10-12", desc: "Tricep builder" },
+              { name: "Barbell Preacher Curl", sets: 4, reps: "10-12", desc: "Strict bicep" },
+              { name: "Dumbbell Overhead Tricep Extension", sets: 4, reps: "10-12", desc: "Long head focus" },
+              { name: "Dumbbell Incline Bicep Curl", sets: 4, reps: "12-15", desc: "Stretch position" },
+              { name: "Cable Single Arm Tricep Extension", sets: 4, reps: "12-15 each", desc: "Unilateral tricep" }
+            ]
+          },
+          {
+            id: "gym-arms-3",
+            name: "Arms 3",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Barbell", "Dip Bar", "Cable"],
+            exercises: [
+              { name: "Weighted Dips", sets: 4, reps: "6-8", desc: "Heavy tricep compound" },
+              { name: "Barbell Bicep Curl", sets: 4, reps: "6-8", desc: "Heavy bicep" },
+              { name: "Cable Rope Overhead Tricep Extension", sets: 4, reps: "8-10", desc: "Tricep stretch" },
+              { name: "Cable Rope Hammer Curl", sets: 4, reps: "10-12", desc: "Brachialis" },
+              { name: "Barbell Close Grip Bench Press", sets: 4, reps: "8-10", desc: "Tricep finisher" }
+            ]
+          },
+          {
+            id: "gym-arms-4",
+            name: "Arms 4",
+            duration: "45 min",
+            difficulty: "Beginner",
+            equipment: ["Cable", "Dumbbells", "Machine"],
+            exercises: [
+              { name: "Cable Rope Tricep Extension", sets: 4, reps: "12-15", desc: "Tricep isolation" },
+              { name: "Cable Bicep Curl", sets: 4, reps: "12-15", desc: "Bicep curl" },
+              { name: "Dumbbell Overhead Tricep Extension", sets: 4, reps: "12-15", desc: "Tricep extension" },
+              { name: "Dumbbell Hammer Curl", sets: 4, reps: "12-15", desc: "Hammer curl" },
+              { name: "Machine Tricep Dip", sets: 4, reps: "12-15", desc: "Assisted dips" }
+            ]
+          },
+          {
+            id: "gym-arms-5",
+            name: "Arms 5",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Barbell", "Cable", "EZ Bar"],
+            exercises: [
+              { name: "EZ Bar Skull Crusher", sets: 4, reps: "10-12", desc: "Tricep builder" },
+              { name: "EZ Bar Preacher Curl", sets: 4, reps: "10-12", desc: "Bicep peak" },
+              { name: "Cable Single Arm Overhead Tricep Extension", sets: 4, reps: "10-12 each", desc: "Unilateral" },
+              { name: "Cable Single Arm Bicep Curl", sets: 4, reps: "12-15 each", desc: "Peak contraction" },
+              { name: "Barbell Wrist Curl", sets: 4, reps: "15-20", desc: "Forearm mass" }
+            ]
+          },
+          {
+            id: "gym-arms-6",
+            name: "Arms 6",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Barbell", "Dumbbells", "Cable"],
+            exercises: [
+              { name: "Barbell Close Grip Bench Press", sets: 4, reps: "6-8", desc: "Heavy tricep" },
+              { name: "Barbell Bicep Curl", sets: 4, reps: "8-10", desc: "Power curls" },
+              { name: "Dumbbell Skull Crusher", sets: 4, reps: "8-10", desc: "DB skulls" },
+              { name: "Dumbbell Concentration Curl", sets: 4, reps: "10-12 each", desc: "Bicep peak" },
+              { name: "Cable Rope Face Pull", sets: 4, reps: "12-15", desc: "Rear delt and arms" }
+            ]
+          },
+          {
+            id: "gym-arms-7",
+            name: "Arms 7",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Cable", "Dumbbells", "Machine"],
+            exercises: [
+              { name: "Cable Rope Tricep Extension", sets: 4, reps: "10-12", desc: "Cable tricep" },
+              { name: "Cable Rope Hammer Curl", sets: 4, reps: "10-12", desc: "Cable hammer" },
+              { name: "Dumbbell Tricep Kickback", sets: 4, reps: "12-15 each", desc: "Tricep isolation" },
+              { name: "Dumbbell Spider Curl", sets: 4, reps: "12-15", desc: "Bicep stretch" },
+              { name: "Machine Preacher Curl", sets: 4, reps: "12-15", desc: "Machine curl" }
+            ]
+          },
+          {
+            id: "gym-arms-8",
+            name: "Arms 8",
+            duration: "45 min",
+            difficulty: "Beginner",
+            equipment: ["Dumbbells", "Cable", "Machine"],
+            exercises: [
+              { name: "Dumbbell Overhead Tricep Extension", sets: 4, reps: "12-15", desc: "Overhead ext" },
+              { name: "Dumbbell Bicep Curl", sets: 4, reps: "12-15", desc: "Basic curl" },
+              { name: "Cable Rope Tricep Extension", sets: 4, reps: "12-15", desc: "Cable tricep" },
+              { name: "Cable Bicep Curl", sets: 4, reps: "12-15", desc: "Cable bicep" },
+              { name: "Dumbbell Hammer Curl", sets: 4, reps: "15-20", desc: "Forearms" }
+            ]
+          },
+          {
+            id: "gym-arms-9",
+            name: "Arms 9",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Barbell", "EZ Bar", "Cable"],
+            exercises: [
+              { name: "Barbell Skull Crusher", sets: 4, reps: "6-8", desc: "Heavy skulls" },
+              { name: "Barbell Preacher Curl", sets: 4, reps: "6-8", desc: "Heavy preacher" },
+              { name: "Cable Rope Overhead Tricep Extension", sets: 4, reps: "10-12", desc: "Cable overhead" },
+              { name: "EZ Bar Spider Curl", sets: 4, reps: "10-12", desc: "Spider curl" },
+              { name: "Cable Rope Tricep Extension", sets: 4, reps: "12-15", desc: "Finisher" }
+            ]
+          },
+          {
+            id: "gym-arms-10",
+            name: "Arms 10",
+            duration: "45 min",
+            difficulty: "Beginner",
+            equipment: ["Cable", "Machine", "Dumbbells"],
+            exercises: [
+              { name: "Cable Rope Tricep Extension", sets: 4, reps: "12-15", desc: "Cable tricep" },
+              { name: "Cable Bicep Curl", sets: 4, reps: "12-15", desc: "Cable bicep" },
+              { name: "Machine Tricep Dip", sets: 4, reps: "12-15", desc: "Machine dips" },
+              { name: "Machine Preacher Curl", sets: 4, reps: "12-15", desc: "Machine curl" },
+              { name: "Dumbbell Wrist Curl", sets: 4, reps: "15-20", desc: "Forearms" }
+            ]
+          },
+          {
+            id: "gym-arms-11",
+            name: "Arms 11",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Barbell", "Dumbbells", "Cable"],
+            exercises: [
+              { name: "Barbell Close Grip Bench Press", sets: 4, reps: "8-10", desc: "Tricep press" },
+              { name: "Dumbbell Alternating Bicep Curl", sets: 4, reps: "10-12 each", desc: "Alternating curls" },
+              { name: "Cable Single Arm Tricep Extension", sets: 4, reps: "10-12 each", desc: "Unilateral tricep" },
+              { name: "Cable Single Arm Bicep Curl", sets: 4, reps: "12-15 each", desc: "Unilateral bicep" },
+              { name: "Dumbbell Reverse Curl", sets: 4, reps: "12-15", desc: "Brachioradialis" }
+            ]
+          },
+          {
+            id: "gym-arms-12",
+            name: "Arms 12",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Dip Bar", "Barbell", "Cable"],
+            exercises: [
+              { name: "Weighted Dips", sets: 4, reps: "8-10", desc: "Compound tricep" },
+              { name: "Barbell Bicep Curl", sets: 4, reps: "8-10", desc: "Barbell curl" },
+              { name: "Cable Rope Overhead Tricep Extension", sets: 4, reps: "10-12", desc: "Long head" },
+              { name: "Cable Rope Hammer Curl", sets: 4, reps: "10-12", desc: "Cable hammer" },
+              { name: "Barbell Reverse Curl", sets: 4, reps: "10-12", desc: "Forearm builder" }
+            ]
+          },
+          {
+            id: "gym-arms-13",
+            name: "Arms 13",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["EZ Bar", "Cable", "Dumbbells"],
+            exercises: [
+              { name: "EZ Bar Skull Crusher", sets: 4, reps: "10-12", desc: "EZ bar skulls" },
+              { name: "EZ Bar Bicep Curl", sets: 4, reps: "10-12", desc: "EZ bar curl" },
+              { name: "Cable Rope Tricep Extension", sets: 4, reps: "12-15", desc: "Cable rope" },
+              { name: "Dumbbell Incline Bicep Curl", sets: 4, reps: "12-15", desc: "Incline curl" },
+              { name: "Dumbbell Tricep Kickback", sets: 4, reps: "12-15 each", desc: "Kickback" }
+            ]
+          },
+          {
+            id: "gym-arms-14",
+            name: "Arms 14",
+            duration: "45 min",
+            difficulty: "Beginner",
+            equipment: ["Dumbbells", "Cable", "Machine"],
+            exercises: [
+              { name: "Dumbbell Overhead Tricep Extension", sets: 4, reps: "12-15", desc: "Overhead" },
+              { name: "Dumbbell Bicep Curl", sets: 4, reps: "12-15", desc: "Bicep curl" },
+              { name: "Cable Rope Tricep Extension", sets: 4, reps: "12-15", desc: "Cable tricep" },
+              { name: "Cable Bicep Curl", sets: 4, reps: "12-15", desc: "Cable bicep" },
+              { name: "Machine Preacher Curl", sets: 4, reps: "15-20", desc: "Machine" }
+            ]
+          },
+          {
+            id: "gym-arms-15",
+            name: "Arms 15",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Barbell", "Cable", "Dumbbells"],
+            exercises: [
+              { name: "Barbell Close Grip Bench Press", sets: 4, reps: "6-8", desc: "Power press" },
+              { name: "Barbell Preacher Curl", sets: 4, reps: "6-8", desc: "Power curl" },
+              { name: "Dumbbell Skull Crusher", sets: 4, reps: "8-10", desc: "DB skulls" },
+              { name: "Dumbbell Concentration Curl", sets: 4, reps: "10-12 each", desc: "Peak contraction" },
+              { name: "Cable Rope Tricep Extension", sets: 4, reps: "12-15", desc: "High rep finisher" }
+            ]
+          }
+        ]
+      },
+
+      // CORE WORKOUTS
+      "core": {
+        name: "Core",
+        description: "Build a strong, stable core with gym equipment",
+        workouts: [
+          {
+            id: "gym-core-1",
+            name: "Core 1",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Cable", "Ab Wheel", "Weight Plate"],
+            exercises: [
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "12-15", desc: "Weighted crunch" },
+              { name: "Hanging Leg Raise", sets: 4, reps: "10-12", desc: "Lower abs" },
+              { name: "Cable Wood Chop", sets: 4, reps: "12-15 each", desc: "Rotational power" },
+              { name: "Ab Wheel Rollout", sets: 4, reps: "8-10", desc: "Core stability" },
+              { name: "Cable Pallof Press", sets: 4, reps: "12-15 each", desc: "Anti-rotation" }
+            ]
+          },
+          {
+            id: "gym-core-2",
+            name: "Core 2",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Cable", "Medicine Ball", "Decline Bench"],
+            exercises: [
+              { name: "Cable Standing Crunch", sets: 4, reps: "12-15", desc: "Standing abs" },
+              { name: "Decline Weighted Sit Up", sets: 4, reps: "12-15", desc: "Weighted sit ups" },
+              { name: "Medicine Ball Russian Twist", sets: 4, reps: "20-30 total", desc: "Oblique rotation" },
+              { name: "Cable Reverse Crunch", sets: 4, reps: "12-15", desc: "Lower abs" },
+              { name: "Cable Side Bend", sets: 4, reps: "15-20 each", desc: "Oblique isolation" }
+            ]
+          },
+          {
+            id: "gym-core-3",
+            name: "Core 3",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Pull-up Bar", "Cable", "Ab Wheel"],
+            exercises: [
+              { name: "Hanging Leg Raise", sets: 4, reps: "12-15", desc: "Strict form" },
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "15-20", desc: "Heavy weight" },
+              { name: "Ab Wheel Rollout", sets: 4, reps: "12-15", desc: "Full extension" },
+              { name: "Cable Wood Chop", sets: 4, reps: "15-20 each", desc: "Explosive rotation" },
+              { name: "Toes To Bar", sets: 4, reps: "10-12", desc: "Advanced hanging" }
+            ]
+          },
+          {
+            id: "gym-core-4",
+            name: "Core 4",
+            duration: "45 min",
+            difficulty: "Beginner",
+            equipment: ["Cable", "Medicine Ball", "Mat"],
+            exercises: [
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "12-15", desc: "Cable crunch" },
+              { name: "Medicine Ball Dead Bug", sets: 4, reps: "10-12 each", desc: "Stability" },
+              { name: "Cable Pallof Press", sets: 4, reps: "12-15 each", desc: "Anti-rotation" },
+              { name: "Weighted Plank", sets: 4, reps: "30-45 sec", desc: "Isometric hold" },
+              { name: "Cable Side Bend", sets: 4, reps: "15-20 each", desc: "Obliques" }
+            ]
+          },
+          {
+            id: "gym-core-5",
+            name: "Core 5",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Cable", "Decline Bench", "Weight Plate"],
+            exercises: [
+              { name: "Cable Standing Crunch", sets: 4, reps: "12-15", desc: "Standing abs" },
+              { name: "Decline Weighted Sit Up", sets: 4, reps: "10-12", desc: "Decline sit up" },
+              { name: "Cable Reverse Wood Chop", sets: 4, reps: "12-15 each", desc: "Low to high" },
+              { name: "Weighted Russian Twist", sets: 4, reps: "20-30 total", desc: "Plate twist" },
+              { name: "Hanging Knee Raise", sets: 4, reps: "12-15", desc: "Knee raises" }
+            ]
+          },
+          {
+            id: "gym-core-6",
+            name: "Core 6",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Cable", "Ab Wheel", "Pull-up Bar"],
+            exercises: [
+              { name: "Toes To Bar", sets: 4, reps: "12-15", desc: "Advanced T2B" },
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "15-20", desc: "Heavy crunch" },
+              { name: "Ab Wheel Rollout", sets: 4, reps: "15-20", desc: "Extended rollouts" },
+              { name: "Cable Wood Chop", sets: 4, reps: "15-20 each", desc: "Power chop" },
+              { name: "Hanging Windshield Wiper", sets: 4, reps: "8-10 each", desc: "Advanced oblique" }
+            ]
+          },
+          {
+            id: "gym-core-7",
+            name: "Core 7",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Cable", "Medicine Ball", "Decline Bench"],
+            exercises: [
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "12-15", desc: "Cable crunch" },
+              { name: "Medicine Ball Slam", sets: 4, reps: "15-20", desc: "Explosive core" },
+              { name: "Decline Weighted Sit Up", sets: 4, reps: "12-15", desc: "Weighted sit up" },
+              { name: "Cable Pallof Press", sets: 4, reps: "12-15 each", desc: "Anti-rotation" },
+              { name: "Hanging Leg Raise", sets: 4, reps: "10-12", desc: "Leg raises" }
+            ]
+          },
+          {
+            id: "gym-core-8",
+            name: "Core 8",
+            duration: "45 min",
+            difficulty: "Beginner",
+            equipment: ["Cable", "Mat", "Weight Plate"],
+            exercises: [
+              { name: "Cable Standing Crunch", sets: 4, reps: "12-15", desc: "Standing crunch" },
+              { name: "Weighted Plank", sets: 4, reps: "30-45 sec", desc: "Plate plank" },
+              { name: "Cable Side Bend", sets: 4, reps: "15-20 each", desc: "Side bend" },
+              { name: "Cable Reverse Crunch", sets: 4, reps: "12-15", desc: "Reverse crunch" },
+              { name: "Cable Pallof Press", sets: 4, reps: "12-15 each", desc: "Pallof press" }
+            ]
+          },
+          {
+            id: "gym-core-9",
+            name: "Core 9",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Pull-up Bar", "Ab Wheel", "Cable"],
+            exercises: [
+              { name: "Hanging Leg Raise", sets: 4, reps: "15-20", desc: "High reps" },
+              { name: "Ab Wheel Rollout", sets: 4, reps: "15-20", desc: "Full rollouts" },
+              { name: "Toes To Bar", sets: 4, reps: "12-15", desc: "Strict T2B" },
+              { name: "Cable Wood Chop", sets: 4, reps: "15-20 each", desc: "Heavy chop" },
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "15-20", desc: "Heavy crunch" }
+            ]
+          },
+          {
+            id: "gym-core-10",
+            name: "Core 10",
+            duration: "45 min",
+            difficulty: "Beginner",
+            equipment: ["Cable", "Medicine Ball", "Mat"],
+            exercises: [
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "12-15", desc: "Crunch" },
+              { name: "Medicine Ball Dead Bug", sets: 4, reps: "10-12 each", desc: "Dead bug" },
+              { name: "Cable Pallof Press", sets: 4, reps: "12-15 each", desc: "Pallof" },
+              { name: "Weighted Plank", sets: 4, reps: "30-45 sec", desc: "Plank" },
+              { name: "Hanging Knee Raise", sets: 4, reps: "10-12", desc: "Knee raise" }
+            ]
+          },
+          {
+            id: "gym-core-11",
+            name: "Core 11",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Cable", "Decline Bench", "Medicine Ball"],
+            exercises: [
+              { name: "Cable Standing Crunch", sets: 4, reps: "12-15", desc: "Standing" },
+              { name: "Decline Weighted Sit Up", sets: 4, reps: "12-15", desc: "Decline" },
+              { name: "Medicine Ball Russian Twist", sets: 4, reps: "20-30 total", desc: "Twist" },
+              { name: "Cable Wood Chop", sets: 4, reps: "12-15 each", desc: "Chop" },
+              { name: "Hanging Leg Raise", sets: 4, reps: "12-15", desc: "Leg raise" }
+            ]
+          },
+          {
+            id: "gym-core-12",
+            name: "Core 12",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Ab Wheel", "Cable", "Pull-up Bar"],
+            exercises: [
+              { name: "Ab Wheel Rollout", sets: 4, reps: "15-20", desc: "Rollouts" },
+              { name: "Toes To Bar", sets: 4, reps: "15-20", desc: "T2B" },
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "15-20", desc: "Heavy" },
+              { name: "Hanging Windshield Wiper", sets: 4, reps: "10-12 each", desc: "Wipers" },
+              { name: "Cable Wood Chop", sets: 4, reps: "15-20 each", desc: "Chop" }
+            ]
+          },
+          {
+            id: "gym-core-13",
+            name: "Core 13",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Cable", "Medicine Ball", "Weight Plate"],
+            exercises: [
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "12-15", desc: "Crunch" },
+              { name: "Medicine Ball Slam", sets: 4, reps: "15-20", desc: "Slam" },
+              { name: "Cable Pallof Press", sets: 4, reps: "12-15 each", desc: "Pallof" },
+              { name: "Weighted Russian Twist", sets: 4, reps: "20-30 total", desc: "Twist" },
+              { name: "Hanging Leg Raise", sets: 4, reps: "12-15", desc: "Leg raise" }
+            ]
+          },
+          {
+            id: "gym-core-14",
+            name: "Core 14",
+            duration: "45 min",
+            difficulty: "Beginner",
+            equipment: ["Cable", "Mat", "Medicine Ball"],
+            exercises: [
+              { name: "Cable Standing Crunch", sets: 4, reps: "12-15", desc: "Crunch" },
+              { name: "Weighted Plank", sets: 4, reps: "30-45 sec", desc: "Plank" },
+              { name: "Cable Side Bend", sets: 4, reps: "15-20 each", desc: "Side bend" },
+              { name: "Medicine Ball Dead Bug", sets: 4, reps: "10-12 each", desc: "Dead bug" },
+              { name: "Cable Reverse Crunch", sets: 4, reps: "12-15", desc: "Reverse" }
+            ]
+          },
+          {
+            id: "gym-core-15",
+            name: "Core 15",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Pull-up Bar", "Ab Wheel", "Cable"],
+            exercises: [
+              { name: "Toes To Bar", sets: 4, reps: "15-20", desc: "High rep T2B" },
+              { name: "Ab Wheel Rollout", sets: 4, reps: "15-20", desc: "Full rollouts" },
+              { name: "Hanging Leg Raise", sets: 4, reps: "15-20", desc: "Strict legs" },
+              { name: "Cable Wood Chop", sets: 4, reps: "15-20 each", desc: "Power" },
+              { name: "Hanging Windshield Wiper", sets: 4, reps: "10-12 each", desc: "Advanced" }
+            ]
+          }
+        ]
+      },
+
+      // ARMS + CORE COMBO WORKOUTS
+      "armscore": {
+        name: "Arms & Core",
+        description: "Powerful arms and strong core combo workouts",
+        workouts: [
+          {
+            id: "gym-armscore-1",
+            name: "Arms & Core 1",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Barbell", "Cable", "Pull-up Bar"],
+            exercises: [
+              { name: "Barbell Close Grip Bench Press", sets: 4, reps: "8-10", desc: "Tricep compound" },
+              { name: "Barbell Bicep Curl", sets: 4, reps: "10-12", desc: "Bicep builder" },
+              { name: "Cable Rope Tricep Extension", sets: 4, reps: "12-15", desc: "Tricep isolation" },
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "12-15", desc: "Weighted abs" },
+              { name: "Hanging Leg Raise", sets: 4, reps: "10-12", desc: "Lower abs" }
+            ]
+          },
+          {
+            id: "gym-armscore-2",
+            name: "Arms & Core 2",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["EZ Bar", "Cable", "Dumbbells"],
+            exercises: [
+              { name: "EZ Bar Skull Crusher", sets: 4, reps: "10-12", desc: "Tricep builder" },
+              { name: "EZ Bar Preacher Curl", sets: 4, reps: "10-12", desc: "Strict bicep" },
+              { name: "Dumbbell Hammer Curl", sets: 4, reps: "12-15", desc: "Brachialis" },
+              { name: "Cable Wood Chop", sets: 4, reps: "12-15 each", desc: "Rotational power" },
+              { name: "Cable Pallof Press", sets: 4, reps: "12-15 each", desc: "Anti-rotation" }
+            ]
+          },
+          {
+            id: "gym-armscore-3",
+            name: "Arms & Core 3",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Dip Bar", "Barbell", "Cable", "Ab Wheel"],
+            exercises: [
+              { name: "Weighted Dips", sets: 4, reps: "6-8", desc: "Heavy tricep" },
+              { name: "Barbell Bicep Curl", sets: 4, reps: "8-10", desc: "Heavy bicep" },
+              { name: "Cable Rope Hammer Curl", sets: 4, reps: "10-12", desc: "Brachialis focus" },
+              { name: "Ab Wheel Rollout", sets: 4, reps: "12-15", desc: "Full core" },
+              { name: "Toes To Bar", sets: 4, reps: "10-12", desc: "Advanced abs" }
+            ]
+          },
+          {
+            id: "gym-armscore-4",
+            name: "Arms & Core 4",
+            duration: "45 min",
+            difficulty: "Beginner",
+            equipment: ["Dumbbells", "Cable", "Medicine Ball"],
+            exercises: [
+              { name: "Dumbbell Overhead Tricep Extension", sets: 4, reps: "12-15", desc: "Tricep isolation" },
+              { name: "Dumbbell Bicep Curl", sets: 4, reps: "12-15", desc: "Basic curl" },
+              { name: "Cable Bicep Curl", sets: 4, reps: "12-15", desc: "Cable bicep" },
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "12-15", desc: "Cable crunch" },
+              { name: "Medicine Ball Dead Bug", sets: 4, reps: "10-12 each", desc: "Core stability" }
+            ]
+          },
+          {
+            id: "gym-armscore-5",
+            name: "Arms & Core 5",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Barbell", "Cable", "Decline Bench"],
+            exercises: [
+              { name: "Barbell Skull Crusher", sets: 4, reps: "10-12", desc: "Tricep mass" },
+              { name: "Barbell Preacher Curl", sets: 4, reps: "10-12", desc: "Bicep peak" },
+              { name: "Cable Single Arm Tricep Extension", sets: 4, reps: "12-15 each", desc: "Unilateral tricep" },
+              { name: "Decline Weighted Sit Up", sets: 4, reps: "12-15", desc: "Weighted abs" },
+              { name: "Cable Wood Chop", sets: 4, reps: "12-15 each", desc: "Obliques" }
+            ]
+          },
+          {
+            id: "gym-armscore-6",
+            name: "Arms & Core 6",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Barbell", "Cable", "Pull-up Bar"],
+            exercises: [
+              { name: "Barbell Close Grip Bench Press", sets: 4, reps: "6-8", desc: "Heavy press" },
+              { name: "Cable Rope Hammer Curl", sets: 4, reps: "10-12", desc: "Brachialis" },
+              { name: "Dumbbell Concentration Curl", sets: 4, reps: "10-12 each", desc: "Bicep peak" },
+              { name: "Hanging Leg Raise", sets: 4, reps: "12-15", desc: "Lower abs strength" },
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "15-20", desc: "Heavy abs" }
+            ]
+          },
+          {
+            id: "gym-armscore-7",
+            name: "Arms & Core 7",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Cable", "Dumbbells", "Medicine Ball"],
+            exercises: [
+              { name: "Cable Rope Tricep Extension", sets: 4, reps: "10-12", desc: "Tricep pump" },
+              { name: "Cable Bicep Curl", sets: 4, reps: "10-12", desc: "Bicep pump" },
+              { name: "Dumbbell Tricep Kickback", sets: 4, reps: "12-15 each", desc: "Tricep finisher" },
+              { name: "Medicine Ball Russian Twist", sets: 4, reps: "20-30 total", desc: "Oblique rotation" },
+              { name: "Cable Pallof Press", sets: 4, reps: "12-15 each", desc: "Anti-rotation" }
+            ]
+          },
+          {
+            id: "gym-armscore-8",
+            name: "Arms & Core 8",
+            duration: "45 min",
+            difficulty: "Beginner",
+            equipment: ["Dumbbells", "Cable", "Mat"],
+            exercises: [
+              { name: "Dumbbell Skull Crusher", sets: 4, reps: "12-15", desc: "Tricep work" },
+              { name: "Dumbbell Hammer Curl", sets: 4, reps: "12-15", desc: "Hammer curl" },
+              { name: "Cable Rope Tricep Extension", sets: 4, reps: "12-15", desc: "Cable tricep" },
+              { name: "Cable Standing Crunch", sets: 4, reps: "12-15", desc: "Standing abs" },
+              { name: "Weighted Plank", sets: 4, reps: "30-45 sec", desc: "Core hold" }
+            ]
+          },
+          {
+            id: "gym-armscore-9",
+            name: "Arms & Core 9",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["EZ Bar", "Cable", "Ab Wheel", "Pull-up Bar"],
+            exercises: [
+              { name: "EZ Bar Skull Crusher", sets: 4, reps: "8-10", desc: "Heavy skulls" },
+              { name: "EZ Bar Spider Curl", sets: 4, reps: "10-12", desc: "Spider curl" },
+              { name: "Cable Rope Overhead Tricep Extension", sets: 4, reps: "10-12", desc: "Long head" },
+              { name: "Ab Wheel Rollout", sets: 4, reps: "15-20", desc: "Full rollouts" },
+              { name: "Toes To Bar", sets: 4, reps: "12-15", desc: "T2B" }
+            ]
+          },
+          {
+            id: "gym-armscore-10",
+            name: "Arms & Core 10",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Barbell", "Dumbbells", "Cable"],
+            exercises: [
+              { name: "Barbell Close Grip Bench Press", sets: 4, reps: "8-10", desc: "Tricep compound" },
+              { name: "Dumbbell Alternating Bicep Curl", sets: 4, reps: "10-12 each", desc: "Alternating curls" },
+              { name: "Cable Single Arm Bicep Curl", sets: 4, reps: "12-15 each", desc: "Unilateral bicep" },
+              { name: "Cable Kneeling Crunch", sets: 4, reps: "12-15", desc: "Cable abs" },
+              { name: "Cable Wood Chop", sets: 4, reps: "12-15 each", desc: "Rotational core" }
+            ]
+          }
+        ]
+      },
+
       // FULL BODY WORKOUTS
       "fullbody": {
         name: "Full Body",
