@@ -1,8 +1,7 @@
 const CACHE_NAME = 'pbb-app-v11'; // Load both coach and shannon chat types
 const ASSETS = [
   './dashboard.html',
-  './assets/logo_yinyang_192.png',
-  './assets/logo_yinyang_512.png',
+  './assets/Logo_dots.jpg',
   './index.html',
   './lib/supabase.js',
   './lib/auth-guard.js',
@@ -71,7 +70,7 @@ self.addEventListener('push', (e) => {
   const options = {
     body: data.body,
     icon: data.icon || './assets/coach_shannon.jpg',
-    badge: data.badge || './assets/logo_yinyang.png',
+    badge: data.badge || './assets/Logo_dots.jpg',
     vibrate: data.vibrate || [200, 100, 200],
     tag: data.tag || 'coach-message',
     requireInteraction: data.requireInteraction || false,
