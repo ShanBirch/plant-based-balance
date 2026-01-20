@@ -1,23 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 
 :root {
-  /* Flower Theme Colors */
-  --color-primary: #D98B9C; /* Rose Pink */
-  --color-primary-dark: #C97A8A;
-  --color-primary-light: #F4B4C4; /* Soft Petal Pink */
-  --color-secondary: #B4A7D6; /* Lavender */
-  --color-secondary-light: #D4C8E8;
-  --color-accent: #E8C84A; /* Golden Yellow (flower centers) */
-  --color-accent-coral: #FFCBA4; /* Soft Coral */
-  --color-leaf: #98C9A3; /* Sage Green (leaves) */
-  --color-leaf-dark: #7BA883;
-  --color-neutral: #FFF8F5; /* Warm Cream */
-  --color-neutral-dark: #E8DDD8;
-  --color-text-main: #4A3F44; /* Soft Dark */
-  --color-text-light: #8B7D82;
+  /* Brand Colors (Default - Emerald Green & Gold) */
+  --color-primary: #046A38; /* Emerald Green */
+  --color-primary-dark: #024b26;
+  --color-secondary: #D4AF37; /* Metallic Gold */
+  --color-secondary-light: #F4E5B0;
+  --color-neutral: #F5F5F5; /* Silver/Light Grey */
+  --color-neutral-dark: #A9A9A9;
+  --color-text-main: #1F2937;
+  --color-text-light: #6B7280;
   --color-white: #FFFFFF;
-  --color-blush: #FFD1DC; /* Cherry Blossom Pink */
-  --color-peony: #F8D4DB; /* Peony Pink */
+
+  /* Flower Theme Colors (available via .flower-theme class) */
+  --flower-primary: #D98B9C; /* Rose Pink */
+  --flower-primary-dark: #C97A8A;
+  --flower-primary-light: #F4B4C4; /* Soft Petal Pink */
+  --flower-secondary: #B4A7D6; /* Lavender */
+  --flower-accent: #E8C84A; /* Golden Yellow */
+  --flower-leaf: #98C9A3; /* Sage Green */
+  --flower-blush: #FFD1DC; /* Cherry Blossom Pink */
+  --flower-peony: #F8D4DB; /* Peony Pink */
 
   /* Spacing */
   --spacing-xs: 0.5rem;
@@ -32,10 +35,11 @@
   --font-accent: 'Playfair Display', serif;
 
 
-  /* Shadows - Flower themed */
-  --shadow-sm: 0 1px 2px 0 rgba(217, 139, 156, 0.08);
-  --shadow-md: 0 4px 6px -1px rgba(217, 139, 156, 0.12), 0 2px 4px -1px rgba(217, 139, 156, 0.08);
-  --shadow-lg: 0 10px 15px -3px rgba(217, 139, 156, 0.15), 0 4px 6px -2px rgba(217, 139, 156, 0.08);
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-gold: 0 4px 14px 0 rgba(212, 175, 55, 0.39);
   --shadow-rose: 0 4px 14px 0 rgba(217, 139, 156, 0.35);
   --shadow-lavender: 0 4px 14px 0 rgba(180, 167, 214, 0.35);
 }
@@ -109,27 +113,27 @@ a {
 .btn-primary:hover {
   background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(217, 139, 156, 0.4);
+  box-shadow: 0 6px 20px rgba(4, 106, 56, 0.4);
 }
 
 .btn-secondary {
   background: linear-gradient(135deg, var(--color-secondary), var(--color-secondary-light));
   color: var(--color-white);
-  box-shadow: var(--shadow-lavender);
+  box-shadow: var(--shadow-gold);
 }
 
 .btn-secondary:hover {
-  background: linear-gradient(135deg, #A498C6, var(--color-secondary));
+  background: linear-gradient(135deg, #c9a22e, var(--color-secondary));
   transform: translateY(-2px);
 }
 
-.text-gold { color: var(--color-accent); }
-.text-green { color: var(--color-leaf); }
-.text-rose { color: var(--color-primary); }
-.text-lavender { color: var(--color-secondary); }
+.text-gold { color: var(--color-secondary); }
+.text-green { color: var(--color-primary); }
+.text-rose { color: var(--flower-primary); }
+.text-lavender { color: var(--flower-secondary); }
 .text-center { text-align: center; }
 
-/* Flower Theme Decorative Classes */
+/* Flower Theme Decorative Classes (available for use with flower theme) */
 .flower-decoration {
   position: relative;
 }
@@ -469,7 +473,7 @@ a {
 
 .pricing-card.popular:hover {
   transform: scale(1.08) translateY(-8px);
-  box-shadow: 0 25px 30px -5px rgba(217, 139, 156, 0.25);
+  box-shadow: 0 25px 30px -5px rgba(251, 191, 36, 0.2);
 }
 
 .card-icon {
@@ -497,20 +501,6 @@ a {
   padding: var(--spacing-xl) 0;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: var(--color-white);
-  position: relative;
-}
-
-.showcase::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 200px;
-  height: 200px;
-  background: url('assets/flower-corner-decoration.svg') no-repeat;
-  background-size: contain;
-  opacity: 0.15;
-  transform: rotate(180deg);
 }
 
 .showcase-content {
@@ -522,7 +512,7 @@ a {
 
 
 .showcase-text h2 {
-  color: var(--color-blush);
+  color: var(--color-secondary);
   font-size: 3rem;
   margin-bottom: 1.5rem;
 }
