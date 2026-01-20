@@ -18649,6 +18649,10 @@ function renderCycleStatus() {
 // --- CHECK-IN LOGIC ---
 
 function openCheckInModal() {
+    // Ensure gender-specific UI is applied before showing modal
+    if (typeof applyGenderSpecificUI === 'function') {
+        applyGenderSpecificUI();
+    }
     document.getElementById('check-in-modal').style.display = 'flex';
     // Clear previous selection visually? Or keep if re-opening?
     // For now, keep state
