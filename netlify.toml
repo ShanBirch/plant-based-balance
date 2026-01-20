@@ -35,6 +35,23 @@
   function = "analyze_food"
   path = "/.netlify/functions/analyze-food"
 
+# Points System Edge Functions
+[[edge_functions]]
+  function = "award-points"
+  path = "/api/award-points"
+
+[[edge_functions]]
+  function = "redeem-points"
+  path = "/api/redeem-points"
+
+[[edge_functions]]
+  function = "verify-photo"
+  path = "/api/verify-photo"
+
+[[edge_functions]]
+  function = "analyze-workout"
+  path = "/api/analyze-workout"
+
 # Ensure we redirect legacy URLs
 [[redirects]]
   from = "/quiz"
