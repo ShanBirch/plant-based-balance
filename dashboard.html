@@ -13384,6 +13384,7 @@ window.triggerCoachResponse = async function(userMsg) {
     const historyContext = history.slice(0, history.length - messagesToSlice);
 
     // Enhanced timestamp context with Brisbane time for each message
+    const now = new Date();
     const payloadHistory = historyContext.map(m => {
         const msgDate = new Date(m.timestamp);
         const msgBneTime = msgDate.toLocaleString("en-US", {
@@ -13592,6 +13593,7 @@ window.toggleAdminNotifications = async function() {
 
 /**
  * Initialize admin settings on page load
+ * Auto-subscribes admins to notifications if they have permission
  */
 async function initAdminSettings() {
     try {
@@ -13603,12 +13605,36 @@ async function initAdminSettings() {
                 setting.style.display = 'block';
             }
 
-            // Update button state
+            // Check if already subscribed
             const isSubscribed = await checkAdminNotificationStatus();
             const btn = document.getElementById('admin-notif-btn');
-            if (btn && isSubscribed) {
-                btn.textContent = 'Disable';
-                btn.style.background = '#ef4444';
+
+            if (isSubscribed) {
+                if (btn) {
+                    btn.textContent = 'Disable';
+                    btn.style.background = '#ef4444';
+                }
+            } else {
+                // Auto-subscribe admin if notification permission is already granted
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    console.log('Auto-subscribing admin to notifications...');
+                    const success = await subscribeToAdminNotifications();
+                    if (success && btn) {
+                        btn.textContent = 'Disable';
+                        btn.style.background = '#ef4444';
+                    }
+                } else if ('Notification' in window && Notification.permission === 'default') {
+                    // Request permission and subscribe if granted
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        console.log('Permission granted, auto-subscribing admin...');
+                        const success = await subscribeToAdminNotifications();
+                        if (success && btn) {
+                            btn.textContent = 'Disable';
+                            btn.style.background = '#ef4444';
+                        }
+                    }
+                }
             }
         }
     } catch (error) {
