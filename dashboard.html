@@ -8493,8 +8493,11 @@ function startCustomBuilderWorkout() {
                          <option value="antigravity-light">Antigravity Light</option>
                          <option value="ocean">Ocean Calm</option>
                          <option value="sunset">Sunset Glow</option>
-                         <option value="cycle-pink">Cycle Harmony</option>
+                         <option value="cycle-pink" class="female-only-theme">Cycle Harmony</option>
+                         <option value="flower-garden" class="female-only-theme">Flower Garden</option>
                          <option value="monochrome">Monochrome</option>
+                         <option value="dbz-warrior" class="male-only-theme">Super Saiyan</option>
+                         <option value="dbz-vegeta" class="male-only-theme">Saiyan Prince</option>
                      </select>
                  </div>
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
@@ -10741,6 +10744,23 @@ function applyGenderSpecificUI() {
     document.querySelectorAll('.male-only-chip').forEach(el => {
         el.style.display = isMale ? '' : 'none';
     });
+
+    // Handle gender-specific theme options
+    document.querySelectorAll('.female-only-theme').forEach(el => {
+        el.style.display = isMale ? 'none' : '';
+    });
+
+    document.querySelectorAll('.male-only-theme').forEach(el => {
+        el.style.display = isMale ? '' : 'none';
+    });
+
+    // Show/hide DBZ character decorations based on theme and gender
+    const dbzDecorations = document.getElementById('dbz-decorations');
+    if (dbzDecorations) {
+        const currentTheme = localStorage.getItem('userThemePreference') || 'default';
+        const isDbzTheme = currentTheme.startsWith('dbz-');
+        dbzDecorations.style.display = (isMale && isDbzTheme) ? 'block' : 'none';
+    }
 
     // Update Hormone Hub for males
     if (isMale) {
@@ -13949,6 +13969,111 @@ body.male-theme {
     --secondary: #1e40af;
     --accent: #60a5fa;
 }
+
+/* DBZ Theme Decorations */
+#dbz-decorations {
+    display: none;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.dbz-gohan-corner {
+    position: fixed;
+    bottom: 80px;
+    right: 10px;
+    width: 90px;
+    height: 90px;
+    opacity: 0.9;
+    z-index: 100;
+    animation: dbzFloat 3s ease-in-out infinite;
+    filter: drop-shadow(0 4px 8px rgba(255, 107, 0, 0.3));
+}
+
+.dbz-lightning-left {
+    position: fixed;
+    top: 120px;
+    left: 10px;
+    width: 35px;
+    height: 60px;
+    opacity: 0.7;
+    z-index: 100;
+    animation: dbzLightning 2s ease-in-out infinite;
+}
+
+.dbz-lightning-right {
+    position: fixed;
+    top: 200px;
+    right: 15px;
+    width: 30px;
+    height: 50px;
+    opacity: 0.6;
+    z-index: 100;
+    animation: dbzLightning 2.5s ease-in-out infinite 0.5s;
+}
+
+.dbz-ki-blast {
+    position: fixed;
+    top: 50%;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+    opacity: 0.5;
+    z-index: 100;
+    animation: dbzPulse 2s ease-in-out infinite;
+}
+
+@keyframes dbzFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-10px) scale(1.05); }
+}
+
+@keyframes dbzLightning {
+    0%, 100% { opacity: 0.4; transform: scaleY(1); }
+    50% { opacity: 0.9; transform: scaleY(1.1); }
+}
+
+@keyframes dbzPulse {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+}
+
+/* DBZ theme specific gradient for welcome section */
+body.dbz-theme-active .dashboard-welcome {
+    background: linear-gradient(135deg, #FF6B00 0%, #FFD700 50%, #FF8C00 100%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+body.dbz-theme-active .dashboard-welcome::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('assets/gohan-ssj2-mini.svg') no-repeat right 10px bottom 10px;
+    background-size: 70px;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 480px) {
+    .dbz-gohan-corner {
+        width: 70px;
+        height: 70px;
+        bottom: 75px;
+        right: 5px;
+    }
+    .dbz-lightning-left,
+    .dbz-lightning-right {
+        display: none;
+    }
+    .dbz-ki-blast {
+        width: 30px;
+        height: 30px;
+    }
+}
 </style>
 
 <script>
@@ -16580,6 +16705,44 @@ const APP_THEMES = {
             '--chat-text-coach': '#1a1a1a',
             '--chat-border-coach': '#e5e5e5'
         }
+    },
+    'dbz-warrior': {
+        name: 'Super Saiyan',
+        maleOnly: true,
+        colors: {
+            '--primary': '#FF6B00', // Goku's gi orange
+            '--primary-light': '#FF8C00', // Lighter orange
+            '--secondary': '#FFD700', // Super Saiyan gold
+            '--accent-green': '#FFF8E7', // Warm light background
+            '--bg': '#FFFAF0', // Floral white warm
+            '--surface': '#ffffff',
+            '--text-main': '#1a1a1a',
+            '--text-muted': '#8B4513', // Saddle brown
+            '--chat-bg-user': '#FF6B00',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#FFF8E7',
+            '--chat-text-coach': '#1a1a1a',
+            '--chat-border-coach': '#FFD700'
+        }
+    },
+    'dbz-vegeta': {
+        name: 'Saiyan Prince',
+        maleOnly: true,
+        colors: {
+            '--primary': '#0047AB', // Royal blue (Vegeta's suit)
+            '--primary-light': '#1E90FF', // Dodger blue
+            '--secondary': '#FFD700', // Super Saiyan gold
+            '--accent-green': '#F0F8FF', // Alice blue
+            '--bg': '#F5F9FF', // Light blue tint
+            '--surface': '#ffffff',
+            '--text-main': '#0a1628',
+            '--text-muted': '#4a5568',
+            '--chat-bg-user': '#0047AB',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#F0F8FF',
+            '--chat-text-coach': '#0a1628',
+            '--chat-border-coach': '#87CEEB'
+        }
     }
 };
 
@@ -16602,6 +16765,22 @@ function applyAppTheme(themeKey) {
         children.forEach(c => {
              c.style.color = 'white';
         });
+    }
+
+    // Handle DBZ theme decorations (male users only)
+    const isDbzTheme = themeKey.startsWith('dbz-');
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+    const dbzDecorations = document.getElementById('dbz-decorations');
+
+    if (dbzDecorations) {
+        dbzDecorations.style.display = (isDbzTheme && isMale) ? 'block' : 'none';
+    }
+
+    // Toggle DBZ body class for additional styling
+    if (isDbzTheme && isMale) {
+        document.body.classList.add('dbz-theme-active');
+    } else {
+        document.body.classList.remove('dbz-theme-active');
     }
 }
 
@@ -16662,6 +16841,14 @@ document.addEventListener('DOMContentLoaded', () => {
              <h3 id="video-modal-title" style="color:white; margin:0; font-size:1.1rem; font-weight:600; opacity:0.9; letter-spacing: 0.5px;">Exercise Video</h3>
         </div>
     </div>
+</div>
+
+<!-- DBZ Character Decorations (Male Only) -->
+<div id="dbz-decorations" style="display:none;">
+    <img src="assets/gohan-ssj2.svg" alt="Gohan SSJ2" class="dbz-gohan-corner" />
+    <img src="assets/dbz-lightning.svg" alt="Lightning" class="dbz-lightning-left" />
+    <img src="assets/dbz-lightning.svg" alt="Lightning" class="dbz-lightning-right" />
+    <img src="assets/dbz-ki-blast.svg" alt="Ki Blast" class="dbz-ki-blast" />
 </div>
 
 <!-- PWA INSTALL BANNER (Fixed Floating) -->

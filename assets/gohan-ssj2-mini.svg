@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="ssj2HairMini" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFE135"/>
+      <stop offset="50%" style="stop-color:#FFD700"/>
+      <stop offset="100%" style="stop-color:#FFA500"/>
+    </linearGradient>
+    <radialGradient id="auraMini" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#FF6B00;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Aura -->
+  <circle cx="50" cy="50" r="45" fill="url(#auraMini)"/>
+
+  <!-- Simple body -->
+  <path d="M35 82 Q40 72 45 68 L50 65 L55 68 Q60 72 65 82 L70 95 L30 95 Z" fill="#FF6B00"/>
+  <path d="M45 68 L50 73 L55 68 L50 78 Z" fill="#0047AB"/>
+
+  <!-- Face -->
+  <ellipse cx="50" cy="50" rx="16" ry="19" fill="#FFE4B5"/>
+
+  <!-- Eyes -->
+  <ellipse cx="44" cy="51" rx="3" ry="2.5" fill="white"/>
+  <circle cx="44" cy="51.5" r="1.5" fill="#00CED1"/>
+  <ellipse cx="56" cy="51" rx="3" ry="2.5" fill="white"/>
+  <circle cx="56" cy="51.5" r="1.5" fill="#00CED1"/>
+  <!-- Eyebrows -->
+  <path d="M39 47 Q44 45 48 48" stroke="#8B4513" stroke-width="1.5" fill="none"/>
+  <path d="M61 47 Q56 45 52 48" stroke="#8B4513" stroke-width="1.5" fill="none"/>
+
+  <!-- Mouth -->
+  <path d="M46 60 Q50 58 54 60" stroke="#8B4513" stroke-width="1" fill="none"/>
+
+  <!-- SSJ2 Hair -->
+  <g fill="url(#ssj2HairMini)">
+    <path d="M50 30 L45 12 L48 25 L40 10 L44 24 L32 15 L40 28 Z"/>
+    <path d="M50 30 L55 12 L52 25 L60 10 L56 24 L68 15 L60 28 Z"/>
+    <path d="M34 40 L22 35 L32 42 L20 42 L30 48 Z"/>
+    <path d="M66 40 L78 35 L68 42 L80 42 L70 48 Z"/>
+    <path d="M38 42 L32 32 L40 40 L50 32 L60 40 L68 32 L62 42 Q50 45 38 42 Z"/>
+    <path d="M50 28 L48 5 L50 22 L52 5 L50 28"/>
+  </g>
+
+  <!-- Lightning sparks -->
+  <g stroke="#00BFFF" stroke-width="1" fill="none" opacity="0.8">
+    <path d="M20 35 L28 38 L24 45"/>
+    <path d="M80 35 L72 38 L76 45"/>
+  </g>
+</svg>
