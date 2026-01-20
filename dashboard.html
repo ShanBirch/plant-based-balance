@@ -8157,6 +8157,22 @@ function startCustomBuilderWorkout() {
         </div>
     </div>
 
+    <!-- EXERCISE CHART MODAL -->
+    <div id="exercise-chart-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: white; border-radius: 20px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+            <!-- Modal Header -->
+            <div style="padding: 20px 25px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; border-radius: 20px 20px 0 0; z-index: 1;">
+                <h3 id="exercise-chart-title" style="margin: 0; font-family: 'Playfair Display'; color: var(--primary); font-size: 1.3rem;">Exercise Progress</h3>
+                <button onclick="closeExerciseChartModal()" style="background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; padding: 5px; line-height: 1;">&times;</button>
+            </div>
+
+            <!-- Modal Content -->
+            <div id="exercise-chart-content">
+                <!-- Chart will be rendered here -->
+            </div>
+        </div>
+    </div>
+
     <!-- CALENDAR / CYCLE VIEW -->
     <!-- CYCLE / HORMONE HUB VIEW -->
     <div id="view-cycle" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc;">
@@ -16985,8 +17001,11 @@ async function renderExerciseProgress(userId, exercises) {
         }
 
         return `
-            <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); margin-bottom: 12px;">
-                <div style="font-weight: 700; color: var(--primary); font-size: 1rem; margin-bottom: 8px;">${exercise}</div>
+            <div onclick="showExerciseDetailChart('${exercise.replace(/'/g, "\\'")}', '${userId}')" style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); margin-bottom: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(0,0,0,0.15)';" onmouseout="this.style.transform=''; this.style.boxShadow='var(--card-shadow)';">
+                <div style="font-weight: 700; color: var(--primary); font-size: 1rem; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>${exercise}</span>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">📊</span>
+                </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="font-size: 0.85rem; color: var(--text-muted);">
                         Best: ${latestWeight > 0 ? latestWeight + 'kg' : ''} ${latestReps > 0 ? 'x ' + latestReps : ''}
@@ -17000,6 +17019,178 @@ async function renderExerciseProgress(userId, exercises) {
     }).filter(Boolean).join('');
 
     container.innerHTML = html || '<div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); text-align: center; color: var(--text-muted);">No exercise progress data yet</div>';
+}
+
+// Show detailed exercise chart modal
+async function showExerciseDetailChart(exerciseName, userId) {
+    console.log('Opening chart for:', exerciseName);
+
+    // Show modal
+    const modal = document.getElementById('exercise-chart-modal');
+    modal.style.display = 'flex';
+    document.getElementById('exercise-chart-title').innerText = exerciseName;
+    document.getElementById('exercise-chart-content').innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading chart...</div>';
+
+    try {
+        // Fetch detailed progress (last 20 workouts)
+        const progress = await dbHelpers.workouts.getExerciseProgress(userId, exerciseName, 20);
+
+        if (!progress || progress.length === 0) {
+            document.getElementById('exercise-chart-content').innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">No progress data available</div>';
+            return;
+        }
+
+        // Render the chart
+        renderExerciseChart(progress);
+
+    } catch (error) {
+        console.error('Error loading exercise chart:', error);
+        document.getElementById('exercise-chart-content').innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Failed to load chart</div>';
+    }
+}
+
+// Close the exercise chart modal
+function closeExerciseChartModal() {
+    document.getElementById('exercise-chart-modal').style.display = 'none';
+}
+
+// Render SVG chart for exercise progress
+function renderExerciseChart(progress) {
+    const container = document.getElementById('exercise-chart-content');
+
+    // Prepare data
+    const dates = progress.map(p => {
+        const d = new Date(p.workout_date);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+
+    const weights = progress.map(p => parseFloat(p.weight_kg) || 0);
+    const reps = progress.map(p => parseInt(p.reps) || 0);
+
+    const hasWeight = weights.some(w => w > 0);
+    const hasReps = reps.some(r => r > 0);
+
+    // Chart dimensions
+    const width = 350;
+    const height = 250;
+    const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+
+    // Calculate scales
+    const maxWeight = Math.max(...weights, 1);
+    const maxReps = Math.max(...reps, 1);
+
+    // Create SVG
+    let svg = `<svg viewBox="0 0 ${width} ${height}" style="width: 100%; max-width: 500px; margin: 0 auto; display: block;">`;
+
+    // Grid lines
+    for (let i = 0; i <= 4; i++) {
+        const y = padding.top + (chartHeight / 4) * i;
+        svg += `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="#f1f5f9" stroke-width="1"/>`;
+    }
+
+    // X-axis labels (dates)
+    const labelFrequency = Math.ceil(dates.length / 5);
+    dates.forEach((date, i) => {
+        if (i % labelFrequency === 0 || i === dates.length - 1) {
+            const x = padding.left + (chartWidth / (dates.length - 1)) * i;
+            svg += `<text x="${x}" y="${height - 10}" text-anchor="middle" font-size="10" fill="#718096">${date}</text>`;
+        }
+    });
+
+    // Y-axis labels and data lines
+    if (hasWeight) {
+        // Weight line (primary - green)
+        let weightPath = 'M';
+        weights.forEach((weight, i) => {
+            const x = padding.left + (chartWidth / (weights.length - 1)) * i;
+            const y = padding.top + chartHeight - (weight / maxWeight) * chartHeight;
+            weightPath += ` ${x},${y}`;
+
+            // Add point
+            svg += `<circle cx="${x}" cy="${y}" r="4" fill="#7BA883" stroke="white" stroke-width="2"/>`;
+        });
+        svg += `<path d="${weightPath}" fill="none" stroke="#7BA883" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+        // Y-axis labels for weight
+        for (let i = 0; i <= 4; i++) {
+            const value = (maxWeight / 4) * (4 - i);
+            const y = padding.top + (chartHeight / 4) * i;
+            svg += `<text x="${padding.left - 10}" y="${y + 4}" text-anchor="end" font-size="10" fill="#7BA883" font-weight="600">${value.toFixed(0)}kg</text>`;
+        }
+    }
+
+    if (hasReps) {
+        // Reps line (secondary - gold)
+        let repsPath = 'M';
+        reps.forEach((rep, i) => {
+            const x = padding.left + (chartWidth / (reps.length - 1)) * i;
+            const y = padding.top + chartHeight - (rep / maxReps) * chartHeight;
+            repsPath += ` ${x},${y}`;
+
+            // Add point
+            svg += `<circle cx="${x}" cy="${y}" r="4" fill="#E8D68E" stroke="white" stroke-width="2"/>`;
+        });
+        svg += `<path d="${repsPath}" fill="none" stroke="#E8D68E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+        // Y-axis labels for reps (on right side)
+        for (let i = 0; i <= 4; i++) {
+            const value = (maxReps / 4) * (4 - i);
+            const y = padding.top + (chartHeight / 4) * i;
+            svg += `<text x="${width - padding.right + 10}" y="${y + 4}" text-anchor="start" font-size="10" fill="#E8D68E" font-weight="600">${value.toFixed(0)} reps</text>`;
+        }
+    }
+
+    svg += '</svg>';
+
+    // Add legend
+    let legend = '<div style="display: flex; justify-content: center; gap: 20px; margin-top: 20px; font-size: 0.85rem;">';
+    if (hasWeight) {
+        legend += '<div style="display: flex; align-items: center; gap: 8px;"><div style="width: 20px; height: 3px; background: #7BA883; border-radius: 2px;"></div><span style="color: var(--text-muted);">Weight (kg)</span></div>';
+    }
+    if (hasReps) {
+        legend += '<div style="display: flex; align-items: center; gap: 8px;"><div style="width: 20px; height: 3px; background: #E8D68E; border-radius: 2px;"></div><span style="color: var(--text-muted);">Reps</span></div>';
+    }
+    legend += '</div>';
+
+    // Stats summary
+    const firstWeight = weights[0] || 0;
+    const lastWeight = weights[weights.length - 1] || 0;
+    const firstReps = reps[0] || 0;
+    const lastReps = reps[reps.length - 1] || 0;
+    const weightChange = lastWeight - firstWeight;
+    const repsChange = lastReps - firstReps;
+
+    let stats = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">';
+
+    if (hasWeight && weightChange !== 0) {
+        stats += `
+            <div style="background: #f0fdf4; padding: 15px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: ${weightChange > 0 ? '#10b981' : '#ef4444'};">${weightChange > 0 ? '+' : ''}${weightChange.toFixed(1)}kg</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Weight Change</div>
+            </div>
+        `;
+    }
+
+    if (hasReps && repsChange !== 0) {
+        stats += `
+            <div style="background: #fefce8; padding: 15px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: ${repsChange > 0 ? '#10b981' : '#ef4444'};">${repsChange > 0 ? '+' : ''}${repsChange}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Reps Change</div>
+            </div>
+        `;
+    }
+
+    stats += '</div>';
+
+    container.innerHTML = `
+        <div style="padding: 20px;">
+            ${svg}
+            ${legend}
+            ${stats}
+        </div>
+    `;
 }
 </script>
 
