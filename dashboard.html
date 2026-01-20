@@ -9166,6 +9166,13 @@ async function syncQuizDataToDb() {
                             fat_goal_g: nutritionGoals.fat_goal_g
                         });
                         console.log("Daily nutrition goals updated");
+
+                        // CRITICAL FIX: Save sex to users table so it persists on page reload
+                        // This fixes the bug where gender resets to female on refresh
+                        await dbHelpers.users.update(user.id, {
+                            sex: metricData.sex
+                        });
+                        console.log("User sex field saved to users table:", metricData.sex);
                     }
                 } catch (nutritionError) {
                     console.error("Failed to calculate/save nutrition goals:", nutritionError);
@@ -9314,6 +9321,15 @@ async function loadProfileData() {
     if (profile?.theme_preference && !localStorage.getItem('userThemePreference')) {
         localStorage.setItem('userThemePreference', profile.theme_preference);
         console.log("Restored theme preference from DB to localStorage:", profile.theme_preference);
+    }
+
+    // CRITICAL FIX: Restore sex field to sessionStorage for nutrition calculations
+    // This fixes the bug where gender resets to female on page refresh
+    if (profile?.sex) {
+        const currentProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        currentProfile.sex = profile.sex;
+        sessionStorage.setItem('userProfile', JSON.stringify(currentProfile));
+        console.log("Restored sex from DB to sessionStorage:", profile.sex);
     }
 
     // ALWAYS apply gender-specific UI after profile loads
