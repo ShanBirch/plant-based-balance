@@ -2110,6 +2110,11 @@
     window.addEventListener('DOMContentLoaded', async () => {
         injectMealPhotoUploads();
         injectReflectionsIntoDays();
+
+        // Apply gender theme if already set
+        if (typeof applyGenderTheme === 'function') {
+            applyGenderTheme();
+        }
         
         // Wait for Auth before loading user-specific data
         const waitForAuth = () => new Promise(resolve => {
@@ -10332,7 +10337,8 @@ function switchView(id) {
 
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
-const totalWizardSteps = 6;
+const totalWizardSteps = 7;
+let selectedGender = localStorage.getItem('userGender') || null; // Track gender selection
 
 async function checkAndTriggerOnboarding() {
     // Check if user has completed onboarding before
@@ -10408,12 +10414,14 @@ function updateWizardUI() {
     });
 
     // 3. Update final slide with hormone profile goal
-    if(currentWizardStep === 6) {
+    if(currentWizardStep === 7) {
         const hormoneProfile = sessionStorage.getItem('userResult') || 'CORTISOL';
         const goalDiv = document.getElementById('wizard-hormone-goal');
         if(goalDiv) {
             if(hormoneProfile === 'ESTROGEN') {
                 goalDiv.innerHTML = 'Goal: Balance Estrogen & Support Hormones';
+            } else if (selectedGender === 'male') {
+                goalDiv.innerHTML = 'Goal: Optimize Performance & Build Strength';
             } else {
                 goalDiv.innerHTML = 'Goal: Reduce Cortisol & Restore Balance';
             }
@@ -10509,9 +10517,69 @@ function calculateNutritionGoals(data) {
     };
 }
 
+// Gender selection function
+function selectGender(gender) {
+    selectedGender = gender;
+    document.getElementById('wizard-gender').value = gender;
+    localStorage.setItem('userGender', gender);
+
+    // Apply theme based on gender
+    if (gender === 'male') {
+        document.body.classList.add('male-theme');
+        document.body.classList.remove('female-theme');
+    } else {
+        document.body.classList.add('female-theme');
+        document.body.classList.remove('male-theme');
+    }
+
+    // Update button styles
+    const femaleBtn = document.getElementById('gender-btn-female');
+    const maleBtn = document.getElementById('gender-btn-male');
+
+    if (gender === 'female') {
+        femaleBtn.style.border = '2px solid var(--primary)';
+        femaleBtn.style.background = '#f0fdf4';
+        maleBtn.style.border = '2px solid #e2e8f0';
+        maleBtn.style.background = 'white';
+    } else {
+        maleBtn.style.border = '2px solid #3b82f6';
+        maleBtn.style.background = '#eff6ff';
+        femaleBtn.style.border = '2px solid #e2e8f0';
+        femaleBtn.style.background = 'white';
+    }
+
+    // Auto-advance to next slide after selection
+    setTimeout(() => {
+        currentWizardStep++;
+        updateWizardUI();
+    }, 300);
+}
+
+// Apply gender theme on page load if already set
+function applyGenderTheme() {
+    const savedGender = localStorage.getItem('userGender');
+    if (savedGender === 'male') {
+        document.body.classList.add('male-theme');
+        selectedGender = 'male';
+    } else if (savedGender === 'female') {
+        document.body.classList.add('female-theme');
+        selectedGender = 'female';
+    }
+}
+
 function wizardNext() {
-    // Validation for Step 1: Essential Data Collection
+    // Validation for Step 1: Gender Selection
     if(currentWizardStep === 1) {
+        if (!selectedGender) {
+            alert("Please select your program (For Her or For Him).");
+            return;
+        }
+        // Gender already saved in selectGender function
+        console.log("Step 1 gender selected:", selectedGender);
+    }
+
+    // Validation for Step 2: Essential Data Collection
+    if(currentWizardStep === 2) {
         const name = document.getElementById('wizard-name').value.trim();
         const age = document.getElementById('wizard-age').value;
         const sex = document.getElementById('wizard-sex').value;
@@ -10570,7 +10638,8 @@ function wizardNext() {
             goal_weight: parseFloat(goalWeight),
             equipment_access: equipment,
             activity_level: activityLevel,
-            energy_level: energyLevel
+            energy_level: energyLevel,
+            user_gender: selectedGender // Also store gender preference
         };
 
         // Calculate BMR, TDEE, and Macros
@@ -10580,11 +10649,27 @@ function wizardNext() {
         // Store in sessionStorage
         sessionStorage.setItem('userProfile', JSON.stringify(quizData));
 
-        console.log("Step 1 data collected:", quizData);
+        console.log("Step 2 data collected:", quizData);
+
+        // If male, skip cycle tracking (step 3) and go directly to step 4
+        if (selectedGender === 'male') {
+            // Set default values for males (no cycle tracking)
+            const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            existingData.menopause_status = 'not_applicable';
+            existingData.last_period = null;
+            existingData.profile = 'CORTISOL'; // Default profile for males
+            sessionStorage.setItem('userProfile', JSON.stringify(existingData));
+            sessionStorage.setItem('userResult', 'CORTISOL');
+
+            // Skip to step 4 (nutrition logic)
+            currentWizardStep = 4;
+            updateWizardUI();
+            return;
+        }
     }
 
-    // Validation for Step 2: Cycle Setup (formerly Step 1)
-    if(currentWizardStep === 2) {
+    // Validation for Step 3: Cycle Setup (females only)
+    if(currentWizardStep === 3) {
         const dateInput = document.getElementById('wizard-period-date');
         const wellnessToggle = document.getElementById('wizard-wellness-toggle');
 
@@ -10630,7 +10715,7 @@ function wizardNext() {
         sessionStorage.setItem('userProfile', JSON.stringify(existingData));
         sessionStorage.setItem('userResult', existingData.profile);
 
-        console.log("Step 2 data collected, hormone profile:", existingData.profile);
+        console.log("Step 3 data collected, hormone profile:", existingData.profile);
     }
 
     if(currentWizardStep < totalWizardSteps) {
@@ -10641,7 +10726,12 @@ function wizardNext() {
 
 function wizardPrev() {
     if(currentWizardStep > 1) {
-        currentWizardStep--;
+        // If male and going back from step 4, skip step 3 (cycle tracking)
+        if (selectedGender === 'male' && currentWizardStep === 4) {
+            currentWizardStep = 2;
+        } else {
+            currentWizardStep--;
+        }
         updateWizardUI();
     }
 }
@@ -13340,7 +13430,7 @@ function openAsClient() {
         <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative;">
             <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
             <div class="wizard-progress" style="display:flex; justify-content:center; gap:8px; margin-bottom:15px;">
-                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
             <h2 id="wizard-title" style="margin:0; color:var(--primary);">Let's Align Your Body</h2>
         </div>
@@ -13348,8 +13438,39 @@ function openAsClient() {
         <!-- CONTENT SLIDES -->
         <div class="wizard-content" style="flex: 1; padding: 25px; overflow-y: auto;">
 
-            <!-- SLIDE 1: ESSENTIAL DATA COLLECTION -->
+            <!-- SLIDE 1: GENDER SELECTION -->
             <div class="wizard-slide active" id="slide-1">
+                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🌟</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Welcome to Your Journey</h3>
+                <p style="text-align:center; color:#666; margin-bottom:30px;">Select your program to get started:</p>
+
+                <div style="display:flex; flex-direction:column; gap:15px; max-width:300px; margin:0 auto;">
+                    <button type="button" id="gender-btn-female" onclick="selectGender('female')" class="gender-select-btn" style="
+                        display:flex; align-items:center; justify-content:center; gap:15px;
+                        padding:20px 30px; border-radius:16px; border:2px solid #e2e8f0;
+                        background:white; cursor:pointer; transition:all 0.3s ease;
+                        font-size:1.1rem; font-weight:600; color:#334155;
+                    ">
+                        <span style="font-size:2rem;">🌸</span>
+                        <span>For Her</span>
+                    </button>
+
+                    <button type="button" id="gender-btn-male" onclick="selectGender('male')" class="gender-select-btn" style="
+                        display:flex; align-items:center; justify-content:center; gap:15px;
+                        padding:20px 30px; border-radius:16px; border:2px solid #e2e8f0;
+                        background:white; cursor:pointer; transition:all 0.3s ease;
+                        font-size:1.1rem; font-weight:600; color:#334155;
+                    ">
+                        <span style="font-size:2rem;">💪</span>
+                        <span>For Him</span>
+                    </button>
+                </div>
+
+                <input type="hidden" id="wizard-gender" value="">
+            </div>
+
+            <!-- SLIDE 2: ESSENTIAL DATA COLLECTION -->
+            <div class="wizard-slide" id="slide-2" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">📋</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Let's Get Started</h3>
                 <p style="text-align:center; color:#666; margin-bottom:25px;">We need a few details to personalize your program.</p>
@@ -13429,8 +13550,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 2: CYCLE SETUP -->
-            <div class="wizard-slide" id="slide-2" style="display:none;">
+            <!-- SLIDE 3: CYCLE SETUP (females only) -->
+            <div class="wizard-slide" id="slide-3" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🌸</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Cycle Syncing</h3>
                 <p style="text-align:center; color:#666; margin-bottom:25px;">We tailor your daily movement to match your hormonal phase.</p>
@@ -13446,8 +13567,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 3: NUTRITION LOGIC -->
-            <div class="wizard-slide" id="slide-3" style="display:none;">
+            <!-- SLIDE 4: NUTRITION LOGIC -->
+            <div class="wizard-slide" id="slide-4" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🥑</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Food as Medicine</h3>
                 <p style="color:#475569; line-height:1.6; text-align:center;">
@@ -13461,8 +13582,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 4: ACCOUNTABILITY -->
-            <div class="wizard-slide" id="slide-4" style="display:none;">
+            <!-- SLIDE 5: ACCOUNTABILITY -->
+            <div class="wizard-slide" id="slide-5" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🤝</div>
                 <h3 style="text-align:center; margin-bottom:15px;">You Are Supported</h3>
                 <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:15px;">
@@ -13481,9 +13602,8 @@ function openAsClient() {
                 </ul>
             </div>
             
-             <!-- SLIDE 5: READY -->
-            <!-- SLIDE 5: PROFILE EVOLUTION -->
-            <div class="wizard-slide" id="slide-5" style="display:none;">
+            <!-- SLIDE 6: PROFILE EVOLUTION -->
+            <div class="wizard-slide" id="slide-6" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">⚙️</div>
                 <h3 style="text-align:center; margin-bottom:15px;">Protocol Evolves</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">
@@ -13496,8 +13616,8 @@ function openAsClient() {
                 </div>
             </div>
 
-             <!-- SLIDE 6: READY -->
-            <div class="wizard-slide" id="slide-6" style="display:none; text-align:center;">
+            <!-- SLIDE 7: READY -->
+            <div class="wizard-slide" id="slide-7" style="display:none; text-align:center;">
                  <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
                 <h3 style="margin-bottom:10px;">You're All Set!</h3>
                 <p style="color:#64748b; margin-bottom:25px;">Your custom 28-day plan is ready.</p>
@@ -13521,6 +13641,23 @@ function openAsClient() {
 .wizard-progress .dot { width: 8px; height: 8px; background: #e2e8f0; border-radius: 50%; transition: all 0.3s; }
 .wizard-progress .dot.active { background: var(--primary); width: 20px; border-radius: 10px; }
 .wizard-slide { animation: fadeIn 0.4s ease; }
+
+/* Gender selection button styles */
+.gender-select-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.gender-select-btn:active {
+    transform: translateY(0);
+}
+
+/* Male theme variables (applied when male is selected) */
+body.male-theme {
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --secondary: #1e40af;
+    --accent: #60a5fa;
+}
 </style>
 
 <script>
