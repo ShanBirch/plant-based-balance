@@ -17040,8 +17040,71 @@ function applyAppTheme(themeKey) {
         document.body.classList.remove('dbz-theme-active', 'dbz-goku-theme', 'dbz-vegeta-theme');
     }
 
-    // Icon toggle is now handled by CSS based on body.dbz-theme-active class
+    // Icon toggle is handled by CSS, but add JavaScript fallback for reliability
+    // This ensures icons toggle correctly even if CSS has timing/specificity issues
+    setTimeout(() => {
+        const gearIcon = document.getElementById('settings-icon-gear');
+        const dragonBallIcon = document.getElementById('settings-icon-dragonball');
+
+        if (gearIcon && dragonBallIcon) {
+            if (isDbzTheme && isMale) {
+                // DBZ theme: show dragon ball, hide gear
+                gearIcon.style.setProperty('display', 'none', 'important');
+                dragonBallIcon.style.setProperty('display', 'inline-block', 'important');
+            } else {
+                // Default: show gear, hide dragon ball
+                gearIcon.style.setProperty('display', 'inline-block', 'important');
+                dragonBallIcon.style.setProperty('display', 'none', 'important');
+            }
+        }
+    }, 0); // Use setTimeout to ensure it runs after CSS has a chance to apply
 }
+
+// Diagnostic function for debugging Dragon Ball icon
+function debugDragonBallIcon() {
+    const results = {
+        userGender: localStorage.getItem('userGender'),
+        isMale: isMaleUser(),
+        currentTheme: localStorage.getItem('userThemePreference'),
+        bodyClasses: Array.from(document.body.classList),
+        hasDbzThemeActive: document.body.classList.contains('dbz-theme-active'),
+        gearIcon: {
+            exists: !!document.getElementById('settings-icon-gear'),
+            display: document.getElementById('settings-icon-gear')?.style.display,
+            computedDisplay: window.getComputedStyle(document.getElementById('settings-icon-gear') || document.createElement('div')).display
+        },
+        dragonBallIcon: {
+            exists: !!document.getElementById('settings-icon-dragonball'),
+            display: document.getElementById('settings-icon-dragonball')?.style.display,
+            computedDisplay: window.getComputedStyle(document.getElementById('settings-icon-dragonball') || document.createElement('div')).display,
+            src: document.getElementById('settings-icon-dragonball')?.src
+        }
+    };
+
+    console.log('=== Dragon Ball Icon Debug Info ===');
+    console.table(results);
+    console.log('Full results:', results);
+
+    // Show user-friendly message
+    if (results.isMale && results.currentTheme?.startsWith('dbz-')) {
+        if (results.hasDbzThemeActive && results.dragonBallIcon.computedDisplay !== 'none') {
+            console.log('✅ Dragon Ball icon SHOULD be visible');
+        } else {
+            console.log('❌ Dragon Ball icon should be visible but something is wrong:');
+            if (!results.hasDbzThemeActive) console.log('  - body.dbz-theme-active class is MISSING');
+            if (results.dragonBallIcon.computedDisplay === 'none') console.log('  - Dragon Ball icon has display: none (CSS issue)');
+        }
+    } else {
+        console.log('ℹ️ Dragon Ball icon should NOT be visible because:');
+        if (!results.isMale) console.log('  - User is not male (gender: ' + results.userGender + ')');
+        if (!results.currentTheme?.startsWith('dbz-')) console.log('  - Current theme is not DBZ (theme: ' + results.currentTheme + ')');
+    }
+
+    return results;
+}
+
+// Make it available in console
+window.debugDragonBallIcon = debugDragonBallIcon;
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
