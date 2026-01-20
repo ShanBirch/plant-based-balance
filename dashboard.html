@@ -9912,9 +9912,12 @@ function switchWeek(id, btn) {
                 await recalculateDailyNutrition();
                 loadTodayNutrition();
             })();
+        } else {
+            // For week views, add cycle sync indicators
+            markCycleSyncMeals();
         }
     }
-    
+
     // Update Pills
     if(btn) {
         document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
@@ -9929,6 +9932,26 @@ function switchWeek(id, btn) {
             }
         });
     }
+}
+
+// Add stars to cycle sync meals in static week views
+function markCycleSyncMeals() {
+    if (!window.cycleSyncMealTitle) return;
+
+    // Find all meal titles in the currently active week view
+    const activeSection = document.querySelector('#meals-content-container .view-section.active');
+    if (!activeSection) return;
+
+    // Skip Today view (it handles stars in renderTodayMeals)
+    if (activeSection.id === 'today' || activeSection.id === 'calorie-tracker') return;
+
+    const mealTitles = activeSection.querySelectorAll('.meal-title');
+    mealTitles.forEach(titleEl => {
+        const originalText = titleEl.textContent.replace('⭐ ', '').trim();
+        if (originalText === window.cycleSyncMealTitle && !titleEl.textContent.startsWith('⭐')) {
+            titleEl.textContent = '⭐ ' + originalText;
+        }
+    });
 }
 
 async function renderTodayMeals() {
