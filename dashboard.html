@@ -10139,6 +10139,20 @@ function updateDashboardWorkoutCard() {
 
 // --- DAILY WELLNESS MODAL LOGIC ---
 function checkDailyWellness(forceShow = false) {
+    // Don't show if onboarding isn't complete
+    const onboardingComplete = localStorage.getItem('onboardingComplete');
+    if (onboardingComplete !== 'true' && !forceShow) {
+        console.log("Skipping daily wellness - onboarding not complete");
+        return;
+    }
+
+    // Don't show if the onboarding wizard is currently visible
+    const wizardModal = document.getElementById('onboarding-wizard');
+    if (wizardModal && wizardModal.style.display !== 'none') {
+        console.log("Skipping daily wellness - onboarding wizard is open");
+        return;
+    }
+
     const lastCheck = localStorage.getItem('lastWellnessCheck');
     const today = new Date().toDateString();
 
@@ -13715,10 +13729,10 @@ function openAsClient() {
 <!-- Onboarding Modal -->
 <!-- ONBOARDING WIZARD -->
 <div class="onboarding-overlay" id="onboarding-wizard" style="display:none; z-index:12000;">
-    <div class="onboarding-modal wizard-container" style="max-width: 450px; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
-        
+    <div class="onboarding-modal wizard-container" style="max-width: 450px; max-height: 90vh; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+
         <!-- HEADER -->
-        <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative;">
+        <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative; flex-shrink: 0;">
             <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
             <div class="wizard-progress" style="display:flex; justify-content:center; gap:8px; margin-bottom:15px;">
                 <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
@@ -13727,7 +13741,7 @@ function openAsClient() {
         </div>
 
         <!-- CONTENT SLIDES -->
-        <div class="wizard-content" style="flex: 1; padding: 25px; overflow-y: auto;">
+        <div class="wizard-content" style="flex: 1; padding: 25px; overflow-y: auto; min-height: 0;">
 
             <!-- SLIDE 1: GENDER SELECTION -->
             <div class="wizard-slide active" id="slide-1">
@@ -13921,7 +13935,7 @@ function openAsClient() {
         </div>
 
         <!-- FOOTER -->
-        <div class="wizard-footer" style="padding: 25px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between;">
+        <div class="wizard-footer" style="padding: 25px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; flex-shrink: 0;">
             <button class="wizard-btn secondary" id="wizard-back" onclick="wizardPrev()" style="background:transparent; border:none; color:#64748b; font-weight:600; cursor:pointer; visibility:hidden;">Back</button>
             <button class="wizard-btn primary" id="wizard-next" onclick="wizardNext()" style="background:var(--primary); color:white; border:none; padding:12px 30px; border-radius:25px; font-weight:700; cursor:pointer; box-shadow:0 4px 10px rgba(4,106,56,0.2);">Next &rarr;</button>
         </div>
