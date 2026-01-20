@@ -2260,16 +2260,8 @@
             }
 
             // Auto-show Daily Wellness check-in (once per day)
-            setTimeout(() => {
-                const today = new Date().toDateString();
-                const lastCheck = localStorage.getItem('lastWellnessCheck');
-                if (lastCheck !== today) {
-                    const modal = document.getElementById('check-in-modal');
-                    if (modal) {
-                        modal.style.display = 'flex';
-                    }
-                }
-            }, 500); // Small delay to ensure DOM is fully rendered
+            // NOTE: Moved to after onboarding completes - handled by finishOnboarding()
+            // This ensures check-in only shows AFTER user selects gender in onboarding
         }
     });
 
@@ -10568,14 +10560,34 @@ async function checkAndTriggerOnboarding() {
         }
     }
 
-    // If still no essential data, trigger onboarding wizard
-    if (!hasEssentialData) {
-        console.log("Essential quiz data missing, triggering onboarding wizard...");
+    // Check if gender is selected (required for proper UI)
+    const hasGender = localStorage.getItem('userGender');
+
+    // If missing essential data OR missing gender selection, trigger onboarding wizard
+    if (!hasEssentialData || !hasGender) {
+        console.log("Essential quiz data or gender missing, triggering onboarding wizard...");
         setTimeout(initOnboardingWizard, 1500);
     } else {
-        // User has essential data but hasn't marked onboarding complete
-        // Show daily wellness check instead
-        setTimeout(checkDailyWellness, 1500);
+        // User has essential data AND gender but hasn't marked onboarding complete
+        // Mark as complete and show the gender-specific check-in
+        console.log("User has essential data and gender, marking onboarding complete...");
+        localStorage.setItem('onboardingComplete', 'true');
+
+        // Apply gender-specific UI and show check-in
+        if (typeof applyGenderSpecificUI === 'function') {
+            applyGenderSpecificUI();
+        }
+
+        setTimeout(() => {
+            const today = new Date().toDateString();
+            const lastCheck = localStorage.getItem('lastWellnessCheck');
+            if (lastCheck !== today) {
+                const modal = document.getElementById('check-in-modal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                }
+            }
+        }, 1500);
     }
 }
 
@@ -11114,8 +11126,22 @@ async function finishOnboarding() {
         }
     }
 
-    // Trigger the Daily Wellness check immediately after (skipped for males or handled appropriately)
-    setTimeout(checkDailyWellness, 500);
+    // Show the gender-specific daily check-in modal after onboarding
+    // This is the full check-in modal with gender-appropriate sections
+    setTimeout(() => {
+        const today = new Date().toDateString();
+        const lastCheck = localStorage.getItem('lastWellnessCheck');
+        if (lastCheck !== today) {
+            // Apply gender-specific UI to ensure correct sections are visible
+            if (typeof applyGenderSpecificUI === 'function') {
+                applyGenderSpecificUI();
+            }
+            const modal = document.getElementById('check-in-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+    }, 500);
 }
 
 function closeWizardManually() {
@@ -11128,6 +11154,18 @@ function closeWizardManually() {
      if (typeof applyGenderSpecificUI === 'function') {
          applyGenderSpecificUI();
      }
+
+     // Show the gender-specific check-in modal if not shown today
+     setTimeout(() => {
+         const today = new Date().toDateString();
+         const lastCheck = localStorage.getItem('lastWellnessCheck');
+         if (lastCheck !== today) {
+             const modal = document.getElementById('check-in-modal');
+             if (modal) {
+                 modal.style.display = 'flex';
+             }
+         }
+     }, 500);
 }
 
 function toggleWizardPeriodInput() {
