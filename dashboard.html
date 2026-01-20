@@ -2227,6 +2227,30 @@
                         console.error("❌ Failed to seed test data (Fatal)", e);
                     }
                 }
+
+                // Test account that skips quiz but shows onboarding slides
+                if (window.currentUser?.email === 'shannonrhysbirch@gmail.com') {
+                    console.log("🧪 Setting up Onboarding Test Account (skips quiz, shows onboarding)...");
+
+                    // Clear onboarding complete flag to ensure wizard shows
+                    localStorage.removeItem('onboardingComplete');
+
+                    // Clear any cached quiz data from sessionStorage
+                    sessionStorage.removeItem('userProfile');
+
+                    // Clear quiz results from database to ensure onboarding triggers
+                    try {
+                        await window.supabaseClient
+                            .from('quiz_results')
+                            .delete()
+                            .eq('user_id', window.currentUser.id);
+                        console.log("✅ Cleared quiz results for onboarding test account");
+                    } catch(e) {
+                        console.warn("⚠️ Could not clear quiz results:", e);
+                    }
+
+                    console.log("✅ Onboarding Test Account Ready - wizard will show");
+                }
             }
 
             // Auto-show Daily Wellness check-in (once per day)
