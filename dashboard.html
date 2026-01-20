@@ -14655,6 +14655,46 @@ function openAsClient() {
     50% { opacity: 0.9; transform: scaleY(1.1); }
 }
 
+/* Flower Garden Theme - Falling Flower Animation */
+@keyframes flowerFall {
+    0% {
+        transform: translateY(-100px) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    25% {
+        transform: translateY(25vh) translateX(20px) rotate(90deg);
+    }
+    50% {
+        transform: translateY(50vh) translateX(-15px) rotate(180deg);
+    }
+    75% {
+        transform: translateY(75vh) translateX(10px) rotate(270deg);
+        opacity: 0.8;
+    }
+    90% {
+        opacity: 0.5;
+    }
+    100% {
+        transform: translateY(100vh) translateX(0) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+.falling-flower {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    pointer-events: none;
+    z-index: 9999;
+    will-change: transform, opacity;
+}
+
 /* DBZ theme specific gradient for welcome section */
 body.dbz-theme-active .dashboard-welcome {
     background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--primary-light) 100%) !important;
@@ -17397,6 +17437,57 @@ const APP_THEMES = {
     }
 };
 
+// Function to create falling flower animation for flower-garden theme
+function createFallingFlowerAnimation() {
+    const flowerAssets = [
+        'assets/flower-cherry-blossom.svg',
+        'assets/flower-rose.svg',
+        'assets/flower-daisy.svg',
+        'assets/flower-peony.svg',
+        'assets/flower-lavender.svg'
+    ];
+
+    const numberOfFlowers = 15; // Number of flowers to fall
+    const containerWidth = window.innerWidth;
+
+    for (let i = 0; i < numberOfFlowers; i++) {
+        setTimeout(() => {
+            const flower = document.createElement('div');
+            flower.className = 'falling-flower';
+
+            // Random flower type
+            const randomFlower = flowerAssets[Math.floor(Math.random() * flowerAssets.length)];
+            flower.style.backgroundImage = `url('${randomFlower}')`;
+
+            // Random horizontal position
+            const randomX = Math.random() * containerWidth;
+            flower.style.left = randomX + 'px';
+            flower.style.top = '-100px';
+
+            // Random size variation (30px to 50px)
+            const randomSize = 30 + Math.random() * 20;
+            flower.style.width = randomSize + 'px';
+            flower.style.height = randomSize + 'px';
+
+            // Random animation duration (4s to 7s for graceful fall)
+            const randomDuration = 4 + Math.random() * 3;
+            flower.style.animation = `flowerFall ${randomDuration}s ease-in-out forwards`;
+
+            // Random delay for staggered effect
+            flower.style.animationDelay = (Math.random() * 0.5) + 's';
+
+            document.body.appendChild(flower);
+
+            // Remove flower element after animation completes
+            setTimeout(() => {
+                if (flower.parentNode) {
+                    flower.parentNode.removeChild(flower);
+                }
+            }, (randomDuration + 0.5) * 1000);
+        }, i * 200); // Stagger the creation of flowers
+    }
+}
+
 async function applyAppTheme(themeKey) {
     const theme = APP_THEMES[themeKey];
     if(!theme) return;
@@ -17489,6 +17580,28 @@ async function applyAppTheme(themeKey) {
             }
         }
     }
+
+    // Flower Garden theme animation - falling flowers on first selection (female users only)
+    const isFlowerTheme = (themeKey === 'flower-garden');
+    const isFemale = !isMale; // Female users get flower themes
+
+    if (isFemale && isFlowerTheme) {
+        const flowerEasterEggKey = 'flower_garden_animation_seen';
+        const hasSeenFlowerAnimation = localStorage.getItem(flowerEasterEggKey);
+
+        if (!hasSeenFlowerAnimation) {
+            // Mark as seen so it only shows once
+            localStorage.setItem(flowerEasterEggKey, 'true');
+
+            // Trigger falling flower animation after a short delay to let theme apply
+            setTimeout(() => {
+                if (typeof createFallingFlowerAnimation === 'function') {
+                    createFallingFlowerAnimation();
+                }
+            }, 300);
+        }
+    }
+
     const dbzDecorations = document.getElementById('dbz-decorations');
     const gokuImg = document.getElementById('dbz-goku');
     const vegetaImg = document.getElementById('dbz-vegeta');
