@@ -106,6 +106,27 @@
             background: #dc2626;
         }
 
+        .dashboard-btn {
+            width: 100%;
+            background: #48864B;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .dashboard-btn:hover {
+            background: #3a6d3c;
+        }
+
         /* Hamburger Menu */
         .hamburger {
             display: none;
@@ -452,6 +473,9 @@
 
             <!-- Logout at bottom -->
             <div class="sidebar-footer">
+                <button class="dashboard-btn" onclick="switchToDashboard()">
+                    <i data-lucide="home"></i> Go to Dashboard
+                </button>
                 <button class="logout-btn" onclick="handleLogout()">
                     <i data-lucide="log-out"></i> Logout
                 </button>
@@ -771,6 +795,11 @@
                 await authHelpers.signOut();
                 window.location.href = '/login.html';
             }
+        }
+
+        // Switch to regular dashboard
+        function switchToDashboard() {
+            window.location.href = '/dashboard.html';
         }
 
         // Mobile menu toggle
