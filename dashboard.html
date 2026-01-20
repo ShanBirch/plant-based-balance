@@ -2131,11 +2131,9 @@
         injectMealPhotoUploads();
         injectReflectionsIntoDays();
 
-        // Apply gender theme if already set
-        if (typeof applyGenderTheme === 'function') {
-            applyGenderTheme();
-        }
-        
+        // NOTE: Do NOT call applyGenderTheme() here - it must run AFTER loadProfileData()
+        // restores gender from the database, otherwise it defaults to female
+
         // Wait for Auth before loading user-specific data
         const waitForAuth = () => new Promise(resolve => {
             if(window.currentUser) return resolve(window.currentUser);
@@ -8989,7 +8987,8 @@ async function syncQuizDataToDb() {
             console.log("Syncing quiz data to DB...", quizData);
 
             // SPLIT DATA: Users table vs User Facts (personal_details)
-            const userColumns = ['name', 'email', 'profile_photo', 'program_start_date', 'theme_preference', 'location'];
+            // user_gender and equipment_access are core user attributes that should be in users table
+            const userColumns = ['name', 'email', 'profile_photo', 'program_start_date', 'theme_preference', 'location', 'user_gender', 'equipment_access'];
             const coreData = {};
             const factsData = {};
 
@@ -9171,18 +9170,19 @@ async function loadProfileData() {
     if (profile?.user_gender) {
         localStorage.setItem('userGender', profile.user_gender);
         console.log("Restored gender from DB:", profile.user_gender);
+    }
 
-        // Re-apply gender theme and UI now that we have the correct gender
-        if (typeof applyGenderTheme === 'function') {
-            applyGenderTheme();
-        }
-        if (typeof applyGenderSpecificUI === 'function') {
-            applyGenderSpecificUI();
-        }
-        // Re-render cycle status with correct gender
-        if (typeof renderCycleStatus === 'function') {
-            renderCycleStatus();
-        }
+    // ALWAYS apply gender-specific UI after profile loads
+    // This uses localStorage (which may have been set during onboarding or restored from DB above)
+    if (typeof applyGenderTheme === 'function') {
+        applyGenderTheme();
+    }
+    if (typeof applyGenderSpecificUI === 'function') {
+        applyGenderSpecificUI();
+    }
+    // Re-render cycle status with correct gender
+    if (typeof renderCycleStatus === 'function') {
+        renderCycleStatus();
     }
 }
 
