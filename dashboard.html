@@ -2128,18 +2128,21 @@
         
         if(window.currentUser) {
             loadChat();
-            loadJournalHistory(); 
+            loadJournalHistory();
             await syncQuizDataToDb(); // Sync quiz data first
             await seedTestAccount(); // Inject fake data for test user
             loadProfileData(); // Ensure profile is loaded
             initProgramDate(); // Ensure program date is synced
-            
+
+            // Check if essential quiz data is missing and trigger onboarding wizard
+            await checkAndTriggerOnboarding();
+
             // Update dashboard workout card to show today's recommended workout
             if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
-            
+
             // Also refresh community feed if function exists
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
-            
+
             // Switch to dashboard as default entry point
             if(typeof switchAppTab === 'function') {
                 const homeNav = document.querySelector('.nav-item');
@@ -10329,7 +10332,55 @@ function switchView(id) {
 
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
-const totalWizardSteps = 5;
+const totalWizardSteps = 6;
+
+async function checkAndTriggerOnboarding() {
+    // Check if user has completed onboarding before
+    const onboardingComplete = localStorage.getItem('onboardingComplete');
+
+    // If onboarding is already complete, skip
+    if (onboardingComplete === 'true') {
+        return;
+    }
+
+    // Check if essential quiz data exists in sessionStorage
+    const quizJson = sessionStorage.getItem('userProfile');
+    let hasEssentialData = false;
+
+    if (quizJson) {
+        try {
+            const quizData = JSON.parse(quizJson);
+            // Check for essential fields
+            hasEssentialData = quizData.age && quizData.weight && quizData.height &&
+                             quizData.sex && quizData.equipment_access &&
+                             quizData.activity_level && quizData.energy_level;
+        } catch(e) {
+            console.warn("Error parsing quiz data:", e);
+        }
+    }
+
+    // If no essential data, check the database
+    if (!hasEssentialData && window.currentUser) {
+        try {
+            const quizResults = await dbHelpers.quizResults.getLatest(window.currentUser.id);
+            if (quizResults && quizResults.age && quizResults.weight && quizResults.height) {
+                hasEssentialData = true;
+            }
+        } catch(e) {
+            console.warn("Error fetching quiz results:", e);
+        }
+    }
+
+    // If still no essential data, trigger onboarding wizard
+    if (!hasEssentialData) {
+        console.log("Essential quiz data missing, triggering onboarding wizard...");
+        setTimeout(initOnboardingWizard, 1500);
+    } else {
+        // User has essential data but hasn't marked onboarding complete
+        // Show daily wellness check instead
+        setTimeout(checkDailyWellness, 1500);
+    }
+}
 
 function initOnboardingWizard() {
     currentWizardStep = 1; // Reset to first step
@@ -10348,20 +10399,33 @@ function updateWizardUI() {
         const slide = document.getElementById('slide-' + i);
         if(slide) slide.style.display = (i === currentWizardStep) ? 'block' : 'none';
     }
-    
+
     // 2. Dots
     const dots = document.querySelectorAll('.wizard-progress .dot');
     dots.forEach((d, i) => {
         if(i < currentWizardStep) d.classList.add('active');
         else d.classList.remove('active');
     });
-    
-    // 3. Buttons
+
+    // 3. Update final slide with hormone profile goal
+    if(currentWizardStep === 6) {
+        const hormoneProfile = sessionStorage.getItem('userResult') || 'CORTISOL';
+        const goalDiv = document.getElementById('wizard-hormone-goal');
+        if(goalDiv) {
+            if(hormoneProfile === 'ESTROGEN') {
+                goalDiv.innerHTML = 'Goal: Balance Estrogen & Support Hormones';
+            } else {
+                goalDiv.innerHTML = 'Goal: Reduce Cortisol & Restore Balance';
+            }
+        }
+    }
+
+    // 4. Buttons
     const prevBtn = document.getElementById('wizard-back');
     const nextBtn = document.getElementById('wizard-next');
-    
+
     if(prevBtn) prevBtn.style.visibility = (currentWizardStep > 1) ? 'visible' : 'hidden';
-    
+
     if(nextBtn) {
         if(currentWizardStep === totalWizardSteps) {
             nextBtn.innerHTML = "Let's Go! 🚀";
@@ -10373,17 +10437,162 @@ function updateWizardUI() {
     }
 }
 
+function calculateNutritionGoals(data) {
+    // Calculate BMR using Mifflin-St Jeor Equation
+    // BMR (kcal/day) = 10 × weight (kg) + 6.25 × height (cm) − 5 × age (y) + s
+    // where s = +5 for males and −161 for females
+
+    const weight = data.weight;
+    const height = data.height;
+    const age = data.age;
+    const sex = data.sex;
+
+    let bmr;
+    if (sex === 'male') {
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+    } else { // female
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+    }
+
+    // Calculate TDEE (Total Daily Energy Expenditure) based on activity level
+    let activityMultiplier;
+    switch(data.activity_level) {
+        case 'sedentary':
+            activityMultiplier = 1.2;
+            break;
+        case 'light':
+            activityMultiplier = 1.375;
+            break;
+        case 'moderate':
+            activityMultiplier = 1.55;
+            break;
+        case 'very':
+            activityMultiplier = 1.725;
+            break;
+        default:
+            activityMultiplier = 1.375;
+    }
+
+    const tdee = bmr * activityMultiplier;
+
+    // Calculate calorie goal (slight deficit for weight loss, or maintenance)
+    let calorieGoal = tdee;
+    if (data.goal_weight < data.weight) {
+        // Weight loss: 15% deficit
+        calorieGoal = tdee * 0.85;
+    } else if (data.goal_weight > data.weight) {
+        // Weight gain: 10% surplus
+        calorieGoal = tdee * 1.10;
+    }
+
+    // Calculate Macronutrient Goals (Plant-Based Distribution)
+    // Protein: 1.6-2.0g per kg body weight (use 1.8g as middle ground)
+    // Fat: 25-30% of calories (use 27%)
+    // Carbs: Remaining calories
+
+    const proteinGrams = weight * 1.8;
+    const proteinCalories = proteinGrams * 4; // 4 cal per gram
+
+    const fatCalories = calorieGoal * 0.27;
+    const fatGrams = fatCalories / 9; // 9 cal per gram
+
+    const carbCalories = calorieGoal - proteinCalories - fatCalories;
+    const carbGrams = carbCalories / 4; // 4 cal per gram
+
+    return {
+        bmr: Math.round(bmr),
+        tdee: Math.round(tdee),
+        calorie_goal: Math.round(calorieGoal),
+        protein_goal_g: Math.round(proteinGrams),
+        carbs_goal_g: Math.round(carbGrams),
+        fat_goal_g: Math.round(fatGrams)
+    };
+}
+
 function wizardNext() {
-    // Validation for Step 1
+    // Validation for Step 1: Essential Data Collection
     if(currentWizardStep === 1) {
+        const name = document.getElementById('wizard-name').value.trim();
+        const age = document.getElementById('wizard-age').value;
+        const sex = document.getElementById('wizard-sex').value;
+        const height = document.getElementById('wizard-height').value;
+        const weight = document.getElementById('wizard-weight').value;
+        const goalWeight = document.getElementById('wizard-goal-weight').value;
+        const equipment = document.getElementById('wizard-equipment').value;
+        const activityLevel = document.getElementById('wizard-activity-level').value;
+        const energyLevel = document.getElementById('wizard-energy-level').value;
+
+        // Validate all required fields
+        if (!name) {
+            alert("Please enter your name.");
+            return;
+        }
+        if (!age || age < 18 || age > 100) {
+            alert("Please enter a valid age (18-100).");
+            return;
+        }
+        if (!sex) {
+            alert("Please select your biological sex.");
+            return;
+        }
+        if (!height || height < 100 || height > 250) {
+            alert("Please enter a valid height in cm (100-250).");
+            return;
+        }
+        if (!weight || weight < 30 || weight > 300) {
+            alert("Please enter a valid weight in kg (30-300).");
+            return;
+        }
+        if (!goalWeight || goalWeight < 30 || goalWeight > 300) {
+            alert("Please enter a valid goal weight in kg (30-300).");
+            return;
+        }
+        if (!equipment) {
+            alert("Please select your equipment access.");
+            return;
+        }
+        if (!activityLevel) {
+            alert("Please select your activity level.");
+            return;
+        }
+        if (!energyLevel) {
+            alert("Please select your energy status.");
+            return;
+        }
+
+        // Save to sessionStorage for later processing
+        const quizData = {
+            name: name,
+            age: parseInt(age),
+            sex: sex,
+            height: parseFloat(height),
+            weight: parseFloat(weight),
+            goal_weight: parseFloat(goalWeight),
+            equipment_access: equipment,
+            activity_level: activityLevel,
+            energy_level: energyLevel
+        };
+
+        // Calculate BMR, TDEE, and Macros
+        const calculatedData = calculateNutritionGoals(quizData);
+        Object.assign(quizData, calculatedData);
+
+        // Store in sessionStorage
+        sessionStorage.setItem('userProfile', JSON.stringify(quizData));
+
+        console.log("Step 1 data collected:", quizData);
+    }
+
+    // Validation for Step 2: Cycle Setup (formerly Step 1)
+    if(currentWizardStep === 2) {
         const dateInput = document.getElementById('wizard-period-date');
         const wellnessToggle = document.getElementById('wizard-wellness-toggle');
-        
+
         if (!wellnessToggle.checked && !dateInput.value) {
             alert("Please enter your last period date so we can sync your plan.");
             return;
         }
-        
+
         // Save Data
         if (wellnessToggle.checked) {
             userCycleData.noPeriodMode = true;
@@ -10397,6 +10606,31 @@ function wizardNext() {
 
             updateCycleData(); // Trigger calculations
         }
+
+        // Add menopause status to quizData
+        const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        const age = existingData.age || 0;
+
+        // Determine menopause status based on wellness toggle and age
+        let menopause_status = 'cycling';
+        if (wellnessToggle.checked || age > 45) {
+            menopause_status = 'menopause';
+        }
+
+        existingData.menopause_status = menopause_status;
+        existingData.last_period = wellnessToggle.checked ? null : dateInput.value;
+
+        // Calculate hormone profile (CORTISOL vs ESTROGEN)
+        if (menopause_status === 'menopause' || age > 45) {
+            existingData.profile = 'ESTROGEN';
+        } else {
+            existingData.profile = 'CORTISOL';
+        }
+
+        sessionStorage.setItem('userProfile', JSON.stringify(existingData));
+        sessionStorage.setItem('userResult', existingData.profile);
+
+        console.log("Step 2 data collected, hormone profile:", existingData.profile);
     }
 
     if(currentWizardStep < totalWizardSteps) {
@@ -10412,10 +10646,13 @@ function wizardPrev() {
     }
 }
 
-function finishOnboarding() {
+async function finishOnboarding() {
     localStorage.setItem('onboardingComplete', 'true');
     document.getElementById('onboarding-wizard').style.display = 'none';
-    
+
+    // Sync quiz data to database
+    await syncQuizDataToDb();
+
     // Trigger the Daily Wellness check immediately after
     setTimeout(checkDailyWellness, 500);
 }
@@ -13103,16 +13340,97 @@ function openAsClient() {
         <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative;">
             <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
             <div class="wizard-progress" style="display:flex; justify-content:center; gap:8px; margin-bottom:15px;">
-                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
             <h2 id="wizard-title" style="margin:0; color:var(--primary);">Let's Align Your Body</h2>
         </div>
 
         <!-- CONTENT SLIDES -->
         <div class="wizard-content" style="flex: 1; padding: 25px; overflow-y: auto;">
-            
-            <!-- SLIDE 1: CYCLE SETUP -->
+
+            <!-- SLIDE 1: ESSENTIAL DATA COLLECTION -->
             <div class="wizard-slide active" id="slide-1">
+                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">📋</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Let's Get Started</h3>
+                <p style="text-align:center; color:#666; margin-bottom:25px;">We need a few details to personalize your program.</p>
+
+                <!-- Name -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">What's your name?</label>
+                    <input type="text" id="wizard-name" class="wizard-input" placeholder="Enter your name" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                </div>
+
+                <!-- Age & Sex (side by side) -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px;">
+                    <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Age</label>
+                        <input type="number" id="wizard-age" class="wizard-input" placeholder="25" min="18" max="100" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                    </div>
+                    <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Sex</label>
+                        <select id="wizard-sex" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                            <option value="">Select</option>
+                            <option value="female">Female</option>
+                            <option value="male">Male</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Height & Weight -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px;">
+                    <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Height (cm)</label>
+                        <input type="number" id="wizard-height" class="wizard-input" placeholder="170" min="100" max="250" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                    </div>
+                    <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Weight (kg)</label>
+                        <input type="number" id="wizard-weight" class="wizard-input" placeholder="70" min="30" max="300" step="0.1" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                    </div>
+                </div>
+
+                <!-- Goal Weight -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Goal Weight (kg)</label>
+                    <input type="number" id="wizard-goal-weight" class="wizard-input" placeholder="65" min="30" max="300" step="0.1" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                </div>
+
+                <!-- Equipment Access -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Where do you train?</label>
+                    <select id="wizard-equipment" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                        <option value="">Select</option>
+                        <option value="gym">Full Gym Access</option>
+                        <option value="home">Home Equipment (Dumbbells/Bands)</option>
+                        <option value="bodyweight">Bodyweight Only</option>
+                    </select>
+                </div>
+
+                <!-- Activity Level -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Activity Level</label>
+                    <select id="wizard-activity-level" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                        <option value="">Select</option>
+                        <option value="sedentary">Sedentary (Little or no exercise)</option>
+                        <option value="light">Lightly Active (Exercise 1-3 days/week)</option>
+                        <option value="moderate">Moderately Active (Exercise 3-5 days/week)</option>
+                        <option value="very">Very Active (Exercise 6-7 days/week)</option>
+                    </select>
+                </div>
+
+                <!-- Energy Level -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Energy Status</label>
+                    <select id="wizard-energy-level" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                        <option value="">Select</option>
+                        <option value="low">Low Energy (Often tired)</option>
+                        <option value="normal">Normal Energy</option>
+                        <option value="high">High Energy</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SLIDE 2: CYCLE SETUP -->
+            <div class="wizard-slide" id="slide-2" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🌸</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Cycle Syncing</h3>
                 <p style="text-align:center; color:#666; margin-bottom:25px;">We tailor your daily movement to match your hormonal phase.</p>
@@ -13128,8 +13446,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 2: NUTRITION LOGIC -->
-            <div class="wizard-slide" id="slide-2" style="display:none;">
+            <!-- SLIDE 3: NUTRITION LOGIC -->
+            <div class="wizard-slide" id="slide-3" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🥑</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Food as Medicine</h3>
                 <p style="color:#475569; line-height:1.6; text-align:center;">
@@ -13143,8 +13461,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 3: ACCOUNTABILITY -->
-            <div class="wizard-slide" id="slide-3" style="display:none;">
+            <!-- SLIDE 4: ACCOUNTABILITY -->
+            <div class="wizard-slide" id="slide-4" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🤝</div>
                 <h3 style="text-align:center; margin-bottom:15px;">You Are Supported</h3>
                 <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:15px;">
@@ -13163,9 +13481,9 @@ function openAsClient() {
                 </ul>
             </div>
             
-             <!-- SLIDE 4: READY -->
-            <!-- SLIDE 4: PROFILE EVOLUTION -->
-            <div class="wizard-slide" id="slide-4" style="display:none;">
+             <!-- SLIDE 5: READY -->
+            <!-- SLIDE 5: PROFILE EVOLUTION -->
+            <div class="wizard-slide" id="slide-5" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">⚙️</div>
                 <h3 style="text-align:center; margin-bottom:15px;">Protocol Evolves</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">
@@ -13178,13 +13496,13 @@ function openAsClient() {
                 </div>
             </div>
 
-             <!-- SLIDE 5: READY -->
-            <div class="wizard-slide" id="slide-5" style="display:none; text-align:center;">
+             <!-- SLIDE 6: READY -->
+            <div class="wizard-slide" id="slide-6" style="display:none; text-align:center;">
                  <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
                 <h3 style="margin-bottom:10px;">You're All Set!</h3>
                 <p style="color:#64748b; margin-bottom:25px;">Your custom 28-day plan is ready.</p>
-                
-                <div style="background:var(--secondary); color:white; padding:15px; border-radius:12px; display:inline-block; font-weight:600;">
+
+                <div id="wizard-hormone-goal" style="background:var(--secondary); color:white; padding:15px; border-radius:12px; display:inline-block; font-weight:600;">
                     Goal: Reduce Cortisol & Detox Estrogen
                 </div>
             </div>
