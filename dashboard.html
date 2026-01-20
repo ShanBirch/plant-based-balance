@@ -1390,8 +1390,15 @@
         text-align: center;
     }
 
+    .calorie-circle-numbers {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 4px;
+    }
+
     .calorie-circle-current {
-        font-size: 2.5rem;
+        font-size: 2.2rem;
         font-weight: 700;
         color: var(--primary);
         line-height: 1;
@@ -1400,11 +1407,10 @@
     .calorie-circle-separator {
         font-size: 1.2rem;
         color: var(--text-muted);
-        margin: 0 2px;
     }
 
     .calorie-circle-goal {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
         font-weight: 600;
         color: var(--text-muted);
     }
@@ -1412,7 +1418,7 @@
     .calorie-circle-label {
         font-size: 0.85rem;
         color: var(--text-muted);
-        margin-top: 4px;
+        margin-top: 8px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
@@ -1815,9 +1821,11 @@
                                     style="stroke-dasharray: 565; stroke-dashoffset: 565; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 0.5s ease;"/>
                             </svg>
                             <div class="calorie-circle-text">
-                                <div class="calorie-circle-current" id="tracker-calories-current">0</div>
-                                <div class="calorie-circle-separator">/</div>
-                                <div class="calorie-circle-goal" id="tracker-calories-goal">2000</div>
+                                <div class="calorie-circle-numbers">
+                                    <span class="calorie-circle-current" id="tracker-calories-current">0</span>
+                                    <span class="calorie-circle-separator">/</span>
+                                    <span class="calorie-circle-goal" id="tracker-calories-goal">2000</span>
+                                </div>
                                 <div class="calorie-circle-label">calories</div>
                             </div>
                         </div>
