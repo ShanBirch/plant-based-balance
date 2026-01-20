@@ -8776,7 +8776,13 @@ function startCustomBuilderWorkout() {
                 quizData[f.key] = val;
                 // Update UI Display properly
                 if (f.key === 'equipment_access') {
-                    const eqMap = { 'gym': 'Full Gym Access', 'dumbbells': 'Home / Dumbbells', 'none': 'No Equipment' };
+                    const eqMap = {
+                        'gym': 'Full Gym Access',
+                        'dumbbells': 'Home / Dumbbells',
+                        'home': 'Home / Dumbbells',  // Legacy value support
+                        'none': 'No Equipment',
+                        'bodyweight': 'No Equipment'  // Legacy value support
+                    };
                     el.innerText = eqMap[val] || 'No Equipment';
                     el.dataset.raw = val; 
                 } else {
@@ -9211,7 +9217,13 @@ async function loadProfileData() {
     if(document.getElementById('profile-type-display')) document.getElementById('profile-type-display').innerText = context.profile;
     
     const equipment = profile?.equipment_access || 'none';
-    const eqMap = { 'gym': 'Full Gym Access', 'dumbbells': 'Home / Dumbbells', 'none': 'No Equipment' };
+    const eqMap = {
+        'gym': 'Full Gym Access',
+        'dumbbells': 'Home / Dumbbells',
+        'home': 'Home / Dumbbells',  // Legacy value support
+        'none': 'No Equipment',
+        'bodyweight': 'No Equipment'  // Legacy value support
+    };
     const eqDisplay = document.getElementById('profile-equipment-display');
     if(eqDisplay) {
         eqDisplay.innerText = eqMap[equipment] || 'No Equipment';
@@ -11804,6 +11816,7 @@ async function renderMovementView() {
     // PRIORITY 1: Determine available programs based on quiz/profile equipment
     // Check if user has gym access from their profile
     const hasGymAccess = profile?.equipment_access === 'gym' || profile?.gym_access === true;
+    // Support both 'dumbbells' (new) and 'home' (legacy) values for backward compatibility
     const hasDumbbells = profile?.equipment_access === 'dumbbells' || profile?.equipment_access === 'home' || hasGymAccess;
     
     // Default available programs based on equipment
@@ -11815,14 +11828,23 @@ async function renderMovementView() {
     const today = new Date();
     const dayOfWeek = today.getDay();
     const calDayIndex = (dayOfWeek + 6) % 7; // Mon=0 index
-    
+
+    // Determine default strength program based on equipment from onboarding
+    let defaultStrengthProgram = 'bodyweight'; // Default fallback
+    if (hasGymAccess) {
+        defaultStrengthProgram = 'gym';
+    } else if (hasDumbbells) {
+        defaultStrengthProgram = 'home';
+    }
+
     // Weekly Schedule - maps each day to a program and workout
+    // Uses equipment settings from onboarding to set appropriate workouts
     const WEEKLY_SCHEDULE = [
-        { day: 'Mon', program: 'bodyweight', dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 }, // Lower Body Power / Balance & Core
-        { day: 'Tue', program: 'bodyweight', dayIndex: 1, fallback: 'yoga', fallbackIdx: 5 }, // Upper Body / Dynamic Flow
+        { day: 'Mon', program: defaultStrengthProgram, dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 }, // Lower Body Power / Balance & Core
+        { day: 'Tue', program: defaultStrengthProgram, dayIndex: 1, fallback: 'yoga', fallbackIdx: 5 }, // Upper Body / Dynamic Flow
         { day: 'Wed', program: 'yoga', dayIndex: 2, fallback: 'yoga', fallbackIdx: 2 },       // Spinal Mobility
-        { day: 'Thu', program: 'bodyweight', dayIndex: 3, fallback: 'yoga', fallbackIdx: 4 }, // Full Body / Balance & Core
-        { day: 'Fri', program: 'bodyweight', dayIndex: 4, fallback: 'yoga', fallbackIdx: 4 }, // Glutes & Core
+        { day: 'Thu', program: defaultStrengthProgram, dayIndex: 3, fallback: 'yoga', fallbackIdx: 4 }, // Full Body / Balance & Core
+        { day: 'Fri', program: defaultStrengthProgram, dayIndex: 4, fallback: 'yoga', fallbackIdx: 4 }, // Glutes & Core
         { day: 'Sat', program: 'yoga', dayIndex: 0, fallback: 'yoga', fallbackIdx: 0 },       // Somatic Hormone Reset
         { day: 'Sun', program: 'yoga', dayIndex: 6, fallback: 'yoga', fallbackIdx: 6 }        // Yin & Meditation
     ];
@@ -14019,8 +14041,8 @@ function openAsClient() {
                     <select id="wizard-equipment" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                         <option value="">Select</option>
                         <option value="gym">Full Gym Access</option>
-                        <option value="home">Home Equipment (Dumbbells/Bands)</option>
-                        <option value="bodyweight">Bodyweight Only</option>
+                        <option value="dumbbells">Home Equipment (Dumbbells/Bands)</option>
+                        <option value="none">Bodyweight Only</option>
                     </select>
                 </div>
 
