@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   -- User preferences
   location TEXT,
   rapid_api_key TEXT,
+  sex TEXT, -- 'male' or 'female' (for BMR/TDEE calculations)
 
   -- Tracking
   last_login TIMESTAMPTZ,
