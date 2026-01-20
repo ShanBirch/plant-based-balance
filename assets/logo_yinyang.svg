@@ -4,6 +4,6 @@
   <!-- Top solid black circle -->
   <circle cx="50" cy="30" r="18" fill="black"/>
 
-  <!-- Bottom outlined circle (white fill with black stroke) -->
-  <circle cx="50" cy="70" r="18" fill="white" stroke="black" stroke-width="3"/>
+  <!-- Bottom outlined circle (transparent fill with black stroke) -->
+  <circle cx="50" cy="70" r="18" fill="none" stroke="black" stroke-width="3"/>
 </svg>
