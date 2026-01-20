@@ -16709,61 +16709,98 @@ updateCoachUI();
 // --- PROGRESS / ANALYTICS VIEW ---
 async function initProgressView() {
     const user = window.currentUser;
-    if (!user) return;
+    if (!user) {
+        console.error('No user logged in');
+        return;
+    }
+
+    console.log('Initializing Progress View for user:', user.id);
 
     try {
         // Show loading
         document.getElementById('progress-loading').style.display = 'block';
         document.getElementById('progress-main-content').style.display = 'none';
 
-        // Fetch all data in parallel
-        const [
-            workoutCount,
-            workoutHistory,
-            milestones,
-            checkins,
-            pointsData,
-            quizData,
-            recentExercises
-        ] = await Promise.all([
-            dbHelpers.workouts.getWorkoutCount(user.id),
-            dbHelpers.workouts.getHistory(user.id, 30),
-            dbHelpers.milestones.getAll(user.id, 20),
-            dbHelpers.checkins.getRecent(user.id, 14),
-            dbHelpers.points.getPoints(user.id),
-            dbHelpers.quizResults.getLatest(user.id),
-            dbHelpers.workouts.getRecentExercises(user.id, 10)
-        ]);
+        // Fetch data individually with fallbacks
+        let workoutCount = 0;
+        let workoutHistory = [];
+        let milestones = [];
+        let checkins = [];
+        let pointsData = null;
+        let recentExercises = [];
+
+        // Load workout count
+        try {
+            workoutCount = await dbHelpers.workouts.getWorkoutCount(user.id);
+            console.log('Workout count:', workoutCount);
+        } catch (e) {
+            console.warn('Failed to load workout count:', e);
+        }
+
+        // Load workout history
+        try {
+            workoutHistory = await dbHelpers.workouts.getHistory(user.id, 30);
+            console.log('Workout history:', workoutHistory?.length || 0, 'records');
+        } catch (e) {
+            console.warn('Failed to load workout history:', e);
+        }
+
+        // Load milestones
+        try {
+            milestones = await dbHelpers.milestones.getAll(user.id, 20);
+            console.log('Milestones:', milestones?.length || 0);
+        } catch (e) {
+            console.warn('Failed to load milestones:', e);
+        }
+
+        // Load check-ins
+        try {
+            checkins = await dbHelpers.checkins.getRecent(user.id, 14);
+            console.log('Check-ins:', checkins?.length || 0);
+        } catch (e) {
+            console.warn('Failed to load check-ins:', e);
+        }
+
+        // Load points data
+        try {
+            pointsData = await dbHelpers.points.getPoints(user.id);
+            console.log('Points data:', pointsData);
+        } catch (e) {
+            console.warn('Failed to load points data:', e);
+        }
+
+        // Load recent exercises
+        try {
+            recentExercises = await dbHelpers.workouts.getRecentExercises(user.id, 10);
+            console.log('Recent exercises:', recentExercises?.length || 0);
+        } catch (e) {
+            console.warn('Failed to load recent exercises:', e);
+        }
 
         // Update overview stats
         document.getElementById('total-workouts-stat').innerText = workoutCount || 0;
         document.getElementById('current-streak-stat').innerText = pointsData?.current_streak || 0;
         document.getElementById('total-points-stat').innerText = pointsData?.current_points || 0;
-
-        // Calculate average calories (placeholder - would need nutrition data)
         document.getElementById('avg-calories-stat').innerText = '-';
 
-        // Render workout history (grouped by date)
+        // Render sections
         renderWorkoutHistory(workoutHistory);
-
-        // Render milestones
         renderMilestones(milestones);
-
-        // Render check-ins
         renderCheckins(checkins);
-
-        // Render exercise progress
         await renderExerciseProgress(user.id, recentExercises);
 
         // Hide loading, show content
         document.getElementById('progress-loading').style.display = 'none';
         document.getElementById('progress-main-content').style.display = 'block';
 
+        console.log('✅ Progress view loaded successfully');
+
     } catch (error) {
-        console.error('Error loading progress view:', error);
+        console.error('Critical error loading progress view:', error);
         document.getElementById('progress-loading').innerHTML = `
             <div style="font-size: 2rem; margin-bottom: 10px;">😔</div>
-            <div style="color: var(--text-muted);">Failed to load progress data</div>
+            <div style="color: var(--text-muted); margin-bottom: 10px;">Failed to load progress data</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-family: monospace;">${error.message}</div>
         `;
     }
 }
