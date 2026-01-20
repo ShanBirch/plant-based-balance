@@ -9949,21 +9949,126 @@ function renderWeeklyCalendar() {
     const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
     const isHighCortisol = profileType.includes('CORTISOL') || profileType.includes('ADRENAL');
 
+    // Check if user qualifies for Gym Split (Male or Female)
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    const hasGymAccess = userProfile.equipment_access === 'gym';
+    const hasHighEnergy = userProfile.energy_status === 'high';
+    const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
+    const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
+
+    // Calculate which week we're in for 12 different 4-week programs (48 weeks total)
+    function getGymSplitWeekNumber() {
+        if (!useMaleGymSplit && !useFemaleGymSplit) return 1;
+
+        let startDate = localStorage.getItem('gym_split_start_date');
+        if (!startDate) {
+            // First time using gym split - set start date to this week's Monday
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const distToMon = (dayOfWeek + 6) % 7;
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - distToMon);
+            monday.setHours(0, 0, 0, 0);
+            startDate = monday.toISOString().split('T')[0];
+            localStorage.setItem('gym_split_start_date', startDate);
+        }
+
+        // Calculate weeks elapsed since start
+        const start = new Date(startDate);
+        const now = new Date();
+        const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+        const weeksElapsed = Math.floor((now - start) / msPerWeek);
+
+        // Return week number 1-48 (12 programs × 4 weeks each)
+        return (weeksElapsed % 48) + 1;
+    }
+
+    const currentWeek = getGymSplitWeekNumber();
+
+    // Helper to get the workout index based on which 4-week program we're in
+    function getWorkoutIndexForWeek(numWorkouts) {
+        // Calculate which 4-week program (0-11)
+        // Week 1-4 = Program 0 (uses workout 1)
+        // Week 5-8 = Program 1 (uses workout 2)
+        // Week 9-12 = Program 2 (uses workout 3)
+        // etc.
+        const programNumber = Math.floor((currentWeek - 1) / 4);
+        return programNumber % numWorkouts; // Cycles through available workouts
+    }
+
     // Weekly Schedule Template - maps to WORKOUT_DB programs
     // Each day references a program and the day index within that program's schedule
-    const WEEKLY_SCHEDULE = [
-        { day: 'Mon', program: 'bodyweight', dayIndex: 0 }, // Lower Body Power
-        { day: 'Tue', program: 'bodyweight', dayIndex: 1 }, // Upper Body Strength
-        { day: 'Wed', program: 'yoga', dayIndex: 2 },       // Spinal Mobility & Detox
-        { day: 'Thu', program: 'bodyweight', dayIndex: 3 }, // Full Body Conditioning
-        { day: 'Fri', program: 'bodyweight', dayIndex: 4 }, // Glutes & Core Focus
-        { day: 'Sat', program: 'yoga', dayIndex: 0 },       // Somatic Hormone Reset
-        { day: 'Sun', program: 'yoga', dayIndex: 6 }        // Yin & Meditation (Rest)
-    ];
+    let WEEKLY_SCHEDULE;
 
-    // Helper to get workout from WORKOUT_DB
+    if (useMaleGymSplit) {
+        // Male Gym Split: Chest, Back, Legs, Shoulders, Arms+Core, Active Recovery, Rest
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'gym_split', dayIndex: 0, muscleGroup: 'chest' }, // Chest
+            { day: 'Tue', program: 'gym_split', dayIndex: 1, muscleGroup: 'back' }, // Back
+            { day: 'Wed', program: 'gym_split', dayIndex: 2, muscleGroup: 'legs' }, // Legs
+            { day: 'Thu', program: 'gym_split', dayIndex: 3, muscleGroup: 'shoulders' }, // Shoulders
+            { day: 'Fri', program: 'gym_split', dayIndex: 4, muscleGroup: 'armscore' }, // Arms & Core
+            { day: 'Sat', program: 'gym_split', dayIndex: 5 }, // Active Recovery
+            { day: 'Sun', program: 'gym_split', dayIndex: 6 }  // Rest
+        ];
+    } else if (useFemaleGymSplit) {
+        // Female Gym Split: Legs, Push, Arms+Core, Legs, Pull, Active Recovery, Rest
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'female_gym_split', dayIndex: 0, muscleGroup: 'legs' }, // Legs
+            { day: 'Tue', program: 'female_gym_split', dayIndex: 1, muscleGroup: 'push' }, // Push
+            { day: 'Wed', program: 'female_gym_split', dayIndex: 2, muscleGroup: 'armscore' }, // Arms & Core
+            { day: 'Thu', program: 'female_gym_split', dayIndex: 3, muscleGroup: 'legs' }, // Legs
+            { day: 'Fri', program: 'female_gym_split', dayIndex: 4, muscleGroup: 'pull' }, // Pull
+            { day: 'Sat', program: 'female_gym_split', dayIndex: 5 }, // Active Recovery
+            { day: 'Sun', program: 'female_gym_split', dayIndex: 6 }  // Rest
+        ];
+    } else {
+        // Default schedule for everyone else
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bodyweight', dayIndex: 0 }, // Lower Body Power
+            { day: 'Tue', program: 'bodyweight', dayIndex: 1 }, // Upper Body Strength
+            { day: 'Wed', program: 'yoga', dayIndex: 2 },       // Spinal Mobility & Detox
+            { day: 'Thu', program: 'bodyweight', dayIndex: 3 }, // Full Body Conditioning
+            { day: 'Fri', program: 'bodyweight', dayIndex: 4 }, // Glutes & Core Focus
+            { day: 'Sat', program: 'yoga', dayIndex: 0 },       // Somatic Hormone Reset
+            { day: 'Sun', program: 'yoga', dayIndex: 6 }        // Yin & Meditation (Rest)
+        ];
+    }
+
+    // Helper to get workout from WORKOUT_DB or WORKOUT_LIBRARY (for gym split rotation)
     function getWorkoutForDay(dayIdx) {
         const scheduleItem = WEEKLY_SCHEDULE[dayIdx];
+
+        // For gym split with muscle group, pull from WORKOUT_LIBRARY with 48-week rotation
+        if ((scheduleItem.program === 'gym_split' || scheduleItem.program === 'female_gym_split') && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
+            const muscleGroup = scheduleItem.muscleGroup;
+            const gymCategory = WORKOUT_LIBRARY['gym'];
+
+            if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
+                const workouts = gymCategory.subcategories[muscleGroup].workouts;
+
+                // Get workout index based on current week in 48-week cycle
+                const workoutIndex = getWorkoutIndexForWeek(workouts.length);
+                const workout = workouts[workoutIndex];
+
+                // Calculate which 4-week program we're in (1-12)
+                const programNumber = Math.floor((currentWeek - 1) / 4) + 1;
+                const weekInProgram = ((currentWeek - 1) % 4) + 1;
+
+                if (workout) {
+                    return {
+                        title: workout.name,
+                        programName: `Gym - Program ${programNumber}, Week ${weekInProgram}`,
+                        programId: 'gym_library',
+                        libraryWorkout: { category: 'gym', subcategory: muscleGroup, workoutId: workout.id },
+                        exercises: workout.exercises
+                    };
+                }
+            }
+        }
+
+        // Default: use WORKOUT_DB
         const program = window.WORKOUT_DB?.[scheduleItem.program];
         if (program && program.schedule && program.schedule[scheduleItem.dayIndex]) {
             const workout = program.schedule[scheduleItem.dayIndex];
@@ -10023,13 +10128,14 @@ function renderWeeklyCalendar() {
         }
 
         // 2. High Cortisol Safety Override - encourage yoga over HIIT
-        if (isHighCortisol && dayWorkout.programId === 'bodyweight') {
+        if (isHighCortisol && (dayWorkout.programId === 'bodyweight' || dayWorkout.programId === 'gym_library')) {
             const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
             if (yogaWorkout) workoutName = yogaWorkout.title;
         }
 
         // 3. Daily Mood/Symptoms only apply to TODAY
         if (isToday) {
+            // Swap to yoga if user reports being tired (applies to all users including males)
             if (userCycleData.mood === 'tired') {
                 const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
                 if (yogaWorkout) workoutName = yogaWorkout.title;
@@ -10040,6 +10146,7 @@ function renderWeeklyCalendar() {
                     const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative
                     if (yogaWorkout) workoutName = yogaWorkout.title;
                 } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+                    // Fatigue/anxiety triggers yoga for everyone (males & females)
                     const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[6]; // Yin & Meditation
                     if (yogaWorkout) workoutName = yogaWorkout.title;
                 }
@@ -10079,16 +10186,48 @@ function renderWeeklyCalendar() {
 }
 
 window.openCalendarWorkout = function(dayIndexFromMonday) {
-    // 1. Schedule Definition (Same as in renderWeeklyCalendar)
-    const WEEKLY_SCHEDULE = [
-        { day: 'Mon', program: 'bodyweight', dayIndex: 0 }, 
-        { day: 'Tue', program: 'bodyweight', dayIndex: 1 }, 
-        { day: 'Wed', program: 'yoga', dayIndex: 2 },       
-        { day: 'Thu', program: 'bodyweight', dayIndex: 3 }, 
-        { day: 'Fri', program: 'bodyweight', dayIndex: 4 }, 
-        { day: 'Sat', program: 'yoga', dayIndex: 0 },       
-        { day: 'Sun', program: 'yoga', dayIndex: 6 }        
-    ];
+    // 1. Check if user qualifies for Gym Split (Male or Female)
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    const hasGymAccess = userProfile.equipment_access === 'gym';
+    const hasHighEnergy = userProfile.energy_status === 'high';
+    const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
+    const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
+
+    // 2. Schedule Definition (Same as in renderWeeklyCalendar)
+    let WEEKLY_SCHEDULE;
+
+    if (useMaleGymSplit) {
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'gym_split', dayIndex: 0 }, // Chest
+            { day: 'Tue', program: 'gym_split', dayIndex: 1 }, // Back
+            { day: 'Wed', program: 'gym_split', dayIndex: 2 }, // Legs
+            { day: 'Thu', program: 'gym_split', dayIndex: 3 }, // Shoulders
+            { day: 'Fri', program: 'gym_split', dayIndex: 4 }, // Arms & Core
+            { day: 'Sat', program: 'gym_split', dayIndex: 5 }, // Active Recovery
+            { day: 'Sun', program: 'gym_split', dayIndex: 6 }  // Rest
+        ];
+    } else if (useFemaleGymSplit) {
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'female_gym_split', dayIndex: 0 }, // Legs
+            { day: 'Tue', program: 'female_gym_split', dayIndex: 1 }, // Push
+            { day: 'Wed', program: 'female_gym_split', dayIndex: 2 }, // Arms & Core
+            { day: 'Thu', program: 'female_gym_split', dayIndex: 3 }, // Legs
+            { day: 'Fri', program: 'female_gym_split', dayIndex: 4 }, // Pull
+            { day: 'Sat', program: 'female_gym_split', dayIndex: 5 }, // Active Recovery
+            { day: 'Sun', program: 'female_gym_split', dayIndex: 6 }  // Rest
+        ];
+    } else {
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bodyweight', dayIndex: 0 },
+            { day: 'Tue', program: 'bodyweight', dayIndex: 1 },
+            { day: 'Wed', program: 'yoga', dayIndex: 2 },
+            { day: 'Thu', program: 'bodyweight', dayIndex: 3 },
+            { day: 'Fri', program: 'bodyweight', dayIndex: 4 },
+            { day: 'Sat', program: 'yoga', dayIndex: 0 },
+            { day: 'Sun', program: 'yoga', dayIndex: 6 }
+        ];
+    }
     
     if (dayIndexFromMonday < 0 || dayIndexFromMonday >= WEEKLY_SCHEDULE.length) return;
 
@@ -10137,69 +10276,182 @@ window.openCalendarWorkout = function(dayIndexFromMonday) {
         }
     }
 
-    // Modifier: High Cortisol -> Yoga (overrides HIIT/Bodyweight)
-    if (isHighCortisol && programId === 'bodyweight') {
+    // Modifier: High Cortisol -> Yoga (overrides HIIT/Bodyweight/Gym)
+    if (isHighCortisol && (programId === 'bodyweight' || programId === 'gym_split' || programId === 'female_gym_split')) {
         programId = 'yoga';
         dayIndex = 0; // Somatic Hormone Reset
     }
 
     // Modifier: Mood/Symptoms (Only applies if targetDate is TODAY)
     if (targetDate.toDateString() === today.toDateString()) {
+         // Swap to yoga if user reports being tired (applies to all users including males)
          if (userCycleData.mood === 'tired') {
              programId = 'yoga';
-             dayIndex = 3;
+             dayIndex = 3; // Restorative Recovery
          }
          if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
              // Hot flash and dizziness are female-specific symptoms
              if (!isMaleWorkout && (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness'))) {
                  programId = 'yoga';
-                 dayIndex = 3;
+                 dayIndex = 3; // Restorative
              } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+                 // Fatigue/anxiety triggers yoga for everyone (males & females)
                  programId = 'yoga';
-                 dayIndex = 6;
+                 dayIndex = 6; // Yin & Meditation
              }
          }
     }
 
     // 4. Fetch Exercises & Launch Player
-    const program = window.WORKOUT_DB?.[programId];
-    if (program && program.schedule && program.schedule[dayIndex]) {
-        if (typeof startActiveWorkout === 'function') {
-            startActiveWorkout(programId, dayIndex);
-        } else {
-            console.error("Workout player function not found");
+    // For gym_split with muscle groups, use WORKOUT_LIBRARY with rotation
+    if ((programId === 'gym_split' || programId === 'female_gym_split') && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
+        const muscleGroup = scheduleItem.muscleGroup;
+        const gymCategory = WORKOUT_LIBRARY['gym'];
+
+        if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
+            // Calculate which week in 48-week cycle (12 programs × 4 weeks)
+            let startDate = localStorage.getItem('gym_split_start_date');
+            if (!startDate) {
+                const today = new Date();
+                const dayOfWeek = today.getDay();
+                const distToMon = (dayOfWeek + 6) % 7;
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - distToMon);
+                monday.setHours(0, 0, 0, 0);
+                startDate = monday.toISOString().split('T')[0];
+                localStorage.setItem('gym_split_start_date', startDate);
+            }
+            const start = new Date(startDate);
+            const now = new Date();
+            const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+            const weeksElapsed = Math.floor((now - start) / msPerWeek);
+            const currentWeek = (weeksElapsed % 48) + 1;
+
+            const workouts = gymCategory.subcategories[muscleGroup].workouts;
+            // Calculate which 4-week program (same workout for 4 weeks)
+            const programNumber = Math.floor((currentWeek - 1) / 4);
+            const workoutIndex = programNumber % workouts.length;
+            const workout = workouts[workoutIndex];
+
+            if (workout && typeof startLibraryWorkout === 'function') {
+                startLibraryWorkout('gym', muscleGroup, workout.id);
+            } else {
+                console.error("Library workout not found or player function missing");
+            }
         }
     } else {
-        console.log("Workout data not found for program:", programId);
+        // Default: use WORKOUT_DB
+        const program = window.WORKOUT_DB?.[programId];
+        if (program && program.schedule && program.schedule[dayIndex]) {
+            if (typeof startActiveWorkout === 'function') {
+                startActiveWorkout(programId, dayIndex);
+            } else {
+                console.error("Workout player function not found");
+            }
+        } else {
+            console.log("Workout data not found for program:", programId);
+        }
     }
 };
 
 // --- SHARED WORKOUT LOGIC ---
 // Returns today's recommended workout based on Calendar logic (same as renderWeeklyCalendar)
 function getTodaysWorkout() {
+    // Check if user qualifies for Gym Split (Male or Female)
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    const hasGymAccess = userProfile.equipment_access === 'gym';
+    const hasHighEnergy = userProfile.energy_status === 'high';
+    const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
+    const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
+
     // Weekly Schedule Template - maps to WORKOUT_DB programs (same as calendar)
-    const WEEKLY_SCHEDULE = [
-        { day: 'Mon', program: 'bodyweight', dayIndex: 0, icon: '🦵' }, // Lower Body Power
-        { day: 'Tue', program: 'bodyweight', dayIndex: 1, icon: '💪' }, // Upper Body Strength
-        { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️' },       // Spinal Mobility & Detox
-        { day: 'Thu', program: 'bodyweight', dayIndex: 3, icon: '🔥' }, // Full Body Conditioning
-        { day: 'Fri', program: 'bodyweight', dayIndex: 4, icon: '🍑' }, // Glutes & Core Focus
-        { day: 'Sat', program: 'yoga', dayIndex: 0, icon: '🧘‍♀️' },       // Somatic Hormone Reset
-        { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤' }        // Yin & Meditation (Rest)
-    ];
+    let WEEKLY_SCHEDULE;
+
+    if (useMaleGymSplit) {
+        // Male Gym Split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'gym_split', dayIndex: 0, icon: '💪', muscleGroup: 'chest' }, // Chest
+            { day: 'Tue', program: 'gym_split', dayIndex: 1, icon: '💪', muscleGroup: 'back' }, // Back
+            { day: 'Wed', program: 'gym_split', dayIndex: 2, icon: '🦵', muscleGroup: 'legs' }, // Legs
+            { day: 'Thu', program: 'gym_split', dayIndex: 3, icon: '💪', muscleGroup: 'shoulders' }, // Shoulders
+            { day: 'Fri', program: 'gym_split', dayIndex: 4, icon: '💪', muscleGroup: 'armscore' }, // Arms & Core
+            { day: 'Sat', program: 'gym_split', dayIndex: 5, icon: '🧘‍♂️' }, // Active Recovery
+            { day: 'Sun', program: 'gym_split', dayIndex: 6, icon: '💤' }  // Rest
+        ];
+    } else if (useFemaleGymSplit) {
+        // Female Gym Split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'female_gym_split', dayIndex: 0, icon: '🦵', muscleGroup: 'legs' }, // Legs
+            { day: 'Tue', program: 'female_gym_split', dayIndex: 1, icon: '💪', muscleGroup: 'push' }, // Push
+            { day: 'Wed', program: 'female_gym_split', dayIndex: 2, icon: '💪', muscleGroup: 'armscore' }, // Arms & Core
+            { day: 'Thu', program: 'female_gym_split', dayIndex: 3, icon: '🦵', muscleGroup: 'legs' }, // Legs
+            { day: 'Fri', program: 'female_gym_split', dayIndex: 4, icon: '💪', muscleGroup: 'pull' }, // Pull
+            { day: 'Sat', program: 'female_gym_split', dayIndex: 5, icon: '🧘‍♀️' }, // Active Recovery
+            { day: 'Sun', program: 'female_gym_split', dayIndex: 6, icon: '💤' }  // Rest
+        ];
+    } else {
+        // Default schedule
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bodyweight', dayIndex: 0, icon: '🦵' }, // Lower Body Power
+            { day: 'Tue', program: 'bodyweight', dayIndex: 1, icon: '💪' }, // Upper Body Strength
+            { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️' },       // Spinal Mobility & Detox
+            { day: 'Thu', program: 'bodyweight', dayIndex: 3, icon: '🔥' }, // Full Body Conditioning
+            { day: 'Fri', program: 'bodyweight', dayIndex: 4, icon: '🍑' }, // Glutes & Core Focus
+            { day: 'Sat', program: 'yoga', dayIndex: 0, icon: '🧘‍♀️' },       // Somatic Hormone Reset
+            { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤' }        // Yin & Meditation (Rest)
+        ];
+    }
 
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 is Sun, 6 is Sat
     // Convert to Mon=0 index
     const dayIndex = (dayOfWeek + 6) % 7;
     const scheduleItem = WEEKLY_SCHEDULE[dayIndex];
-    
-    // Get workout from WORKOUT_DB
-    const program = window.WORKOUT_DB?.[scheduleItem.program];
-    const workout = program?.schedule?.[scheduleItem.dayIndex];
-    
-    let workoutName = workout?.title || scheduleItem.day + ' Workout';
-    let workoutIcon = scheduleItem.icon;
+
+    let workoutName, workoutIcon;
+
+    // For gym_split with muscle groups, pull from WORKOUT_LIBRARY with rotation
+    if ((scheduleItem.program === 'gym_split' || scheduleItem.program === 'female_gym_split') && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
+        const muscleGroup = scheduleItem.muscleGroup;
+        const gymCategory = WORKOUT_LIBRARY['gym'];
+
+        if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
+            // Calculate which week in 48-week cycle (12 programs × 4 weeks)
+            let startDate = localStorage.getItem('gym_split_start_date');
+            if (!startDate) {
+                const dayOfWeek = today.getDay();
+                const distToMon = (dayOfWeek + 6) % 7;
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - distToMon);
+                monday.setHours(0, 0, 0, 0);
+                startDate = monday.toISOString().split('T')[0];
+                localStorage.setItem('gym_split_start_date', startDate);
+            }
+            const start = new Date(startDate);
+            const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+            const weeksElapsed = Math.floor((today - start) / msPerWeek);
+            const currentWeek = (weeksElapsed % 48) + 1;
+
+            const workouts = gymCategory.subcategories[muscleGroup].workouts;
+            // Calculate which 4-week program (same workout for 4 weeks)
+            const programNumber = Math.floor((currentWeek - 1) / 4);
+            const workoutIndex = programNumber % workouts.length;
+            const workout = workouts[workoutIndex];
+
+            workoutName = workout ? workout.name : scheduleItem.day + ' Workout';
+            workoutIcon = scheduleItem.icon;
+        } else {
+            workoutName = scheduleItem.day + ' Workout';
+            workoutIcon = scheduleItem.icon;
+        }
+    } else {
+        // Default: get from WORKOUT_DB
+        const program = window.WORKOUT_DB?.[scheduleItem.program];
+        const workout = program?.schedule?.[scheduleItem.dayIndex];
+        workoutName = workout?.title || scheduleItem.day + ' Workout';
+        workoutIcon = scheduleItem.icon;
+    }
     let programId = scheduleItem.program;
     let phaseInfo = null;
     let currentCycleDay = 0;
@@ -10239,8 +10491,8 @@ function getTodaysWorkout() {
         phaseInfo = PHASE_INFO['performance'];
     }
 
-    // Apply High Cortisol safety override
-    if (isHighCortisol && programId === 'bodyweight') {
+    // Apply High Cortisol safety override (applies to bodyweight and gym split users)
+    if (isHighCortisol && (programId === 'bodyweight' || scheduleItem.program === 'gym_split' || scheduleItem.program === 'female_gym_split')) {
         const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
         if (yogaWorkout) {
             workoutName = yogaWorkout.title;
@@ -10248,7 +10500,7 @@ function getTodaysWorkout() {
         }
     }
 
-    // Apply mood modifiers
+    // Apply mood modifiers (applies to all users including males on gym split)
     if (userCycleData.mood === 'tired') {
         const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
         if (yogaWorkout) {
@@ -10265,6 +10517,7 @@ function getTodaysWorkout() {
                 workoutIcon = '🧘‍♀️';
             }
         } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+            // Fatigue/anxiety triggers yoga for everyone (males & females, gym & bodyweight)
             const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[6]; // Yin & Meditation
             if (yogaWorkout) {
                 workoutName = yogaWorkout.title;
@@ -11671,6 +11924,176 @@ window.WORKOUT_DB = {
                 title: 'Rest & Recovery',
                 exercises: [
                     { name: 'Downward Dog', sets: 1, reps: '5 min', desc: 'Full body stretch' },
+                    { name: "Child's Pose", sets: 1, reps: '5 min', desc: 'Recovery' },
+                    { name: 'Corpse Pose', sets: 1, reps: '15 min', desc: 'Complete rest' }
+                ]
+            }
+        ]
+    },
+    'gym_split': {
+        name: 'Male Gym Split',
+        id: 'gym_split',
+        description: 'Classic bodybuilding split for men with full gym access. Build strength and muscle with dedicated muscle group focus each day.',
+        estimatedTime: '45',
+        equipment: ['Barbell', 'Dumbbells', 'Cable', 'Machine'],
+        schedule: [
+            // DAY 1: CHEST
+            {
+                title: 'Chest Day',
+                exercises: [
+                    { name: 'Barbell Bench Press', sets: 4, reps: '8-10', desc: 'Chest compound' },
+                    { name: 'Dumbbell Incline Bench Press', sets: 4, reps: '10-12', desc: 'Upper chest' },
+                    { name: 'Dumbbell Flat Bench Fly', sets: 4, reps: '10-12', desc: 'Chest stretch' },
+                    { name: 'Cable Standing High To Low Fly', sets: 4, reps: '12-15', desc: 'Lower chest' },
+                    { name: 'Cable Rope Tricep Extension', sets: 4, reps: '12-15', desc: 'Tricep finisher' }
+                ]
+            },
+            // DAY 2: BACK
+            {
+                title: 'Back Day',
+                exercises: [
+                    { name: 'Barbell Romanian Deadlift', sets: 4, reps: '8-10', desc: 'Posterior chain' },
+                    { name: 'Wide Grip Pull Up', sets: 4, reps: '8-10', desc: 'Lat width' },
+                    { name: 'Cable Seated Rotational Row', sets: 4, reps: '10-12', desc: 'Mid-back' },
+                    { name: 'Cable Rope Face Pull', sets: 4, reps: '12-15', desc: 'Rear delts' },
+                    { name: 'Dumbbell Shrug', sets: 4, reps: '12-15', desc: 'Trap work' }
+                ]
+            },
+            // DAY 3: LEGS
+            {
+                title: 'Leg Day',
+                exercises: [
+                    { name: 'Barbell Back Squat', sets: 4, reps: '8-10', desc: 'Quad compound' },
+                    { name: 'Barbell Romanian Deadlift', sets: 4, reps: '10-12', desc: 'Hamstrings' },
+                    { name: 'Dumbbell Walking Lunge', sets: 4, reps: '10-12 each', desc: 'Unilateral' },
+                    { name: 'Machine Seated Leg Curl', sets: 4, reps: '12-15', desc: 'Hamstring isolation' },
+                    { name: 'Smith Machine Calf Raise', sets: 4, reps: '15-20', desc: 'Calf work' }
+                ]
+            },
+            // DAY 4: SHOULDERS
+            {
+                title: 'Shoulder Day',
+                exercises: [
+                    { name: 'Barbell Overhead Press', sets: 4, reps: '8-10', desc: 'Shoulder compound' },
+                    { name: 'Dumbbell Lateral Raise', sets: 4, reps: '12-15', desc: 'Side delts' },
+                    { name: 'Cable Rope Face Pull', sets: 4, reps: '12-15', desc: 'Rear delts' },
+                    { name: 'Dumbbell Front Raise', sets: 4, reps: '12-15', desc: 'Front delts' },
+                    { name: 'Dumbbell Shrug', sets: 4, reps: '12-15', desc: 'Traps' }
+                ]
+            },
+            // DAY 5: ARMS & CORE
+            {
+                title: 'Arms & Core',
+                exercises: [
+                    { name: 'Barbell Close Grip Bench Press', sets: 4, reps: '8-10', desc: 'Tricep compound' },
+                    { name: 'Barbell Bicep Curl', sets: 4, reps: '10-12', desc: 'Bicep mass' },
+                    { name: 'Cable Rope Tricep Extension', sets: 4, reps: '12-15', desc: 'Tricep isolation' },
+                    { name: 'Cable Kneeling Crunch', sets: 4, reps: '12-15', desc: 'Abs' },
+                    { name: 'Hanging Leg Raise', sets: 4, reps: '10-12', desc: 'Lower abs' }
+                ]
+            },
+            // DAY 6: ACTIVE RECOVERY
+            {
+                title: 'Active Recovery',
+                exercises: [
+                    { name: 'Yoga - Downward Dog', sets: 1, reps: '5 min', desc: 'Full body stretch' },
+                    { name: 'Yoga - Pigeon Pose (Eka Pada Rajakapotasana)', sets: 2, reps: '2 min/side', desc: 'Hip mobility' },
+                    { name: "Child's Pose", sets: 1, reps: '3 min', desc: 'Recovery' },
+                    { name: 'Cat to Cow', sets: 1, reps: '3 min', desc: 'Spinal mobility' },
+                    { name: 'Corpse Pose', sets: 1, reps: '10 min', desc: 'Deep rest' }
+                ]
+            },
+            // DAY 7: REST
+            {
+                title: 'Rest & Recovery',
+                exercises: [
+                    { name: 'Light Walk or Bike', sets: 1, reps: '20-30 min', desc: 'Active recovery cardio' },
+                    { name: 'Yoga - Downward Dog', sets: 1, reps: '5 min', desc: 'Stretch' },
+                    { name: "Child's Pose", sets: 1, reps: '5 min', desc: 'Recovery' },
+                    { name: 'Corpse Pose', sets: 1, reps: '15 min', desc: 'Complete rest' }
+                ]
+            }
+        ]
+    },
+    'female_gym_split': {
+        name: 'Female Gym Split',
+        id: 'female_gym_split',
+        description: 'Balanced training split for women with full gym access. Build strength with legs twice weekly, push/pull movements, and core focus.',
+        estimatedTime: '45',
+        equipment: ['Barbell', 'Dumbbells', 'Cable', 'Machine'],
+        schedule: [
+            // DAY 1: LEGS
+            {
+                title: 'Leg Day',
+                exercises: [
+                    { name: 'Barbell Back Squat', sets: 4, reps: '8-10', desc: 'Quad compound' },
+                    { name: 'Barbell Romanian Deadlift', sets: 4, reps: '10-12', desc: 'Hamstrings' },
+                    { name: 'Dumbbell Walking Lunge', sets: 4, reps: '10-12 each', desc: 'Unilateral' },
+                    { name: 'Machine Seated Leg Curl', sets: 4, reps: '12-15', desc: 'Hamstring isolation' },
+                    { name: 'Smith Machine Calf Raise', sets: 4, reps: '15-20', desc: 'Calf work' }
+                ]
+            },
+            // DAY 2: PUSH
+            {
+                title: 'Push Day',
+                exercises: [
+                    { name: 'Barbell Bench Press', sets: 4, reps: '8-10', desc: 'Chest compound' },
+                    { name: 'Dumbbell Seated Shoulder Press', sets: 4, reps: '10-12', desc: 'Shoulder press' },
+                    { name: 'Dumbbell Incline Bench Press', sets: 4, reps: '10-12', desc: 'Upper chest' },
+                    { name: 'Dumbbell Lateral Raise', sets: 4, reps: '12-15', desc: 'Side delts' },
+                    { name: 'Cable Rope Tricep Extension', sets: 4, reps: '12-15', desc: 'Tricep isolation' }
+                ]
+            },
+            // DAY 3: ARMS & CORE
+            {
+                title: 'Arms & Core',
+                exercises: [
+                    { name: 'Barbell Close Grip Bench Press', sets: 4, reps: '8-10', desc: 'Tricep compound' },
+                    { name: 'Barbell Bicep Curl', sets: 4, reps: '10-12', desc: 'Bicep mass' },
+                    { name: 'Cable Rope Tricep Extension', sets: 4, reps: '12-15', desc: 'Tricep isolation' },
+                    { name: 'Cable Kneeling Crunch', sets: 4, reps: '12-15', desc: 'Abs' },
+                    { name: 'Hanging Leg Raise', sets: 4, reps: '10-12', desc: 'Lower abs' }
+                ]
+            },
+            // DAY 4: LEGS
+            {
+                title: 'Leg Day',
+                exercises: [
+                    { name: 'Barbell Back Squat', sets: 4, reps: '8-10', desc: 'Quad compound' },
+                    { name: 'Barbell Romanian Deadlift', sets: 4, reps: '10-12', desc: 'Hamstrings' },
+                    { name: 'Dumbbell Walking Lunge', sets: 4, reps: '10-12 each', desc: 'Unilateral' },
+                    { name: 'Machine Seated Leg Curl', sets: 4, reps: '12-15', desc: 'Hamstring isolation' },
+                    { name: 'Smith Machine Calf Raise', sets: 4, reps: '15-20', desc: 'Calf work' }
+                ]
+            },
+            // DAY 5: PULL
+            {
+                title: 'Pull Day',
+                exercises: [
+                    { name: 'Barbell Romanian Deadlift', sets: 4, reps: '8-10', desc: 'Posterior chain' },
+                    { name: 'Wide Grip Pull Up', sets: 4, reps: '8-10', desc: 'Lat width' },
+                    { name: 'Cable Seated Rotational Row', sets: 4, reps: '10-12', desc: 'Back thickness' },
+                    { name: 'Cable Rope Face Pull', sets: 4, reps: '12-15', desc: 'Rear delts' },
+                    { name: 'Dumbbell Bicep Curl', sets: 4, reps: '12-15', desc: 'Bicep isolation' }
+                ]
+            },
+            // DAY 6: ACTIVE RECOVERY
+            {
+                title: 'Active Recovery',
+                exercises: [
+                    { name: 'Yoga - Downward Dog', sets: 1, reps: '5 min', desc: 'Full body stretch' },
+                    { name: 'Yoga - Pigeon Pose (Eka Pada Rajakapotasana)', sets: 2, reps: '2 min/side', desc: 'Hip mobility' },
+                    { name: "Child's Pose", sets: 1, reps: '3 min', desc: 'Recovery' },
+                    { name: 'Cat to Cow', sets: 1, reps: '3 min', desc: 'Spinal mobility' },
+                    { name: 'Corpse Pose', sets: 1, reps: '10 min', desc: 'Deep rest' }
+                ]
+            },
+            // DAY 7: REST
+            {
+                title: 'Rest & Recovery',
+                exercises: [
+                    { name: 'Light Walk or Bike', sets: 1, reps: '20-30 min', desc: 'Active recovery cardio' },
+                    { name: 'Yoga - Downward Dog', sets: 1, reps: '5 min', desc: 'Stretch' },
                     { name: "Child's Pose", sets: 1, reps: '5 min', desc: 'Recovery' },
                     { name: 'Corpse Pose', sets: 1, reps: '15 min', desc: 'Complete rest' }
                 ]
