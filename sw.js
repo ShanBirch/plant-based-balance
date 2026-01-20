@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v10'; // Fixed coach message persistence
+const CACHE_NAME = 'pbb-app-v11'; // Load both coach and shannon chat types
 const ASSETS = [
   './dashboard.html',
   './icon-192.png',

@@ -14799,9 +14799,17 @@ window.openAsClient = function() {
 
 // Old submitCoachMessage removed as it is now defined earlier in the file.
 
-async function getChatHistory() { 
+async function getChatHistory() {
     if(!window.currentUser) return [];
-    return await dbHelpers.conversations.getHistory(window.currentUser.id, 'coach'); 
+    // Get both 'coach' and legacy 'shannon' messages and merge them
+    const [coachHistory, shannonHistory] = await Promise.all([
+        dbHelpers.conversations.getHistory(window.currentUser.id, 'coach'),
+        dbHelpers.conversations.getHistory(window.currentUser.id, 'shannon')
+    ]);
+    // Combine and sort by timestamp
+    const combined = [...coachHistory, ...shannonHistory];
+    combined.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    return combined;
 }
 
 async function saveToHistory(role, text) {
