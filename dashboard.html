@@ -28,19 +28,29 @@
 
 <style>
     :root {
-        /* Premium Green & Gold Palette */
-        --primary: #7BA883; /* Soft Sage Green (Pastel) */
-        --primary-light: #98C9A3; /* Light Mint Green (Pastel) */
-        --secondary: #E8D68E; /* Soft Golden Yellow */
-        --accent-green: #f2f7f4; /* Subtle Green Tint */
-        
-        --bg: #f9f9f7;
+        /* Flower Theme Palette */
+        --primary: #D98B9C; /* Rose Pink */
+        --primary-light: #F4B4C4; /* Soft Petal Pink */
+        --primary-dark: #C97A8A; /* Deeper Rose */
+        --secondary: #B4A7D6; /* Lavender */
+        --secondary-light: #D4C8E8; /* Light Lavender */
+        --accent: #E8C84A; /* Golden Yellow (flower centers) */
+        --accent-coral: #FFCBA4; /* Soft Coral */
+        --leaf: #98C9A3; /* Sage Green (leaves) */
+        --leaf-dark: #7BA883; /* Darker leaf green */
+        --blush: #FFD1DC; /* Cherry Blossom Pink */
+        --peony: #F8D4DB; /* Peony Pink */
+        --accent-green: #FFF8F5; /* Warm Cream Tint */
+
+        --bg: #FFFBF9; /* Warm white with pink tint */
         --surface: #ffffff;
-        --text-main: #1a202c;
-        --text-muted: #718096;
-        
+        --text-main: #4A3F44; /* Soft Dark */
+        --text-muted: #8B7D82;
+
         --border-radius: 16px;
-        --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --card-shadow: 0 4px 6px -1px rgba(217, 139, 156, 0.1), 0 2px 4px -1px rgba(217, 139, 156, 0.06);
+        --shadow-rose: 0 4px 14px 0 rgba(217, 139, 156, 0.25);
+        --shadow-lavender: 0 4px 14px 0 rgba(180, 167, 214, 0.25);
         --nav-height: 80px;
     }
 
@@ -123,17 +133,50 @@
         filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.8));
     }
 
+    /* Flower Theme Decorative Elements */
+    .flower-decoration-corner {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        background: url('assets/flower-cherry-blossom.svg') no-repeat center;
+        background-size: contain;
+        opacity: 0.25;
+        pointer-events: none;
+    }
+    .flower-decoration-corner.top-right {
+        top: 10px;
+        right: 10px;
+    }
+    .flower-decoration-corner.bottom-left {
+        bottom: 10px;
+        left: 10px;
+        transform: rotate(180deg);
+    }
+
     /* Top Header for Views */
     .app-header {
         padding: 20px 25px;
-        background: white;
+        background: linear-gradient(135deg, white 0%, var(--accent-green) 100%);
         display: flex;
         justify-content: space-between;
         align-items: center;
         position: sticky;
         top: 0;
         z-index: 900;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        box-shadow: 0 2px 10px rgba(217, 139, 156, 0.08);
+        border-bottom: 1px solid var(--peony);
+    }
+    .app-header::after {
+        content: '';
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 35px;
+        height: 35px;
+        background: url('assets/flower-cherry-blossom.svg') no-repeat center;
+        background-size: contain;
+        opacity: 0.3;
     }
     .app-logo { font-family: 'Playfair Display'; font-weight: 700; font-size: 1.25rem; color: var(--primary); }
     /* Profile View Styles */
@@ -1109,14 +1152,14 @@
 
     .progress-fill-protein {
         height: 100%;
-        background: linear-gradient(90deg, #7BA883, #98C9A3);
+        background: linear-gradient(90deg, var(--primary), var(--primary-light));
         border-radius: 3px;
         transition: width 0.5s ease;
     }
 
     .progress-fill-carbs {
         height: 100%;
-        background: linear-gradient(90deg, #E8D68E, #f2e8b0);
+        background: linear-gradient(90deg, var(--secondary), var(--secondary-light));
         border-radius: 3px;
         transition: width 0.5s ease;
     }
@@ -15974,21 +16017,21 @@ window.addEventListener('DOMContentLoaded', () => {
 // --- THEME SYSTEM ---
 const APP_THEMES = {
     'default': {
-        name: 'Forest (Premium)',
+        name: 'Flower Garden',
         colors: {
-            '--primary': '#7BA883',
-            '--primary-light': '#98C9A3',
-            '--secondary': '#E8D68E',
-            '--accent-green': '#f2f7f4',
-            '--bg': '#f9f9f7',
+            '--primary': '#D98B9C',
+            '--primary-light': '#F4B4C4',
+            '--secondary': '#B4A7D6',
+            '--accent-green': '#FFF8F5',
+            '--bg': '#FFFBF9',
             '--surface': '#ffffff',
-            '--text-main': '#1a202c',
-            '--text-muted': '#718096',
-            '--chat-bg-user': '#7BA883',
+            '--text-main': '#4A3F44',
+            '--text-muted': '#8B7D82',
+            '--chat-bg-user': '#D98B9C',
             '--chat-text-user': '#ffffff',
-            '--chat-bg-coach': '#f2f7f4',
-            '--chat-text-coach': '#1a202c',
-            '--chat-border-coach': '#e2e8f0'
+            '--chat-bg-coach': '#FFF8F5',
+            '--chat-text-coach': '#4A3F44',
+            '--chat-border-coach': '#F4B4C4'
         }
     },
     'antigravity-light': { 

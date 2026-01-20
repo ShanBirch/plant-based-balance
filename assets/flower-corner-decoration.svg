@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Corner decoration with flowers and leaves -->
+
+  <!-- Curved branch -->
+  <path d="M0,200 Q50,180 80,140 Q100,110 130,90 Q160,70 200,60"
+        stroke="#98C9A3" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M0,180 Q40,160 70,120 Q90,90 120,70 Q150,50 180,40"
+        stroke="#7BA883" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- Leaves along branch -->
+  <ellipse cx="40" cy="170" rx="15" ry="8" fill="#98C9A3" transform="rotate(-30, 40, 170)"/>
+  <ellipse cx="70" cy="135" rx="12" ry="6" fill="#A8C69F" transform="rotate(-45, 70, 135)"/>
+  <ellipse cx="100" cy="105" rx="14" ry="7" fill="#98C9A3" transform="rotate(-50, 100, 105)"/>
+  <ellipse cx="130" cy="80" rx="11" ry="5" fill="#B8D6AF" transform="rotate(-55, 130, 80)"/>
+  <ellipse cx="160" cy="65" rx="13" ry="6" fill="#98C9A3" transform="rotate(-60, 160, 65)"/>
+
+  <!-- Small cherry blossom 1 -->
+  <g transform="translate(25, 185) scale(0.4)">
+    <path d="M0,-8 Q-10,-22 -6,-30 Q0,-36 6,-30 Q10,-22 0,-8" fill="#FFD1DC"/>
+    <path d="M0,-8 Q-10,-22 -6,-30 Q0,-36 6,-30 Q10,-22 0,-8" fill="#FFD1DC" transform="rotate(72)"/>
+    <path d="M0,-8 Q-10,-22 -6,-30 Q0,-36 6,-30 Q10,-22 0,-8" fill="#FFD1DC" transform="rotate(144)"/>
+    <path d="M0,-8 Q-10,-22 -6,-30 Q0,-36 6,-30 Q10,-22 0,-8" fill="#FFBCD0" transform="rotate(216)"/>
+    <path d="M0,-8 Q-10,-22 -6,-30 Q0,-36 6,-30 Q10,-22 0,-8" fill="#FFBCD0" transform="rotate(288)"/>
+    <circle cx="0" cy="0" r="6" fill="#FFE4EC"/>
+    <circle cx="0" cy="-8" r="2" fill="#E8C84A"/>
+    <circle cx="6" cy="-4" r="2" fill="#E8C84A"/>
+    <circle cx="-6" cy="-4" r="2" fill="#E8C84A"/>
+  </g>
+
+  <!-- Small rose -->
+  <g transform="translate(85, 120) scale(0.35)">
+    <ellipse cx="0" cy="-20" rx="14" ry="22" fill="#F4B4C4" transform="rotate(0)"/>
+    <ellipse cx="0" cy="-20" rx="14" ry="22" fill="#F4B4C4" transform="rotate(72)"/>
+    <ellipse cx="0" cy="-20" rx="14" ry="22" fill="#F4B4C4" transform="rotate(144)"/>
+    <ellipse cx="0" cy="-20" rx="14" ry="22" fill="#F4B4C4" transform="rotate(216)"/>
+    <ellipse cx="0" cy="-20" rx="14" ry="22" fill="#F4B4C4" transform="rotate(288)"/>
+    <ellipse cx="0" cy="-14" rx="10" ry="16" fill="#E8A0B0" transform="rotate(36)"/>
+    <ellipse cx="0" cy="-14" rx="10" ry="16" fill="#E8A0B0" transform="rotate(108)"/>
+    <ellipse cx="0" cy="-14" rx="10" ry="16" fill="#E8A0B0" transform="rotate(180)"/>
+    <ellipse cx="0" cy="-14" rx="10" ry="16" fill="#E8A0B0" transform="rotate(252)"/>
+    <ellipse cx="0" cy="-14" rx="10" ry="16" fill="#E8A0B0" transform="rotate(324)"/>
+    <circle cx="0" cy="0" r="8" fill="#D98B9C"/>
+  </g>
+
+  <!-- Larger cherry blossom -->
+  <g transform="translate(150, 70) scale(0.5)">
+    <path d="M0,-8 Q-12,-25 -8,-35 Q0,-42 8,-35 Q12,-25 0,-8" fill="#FFD1DC"/>
+    <path d="M0,-8 Q-12,-25 -8,-35 Q0,-42 8,-35 Q12,-25 0,-8" fill="#FFD1DC" transform="rotate(72)"/>
+    <path d="M0,-8 Q-12,-25 -8,-35 Q0,-42 8,-35 Q12,-25 0,-8" fill="#FFBCD0" transform="rotate(144)"/>
+    <path d="M0,-8 Q-12,-25 -8,-35 Q0,-42 8,-35 Q12,-25 0,-8" fill="#FFBCD0" transform="rotate(216)"/>
+    <path d="M0,-8 Q-12,-25 -8,-35 Q0,-42 8,-35 Q12,-25 0,-8" fill="#FFD1DC" transform="rotate(288)"/>
+    <circle cx="0" cy="0" r="8" fill="#FFE4EC"/>
+    <circle cx="0" cy="-10" r="2.5" fill="#E8C84A"/>
+    <circle cx="8" cy="-6" r="2.5" fill="#E8C84A"/>
+    <circle cx="-8" cy="-6" r="2.5" fill="#E8C84A"/>
+    <circle cx="8" cy="5" r="2.5" fill="#E8C84A"/>
+    <circle cx="-8" cy="5" r="2.5" fill="#E8C84A"/>
+  </g>
+
+  <!-- Small buds -->
+  <circle cx="55" cy="155" r="5" fill="#F4B4C4"/>
+  <circle cx="115" cy="95" r="4" fill="#FFD1DC"/>
+  <circle cx="175" cy="55" r="5" fill="#E8A0B0"/>
+
+</svg>

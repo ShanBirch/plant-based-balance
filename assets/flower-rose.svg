@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Rose flower -->
+  <g transform="translate(50,50)">
+    <!-- Outer petals -->
+    <ellipse cx="0" cy="-25" rx="18" ry="28" fill="#F4B4C4" transform="rotate(0)"/>
+    <ellipse cx="0" cy="-25" rx="18" ry="28" fill="#F4B4C4" transform="rotate(72)"/>
+    <ellipse cx="0" cy="-25" rx="18" ry="28" fill="#F4B4C4" transform="rotate(144)"/>
+    <ellipse cx="0" cy="-25" rx="18" ry="28" fill="#F4B4C4" transform="rotate(216)"/>
+    <ellipse cx="0" cy="-25" rx="18" ry="28" fill="#F4B4C4" transform="rotate(288)"/>
+    <!-- Middle petals -->
+    <ellipse cx="0" cy="-18" rx="14" ry="22" fill="#E8A0B0" transform="rotate(36)"/>
+    <ellipse cx="0" cy="-18" rx="14" ry="22" fill="#E8A0B0" transform="rotate(108)"/>
+    <ellipse cx="0" cy="-18" rx="14" ry="22" fill="#E8A0B0" transform="rotate(180)"/>
+    <ellipse cx="0" cy="-18" rx="14" ry="22" fill="#E8A0B0" transform="rotate(252)"/>
+    <ellipse cx="0" cy="-18" rx="14" ry="22" fill="#E8A0B0" transform="rotate(324)"/>
+    <!-- Inner petals -->
+    <ellipse cx="0" cy="-12" rx="10" ry="16" fill="#D98B9C" transform="rotate(18)"/>
+    <ellipse cx="0" cy="-12" rx="10" ry="16" fill="#D98B9C" transform="rotate(90)"/>
+    <ellipse cx="0" cy="-12" rx="10" ry="16" fill="#D98B9C" transform="rotate(162)"/>
+    <ellipse cx="0" cy="-12" rx="10" ry="16" fill="#D98B9C" transform="rotate(234)"/>
+    <ellipse cx="0" cy="-12" rx="10" ry="16" fill="#D98B9C" transform="rotate(306)"/>
+    <!-- Center -->
+    <circle cx="0" cy="0" r="8" fill="#C97A8A"/>
+    <circle cx="0" cy="0" r="5" fill="#B86B7A"/>
+  </g>
+</svg>

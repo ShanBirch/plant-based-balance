@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Peony flower - lush and full -->
+  <g transform="translate(60,60)">
+    <!-- Outer layer petals -->
+    <ellipse cx="0" cy="-38" rx="20" ry="25" fill="#F8D4DB" transform="rotate(0)"/>
+    <ellipse cx="0" cy="-38" rx="20" ry="25" fill="#F8D4DB" transform="rotate(45)"/>
+    <ellipse cx="0" cy="-38" rx="20" ry="25" fill="#F8D4DB" transform="rotate(90)"/>
+    <ellipse cx="0" cy="-38" rx="20" ry="25" fill="#F8D4DB" transform="rotate(135)"/>
+    <ellipse cx="0" cy="-38" rx="20" ry="25" fill="#F8D4DB" transform="rotate(180)"/>
+    <ellipse cx="0" cy="-38" rx="20" ry="25" fill="#F8D4DB" transform="rotate(225)"/>
+    <ellipse cx="0" cy="-38" rx="20" ry="25" fill="#F8D4DB" transform="rotate(270)"/>
+    <ellipse cx="0" cy="-38" rx="20" ry="25" fill="#F8D4DB" transform="rotate(315)"/>
+    <!-- Middle layer -->
+    <ellipse cx="0" cy="-28" rx="16" ry="20" fill="#F4B4C4" transform="rotate(22)"/>
+    <ellipse cx="0" cy="-28" rx="16" ry="20" fill="#F4B4C4" transform="rotate(67)"/>
+    <ellipse cx="0" cy="-28" rx="16" ry="20" fill="#F4B4C4" transform="rotate(112)"/>
+    <ellipse cx="0" cy="-28" rx="16" ry="20" fill="#F4B4C4" transform="rotate(157)"/>
+    <ellipse cx="0" cy="-28" rx="16" ry="20" fill="#F4B4C4" transform="rotate(202)"/>
+    <ellipse cx="0" cy="-28" rx="16" ry="20" fill="#F4B4C4" transform="rotate(247)"/>
+    <ellipse cx="0" cy="-28" rx="16" ry="20" fill="#F4B4C4" transform="rotate(292)"/>
+    <ellipse cx="0" cy="-28" rx="16" ry="20" fill="#F4B4C4" transform="rotate(337)"/>
+    <!-- Inner layer -->
+    <ellipse cx="0" cy="-18" rx="12" ry="15" fill="#E8A0B0" transform="rotate(10)"/>
+    <ellipse cx="0" cy="-18" rx="12" ry="15" fill="#E8A0B0" transform="rotate(55)"/>
+    <ellipse cx="0" cy="-18" rx="12" ry="15" fill="#E8A0B0" transform="rotate(100)"/>
+    <ellipse cx="0" cy="-18" rx="12" ry="15" fill="#E8A0B0" transform="rotate(145)"/>
+    <ellipse cx="0" cy="-18" rx="12" ry="15" fill="#E8A0B0" transform="rotate(190)"/>
+    <ellipse cx="0" cy="-18" rx="12" ry="15" fill="#E8A0B0" transform="rotate(235)"/>
+    <ellipse cx="0" cy="-18" rx="12" ry="15" fill="#E8A0B0" transform="rotate(280)"/>
+    <ellipse cx="0" cy="-18" rx="12" ry="15" fill="#E8A0B0" transform="rotate(325)"/>
+    <!-- Center petals -->
+    <ellipse cx="0" cy="-10" rx="8" ry="12" fill="#D98B9C" transform="rotate(0)"/>
+    <ellipse cx="0" cy="-10" rx="8" ry="12" fill="#D98B9C" transform="rotate(60)"/>
+    <ellipse cx="0" cy="-10" rx="8" ry="12" fill="#D98B9C" transform="rotate(120)"/>
+    <ellipse cx="0" cy="-10" rx="8" ry="12" fill="#D98B9C" transform="rotate(180)"/>
+    <ellipse cx="0" cy="-10" rx="8" ry="12" fill="#D98B9C" transform="rotate(240)"/>
+    <ellipse cx="0" cy="-10" rx="8" ry="12" fill="#D98B9C" transform="rotate(300)"/>
+    <!-- Center -->
+    <circle cx="0" cy="0" r="10" fill="#C97A8A"/>
+    <circle cx="0" cy="0" r="6" fill="#E8C84A"/>
+  </g>
+</svg>
