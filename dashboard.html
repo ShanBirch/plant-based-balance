@@ -10508,12 +10508,28 @@ const totalWizardSteps = 7;
 let selectedGender = localStorage.getItem('userGender') || null; // Track gender selection
 
 async function checkAndTriggerOnboarding() {
-    // Check if user has completed onboarding before
+    // Check if user has completed onboarding before (localStorage)
     const onboardingComplete = localStorage.getItem('onboardingComplete');
 
-    // If onboarding is already complete, skip
+    // If onboarding is already complete in localStorage, skip
     if (onboardingComplete === 'true') {
         return;
+    }
+
+    // If user is logged in, check the database for onboarding_complete flag
+    // This ensures onboarding is skipped even if localStorage was cleared or user is on a new device
+    if (window.currentUser) {
+        try {
+            const userData = await dbHelpers.users.get(window.currentUser.id);
+            if (userData && userData.onboarding_complete) {
+                // Sync localStorage with database state
+                localStorage.setItem('onboardingComplete', 'true');
+                console.log("Onboarding already completed (from database), skipping wizard");
+                return;
+            }
+        } catch(e) {
+            console.warn("Error checking onboarding status from database:", e);
+        }
     }
 
     // Check if essential quiz data exists in sessionStorage
@@ -11099,6 +11115,16 @@ async function finishOnboarding() {
 
     // Sync quiz data to database
     await syncQuizDataToDb();
+
+    // Mark onboarding complete in the database so it persists across browsers/sessions
+    if (window.currentUser) {
+        try {
+            await dbHelpers.users.update(window.currentUser.id, { onboarding_complete: true });
+            console.log("Onboarding marked complete in database");
+        } catch (e) {
+            console.warn("Failed to mark onboarding complete in database:", e);
+        }
+    }
 
     // Show the gender-specific daily check-in modal after onboarding
     // This is the full check-in modal with gender-appropriate sections
