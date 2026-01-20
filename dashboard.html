@@ -15150,6 +15150,17 @@ function checkReferralBannerDismissed() {
     }
 }
 
+// Generate a unique referral code
+function generateReferralCode() {
+    // Generate 8-character alphanumeric code (similar to backend logic)
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
 // Load referral stats and update UI
 async function loadReferralStats() {
     if (!window.currentUser) return;
@@ -15159,6 +15170,25 @@ async function loadReferralStats() {
 
     try {
         const stats = await window.dbHelpers.referrals.getStats(window.currentUser.id);
+
+        // Check if user has a referral code, if not generate one
+        if (!stats.referralCode) {
+            console.log('No referral code found, generating one...');
+            const newCode = generateReferralCode();
+
+            // Update user record with new referral code
+            try {
+                await window.dbHelpers.users.update(window.currentUser.id, {
+                    referral_code: newCode
+                });
+                stats.referralCode = newCode;
+                console.log('Generated and saved referral code:', newCode);
+            } catch (updateError) {
+                console.error('Error saving referral code:', updateError);
+                // If save fails, still use the generated code temporarily
+                stats.referralCode = newCode;
+            }
+        }
 
         // Update stats in banner
         document.getElementById('referral-count').textContent = stats.totalReferrals || 0;
@@ -15180,20 +15210,24 @@ async function loadReferralStats() {
 }
 
 // Open share modal
-function openShareReferralModal() {
+async function openShareReferralModal() {
     const modal = document.getElementById('share-referral-modal');
     if (!modal) return;
 
     // Show modal with flex display
     modal.style.display = 'flex';
 
+    // If we don't have a referral code yet, try to load it
+    if (!currentReferralCode) {
+        await loadReferralStats();
+    }
+
     // Load and display referral code
     if (currentReferralCode) {
         document.getElementById('referral-code-display').textContent = currentReferralCode;
-
-        // Generate referral link
-        const referralLink = `${window.location.origin}/signup.html?ref=${currentReferralCode}`;
-        document.getElementById('referral-link-display').value = referralLink;
+    } else {
+        // Fallback if still no code
+        document.getElementById('referral-code-display').textContent = 'Error loading code';
     }
 }
 
@@ -15221,25 +15255,6 @@ function copyReferralCode() {
     }).catch(err => {
         console.error('Failed to copy:', err);
         alert('Failed to copy code. Please copy manually.');
-    });
-}
-
-// Copy referral link
-function copyReferralLink() {
-    const linkInput = document.getElementById('referral-link-display');
-
-    linkInput.select();
-    linkInput.setSelectionRange(0, 99999); // For mobile devices
-
-    navigator.clipboard.writeText(linkInput.value).then(() => {
-        // Show feedback
-        linkInput.style.borderColor = '#22c55e';
-        setTimeout(() => {
-            linkInput.style.borderColor = '#e2e8f0';
-        }, 2000);
-    }).catch(err => {
-        console.error('Failed to copy:', err);
-        alert('Failed to copy link. Please copy manually.');
     });
 }
 
@@ -16207,17 +16222,6 @@ updateCoachUI();
                         Loading...
                     </div>
                     <button onclick="copyReferralCode()" style="padding:14px 20px; background:var(--primary); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:600; white-space:nowrap; transition:all 0.2s;">
-                        Copy
-                    </button>
-                </div>
-            </div>
-
-            <!-- Shareable Link -->
-            <div style="margin-bottom:24px;">
-                <label style="display:block; font-size:0.875rem; font-weight:600; color:var(--text-main); margin-bottom:8px;">Share Link</label>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <input type="text" id="referral-link-display" readonly value="Loading..." style="flex:1; padding:12px; background:#f8fafc; border:2px solid #e2e8f0; border-radius:12px; font-size:0.9rem; color:#64748b;">
-                    <button onclick="copyReferralLink()" style="padding:12px 20px; background:#f1f5f9; color:var(--text-main); border:none; border-radius:12px; cursor:pointer; font-weight:600; white-space:nowrap; transition:all 0.2s;">
                         Copy
                     </button>
                 </div>
