@@ -33,16 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 4. One-Click Payment Logic (Apple Pay / Google Pay)
-    // Dynamic Pricing based on Timer Extension / Scarcity
-    const isDiscounted = sessionStorage.getItem('is_discounted') !== 'false';
-    const PLAN_DETAILS = isDiscounted ? {
-        '1-month': { amount: 4600, label: '28-Day Switch (1 Month)' },
-        '3-month': { amount: 9300, label: '28-Day Switch (3 Months)' },
-        '6-month': { amount: 10800, label: '28-Day Switch (6 Months)' }
-    } : {
-        '1-month': { amount: 9200, label: '28-Day Switch (1 Month) - Full Price' },
-        '3-month': { amount: 18600, label: '28-Day Switch (3 Months) - Full Price' },
-        '6-month': { amount: 21600, label: '28-Day Switch (6 Months) - Full Price' }
+    // Flat Pricing - no discount complexity
+    const PLAN_DETAILS = {
+        '1-month': { amount: 3000, label: '28-Day Switch (1 Month)' },      // $30 AUD
+        '3-month': { amount: 7500, label: '28-Day Switch (3 Months)' },     // $75 AUD ($25/mo)
+        '6-month': { amount: 12000, label: '28-Day Switch (6 Months)' }     // $120 AUD ($20/mo)
     };
 
     const paymentRequest = stripe.paymentRequest({
@@ -66,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     name: ev.payerName,
                     paymentMethodId: ev.paymentMethod.id,
                     priceId: PRICES[currentSelectedPlan],
-                    isDiscounted: isDiscounted,
+                    isDiscounted: false, // Flat pricing, no discount
                     isTrial: isTrial, // Pass Trial Flag
                     fbc: getCookie('_fbc'),
                     fbp: getCookie('_fbp')
@@ -284,12 +279,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             }).catch(() => {});
 
-            const discounts = isDiscounted ? [{ coupon: 'rjrlOEdm' }] : [];
-
+            // Flat pricing - no discount coupons needed
             const { error } = await stripe.redirectToCheckout({
                 lineItems: lineItems,
-                mode: 'subscription',
-                discounts: discounts, 
+                mode: 'subscription', 
                 successUrl: window.location.origin + '/success.html?amount=' + totalVal + '&bump=' + isBumpChecked,
                 cancelUrl: window.location.origin + '/plantbasedswitch.html',
                 customerEmail: sessionStorage.getItem('userEmail'),

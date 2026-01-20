@@ -1,11 +1,13 @@
-const CACHE_NAME = 'pbb-app-v7'; // Bumped to force fresh supabase.js load
+const CACHE_NAME = 'pbb-app-v11'; // Load both coach and shannon chat types
 const ASSETS = [
   './dashboard.html',
-  './icon-192.png',
-  './icon-512.png',
+  './assets/logo_yinyang_192.png',
+  './assets/logo_yinyang_512.png',
   './index.html',
   './lib/supabase.js',
-  './lib/auth-guard.js'
+  './lib/auth-guard.js',
+  './lib/biometric-auth.js',
+  './login.html'
 ];
 
 // Install - cache assets
@@ -69,7 +71,7 @@ self.addEventListener('push', (e) => {
   const options = {
     body: data.body,
     icon: data.icon || './assets/coach_shannon.jpg',
-    badge: data.badge || './assets/logo_optimized.png',
+    badge: data.badge || './assets/logo_yinyang.png',
     vibrate: data.vibrate || [200, 100, 200],
     tag: data.tag || 'coach-message',
     requireInteraction: data.requireInteraction || false,

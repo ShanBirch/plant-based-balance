@@ -21,7 +21,7 @@
     
     // Dynamic Purchase Tracking
     const urlParams = new URLSearchParams(window.location.search);
-    const purchaseValue = parseFloat(urlParams.get('amount')) || 46.00;
+    const purchaseValue = parseFloat(urlParams.get('amount')) || 30.00;
 
     fbq('init', '1928402271406692'); 
     fbq('track', 'PageView');
@@ -115,7 +115,7 @@
         // Server-side CAPI Purchase Sync
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const purchaseValue = parseFloat(urlParams.get('amount')) || 46.00;
+            const purchaseValue = parseFloat(urlParams.get('amount')) || 30.00;
             const isBump = urlParams.get('bump') === 'true';
             
             // Show Kickstart Box if purchased

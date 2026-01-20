@@ -171,6 +171,16 @@ const coreQuestions = [
         inputType: "number"
     },
     {
+        id: "sex",
+        text: "What is your biological sex?",
+        subtext: "This helps us calculate accurate metabolic rates for your body.",
+        type: "choice",
+        options: [
+            { text: "Female", value: "female" },
+            { text: "Male", value: "male" }
+        ]
+    },
+    {
         id: "height",
         text: "What is your height?",
         subtext: "This information helps us in metabolic calculations!",
@@ -1040,7 +1050,7 @@ function analyzeWithGemini(imageBlob, key, customPrompt) {
             const prompt = customPrompt || "Analyze this health scan. Provide a scientific assessment.";
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

@@ -14,7 +14,7 @@
     <meta property="og:url" content="https://plantbased-balance.org/plantbasedswitch.html">
     <meta property="og:type" content="website">
 
-    <link rel="icon" type="image/png" href="assets/logo_pbb.png">
+    <link rel="icon" type="image/png" href="assets/logo_yinyang.png">
     <!-- Load Montserrat Font -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Preload Hero Assets for Elite Performance -->
@@ -1602,11 +1602,10 @@
                 <div class="pricing-card">
                     <h3>1-MONTH PROTOCOL</h3>
                     <div class="price-tag">
-                        <div id="p1-old" class="price-old">AUD $92</div>
-                        <div id="p1-new" class="price-new">AUD $46</div>
+                        <div id="p1-new" class="price-new">AUD $30</div>
                     </div>
-                    <span id="p1-weekly" class="weekly-price">AUD $11.50 per week</span>
-                    <button class="btn btn-outline checkout-btn" onclick="selectPlan('1-month', 92)" data-plan="1-month" style="margin-top: 1.5rem; width: 100%;">GET MY PROTOCOL</button>
+                    <span id="p1-weekly" class="weekly-price">AUD $7.50 per week</span>
+                    <button class="btn btn-outline checkout-btn" onclick="selectPlan('1-month', 30)" data-plan="1-month" style="margin-top: 1.5rem; width: 100%;">GET MY PROTOCOL</button>
                     <div style="font-size: 0.75rem; color: #666; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 4px;">
                         <i data-lucide="lock" size="12"></i> Secure Transaction
                     </div>
@@ -1618,13 +1617,13 @@
                     <h3>6-MONTH PROTOCOL</h3>
                     <div class="price-tag">
                         <div style="font-size: 1rem; color: #666; font-weight: 700;">TRY FREE FOR 7 DAYS</div>
-                        <div id="p6-new" class="price-new">Then AUD $108</div>
+                        <div id="p6-new" class="price-new">Then AUD $120</div>
                     </div>
-                    <span id="p6-weekly" class="weekly-price">AUD $4.15 per week (billed after trial)</span>
+                    <span id="p6-weekly" class="weekly-price">AUD $4.60 per week (billed after trial)</span>
                     <div style="font-size: 0.75rem; color: #15803d; font-weight: 700; margin: 10px 0; display: flex; align-items: center; justify-content: center; gap: 5px;">
                         <i data-lucide="leaf" size="14"></i> 1 Tree Planted With Every 6-Month Protocol
                     </div>
-                    <button class="btn btn-primary checkout-btn" onclick="selectPlan('6-month', 216)" data-plan="6-month" style="width: 100%; background: #ef4444; border-color: #ef4444;">START 7-DAY FREE TRIAL</button>
+                    <button class="btn btn-primary checkout-btn" onclick="selectPlan('6-month', 120)" data-plan="6-month" style="width: 100%; background: #ef4444; border-color: #ef4444;">START 7-DAY FREE TRIAL</button>
                     <div style="font-size: 0.75rem; color: #666; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 4px;">
                         <i data-lucide="lock" size="12"></i> $0.00 Due Today
                     </div>
@@ -1634,11 +1633,10 @@
                 <div class="pricing-card">
                     <h3>3-MONTH PROTOCOL</h3>
                     <div class="price-tag">
-                        <div id="p3-old" class="price-old">AUD $186</div>
-                        <div id="p3-new" class="price-new">AUD $93</div>
+                        <div id="p3-new" class="price-new">AUD $75</div>
                     </div>
-                    <span id="p3-weekly" class="weekly-price">AUD $7.15 per week</span>
-                    <button class="btn btn-outline checkout-btn" onclick="selectPlan('3-month', 186)" data-plan="3-month" style="margin-top: 1.5rem; width: 100%;">GET MY 3-MONTH PROTOCOL</button>
+                    <span id="p3-weekly" class="weekly-price">AUD $5.75 per week</span>
+                    <button class="btn btn-outline checkout-btn" onclick="selectPlan('3-month', 75)" data-plan="3-month" style="margin-top: 1.5rem; width: 100%;">GET MY 3-MONTH PROTOCOL</button>
                     <div style="font-size: 0.75rem; color: #666; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 4px;">
                         <i data-lucide="lock" size="12"></i> Secure Transaction
                     </div>
@@ -1966,97 +1964,44 @@
             }, 3000);
         }
 
-        function applyDiscountPrices() {
-            sessionStorage.setItem('is_discounted', 'true');
+        // Flat pricing - no more discount complexity
+        function applyPrices() {
             const note = document.getElementById('discount-note');
             if (note) {
-                note.innerText = "50% DISCOUNT RESERVED • EXPIRES SOON";
-                note.style.color = "#ef4444";
+                note.innerText = "SLOT RESERVED • STARTS AT $30/MONTH";
+                note.style.color = "#48864B";
             }
 
-            // DISCOUNTED PRICES: $46 / $108 / $93
-            const p1Old = document.getElementById('p1-old');
+            // FLAT PRICES: $30 / $120 / $75
             const p1New = document.getElementById('p1-new');
             const p1Weekly = document.getElementById('p1-weekly');
-            if (p1Old) {
-                p1Old.innerText = "AUD $92";
-                p1Old.style.display = 'block';
-                p1Old.style.textDecoration = 'line-through';
-                p1Old.style.opacity = '0.5';
-            }
-            if (p1New) p1New.innerText = "AUD $46";
-            if (p1Weekly) p1Weekly.innerText = "AUD $11.50 per week";
+            if (p1New) p1New.innerText = "AUD $30";
+            if (p1Weekly) p1Weekly.innerText = "AUD $7.50 per week";
 
-            const p6Old = document.getElementById('p6-old');
             const p6New = document.getElementById('p6-new');
             const p6Weekly = document.getElementById('p6-weekly');
-            if (p6Old) {
-                p6Old.innerText = "AUD $216";
-                p6Old.style.display = 'block';
-                p6Old.style.textDecoration = 'line-through';
-                p6Old.style.opacity = '0.5';
-            }
-            if (p6New) p6New.innerText = "AUD $108";
-            if (p6Weekly) p6Weekly.innerText = "AUD $4.15 per week";
+            if (p6New) p6New.innerText = "Then AUD $120";
+            if (p6Weekly) p6Weekly.innerText = "AUD $4.60 per week (billed after trial)";
 
-            const p3Old = document.getElementById('p3-old');
             const p3New = document.getElementById('p3-new');
             const p3Weekly = document.getElementById('p3-weekly');
-            if (p3Old) {
-                p3Old.innerText = "AUD $186";
-                p3Old.style.display = 'block';
-                p3Old.style.textDecoration = 'line-through';
-                p3Old.style.opacity = '0.5';
-            }
-            if (p3New) p3New.innerText = "AUD $93";
-            if (p3Weekly) p3Weekly.innerText = "AUD $7.15 per week";
+            if (p3New) p3New.innerText = "AUD $75";
+            if (p3Weekly) p3Weekly.innerText = "AUD $5.75 per week";
+        }
+
+        // Keep for backwards compatibility but just applies flat prices
+        function applyDiscountPrices() {
+            applyPrices();
         }
 
         function switchToFullPrice() {
-            sessionStorage.setItem('timer_expired_final', 'true');
-            sessionStorage.setItem('is_discounted', 'false'); // Disable coupon on backend
-            
-            // TRACK: Offer Expired
-            if (typeof fbq === 'function') {
-                fbq('trackCustom', 'OfferExpiredToFullPrice');
-            }
-
-            const note = document.getElementById('discount-note');
-            if (note) {
-                note.innerText = "OFFER EXPIRED: RESUMING STANDARD PRICING";
-                note.style.color = "#666"; 
-            }
-
-            // AUD $92 / $216 / $186
-            const p1Old = document.getElementById('p1-old');
-            const p1New = document.getElementById('p1-new');
-            const p1Weekly = document.getElementById('p1-weekly');
-            if (p1Old) p1Old.style.display = 'none';
-            if (p1New) p1New.innerText = "AUD $92";
-            if (p1Weekly) p1Weekly.innerText = "AUD $23.00 per week";
-
-            const p6Old = document.getElementById('p6-old');
-            const p6New = document.getElementById('p6-new');
-            const p6Weekly = document.getElementById('p6-weekly');
-            if (p6Old) p6Old.style.display = 'none';
-            if (p6New) p6New.innerText = "AUD $216";
-            if (p6Weekly) p6Weekly.innerText = "AUD $8.30 per week";
-
-            const p3Old = document.getElementById('p3-old');
-            const p3New = document.getElementById('p3-new');
-            const p3Weekly = document.getElementById('p3-weekly');
-            if (p3Old) p3Old.style.display = 'none';
-            if (p3New) p3New.innerText = "AUD $186";
-            if (p3Weekly) p3Weekly.innerText = "AUD $14.30 per week";
+            // With flat pricing, this just applies the same prices
+            applyPrices();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Check for Final Expiry
-            if (sessionStorage.getItem('timer_expired_final') === 'true') {
-                switchToFullPrice();
-            } else {
-                applyDiscountPrices();
-            }
+            // Apply flat pricing
+            applyPrices();
 
             // Timer Init (Reserved Slot - 15 Minutes)
             const fifteenMinutes = 60 * 15,

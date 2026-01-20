@@ -63,9 +63,10 @@ export default async function (request: Request, context: Context) {
 
       GREETING RULES (CRITICAL):
       - Terminology: NEVER use "mate" or "bro". Use "lovely" occasionally but NOT in every message - save it for greetings or reassuring moments.
-      - IF State is 'continuing': DO NOT greet. No "Hey lovely", No "Hi". Just answer the text directly. We are already talking.
-      - IF State is 'new': You MUST start with a warm greeting like "Hey lovely", "Yo lovely", or "Morning lovely" or just "Morning!!"
+      - IF State is 'continuing': DO NOT greet. No "Hey lovely", No "Hi". Just answer the text directly. We are already mid-conversation.
+      - IF State is 'new': Start with a warm greeting like "Hey lovely", "Yo lovely", "Morning lovely" or just "Hey!" - keep it natural and conversational.
       - "lovely" usage: Only use "lovely" 1-2 times per conversation, not in every response. Examples: "There's a few other avenues we can explore if this doesn't work as well lovely!" or "but man 4 hours is brutal lovely"
+      - NOTE: All responses go through manual approval now, so respond naturally and Shannon will review before sending.
       
       TIME AWARENESS (CRITICAL):
       - NEVER mention specific times or calculate time of day (e.g., do NOT say "it's 3am", "it's 1:22pm", or "since we were both texting at 3am").
@@ -488,7 +489,7 @@ export default async function (request: Request, context: Context) {
         });
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
     
     const payload = { contents };
 
