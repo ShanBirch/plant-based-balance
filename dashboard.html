@@ -7949,12 +7949,44 @@ function startCustomBuilderWorkout() {
         <div id="workout-exercises-list">
             <!-- Dynamic Content Injected Here via JS -->
         </div>
+
+        <!-- Add Exercise Button -->
+        <div style="margin-top: 20px; padding-bottom: 40px;">
+            <button onclick="openAddExerciseModal()" style="width: 100%; background: transparent; border: 2px dashed var(--primary); color: var(--primary); font-weight: 700; font-size: 0.95rem; padding: 18px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+                Add Exercise
+            </button>
+        </div>
     </div>
 </div>
 
 </div>
 
+<!-- ADD EXERCISE MODAL -->
+<div id="add-exercise-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 600; overflow-y: auto;">
+    <div style="background: white; min-height: 100%; max-width: 600px; margin: 0 auto; position: relative;">
+        <!-- Modal Header -->
+        <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <div onclick="closeAddExerciseModal()" style="font-weight: 600; cursor: pointer; color: var(--text-muted); padding: 10px;">Cancel</div>
+            <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Add Exercise</div>
+            <div style="width: 60px;"></div>
+        </div>
 
+        <!-- Search Box -->
+        <div style="padding: 15px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+            <input type="text" id="add-exercise-search" placeholder="Search exercises..." oninput="searchExercisesForAdd(this.value)" style="width: 100%; padding: 12px 15px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 1rem; background: white;">
+        </div>
+
+        <!-- Exercise Results -->
+        <div id="add-exercise-results" style="padding: 15px 20px; padding-bottom: 100px;">
+            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                Type to search for exercises from your library
+            </div>
+        </div>
+    </div>
+</div>
 
 
 <!-- WORKOUT SUCCESS VIEW -->
@@ -12631,11 +12663,12 @@ function hideAllAppViews() {
 
 async function startActiveWorkout(id, forcedDayIndex = null) {
     const program = WORKOUT_DB[id];
-    
+
     // Get correct day schedule & Preload History
     const user = window.currentUser;
     let dayIndex = 0;
-    
+    let customizations = null;
+
     if (forcedDayIndex !== null) {
         dayIndex = forcedDayIndex;
     } else if (user) {
@@ -12643,7 +12676,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
         try {
             window.workoutHistoryCache = await dbHelpers.workouts.getHistory(user.id);
         } catch(e) { console.error("Failed to load history", e); }
-        
+
         const profile = await window.getUserProfile();
         const startDate = profile?.program_start_date;
         if (startDate) {
@@ -12653,32 +12686,81 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
         }
     }
 
-    const workout = program.schedule[dayIndex % program.schedule.length];
+    const actualDayIndex = dayIndex % program.schedule.length;
+    const workout = program.schedule[actualDayIndex];
+
+    // Store current workout key for customizations
+    window.currentWorkoutKey = `${id}/${actualDayIndex}`;
+
+    // Load workout customizations if user is logged in
+    if (user) {
+        try {
+            customizations = await dbHelpers.workoutCustomizations.get(user.id, window.currentWorkoutKey);
+            window.currentWorkoutCustomizations = customizations;
+        } catch(e) {
+            console.error("Failed to load customizations", e);
+        }
+    }
+
+    // Build exercise list with customizations applied
+    let exercises = workout.exercises.map(ex => ({...ex}));
+
+    if (customizations) {
+        // Filter out removed exercises
+        const removedExercises = customizations.removed_exercises || [];
+        exercises = exercises.filter(ex => !removedExercises.includes(ex.name));
+
+        // Add user-added exercises at the end
+        const addedExercises = customizations.added_exercises || [];
+        exercises = exercises.concat(addedExercises.map(ex => ({
+            ...ex,
+            isUserAdded: true
+        })));
+    }
 
     document.getElementById('workout-player-title').innerText = workout.title;
-    document.getElementById('workout-player-goal').innerText = program.description;
-    
+    const exerciseCount = exercises.length;
+    document.getElementById('workout-player-goal').innerText = `${program.description} · ${exerciseCount} Exercise${exerciseCount !== 1 ? 's' : ''}`;
+
     const list = document.getElementById('workout-exercises-list');
     list.innerHTML = '';
 
-    workout.exercises.forEach((ex, idx) => {
+    exercises.forEach((ex, idx) => {
         const card = document.createElement('div');
+        card.className = 'exercise-logger-card';
+        card.setAttribute('data-exercise-name', ex.name);
+        card.setAttribute('data-is-user-added', ex.isUserAdded || false);
         card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
 
-        const isTimeBased = ex.reps.toLowerCase().includes('min') || ex.reps.toLowerCase().includes('s');
+        const isTimeBased = ex.reps && (ex.reps.toLowerCase().includes('min') || ex.reps.toLowerCase().includes('s'));
         let setsHtml = '';
-        for(let s=1; s<=ex.sets; s++) {
+        const numSets = ex.sets || 3;
+        for(let s=1; s<=numSets; s++) {
             setsHtml += getSetRowHtml(ex.name, s, isTimeBased);
         }
 
         const videoUrl = findVideoMatch(ex.name);
         const prevData = findPreviousSetData(ex.name);
+        const isUserAdded = ex.isUserAdded || false;
+        const escapedName = ex.name.replace(/'/g, "\\'");
 
         card.innerHTML = `
             <div style="padding:15px; background:#f8fafc; border-bottom:1px solid #e2e8f0;">
-                <h3 style="margin:0 0 4px 0; font-size:1.05rem; font-weight:700; color:var(--text-main); line-height:1.2;">${ex.name}</h3>
-                <p style="margin:0; font-size:0.85rem; color:var(--text-muted); line-height:1.3;">${ex.desc || ''}</p>
-                ${prevData ? `<div style="color: var(--primary); font-size: 0.75rem; margin-top: 5px;">Last: ${prevData}</div>` : ''}
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:var(--text-main); line-height:1.2;">${ex.name}</h3>
+                            ${isUserAdded ? '<span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>' : ''}
+                        </div>
+                        <p style="margin:0; font-size:0.85rem; color:var(--text-muted); line-height:1.3;">${ex.desc || ''}</p>
+                        ${prevData ? `<div style="color: var(--primary); font-size: 0.75rem; margin-top: 5px;">Last: ${prevData}</div>` : ''}
+                    </div>
+                    <button onclick="deleteExerciseFromWorkout('${escapedName}', ${isUserAdded})" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
+                        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             ${videoUrl ? `
@@ -12702,7 +12784,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
             </div>
 
             <div style="padding:15px; border-top:1px solid #f8fafc;">
-                <button onclick="addWorkoutSet(this, '${ex.name.replace(/'/g, "\\'")}', ${isTimeBased})" style="width:100%; background:transparent; border:2px dashed #e2e8f0; color:#94a3b8; font-weight:700; font-size:0.8rem; padding:12px; border-radius:12px; cursor:pointer;">+ ADD SET</button>
+                <button onclick="addWorkoutSet(this, '${escapedName}', ${isTimeBased})" style="width:100%; background:transparent; border:2px dashed #e2e8f0; color:#94a3b8; font-weight:700; font-size:0.8rem; padding:12px; border-radius:12px; cursor:pointer;">+ ADD SET</button>
             </div>
         `;
         list.appendChild(card);
@@ -13409,6 +13491,10 @@ function openLibraryWorkoutOverview(categoryKey, subcategoryKey, workoutId) {
     pushNavigationState('view-workout-overview', () => switchAppTab('movement-tab'));
 }
 
+// Store current workout key globally for customizations
+window.currentWorkoutKey = null;
+window.currentWorkoutCustomizations = null;
+
 async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
     const category = WORKOUT_LIBRARY[categoryKey];
     const subcategory = category.subcategories[subcategoryKey];
@@ -13419,19 +13505,44 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
         return;
     }
 
+    // Store current workout key for customizations
+    window.currentWorkoutKey = `${categoryKey}/${subcategoryKey}/${workoutId}`;
+
     // Preload history if user is logged in
     const user = window.currentUser;
+    let customizations = null;
     if (user) {
         try {
             window.workoutHistoryCache = await dbHelpers.workouts.getHistory(user.id);
+            // Load workout customizations
+            customizations = await dbHelpers.workoutCustomizations.get(user.id, window.currentWorkoutKey);
+            window.currentWorkoutCustomizations = customizations;
         } catch(e) {
-            console.error("Failed to load history", e);
+            console.error("Failed to load history/customizations", e);
         }
+    }
+
+    // Build exercise list with customizations applied
+    let exercises = [...workout.exercises];
+
+    // Apply customizations if they exist
+    if (customizations) {
+        // Filter out removed exercises
+        const removedExercises = customizations.removed_exercises || [];
+        exercises = exercises.filter(ex => !removedExercises.includes(ex.name));
+
+        // Add user-added exercises at the end
+        const addedExercises = customizations.added_exercises || [];
+        exercises = exercises.concat(addedExercises.map(ex => ({
+            ...ex,
+            isUserAdded: true
+        })));
     }
 
     // Set workout title and goal
     document.getElementById('workout-player-title').textContent = workout.name;
-    document.getElementById('workout-player-goal').textContent = `${workout.difficulty} · ${workout.duration} · ${workout.exercises.length} Exercises`;
+    const exerciseCount = exercises.length;
+    document.getElementById('workout-player-goal').textContent = `${workout.difficulty} · ${workout.duration} · ${exerciseCount} Exercise${exerciseCount !== 1 ? 's' : ''}`;
 
     // Start timer
     window.workoutStartTime = Date.now();
@@ -13443,19 +13554,46 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
     }, 1000);
 
     // Render exercises
+    renderWorkoutExercises(exercises);
+
+    // Show workout player
+    hideAllAppViews();
+    document.getElementById('view-active-workout').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
+
+    // Push navigation state for Android back button
+    pushNavigationState('view-active-workout', () => quitWorkout());
+}
+
+// Render workout exercises with delete buttons
+function renderWorkoutExercises(exercises) {
     const container = document.getElementById('workout-exercises-list');
     container.innerHTML = '';
 
-    workout.exercises.forEach((ex, idx) => {
+    exercises.forEach((ex, idx) => {
         const videoUrl = findVideoMatch(ex.name);
         const prevData = findPreviousSetData(ex.name);
+        const isUserAdded = ex.isUserAdded || false;
+        const escapedName = ex.name.replace(/'/g, "\\'");
 
         container.innerHTML += `
-            <div class="exercise-logger-card">
+            <div class="exercise-logger-card" data-exercise-name="${ex.name}" data-is-user-added="${isUserAdded}">
                 <div style="padding: 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                    <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 5px;">${ex.name}</div>
-                    <div style="color: var(--text-muted); font-size: 0.85rem;">${ex.desc}</div>
-                    ${prevData ? `<div style="color: var(--primary); font-size: 0.75rem; margin-top: 5px;">Last: ${prevData}</div>` : ''}
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                                <span style="font-weight: 700; font-size: 1.05rem;">${ex.name}</span>
+                                ${isUserAdded ? '<span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>' : ''}
+                            </div>
+                            <div style="color: var(--text-muted); font-size: 0.85rem;">${ex.desc || ''}</div>
+                            ${prevData ? `<div style="color: var(--primary); font-size: 0.75rem; margin-top: 5px;">Last: ${prevData}</div>` : ''}
+                        </div>
+                        <button onclick="deleteExerciseFromWorkout('${escapedName}', ${isUserAdded})" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
+                            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 ${videoUrl ? `
@@ -13475,7 +13613,7 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
                 </div>
 
                 <div class="sets-list-container">
-                    ${Array.from({length: ex.sets}, (_, setIdx) => `
+                    ${Array.from({length: ex.sets || 3}, (_, setIdx) => `
                         <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
                             <div style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
                             <input type="text" class="input-time" placeholder="-" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
@@ -13486,19 +13624,258 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
                 </div>
 
                 <div style="padding:15px; border-top:1px solid #f8fafc;">
-                    <button onclick="addWorkoutSet(this, '${ex.name.replace(/'/g, "\\'")}', false)" style="width:100%; background:transparent; border:2px dashed #e2e8f0; color:#94a3b8; font-weight:700; font-size:0.8rem; padding:12px; border-radius:12px; cursor:pointer;">+ ADD SET</button>
+                    <button onclick="addWorkoutSet(this, '${escapedName}', false)" style="width:100%; background:transparent; border:2px dashed #e2e8f0; color:#94a3b8; font-weight:700; font-size:0.8rem; padding:12px; border-radius:12px; cursor:pointer;">+ ADD SET</button>
                 </div>
             </div>
         `;
     });
+}
 
-    // Show workout player
-    hideAllAppViews();
-    document.getElementById('view-active-workout').style.display = 'block';
-    document.querySelector('.bottom-nav').style.display = 'none';
+// Delete exercise from workout
+async function deleteExerciseFromWorkout(exerciseName, isUserAdded) {
+    const user = window.currentUser;
+    const workoutKey = window.currentWorkoutKey;
 
-    // Push navigation state for Android back button
-    pushNavigationState('view-active-workout', () => quitWorkout());
+    if (!user || !workoutKey) {
+        // Just remove from DOM if not logged in
+        const card = document.querySelector(`.exercise-logger-card[data-exercise-name="${exerciseName}"]`);
+        if (card && confirm('Remove this exercise from today\'s workout?')) {
+            card.remove();
+        }
+        return;
+    }
+
+    // Ask user if they want to save this permanently
+    const saveChoice = confirm(`Remove "${exerciseName}" from this workout?\n\nClick OK to remove it permanently (it won't show next time).\nClick Cancel to keep it.`);
+
+    if (!saveChoice) return;
+
+    try {
+        // Remove from database
+        await dbHelpers.workoutCustomizations.removeExercise(user.id, workoutKey, exerciseName);
+
+        // Remove from DOM
+        const card = document.querySelector(`.exercise-logger-card[data-exercise-name="${exerciseName}"]`);
+        if (card) {
+            card.remove();
+        }
+
+        // Update exercise count in header
+        const remainingExercises = document.querySelectorAll('.exercise-logger-card').length;
+        const goalEl = document.getElementById('workout-player-goal');
+        if (goalEl) {
+            const currentText = goalEl.textContent;
+            goalEl.textContent = currentText.replace(/\d+ Exercise[s]?/, `${remainingExercises} Exercise${remainingExercises !== 1 ? 's' : ''}`);
+        }
+
+        console.log(`Exercise "${exerciseName}" removed from workout`);
+    } catch (e) {
+        console.error('Failed to remove exercise:', e);
+        alert('Failed to remove exercise. Please try again.');
+    }
+}
+
+// Open add exercise modal
+function openAddExerciseModal() {
+    document.getElementById('add-exercise-modal').style.display = 'block';
+    document.getElementById('add-exercise-search').value = '';
+    document.getElementById('add-exercise-results').innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #94a3b8;">
+            Type to search for exercises from your library
+        </div>
+    `;
+    document.getElementById('add-exercise-search').focus();
+}
+
+// Close add exercise modal
+function closeAddExerciseModal() {
+    document.getElementById('add-exercise-modal').style.display = 'none';
+}
+
+// Search exercises for add modal
+function searchExercisesForAdd(query) {
+    const resultsContainer = document.getElementById('add-exercise-results');
+
+    if (!query || query.length < 2) {
+        resultsContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                Type at least 2 characters to search
+            </div>
+        `;
+        return;
+    }
+
+    // Search in EXERCISE_VIDEOS library
+    if (typeof EXERCISE_VIDEOS === 'undefined') {
+        resultsContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #ef4444;">
+                Exercise library not loaded
+            </div>
+        `;
+        return;
+    }
+
+    const allExercises = Object.keys(EXERCISE_VIDEOS);
+    const terms = query.toLowerCase().split(' ');
+    const filteredExercises = allExercises.filter(name => {
+        const nameLower = name.toLowerCase();
+        return terms.every(term => nameLower.includes(term));
+    });
+
+    if (filteredExercises.length === 0) {
+        resultsContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                No exercises found matching "${query}"
+            </div>
+        `;
+        return;
+    }
+
+    // Limit to first 50 results
+    const displayExercises = filteredExercises.slice(0, 50);
+
+    resultsContainer.innerHTML = displayExercises.map(name => {
+        const escapedName = name.replace(/'/g, "\\'");
+        return `
+            <div onclick="selectExerciseToAdd('${escapedName}')" style="padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                <div style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #94a3b8;">
+                        <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+                    </svg>
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: var(--text-main);">${name}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Tap to add to workout</div>
+                </div>
+                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary);">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+            </div>
+        `;
+    }).join('');
+
+    if (displayExercises.length < filteredExercises.length) {
+        resultsContainer.innerHTML += `
+            <div style="text-align: center; padding: 15px; color: #94a3b8; font-size: 0.85rem;">
+                Showing ${displayExercises.length} of ${filteredExercises.length} results. Refine your search for more specific results.
+            </div>
+        `;
+    }
+}
+
+// Select exercise to add
+async function selectExerciseToAdd(exerciseName) {
+    const user = window.currentUser;
+    const workoutKey = window.currentWorkoutKey;
+
+    // Create exercise object
+    const newExercise = {
+        name: exerciseName,
+        sets: 3,
+        reps: '8-12',
+        desc: 'Custom exercise added by you',
+        isUserAdded: true
+    };
+
+    // Ask user if they want to save permanently
+    const saveChoice = confirm(`Add "${exerciseName}" to this workout?\n\nClick OK to save it permanently (it will appear every time you do this workout).\nClick Cancel to just add it for today.`);
+
+    // Add to UI immediately
+    addExerciseToUI(newExercise);
+    closeAddExerciseModal();
+
+    // Save to database if user confirmed and is logged in
+    if (saveChoice && user && workoutKey) {
+        try {
+            await dbHelpers.workoutCustomizations.addExercise(user.id, workoutKey, {
+                name: exerciseName,
+                sets: 3,
+                reps: '8-12',
+                desc: 'Custom exercise added by you'
+            });
+            console.log(`Exercise "${exerciseName}" saved to workout permanently`);
+        } catch (e) {
+            console.error('Failed to save exercise to database:', e);
+            // Exercise is already added to UI, just log the error
+        }
+    }
+}
+
+// Add exercise to UI
+function addExerciseToUI(exercise) {
+    const container = document.getElementById('workout-exercises-list');
+    const videoUrl = findVideoMatch(exercise.name);
+    const prevData = findPreviousSetData(exercise.name);
+    const escapedName = exercise.name.replace(/'/g, "\\'");
+
+    const exerciseHtml = `
+        <div class="exercise-logger-card" data-exercise-name="${exercise.name}" data-is-user-added="true" style="animation: slideInUp 0.3s ease;">
+            <div style="padding: 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                            <span style="font-weight: 700; font-size: 1.05rem;">${exercise.name}</span>
+                            <span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 0.85rem;">${exercise.desc || ''}</div>
+                        ${prevData ? `<div style="color: var(--primary); font-size: 0.75rem; margin-top: 5px;">Last: ${prevData}</div>` : ''}
+                    </div>
+                    <button onclick="deleteExerciseFromWorkout('${escapedName}', true)" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
+                        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            ${videoUrl ? `
+            <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
+                <video style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline>
+                    <source src="${videoUrl}" type="video/mp4">
+                </video>
+                <div class="inline-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    <svg viewBox="0 0 24 24" style="width: 30px; height: 30px; fill: var(--primary); margin-left: 3px;">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+            </div>` : ''}
+
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div>
+            </div>
+
+            <div class="sets-list-container">
+                ${Array.from({length: exercise.sets || 3}, (_, setIdx) => `
+                    <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
+                        <div style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
+                        <input type="text" class="input-time" placeholder="-" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                        <input type="text" class="input-reps" placeholder="Reps" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                        <input type="text" class="input-kg" placeholder="Kg" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                    </div>
+                `).join('')}
+            </div>
+
+            <div style="padding:15px; border-top:1px solid #f8fafc;">
+                <button onclick="addWorkoutSet(this, '${escapedName}', false)" style="width:100%; background:transparent; border:2px dashed #e2e8f0; color:#94a3b8; font-weight:700; font-size:0.8rem; padding:12px; border-radius:12px; cursor:pointer;">+ ADD SET</button>
+            </div>
+        </div>
+    `;
+
+    container.insertAdjacentHTML('beforeend', exerciseHtml);
+
+    // Update exercise count in header
+    const exerciseCount = document.querySelectorAll('.exercise-logger-card').length;
+    const goalEl = document.getElementById('workout-player-goal');
+    if (goalEl) {
+        const currentText = goalEl.textContent;
+        goalEl.textContent = currentText.replace(/\d+ Exercise[s]?/, `${exerciseCount} Exercise${exerciseCount !== 1 ? 's' : ''}`);
+    }
+
+    // Scroll to the new exercise
+    const newCard = container.lastElementChild;
+    if (newCard) {
+        newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
 
 // Update hideAllAppViews to include new views
