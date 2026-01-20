@@ -2136,7 +2136,7 @@
             loadJournalHistory();
             await syncQuizDataToDb(); // Sync quiz data first
             await seedTestAccount(); // Inject fake data for test user
-            loadProfileData(); // Ensure profile is loaded
+            await loadProfileData(); // Ensure profile is loaded (includes gender restore)
             initProgramDate(); // Ensure program date is synced
 
             // Check if essential quiz data is missing and trigger onboarding wizard
@@ -9043,6 +9043,8 @@ async function handleLogout() {
             // Clear any cached data
             sessionStorage.clear();
             localStorage.removeItem('userProfile');
+            localStorage.removeItem('userGender'); // Clear gender on logout
+            localStorage.removeItem('onboardingComplete'); // Reset onboarding status
             window.location.href = '/login.html';
         } catch (error) {
             console.error('Logout failed:', error);
@@ -9117,6 +9119,25 @@ async function loadProfileData() {
             el.innerHTML = `<img src="${savedPhoto}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
             el.style.background = 'transparent';
         });
+    }
+
+    // CRITICAL: Restore gender from database to localStorage
+    // This ensures male users get their UI on page reload
+    if (profile?.user_gender) {
+        localStorage.setItem('userGender', profile.user_gender);
+        console.log("Restored gender from DB:", profile.user_gender);
+
+        // Re-apply gender theme and UI now that we have the correct gender
+        if (typeof applyGenderTheme === 'function') {
+            applyGenderTheme();
+        }
+        if (typeof applyGenderSpecificUI === 'function') {
+            applyGenderSpecificUI();
+        }
+        // Re-render cycle status with correct gender
+        if (typeof renderCycleStatus === 'function') {
+            renderCycleStatus();
+        }
     }
 }
 
