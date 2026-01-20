@@ -5271,6 +5271,261 @@ const WORKOUT_LIBRARY = {
         ]
       }
     }
+  },
+
+  // ====================
+  // RESISTANCE BANDS
+  // ====================
+  "bands": {
+    name: "Resistance Bands",
+    icon: "🎯",
+    description: "Complete band-based workouts for any fitness level",
+    subcategories: {
+
+      // UPPER BODY BAND WORKOUTS
+      "upper": {
+        name: "Upper Body",
+        description: "Build upper body strength with resistance bands",
+        workouts: [
+          {
+            id: "bands-upper-1",
+            name: "Band Upper 1 - Push Focus",
+            duration: "35 min",
+            difficulty: "Intermediate",
+            equipment: ["Resistance Bands", "Door Anchor"],
+            exercises: [
+              { name: "Band Anchored Chest Press", sets: 4, reps: "12-15", desc: "Chest builder" },
+              { name: "Band Anchored Decline Chest Press", sets: 4, reps: "12-15", desc: "Lower chest focus" },
+              { name: "Band Shoulder Press", sets: 4, reps: "10-12", desc: "Shoulder development" },
+              { name: "Band Anchored Tricep Pushdown", sets: 3, reps: "12-15", desc: "Tricep isolation" },
+              { name: "Band Lateral Raise", sets: 3, reps: "15-20", desc: "Side delt finisher" }
+            ]
+          },
+          {
+            id: "bands-upper-2",
+            name: "Band Upper 2 - Pull Focus",
+            duration: "35 min",
+            difficulty: "Intermediate",
+            equipment: ["Resistance Bands", "Door Anchor"],
+            exercises: [
+              { name: "Band Lat Pull Down", sets: 4, reps: "12-15", desc: "Lat development" },
+              { name: "Band Bent Over Row", sets: 4, reps: "12-15", desc: "Back thickness" },
+              { name: "SuperBand Face Pulls", sets: 4, reps: "15-20", desc: "Rear delts and upper back" },
+              { name: "Band Bicep Curl", sets: 3, reps: "12-15", desc: "Bicep builder" },
+              { name: "Mini Band Pull Aparts", sets: 3, reps: "20-25", desc: "Shoulder health" }
+            ]
+          },
+          {
+            id: "bands-upper-3",
+            name: "Band Upper 3 - Chest & Back",
+            duration: "40 min",
+            difficulty: "Advanced",
+            equipment: ["Resistance Bands", "Door Anchor"],
+            exercises: [
+              { name: "SuperBand Push Up", sets: 4, reps: "10-12", desc: "Weighted push up variation" },
+              { name: "Band Anchored Chest Fly", sets: 3, reps: "12-15", desc: "Chest stretch and squeeze" },
+              { name: "Band Standing Row", sets: 4, reps: "12-15", desc: "Mid-back rows" },
+              { name: "Band Single Arm Lat Pull Down", sets: 3, reps: "10-12 each", desc: "Unilateral lat work" },
+              { name: "Band Upright Row", sets: 3, reps: "12-15", desc: "Upper trap and delt work" }
+            ]
+          },
+          {
+            id: "bands-upper-4",
+            name: "Band Upper 4 - Arms & Shoulders",
+            duration: "30 min",
+            difficulty: "Beginner",
+            equipment: ["Resistance Bands", "Door Anchor"],
+            exercises: [
+              { name: "Band Alternating Shoulder Press", sets: 3, reps: "10-12 each", desc: "Shoulder strength" },
+              { name: "Band Front To Lateral Raise", sets: 3, reps: "12-15", desc: "Delt combo move" },
+              { name: "Band Single Arm Bicep Curl", sets: 3, reps: "12-15 each", desc: "Bicep isolation" },
+              { name: "Band Overhead Tricep Extension", sets: 3, reps: "12-15", desc: "Tricep stretch" },
+              { name: "Mini Band Bent Over Y's", sets: 3, reps: "15-20", desc: "Rear delt and trap activation" }
+            ]
+          },
+          {
+            id: "bands-upper-5",
+            name: "Band Upper 5 - Complete Upper",
+            duration: "40 min",
+            difficulty: "Intermediate",
+            equipment: ["Resistance Bands", "Door Anchor", "Mini Band"],
+            exercises: [
+              { name: "Band Anchored Standing Incline Chest Press", sets: 4, reps: "12-15", desc: "Upper chest press" },
+              { name: "SuperBand Seated Row", sets: 4, reps: "12-15", desc: "Horizontal pulling" },
+              { name: "Band Alternating Front Raise", sets: 3, reps: "12-15 each", desc: "Front delt work" },
+              { name: "Band Alternating Bicep Curl", sets: 3, reps: "12-15 each", desc: "Alternating curls" },
+              { name: "Band Tricep Kickback", sets: 3, reps: "12-15", desc: "Tricep finisher" },
+              { name: "Mini Band External Rotation", sets: 2, reps: "15-20", desc: "Rotator cuff health" }
+            ]
+          }
+        ]
+      },
+
+      // LOWER BODY BAND WORKOUTS
+      "lower": {
+        name: "Lower Body",
+        description: "Strengthen legs and glutes with resistance bands",
+        workouts: [
+          {
+            id: "bands-lower-1",
+            name: "Band Lower 1 - Glute Focus",
+            duration: "35 min",
+            difficulty: "Intermediate",
+            equipment: ["Resistance Bands", "Mini Band"],
+            exercises: [
+              { name: "SuperBand Glute Bridge", sets: 4, reps: "15-20", desc: "Glute activation" },
+              { name: "SuperBand Deadlift", sets: 4, reps: "12-15", desc: "Posterior chain builder" },
+              { name: "Mini Band Glute Kickback", sets: 3, reps: "15-20 each", desc: "Glute isolation" },
+              { name: "Mini Band Fire Hydrants", sets: 3, reps: "15-20 each", desc: "Glute med activation" },
+              { name: "Mini Band Clamshell", sets: 3, reps: "20-25 each", desc: "Hip external rotation" }
+            ]
+          },
+          {
+            id: "bands-lower-2",
+            name: "Band Lower 2 - Quad Focus",
+            duration: "35 min",
+            difficulty: "Intermediate",
+            equipment: ["Resistance Bands", "Mini Band"],
+            exercises: [
+              { name: "Resistance Band Squat", sets: 4, reps: "15-20", desc: "Quad builder" },
+              { name: "Band Split Squat", sets: 4, reps: "12-15 each", desc: "Single leg strength" },
+              { name: "Mini Band Squat", sets: 3, reps: "20-25", desc: "Quad burn with abduction" },
+              { name: "Band Reverse Lunge", sets: 3, reps: "12-15 each", desc: "Lunge variation" },
+              { name: "Mini Band Wall Sit with Abductions", sets: 3, reps: "30-45 sec", desc: "Isometric quad and glute work" }
+            ]
+          },
+          {
+            id: "bands-lower-3",
+            name: "Band Lower 3 - Hamstring Focus",
+            duration: "30 min",
+            difficulty: "Beginner",
+            equipment: ["Resistance Bands", "Mini Band"],
+            exercises: [
+              { name: "SuperBand Deadlift", sets: 4, reps: "12-15", desc: "Hamstring and glute work" },
+              { name: "Band Pull Through", sets: 4, reps: "15-20", desc: "Hip hinge pattern" },
+              { name: "Mini Band Single Leg Glute Bridge", sets: 3, reps: "12-15 each", desc: "Unilateral glute work" },
+              { name: "Mini Band Single Leg Deadlift", sets: 3, reps: "10-12 each", desc: "Balance and hamstrings" },
+              { name: "Band Calf Raise", sets: 3, reps: "15-20", desc: "Calf finisher" }
+            ]
+          },
+          {
+            id: "bands-lower-4",
+            name: "Band Lower 4 - Hip & Glute",
+            duration: "40 min",
+            difficulty: "Advanced",
+            equipment: ["Resistance Bands", "Mini Band"],
+            exercises: [
+              { name: "SuperBand Single Leg Glute Bridge", sets: 4, reps: "12-15 each", desc: "Advanced glute work" },
+              { name: "SuperBand Kneeling Hip Thrust", sets: 4, reps: "15-20", desc: "Hip thrust variation" },
+              { name: "Mini Band Lateral Squat Walk (Knees)", sets: 3, reps: "10-12 each way", desc: "Lateral movement" },
+              { name: "Mini Band Side Lying Hip Abduction", sets: 3, reps: "15-20 each", desc: "Glute med isolation" },
+              { name: "Mini Band Standing Hip Abduction", sets: 3, reps: "15-20 each", desc: "Standing abduction" },
+              { name: "Mini Band Frog Pumps", sets: 3, reps: "20-25", desc: "Glute finisher" }
+            ]
+          },
+          {
+            id: "bands-lower-5",
+            name: "Band Lower 5 - Complete Lower",
+            duration: "40 min",
+            difficulty: "Intermediate",
+            equipment: ["Resistance Bands", "Mini Band"],
+            exercises: [
+              { name: "Superband Squat", sets: 4, reps: "15-20", desc: "Compound leg movement" },
+              { name: "Superband Good Morning", sets: 4, reps: "12-15", desc: "Hamstring and lower back" },
+              { name: "Band Lying Leg Press", sets: 3, reps: "15-20", desc: "Leg press variation" },
+              { name: "Resistance Band Lateral Lunge", sets: 3, reps: "12-15 each", desc: "Lateral strength" },
+              { name: "Mini Band Glute Bridge", sets: 3, reps: "20-25", desc: "Glute pump" },
+              { name: "Mini Band Donkey Kicks", sets: 3, reps: "15-20 each", desc: "Glute isolation finisher" }
+            ]
+          }
+        ]
+      },
+
+      // FULL BODY BAND WORKOUTS
+      "fullbody": {
+        name: "Full Body",
+        description: "Complete full body resistance band training",
+        workouts: [
+          {
+            id: "bands-fullbody-1",
+            name: "Band Full Body 1",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Resistance Bands", "Mini Band", "Door Anchor"],
+            exercises: [
+              { name: "SuperBand Thruster", sets: 4, reps: "12-15", desc: "Full body compound" },
+              { name: "Band Anchored Squat to Row", sets: 4, reps: "12-15", desc: "Legs and back combo" },
+              { name: "Band Anchored Chest Press", sets: 3, reps: "12-15", desc: "Chest work" },
+              { name: "Band Lat Pull Down", sets: 3, reps: "12-15", desc: "Lat development" },
+              { name: "SuperBand Pallof Press", sets: 3, reps: "12-15 each", desc: "Anti-rotation core" },
+              { name: "Mini Band Glute Bridge", sets: 3, reps: "15-20", desc: "Glute finisher" }
+            ]
+          },
+          {
+            id: "bands-fullbody-2",
+            name: "Band Full Body 2",
+            duration: "40 min",
+            difficulty: "Beginner",
+            equipment: ["Resistance Bands", "Mini Band"],
+            exercises: [
+              { name: "Resistance Band Squat", sets: 3, reps: "15-20", desc: "Leg foundation" },
+              { name: "Band Standing Row", sets: 3, reps: "12-15", desc: "Back rows" },
+              { name: "Band Shoulder Press", sets: 3, reps: "10-12", desc: "Shoulder press" },
+              { name: "Band Bicep Curl", sets: 3, reps: "12-15", desc: "Bicep work" },
+              { name: "Band Overhead Tricep Extension", sets: 3, reps: "12-15", desc: "Tricep extension" },
+              { name: "Mini Band Mountain Climbers", sets: 3, reps: "30 sec", desc: "Core and cardio finisher" }
+            ]
+          },
+          {
+            id: "bands-fullbody-3",
+            name: "Band Full Body 3 - Athletic",
+            duration: "45 min",
+            difficulty: "Advanced",
+            equipment: ["Resistance Bands", "Mini Band"],
+            exercises: [
+              { name: "Superband Deadlift to Row", sets: 4, reps: "10-12", desc: "Compound power move" },
+              { name: "Banded Thruster", sets: 4, reps: "12-15", desc: "Legs and shoulders" },
+              { name: "SuperBand Push Up", sets: 3, reps: "12-15", desc: "Weighted push variation" },
+              { name: "Band Lunge to Curl", sets: 3, reps: "10-12 each", desc: "Leg and arm combo" },
+              { name: "SuperBand Mountain Climber", sets: 3, reps: "30 sec", desc: "Core stability" },
+              { name: "Mini Band Plank Alternating Leg Lift", sets: 3, reps: "10-12 each", desc: "Core and glute" }
+            ]
+          },
+          {
+            id: "bands-fullbody-4",
+            name: "Band Full Body 4 - Strength",
+            duration: "50 min",
+            difficulty: "Intermediate",
+            equipment: ["Resistance Bands", "Mini Band", "Door Anchor"],
+            exercises: [
+              { name: "SuperBand Deadlift", sets: 4, reps: "12-15", desc: "Posterior chain" },
+              { name: "Band Anchored Chest Press", sets: 4, reps: "12-15", desc: "Chest press" },
+              { name: "Band Bent Over Row", sets: 4, reps: "12-15", desc: "Back rows" },
+              { name: "Band Split Squat", sets: 3, reps: "12-15 each", desc: "Single leg work" },
+              { name: "Band Pallof Press", sets: 3, reps: "12-15 each", desc: "Core stability" },
+              { name: "Band Alternating Shoulder Press", sets: 3, reps: "10-12 each", desc: "Shoulder work" },
+              { name: "Mini Band Bicycle Crunch", sets: 3, reps: "20-25", desc: "Core finisher" }
+            ]
+          },
+          {
+            id: "bands-fullbody-5",
+            name: "Band Full Body 5 - Functional",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Resistance Bands", "Mini Band"],
+            exercises: [
+              { name: "Reverse Lunge to Band Pull Apart", sets: 4, reps: "12-15 each", desc: "Leg and back combo" },
+              { name: "SuperBand Overhead Squat", sets: 3, reps: "12-15", desc: "Overhead stability squat" },
+              { name: "SuperBand Standing Row", sets: 4, reps: "12-15", desc: "Standing row" },
+              { name: "Resistance Band Chest Press", sets: 3, reps: "12-15", desc: "Chest press" },
+              { name: "Half Kneeling Band Pallof Press", sets: 3, reps: "12-15 each", desc: "Anti-rotation" },
+              { name: "Mini Band Bear Crawl (Around Legs)", sets: 3, reps: "30 sec", desc: "Full body crawl" },
+              { name: "Band Pull Through", sets: 3, reps: "15-20", desc: "Hip hinge finisher" }
+            ]
+          }
+        ]
+      }
+    }
   }
 };
 
