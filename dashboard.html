@@ -8474,11 +8474,11 @@ function startCustomBuilderWorkout() {
                 </h3>
             </div>
             <div style="padding: 0;">
-                <!-- Hormone Type -->
+                <!-- Hormone Type / Energy Level (gender-specific) -->
                 <div class="setting-row" style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Hormone Type</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">Determines your nutrition plan</div>
+                        <div id="profile-type-label" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Hormone Type</div>
+                        <div id="profile-type-desc" style="font-size: 0.8rem; color: var(--text-muted);">Determines your nutrition plan</div>
                     </div>
                     <div id="profile-type-display" style="font-weight: 700; color: var(--primary);">Cortisol</div>
                 </div>
@@ -9111,10 +9111,11 @@ async function syncQuizDataToDb() {
                             goal_body_type: quizData.goalBodyType,
                             sleep_hours: quizData.sleep_hours,
                             sleep_quality: quizData.wake_feel,
-                            energy_level: quizData.energy_status,
+                            energy_level: quizData.energy_level || quizData.energy_status, // Support both field names
                             energy_crashes: quizData.midday_crash,
                             caffeine_relationship: quizData.caffeine,
                             hormone_profile: hormoneType,
+                            equipment_access: quizData.equipment_access, // Include equipment selection
                             age: metricData.age,
                             height: metricData.height,
                             weight: metricData.weight,
@@ -9174,12 +9175,28 @@ async function handleLogout() {
 
 async function loadProfileData() {
     let profile = null;
+    let quizResult = null;
+
     try {
         profile = await window.getUserProfile();
     } catch (e) {
         console.warn("Profile fetching error", e);
     }
-    
+
+    // Also fetch quiz results for equipment_access and energy_level
+    try {
+        if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
+            quizResult = await dbHelpers.quizResults.getLatest(window.currentUser.id);
+        }
+    } catch (e) {
+        console.warn("Quiz results fetching error", e);
+    }
+
+    // Merge quiz results into profile for easy access
+    if (quizResult) {
+        profile = { ...profile, ...quizResult };
+    }
+
     // Fallback if DB fetch fail
     if (!profile) {
         try {
@@ -9193,8 +9210,12 @@ async function loadProfileData() {
         age: profile?.age || "34",
         weight: profile?.weight || "68 kg",
         goal: profile?.goal_weight || profile?.goal || "Fat Loss",
-        profile: profile?.profile || (sessionStorage.getItem('userResult') || 'Cortisol').toUpperCase()
+        profile: profile?.profile || (sessionStorage.getItem('userResult') || 'Cortisol').toUpperCase(),
+        energy_level: profile?.energy_level || 'normal'
     };
+
+    // Store energy_level globally for gender-specific UI
+    window.userEnergyLevel = context.energy_level;
 
     // Load symptoms from profile if available (from quiz)
     if (profile?.symptoms && Array.isArray(profile.symptoms) && profile.symptoms.length > 0) {
@@ -9230,9 +9251,17 @@ async function loadProfileData() {
         eqDisplay.dataset.raw = equipment; // Store raw value for edit mode mapping
     }
 
-    const symptoms = Array.isArray(profile?.symptoms) ? profile.symptoms.join(', ') : (profile?.symptoms || 'None');
+    // Format symptoms nicely (e.g., hot_flash -> Hot Flash)
+    let symptomsText = 'None';
+    if (Array.isArray(profile?.symptoms) && profile.symptoms.length > 0) {
+        symptomsText = profile.symptoms.map(s =>
+            s.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+        ).join(', ');
+    } else if (typeof profile?.symptoms === 'string' && profile.symptoms) {
+        symptomsText = profile.symptoms;
+    }
     if(document.getElementById('profile-symptoms-display')) {
-        document.getElementById('profile-symptoms-display').innerText = symptoms || 'None';
+        document.getElementById('profile-symptoms-display').innerText = symptomsText;
     }
 
     // Load saved avatar if exists
@@ -10324,7 +10353,21 @@ function submitDailyWellness() {
     renderTodayMeals(); // Re-render meals with personalization
     renderMovementView(); // Re-render workouts with personalization
 
-    // 7. Show personalization message
+    // 7. Update Active Symptoms display in Metabolic Protocol section
+    const symptomsDisplay = document.getElementById('profile-symptoms-display');
+    if (symptomsDisplay) {
+        if (symptoms.length > 0) {
+            // Format symptom names nicely (e.g., hot_flash -> Hot Flash)
+            const formattedSymptoms = symptoms.map(s =>
+                s.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+            ).join(', ');
+            symptomsDisplay.textContent = formattedSymptoms;
+        } else {
+            symptomsDisplay.textContent = 'None';
+        }
+    }
+
+    // 8. Show personalization message
     if (userCycleData.mood || userCycleData.symptoms?.length > 0) {
         showPersonalizationMessage();
     }
@@ -11011,6 +11054,31 @@ function applyGenderSpecificUI() {
                 el.textContent = el.textContent.replace('estrogen detox', 'metabolic optimization');
             }
         });
+    }
+
+    // Update Metabolic Protocol section based on gender
+    const typeLabel = document.getElementById('profile-type-label');
+    const typeDesc = document.getElementById('profile-type-desc');
+    const typeDisplay = document.getElementById('profile-type-display');
+
+    if (isMale) {
+        // Males: Show Energy Level instead of Hormone Type
+        if (typeLabel) typeLabel.textContent = 'Energy Level';
+        if (typeDesc) typeDesc.textContent = 'Affects workout intensity';
+        if (typeDisplay) {
+            const energyLevel = window.userEnergyLevel || 'normal';
+            const energyMap = {
+                'low': 'Low Energy',
+                'normal': 'Normal',
+                'high': 'High Energy'
+            };
+            typeDisplay.textContent = energyMap[energyLevel] || 'Normal';
+        }
+    } else {
+        // Females: Show Hormone Type (default)
+        if (typeLabel) typeLabel.textContent = 'Hormone Type';
+        if (typeDesc) typeDesc.textContent = 'Determines your nutrition plan';
+        // typeDisplay keeps its hormone profile value (set in loadProfileData)
     }
 }
 
@@ -13906,10 +13974,12 @@ function openAsClient() {
         <!-- Symptoms -->
         <label style="display:block; text-align:left; font-weight:600; margin-bottom:10px; color:var(--text-main);">Any Symptoms?</label>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:25px; text-align:left;">
-             <label class="symptom-chip"><input type="checkbox" value="hot_flash" onchange="toggleSymptom(this)"> Hot Flashes</label>
+             <label class="symptom-chip female-only-chip"><input type="checkbox" value="hot_flash" onchange="toggleSymptom(this)"> Hot Flashes</label>
              <label class="symptom-chip"><input type="checkbox" value="dizziness" onchange="toggleSymptom(this)"> Dizziness</label>
              <label class="symptom-chip"><input type="checkbox" value="anxiety" onchange="toggleSymptom(this)"> Anxiety</label>
              <label class="symptom-chip"><input type="checkbox" value="fatigue" onchange="toggleSymptom(this)"> Fatigue</label>
+             <label class="symptom-chip male-only-chip"><input type="checkbox" value="muscle_soreness" onchange="toggleSymptom(this)"> Muscle Soreness</label>
+             <label class="symptom-chip male-only-chip"><input type="checkbox" value="joint_pain" onchange="toggleSymptom(this)"> Joint Pain</label>
         </div>
 
         <button onclick="submitDailyWellness()" style="width:100%; background:var(--primary); color:white; border:none; padding:16px; border-radius:50px; font-weight:700; font-size:1rem; cursor:pointer;">Save & Start Day</button>
