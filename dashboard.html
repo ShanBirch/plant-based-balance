@@ -9249,6 +9249,10 @@ async function loadProfileData() {
     if (typeof applyGenderSpecificUI === 'function') {
         applyGenderSpecificUI();
     }
+    // Update settings icon to show Dragon Ball for DBZ themes
+    if (typeof updateSettingsIcon === 'function') {
+        updateSettingsIcon();
+    }
     // Re-render cycle status with correct gender
     if (typeof renderCycleStatus === 'function') {
         renderCycleStatus();
@@ -9494,11 +9498,15 @@ function switchAppTab(tabName, btn) {
         }
     } else if (tabName === 'profile') {
         const el = document.getElementById('view-profile');
-        if(el) { 
-            el.classList.add('active'); 
-            el.style.display='block'; 
+        if(el) {
+            el.classList.add('active');
+            el.style.display='block';
             // Decouple data loading so errors don't stop view from showing
             setTimeout(loadProfileData, 10);
+            // Update settings icon when profile view is shown
+            if (typeof updateSettingsIcon === 'function') {
+                setTimeout(updateSettingsIcon, 100);
+            }
         }
     } else if (tabName === 'progress') {
         const el = document.getElementById('view-progress');
@@ -17040,8 +17048,16 @@ function applyAppTheme(themeKey) {
         document.body.classList.remove('dbz-theme-active', 'dbz-goku-theme', 'dbz-vegeta-theme');
     }
 
-    // Icon toggle is handled by CSS, but add JavaScript fallback for reliability
-    // This ensures icons toggle correctly even if CSS has timing/specificity issues
+    // Trigger icon toggle update
+    updateSettingsIcon();
+}
+
+// Reusable function to toggle settings icon based on current theme
+function updateSettingsIcon() {
+    const savedTheme = localStorage.getItem('userThemePreference') || 'default';
+    const isDbzTheme = savedTheme.startsWith('dbz-');
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+
     setTimeout(() => {
         const gearIcon = document.getElementById('settings-icon-gear');
         const dragonBallIcon = document.getElementById('settings-icon-dragonball');
@@ -17051,13 +17067,17 @@ function applyAppTheme(themeKey) {
                 // DBZ theme: show dragon ball, hide gear
                 gearIcon.style.setProperty('display', 'none', 'important');
                 dragonBallIcon.style.setProperty('display', 'inline-block', 'important');
+                console.log('✅ Dragon Ball icon activated');
             } else {
                 // Default: show gear, hide dragon ball
                 gearIcon.style.setProperty('display', 'inline-block', 'important');
                 dragonBallIcon.style.setProperty('display', 'none', 'important');
+                console.log('✅ Gear icon activated (theme: ' + savedTheme + ', male: ' + isMale + ')');
             }
+        } else {
+            console.warn('⚠️ Settings icons not found in DOM yet');
         }
-    }, 0); // Use setTimeout to ensure it runs after CSS has a chance to apply
+    }, 50); // Small delay to ensure DOM is ready
 }
 
 // Diagnostic function for debugging Dragon Ball icon
@@ -17103,8 +17123,9 @@ function debugDragonBallIcon() {
     return results;
 }
 
-// Make it available in console
+// Make functions available in console for debugging
 window.debugDragonBallIcon = debugDragonBallIcon;
+window.updateSettingsIcon = updateSettingsIcon;
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
