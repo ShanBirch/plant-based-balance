@@ -7,7 +7,7 @@ The Calorie Tracker feature allows users to log meals by taking photos, which ar
 ## Features
 
 - 📸 **Photo-based meal logging** - Take a photo, get instant nutrition analysis
-- 🤖 **AI-powered analysis** - Uses Google Gemini 1.5 Flash to identify foods and estimate nutrition
+- 🤖 **AI-powered analysis** - Uses Google Gemini Flash (latest) to identify foods and estimate nutrition
 - 📊 **Progress tracking** - Visual progress bars for calories and macros
 - 🎯 **Daily goals** - Track your nutrition against customizable daily goals
 - 📱 **Mobile-first design** - Clean, responsive interface optimized for mobile devices

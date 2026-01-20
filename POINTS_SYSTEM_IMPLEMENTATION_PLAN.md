@@ -890,7 +890,7 @@ export default async function (request: Request, context: Context) {
       });
     }
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
     const systemPrompt = `You are a workout verification AI. Analyze this image to determine if it shows a legitimate workout or exercise activity.
 
