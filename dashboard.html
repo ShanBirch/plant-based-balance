@@ -2187,7 +2187,6 @@
 
     // --- NEW: Coach & Photo Logic ---
     window.addEventListener('DOMContentLoaded', async () => {
-        injectMealPhotoUploads();
         injectReflectionsIntoDays();
 
         // NOTE: Do NOT call applyGenderTheme() here - it must run AFTER loadProfileData()
@@ -2322,47 +2321,6 @@
         }
     });
 
-    function injectMealPhotoUploads() {
-        // Target meal cards via the meal icon in header
-        document.querySelectorAll('.card').forEach((card, index) => {
-            const header = card.querySelector('.card-header');
-            if (header && header.querySelector('.meal-icon')) {
-                 const body = card.querySelector('.card-body');
-                 // Avoid duplicating if already present
-                 if (body && !body.querySelector('.meal-upload-section')) {
-                     const uploadId = 'meal-photo-' + index;
-                     const uploadDiv = document.createElement('div');
-                     uploadDiv.className = 'meal-upload-section';
-                     uploadDiv.style.cssText = 'margin-top: 20px; border-top: 1px dashed #e2e8f0; padding-top: 15px;';
-                     
-                     uploadDiv.innerHTML = `
-                        <h4 style="color:var(--secondary); font-size:0.85rem; margin:0 0 10px 0; text-transform:uppercase; letter-spacing:0.5px;">Daily Meal Log</h4>
-                        <div style="display:flex; gap:15px; align-items:center;">
-                            <label style="cursor:pointer; background:var(--accent-green); padding:6px 12px; border-radius:6px; font-size:0.85rem; color:#2d4a3e; font-weight:600; display:flex; align-items:center; gap:6px; transition:all 0.2s;">
-                                <span>Upload Photo</span>
-                                <input type="file" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this, '${uploadId}')">
-                            </label>
-                            <span class="status-text" style="font-size:0.8rem; color:#94a3b8;">No photo yet</span>
-                        </div>
-                        <div class="preview-area" style="margin-top:10px; display:none;">
-                            <img src="" style="width:80px; height:80px; object-fit:cover; border-radius:8px; border:2px solid #e2e8f0;">
-                        </div>
-                     `;
-                     body.appendChild(uploadDiv);
-                     
-                     // Load saved
-                     const saved = localStorage.getItem(uploadId);
-                     if (saved) {
-                         const img = uploadDiv.querySelector('img');
-                         img.src = saved;
-                         uploadDiv.querySelector('.preview-area').style.display = 'block';
-                         uploadDiv.querySelector('.status-text').textContent = 'Saved in your log';
-                     }
-                 }
-            }
-        });
-    }
-
     function injectReflectionsIntoDays() {
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         // Find all day views
@@ -2473,25 +2431,6 @@
         }
     `;
     document.head.appendChild(style);
-
-    window.handlePhotoUpload = function(input, id) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const container = input.closest('.meal-upload-section');
-                const img = container.querySelector('img');
-                img.src = e.target.result;
-                container.querySelector('.preview-area').style.display = 'block';
-                container.querySelector('.status-text').textContent = 'Saved in your log';
-                try {
-                    localStorage.setItem(id, e.target.result);
-                } catch(err) {
-                    alert("Local storage is full. Photo visible but may not persist.");
-                }
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-    };
 
     // --- MOVEMENT STUDIO DB & LOGIC ---
     // --- WORKOUT TRACKER & DATABASE LOGIC ---
