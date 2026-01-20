@@ -16929,6 +16929,39 @@ function applyAppTheme(themeKey) {
 
     // Handle DBZ theme decorations (male users only)
     const isDbzTheme = themeKey.startsWith('dbz-');
+
+    // Easter egg: Show video on first theme selection (male users only)
+    if (isMale && isDbzTheme) {
+        const easterEggKey = `dbz_easter_egg_${themeKey}`;
+        const hasSeenEasterEgg = localStorage.getItem(easterEggKey);
+
+        if (!hasSeenEasterEgg) {
+            // Show the appropriate Easter egg video
+            let videoUrl, videoTitle;
+
+            if (themeKey === 'dbz-warrior') {
+                // Super Saiyan theme - bigger video
+                videoUrl = 'https://f005.backblazeb2.com/file/shannonsvideos/download_20260120_225718_0000.mp4';
+                videoTitle = 'Super Saiyan Unlocked!';
+            } else if (themeKey === 'dbz-vegeta') {
+                // Saiyan Prince theme - smaller video
+                videoUrl = 'https://f005.backblazeb2.com/file/shannonsvideos/download_20260120_231525_0000.mp4';
+                videoTitle = 'Saiyan Prince Unlocked!';
+            }
+
+            if (videoUrl) {
+                // Mark as seen so it only shows once
+                localStorage.setItem(easterEggKey, 'true');
+
+                // Show the Easter egg video after a short delay to let theme apply
+                setTimeout(() => {
+                    if (typeof openExerciseVideo === 'function') {
+                        openExerciseVideo(videoUrl, videoTitle);
+                    }
+                }, 300);
+            }
+        }
+    }
     const dbzDecorations = document.getElementById('dbz-decorations');
     const gokuImg = document.getElementById('dbz-goku');
     const vegetaImg = document.getElementById('dbz-vegeta');
