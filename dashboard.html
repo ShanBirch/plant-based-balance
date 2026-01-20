@@ -10059,13 +10059,14 @@ function renderWeeklyCalendar() {
         }
 
         // 2. High Cortisol Safety Override - encourage yoga over HIIT
-        if (isHighCortisol && dayWorkout.programId === 'bodyweight') {
+        if (isHighCortisol && (dayWorkout.programId === 'bodyweight' || dayWorkout.programId === 'gym_library')) {
             const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
             if (yogaWorkout) workoutName = yogaWorkout.title;
         }
 
         // 3. Daily Mood/Symptoms only apply to TODAY
         if (isToday) {
+            // Swap to yoga if user reports being tired (applies to all users including males)
             if (userCycleData.mood === 'tired') {
                 const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
                 if (yogaWorkout) workoutName = yogaWorkout.title;
@@ -10076,6 +10077,7 @@ function renderWeeklyCalendar() {
                     const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative
                     if (yogaWorkout) workoutName = yogaWorkout.title;
                 } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+                    // Fatigue/anxiety triggers yoga for everyone (males & females)
                     const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[6]; // Yin & Meditation
                     if (yogaWorkout) workoutName = yogaWorkout.title;
                 }
@@ -10194,26 +10196,28 @@ window.openCalendarWorkout = function(dayIndexFromMonday) {
         }
     }
 
-    // Modifier: High Cortisol -> Yoga (overrides HIIT/Bodyweight)
-    if (isHighCortisol && programId === 'bodyweight') {
+    // Modifier: High Cortisol -> Yoga (overrides HIIT/Bodyweight/Gym)
+    if (isHighCortisol && (programId === 'bodyweight' || programId === 'gym_split')) {
         programId = 'yoga';
         dayIndex = 0; // Somatic Hormone Reset
     }
 
     // Modifier: Mood/Symptoms (Only applies if targetDate is TODAY)
     if (targetDate.toDateString() === today.toDateString()) {
+         // Swap to yoga if user reports being tired (applies to all users including males)
          if (userCycleData.mood === 'tired') {
              programId = 'yoga';
-             dayIndex = 3;
+             dayIndex = 3; // Restorative Recovery
          }
          if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
              // Hot flash and dizziness are female-specific symptoms
              if (!isMaleWorkout && (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness'))) {
                  programId = 'yoga';
-                 dayIndex = 3;
+                 dayIndex = 3; // Restorative
              } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+                 // Fatigue/anxiety triggers yoga for everyone (males & females)
                  programId = 'yoga';
-                 dayIndex = 6;
+                 dayIndex = 6; // Yin & Meditation
              }
          }
     }
@@ -10395,8 +10399,8 @@ function getTodaysWorkout() {
         phaseInfo = PHASE_INFO['performance'];
     }
 
-    // Apply High Cortisol safety override
-    if (isHighCortisol && programId === 'bodyweight') {
+    // Apply High Cortisol safety override (applies to bodyweight and gym split users)
+    if (isHighCortisol && (programId === 'bodyweight' || scheduleItem.program === 'gym_split')) {
         const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
         if (yogaWorkout) {
             workoutName = yogaWorkout.title;
@@ -10404,7 +10408,7 @@ function getTodaysWorkout() {
         }
     }
 
-    // Apply mood modifiers
+    // Apply mood modifiers (applies to all users including males on gym split)
     if (userCycleData.mood === 'tired') {
         const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
         if (yogaWorkout) {
@@ -10421,6 +10425,7 @@ function getTodaysWorkout() {
                 workoutIcon = '🧘‍♀️';
             }
         } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
+            // Fatigue/anxiety triggers yoga for everyone (males & females, gym & bodyweight)
             const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[6]; // Yin & Meditation
             if (yogaWorkout) {
                 workoutName = yogaWorkout.title;
