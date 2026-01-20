@@ -9892,16 +9892,17 @@ function renderWeeklyCalendar() {
     const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
     const isHighCortisol = profileType.includes('CORTISOL') || profileType.includes('ADRENAL');
 
-    // Check if user qualifies for Male Gym Split
+    // Check if user qualifies for Gym Split (Male or Female)
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const hasGymAccess = userProfile.equipment_access === 'gym';
     const hasHighEnergy = userProfile.energy_status === 'high';
     const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
+    const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
     // Calculate which week we're in for 12 different 4-week programs (48 weeks total)
     function getGymSplitWeekNumber() {
-        if (!useMaleGymSplit) return 1;
+        if (!useMaleGymSplit && !useFemaleGymSplit) return 1;
 
         let startDate = localStorage.getItem('gym_split_start_date');
         if (!startDate) {
@@ -9954,6 +9955,17 @@ function renderWeeklyCalendar() {
             { day: 'Sat', program: 'gym_split', dayIndex: 5 }, // Active Recovery
             { day: 'Sun', program: 'gym_split', dayIndex: 6 }  // Rest
         ];
+    } else if (useFemaleGymSplit) {
+        // Female Gym Split: Legs, Push, Arms+Core, Legs, Pull, Active Recovery, Rest
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'female_gym_split', dayIndex: 0, muscleGroup: 'legs' }, // Legs
+            { day: 'Tue', program: 'female_gym_split', dayIndex: 1, muscleGroup: 'push' }, // Push
+            { day: 'Wed', program: 'female_gym_split', dayIndex: 2, muscleGroup: 'armscore' }, // Arms & Core
+            { day: 'Thu', program: 'female_gym_split', dayIndex: 3, muscleGroup: 'legs' }, // Legs
+            { day: 'Fri', program: 'female_gym_split', dayIndex: 4, muscleGroup: 'pull' }, // Pull
+            { day: 'Sat', program: 'female_gym_split', dayIndex: 5 }, // Active Recovery
+            { day: 'Sun', program: 'female_gym_split', dayIndex: 6 }  // Rest
+        ];
     } else {
         // Default schedule for everyone else
         WEEKLY_SCHEDULE = [
@@ -9972,7 +9984,7 @@ function renderWeeklyCalendar() {
         const scheduleItem = WEEKLY_SCHEDULE[dayIdx];
 
         // For gym split with muscle group, pull from WORKOUT_LIBRARY with 48-week rotation
-        if (scheduleItem.program === 'gym_split' && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
+        if ((scheduleItem.program === 'gym_split' || scheduleItem.program === 'female_gym_split') && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
             const muscleGroup = scheduleItem.muscleGroup;
             const gymCategory = WORKOUT_LIBRARY['gym'];
 
@@ -10117,12 +10129,13 @@ function renderWeeklyCalendar() {
 }
 
 window.openCalendarWorkout = function(dayIndexFromMonday) {
-    // 1. Check if user qualifies for Male Gym Split
+    // 1. Check if user qualifies for Gym Split (Male or Female)
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const hasGymAccess = userProfile.equipment_access === 'gym';
     const hasHighEnergy = userProfile.energy_status === 'high';
     const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
+    const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
     // 2. Schedule Definition (Same as in renderWeeklyCalendar)
     let WEEKLY_SCHEDULE;
@@ -10136,6 +10149,16 @@ window.openCalendarWorkout = function(dayIndexFromMonday) {
             { day: 'Fri', program: 'gym_split', dayIndex: 4 }, // Arms & Core
             { day: 'Sat', program: 'gym_split', dayIndex: 5 }, // Active Recovery
             { day: 'Sun', program: 'gym_split', dayIndex: 6 }  // Rest
+        ];
+    } else if (useFemaleGymSplit) {
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'female_gym_split', dayIndex: 0 }, // Legs
+            { day: 'Tue', program: 'female_gym_split', dayIndex: 1 }, // Push
+            { day: 'Wed', program: 'female_gym_split', dayIndex: 2 }, // Arms & Core
+            { day: 'Thu', program: 'female_gym_split', dayIndex: 3 }, // Legs
+            { day: 'Fri', program: 'female_gym_split', dayIndex: 4 }, // Pull
+            { day: 'Sat', program: 'female_gym_split', dayIndex: 5 }, // Active Recovery
+            { day: 'Sun', program: 'female_gym_split', dayIndex: 6 }  // Rest
         ];
     } else {
         WEEKLY_SCHEDULE = [
@@ -10197,7 +10220,7 @@ window.openCalendarWorkout = function(dayIndexFromMonday) {
     }
 
     // Modifier: High Cortisol -> Yoga (overrides HIIT/Bodyweight/Gym)
-    if (isHighCortisol && (programId === 'bodyweight' || programId === 'gym_split')) {
+    if (isHighCortisol && (programId === 'bodyweight' || programId === 'gym_split' || programId === 'female_gym_split')) {
         programId = 'yoga';
         dayIndex = 0; // Somatic Hormone Reset
     }
@@ -10224,7 +10247,7 @@ window.openCalendarWorkout = function(dayIndexFromMonday) {
 
     // 4. Fetch Exercises & Launch Player
     // For gym_split with muscle groups, use WORKOUT_LIBRARY with rotation
-    if (programId === 'gym_split' && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
+    if ((programId === 'gym_split' || programId === 'female_gym_split') && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
         const muscleGroup = scheduleItem.muscleGroup;
         const gymCategory = WORKOUT_LIBRARY['gym'];
 
@@ -10277,12 +10300,13 @@ window.openCalendarWorkout = function(dayIndexFromMonday) {
 // --- SHARED WORKOUT LOGIC ---
 // Returns today's recommended workout based on Calendar logic (same as renderWeeklyCalendar)
 function getTodaysWorkout() {
-    // Check if user qualifies for Male Gym Split
+    // Check if user qualifies for Gym Split (Male or Female)
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const hasGymAccess = userProfile.equipment_access === 'gym';
     const hasHighEnergy = userProfile.energy_status === 'high';
     const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
+    const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
     // Weekly Schedule Template - maps to WORKOUT_DB programs (same as calendar)
     let WEEKLY_SCHEDULE;
@@ -10297,6 +10321,17 @@ function getTodaysWorkout() {
             { day: 'Fri', program: 'gym_split', dayIndex: 4, icon: '💪', muscleGroup: 'armscore' }, // Arms & Core
             { day: 'Sat', program: 'gym_split', dayIndex: 5, icon: '🧘‍♂️' }, // Active Recovery
             { day: 'Sun', program: 'gym_split', dayIndex: 6, icon: '💤' }  // Rest
+        ];
+    } else if (useFemaleGymSplit) {
+        // Female Gym Split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'female_gym_split', dayIndex: 0, icon: '🦵', muscleGroup: 'legs' }, // Legs
+            { day: 'Tue', program: 'female_gym_split', dayIndex: 1, icon: '💪', muscleGroup: 'push' }, // Push
+            { day: 'Wed', program: 'female_gym_split', dayIndex: 2, icon: '💪', muscleGroup: 'armscore' }, // Arms & Core
+            { day: 'Thu', program: 'female_gym_split', dayIndex: 3, icon: '🦵', muscleGroup: 'legs' }, // Legs
+            { day: 'Fri', program: 'female_gym_split', dayIndex: 4, icon: '💪', muscleGroup: 'pull' }, // Pull
+            { day: 'Sat', program: 'female_gym_split', dayIndex: 5, icon: '🧘‍♀️' }, // Active Recovery
+            { day: 'Sun', program: 'female_gym_split', dayIndex: 6, icon: '💤' }  // Rest
         ];
     } else {
         // Default schedule
@@ -10320,7 +10355,7 @@ function getTodaysWorkout() {
     let workoutName, workoutIcon;
 
     // For gym_split with muscle groups, pull from WORKOUT_LIBRARY with rotation
-    if (scheduleItem.program === 'gym_split' && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
+    if ((scheduleItem.program === 'gym_split' || scheduleItem.program === 'female_gym_split') && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
         const muscleGroup = scheduleItem.muscleGroup;
         const gymCategory = WORKOUT_LIBRARY['gym'];
 
@@ -10400,7 +10435,7 @@ function getTodaysWorkout() {
     }
 
     // Apply High Cortisol safety override (applies to bodyweight and gym split users)
-    if (isHighCortisol && (programId === 'bodyweight' || scheduleItem.program === 'gym_split')) {
+    if (isHighCortisol && (programId === 'bodyweight' || scheduleItem.program === 'gym_split' || scheduleItem.program === 'female_gym_split')) {
         const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
         if (yogaWorkout) {
             workoutName = yogaWorkout.title;
@@ -11924,6 +11959,91 @@ window.WORKOUT_DB = {
                     { name: 'Cable Rope Tricep Extension', sets: 4, reps: '12-15', desc: 'Tricep isolation' },
                     { name: 'Cable Kneeling Crunch', sets: 4, reps: '12-15', desc: 'Abs' },
                     { name: 'Hanging Leg Raise', sets: 4, reps: '10-12', desc: 'Lower abs' }
+                ]
+            },
+            // DAY 6: ACTIVE RECOVERY
+            {
+                title: 'Active Recovery',
+                exercises: [
+                    { name: 'Yoga - Downward Dog', sets: 1, reps: '5 min', desc: 'Full body stretch' },
+                    { name: 'Yoga - Pigeon Pose (Eka Pada Rajakapotasana)', sets: 2, reps: '2 min/side', desc: 'Hip mobility' },
+                    { name: "Child's Pose", sets: 1, reps: '3 min', desc: 'Recovery' },
+                    { name: 'Cat to Cow', sets: 1, reps: '3 min', desc: 'Spinal mobility' },
+                    { name: 'Corpse Pose', sets: 1, reps: '10 min', desc: 'Deep rest' }
+                ]
+            },
+            // DAY 7: REST
+            {
+                title: 'Rest & Recovery',
+                exercises: [
+                    { name: 'Light Walk or Bike', sets: 1, reps: '20-30 min', desc: 'Active recovery cardio' },
+                    { name: 'Yoga - Downward Dog', sets: 1, reps: '5 min', desc: 'Stretch' },
+                    { name: "Child's Pose", sets: 1, reps: '5 min', desc: 'Recovery' },
+                    { name: 'Corpse Pose', sets: 1, reps: '15 min', desc: 'Complete rest' }
+                ]
+            }
+        ]
+    },
+    'female_gym_split': {
+        name: 'Female Gym Split',
+        id: 'female_gym_split',
+        description: 'Balanced training split for women with full gym access. Build strength with legs twice weekly, push/pull movements, and core focus.',
+        estimatedTime: '45',
+        equipment: ['Barbell', 'Dumbbells', 'Cable', 'Machine'],
+        schedule: [
+            // DAY 1: LEGS
+            {
+                title: 'Leg Day',
+                exercises: [
+                    { name: 'Barbell Back Squat', sets: 4, reps: '8-10', desc: 'Quad compound' },
+                    { name: 'Barbell Romanian Deadlift', sets: 4, reps: '10-12', desc: 'Hamstrings' },
+                    { name: 'Dumbbell Walking Lunge', sets: 4, reps: '10-12 each', desc: 'Unilateral' },
+                    { name: 'Machine Seated Leg Curl', sets: 4, reps: '12-15', desc: 'Hamstring isolation' },
+                    { name: 'Smith Machine Calf Raise', sets: 4, reps: '15-20', desc: 'Calf work' }
+                ]
+            },
+            // DAY 2: PUSH
+            {
+                title: 'Push Day',
+                exercises: [
+                    { name: 'Barbell Bench Press', sets: 4, reps: '8-10', desc: 'Chest compound' },
+                    { name: 'Dumbbell Seated Shoulder Press', sets: 4, reps: '10-12', desc: 'Shoulder press' },
+                    { name: 'Dumbbell Incline Bench Press', sets: 4, reps: '10-12', desc: 'Upper chest' },
+                    { name: 'Dumbbell Lateral Raise', sets: 4, reps: '12-15', desc: 'Side delts' },
+                    { name: 'Cable Rope Tricep Extension', sets: 4, reps: '12-15', desc: 'Tricep isolation' }
+                ]
+            },
+            // DAY 3: ARMS & CORE
+            {
+                title: 'Arms & Core',
+                exercises: [
+                    { name: 'Barbell Close Grip Bench Press', sets: 4, reps: '8-10', desc: 'Tricep compound' },
+                    { name: 'Barbell Bicep Curl', sets: 4, reps: '10-12', desc: 'Bicep mass' },
+                    { name: 'Cable Rope Tricep Extension', sets: 4, reps: '12-15', desc: 'Tricep isolation' },
+                    { name: 'Cable Kneeling Crunch', sets: 4, reps: '12-15', desc: 'Abs' },
+                    { name: 'Hanging Leg Raise', sets: 4, reps: '10-12', desc: 'Lower abs' }
+                ]
+            },
+            // DAY 4: LEGS
+            {
+                title: 'Leg Day',
+                exercises: [
+                    { name: 'Barbell Back Squat', sets: 4, reps: '8-10', desc: 'Quad compound' },
+                    { name: 'Barbell Romanian Deadlift', sets: 4, reps: '10-12', desc: 'Hamstrings' },
+                    { name: 'Dumbbell Walking Lunge', sets: 4, reps: '10-12 each', desc: 'Unilateral' },
+                    { name: 'Machine Seated Leg Curl', sets: 4, reps: '12-15', desc: 'Hamstring isolation' },
+                    { name: 'Smith Machine Calf Raise', sets: 4, reps: '15-20', desc: 'Calf work' }
+                ]
+            },
+            // DAY 5: PULL
+            {
+                title: 'Pull Day',
+                exercises: [
+                    { name: 'Barbell Romanian Deadlift', sets: 4, reps: '8-10', desc: 'Posterior chain' },
+                    { name: 'Wide Grip Pull Up', sets: 4, reps: '8-10', desc: 'Lat width' },
+                    { name: 'Cable Seated Rotational Row', sets: 4, reps: '10-12', desc: 'Back thickness' },
+                    { name: 'Cable Rope Face Pull', sets: 4, reps: '12-15', desc: 'Rear delts' },
+                    { name: 'Dumbbell Bicep Curl', sets: 4, reps: '12-15', desc: 'Bicep isolation' }
                 ]
             },
             // DAY 6: ACTIVE RECOVERY
