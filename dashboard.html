@@ -15200,6 +15200,33 @@ async function sendCommunityMessage() {
 
 let currentReferralCode = null;
 
+// Client-side fallback code generator (used if database function fails)
+function generateReferralCodeFallback() {
+    // Generate a random 8-character alphanumeric code
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    console.log('Generated fallback referral code:', code);
+    return code;
+}
+
+// Check if referral code already exists in database
+async function isReferralCodeUnique(code) {
+    try {
+        const existingUser = await window.dbHelpers.referrals.getUserByReferralCode(code);
+        return !existingUser; // If no user found, code is unique
+    } catch (error) {
+        // If error is "not found", code is unique
+        if (error.message && error.message.includes('not found')) {
+            return true;
+        }
+        console.error('Error checking code uniqueness:', error);
+        return true; // Assume unique if we can't check
+    }
+}
+
 // Dismiss referral banner
 function dismissReferralBanner() {
     const banner = document.getElementById('referral-invite-banner');
@@ -15220,80 +15247,168 @@ function checkReferralBannerDismissed() {
 
 // Load referral stats and update UI
 async function loadReferralStats() {
-    if (!window.currentUser) return;
+    if (!window.currentUser) {
+        console.error('loadReferralStats: No current user found');
+        return;
+    }
 
     // Check if banner was dismissed
     checkReferralBannerDismissed();
 
     try {
+        console.log('Loading referral stats for user:', window.currentUser.id);
         const stats = await window.dbHelpers.referrals.getStats(window.currentUser.id);
+        console.log('Referral stats loaded:', stats);
 
         // Check if user has a referral code, if not generate one using database function
         if (!stats.referralCode) {
-            console.log('No referral code found, generating one via database function...');
+            console.log('No referral code found, generating one...');
+
+            let newCode = null;
+            let usedFallback = false;
 
             try {
-                // Call the database function to generate a unique code
-                const newCode = await window.dbHelpers.referrals.generateReferralCode();
+                // Try database function first
+                console.log('Calling database generateReferralCode()...');
+                newCode = await window.dbHelpers.referrals.generateReferralCode();
+                console.log('Generated code via database:', newCode);
 
-                if (newCode) {
-                    // Update user record with new referral code
+                if (!newCode) {
+                    console.warn('Database function returned no code, using fallback generator');
+                    usedFallback = true;
+                    throw new Error('Database returned null');
+                }
+            } catch (dbError) {
+                console.error('Database code generation failed:', dbError.message);
+                console.log('Falling back to client-side code generation...');
+                usedFallback = true;
+
+                // Try client-side generation with uniqueness check
+                let attempts = 0;
+                const maxAttempts = 10;
+
+                while (attempts < maxAttempts) {
+                    newCode = generateReferralCodeFallback();
+                    const isUnique = await isReferralCodeUnique(newCode);
+
+                    if (isUnique) {
+                        console.log('✓ Generated unique code (client-side):', newCode);
+                        break;
+                    }
+
+                    attempts++;
+                    console.log(`Code collision, retrying... (${attempts}/${maxAttempts})`);
+                }
+
+                if (attempts >= maxAttempts) {
+                    throw new Error('Failed to generate unique referral code after multiple attempts');
+                }
+            }
+
+            // Update user record with new referral code
+            if (newCode) {
+                try {
+                    console.log('Updating user with new referral code...');
                     await window.dbHelpers.users.update(window.currentUser.id, {
                         referral_code: newCode
                     });
                     stats.referralCode = newCode;
-                    console.log('Generated and saved referral code:', newCode);
-                } else {
-                    console.error('Database function returned no code');
+                    console.log(`✓ Successfully saved referral code (${usedFallback ? 'fallback' : 'database'}):`, newCode);
+                } catch (updateError) {
+                    console.error('❌ Error saving referral code:', updateError);
+                    throw new Error(`Failed to save referral code: ${updateError.message}`);
                 }
-            } catch (updateError) {
-                console.error('Error generating/saving referral code:', updateError);
-                console.error('Full error details:', updateError);
-                // Show error to user so they know what's wrong
-                if (document.getElementById('referral-code-display')) {
-                    document.getElementById('referral-code-display').textContent = 'ERROR';
-                }
+            } else {
+                throw new Error('No referral code generated');
             }
         }
 
         // Update stats in banner
-        document.getElementById('referral-count').textContent = stats.totalReferrals || 0;
-        document.getElementById('free-days-count').textContent = stats.freeDaysEarned || 0;
+        if (document.getElementById('referral-count')) {
+            document.getElementById('referral-count').textContent = stats.totalReferrals || 0;
+        }
+        if (document.getElementById('free-days-count')) {
+            document.getElementById('free-days-count').textContent = stats.freeDaysEarned || 0;
+        }
 
         // Update network count in header
         const networkCount = stats.totalReferrals || 0;
-        document.getElementById('referral-network-count').textContent =
-            networkCount === 0 ? 'Invite your first friend' :
-            networkCount === 1 ? '1 friend in your network' :
-            `${networkCount} friends in your network`;
+        if (document.getElementById('referral-network-count')) {
+            document.getElementById('referral-network-count').textContent =
+                networkCount === 0 ? 'Invite your first friend' :
+                networkCount === 1 ? '1 friend in your network' :
+                `${networkCount} friends in your network`;
+        }
 
         // Store code for modal
         currentReferralCode = stats.referralCode;
+        console.log('✓ Current referral code set to:', currentReferralCode);
 
     } catch (error) {
-        console.error('Error loading referral stats:', error);
+        console.error('❌ Error loading referral stats:', error);
+        console.error('Error stack:', error.stack);
+        // Re-throw to allow caller to handle
+        throw error;
     }
 }
 
 // Open share modal
 async function openShareReferralModal() {
     const modal = document.getElementById('share-referral-modal');
-    if (!modal) return;
+    if (!modal) {
+        console.error('Share referral modal not found');
+        return;
+    }
 
     // Show modal with flex display
     modal.style.display = 'flex';
 
+    const codeDisplay = document.getElementById('referral-code-display');
+    if (!codeDisplay) {
+        console.error('Referral code display element not found');
+        return;
+    }
+
+    // Show loading state
+    codeDisplay.textContent = 'Loading...';
+    codeDisplay.style.color = 'var(--text-muted)';
+
     // If we don't have a referral code yet, try to load it
     if (!currentReferralCode) {
-        await loadReferralStats();
+        try {
+            console.log('Loading referral stats...');
+            await loadReferralStats();
+        } catch (error) {
+            console.error('Failed to load referral stats:', error);
+            codeDisplay.textContent = 'Failed to load code';
+            codeDisplay.style.color = '#ef4444';
+
+            // Show user-friendly error message
+            setTimeout(() => {
+                codeDisplay.textContent = 'Tap to retry';
+                codeDisplay.style.cursor = 'pointer';
+                codeDisplay.onclick = async () => {
+                    codeDisplay.onclick = null;
+                    codeDisplay.style.cursor = 'default';
+                    await openShareReferralModal();
+                };
+            }, 2000);
+            return;
+        }
     }
 
     // Load and display referral code
     if (currentReferralCode) {
-        document.getElementById('referral-code-display').textContent = currentReferralCode;
+        codeDisplay.textContent = currentReferralCode;
+        codeDisplay.style.color = 'var(--primary)';
+        codeDisplay.style.cursor = 'default';
+        codeDisplay.onclick = null;
+        console.log('✓ Referral code displayed:', currentReferralCode);
     } else {
         // Fallback if still no code
-        document.getElementById('referral-code-display').textContent = 'Error loading code';
+        console.error('No referral code available after loading');
+        codeDisplay.textContent = 'Code unavailable';
+        codeDisplay.style.color = '#ef4444';
     }
 }
 
