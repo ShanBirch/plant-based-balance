@@ -1,6 +1,6 @@
 {
-  "name": "PlantBased Balance",
-  "short_name": "PB Balance",
+  "name": "Balance",
+  "short_name": "Balance",
   "start_url": "./dashboard.html",
   "display": "standalone",
   "background_color": "#f9f9f7",
