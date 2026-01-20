@@ -3,7 +3,7 @@
   "short_name": "Balance",
   "start_url": "./dashboard.html",
   "display": "standalone",
-  "background_color": "#f9f9f7",
+  "background_color": "#ffffff",
   "theme_color": "#1e3a5f",
   "orientation": "portrait-primary",
   "icons": [
