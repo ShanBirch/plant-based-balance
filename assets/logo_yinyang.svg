@@ -1,13 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512">
-  <!-- Black half (left side) -->
-  <path d="M50,0 A50,50 0 0,0 50,100 A25,25 0 0,0 50,50 A25,25 0 0,1 50,0" fill="black"/>
+  <!-- Outer circle defining the shape with white fill -->
+  <circle cx="50" cy="50" r="45" fill="white"/>
 
-  <!-- White half (right side) -->
-  <path d="M50,0 A50,50 0 0,1 50,100 A25,25 0 0,1 50,50 A25,25 0 0,0 50,0" fill="white"/>
+  <!-- Black half covering the white circle -->
+  <path d="M50,5 A45,45 0 0,0 50,95 A22.5,22.5 0 0,0 50,50 A22.5,22.5 0 0,1 50,5 Z" fill="black"/>
 
   <!-- Small white dot in black section -->
-  <circle cx="50" cy="25" r="7" fill="white"/>
+  <circle cx="50" cy="27.5" r="6.3" fill="white"/>
 
   <!-- Small black dot in white section -->
-  <circle cx="50" cy="75" r="7" fill="black"/>
+  <circle cx="50" cy="72.5" r="6.3" fill="black"/>
+
+  <!-- Black border around the entire symbol -->
+  <circle cx="50" cy="50" r="45" fill="none" stroke="black" stroke-width="1.5"/>
 </svg>
