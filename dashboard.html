@@ -9884,14 +9884,33 @@ function renderWeeklyCalendar() {
     const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
     const isHighCortisol = profileType.includes('CORTISOL') || profileType.includes('ADRENAL');
 
+    // Get equipment access from user profile
+    let userProfile = {};
+    try {
+        userProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+    } catch(e) {}
+
+    const equipmentAccess = userProfile.equipment_access || 'none';
+    const hasGymAccess = equipmentAccess === 'gym';
+    const hasDumbbells = equipmentAccess === 'dumbbells' || equipmentAccess === 'home' || hasGymAccess;
+
+    // Determine default strength program based on equipment
+    let defaultStrengthProgram = 'bodyweight';
+    if (hasGymAccess) {
+        defaultStrengthProgram = 'gym';
+    } else if (hasDumbbells) {
+        defaultStrengthProgram = 'home';
+    }
+
     // Weekly Schedule Template - maps to WORKOUT_DB programs
     // Each day references a program and the day index within that program's schedule
+    // Uses equipment settings from onboarding to set appropriate workouts
     const WEEKLY_SCHEDULE = [
-        { day: 'Mon', program: 'bodyweight', dayIndex: 0 }, // Lower Body Power
-        { day: 'Tue', program: 'bodyweight', dayIndex: 1 }, // Upper Body Strength
+        { day: 'Mon', program: defaultStrengthProgram, dayIndex: 0 }, // Lower Body Power
+        { day: 'Tue', program: defaultStrengthProgram, dayIndex: 1 }, // Upper Body Strength
         { day: 'Wed', program: 'yoga', dayIndex: 2 },       // Spinal Mobility & Detox
-        { day: 'Thu', program: 'bodyweight', dayIndex: 3 }, // Full Body Conditioning
-        { day: 'Fri', program: 'bodyweight', dayIndex: 4 }, // Glutes & Core Focus
+        { day: 'Thu', program: defaultStrengthProgram, dayIndex: 3 }, // Full Body Conditioning
+        { day: 'Fri', program: defaultStrengthProgram, dayIndex: 4 }, // Glutes & Core Focus
         { day: 'Sat', program: 'yoga', dayIndex: 0 },       // Somatic Hormone Reset
         { day: 'Sun', program: 'yoga', dayIndex: 6 }        // Yin & Meditation (Rest)
     ];
@@ -9958,7 +9977,9 @@ function renderWeeklyCalendar() {
         }
 
         // 2. High Cortisol Safety Override - encourage yoga over HIIT
-        if (isHighCortisol && dayWorkout.programId === 'bodyweight') {
+        // Only apply if user has low/normal energy, not if they explicitly selected high energy
+        const userEnergyLevel = userProfile.energy_level || 'normal';
+        if (isHighCortisol && dayWorkout.programId === 'bodyweight' && userEnergyLevel !== 'high') {
             const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
             if (yogaWorkout) workoutName = yogaWorkout.title;
         }
