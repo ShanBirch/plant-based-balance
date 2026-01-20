@@ -17270,7 +17270,7 @@ function renderExerciseChart(progress) {
     const maxReps = Math.max(...reps, 1);
 
     // Create SVG
-    let svg = `<svg viewBox="0 0 ${width} ${height}" style="width: 100%; max-width: 500px; margin: 0 auto; display: block;">`;
+    let svg = `<svg viewBox="0 0 ${width} ${height}" style="width: 100%; max-width: 500px; margin: 0 auto; display: block; overflow: visible;">`;
 
     // Grid lines
     for (let i = 0; i <= 4; i++) {
@@ -17280,19 +17280,26 @@ function renderExerciseChart(progress) {
 
     // X-axis labels (dates)
     const labelFrequency = Math.ceil(dates.length / 5);
+    const xStep = dates.length > 1 ? chartWidth / (dates.length - 1) : 0;
     dates.forEach((date, i) => {
         if (i % labelFrequency === 0 || i === dates.length - 1) {
-            const x = padding.left + (chartWidth / (dates.length - 1)) * i;
-            svg += `<text x="${x}" y="${height - 10}" text-anchor="middle" font-size="10" fill="#718096">${date}</text>`;
+            const x = padding.left + xStep * i;
+            // Use text-anchor start for first label, end for last, middle for others
+            let anchor = 'middle';
+            if (i === 0) anchor = 'start';
+            else if (i === dates.length - 1 && dates.length > 1) anchor = 'end';
+            svg += `<text x="${x}" y="${height - 10}" text-anchor="${anchor}" font-size="10" fill="#718096">${date}</text>`;
         }
     });
 
     // Y-axis labels and data lines
+    const dataXStep = dates.length > 1 ? chartWidth / (dates.length - 1) : 0;
+
     if (hasWeight) {
         // Weight line (primary - green)
         let weightPath = 'M';
         weights.forEach((weight, i) => {
-            const x = padding.left + (chartWidth / (weights.length - 1)) * i;
+            const x = padding.left + dataXStep * i;
             const y = padding.top + chartHeight - (weight / maxWeight) * chartHeight;
             weightPath += ` ${x},${y}`;
 
@@ -17313,7 +17320,7 @@ function renderExerciseChart(progress) {
         // Reps line (secondary - gold)
         let repsPath = 'M';
         reps.forEach((rep, i) => {
-            const x = padding.left + (chartWidth / (reps.length - 1)) * i;
+            const x = padding.left + dataXStep * i;
             const y = padding.top + chartHeight - (rep / maxReps) * chartHeight;
             repsPath += ` ${x},${y}`;
 
@@ -17373,7 +17380,7 @@ function renderExerciseChart(progress) {
     stats += '</div>';
 
     container.innerHTML = `
-        <div style="padding: 20px;">
+        <div style="padding: 20px; overflow: visible;">
             ${svg}
             ${legend}
             ${stats}
