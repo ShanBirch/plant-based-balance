@@ -9298,6 +9298,34 @@ async function loadProfileData() {
     if (typeof renderCycleStatus === 'function') {
         renderCycleStatus();
     }
+
+    // Load today's check-in from Supabase to sync localStorage
+    if (window.currentUser && typeof dbHelpers !== 'undefined') {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const todayCheckin = await dbHelpers.checkins.get(window.currentUser.id, today);
+            if (todayCheckin) {
+                // User has already checked in today - mark localStorage
+                localStorage.setItem('lastWellnessCheck', new Date().toDateString());
+                console.log('✅ Today\'s check-in found in DB');
+
+                // Update symptoms display from check-in data
+                const additionalData = todayCheckin.additional_data || {};
+                const checkInSymptoms = additionalData.symptoms || [];
+                if (checkInSymptoms.length > 0) {
+                    const symptomsEl = document.getElementById('profile-symptoms-display');
+                    if (symptomsEl) {
+                        const formattedSymptoms = checkInSymptoms.map(s =>
+                            s.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+                        ).join(', ');
+                        symptomsEl.textContent = formattedSymptoms;
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Could not check today\'s check-in status:', e);
+        }
+    }
 }
 
 function handlePhotoUpload(input) {
@@ -10277,7 +10305,7 @@ function updateDashboardWorkoutCard() {
 }
 
 
-// --- DAILY WELLNESS MODAL LOGIC ---
+// --- DAILY WELLNESS CHECK-IN LOGIC ---
 function checkDailyWellness(forceShow = false) {
     // Don't show if onboarding isn't complete
     const onboardingComplete = localStorage.getItem('onboardingComplete');
@@ -10298,78 +10326,13 @@ function checkDailyWellness(forceShow = false) {
 
     // Show if manually triggered (forceShow=true) OR if it hasn't been shown today
     if (forceShow || lastCheck !== today) {
-        const modal = document.getElementById('daily-wellness-modal');
-        if(modal) modal.style.display = 'flex';
-    }
-}
-
-function selectDailyMood(mood, btn) {
-    userCycleData.mood = mood;
-    // Update local UI
-    document.querySelectorAll('.mood-check-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-}
-
-function toggleSymptom(checkbox) {
-    // Styling fallback
-    const chip = checkbox.parentElement;
-    if(checkbox.checked) chip.classList.add('checked');
-    else chip.classList.remove('checked');
-}
-
-function submitDailyWellness() {
-    // 1. Collect Symptoms
-    const symptoms = [];
-    document.querySelectorAll('#daily-wellness-modal input[type="checkbox"]:checked').forEach(cb => {
-        symptoms.push(cb.value);
-    });
-    userCycleData.symptoms = symptoms;
-
-    // 2. Save Date
-    const today = new Date().toDateString();
-    localStorage.setItem('lastWellnessCheck', today);
-
-    // 3. Hide Modal
-    document.getElementById('daily-wellness-modal').style.display = 'none';
-
-    // 4. Update UI
-    renderCycleStatus();
-    renderWeeklyCalendar();
-
-    // 5. Update Mood buttons in Dashboard if visible
-    if(userCycleData.mood) {
-        document.querySelectorAll('.mood-btn').forEach(b => {
-             // Basic match
-            if((b.innerText.toLowerCase().includes('strong') && userCycleData.mood === 'strong') ||
-               (b.innerText.toLowerCase().includes('tired') && userCycleData.mood === 'tired')) {
-                b.classList.add('active');
-            } else {
-                b.classList.remove('active');
-            }
-        });
-    }
-
-    // 6. Refresh Personalized Content
-    renderTodayMeals(); // Re-render meals with personalization
-    renderMovementView(); // Re-render workouts with personalization
-
-    // 7. Update Active Symptoms display in Metabolic Protocol section
-    const symptomsDisplay = document.getElementById('profile-symptoms-display');
-    if (symptomsDisplay) {
-        if (symptoms.length > 0) {
-            // Format symptom names nicely (e.g., hot_flash -> Hot Flash)
-            const formattedSymptoms = symptoms.map(s =>
-                s.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-            ).join(', ');
-            symptomsDisplay.textContent = formattedSymptoms;
-        } else {
-            symptomsDisplay.textContent = 'None';
+        // Apply gender-specific UI before showing modal
+        if (typeof applyGenderSpecificUI === 'function') {
+            applyGenderSpecificUI();
         }
-    }
-
-    // 8. Show personalization message
-    if (userCycleData.mood || userCycleData.symptoms?.length > 0) {
-        showPersonalizationMessage();
+        // Open the detailed check-in modal
+        const modal = document.getElementById('check-in-modal');
+        if(modal) modal.style.display = 'flex';
     }
 }
 
@@ -13956,42 +13919,6 @@ function openAsClient() {
     </div>
 </div>
 
-
-<!-- DAILY WELLNESS MODAL -->
-<div id="daily-wellness-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:11000; align-items:center; justify-content:center; backdrop-filter:blur(8px);">
-    <div style="background:white; width:90%; max-width:400px; border-radius:24px; padding:30px; position:relative; animation: slideUp 0.3s ease-out; text-align:center;">
-        <div style="font-size:3rem; margin-bottom:10px;">☀️</div>
-        <h2 style="color:var(--primary); margin:0 0 10px 0;">Good Morning</h2>
-        <p style="color:#64748b; margin-bottom:25px;">How is your body feeling today?</p>
-
-        <!-- Mood -->
-        <label style="display:block; text-align:left; font-weight:600; margin-bottom:10px; color:var(--text-main);">Energy Level</label>
-        <div style="display:flex; gap:10px; margin-bottom:20px;">
-            <button onclick="selectDailyMood('strong', this)" class="mood-check-btn" style="flex:1; padding:15px; border-radius:12px; border:1px solid #ddd; background:white; font-size:1rem;">💪 Strong</button>
-            <button onclick="selectDailyMood('tired', this)" class="mood-check-btn" style="flex:1; padding:15px; border-radius:12px; border:1px solid #ddd; background:white; font-size:1rem;">😴 Tired</button>
-        </div>
-
-        <!-- Symptoms -->
-        <label style="display:block; text-align:left; font-weight:600; margin-bottom:10px; color:var(--text-main);">Any Symptoms?</label>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:25px; text-align:left;">
-             <label class="symptom-chip female-only-chip"><input type="checkbox" value="hot_flash" onchange="toggleSymptom(this)"> Hot Flashes</label>
-             <label class="symptom-chip"><input type="checkbox" value="dizziness" onchange="toggleSymptom(this)"> Dizziness</label>
-             <label class="symptom-chip"><input type="checkbox" value="anxiety" onchange="toggleSymptom(this)"> Anxiety</label>
-             <label class="symptom-chip"><input type="checkbox" value="fatigue" onchange="toggleSymptom(this)"> Fatigue</label>
-             <label class="symptom-chip male-only-chip"><input type="checkbox" value="muscle_soreness" onchange="toggleSymptom(this)"> Muscle Soreness</label>
-             <label class="symptom-chip male-only-chip"><input type="checkbox" value="joint_pain" onchange="toggleSymptom(this)"> Joint Pain</label>
-        </div>
-
-        <button onclick="submitDailyWellness()" style="width:100%; background:var(--primary); color:white; border:none; padding:16px; border-radius:50px; font-weight:700; font-size:1rem; cursor:pointer;">Save & Start Day</button>
-    </div>
-</div>
-<style>
-.mood-check-btn.selected { background: var(--secondary) !important; color: white; border-color: var(--secondary) !important; }
-.symptom-chip { display: block; padding: 10px; border-radius: 8px; border: 1px solid #eee; cursor: pointer; font-size: 0.9rem; }
-.symptom-chip:has(input:checked) { background: #fff0f0; border-color: #ffcdd2; color: #d32f2f; }
-/* Fallback for :has support */
-.symptom-chip.checked { background: #fff0f0; border-color: #ffcdd2; color: #d32f2f; } 
-</style>
 
 <!-- Cycle Tracking Modal -->
 <div class="onboarding-overlay" id="cycle-tracking-modal" style="display:none; z-index:12000;">
@@ -19042,35 +18969,70 @@ function toggleCheckInOption(category, value, el) {
     }
 }
 
-function submitDailyCycleSync() {
-    // 1. Save Log
+async function submitDailyCycleSync() {
+    // 1. Save Log locally
     const today = new Date().toISOString().split('T')[0];
     if(!userCycleData.logs) userCycleData.logs = {};
 
     // Clone to avoid ref issues
     userCycleData.logs[today] = JSON.parse(JSON.stringify(checkInProgress));
 
-    // Persist
+    // Update userCycleData.symptoms from check-in
+    userCycleData.symptoms = checkInProgress.symptoms || [];
+
+    // Persist to localStorage
     localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
-    if(window.currentUser) {
-        // Sync to DB (Optional async)
-        // dbHelpers.userFacts.update...
+
+    // 2. Save to Supabase for persistence across refreshes
+    if(window.currentUser && typeof dbHelpers !== 'undefined') {
+        try {
+            await dbHelpers.checkins.upsert(window.currentUser.id, today, {
+                energy: checkInProgress.energy || null,
+                equipment: checkInProgress.equipment || null,
+                additional_data: {
+                    symptoms: checkInProgress.symptoms || [],
+                    mood: checkInProgress.mood || null,
+                    flow: checkInProgress.flow || null,
+                    fluid: checkInProgress.fluid || null,
+                    recovery: checkInProgress.recovery || null
+                }
+            });
+            console.log('✅ Check-in saved to Supabase');
+        } catch (e) {
+            console.error('Failed to save check-in to DB:', e);
+        }
     }
 
     // Mark check-in as completed for today
     localStorage.setItem('lastWellnessCheck', new Date().toDateString());
 
-    // 2. Trigger Cycle Sync Engine
+    // 3. Update Active Symptoms display in Metabolic Protocol section
+    const symptomsDisplay = document.getElementById('profile-symptoms-display');
+    if (symptomsDisplay) {
+        const symptoms = checkInProgress.symptoms || [];
+        if (symptoms.length > 0) {
+            // Format symptom names nicely (e.g., cramps -> Cramps, back_pain -> Back Pain)
+            const formattedSymptoms = symptoms.map(s =>
+                s.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+            ).join(', ');
+            symptomsDisplay.textContent = formattedSymptoms;
+        } else {
+            symptomsDisplay.textContent = 'None';
+        }
+    }
+
+    // 4. Trigger Cycle Sync Engine (updates workout recommendations)
     applyCycleSync(checkInProgress);
 
-    // 3. Close & Refresh
+    // 5. Close & Refresh views
     closeCheckInModal();
-    initCycleView();
+    initCycleView(); // Updates calendar
+    renderWeeklyCalendar(); // Update weekly calendar view
 
-    // 4. Redirect to Dashboard with Animation
+    // 6. Redirect to Dashboard with Animation
     switchAppTab('dashboard');
 
-    // Show Toast/Banner on Dashboard?
+    // Show Toast/Banner on Dashboard
     showCycleSyncBanner();
 }
 
