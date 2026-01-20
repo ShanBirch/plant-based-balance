@@ -8,12 +8,12 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "assets/logo_optimized.png",
+      "src": "assets/logo_yinyang_192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "assets/logo_optimized.png",
+      "src": "assets/logo_yinyang_512.png",
       "type": "image/png",
       "sizes": "512x512"
     }

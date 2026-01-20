@@ -84,7 +84,7 @@ exports.handler = async (event) => {
             title,
             body,
             icon: '/assets/coach_shannon.jpg',
-            badge: '/assets/logo_optimized.png',
+            badge: '/assets/logo_yinyang.png',
             vibrate: [200, 100, 200],
             tag: 'pending-approval',
             requireInteraction: true,
