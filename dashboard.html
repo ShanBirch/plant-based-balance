@@ -10970,18 +10970,38 @@ async function finishOnboarding() {
     localStorage.setItem('onboardingComplete', 'true');
     document.getElementById('onboarding-wizard').style.display = 'none';
 
+    // Apply gender-specific UI changes NOW that gender is selected
+    if (typeof applyGenderSpecificUI === 'function') {
+        applyGenderSpecificUI();
+    }
+
+    // Re-render cycle status with correct gender
+    if (typeof renderCycleStatus === 'function') {
+        renderCycleStatus();
+    }
+
+    // Update daily content with gender-appropriate tips
+    if (typeof initProgramDate === 'function') {
+        initProgramDate();
+    }
+
     // Sync quiz data to database
     await syncQuizDataToDb();
 
-    // Trigger the Daily Wellness check immediately after
+    // Trigger the Daily Wellness check immediately after (skipped for males or handled appropriately)
     setTimeout(checkDailyWellness, 500);
 }
 
 function closeWizardManually() {
      document.getElementById('onboarding-wizard').style.display = 'none';
-     // Warning: if they close manually without finishing, we might show it again next time? 
+     // Warning: if they close manually without finishing, we might show it again next time?
      // For now, let's assume they want to skip it.
      localStorage.setItem('onboardingComplete', 'true');
+
+     // Still apply gender-specific UI if they selected a gender
+     if (typeof applyGenderSpecificUI === 'function') {
+         applyGenderSpecificUI();
+     }
 }
 
 function toggleWizardPeriodInput() {
