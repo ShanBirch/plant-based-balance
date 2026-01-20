@@ -14273,6 +14273,15 @@ body.dbz-theme-active .settings-icon-gear {
 body.dbz-theme-active .settings-icon-dragonball {
     display: inline-block !important;
 }
+
+/* Profile icon Dragon Ball for DBZ themes */
+body.dbz-theme-active .profile-icon {
+    background-image: url('assets/dragon-ball.svg');
+    background-size: cover;
+    background-position: center;
+    color: transparent !important; /* Hide the "S" text */
+    font-size: 0; /* Extra measure to hide text */
+}
 </style>
 
 <script>
@@ -17052,13 +17061,14 @@ function applyAppTheme(themeKey) {
     updateSettingsIcon();
 }
 
-// Reusable function to toggle settings icon based on current theme
+// Reusable function to toggle settings icon and profile icon based on current theme
 function updateSettingsIcon() {
     const savedTheme = localStorage.getItem('userThemePreference') || 'default';
     const isDbzTheme = savedTheme.startsWith('dbz-');
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
 
     setTimeout(() => {
+        // Update settings icon (gear vs dragon ball)
         const gearIcon = document.getElementById('settings-icon-gear');
         const dragonBallIcon = document.getElementById('settings-icon-dragonball');
 
@@ -17067,37 +17077,69 @@ function updateSettingsIcon() {
                 // DBZ theme: show dragon ball, hide gear
                 gearIcon.style.setProperty('display', 'none', 'important');
                 dragonBallIcon.style.setProperty('display', 'inline-block', 'important');
-                console.log('✅ Dragon Ball icon activated');
+                console.log('✅ Dragon Ball settings icon activated');
             } else {
                 // Default: show gear, hide dragon ball
                 gearIcon.style.setProperty('display', 'inline-block', 'important');
                 dragonBallIcon.style.setProperty('display', 'none', 'important');
-                console.log('✅ Gear icon activated (theme: ' + savedTheme + ', male: ' + isMale + ')');
+                console.log('✅ Gear settings icon activated (theme: ' + savedTheme + ', male: ' + isMale + ')');
             }
         } else {
             console.warn('⚠️ Settings icons not found in DOM yet');
         }
+
+        // Update profile icons (all instances with class profile-icon)
+        const profileIcons = document.querySelectorAll('.profile-icon');
+        profileIcons.forEach(icon => {
+            if (isDbzTheme && isMale) {
+                // DBZ theme: show dragon ball background
+                icon.style.setProperty('background-image', 'url(assets/dragon-ball.svg)', 'important');
+                icon.style.setProperty('background-size', 'cover', 'important');
+                icon.style.setProperty('background-position', 'center', 'important');
+                icon.style.setProperty('color', 'transparent', 'important');
+                icon.style.setProperty('font-size', '0', 'important');
+                console.log('✅ Dragon Ball profile icon activated');
+            } else {
+                // Default: remove dragon ball background, show "S"
+                icon.style.removeProperty('background-image');
+                icon.style.setProperty('background', 'var(--accent-green)', 'important');
+                icon.style.setProperty('color', 'var(--primary)', 'important');
+                icon.style.setProperty('font-size', '', 'important');
+                console.log('✅ Standard profile icon activated');
+            }
+        });
     }, 50); // Small delay to ensure DOM is ready
 }
 
-// Diagnostic function for debugging Dragon Ball icon
+// Diagnostic function for debugging Dragon Ball icons
 function debugDragonBallIcon() {
+    const profileIconElements = document.querySelectorAll('.profile-icon');
+    const firstProfileIcon = profileIconElements[0];
+
     const results = {
         userGender: localStorage.getItem('userGender'),
         isMale: isMaleUser(),
         currentTheme: localStorage.getItem('userThemePreference'),
         bodyClasses: Array.from(document.body.classList),
         hasDbzThemeActive: document.body.classList.contains('dbz-theme-active'),
-        gearIcon: {
+        settingsGearIcon: {
             exists: !!document.getElementById('settings-icon-gear'),
             display: document.getElementById('settings-icon-gear')?.style.display,
             computedDisplay: window.getComputedStyle(document.getElementById('settings-icon-gear') || document.createElement('div')).display
         },
-        dragonBallIcon: {
+        settingsDragonBallIcon: {
             exists: !!document.getElementById('settings-icon-dragonball'),
             display: document.getElementById('settings-icon-dragonball')?.style.display,
             computedDisplay: window.getComputedStyle(document.getElementById('settings-icon-dragonball') || document.createElement('div')).display,
             src: document.getElementById('settings-icon-dragonball')?.src
+        },
+        profileIcons: {
+            count: profileIconElements.length,
+            firstIcon: firstProfileIcon ? {
+                backgroundImage: window.getComputedStyle(firstProfileIcon).backgroundImage,
+                color: window.getComputedStyle(firstProfileIcon).color,
+                textContent: firstProfileIcon.textContent
+            } : null
         }
     };
 
@@ -17107,15 +17149,20 @@ function debugDragonBallIcon() {
 
     // Show user-friendly message
     if (results.isMale && results.currentTheme?.startsWith('dbz-')) {
-        if (results.hasDbzThemeActive && results.dragonBallIcon.computedDisplay !== 'none') {
-            console.log('✅ Dragon Ball icon SHOULD be visible');
+        console.log('✅ DBZ theme active for male user');
+        console.log('  → Settings: Dragon Ball should show, Gear should hide');
+        console.log('  → Profile icon (top right S): Should show Dragon Ball background');
+
+        if (!results.hasDbzThemeActive) {
+            console.log('  ❌ body.dbz-theme-active class is MISSING');
+        }
+        if (results.profileIcons.firstIcon?.backgroundImage.includes('dragon-ball')) {
+            console.log('  ✅ Profile icon has Dragon Ball background');
         } else {
-            console.log('❌ Dragon Ball icon should be visible but something is wrong:');
-            if (!results.hasDbzThemeActive) console.log('  - body.dbz-theme-active class is MISSING');
-            if (results.dragonBallIcon.computedDisplay === 'none') console.log('  - Dragon Ball icon has display: none (CSS issue)');
+            console.log('  ❌ Profile icon does NOT have Dragon Ball background');
         }
     } else {
-        console.log('ℹ️ Dragon Ball icon should NOT be visible because:');
+        console.log('ℹ️ Dragon Ball icons should NOT be visible because:');
         if (!results.isMale) console.log('  - User is not male (gender: ' + results.userGender + ')');
         if (!results.currentTheme?.startsWith('dbz-')) console.log('  - Current theme is not DBZ (theme: ' + results.currentTheme + ')');
     }
