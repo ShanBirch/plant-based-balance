@@ -7861,6 +7861,22 @@ function startCustomBuilderWorkout() {
 
         <p style="max-width: 300px; margin: 30px auto 40px; line-height: 1.6; opacity: 0.9;">Great job signaling safety to your body. Your cortisol levels are thanking you.</p>
 
+        <!-- Workout Photo Section -->
+        <div id="workout-photo-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin-bottom: 30px; backdrop-filter: blur(10px);">
+            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;">Earn a Point!</div>
+            <p style="font-size: 0.9rem; opacity: 0.85; margin-bottom: 15px;">Post a workout photo to verify and earn your point</p>
+            <label for="workout-photo-input" style="display: inline-block; background: white; color: var(--primary); padding: 12px 30px; border-radius: 25px; font-weight: 600; cursor: pointer; transition: transform 0.2s;">
+                Post Workout Photo
+            </label>
+            <input type="file" id="workout-photo-input" accept="image/*" capture="environment" style="display: none;" onchange="handleWorkoutPhotoSelect(event)">
+        </div>
+
+        <!-- Points Awarded Confirmation (shown after photo verified) -->
+        <div id="workout-points-awarded" style="display: none; background: rgba(68, 255, 68, 0.2); padding: 15px 25px; border-radius: 16px; margin-bottom: 30px; border: 2px solid rgba(68, 255, 68, 0.5);">
+            <div style="font-size: 1.3rem; font-weight: 700;">+1 Point Earned!</div>
+            <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 5px;">Workout verified successfully</div>
+        </div>
+
         <button onclick="closeSuccessScreen()" style="background: white; color: var(--primary); border: none; padding: 15px 50px; border-radius: 50px; font-size: 1.1rem; font-weight: 600; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.2); margin-bottom: 40px;">
             DONE
         </button>
@@ -16321,6 +16337,39 @@ updateCoachUI();
     </button>
 </div>
 
+<!-- Workout Photo Preview Modal -->
+<div id="workout-preview-modal" style="display:none; position:fixed; inset:0; background:black; z-index:10012; flex-direction:column; align-items:center; justify-content:center;">
+    <!-- Photo Preview -->
+    <img id="workout-preview-photo" style="width:100%; height:100%; object-fit:contain; position:absolute; top:0; left:0;">
+
+    <!-- Close Button -->
+    <button onclick="closeWorkoutPreviewModal()" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:13; backdrop-filter:blur(10px);">
+        &times;
+    </button>
+
+    <!-- Loading Indicator -->
+    <div id="workout-photo-loading" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); padding:30px 40px; border-radius:20px; z-index:14; text-align:center;">
+        <div style="width:50px; height:50px; border:4px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 15px;"></div>
+        <div id="workout-photo-loading-text" style="color:white; font-size:1rem;">Verifying workout...</div>
+    </div>
+
+    <!-- Error Message -->
+    <div id="workout-photo-error" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(220,38,38,0.9); padding:25px 35px; border-radius:16px; z-index:14; text-align:center; max-width:80%;">
+        <div style="color:white; font-size:1rem; font-weight:600;" id="workout-photo-error-text">Error</div>
+        <button onclick="document.getElementById('workout-photo-error').style.display='none'" style="margin-top:15px; background:white; color:#dc2626; border:none; padding:10px 25px; border-radius:20px; font-weight:600; cursor:pointer;">OK</button>
+    </div>
+
+    <!-- Verify Button -->
+    <button onclick="verifyWorkoutPhoto()" id="workout-verify-btn" style="position:absolute; bottom:40px; right:30px; background:var(--primary); color:white; padding:14px 35px; border:none; border-radius:25px; font-weight:600; font-size:1.1rem; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.6); z-index:13; transition:transform 0.2s;">
+        Verify Workout
+    </button>
+
+    <!-- Cancel Button -->
+    <button onclick="closeWorkoutPreviewModal()" style="position:absolute; bottom:40px; left:30px; background:rgba(255,255,255,0.2); color:white; padding:14px 28px; border:none; border-radius:25px; font-weight:600; font-size:1.1rem; cursor:pointer; backdrop-filter:blur(10px); z-index:13; transition:transform 0.2s;">
+        Cancel
+    </button>
+</div>
+
 <!-- Story Upload Modal -->
 <div id="story-upload-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10007; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
     <div style="width:90%; max-width:500px; background:white; border-radius:20px; overflow:hidden;">
@@ -17002,6 +17051,264 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
         console.error('Error awarding points for workout:', error);
         return null;
     }
+}
+
+// ==========================================
+// WORKOUT PHOTO VERIFICATION FUNCTIONS
+// ==========================================
+
+let capturedWorkoutFile = null;
+let workoutPhotoBase64 = null;
+
+// Handle workout photo selection
+async function handleWorkoutPhotoSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    capturedWorkoutFile = file;
+
+    // Convert to base64 for preview and analysis
+    workoutPhotoBase64 = await fileToBase64(file);
+
+    // Show preview modal
+    const previewModal = document.getElementById('workout-preview-modal');
+    const previewPhoto = document.getElementById('workout-preview-photo');
+
+    if (previewModal && previewPhoto) {
+        previewPhoto.src = workoutPhotoBase64;
+        previewModal.style.display = 'flex';
+    }
+
+    // Reset file input for future selections
+    event.target.value = '';
+}
+
+// Close workout preview modal
+function closeWorkoutPreviewModal() {
+    const previewModal = document.getElementById('workout-preview-modal');
+    if (previewModal) {
+        previewModal.style.display = 'none';
+    }
+    capturedWorkoutFile = null;
+    workoutPhotoBase64 = null;
+
+    // Hide any loading/error states
+    const loading = document.getElementById('workout-photo-loading');
+    const error = document.getElementById('workout-photo-error');
+    if (loading) loading.style.display = 'none';
+    if (error) error.style.display = 'none';
+}
+
+// Verify workout photo with Gemini AI
+async function verifyWorkoutPhoto() {
+    if (!capturedWorkoutFile || !workoutPhotoBase64) {
+        alert('No photo captured. Please try again.');
+        return;
+    }
+
+    const loadingEl = document.getElementById('workout-photo-loading');
+    const errorEl = document.getElementById('workout-photo-error');
+    const verifyBtn = document.getElementById('workout-verify-btn');
+
+    // Show loading
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (verifyBtn) verifyBtn.disabled = true;
+
+    try {
+        // Get base64 data without prefix
+        const base64Data = workoutPhotoBase64.split(',')[1];
+
+        // Call Gemini API to verify workout photo
+        const response = await fetch('/api/analyze-workout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                imageBase64: base64Data,
+                mimeType: capturedWorkoutFile.type
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(errorData.error || 'Failed to verify workout photo');
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Verification failed');
+        }
+
+        const analysisData = result.data;
+
+        // Check if photo is eligible for points
+        if (!result.pointsEligible) {
+            // Show why it wasn't eligible
+            let reason = 'This photo could not be verified as a workout.';
+            if (!analysisData.isWorkoutPhoto) {
+                reason = 'This doesn\'t appear to be a workout photo. Try taking a photo at the gym, during exercise, or showing workout equipment.';
+            } else if (analysisData.confidence === 'low') {
+                reason = 'The photo quality or content couldn\'t be clearly verified. Try a clearer photo showing your workout.';
+            } else if (analysisData.suspiciousIndicators?.length > 0) {
+                reason = 'This photo appears to be a screenshot or stock image. Please take a real photo of your workout.';
+            }
+
+            if (errorEl) {
+                document.getElementById('workout-photo-error-text').textContent = reason;
+                errorEl.style.display = 'block';
+            }
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (verifyBtn) verifyBtn.disabled = false;
+            return;
+        }
+
+        // Photo verified! Upload and save
+        await saveVerifiedWorkoutPhoto(analysisData);
+
+    } catch (error) {
+        console.error('Error verifying workout photo:', error);
+        if (errorEl) {
+            document.getElementById('workout-photo-error-text').textContent = error.message || 'Failed to verify photo. Please try again.';
+            errorEl.style.display = 'block';
+        }
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (verifyBtn) verifyBtn.disabled = false;
+    }
+}
+
+// Save verified workout photo and award points
+async function saveVerifiedWorkoutPhoto(analysisData) {
+    const loadingEl = document.getElementById('workout-photo-loading');
+    const loadingText = document.getElementById('workout-photo-loading-text');
+
+    if (loadingText) loadingText.textContent = 'Saving workout...';
+
+    try {
+        const user = await window.supabaseClient.auth.getUser();
+        const userId = user?.data?.user?.id;
+
+        if (!userId) {
+            throw new Error('User not authenticated');
+        }
+
+        // Upload photo to B2
+        const formData = new FormData();
+        formData.append('file', capturedWorkoutFile);
+        formData.append('userId', userId);
+
+        const uploadResponse = await fetch('/api/upload-workout-photo', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json();
+            throw new Error(errorData.error || 'Failed to upload photo');
+        }
+
+        const uploadData = await uploadResponse.json();
+        const photoUrl = uploadData.url;
+
+        // Generate photo hash for duplicate detection
+        const photoHash = await window.db?.points?.generatePhotoHash(workoutPhotoBase64);
+
+        // Save workout photo log to database
+        const { data: savedLog, error: saveError } = await window.supabaseClient
+            .from('workout_photo_logs')
+            .insert({
+                user_id: userId,
+                photo_url: photoUrl,
+                storage_path: uploadData.fileName,
+                is_workout_photo: analysisData.isWorkoutPhoto,
+                workout_type: analysisData.workoutType,
+                detected_elements: analysisData.detectedElements || [],
+                suspicious_indicators: analysisData.suspiciousIndicators || [],
+                ai_confidence: analysisData.confidence,
+                ai_notes: analysisData.notes,
+                analysis_timestamp: new Date().toISOString(),
+                points_eligible: true,
+                photo_hash: photoHash
+            })
+            .select();
+
+        if (saveError) {
+            console.error('Error saving workout photo log:', saveError);
+            // Continue anyway - we still want to award points
+        }
+
+        // Award points for the verified workout photo
+        const workoutLogId = savedLog?.[0]?.id || `workout_photo_${Date.now()}`;
+        const photoTimestamp = capturedWorkoutFile.lastModified
+            ? new Date(capturedWorkoutFile.lastModified).toISOString()
+            : null;
+
+        const pointsResult = await awardPointsForWorkout(
+            workoutLogId,
+            photoTimestamp,
+            analysisData.confidence,
+            photoHash
+        );
+
+        // Update the saved log with points awarded
+        if (savedLog?.[0]?.id && pointsResult?.pointsAwarded) {
+            await window.supabaseClient
+                .from('workout_photo_logs')
+                .update({ points_awarded: pointsResult.pointsAwarded })
+                .eq('id', savedLog[0].id);
+        }
+
+        // Close modal and show success
+        closeWorkoutPreviewModal();
+
+        // Update success screen to show points earned
+        const photoSection = document.getElementById('workout-photo-section');
+        const pointsAwarded = document.getElementById('workout-points-awarded');
+
+        if (photoSection) photoSection.style.display = 'none';
+        if (pointsAwarded) pointsAwarded.style.display = 'block';
+
+        console.log('Workout photo verified and points awarded!', pointsResult);
+
+    } catch (error) {
+        console.error('Error saving workout photo:', error);
+        const errorEl = document.getElementById('workout-photo-error');
+        if (errorEl) {
+            document.getElementById('workout-photo-error-text').textContent = error.message || 'Failed to save workout. Please try again.';
+            errorEl.style.display = 'block';
+        }
+        if (loadingEl) loadingEl.style.display = 'none';
+        const verifyBtn = document.getElementById('workout-verify-btn');
+        if (verifyBtn) verifyBtn.disabled = false;
+    }
+}
+
+// Upload workout photo to B2 storage
+async function uploadWorkoutPhoto(file) {
+    const user = await window.supabaseClient.auth.getUser();
+    const userId = user?.data?.user?.id;
+
+    if (!userId) {
+        throw new Error('User not authenticated');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('userId', userId);
+
+    const response = await fetch('/api/upload-workout-photo', {
+        method: 'POST',
+        body: formData
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload photo');
+    }
+
+    const data = await response.json();
+    return data.url;
 }
 
 // Initialize points widget on dashboard load
