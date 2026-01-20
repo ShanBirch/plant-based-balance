@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 120" fill="none">
+  <!-- Lavender sprig -->
+  <!-- Stem -->
+  <path d="M30 120 Q28 80 30 40 Q32 80 30 120" stroke="#7BA883" stroke-width="2" fill="none"/>
+  <!-- Left leaves -->
+  <ellipse cx="22" cy="90" rx="8" ry="3" fill="#98C9A3" transform="rotate(-30, 22, 90)"/>
+  <ellipse cx="24" cy="70" rx="7" ry="2.5" fill="#98C9A3" transform="rotate(-25, 24, 70)"/>
+  <!-- Right leaves -->
+  <ellipse cx="38" cy="85" rx="8" ry="3" fill="#98C9A3" transform="rotate(30, 38, 85)"/>
+  <ellipse cx="36" cy="65" rx="7" ry="2.5" fill="#98C9A3" transform="rotate(25, 36, 65)"/>
+  <!-- Lavender buds -->
+  <ellipse cx="30" cy="8" rx="4" ry="6" fill="#B4A7D6"/>
+  <ellipse cx="26" cy="14" rx="4" ry="5" fill="#C4B8E0"/>
+  <ellipse cx="34" cy="14" rx="4" ry="5" fill="#C4B8E0"/>
+  <ellipse cx="28" cy="22" rx="4" ry="5" fill="#B4A7D6"/>
+  <ellipse cx="32" cy="22" rx="4" ry="5" fill="#B4A7D6"/>
+  <ellipse cx="26" cy="30" rx="3.5" ry="4.5" fill="#A898CC"/>
+  <ellipse cx="34" cy="30" rx="3.5" ry="4.5" fill="#A898CC"/>
+  <ellipse cx="28" cy="38" rx="3" ry="4" fill="#9888BC"/>
+  <ellipse cx="32" cy="38" rx="3" ry="4" fill="#9888BC"/>
+  <ellipse cx="30" cy="46" rx="2.5" ry="3.5" fill="#8878AC"/>
+</svg>

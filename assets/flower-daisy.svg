@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Daisy flower -->
+  <g transform="translate(50,50)">
+    <!-- White petals -->
+    <ellipse cx="0" cy="-28" rx="8" ry="22" fill="#FFF8F5" transform="rotate(0)"/>
+    <ellipse cx="0" cy="-28" rx="8" ry="22" fill="#FFF8F5" transform="rotate(30)"/>
+    <ellipse cx="0" cy="-28" rx="8" ry="22" fill="#FFF8F5" transform="rotate(60)"/>
+    <ellipse cx="0" cy="-28" rx="8" ry="22" fill="#FFF8F5" transform="rotate(90)"/>
+    <ellipse cx="0" cy="-28" rx="8" ry="22" fill="#FFF8F5" transform="rotate(120)"/>
+    <ellipse cx="0" cy="-28" rx="8" ry="22" fill="#FFF8F5" transform="rotate(150)"/>
+    <ellipse cx="0" cy="-28" rx="8" ry="22" fill="#FFF8F5" transform="rotate(180)"/>
+    <ellipse cx="0" cy="-28" rx="8" ry="22" fill="#FFF8F5" transform="rotate(210)"/>
+    <ellipse cx="0" cy="-28" rx="8" ry="22" fill="#FFF8F5" transform="rotate(240)"/>
+    <ellipse cx="0" cy="-28" rx="8" ry="22" fill="#FFF8F5" transform="rotate(270)"/>
+    <ellipse cx="0" cy="-28" rx="8" ry="22" fill="#FFF8F5" transform="rotate(300)"/>
+    <ellipse cx="0" cy="-28" rx="8" ry="22" fill="#FFF8F5" transform="rotate(330)"/>
+    <!-- Yellow center -->
+    <circle cx="0" cy="0" r="14" fill="#F5D76E"/>
+    <circle cx="0" cy="0" r="10" fill="#E8C84A"/>
+    <!-- Center dots -->
+    <circle cx="3" cy="-3" r="2" fill="#D4AF37" opacity="0.6"/>
+    <circle cx="-4" cy="2" r="2" fill="#D4AF37" opacity="0.6"/>
+    <circle cx="2" cy="4" r="2" fill="#D4AF37" opacity="0.6"/>
+  </g>
+</svg>

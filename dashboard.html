@@ -28,17 +28,17 @@
 
 <style>
     :root {
-        /* Premium Green & Gold Palette */
+        /* Premium Green & Gold Palette (Default) */
         --primary: #7BA883; /* Soft Sage Green (Pastel) */
         --primary-light: #98C9A3; /* Light Mint Green (Pastel) */
         --secondary: #E8D68E; /* Soft Golden Yellow */
         --accent-green: #f2f7f4; /* Subtle Green Tint */
-        
+
         --bg: #f9f9f7;
         --surface: #ffffff;
         --text-main: #1a202c;
         --text-muted: #718096;
-        
+
         --border-radius: 16px;
         --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         --nav-height: 80px;
@@ -121,6 +121,26 @@
     .nav-item.has-notification span {
         color: #fbbf24;
         filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.8));
+    }
+
+    /* Flower Theme Decorative Elements (used when flower-garden theme is active) */
+    .flower-decoration-corner {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        background: url('assets/flower-cherry-blossom.svg') no-repeat center;
+        background-size: contain;
+        opacity: 0.25;
+        pointer-events: none;
+    }
+    .flower-decoration-corner.top-right {
+        top: 10px;
+        right: 10px;
+    }
+    .flower-decoration-corner.bottom-left {
+        bottom: 10px;
+        left: 10px;
+        transform: rotate(180deg);
     }
 
     /* Top Header for Views */
@@ -1109,14 +1129,14 @@
 
     .progress-fill-protein {
         height: 100%;
-        background: linear-gradient(90deg, #7BA883, #98C9A3);
+        background: linear-gradient(90deg, var(--primary), var(--primary-light));
         border-radius: 3px;
         transition: width 0.5s ease;
     }
 
     .progress-fill-carbs {
         height: 100%;
-        background: linear-gradient(90deg, #E8D68E, #f2e8b0);
+        background: linear-gradient(90deg, var(--secondary), var(--secondary-light));
         border-radius: 3px;
         transition: width 0.5s ease;
     }
@@ -15991,23 +16011,41 @@ const APP_THEMES = {
             '--chat-border-coach': '#e2e8f0'
         }
     },
-    'antigravity-light': { 
-        name: 'Antigravity Light', 
-        colors: { 
-            '--primary': '#4f46e5', 
-            '--primary-light': '#6366f1', 
-            '--secondary': '#0891b2', 
-            '--accent-green': '#eff6ff', 
-            '--bg': '#ffffff', 
-            '--surface': '#f8fafc', 
-            '--text-main': '#0f172a', 
+    'flower-garden': {
+        name: 'Flower Garden',
+        colors: {
+            '--primary': '#D98B9C',
+            '--primary-light': '#F4B4C4',
+            '--secondary': '#B4A7D6',
+            '--accent-green': '#FFF8F5',
+            '--bg': '#FFFBF9',
+            '--surface': '#ffffff',
+            '--text-main': '#4A3F44',
+            '--text-muted': '#8B7D82',
+            '--chat-bg-user': '#D98B9C',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#FFF8F5',
+            '--chat-text-coach': '#4A3F44',
+            '--chat-border-coach': '#F4B4C4'
+        }
+    },
+    'antigravity-light': {
+        name: 'Antigravity Light',
+        colors: {
+            '--primary': '#4f46e5',
+            '--primary-light': '#6366f1',
+            '--secondary': '#0891b2',
+            '--accent-green': '#eff6ff',
+            '--bg': '#ffffff',
+            '--surface': '#f8fafc',
+            '--text-main': '#0f172a',
             '--text-muted': '#64748b',
             '--chat-bg-user': '#4f46e5',
             '--chat-text-user': '#ffffff',
             '--chat-bg-coach': '#f1f5f9',
             '--chat-text-coach': '#0f172a',
             '--chat-border-coach': '#e2e8f0'
-        } 
+        }
     },
     'ocean': { 
         name: 'Ocean Calm', 

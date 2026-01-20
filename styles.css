@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 
 :root {
-  /* Brand Colors */
+  /* Brand Colors (Default - Emerald Green & Gold) */
   --color-primary: #046A38; /* Emerald Green */
   --color-primary-dark: #024b26;
   --color-secondary: #D4AF37; /* Metallic Gold */
@@ -11,6 +11,16 @@
   --color-text-main: #1F2937;
   --color-text-light: #6B7280;
   --color-white: #FFFFFF;
+
+  /* Flower Theme Colors (available via .flower-theme class) */
+  --flower-primary: #D98B9C; /* Rose Pink */
+  --flower-primary-dark: #C97A8A;
+  --flower-primary-light: #F4B4C4; /* Soft Petal Pink */
+  --flower-secondary: #B4A7D6; /* Lavender */
+  --flower-accent: #E8C84A; /* Golden Yellow */
+  --flower-leaf: #98C9A3; /* Sage Green */
+  --flower-blush: #FFD1DC; /* Cherry Blossom Pink */
+  --flower-peony: #F8D4DB; /* Peony Pink */
 
   /* Spacing */
   --spacing-xs: 0.5rem;
@@ -24,12 +34,14 @@
   --font-body: 'Montserrat', sans-serif;
   --font-accent: 'Playfair Display', serif;
 
-  
+
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-gold: 0 4px 14px 0 rgba(212, 175, 55, 0.39);
+  --shadow-rose: 0 4px 14px 0 rgba(217, 139, 156, 0.35);
+  --shadow-lavender: 0 4px 14px 0 rgba(180, 167, 214, 0.35);
 }
 
 /* Reset & Base */
@@ -93,31 +105,64 @@ a {
 }
 
 .btn-primary {
-  background: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
   color: var(--color-white);
-  box-shadow: 0 4px 14px 0 rgba(4, 106, 56, 0.39);
+  box-shadow: var(--shadow-rose);
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-dark);
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(4, 106, 56, 0.23);
+  box-shadow: 0 6px 20px rgba(4, 106, 56, 0.4);
 }
 
 .btn-secondary {
-  background: var(--color-secondary);
-  color: var(--color-primary-dark);
+  background: linear-gradient(135deg, var(--color-secondary), var(--color-secondary-light));
+  color: var(--color-white);
   box-shadow: var(--shadow-gold);
 }
 
 .btn-secondary:hover {
-  background: #c5a028;
+  background: linear-gradient(135deg, #c9a22e, var(--color-secondary));
   transform: translateY(-2px);
 }
 
 .text-gold { color: var(--color-secondary); }
 .text-green { color: var(--color-primary); }
+.text-rose { color: var(--flower-primary); }
+.text-lavender { color: var(--flower-secondary); }
 .text-center { text-align: center; }
+
+/* Flower Theme Decorative Classes (available for use with flower theme) */
+.flower-decoration {
+  position: relative;
+}
+
+.flower-decoration::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  width: 80px;
+  height: 80px;
+  background: url('assets/flower-cherry-blossom.svg') no-repeat center;
+  background-size: contain;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.flower-divider {
+  width: 100%;
+  height: 60px;
+  background: url('assets/flower-divider.svg') no-repeat center;
+  background-size: 400px 60px;
+  margin: 2rem 0;
+}
+
+.flower-bg-pattern {
+  background-image: url('assets/flower-pattern-bg.svg');
+  background-repeat: repeat;
+}
 
 /* Navigation */
 .navbar {
@@ -343,7 +388,7 @@ a {
   position: relative;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: var(--shadow-gold);
+  box-shadow: var(--shadow-rose);
 }
 
 .hero-image-wrapper img {
@@ -383,22 +428,22 @@ a {
 }
 
 .card, .pricing-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%); /* Silver/Light Slate tinge */
+  background: linear-gradient(135deg, #ffffff 0%, var(--color-neutral) 100%); /* Warm cream tinge */
   padding: 3.5rem 2rem 2rem;
   border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-md);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-peony);
   position: relative;
   display: flex;
   flex-direction: column;
 }
 
 .pricing-card.popular {
-  background: linear-gradient(135deg, #fffcf0 0%, #fff9db 100%); /* Gold tinge */
-  border: 2px solid #fbbf24;
+  background: linear-gradient(135deg, #FFF8F5 0%, var(--color-blush) 100%); /* Rose/pink tinge */
+  border: 2px solid var(--color-primary);
   transform: scale(1.05);
-  box-shadow: 0 20px 25px -5px rgba(251, 191, 36, 0.1), 0 10px 10px -5px rgba(251, 191, 36, 0.04);
+  box-shadow: 0 20px 25px -5px rgba(217, 139, 156, 0.15), 0 10px 10px -5px rgba(217, 139, 156, 0.08);
   z-index: 5;
 }
 
@@ -454,7 +499,7 @@ a {
 /* App Showcase */
 .showcase {
   padding: var(--spacing-xl) 0;
-  background: linear-gradient(135deg, #046A38 0%, #034927 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: var(--color-white);
 }
 
