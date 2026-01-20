@@ -2150,7 +2150,7 @@
         });
 
         await waitForAuth();
-        
+
         if(window.currentUser) {
             loadChat();
             loadJournalHistory();
@@ -2158,6 +2158,12 @@
             await seedTestAccount(); // Inject fake data for test user
             await loadProfileData(); // Ensure profile is loaded (includes gender restore)
             initProgramDate(); // Ensure program date is synced
+
+            // Apply saved theme AFTER gender is loaded from database
+            const savedTheme = localStorage.getItem('userThemePreference') || 'default';
+            if (typeof applyAppTheme === 'function') {
+                applyAppTheme(savedTheme);
+            }
 
             // Check if essential quiz data is missing and trigger onboarding wizard
             await checkAndTriggerOnboarding();
@@ -16878,8 +16884,7 @@ document.addEventListener('DOMContentLoaded', () => {
             subscribeToCoachMessages(window.currentUser.id);
         }
         checkUserRole();
-        const savedTheme = localStorage.getItem('userThemePreference') || 'default';
-        applyAppTheme(savedTheme);
+        // Theme is now applied in the main initialization sequence after gender is loaded
     });
 
     // Event Listeners (Community only - Coach uses form onsubmit)
