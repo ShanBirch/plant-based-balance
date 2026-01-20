@@ -15342,8 +15342,9 @@ function checkReferralBannerDismissed() {
 // Load referral stats and update UI
 async function loadReferralStats() {
     if (!window.currentUser) {
-        console.error('loadReferralStats: No current user found');
-        return;
+        const error = new Error('No current user found. Please ensure you are logged in.');
+        console.error('loadReferralStats:', error.message);
+        throw error;
     }
 
     // Check if banner was dismissed
@@ -15467,6 +15468,37 @@ async function openShareReferralModal() {
     codeDisplay.textContent = 'Loading...';
     codeDisplay.style.color = 'var(--text-muted)';
 
+    // Wait for authentication if not ready
+    if (!window.currentUser) {
+        console.log('Waiting for authentication...');
+        let attempts = 0;
+        const maxAttempts = 30; // 3 seconds max wait
+
+        while (!window.currentUser && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        if (!window.currentUser) {
+            console.error('Authentication timeout - user not available');
+            codeDisplay.textContent = 'Please log in first';
+            codeDisplay.style.color = '#ef4444';
+
+            setTimeout(() => {
+                codeDisplay.textContent = 'Tap to retry';
+                codeDisplay.style.cursor = 'pointer';
+                codeDisplay.onclick = async () => {
+                    codeDisplay.onclick = null;
+                    codeDisplay.style.cursor = 'default';
+                    codeDisplay.textContent = 'Loading...';
+                    codeDisplay.style.color = 'var(--text-muted)';
+                    await openShareReferralModal();
+                };
+            }, 2000);
+            return;
+        }
+    }
+
     // If we don't have a referral code yet, try to load it
     if (!currentReferralCode) {
         try {
@@ -15477,13 +15509,18 @@ async function openShareReferralModal() {
             codeDisplay.textContent = 'Failed to load code';
             codeDisplay.style.color = '#ef4444';
 
-            // Show user-friendly error message
+            // Show user-friendly error message with details
+            const errorMsg = error.message || 'Unknown error';
+            console.error('Error details:', errorMsg);
+
             setTimeout(() => {
                 codeDisplay.textContent = 'Tap to retry';
                 codeDisplay.style.cursor = 'pointer';
                 codeDisplay.onclick = async () => {
                     codeDisplay.onclick = null;
                     codeDisplay.style.cursor = 'default';
+                    codeDisplay.textContent = 'Loading...';
+                    codeDisplay.style.color = 'var(--text-muted)';
                     await openShareReferralModal();
                 };
             }, 2000);
@@ -15499,10 +15536,18 @@ async function openShareReferralModal() {
         codeDisplay.onclick = null;
         console.log('✓ Referral code displayed:', currentReferralCode);
     } else {
-        // Fallback if still no code
+        // Fallback if still no code after successful load
         console.error('No referral code available after loading');
-        codeDisplay.textContent = 'Code unavailable';
+        codeDisplay.textContent = 'Tap to retry';
         codeDisplay.style.color = '#ef4444';
+        codeDisplay.style.cursor = 'pointer';
+        codeDisplay.onclick = async () => {
+            codeDisplay.onclick = null;
+            codeDisplay.style.cursor = 'default';
+            codeDisplay.textContent = 'Loading...';
+            codeDisplay.style.color = 'var(--text-muted)';
+            await openShareReferralModal();
+        };
     }
 }
 
