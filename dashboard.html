@@ -13783,7 +13783,7 @@ window.approveResponse = async function() {
         for (const part of parts) {
             await db.conversations.create(
                 originalUserId,  // The user who asked the question
-                'shannon',       // chat_type
+                'coach',         // chat_type - must match what getChatHistory queries for
                 'assistant',     // role
                 part,           // message text
                 'Coach Shannon'  // author name
