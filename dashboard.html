@@ -2130,6 +2130,11 @@
     window.addEventListener('DOMContentLoaded', async () => {
         injectMealPhotoUploads();
         injectReflectionsIntoDays();
+
+        // Apply gender theme if already set
+        if (typeof applyGenderTheme === 'function') {
+            applyGenderTheme();
+        }
         
         // Wait for Auth before loading user-specific data
         const waitForAuth = () => new Promise(resolve => {
@@ -9372,7 +9377,8 @@ const PHASE_INFO = {
     follicular: { name: 'Follicular Phase', color: '#F06292', css: 'phase-follicular', rec: 'HIIT, Strength, Cardio', icon: '⚡' },
     ovulation: { name: 'Ovulation Phase', color: '#BA68C8', css: 'phase-ovulation', rec: 'Max Effort, PB Attempts', icon: '🥚' },
     luteal: { name: 'Luteal Phase', color: '#FFB74D', css: 'phase-luteal', rec: 'Strength (Mod), Pilates', icon: '🌙' },
-    wellness: { name: 'Wellness Cycle', color: '#4DB6AC', css: 'phase-follicular', rec: 'Balanced Activity / Strength', icon: '🌿' }
+    wellness: { name: 'Wellness Cycle', color: '#4DB6AC', css: 'phase-follicular', rec: 'Balanced Activity / Strength', icon: '🌿' },
+    performance: { name: 'Performance Mode', color: '#3b82f6', css: 'phase-performance', rec: 'Strength, HIIT, Progressive Overload', icon: '💪' }
 };
 
 let userCycleData = {
@@ -9518,19 +9524,24 @@ async function updateCycleData() {
 }
 
 function getCyclePhase(dayOfCycle, cycleLen) {
+    // For male users, always return 'performance' (no cycle tracking)
+    if (typeof isMaleUser === 'function' && isMaleUser()) {
+        return 'performance';
+    }
+
     // Basic Algo
     // Day 1-5: Menstrual
     // Day 6-13: Follicular
     // Day 14: Ovulation (approx mid-cycle)
     // Day 15-End: Luteal
-    
+
     // Adjust for cycle length:
     // Menstrual is usually fixed ~5
     // Luteal is usually fixed ~14 days before end.
     // Follicular varies.
-    
+
     const ovulationDay = cycleLen - 14;
-    
+
     if (dayOfCycle <= 5) return 'menstrual';
     if (dayOfCycle < ovulationDay) return 'follicular';
     if (dayOfCycle === ovulationDay) return 'ovulation';
@@ -9538,6 +9549,35 @@ function getCyclePhase(dayOfCycle, cycleLen) {
 }
 
 function renderCycleStatus() {
+    // For male users, show Performance Mode (no cycle tracking)
+    if (typeof isMaleUser === 'function' && isMaleUser()) {
+        const phase = PHASE_INFO['performance'];
+        const phaseName = document.getElementById('cycle-phase-name');
+        const phaseDesc = document.getElementById('cycle-phase-desc');
+        const cycleDayDisplay = document.getElementById('cycle-day-display');
+
+        if (phaseName) {
+            phaseName.innerText = phase.name;
+            phaseName.style.color = phase.color;
+        }
+        if (cycleDayDisplay && cycleDayDisplay.parentElement) {
+            cycleDayDisplay.parentElement.style.display = 'none'; // Hide day counter for males
+        }
+        if (phaseDesc) {
+            phaseDesc.innerText = "Train based on energy and recovery. Push hard, recover smart.";
+        }
+
+        // Update recommendation
+        let suggestion = phase.rec;
+        const recText = document.getElementById('rec-text');
+        if (recText) recText.innerText = suggestion;
+
+        const recCard = document.getElementById('today-workout-rec');
+        if (recCard) recCard.style.background = phase.color;
+
+        return;
+    }
+
     if (userCycleData.noPeriodMode) {
         // Wellness Mode View
         const phase = PHASE_INFO['wellness'];
@@ -9743,15 +9783,17 @@ function renderWeeklyCalendar() {
         }
 
         // Apply Modifiers
+        const isMaleCalendar = (typeof isMaleUser === 'function' && isMaleUser());
+
         if (!isBaseline) {
-            // 1. Phase Modifiers - swap to yoga on menstrual phase if doing strength
-            if (phaseKey === 'menstrual' && dayWorkout.programId === 'bodyweight') {
+            // 1. Phase Modifiers - swap to yoga on menstrual phase if doing strength (females only)
+            if (!isMaleCalendar && phaseKey === 'menstrual' && dayWorkout.programId === 'bodyweight') {
                 // Swap to gentle yoga
                 const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
                 if (yogaWorkout) workoutName = yogaWorkout.title;
             }
         }
-        
+
         // 2. High Cortisol Safety Override - encourage yoga over HIIT
         if (isHighCortisol && dayWorkout.programId === 'bodyweight') {
             const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
@@ -9765,7 +9807,8 @@ function renderWeeklyCalendar() {
                 if (yogaWorkout) workoutName = yogaWorkout.title;
             }
             if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
-                if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
+                // Hot flash and dizziness are female-specific
+                if (!isMaleCalendar && (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness'))) {
                     const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative
                     if (yogaWorkout) workoutName = yogaWorkout.title;
                 } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
@@ -9844,31 +9887,34 @@ window.openCalendarWorkout = function(dayIndexFromMonday) {
     
     let phaseKey = 'wellness';
     
-    if (!isBaseline && !userCycleData.noPeriodMode) {
+    const isMaleWorkout = (typeof isMaleUser === 'function' && isMaleUser());
+
+    // Skip cycle phase modifiers for males
+    if (!isMaleWorkout && !isBaseline && !userCycleData.noPeriodMode) {
         const start = new Date(userCycleData.lastPeriod);
         const msPerDay = 24 * 60 * 60 * 1000;
         const daysSinceStart = Math.floor((targetDate - start) / msPerDay);
         let mod = daysSinceStart % userCycleData.cycleLength;
         if (mod < 0) mod += userCycleData.cycleLength;
         const currentCycleDay = mod + 1;
-        
+
         if (typeof getCyclePhase === 'function') {
             phaseKey = getCyclePhase(currentCycleDay, userCycleData.cycleLength);
         }
-        
-        // Modifier: Menstrual -> Yoga
+
+        // Modifier: Menstrual -> Yoga (females only)
         if (phaseKey === 'menstrual' && programId === 'bodyweight') {
             programId = 'yoga';
             dayIndex = 3; // Restorative Recovery
         }
     }
-    
+
     // Modifier: High Cortisol -> Yoga (overrides HIIT/Bodyweight)
     if (isHighCortisol && programId === 'bodyweight') {
         programId = 'yoga';
         dayIndex = 0; // Somatic Hormone Reset
     }
-    
+
     // Modifier: Mood/Symptoms (Only applies if targetDate is TODAY)
     if (targetDate.toDateString() === today.toDateString()) {
          if (userCycleData.mood === 'tired') {
@@ -9876,7 +9922,8 @@ window.openCalendarWorkout = function(dayIndexFromMonday) {
              dayIndex = 3;
          }
          if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
-             if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
+             // Hot flash and dizziness are female-specific symptoms
+             if (!isMaleWorkout && (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness'))) {
                  programId = 'yoga';
                  dayIndex = 3;
              } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
@@ -9934,19 +9981,21 @@ function getTodaysWorkout() {
     const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
     const isHighCortisol = profileType.includes('CORTISOL') || profileType.includes('ADRENAL');
     
-    // Calculate phase if we have period data
-    if (!isBaseline && !userCycleData.noPeriodMode) {
+    const isMaleHero = (typeof isMaleUser === 'function' && isMaleUser());
+
+    // Calculate phase if we have period data (skip for males)
+    if (!isMaleHero && !isBaseline && !userCycleData.noPeriodMode) {
         const start = new Date(userCycleData.lastPeriod);
         const msPerDay = 24 * 60 * 60 * 1000;
         const daysSinceStart = Math.floor((today - start) / msPerDay);
         let mod = daysSinceStart % userCycleData.cycleLength;
         if (mod < 0) mod += userCycleData.cycleLength;
         currentCycleDay = mod + 1;
-        
+
         phaseKey = getCyclePhase(currentCycleDay, userCycleData.cycleLength);
         phaseInfo = PHASE_INFO[phaseKey];
-        
-        // Apply phase modifiers - swap to yoga on menstrual phase if doing strength
+
+        // Apply phase modifiers - swap to yoga on menstrual phase if doing strength (females only)
         if (phaseKey === 'menstrual' && programId === 'bodyweight') {
             const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
             if (yogaWorkout) {
@@ -9955,7 +10004,13 @@ function getTodaysWorkout() {
             }
         }
     }
-    
+
+    // For males, set performance mode
+    if (isMaleHero) {
+        phaseKey = 'performance';
+        phaseInfo = PHASE_INFO['performance'];
+    }
+
     // Apply High Cortisol safety override
     if (isHighCortisol && programId === 'bodyweight') {
         const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
@@ -9964,7 +10019,7 @@ function getTodaysWorkout() {
             workoutIcon = '🧘‍♀️';
         }
     }
-    
+
     // Apply mood modifiers
     if (userCycleData.mood === 'tired') {
         const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
@@ -9974,7 +10029,8 @@ function getTodaysWorkout() {
         }
     }
     if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
-        if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
+        // Hot flash and dizziness are female-specific symptoms
+        if (!isMaleHero && (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness'))) {
             const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative
             if (yogaWorkout) {
                 workoutName = yogaWorkout.title;
@@ -10352,7 +10408,8 @@ function switchView(id) {
 
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
-const totalWizardSteps = 6;
+const totalWizardSteps = 7;
+let selectedGender = localStorage.getItem('userGender') || null; // Track gender selection
 
 async function checkAndTriggerOnboarding() {
     // Check if user has completed onboarding before
@@ -10428,12 +10485,14 @@ function updateWizardUI() {
     });
 
     // 3. Update final slide with hormone profile goal
-    if(currentWizardStep === 6) {
+    if(currentWizardStep === 7) {
         const hormoneProfile = sessionStorage.getItem('userResult') || 'CORTISOL';
         const goalDiv = document.getElementById('wizard-hormone-goal');
         if(goalDiv) {
             if(hormoneProfile === 'ESTROGEN') {
                 goalDiv.innerHTML = 'Goal: Balance Estrogen & Support Hormones';
+            } else if (selectedGender === 'male') {
+                goalDiv.innerHTML = 'Goal: Optimize Performance & Build Strength';
             } else {
                 goalDiv.innerHTML = 'Goal: Reduce Cortisol & Restore Balance';
             }
@@ -10529,9 +10588,165 @@ function calculateNutritionGoals(data) {
     };
 }
 
+// Gender selection function
+function selectGender(gender) {
+    selectedGender = gender;
+    document.getElementById('wizard-gender').value = gender;
+    localStorage.setItem('userGender', gender);
+
+    // Apply theme based on gender
+    if (gender === 'male') {
+        document.body.classList.add('male-theme');
+        document.body.classList.remove('female-theme');
+    } else {
+        document.body.classList.add('female-theme');
+        document.body.classList.remove('male-theme');
+    }
+
+    // Update button styles
+    const femaleBtn = document.getElementById('gender-btn-female');
+    const maleBtn = document.getElementById('gender-btn-male');
+
+    if (gender === 'female') {
+        femaleBtn.style.border = '2px solid var(--primary)';
+        femaleBtn.style.background = '#f0fdf4';
+        maleBtn.style.border = '2px solid #e2e8f0';
+        maleBtn.style.background = 'white';
+    } else {
+        maleBtn.style.border = '2px solid #3b82f6';
+        maleBtn.style.background = '#eff6ff';
+        femaleBtn.style.border = '2px solid #e2e8f0';
+        femaleBtn.style.background = 'white';
+    }
+
+    // Auto-advance to next slide after selection
+    setTimeout(() => {
+        currentWizardStep++;
+        updateWizardUI();
+    }, 300);
+}
+
+// Helper function to check if user is male
+function isMaleUser() {
+    return localStorage.getItem('userGender') === 'male';
+}
+
+// Apply gender theme on page load if already set
+function applyGenderTheme() {
+    const savedGender = localStorage.getItem('userGender');
+    if (savedGender === 'male') {
+        document.body.classList.add('male-theme');
+        document.body.classList.remove('female-theme');
+        selectedGender = 'male';
+    } else if (savedGender === 'female') {
+        document.body.classList.add('female-theme');
+        document.body.classList.remove('male-theme');
+        selectedGender = 'female';
+    }
+
+    // Apply gender-specific UI changes
+    applyGenderSpecificUI();
+}
+
+// Hide/show UI elements based on gender
+function applyGenderSpecificUI() {
+    const isMale = isMaleUser();
+
+    // Elements to hide for males (by ID)
+    const femaleOnlyElements = [
+        'check-in-period-section',     // Period flow check-in
+        'check-in-cervical-section',   // Cervical fluid check-in
+    ];
+
+    // Elements to show only for males (by ID)
+    const maleOnlyElements = [
+        'check-in-recovery-section',   // Recovery status check-in
+    ];
+
+    femaleOnlyElements.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = isMale ? 'none' : '';
+    });
+
+    maleOnlyElements.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = isMale ? '' : 'none';
+    });
+
+    // Handle female-only and male-only chips (by class)
+    document.querySelectorAll('.female-only-chip').forEach(el => {
+        el.style.display = isMale ? 'none' : '';
+    });
+
+    document.querySelectorAll('.male-only-chip').forEach(el => {
+        el.style.display = isMale ? '' : 'none';
+    });
+
+    // Update Hormone Hub for males
+    if (isMale) {
+        // Update cycle phase display for males
+        const phaseName = document.getElementById('cycle-phase-name');
+        const phaseDesc = document.getElementById('cycle-phase-desc');
+        const phaseIcon = document.querySelector('#view-cycle .card-body div[style*="font-size: 2.5rem"]');
+
+        if (phaseName) phaseName.textContent = 'Performance Mode';
+        if (phaseDesc) phaseDesc.textContent = 'Optimized training based on your recovery and energy levels.';
+        if (phaseIcon) phaseIcon.textContent = '💪';
+
+        // Hide cycle day badge parent
+        const cycleDayBadge = document.getElementById('cycle-day-display');
+        if (cycleDayBadge && cycleDayBadge.parentElement) {
+            cycleDayBadge.parentElement.style.display = 'none';
+        }
+
+        // Hide cycle phase tags
+        const phaseTags = document.getElementById('cycle-phase-tags');
+        if (phaseTags) phaseTags.style.display = 'none';
+
+        // Update Hormone Hub title and subtitle
+        const hormoneHubHeader = document.querySelector('#view-cycle div[style*="sticky"]');
+        if (hormoneHubHeader) {
+            const title = hormoneHubHeader.querySelector('h2');
+            const subtitle = hormoneHubHeader.querySelector('div[style*="0.8rem"]');
+            if (title) title.textContent = 'Performance Hub';
+            if (subtitle) subtitle.textContent = 'Optimize your training & recovery';
+        }
+
+        // Update "Cycle Sync" text to "Daily Sync"
+        const checkInPrompt = document.getElementById('check-in-prompt-card');
+        if (checkInPrompt) {
+            const subtitleEl = checkInPrompt.querySelector('div[style*="text-muted"]');
+            if (subtitleEl) subtitleEl.textContent = 'Log energy & recovery';
+        }
+
+        // Update completed state text
+        const completedCard = document.getElementById('check-in-completed-card');
+        if (completedCard) {
+            const titleEl = completedCard.querySelector('div[style*="font-weight: 700"]');
+            if (titleEl) titleEl.textContent = 'Daily Sync Active!';
+        }
+
+        // Update check-in modal title
+        const checkInModalTitle = document.querySelector('#check-in-modal h2');
+        if (checkInModalTitle && checkInModalTitle.textContent.includes('Cycle')) {
+            checkInModalTitle.textContent = 'Daily Check-in';
+        }
+    }
+}
+
 function wizardNext() {
-    // Validation for Step 1: Essential Data Collection
+    // Validation for Step 1: Gender Selection
     if(currentWizardStep === 1) {
+        if (!selectedGender) {
+            alert("Please select your program (For Her or For Him).");
+            return;
+        }
+        // Gender already saved in selectGender function
+        console.log("Step 1 gender selected:", selectedGender);
+    }
+
+    // Validation for Step 2: Essential Data Collection
+    if(currentWizardStep === 2) {
         const name = document.getElementById('wizard-name').value.trim();
         const age = document.getElementById('wizard-age').value;
         const sex = document.getElementById('wizard-sex').value;
@@ -10590,7 +10805,8 @@ function wizardNext() {
             goal_weight: parseFloat(goalWeight),
             equipment_access: equipment,
             activity_level: activityLevel,
-            energy_level: energyLevel
+            energy_level: energyLevel,
+            user_gender: selectedGender // Also store gender preference
         };
 
         // Calculate BMR, TDEE, and Macros
@@ -10600,11 +10816,27 @@ function wizardNext() {
         // Store in sessionStorage
         sessionStorage.setItem('userProfile', JSON.stringify(quizData));
 
-        console.log("Step 1 data collected:", quizData);
+        console.log("Step 2 data collected:", quizData);
+
+        // If male, skip cycle tracking (step 3) and go directly to step 4
+        if (selectedGender === 'male') {
+            // Set default values for males (no cycle tracking)
+            const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            existingData.menopause_status = 'not_applicable';
+            existingData.last_period = null;
+            existingData.profile = 'CORTISOL'; // Default profile for males
+            sessionStorage.setItem('userProfile', JSON.stringify(existingData));
+            sessionStorage.setItem('userResult', 'CORTISOL');
+
+            // Skip to step 4 (nutrition logic)
+            currentWizardStep = 4;
+            updateWizardUI();
+            return;
+        }
     }
 
-    // Validation for Step 2: Cycle Setup (formerly Step 1)
-    if(currentWizardStep === 2) {
+    // Validation for Step 3: Cycle Setup (females only)
+    if(currentWizardStep === 3) {
         const dateInput = document.getElementById('wizard-period-date');
         const wellnessToggle = document.getElementById('wizard-wellness-toggle');
 
@@ -10650,7 +10882,7 @@ function wizardNext() {
         sessionStorage.setItem('userProfile', JSON.stringify(existingData));
         sessionStorage.setItem('userResult', existingData.profile);
 
-        console.log("Step 2 data collected, hormone profile:", existingData.profile);
+        console.log("Step 3 data collected, hormone profile:", existingData.profile);
     }
 
     if(currentWizardStep < totalWizardSteps) {
@@ -10661,7 +10893,12 @@ function wizardNext() {
 
 function wizardPrev() {
     if(currentWizardStep > 1) {
-        currentWizardStep--;
+        // If male and going back from step 4, skip step 3 (cycle tracking)
+        if (selectedGender === 'male' && currentWizardStep === 4) {
+            currentWizardStep = 2;
+        } else {
+            currentWizardStep--;
+        }
         updateWizardUI();
     }
 }
@@ -11285,36 +11522,61 @@ async function renderMovementView() {
     let personalizationReason = '';
     
     // PRIORITY 3: Daily Check-in adjustments
-    // --- CYCLE SYNC OVERRIDE (Local Log) ---
+    // --- DAILY SYNC OVERRIDE (Local Log) ---
+    // Use gender-appropriate messaging
+    const syncLabel = (typeof isMaleUser === 'function' && isMaleUser()) ? '💪 Daily Sync' : '✨ Cycle Sync';
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+
     if (userCycleData.logs && userCycleData.logs[dateStr]) {
         const log = userCycleData.logs[dateStr];
-        
+
         // Map Energy
         if (log.energy === 'low') {
              suggestedProgram = 'yoga';
-             workoutDayIndex = 3; 
-             personalizationReason = '✨ Cycle Sync: Gentle flow for low energy.';
+             workoutDayIndex = 3;
+             personalizationReason = isMale ? '💪 Daily Sync: Active recovery for low energy.' : '✨ Cycle Sync: Gentle flow for low energy.';
         }
-        
-        // Map Symptoms (Cramps/Back Pain -> Yin)
-        if (log.symptoms && (log.symptoms.includes('cramps') || log.symptoms.includes('back_pain'))) {
+
+        // Map Symptoms (Cramps/Back Pain -> Yin) - Skip cramps for males
+        if (log.symptoms && !isMale && (log.symptoms.includes('cramps') || log.symptoms.includes('back_pain'))) {
              suggestedProgram = 'yoga';
              workoutDayIndex = 6; // Yin
              personalizationReason = '✨ Cycle Sync: Relief for your body.';
         }
-        
+
+        // Map muscle soreness for males
+        if (log.symptoms && isMale && log.symptoms.includes('muscle_soreness')) {
+             suggestedProgram = 'yoga';
+             workoutDayIndex = 3; // Restorative
+             personalizationReason = '💪 Daily Sync: Recovery session for sore muscles.';
+        }
+
         // Map Mood
         if (log.mood === 'anxious' || log.mood === 'sad') {
              suggestedProgram = 'yoga';
              workoutDayIndex = 6;
-             personalizationReason = '✨ Cycle Sync: Calming practice for your mind.';
+             personalizationReason = `${syncLabel}: Calming practice for your mind.`;
         }
-        
-        // High Energy Bonus
-        if (log.energy === 'high' && suggestedProgram === 'yoga' && !cyclePhaseInfo?.name.includes('Menstrual')) {
+
+        // High Energy Bonus - check for menstrual only if female
+        const skipMenstrualCheck = isMale || !cyclePhaseInfo?.name.includes('Menstrual');
+        if (log.energy === 'high' && suggestedProgram === 'yoga' && skipMenstrualCheck) {
              suggestedProgram = 'bodyweight'; // Upgrade from Yoga
              workoutDayIndex = 1; // Dynamic Flow
-             personalizationReason = '✨ Cycle Sync: Matching your high energy!';
+             personalizationReason = isMale ? '💪 Daily Sync: Let\'s crush it with high energy!' : '✨ Cycle Sync: Matching your high energy!';
+        }
+
+        // Recovery status for males
+        if (isMale && log.recovery) {
+            if (log.recovery === 'fresh') {
+                suggestedProgram = 'bodyweight';
+                workoutDayIndex = 1;
+                personalizationReason = '💪 Daily Sync: Fully recovered - time to push hard!';
+            } else if (log.recovery === 'tired') {
+                suggestedProgram = 'yoga';
+                workoutDayIndex = 3;
+                personalizationReason = '💪 Daily Sync: Rest day for optimal recovery.';
+            }
         }
     }
     // --- END SUPERBOOST ---
@@ -11324,7 +11586,7 @@ async function renderMovementView() {
         if (checkin.energy === 'low') {
             suggestedProgram = 'yoga';
             workoutDayIndex = 3; // Restorative Recovery
-            personalizationReason = '✨ Cycle Sync: Gentle movement for low energy today';
+            personalizationReason = isMale ? '💪 Daily Sync: Active recovery for low energy' : '✨ Cycle Sync: Gentle movement for low energy today';
         }
         // Override equipment based on TODAY's check-in
         else if (checkin.equipment === 'gym' && availablePrograms.includes('gym')) {
@@ -11335,30 +11597,30 @@ async function renderMovementView() {
             workoutDayIndex = calDayIndex % 7;
         }
     }
-    
+
     // Symptoms/mood override (highest daily priority)
     // EXCEPTION: If mood is 'strong' (High Energy), we ignore 'fatigue' and 'anxiety' overrides to allow rigorous exercise
     const isHighEnergy = userCycleData.mood === 'strong';
 
     if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
-        if (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness')) {
+        // Hot flash is female-specific, skip for males
+        if (!isMale && (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness'))) {
             suggestedProgram = 'yoga';
             workoutDayIndex = 3; // Restorative Recovery
-            // Fix variable scope if needed or just use string
             personalizationReason = '✨ Cycle Sync: Gentle recovery for your symptoms today';
         } else if ((userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) && !isHighEnergy) {
             suggestedProgram = 'yoga';
             workoutDayIndex = 6; // Yin & Meditation
-            personalizationReason = '✨ Cycle Sync: Restorative practice for how you feel today';
+            personalizationReason = `${syncLabel}: Restorative practice for how you feel today`;
         }
     } else if (userCycleData.mood === 'tired') {
         suggestedProgram = 'yoga';
         workoutDayIndex = 3; // Restorative Recovery
-        personalizationReason = '✨ Cycle Sync: Recovery & restoration for low energy';
+        personalizationReason = `${syncLabel}: Recovery & restoration for low energy`;
     }
-    
-    // PRIORITY 4: Cycle Phase adjustments
-    if (!personalizationReason && cyclePhaseInfo && phaseKey !== 'wellness') {
+
+    // PRIORITY 4: Cycle Phase adjustments (skip for males)
+    if (!isMale && !personalizationReason && cyclePhaseInfo && phaseKey !== 'wellness' && phaseKey !== 'performance') {
         if (phaseKey === 'menstrual' && suggestedProgram === 'bodyweight') {
             // During menstrual, swap strength to gentle yoga
             suggestedProgram = 'yoga';
@@ -11367,6 +11629,11 @@ async function renderMovementView() {
         } else {
             personalizationReason = `✨ Cycle Sync: ${cyclePhaseInfo.rec}`;
         }
+    }
+
+    // For males, show performance-based recommendation if no other reason
+    if (isMale && !personalizationReason) {
+        personalizationReason = '💪 Daily Sync: Strength, HIIT, Progressive Overload';
     }
     
     // Ensure program is available based on equipment
@@ -11390,7 +11657,8 @@ async function renderMovementView() {
 
     // Check if this is a Cycle Sync personalization
     const isCycleSync = personalizationReason && personalizationReason.startsWith('✨ Cycle Sync:');
-    const badgeText = isCycleSync ? '⭐ Cycle Sync' : (personalizationReason ? '✨ Personalized' : 'Best for Today');
+    const isDailySync = personalizationReason && personalizationReason.startsWith('💪 Daily Sync:');
+    const badgeText = isCycleSync ? '⭐ Cycle Sync' : (isDailySync ? '💪 Daily Sync' : (personalizationReason ? '✨ Personalized' : 'Best for Today'));
 
     heroContainer.innerHTML = `
     <div class="card" onclick="startActiveWorkout('${suggestedProgram}')" style="cursor: pointer; overflow:hidden; border-radius:32px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); border:none; position: relative; margin-bottom: 30px;">
@@ -13360,7 +13628,7 @@ function openAsClient() {
         <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative;">
             <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
             <div class="wizard-progress" style="display:flex; justify-content:center; gap:8px; margin-bottom:15px;">
-                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
             <h2 id="wizard-title" style="margin:0; color:var(--primary);">Let's Align Your Body</h2>
         </div>
@@ -13368,8 +13636,39 @@ function openAsClient() {
         <!-- CONTENT SLIDES -->
         <div class="wizard-content" style="flex: 1; padding: 25px; overflow-y: auto;">
 
-            <!-- SLIDE 1: ESSENTIAL DATA COLLECTION -->
+            <!-- SLIDE 1: GENDER SELECTION -->
             <div class="wizard-slide active" id="slide-1">
+                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🌟</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Welcome to Your Journey</h3>
+                <p style="text-align:center; color:#666; margin-bottom:30px;">Select your program to get started:</p>
+
+                <div style="display:flex; flex-direction:column; gap:15px; max-width:300px; margin:0 auto;">
+                    <button type="button" id="gender-btn-female" onclick="selectGender('female')" class="gender-select-btn" style="
+                        display:flex; align-items:center; justify-content:center; gap:15px;
+                        padding:20px 30px; border-radius:16px; border:2px solid #e2e8f0;
+                        background:white; cursor:pointer; transition:all 0.3s ease;
+                        font-size:1.1rem; font-weight:600; color:#334155;
+                    ">
+                        <span style="font-size:2rem;">🌸</span>
+                        <span>For Her</span>
+                    </button>
+
+                    <button type="button" id="gender-btn-male" onclick="selectGender('male')" class="gender-select-btn" style="
+                        display:flex; align-items:center; justify-content:center; gap:15px;
+                        padding:20px 30px; border-radius:16px; border:2px solid #e2e8f0;
+                        background:white; cursor:pointer; transition:all 0.3s ease;
+                        font-size:1.1rem; font-weight:600; color:#334155;
+                    ">
+                        <span style="font-size:2rem;">💪</span>
+                        <span>For Him</span>
+                    </button>
+                </div>
+
+                <input type="hidden" id="wizard-gender" value="">
+            </div>
+
+            <!-- SLIDE 2: ESSENTIAL DATA COLLECTION -->
+            <div class="wizard-slide" id="slide-2" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">📋</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Let's Get Started</h3>
                 <p style="text-align:center; color:#666; margin-bottom:25px;">We need a few details to personalize your program.</p>
@@ -13449,8 +13748,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 2: CYCLE SETUP -->
-            <div class="wizard-slide" id="slide-2" style="display:none;">
+            <!-- SLIDE 3: CYCLE SETUP (females only) -->
+            <div class="wizard-slide" id="slide-3" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🌸</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Cycle Syncing</h3>
                 <p style="text-align:center; color:#666; margin-bottom:25px;">We tailor your daily movement to match your hormonal phase.</p>
@@ -13466,8 +13765,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 3: NUTRITION LOGIC -->
-            <div class="wizard-slide" id="slide-3" style="display:none;">
+            <!-- SLIDE 4: NUTRITION LOGIC -->
+            <div class="wizard-slide" id="slide-4" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🥑</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Food as Medicine</h3>
                 <p style="color:#475569; line-height:1.6; text-align:center;">
@@ -13481,8 +13780,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 4: ACCOUNTABILITY -->
-            <div class="wizard-slide" id="slide-4" style="display:none;">
+            <!-- SLIDE 5: ACCOUNTABILITY -->
+            <div class="wizard-slide" id="slide-5" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🤝</div>
                 <h3 style="text-align:center; margin-bottom:15px;">You Are Supported</h3>
                 <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:15px;">
@@ -13501,9 +13800,8 @@ function openAsClient() {
                 </ul>
             </div>
             
-             <!-- SLIDE 5: READY -->
-            <!-- SLIDE 5: PROFILE EVOLUTION -->
-            <div class="wizard-slide" id="slide-5" style="display:none;">
+            <!-- SLIDE 6: PROFILE EVOLUTION -->
+            <div class="wizard-slide" id="slide-6" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">⚙️</div>
                 <h3 style="text-align:center; margin-bottom:15px;">Protocol Evolves</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">
@@ -13516,8 +13814,8 @@ function openAsClient() {
                 </div>
             </div>
 
-             <!-- SLIDE 6: READY -->
-            <div class="wizard-slide" id="slide-6" style="display:none; text-align:center;">
+            <!-- SLIDE 7: READY -->
+            <div class="wizard-slide" id="slide-7" style="display:none; text-align:center;">
                  <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
                 <h3 style="margin-bottom:10px;">You're All Set!</h3>
                 <p style="color:#64748b; margin-bottom:25px;">Your custom 28-day plan is ready.</p>
@@ -13541,6 +13839,23 @@ function openAsClient() {
 .wizard-progress .dot { width: 8px; height: 8px; background: #e2e8f0; border-radius: 50%; transition: all 0.3s; }
 .wizard-progress .dot.active { background: var(--primary); width: 20px; border-radius: 10px; }
 .wizard-slide { animation: fadeIn 0.4s ease; }
+
+/* Gender selection button styles */
+.gender-select-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.gender-select-btn:active {
+    transform: translateY(0);
+}
+
+/* Male theme variables (applied when male is selected) */
+body.male-theme {
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --secondary: #1e40af;
+    --accent: #60a5fa;
+}
 </style>
 
 <script>
@@ -16899,8 +17214,8 @@ updateCoachUI();
         <!-- Scrollable Content -->
         <div id="check-in-questions" style="overflow-y: auto; padding: 25px; flex:1;">
             
-            <!-- 1. Bleeding -->
-            <div style="margin-bottom: 25px;">
+            <!-- 1. Bleeding (Female Only) -->
+            <div id="check-in-period-section" style="margin-bottom: 25px;">
                 <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Flow Status</label>
                 <div class="check-in-options" style="display:flex; gap:8px; flex-wrap:wrap;">
                     <div class="check-in-chip" onclick="selectCheckInOption('flow', 'none', this)" data-group="flow">None</div>
@@ -16915,13 +17230,14 @@ updateCoachUI();
             <div style="margin-bottom: 25px;">
                 <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Physical</label>
                 <div class="check-in-options" style="display:flex; flex-wrap:wrap; gap:8px;">
-                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'cramps', this)">Cramps ⚡</div>
+                     <div class="check-in-chip female-only-chip" onclick="toggleCheckInOption('symptoms', 'cramps', this)">Cramps ⚡</div>
                      <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'bloating', this)">Bloating 🎈</div>
                      <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'headache', this)">Headache 🤕</div>
                      <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'back_pain', this)">Back Pain 🦴</div>
-                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'tender_breasts', this)">Tender Breasts 👙</div>
+                     <div class="check-in-chip female-only-chip" onclick="toggleCheckInOption('symptoms', 'tender_breasts', this)">Tender Breasts 👙</div>
                      <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'acne', this)">Acne / Skin 🫧</div>
                      <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'digestion', this)">Digestion Issues 🤢</div>
+                     <div class="check-in-chip male-only-chip" onclick="toggleCheckInOption('symptoms', 'muscle_soreness', this)" style="display:none;">Muscle Soreness 💪</div>
                 </div>
             </div>
 
@@ -16940,14 +17256,24 @@ updateCoachUI();
                 </div>
             </div>
 
-             <!-- 4. Fluid -->
-             <div style="margin-bottom: 15px;">
-                <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Fluid</label>
+             <!-- 4. Fluid (Female Only) -->
+             <div id="check-in-cervical-section" style="margin-bottom: 15px;">
+                <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Cervical Fluid</label>
                 <div class="check-in-options" style="display:flex; gap:8px; flex-wrap:wrap;">
                     <div class="check-in-chip" onclick="selectCheckInOption('fluid', 'dry', this)" data-group="fluid">Dry</div>
                     <div class="check-in-chip" onclick="selectCheckInOption('fluid', 'sticky', this)" data-group="fluid">Sticky</div>
                     <div class="check-in-chip" onclick="selectCheckInOption('fluid', 'creamy', this)" data-group="fluid">Creamy</div>
                     <div class="check-in-chip" onclick="selectCheckInOption('fluid', 'egg_white', this)" data-group="fluid">Egg White 🥚</div>
+                </div>
+            </div>
+
+            <!-- Recovery Section (Male Only - hidden by default) -->
+            <div id="check-in-recovery-section" style="margin-bottom: 15px; display:none;">
+                <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Recovery Status</label>
+                <div class="check-in-options" style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <div class="check-in-chip" onclick="selectCheckInOption('recovery', 'fresh', this)" data-group="recovery">Fully Recovered 💯</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('recovery', 'moderate', this)" data-group="recovery">Slightly Fatigued 😐</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('recovery', 'tired', this)" data-group="recovery">Need Rest 😴</div>
                 </div>
             </div>
 
