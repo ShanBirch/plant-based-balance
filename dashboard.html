@@ -6800,7 +6800,7 @@
             <div class="card-body" style="padding: 20px; opacity: 1; max-height: none; flex-grow: 1; display: flex; flex-direction: column;">
                 <span style="background: #f0f4f8; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; margin-bottom: 10px; text-transform: uppercase;">Daily Essential</span>
                 <h4 style="margin-bottom: 10px; color: var(--primary); font-size: 1.1rem;">Ground Flax</h4>
-                <p style="font-size: 0.9rem; color: #555; line-height: 1.5; margin-bottom: 0;">1-2 tbsp daily. Rich in lignans to help balance estrogen.</p>
+                <p id="flax-description" style="font-size: 0.9rem; color: #555; line-height: 1.5; margin-bottom: 0;">1-2 tbsp daily. Rich in lignans to help balance estrogen.</p>
             </div>
         </div>
         <!-- Creatine -->
@@ -8080,9 +8080,9 @@ function startCustomBuilderWorkout() {
             <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
             <span>Progress</span>
         </button>
-        <button class="nav-item" onclick="switchAppTab('cycle', this)">
-           <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.22-7.52-3.22 3.22 7.52 3.22-7.52z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
-           <span>Cycle</span>
+        <button class="nav-item" id="nav-cycle-btn" onclick="switchAppTab('cycle', this)">
+           <svg id="nav-cycle-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.22-7.52-3.22 3.22 7.52 3.22-7.52z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
+           <span id="nav-cycle-label">Cycle</span>
         </button>
         <button class="nav-item" onclick="switchAppTab('support', this)">
             <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
@@ -8783,6 +8783,38 @@ const COACHING_TIPS = [
     "You have successfully reset your biochemistry. This is not a diet, it's a signal of safety to your body. Well done!"
 ];
 
+// Male-specific coaching tips focused on performance, muscle, and recovery
+const MALE_COACHING_TIPS = [
+    "Protein timing matters. Hit 30-40g within 2 hours post-workout to maximize muscle protein synthesis.",
+    "Sleep is your #1 anabolic hormone. 7-9 hours optimizes testosterone and growth hormone production.",
+    "Progressive overload is key. Add 2.5kg to your lifts each week to keep the gains coming.",
+    "Creatine is the most researched supplement. 5g daily supports strength, power, and cognitive function.",
+    "Don't skip leg day. Compound movements like squats boost testosterone more than isolation exercises.",
+    "Hydration affects performance. Losing just 2% body water can decrease strength by 10%.",
+    "Post-workout nutrition window: Protein + carbs within 2 hours helps muscle recovery and glycogen replenishment.",
+    "Cold exposure (cold showers) can boost recovery and increase brown fat activation for better body composition.",
+    "Zinc and magnesium are critical for testosterone. Pumpkin seeds and dark leafy greens are your friends.",
+    "Rest days are growth days. Muscles repair and grow during recovery, not during the workout itself.",
+    "Caffeine 30 minutes pre-workout can increase power output by 3-5%. Time it right!",
+    "Vitamin D3 acts like a steroid hormone. Get 15 min of morning sun or supplement for optimal levels.",
+    "Mind-muscle connection is real. Focus on the muscle you're working for better activation and growth.",
+    "Protein goal: 1.6-2.2g per kg bodyweight daily for muscle building. Track it today.",
+    "Gut health affects everything. Fermented foods support nutrient absorption and reduce inflammation.",
+    "Box breathing lowers cortisol. High cortisol = muscle breakdown. 4-4-4-4 breathing before bed.",
+    "Omega-3s reduce muscle soreness and inflammation. Fish oil or algae-based DHA daily.",
+    "Deload weeks prevent overtraining. Every 4-6 weeks, reduce volume by 40% to come back stronger.",
+    "Morning sunlight sets your circadian rhythm, improving sleep quality and testosterone production.",
+    "Ashwagandha is proven to increase testosterone and reduce cortisol. Consider adding it to your stack.",
+    "Muscle is metabolic currency. Every kg of muscle burns 50+ extra calories at rest.",
+    "Alcohol tanks testosterone for 24-72 hours. Save it for special occasions if gains are your goal.",
+    "Core temperature drops help sleep. Cool room (18-20°C) optimizes recovery hormones.",
+    "Consistency beats intensity. 4 solid sessions/week beats 7 mediocre ones. Quality over quantity.",
+    "Time under tension matters. Control the eccentric (lowering) phase for 3-4 seconds for better gains.",
+    "Pre-workout meal: Protein + complex carbs 2-3 hours before training for sustained energy.",
+    "Track your lifts. What gets measured gets managed. Progressive overload requires data.",
+    "You're building a performance machine. Every meal, every rep, every hour of sleep is an investment. Keep going!"
+];
+
 async function initProgramDate() {
     let startDate = null;
     try {
@@ -8813,8 +8845,11 @@ async function initProgramDate() {
 }
 
 function updateDailyContent(day) {
-    let tipIndex = (day - 1) % COACHING_TIPS.length;
-    
+    // Use gender-appropriate coaching tips
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+    const tips = isMale ? MALE_COACHING_TIPS : COACHING_TIPS;
+    let tipIndex = (day - 1) % tips.length;
+
     const counterEl = document.getElementById('daily-progress-counter');
     if (counterEl) {
         counterEl.innerText = `Day ${day} of 28`;
@@ -8823,7 +8858,8 @@ function updateDailyContent(day) {
 
     const tipEl = document.getElementById('daily-coaching-tip');
     if (tipEl) {
-        tipEl.innerHTML = `<strong>Day ${day} Insight:</strong> ${COACHING_TIPS[tipIndex]}`;
+        const tipLabel = isMale ? 'Performance Tip' : 'Day ' + day + ' Insight';
+        tipEl.innerHTML = `<strong>${tipLabel}:</strong> ${tips[tipIndex]}`;
     }
 
     // Update Movement Tab Header
@@ -10711,6 +10747,39 @@ function applyGenderSpecificUI() {
         if (checkInModalTitle && checkInModalTitle.textContent.includes('Cycle')) {
             checkInModalTitle.textContent = 'Daily Check-in';
         }
+
+        // Update bottom navigation "Cycle" tab to "Perform"
+        const navCycleLabel = document.getElementById('nav-cycle-label');
+        if (navCycleLabel) navCycleLabel.textContent = 'Perform';
+
+        // Update nav icon to dumbbell for males
+        const navCycleIcon = document.getElementById('nav-cycle-icon');
+        if (navCycleIcon) {
+            navCycleIcon.innerHTML = '<path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>';
+        }
+
+        // Update Cycle Tracking button in settings
+        const cycleTrackingBtn = document.querySelector('button[onclick="openCycleTrackingModal()"]');
+        if (cycleTrackingBtn) {
+            cycleTrackingBtn.innerHTML = '<span>💪</span> Recovery Tracking';
+        }
+
+        // Update meal card descriptions for males
+        const flaxDesc = document.getElementById('flax-description');
+        if (flaxDesc) {
+            flaxDesc.textContent = '1-2 tbsp daily. Rich in omega-3s and fiber for recovery and gut health.';
+        }
+
+        // Update any estrogen-related text visible to users
+        document.querySelectorAll('p, span, div').forEach(el => {
+            if (el.id) return; // Skip elements we handle specifically
+            if (el.textContent.includes('balance estrogen') && !el.textContent.includes('Rich in omega-3s')) {
+                el.textContent = el.textContent.replace('balance estrogen', 'support recovery');
+            }
+            if (el.textContent.includes('estrogen detox')) {
+                el.textContent = el.textContent.replace('estrogen detox', 'metabolic optimization');
+            }
+        });
     }
 }
 
