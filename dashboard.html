@@ -14106,14 +14106,17 @@ function openAsClient() {
 
 .dbz-character-corner {
     position: fixed;
-    bottom: 75px;
-    right: 8px;
-    width: 110px;
-    height: 130px;
+    bottom: 70px;
+    right: 5px;
+    width: 120px;
+    height: auto;
+    max-height: 200px;
+    object-fit: contain;
     opacity: 0.95;
     z-index: 100;
     animation: dbzFloat 3s ease-in-out infinite;
-    filter: drop-shadow(0 6px 12px rgba(255, 107, 0, 0.4));
+    filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.5));
+    border-radius: 8px;
 }
 
 .dbz-lightning-left {
@@ -14171,7 +14174,7 @@ body.dbz-theme-active .dashboard-welcome {
     overflow: hidden;
 }
 
-/* Goku theme (Super Saiyan) - orange/gold gradient with Goku silhouette */
+/* Goku theme (Super Saiyan) - orange/gold gradient with Goku in welcome */
 body.dbz-goku-theme .dashboard-welcome::before {
     content: '';
     position: absolute;
@@ -14179,13 +14182,13 @@ body.dbz-goku-theme .dashboard-welcome::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: url('assets/goku-ssj.svg') no-repeat right 5px bottom 5px;
-    background-size: 80px;
-    opacity: 0.25;
+    background: url('assets/goku-ssj.webp') no-repeat right -10px bottom -20px;
+    background-size: 100px auto;
+    opacity: 0.3;
     pointer-events: none;
 }
 
-/* Vegeta theme (Saiyan Prince) - blue/gold gradient with Vegeta silhouette */
+/* Vegeta theme (Saiyan Prince) - blue/gold gradient with Vegeta in welcome */
 body.dbz-vegeta-theme .dashboard-welcome::before {
     content: '';
     position: absolute;
@@ -14193,19 +14196,19 @@ body.dbz-vegeta-theme .dashboard-welcome::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: url('assets/vegeta-ssj.svg') no-repeat right 5px bottom 5px;
-    background-size: 80px;
-    opacity: 0.25;
+    background: url('assets/vegeta-ssj.webp') no-repeat right -20px bottom -10px;
+    background-size: auto 90px;
+    opacity: 0.3;
     pointer-events: none;
 }
 
 /* Mobile responsive adjustments */
 @media (max-width: 480px) {
     .dbz-character-corner {
-        width: 85px;
-        height: 100px;
-        bottom: 70px;
-        right: 5px;
+        width: 90px;
+        max-height: 150px;
+        bottom: 65px;
+        right: 3px;
     }
     .dbz-lightning-left,
     .dbz-lightning-right {
@@ -17019,8 +17022,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- DBZ Character Decorations (Male Only) -->
 <div id="dbz-decorations" style="display:none;">
-    <img src="assets/goku-ssj.svg" alt="Goku Super Saiyan" class="dbz-character-corner" id="dbz-goku" />
-    <img src="assets/vegeta-ssj.svg" alt="Vegeta Super Saiyan" class="dbz-character-corner" id="dbz-vegeta" style="display:none;" />
+    <img src="assets/goku-ssj.webp" alt="Goku Super Saiyan" class="dbz-character-corner" id="dbz-goku" />
+    <img src="assets/vegeta-ssj.webp" alt="Vegeta Super Saiyan" class="dbz-character-corner" id="dbz-vegeta" style="display:none;" />
     <img src="assets/dbz-lightning.svg" alt="Lightning" class="dbz-lightning-left" />
     <img src="assets/dbz-lightning.svg" alt="Lightning" class="dbz-lightning-right" />
     <img src="assets/dbz-ki-blast.svg" alt="Ki Blast" class="dbz-ki-blast" />
