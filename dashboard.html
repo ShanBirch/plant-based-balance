@@ -8224,7 +8224,7 @@ function startCustomBuilderWorkout() {
                 <label for="profile-photo-input" class="photo-edit-btn">
                     <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:white;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                 </label>
-                <input type="file" id="profile-photo-input" style="display:none;" onchange="handlePhotoUpload(this)">
+                <input type="file" id="profile-photo-input" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
             </div>
             <h2 class="profile-name-large" id="profile-name-display">Shannon</h2>
             <div class="profile-email" id="profile-email-display">Loading...</div>
@@ -8964,20 +8964,88 @@ async function loadProfileData() {
 
 function handlePhotoUpload(input) {
     if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const photoData = e.target.result;
-            document.getElementById('profile-photo-img').src = photoData;
-            localStorage.setItem('profile_photo', photoData);
-            
+        const file = input.files[0];
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file.');
+            input.value = '';
+            return;
+        }
+
+        // Show loading state
+        const mainImg = document.getElementById('profile-photo-img');
+        if (mainImg) mainImg.style.opacity = '0.5';
+
+        // Resize image to prevent localStorage overflow (max 500KB)
+        resizeImageFile(file, 400, 0.8).then(photoData => {
+            // Update main profile photo
+            if (mainImg) {
+                mainImg.src = photoData;
+                mainImg.style.opacity = '1';
+            }
+
+            // Save to localStorage
+            try {
+                localStorage.setItem('profile_photo', photoData);
+            } catch (e) {
+                console.error('Failed to save photo to localStorage:', e);
+            }
+
             // Update all small icons
             document.querySelectorAll('.profile-icon').forEach(el => {
                 el.innerHTML = `<img src="${photoData}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
                 el.style.background = 'transparent';
             });
-        };
-        reader.readAsDataURL(input.files[0]);
+
+            // Reset input to allow re-selecting the same file
+            input.value = '';
+        }).catch(err => {
+            console.error('Failed to process image:', err);
+            alert('Failed to process image. Please try a different photo.');
+            if (mainImg) mainImg.style.opacity = '1';
+            input.value = '';
+        });
     }
+}
+
+// Helper function to resize image before storing
+function resizeImageFile(file, maxSize, quality) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // Scale down if larger than maxSize
+                if (width > height && width > maxSize) {
+                    height = (height * maxSize) / width;
+                    width = maxSize;
+                } else if (height > maxSize) {
+                    width = (width * maxSize) / height;
+                    height = maxSize;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = function() {
+                reject(new Error('Failed to load image'));
+            };
+            img.src = e.target.result;
+        };
+        reader.onerror = function() {
+            reject(new Error('Failed to read file'));
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 function connectApp(appName) {
