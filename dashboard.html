@@ -16912,7 +16912,6 @@ function applyAppTheme(themeKey) {
 
     // Handle DBZ theme decorations (male users only)
     const isDbzTheme = themeKey.startsWith('dbz-');
-    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     const dbzDecorations = document.getElementById('dbz-decorations');
 
     if (dbzDecorations) {
