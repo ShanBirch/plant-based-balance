@@ -9899,7 +9899,7 @@ function renderWeeklyCalendar() {
     const hasHighEnergy = userProfile.energy_status === 'high';
     const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
 
-    // Calculate which week (1-4) of the gym split rotation we're in
+    // Calculate which week we're in for 12 different 4-week programs (48 weeks total)
     function getGymSplitWeekNumber() {
         if (!useMaleGymSplit) return 1;
 
@@ -9922,11 +9922,22 @@ function renderWeeklyCalendar() {
         const msPerWeek = 7 * 24 * 60 * 60 * 1000;
         const weeksElapsed = Math.floor((now - start) / msPerWeek);
 
-        // Return week number 1-4
-        return (weeksElapsed % 4) + 1;
+        // Return week number 1-48 (12 programs × 4 weeks each)
+        return (weeksElapsed % 48) + 1;
     }
 
     const currentWeek = getGymSplitWeekNumber();
+
+    // Helper to get the workout index based on which 4-week program we're in
+    function getWorkoutIndexForWeek(numWorkouts) {
+        // Calculate which 4-week program (0-11)
+        // Week 1-4 = Program 0 (uses workout 1)
+        // Week 5-8 = Program 1 (uses workout 2)
+        // Week 9-12 = Program 2 (uses workout 3)
+        // etc.
+        const programNumber = Math.floor((currentWeek - 1) / 4);
+        return programNumber % numWorkouts; // Cycles through available workouts
+    }
 
     // Weekly Schedule Template - maps to WORKOUT_DB programs
     // Each day references a program and the day index within that program's schedule
@@ -9960,7 +9971,7 @@ function renderWeeklyCalendar() {
     function getWorkoutForDay(dayIdx) {
         const scheduleItem = WEEKLY_SCHEDULE[dayIdx];
 
-        // For gym split with muscle group, pull from WORKOUT_LIBRARY with 4-week rotation
+        // For gym split with muscle group, pull from WORKOUT_LIBRARY with 48-week rotation
         if (scheduleItem.program === 'gym_split' && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
             const muscleGroup = scheduleItem.muscleGroup;
             const gymCategory = WORKOUT_LIBRARY['gym'];
@@ -9968,15 +9979,18 @@ function renderWeeklyCalendar() {
             if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
                 const workouts = gymCategory.subcategories[muscleGroup].workouts;
 
-                // Select workout based on week number (0-indexed, so week 1 = index 0)
-                // Week 1: workout 0, Week 2: workout 1, Week 3: workout 2, Week 4: workout 3
-                const workoutIndex = Math.min(currentWeek - 1, workouts.length - 1);
+                // Get workout index based on current week in 48-week cycle
+                const workoutIndex = getWorkoutIndexForWeek(workouts.length);
                 const workout = workouts[workoutIndex];
+
+                // Calculate which 4-week program we're in (1-12)
+                const programNumber = Math.floor((currentWeek - 1) / 4) + 1;
+                const weekInProgram = ((currentWeek - 1) % 4) + 1;
 
                 if (workout) {
                     return {
                         title: workout.name,
-                        programName: `Gym - Week ${currentWeek}`,
+                        programName: `Gym - Program ${programNumber}, Week ${weekInProgram}`,
                         programId: 'gym_library',
                         libraryWorkout: { category: 'gym', subcategory: muscleGroup, workoutId: workout.id },
                         exercises: workout.exercises
@@ -10211,7 +10225,7 @@ window.openCalendarWorkout = function(dayIndexFromMonday) {
         const gymCategory = WORKOUT_LIBRARY['gym'];
 
         if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
-            // Calculate which week (1-4) of rotation
+            // Calculate which week in 48-week cycle (12 programs × 4 weeks)
             let startDate = localStorage.getItem('gym_split_start_date');
             if (!startDate) {
                 const today = new Date();
@@ -10227,10 +10241,12 @@ window.openCalendarWorkout = function(dayIndexFromMonday) {
             const now = new Date();
             const msPerWeek = 7 * 24 * 60 * 60 * 1000;
             const weeksElapsed = Math.floor((now - start) / msPerWeek);
-            const currentWeek = (weeksElapsed % 4) + 1;
+            const currentWeek = (weeksElapsed % 48) + 1;
 
             const workouts = gymCategory.subcategories[muscleGroup].workouts;
-            const workoutIndex = Math.min(currentWeek - 1, workouts.length - 1);
+            // Calculate which 4-week program (same workout for 4 weeks)
+            const programNumber = Math.floor((currentWeek - 1) / 4);
+            const workoutIndex = programNumber % workouts.length;
             const workout = workouts[workoutIndex];
 
             if (workout && typeof startLibraryWorkout === 'function') {
@@ -10305,7 +10321,7 @@ function getTodaysWorkout() {
         const gymCategory = WORKOUT_LIBRARY['gym'];
 
         if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
-            // Calculate which week (1-4) of rotation
+            // Calculate which week in 48-week cycle (12 programs × 4 weeks)
             let startDate = localStorage.getItem('gym_split_start_date');
             if (!startDate) {
                 const dayOfWeek = today.getDay();
@@ -10319,10 +10335,12 @@ function getTodaysWorkout() {
             const start = new Date(startDate);
             const msPerWeek = 7 * 24 * 60 * 60 * 1000;
             const weeksElapsed = Math.floor((today - start) / msPerWeek);
-            const currentWeek = (weeksElapsed % 4) + 1;
+            const currentWeek = (weeksElapsed % 48) + 1;
 
             const workouts = gymCategory.subcategories[muscleGroup].workouts;
-            const workoutIndex = Math.min(currentWeek - 1, workouts.length - 1);
+            // Calculate which 4-week program (same workout for 4 weeks)
+            const programNumber = Math.floor((currentWeek - 1) / 4);
+            const workoutIndex = programNumber % workouts.length;
             const workout = workouts[workoutIndex];
 
             workoutName = workout ? workout.name : scheduleItem.day + ' Workout';
