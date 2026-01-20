@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v9'; // Fixed coach notification bug
+const CACHE_NAME = 'pbb-app-v10'; // Fixed coach message persistence
 const ASSETS = [
   './dashboard.html',
   './icon-192.png',
