@@ -14656,6 +14656,89 @@ function openAsClient() {
     50% { opacity: 0.9; transform: scaleY(1.1); }
 }
 
+/* Flower Garden Decorations (Female users only) */
+#flower-decorations {
+    display: none;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.flower-corner {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    opacity: 0.4;
+    z-index: 100;
+    filter: drop-shadow(0 2px 8px rgba(217, 139, 156, 0.3));
+    animation: flowerFloat 4s ease-in-out infinite;
+}
+
+.flower-top-right {
+    top: 80px;
+    right: 15px;
+    animation-delay: 0s;
+}
+
+.flower-bottom-left {
+    bottom: 80px;
+    left: 15px;
+    transform: rotate(180deg);
+    animation-delay: 1s;
+}
+
+.flower-top-left {
+    top: 180px;
+    left: 20px;
+    animation-delay: 2s;
+    width: 55px;
+    height: 55px;
+}
+
+.flower-bottom-right {
+    bottom: 180px;
+    right: 20px;
+    transform: rotate(-15deg);
+    animation-delay: 3s;
+    width: 50px;
+    height: 50px;
+}
+
+@keyframes flowerFloat {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg) scale(1);
+    }
+    25% {
+        transform: translateY(-8px) rotate(5deg) scale(1.05);
+    }
+    50% {
+        transform: translateY(-12px) rotate(-3deg) scale(1.08);
+    }
+    75% {
+        transform: translateY(-6px) rotate(3deg) scale(1.03);
+    }
+}
+
+/* Additional rotations for specific corners */
+.flower-bottom-left {
+    animation-name: flowerFloatRotated;
+}
+
+@keyframes flowerFloatRotated {
+    0%, 100% {
+        transform: translateY(0) rotate(180deg) scale(1);
+    }
+    25% {
+        transform: translateY(-8px) rotate(185deg) scale(1.05);
+    }
+    50% {
+        transform: translateY(-12px) rotate(177deg) scale(1.08);
+    }
+    75% {
+        transform: translateY(-6px) rotate(183deg) scale(1.03);
+    }
+}
+
 /* Flower Garden Theme - Falling Flower Animation */
 @keyframes flowerFall {
     0% {
@@ -17634,6 +17717,19 @@ async function applyAppTheme(themeKey) {
         document.body.classList.remove('dbz-theme-active', 'dbz-goku-theme', 'dbz-vegeta-theme');
     }
 
+    // Handle Flower Garden decorations (female users only)
+    const flowerDecorations = document.getElementById('flower-decorations');
+    if (flowerDecorations) {
+        flowerDecorations.style.display = (isFlowerTheme && isFemale) ? 'block' : 'none';
+    }
+
+    // Toggle Flower Garden body class for additional styling
+    if (isFlowerTheme && isFemale) {
+        document.body.classList.add('flower-theme-active');
+    } else {
+        document.body.classList.remove('flower-theme-active');
+    }
+
     // Trigger icon toggle update
     updateSettingsIcon();
 }
@@ -17815,6 +17911,14 @@ document.addEventListener('DOMContentLoaded', () => {
     <img src="assets/vegeta-ssj.webp" alt="Vegeta Super Saiyan" class="dbz-character-corner" id="dbz-vegeta" style="display:none;" />
     <img src="assets/dbz-lightning.svg" alt="Lightning" class="dbz-lightning-left" />
     <img src="assets/dbz-lightning.svg" alt="Lightning" class="dbz-lightning-right" />
+</div>
+
+<!-- Flower Garden Decorations (Female users only) -->
+<div id="flower-decorations" style="display:none;">
+    <img src="assets/flower-cherry-blossom.svg" alt="Cherry Blossom" class="flower-corner flower-top-right" />
+    <img src="assets/flower-rose.svg" alt="Rose" class="flower-corner flower-bottom-left" />
+    <img src="assets/flower-peony.svg" alt="Peony" class="flower-corner flower-top-left" />
+    <img src="assets/flower-daisy.svg" alt="Daisy" class="flower-corner flower-bottom-right" />
 </div>
 
 <!-- PWA INSTALL BANNER (Fixed Floating) -->
