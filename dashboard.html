@@ -9912,9 +9912,12 @@ function switchWeek(id, btn) {
                 await recalculateDailyNutrition();
                 loadTodayNutrition();
             })();
+        } else {
+            // For week views, add cycle sync indicators
+            markCycleSyncMeals();
         }
     }
-    
+
     // Update Pills
     if(btn) {
         document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
@@ -9929,6 +9932,26 @@ function switchWeek(id, btn) {
             }
         });
     }
+}
+
+// Add stars to cycle sync meals in static week views
+function markCycleSyncMeals() {
+    if (!window.cycleSyncMealTitle) return;
+
+    // Find all meal titles in the currently active week view
+    const activeSection = document.querySelector('#meals-content-container .view-section.active');
+    if (!activeSection) return;
+
+    // Skip Today view (it handles stars in renderTodayMeals)
+    if (activeSection.id === 'today' || activeSection.id === 'calorie-tracker') return;
+
+    const mealTitles = activeSection.querySelectorAll('.meal-title');
+    mealTitles.forEach(titleEl => {
+        const originalText = titleEl.textContent.replace('⭐ ', '').trim();
+        if (originalText === window.cycleSyncMealTitle && !titleEl.textContent.startsWith('⭐')) {
+            titleEl.textContent = '⭐ ' + originalText;
+        }
+    });
 }
 
 async function renderTodayMeals() {
@@ -9985,6 +10008,39 @@ async function renderTodayMeals() {
     // 1.5 Personalized Meal Recommendation Banner REMOVED per user request
     // The green bar was appearing empty or unwanted.
 
+    // Add Cycle Sync Meal if available
+    if (window.cycleSyncMealData) {
+        const recipe = window.cycleSyncMealData;
+        const reason = window.cycleSyncMealReason || 'CYCLE SYNC';
+
+        const cycleSyncCard = document.createElement('div');
+        cycleSyncCard.className = 'card';
+        cycleSyncCard.innerHTML = `
+            <div class="card-header" onclick="toggleCard(this)">
+                <div style="display:flex; align-items:center;">
+                    <div class="meal-icon">✨</div>
+                    <div>
+                        <div class="meta" style="color: var(--secondary); font-weight: 600;">${reason}</div>
+                        <div class="meal-title">⭐ ${recipe.title}</div>
+                    </div>
+                </div>
+                <div class="expand-icon">+</div>
+            </div>
+            <div class="card-body">
+                <img alt="${recipe.title}" src="${recipe.img}" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:20px;" onerror="this.style.display='none'"/>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px;">
+                    <h4 style="margin-bottom: 0; border: none; padding-bottom: 0;">Ingredients</h4>
+                </div>
+                <ul>${recipe.ingredients.map(i => `<li>${i}</li>`).join('')}</ul>
+                <h4>Preparation</h4>
+                <p>${recipe.prep}</p>
+                <div style="background: rgba(255,255,255,0.6); padding: 12px; border-radius: 8px; border-left: 3px solid var(--secondary); margin-top: 15px;">
+                    <strong>Why this swap?</strong> ${recipe.why}
+                </div>
+            </div>
+        `;
+        container.appendChild(cycleSyncCard);
+    }
 
     const cards = sourceSection.querySelectorAll('.card');
 
@@ -16583,8 +16639,10 @@ function renderCycleSyncMeal(reason, recipeKey) {
     const recipe = CYCLE_SYNC_RECIPES[recipeKey];
     if(!recipe || !container) return;
 
-    // Save the swapped meal title so we can mark it in the meal plan
+    // Save the swapped meal data so we can add it to the meal plan
     window.cycleSyncMealTitle = recipe.title;
+    window.cycleSyncMealData = recipe;
+    window.cycleSyncMealReason = reason;
 
     const html = `
     <div style="background: linear-gradient(135deg, #fff 0%, #fefce8 100%); border: 2px solid var(--secondary); border-radius: 16px; margin-bottom: 25px; overflow: hidden; box-shadow: 0 10px 30px rgba(180, 155, 10, 0.15); animation: slideUp 0.4s ease-out;">
@@ -16598,7 +16656,7 @@ function renderCycleSyncMeal(reason, recipeKey) {
                 <div style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px; font-weight:500;">${recipe.meta}</div>
                 <p style="font-size: 0.95rem; color: #4a5568; margin-bottom: 15px; line-height: 1.5; background: rgba(255,255,255,0.6); padding: 10px; border-radius: 8px; border-left: 3px solid var(--secondary);">${recipe.why}</p>
                 
-                <button onclick="switchAppTab('meals', this)" style="background: white; border: 1px solid #cbd5e0; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">View Recipe</button>
+                <button onclick="switchAppTab('meals', this); setTimeout(() => switchWeek('today'), 50);" style="background: white; border: 1px solid #cbd5e0; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">View Recipe</button>
             </div>
             <img src="${recipe.img}" style="width: 100%; height: 180px; object-fit: cover; md:width: 150px; md:height: auto;" onerror="this.style.display='none'">
         </div>
