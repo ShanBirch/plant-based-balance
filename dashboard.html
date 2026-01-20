@@ -16303,10 +16303,35 @@ updateCoachUI();
     <img id="story-preview-photo" style="width:100%; height:100%; object-fit:contain; display:none; position:absolute; top:0; left:0;">
     <video id="story-preview-video-player" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:contain; display:none; position:absolute; top:0; left:0;"></video>
 
+    <!-- Text Overlay Preview (user-added text) -->
+    <div id="story-text-overlay-preview" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:white; font-size:1.5rem; font-weight:700; text-align:center; text-shadow:2px 2px 4px rgba(0,0,0,0.8); padding:10px 20px; max-width:80%; word-wrap:break-word; z-index:11; pointer-events:none;">
+    </div>
+
     <!-- Close Button -->
     <button onclick="closePreviewModal()" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:12; backdrop-filter:blur(10px);">
         &times;
     </button>
+
+    <!-- Add Text Button -->
+    <button id="add-text-btn" onclick="showTextEditor()" style="position:absolute; top:20px; left:20px; background:rgba(0,0,0,0.5); border:none; color:white; padding:10px 20px; border-radius:20px; font-weight:600; cursor:pointer; z-index:12; backdrop-filter:blur(10px); display:flex; align-items:center; gap:8px;">
+        <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;">
+            <path d="M5 4v3h5.5v12h3V7H19V4z"/>
+        </svg>
+        Add Text
+    </button>
+
+    <!-- Text Editor Overlay -->
+    <div id="text-editor-overlay" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.9); z-index:13; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
+        <textarea id="story-text-input" placeholder="Type your text..." maxlength="100" style="width:90%; max-width:400px; background:transparent; border:none; color:white; font-size:1.5rem; font-weight:700; text-align:center; resize:none; outline:none; font-family:inherit; min-height:100px; text-shadow:2px 2px 4px rgba(0,0,0,0.8);"></textarea>
+        <div style="display:flex; gap:15px; margin-top:30px;">
+            <button onclick="cancelTextEditor()" style="padding:12px 30px; background:rgba(255,255,255,0.2); color:white; border:none; border-radius:25px; font-weight:600; cursor:pointer; backdrop-filter:blur(10px);">
+                Cancel
+            </button>
+            <button onclick="saveTextOverlay()" style="padding:12px 30px; background:var(--primary); color:white; border:none; border-radius:25px; font-weight:600; cursor:pointer;">
+                Done
+            </button>
+        </div>
+    </div>
 
     <!-- Post Button -->
     <button id="preview-post-btn" onclick="postCapturedStory()" style="position:absolute; bottom:40px; right:30px; background:var(--primary); color:white; padding:14px 35px; border:none; border-radius:25px; font-weight:600; font-size:1.1rem; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.6); z-index:12; transition:transform 0.2s;">
