@@ -15150,17 +15150,6 @@ function checkReferralBannerDismissed() {
     }
 }
 
-// Generate a unique referral code
-function generateReferralCode() {
-    // Generate 8-character alphanumeric code (similar to backend logic)
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
-}
-
 // Load referral stats and update UI
 async function loadReferralStats() {
     if (!window.currentUser) return;
@@ -15171,22 +15160,31 @@ async function loadReferralStats() {
     try {
         const stats = await window.dbHelpers.referrals.getStats(window.currentUser.id);
 
-        // Check if user has a referral code, if not generate one
+        // Check if user has a referral code, if not generate one using database function
         if (!stats.referralCode) {
-            console.log('No referral code found, generating one...');
-            const newCode = generateReferralCode();
+            console.log('No referral code found, generating one via database function...');
 
-            // Update user record with new referral code
             try {
-                await window.dbHelpers.users.update(window.currentUser.id, {
-                    referral_code: newCode
-                });
-                stats.referralCode = newCode;
-                console.log('Generated and saved referral code:', newCode);
+                // Call the database function to generate a unique code
+                const newCode = await window.dbHelpers.referrals.generateReferralCode();
+
+                if (newCode) {
+                    // Update user record with new referral code
+                    await window.dbHelpers.users.update(window.currentUser.id, {
+                        referral_code: newCode
+                    });
+                    stats.referralCode = newCode;
+                    console.log('Generated and saved referral code:', newCode);
+                } else {
+                    console.error('Database function returned no code');
+                }
             } catch (updateError) {
-                console.error('Error saving referral code:', updateError);
-                // If save fails, still use the generated code temporarily
-                stats.referralCode = newCode;
+                console.error('Error generating/saving referral code:', updateError);
+                console.error('Full error details:', updateError);
+                // Show error to user so they know what's wrong
+                if (document.getElementById('referral-code-display')) {
+                    document.getElementById('referral-code-display').textContent = 'ERROR';
+                }
             }
         }
 
