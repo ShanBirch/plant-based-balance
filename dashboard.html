@@ -17588,7 +17588,7 @@ async function recalculateDailyNutrition() {
         // Upsert into daily_nutrition
         const { data: upsertResult, error: upsertError } = await window.supabaseClient
             .from('daily_nutrition')
-            .upsert(upsertData)
+            .upsert(upsertData, { onConflict: 'user_id,nutrition_date' })
             .select();
 
         if (upsertError) {
