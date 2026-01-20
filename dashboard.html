@@ -10940,7 +10940,6 @@ function wizardNext() {
     if(currentWizardStep === 2) {
         const name = document.getElementById('wizard-name').value.trim();
         const age = document.getElementById('wizard-age').value;
-        const sex = document.getElementById('wizard-sex').value;
         const height = document.getElementById('wizard-height').value;
         const weight = document.getElementById('wizard-weight').value;
         const goalWeight = document.getElementById('wizard-goal-weight').value;
@@ -10955,10 +10954,6 @@ function wizardNext() {
         }
         if (!age || age < 18 || age > 100) {
             alert("Please enter a valid age (18-100).");
-            return;
-        }
-        if (!sex) {
-            alert("Please select your biological sex.");
             return;
         }
         if (!height || height < 100 || height > 250) {
@@ -10987,17 +10982,18 @@ function wizardNext() {
         }
 
         // Save to sessionStorage for later processing
+        // Use selectedGender from Step 1 for sex value (for BMR calculation)
         const quizData = {
             name: name,
             age: parseInt(age),
-            sex: sex,
+            sex: selectedGender,
             height: parseFloat(height),
             weight: parseFloat(weight),
             goal_weight: parseFloat(goalWeight),
             equipment_access: equipment,
             activity_level: activityLevel,
             energy_level: energyLevel,
-            user_gender: selectedGender // Also store gender preference
+            user_gender: selectedGender
         };
 
         // Calculate BMR, TDEE, and Macros
@@ -13926,20 +13922,10 @@ function openAsClient() {
                     <input type="text" id="wizard-name" class="wizard-input" placeholder="Enter your name" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                 </div>
 
-                <!-- Age & Sex (side by side) -->
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px;">
-                    <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
-                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Age</label>
-                        <input type="number" id="wizard-age" class="wizard-input" placeholder="25" min="18" max="100" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
-                    </div>
-                    <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
-                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Sex</label>
-                        <select id="wizard-sex" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
-                            <option value="">Select</option>
-                            <option value="female">Female</option>
-                            <option value="male">Male</option>
-                        </select>
-                    </div>
+                <!-- Age -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Age</label>
+                    <input type="number" id="wizard-age" class="wizard-input" placeholder="25" min="18" max="100" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                 </div>
 
                 <!-- Height & Weight -->
