@@ -9277,9 +9277,18 @@ async function loadProfileData() {
 
     // CRITICAL: Restore gender from database to localStorage
     // This ensures male users get their UI on page reload
-    if (profile?.user_gender) {
-        localStorage.setItem('userGender', profile.user_gender);
-        console.log("Restored gender from DB:", profile.user_gender);
+    // Check both user_gender (from users table) and sex (from quiz_results table)
+    const genderFromDb = profile?.user_gender || profile?.sex;
+    if (genderFromDb && !localStorage.getItem('userGender')) {
+        localStorage.setItem('userGender', genderFromDb);
+        console.log("Restored gender from DB to localStorage:", genderFromDb);
+    }
+
+    // CRITICAL: Restore theme preference from database to localStorage
+    // This ensures theme persists even when cache is cleared
+    if (profile?.theme_preference && !localStorage.getItem('userThemePreference')) {
+        localStorage.setItem('userThemePreference', profile.theme_preference);
+        console.log("Restored theme preference from DB to localStorage:", profile.theme_preference);
     }
 
     // ALWAYS apply gender-specific UI after profile loads
@@ -17396,7 +17405,7 @@ const APP_THEMES = {
     }
 };
 
-function applyAppTheme(themeKey) {
+async function applyAppTheme(themeKey) {
     const theme = APP_THEMES[themeKey];
     if(!theme) return;
 
@@ -17412,6 +17421,16 @@ function applyAppTheme(themeKey) {
         localStorage.setItem('userThemePreference', 'default');
         const selector = document.getElementById('theme-selector');
         if(selector) selector.value = 'default';
+
+        // Save to Supabase
+        if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
+            try {
+                await dbHelpers.users.update(window.currentUser.id, { theme_preference: 'default' });
+                console.log("Theme preference saved to DB: default");
+            } catch (e) {
+                console.warn("Failed to save theme preference to DB:", e);
+            }
+        }
         return;
     }
 
@@ -17419,6 +17438,16 @@ function applyAppTheme(themeKey) {
     localStorage.setItem('userThemePreference', themeKey);
     const selector = document.getElementById('theme-selector');
     if(selector) selector.value = themeKey;
+
+    // CRITICAL: Save theme preference to Supabase for persistence across cache clears
+    if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
+        try {
+            await dbHelpers.users.update(window.currentUser.id, { theme_preference: themeKey });
+            console.log("Theme preference saved to DB:", themeKey);
+        } catch (e) {
+            console.warn("Failed to save theme preference to DB:", e);
+        }
+    }
 
     // Update dashboard-welcome background - keep gradient for all themes
     const welcomeSection = document.querySelector('.dashboard-welcome');
