@@ -16598,7 +16598,7 @@ function renderCycleSyncMeal(reason, recipeKey) {
                 <div style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px; font-weight:500;">${recipe.meta}</div>
                 <p style="font-size: 0.95rem; color: #4a5568; margin-bottom: 15px; line-height: 1.5; background: rgba(255,255,255,0.6); padding: 10px; border-radius: 8px; border-left: 3px solid var(--secondary);">${recipe.why}</p>
                 
-                <button onclick="toggleCard(this.parentElement.parentElement.parentElement)" style="background: white; border: 1px solid #cbd5e0; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">View Recipe</button>
+                <button onclick="switchAppTab('meals', this)" style="background: white; border: 1px solid #cbd5e0; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">View Recipe</button>
             </div>
             <img src="${recipe.img}" style="width: 100%; height: 180px; object-fit: cover; md:width: 150px; md:height: auto;" onerror="this.style.display='none'">
         </div>
