@@ -9899,6 +9899,35 @@ function renderWeeklyCalendar() {
     const hasHighEnergy = userProfile.energy_status === 'high';
     const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
 
+    // Calculate which week (1-4) of the gym split rotation we're in
+    function getGymSplitWeekNumber() {
+        if (!useMaleGymSplit) return 1;
+
+        let startDate = localStorage.getItem('gym_split_start_date');
+        if (!startDate) {
+            // First time using gym split - set start date to this week's Monday
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const distToMon = (dayOfWeek + 6) % 7;
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - distToMon);
+            monday.setHours(0, 0, 0, 0);
+            startDate = monday.toISOString().split('T')[0];
+            localStorage.setItem('gym_split_start_date', startDate);
+        }
+
+        // Calculate weeks elapsed since start
+        const start = new Date(startDate);
+        const now = new Date();
+        const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+        const weeksElapsed = Math.floor((now - start) / msPerWeek);
+
+        // Return week number 1-4
+        return (weeksElapsed % 4) + 1;
+    }
+
+    const currentWeek = getGymSplitWeekNumber();
+
     // Weekly Schedule Template - maps to WORKOUT_DB programs
     // Each day references a program and the day index within that program's schedule
     let WEEKLY_SCHEDULE;
@@ -9906,11 +9935,11 @@ function renderWeeklyCalendar() {
     if (useMaleGymSplit) {
         // Male Gym Split: Chest, Back, Legs, Shoulders, Arms+Core, Active Recovery, Rest
         WEEKLY_SCHEDULE = [
-            { day: 'Mon', program: 'gym_split', dayIndex: 0 }, // Chest
-            { day: 'Tue', program: 'gym_split', dayIndex: 1 }, // Back
-            { day: 'Wed', program: 'gym_split', dayIndex: 2 }, // Legs
-            { day: 'Thu', program: 'gym_split', dayIndex: 3 }, // Shoulders
-            { day: 'Fri', program: 'gym_split', dayIndex: 4 }, // Arms & Core
+            { day: 'Mon', program: 'gym_split', dayIndex: 0, muscleGroup: 'chest' }, // Chest
+            { day: 'Tue', program: 'gym_split', dayIndex: 1, muscleGroup: 'back' }, // Back
+            { day: 'Wed', program: 'gym_split', dayIndex: 2, muscleGroup: 'legs' }, // Legs
+            { day: 'Thu', program: 'gym_split', dayIndex: 3, muscleGroup: 'shoulders' }, // Shoulders
+            { day: 'Fri', program: 'gym_split', dayIndex: 4, muscleGroup: 'armscore' }, // Arms & Core
             { day: 'Sat', program: 'gym_split', dayIndex: 5 }, // Active Recovery
             { day: 'Sun', program: 'gym_split', dayIndex: 6 }  // Rest
         ];
@@ -9927,9 +9956,36 @@ function renderWeeklyCalendar() {
         ];
     }
 
-    // Helper to get workout from WORKOUT_DB
+    // Helper to get workout from WORKOUT_DB or WORKOUT_LIBRARY (for gym split rotation)
     function getWorkoutForDay(dayIdx) {
         const scheduleItem = WEEKLY_SCHEDULE[dayIdx];
+
+        // For gym split with muscle group, pull from WORKOUT_LIBRARY with 4-week rotation
+        if (scheduleItem.program === 'gym_split' && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
+            const muscleGroup = scheduleItem.muscleGroup;
+            const gymCategory = WORKOUT_LIBRARY['gym'];
+
+            if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
+                const workouts = gymCategory.subcategories[muscleGroup].workouts;
+
+                // Select workout based on week number (0-indexed, so week 1 = index 0)
+                // Week 1: workout 0, Week 2: workout 1, Week 3: workout 2, Week 4: workout 3
+                const workoutIndex = Math.min(currentWeek - 1, workouts.length - 1);
+                const workout = workouts[workoutIndex];
+
+                if (workout) {
+                    return {
+                        title: workout.name,
+                        programName: `Gym - Week ${currentWeek}`,
+                        programId: 'gym_library',
+                        libraryWorkout: { category: 'gym', subcategory: muscleGroup, workoutId: workout.id },
+                        exercises: workout.exercises
+                    };
+                }
+            }
+        }
+
+        // Default: use WORKOUT_DB
         const program = window.WORKOUT_DB?.[scheduleItem.program];
         if (program && program.schedule && program.schedule[scheduleItem.dayIndex]) {
             const workout = program.schedule[scheduleItem.dayIndex];
@@ -10149,15 +10205,52 @@ window.openCalendarWorkout = function(dayIndexFromMonday) {
     }
 
     // 4. Fetch Exercises & Launch Player
-    const program = window.WORKOUT_DB?.[programId];
-    if (program && program.schedule && program.schedule[dayIndex]) {
-        if (typeof startActiveWorkout === 'function') {
-            startActiveWorkout(programId, dayIndex);
-        } else {
-            console.error("Workout player function not found");
+    // For gym_split with muscle groups, use WORKOUT_LIBRARY with rotation
+    if (programId === 'gym_split' && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
+        const muscleGroup = scheduleItem.muscleGroup;
+        const gymCategory = WORKOUT_LIBRARY['gym'];
+
+        if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
+            // Calculate which week (1-4) of rotation
+            let startDate = localStorage.getItem('gym_split_start_date');
+            if (!startDate) {
+                const today = new Date();
+                const dayOfWeek = today.getDay();
+                const distToMon = (dayOfWeek + 6) % 7;
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - distToMon);
+                monday.setHours(0, 0, 0, 0);
+                startDate = monday.toISOString().split('T')[0];
+                localStorage.setItem('gym_split_start_date', startDate);
+            }
+            const start = new Date(startDate);
+            const now = new Date();
+            const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+            const weeksElapsed = Math.floor((now - start) / msPerWeek);
+            const currentWeek = (weeksElapsed % 4) + 1;
+
+            const workouts = gymCategory.subcategories[muscleGroup].workouts;
+            const workoutIndex = Math.min(currentWeek - 1, workouts.length - 1);
+            const workout = workouts[workoutIndex];
+
+            if (workout && typeof startLibraryWorkout === 'function') {
+                startLibraryWorkout('gym', muscleGroup, workout.id);
+            } else {
+                console.error("Library workout not found or player function missing");
+            }
         }
     } else {
-        console.log("Workout data not found for program:", programId);
+        // Default: use WORKOUT_DB
+        const program = window.WORKOUT_DB?.[programId];
+        if (program && program.schedule && program.schedule[dayIndex]) {
+            if (typeof startActiveWorkout === 'function') {
+                startActiveWorkout(programId, dayIndex);
+            } else {
+                console.error("Workout player function not found");
+            }
+        } else {
+            console.log("Workout data not found for program:", programId);
+        }
     }
 };
 
@@ -10177,11 +10270,11 @@ function getTodaysWorkout() {
     if (useMaleGymSplit) {
         // Male Gym Split
         WEEKLY_SCHEDULE = [
-            { day: 'Mon', program: 'gym_split', dayIndex: 0, icon: '💪' }, // Chest
-            { day: 'Tue', program: 'gym_split', dayIndex: 1, icon: '💪' }, // Back
-            { day: 'Wed', program: 'gym_split', dayIndex: 2, icon: '🦵' }, // Legs
-            { day: 'Thu', program: 'gym_split', dayIndex: 3, icon: '💪' }, // Shoulders
-            { day: 'Fri', program: 'gym_split', dayIndex: 4, icon: '💪' }, // Arms & Core
+            { day: 'Mon', program: 'gym_split', dayIndex: 0, icon: '💪', muscleGroup: 'chest' }, // Chest
+            { day: 'Tue', program: 'gym_split', dayIndex: 1, icon: '💪', muscleGroup: 'back' }, // Back
+            { day: 'Wed', program: 'gym_split', dayIndex: 2, icon: '🦵', muscleGroup: 'legs' }, // Legs
+            { day: 'Thu', program: 'gym_split', dayIndex: 3, icon: '💪', muscleGroup: 'shoulders' }, // Shoulders
+            { day: 'Fri', program: 'gym_split', dayIndex: 4, icon: '💪', muscleGroup: 'armscore' }, // Arms & Core
             { day: 'Sat', program: 'gym_split', dayIndex: 5, icon: '🧘‍♂️' }, // Active Recovery
             { day: 'Sun', program: 'gym_split', dayIndex: 6, icon: '💤' }  // Rest
         ];
@@ -10203,13 +10296,48 @@ function getTodaysWorkout() {
     // Convert to Mon=0 index
     const dayIndex = (dayOfWeek + 6) % 7;
     const scheduleItem = WEEKLY_SCHEDULE[dayIndex];
-    
-    // Get workout from WORKOUT_DB
-    const program = window.WORKOUT_DB?.[scheduleItem.program];
-    const workout = program?.schedule?.[scheduleItem.dayIndex];
-    
-    let workoutName = workout?.title || scheduleItem.day + ' Workout';
-    let workoutIcon = scheduleItem.icon;
+
+    let workoutName, workoutIcon;
+
+    // For gym_split with muscle groups, pull from WORKOUT_LIBRARY with rotation
+    if (scheduleItem.program === 'gym_split' && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
+        const muscleGroup = scheduleItem.muscleGroup;
+        const gymCategory = WORKOUT_LIBRARY['gym'];
+
+        if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
+            // Calculate which week (1-4) of rotation
+            let startDate = localStorage.getItem('gym_split_start_date');
+            if (!startDate) {
+                const dayOfWeek = today.getDay();
+                const distToMon = (dayOfWeek + 6) % 7;
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - distToMon);
+                monday.setHours(0, 0, 0, 0);
+                startDate = monday.toISOString().split('T')[0];
+                localStorage.setItem('gym_split_start_date', startDate);
+            }
+            const start = new Date(startDate);
+            const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+            const weeksElapsed = Math.floor((today - start) / msPerWeek);
+            const currentWeek = (weeksElapsed % 4) + 1;
+
+            const workouts = gymCategory.subcategories[muscleGroup].workouts;
+            const workoutIndex = Math.min(currentWeek - 1, workouts.length - 1);
+            const workout = workouts[workoutIndex];
+
+            workoutName = workout ? workout.name : scheduleItem.day + ' Workout';
+            workoutIcon = scheduleItem.icon;
+        } else {
+            workoutName = scheduleItem.day + ' Workout';
+            workoutIcon = scheduleItem.icon;
+        }
+    } else {
+        // Default: get from WORKOUT_DB
+        const program = window.WORKOUT_DB?.[scheduleItem.program];
+        const workout = program?.schedule?.[scheduleItem.dayIndex];
+        workoutName = workout?.title || scheduleItem.day + ' Workout';
+        workoutIcon = scheduleItem.icon;
+    }
     let programId = scheduleItem.program;
     let phaseInfo = null;
     let currentCycleDay = 0;
