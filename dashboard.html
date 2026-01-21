@@ -11219,6 +11219,7 @@ function calculateNutritionGoals(data) {
     const height = data.height;
     const age = data.age;
     const sex = data.sex;
+    const goalBodyType = data.goalBodyType || 'Athletic'; // Default to Athletic if not specified
 
     let bmr;
     if (sex === 'male') {
@@ -11248,29 +11249,61 @@ function calculateNutritionGoals(data) {
 
     const tdee = bmr * activityMultiplier;
 
-    // Calculate calorie goal (slight deficit for weight loss, or maintenance)
+    // Calculate calorie goal based on weight goals
     let calorieGoal = tdee;
     if (data.goal_weight < data.weight) {
-        // Weight loss: 15% deficit
-        calorieGoal = tdee * 0.85;
+        // Weight loss: 250-500 cal deficit based on how much to lose
+        const deficit = Math.min(500, Math.max(250, (data.weight - data.goal_weight) * 50));
+        calorieGoal = tdee - deficit;
     } else if (data.goal_weight > data.weight) {
-        // Weight gain: 10% surplus
-        calorieGoal = tdee * 1.10;
+        // Weight gain: 300 cal surplus
+        calorieGoal = tdee + 300;
     }
 
-    // Calculate Macronutrient Goals (Plant-Based Distribution)
-    // Protein: 1.6-2.0g per kg body weight (use 1.8g as middle ground)
-    // Fat: 25-30% of calories (use 27%)
-    // Carbs: Remaining calories
+    // Adjust for body type goals
+    if (goalBodyType === 'Body Builder') {
+        // Higher calories for muscle building
+        calorieGoal += 200;
+    } else if (goalBodyType === 'Flat') {
+        // Slight additional deficit for lean body
+        calorieGoal -= 100;
+    }
 
-    const proteinGrams = weight * 1.8;
-    const proteinCalories = proteinGrams * 4; // 4 cal per gram
+    // Ensure minimum safe calorie intake
+    calorieGoal = Math.max(1200, calorieGoal);
 
-    const fatCalories = calorieGoal * 0.27;
-    const fatGrams = fatCalories / 9; // 9 cal per gram
+    // Calculate Macronutrient Goals based on goal body type
+    let proteinPercentage, carbPercentage, fatPercentage;
 
-    const carbCalories = calorieGoal - proteinCalories - fatCalories;
-    const carbGrams = carbCalories / 4; // 4 cal per gram
+    if (goalBodyType === 'Body Builder') {
+        // High protein for muscle building: 30% protein, 40% carbs, 30% fat
+        proteinPercentage = 0.30;
+        carbPercentage = 0.40;
+        fatPercentage = 0.30;
+    } else if (goalBodyType === 'Athletic') {
+        // Balanced for athletic performance: 25% protein, 45% carbs, 30% fat
+        proteinPercentage = 0.25;
+        carbPercentage = 0.45;
+        fatPercentage = 0.30;
+    } else {
+        // Flat & Toned (weight loss): 20% protein, 45% carbs, 35% fat
+        proteinPercentage = 0.20;
+        carbPercentage = 0.45;
+        fatPercentage = 0.35;
+    }
+
+    // Calculate grams from calories (Protein: 4 cal/g, Carbs: 4 cal/g, Fat: 9 cal/g)
+    const proteinCalories = calorieGoal * proteinPercentage;
+    const carbCalories = calorieGoal * carbPercentage;
+    const fatCalories = calorieGoal * fatPercentage;
+
+    let proteinGrams = proteinCalories / 4;
+    const carbGrams = carbCalories / 4;
+    const fatGrams = fatCalories / 9;
+
+    // Ensure minimum protein for plant-based diet (at least 1g per kg body weight)
+    const minProtein = weight * 1.0;
+    proteinGrams = Math.max(proteinGrams, minProtein);
 
     return {
         bmr: Math.round(bmr),
@@ -11530,6 +11563,7 @@ function wizardNext() {
         const height = document.getElementById('wizard-height').value;
         const weight = document.getElementById('wizard-weight').value;
         const goalWeight = document.getElementById('wizard-goal-weight').value;
+        const goalType = document.getElementById('wizard-goal-type').value;
         const equipment = document.getElementById('wizard-equipment').value;
         const activityLevel = document.getElementById('wizard-activity-level').value;
         const energyLevel = document.getElementById('wizard-energy-level').value;
@@ -11555,6 +11589,10 @@ function wizardNext() {
             alert("Please enter a valid goal weight in kg (30-300).");
             return;
         }
+        if (!goalType) {
+            alert("Please select your primary goal.");
+            return;
+        }
         if (!equipment) {
             alert("Please select your equipment access.");
             return;
@@ -11576,6 +11614,7 @@ function wizardNext() {
             height: parseFloat(height),
             weight: parseFloat(weight),
             goal_weight: parseFloat(goalWeight),
+            goalBodyType: goalType, // Maps to: 'Flat' (weight loss), 'Athletic' (toned), 'Body Builder' (muscle gain)
             equipment_access: equipment,
             activity_level: activityLevel,
             energy_level: energyLevel,
@@ -15070,6 +15109,17 @@ function openAsClient() {
                 <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
                     <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Goal Weight (kg)</label>
                     <input type="number" id="wizard-goal-weight" class="wizard-input" placeholder="65" min="30" max="300" step="0.1" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                </div>
+
+                <!-- Primary Goal -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">What's your primary goal?</label>
+                    <select id="wizard-goal-type" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                        <option value="">Select your goal</option>
+                        <option value="Flat">Lose weight / Get lean</option>
+                        <option value="Athletic">Get toned / Maintain fitness</option>
+                        <option value="Body Builder">Build muscle / Gain strength</option>
+                    </select>
                 </div>
 
                 <!-- Equipment Access -->
