@@ -12296,9 +12296,20 @@ async function renderMovementView() {
     const dayOfWeek = today.getDay();
     const calDayIndex = (dayOfWeek + 6) % 7; // Mon=0 index
 
-    // Determine default strength program based on equipment from onboarding
+    // Determine default strength program based on preferred workout style (sticky) or equipment from onboarding
+    const preferredStyle = profile?.preferred_workout_style;
     let defaultStrengthProgram = 'bodyweight'; // Default fallback
-    if (hasGymAccess) {
+
+    // First, check if user has a preferred workout style (from previous check-ins)
+    if (preferredStyle === 'gym' && hasGymAccess) {
+        defaultStrengthProgram = 'gym';
+    } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
+        defaultStrengthProgram = 'home';
+    } else if (preferredStyle === 'none') {
+        defaultStrengthProgram = 'bodyweight'; // User prefers bodyweight
+    }
+    // Fallback to equipment access from onboarding if no preference
+    else if (hasGymAccess) {
         defaultStrengthProgram = 'gym';
     } else if (hasDumbbells) {
         defaultStrengthProgram = 'home';
@@ -19612,6 +19623,25 @@ async function submitDailyCycleSync() {
 
     // Mark check-in as completed for today
     localStorage.setItem('lastWellnessCheck', new Date().toDateString());
+
+    // 2.5. Save equipment selection as preferred workout style (makes it sticky)
+    if (checkInProgress.equipment && window.currentUser && typeof dbHelpers !== 'undefined') {
+        try {
+            // Update user profile with preferred workout style
+            await dbHelpers.users.update(window.currentUser.id, {
+                preferred_workout_style: checkInProgress.equipment
+            });
+
+            // Also update localStorage profile
+            const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            userProfile.preferred_workout_style = checkInProgress.equipment;
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
+
+            console.log('✅ Preferred workout style saved:', checkInProgress.equipment);
+        } catch (e) {
+            console.warn('Failed to save preferred workout style:', e);
+        }
+    }
 
     // 3. Update Active Symptoms display in Metabolic Protocol section
     const symptomsDisplay = document.getElementById('profile-symptoms-display');
