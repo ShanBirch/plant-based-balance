@@ -9036,8 +9036,9 @@ async function _syncQuizDataToDbRealImpl() {
             console.log("Syncing quiz data to DB...", quizData);
 
             // SPLIT DATA: Users table vs User Facts (personal_details)
-            // user_gender and equipment_access are core user attributes that should be in users table
-            const userColumns = ['name', 'email', 'profile_photo', 'program_start_date', 'theme_preference', 'location', 'user_gender', 'equipment_access', 'sex'];
+            // user_gender and sex are core user attributes that should be in users table
+            // equipment_access is stored in quiz_results table (not users table)
+            const userColumns = ['name', 'email', 'profile_photo', 'program_start_date', 'theme_preference', 'location', 'user_gender', 'sex'];
             const coreData = {};
             const factsData = {};
 
