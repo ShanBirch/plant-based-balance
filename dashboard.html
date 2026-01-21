@@ -12536,16 +12536,22 @@ async function renderMovementView() {
     const hasGymAccess = profile?.equipment_access === 'gym' || profile?.gym_access === true;
     // Support both 'dumbbells' (new) and 'home' (legacy) values for backward compatibility
     const hasDumbbells = profile?.equipment_access === 'dumbbells' || profile?.equipment_access === 'home' || hasGymAccess;
-    
+
     // Default available programs based on equipment
     let availablePrograms = ['yoga', 'bodyweight']; // Always available
     if (hasDumbbells) availablePrograms.push('home');
     if (hasGymAccess) availablePrograms.push('gym');
-    
+
     // PRIORITY 2: Weekly Schedule using WORKOUT_DB
     const today = new Date();
     const dayOfWeek = today.getDay();
     const calDayIndex = (dayOfWeek + 6) % 7; // Mon=0 index
+
+    // Check if user qualifies for Gym Split (same logic as calendar for consistency)
+    const userProfileLocal = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    const hasHighEnergy = userProfileLocal.energy_status === 'high';
+    const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
+    const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
     // Determine default strength program based on preferred workout style (sticky) or equipment from onboarding
     const preferredStyle = profile?.preferred_workout_style;
@@ -12568,15 +12574,43 @@ async function renderMovementView() {
 
     // Weekly Schedule - maps each day to a program and workout
     // Uses equipment settings from onboarding to set appropriate workouts
-    const WEEKLY_SCHEDULE = [
-        { day: 'Mon', program: defaultStrengthProgram, dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 }, // Lower Body Power / Balance & Core
-        { day: 'Tue', program: defaultStrengthProgram, dayIndex: 1, fallback: 'yoga', fallbackIdx: 5 }, // Upper Body / Dynamic Flow
-        { day: 'Wed', program: 'yoga', dayIndex: 2, fallback: 'yoga', fallbackIdx: 2 },       // Spinal Mobility
-        { day: 'Thu', program: defaultStrengthProgram, dayIndex: 3, fallback: 'yoga', fallbackIdx: 4 }, // Full Body / Balance & Core
-        { day: 'Fri', program: defaultStrengthProgram, dayIndex: 4, fallback: 'yoga', fallbackIdx: 4 }, // Glutes & Core
-        { day: 'Sat', program: 'yoga', dayIndex: 0, fallback: 'yoga', fallbackIdx: 0 },       // Somatic Hormone Reset
-        { day: 'Sun', program: 'yoga', dayIndex: 6, fallback: 'yoga', fallbackIdx: 6 }        // Yin & Meditation
-    ];
+    // For gym split users (male or female), use the same schedule as the calendar
+    let WEEKLY_SCHEDULE;
+
+    if (useMaleGymSplit) {
+        // Male Gym Split: Same as calendar - Chest, Back, Legs, Shoulders, Arms+Core, Active Recovery, Rest
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'gym_split', dayIndex: 0, muscleGroup: 'chest', fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Tue', program: 'gym_split', dayIndex: 1, muscleGroup: 'back', fallback: 'yoga', fallbackIdx: 5 },
+            { day: 'Wed', program: 'gym_split', dayIndex: 2, muscleGroup: 'legs', fallback: 'yoga', fallbackIdx: 2 },
+            { day: 'Thu', program: 'gym_split', dayIndex: 3, muscleGroup: 'shoulders', fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Fri', program: 'gym_split', dayIndex: 4, muscleGroup: 'armscore', fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Sat', program: 'yoga', dayIndex: 0, fallback: 'yoga', fallbackIdx: 0 },       // Active Recovery
+            { day: 'Sun', program: 'yoga', dayIndex: 6, fallback: 'yoga', fallbackIdx: 6 }        // Rest
+        ];
+    } else if (useFemaleGymSplit) {
+        // Female Gym Split: Same as calendar - Legs, Push, Arms+Core, Legs, Pull, Active Recovery, Rest
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'female_gym_split', dayIndex: 0, muscleGroup: 'legs', fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Tue', program: 'female_gym_split', dayIndex: 1, muscleGroup: 'push', fallback: 'yoga', fallbackIdx: 5 },
+            { day: 'Wed', program: 'female_gym_split', dayIndex: 2, muscleGroup: 'armscore', fallback: 'yoga', fallbackIdx: 2 },
+            { day: 'Thu', program: 'female_gym_split', dayIndex: 3, muscleGroup: 'legs', fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Fri', program: 'female_gym_split', dayIndex: 4, muscleGroup: 'pull', fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Sat', program: 'yoga', dayIndex: 0, fallback: 'yoga', fallbackIdx: 0 },       // Active Recovery
+            { day: 'Sun', program: 'yoga', dayIndex: 6, fallback: 'yoga', fallbackIdx: 6 }        // Rest
+        ];
+    } else {
+        // Default schedule for non-gym-split users
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: defaultStrengthProgram, dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 }, // Lower Body Power / Balance & Core
+            { day: 'Tue', program: defaultStrengthProgram, dayIndex: 1, fallback: 'yoga', fallbackIdx: 5 }, // Upper Body / Dynamic Flow
+            { day: 'Wed', program: 'yoga', dayIndex: 2, fallback: 'yoga', fallbackIdx: 2 },       // Spinal Mobility
+            { day: 'Thu', program: defaultStrengthProgram, dayIndex: 3, fallback: 'yoga', fallbackIdx: 4 }, // Full Body / Balance & Core
+            { day: 'Fri', program: defaultStrengthProgram, dayIndex: 4, fallback: 'yoga', fallbackIdx: 4 }, // Glutes & Core
+            { day: 'Sat', program: 'yoga', dayIndex: 0, fallback: 'yoga', fallbackIdx: 0 },       // Somatic Hormone Reset
+            { day: 'Sun', program: 'yoga', dayIndex: 6, fallback: 'yoga', fallbackIdx: 6 }        // Yin & Meditation
+        ];
+    }
     
     const scheduleItem = WEEKLY_SCHEDULE[calDayIndex];
     let suggestedProgram = scheduleItem.program;
@@ -12744,14 +12778,66 @@ async function renderMovementView() {
         'yoga': { img: '/assets/somatic_yoga_hero.png', sub: 'Recovery', color: '#F59E0B' },
         'bodyweight': { img: '/assets/bodyweight_sculpt_hero.png', sub: 'No Equipment', color: '#ec4899' },
         'home': { img: '/assets/dumbbell_strength_hero.png', sub: 'Dumbbells', color: '#8b5cf6' },
-        'gym': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' }
+        'gym': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' },
+        'gym_split': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' },
+        'female_gym_split': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' }
     };
 
     // Render Hero
     const heroContainer = document.getElementById('movement-hero-container');
-    const heroProg = window.WORKOUT_DB[suggestedProgram];
-    const heroMeta = assets[suggestedProgram];
-    const heroSched = heroProg.schedule[workoutDayIndex % heroProg.schedule.length];
+
+    // Handle gym_split programs - pull from WORKOUT_LIBRARY with 48-week rotation (same as calendar)
+    let heroProg, heroMeta, heroSched;
+
+    if ((suggestedProgram === 'gym_split' || suggestedProgram === 'female_gym_split') && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
+        // Get workout from WORKOUT_LIBRARY with same 48-week rotation as calendar
+        const muscleGroup = scheduleItem.muscleGroup;
+        const gymCategory = WORKOUT_LIBRARY['gym'];
+
+        if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
+            // Calculate which week in 48-week cycle (same logic as calendar)
+            let startDate = localStorage.getItem('gym_split_start_date');
+            if (!startDate) {
+                const dayOfWeek = today.getDay();
+                const distToMon = (dayOfWeek + 6) % 7;
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - distToMon);
+                monday.setHours(0, 0, 0, 0);
+                startDate = monday.toISOString().split('T')[0];
+                localStorage.setItem('gym_split_start_date', startDate);
+            }
+            const start = new Date(startDate);
+            const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+            const weeksElapsed = Math.floor((today - start) / msPerWeek);
+            const currentWeek = (weeksElapsed % 48) + 1;
+
+            const workouts = gymCategory.subcategories[muscleGroup].workouts;
+            const programNumber = Math.floor((currentWeek - 1) / 4);
+            const workoutIndex = programNumber % workouts.length;
+            const workout = workouts[workoutIndex];
+
+            // Create a pseudo-program object for rendering
+            heroProg = {
+                name: 'Gym Split',
+                estimatedTime: workout?.estimatedTime || 45
+            };
+            heroMeta = assets[suggestedProgram];
+            heroSched = {
+                title: workout?.name || `${muscleGroup.charAt(0).toUpperCase() + muscleGroup.slice(1)} Day`,
+                exercises: workout?.exercises || []
+            };
+        } else {
+            // Fallback to gym program if muscle group not found
+            heroProg = window.WORKOUT_DB['gym'];
+            heroMeta = assets['gym'];
+            heroSched = heroProg.schedule[workoutDayIndex % heroProg.schedule.length];
+        }
+    } else {
+        // Standard program from WORKOUT_DB
+        heroProg = window.WORKOUT_DB[suggestedProgram];
+        heroMeta = assets[suggestedProgram];
+        heroSched = heroProg.schedule[workoutDayIndex % heroProg.schedule.length];
+    }
 
     // Check if this is a Cycle Sync personalization
     const isCycleSync = personalizationReason && personalizationReason.startsWith('✨ Cycle Sync:');
