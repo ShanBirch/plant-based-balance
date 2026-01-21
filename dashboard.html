@@ -9066,13 +9066,50 @@ async function _syncQuizDataToDbRealImpl() {
             }
 
             // 3. Calculate and Save Nutrition Goals if we have the required data
-            if (quizData.age && quizData.height && quizData.weight && quizData.goal_weight && quizData.activity_level && quizData.goalBodyType && quizData.sex) {
-                try {
-                    // Convert quiz data to metric units
-                    const metricData = convertQuizDataToMetric(quizData);
+            // Check if nutrition goals were already pre-calculated by the onboarding wizard
+            const hasPreCalculatedGoals = quizData.bmr && quizData.tdee && quizData.calorie_goal &&
+                                          quizData.protein_goal_g && quizData.carbs_goal_g && quizData.fat_goal_g;
 
-                    // Calculate nutrition goals
-                    const nutritionGoals = calculateNutritionGoals(metricData);
+            // Default goalBodyType to 'Athletic' if not provided (balanced middle-ground for non-quiz users)
+            const effectiveGoalBodyType = quizData.goalBodyType || 'Athletic';
+
+            // Required fields: age, height, weight, goal_weight, activity_level, sex
+            // goalBodyType is now optional (defaults to 'Athletic')
+            const hasRequiredFields = quizData.age && quizData.height && quizData.weight &&
+                                      quizData.goal_weight && quizData.activity_level && quizData.sex;
+
+            if (hasPreCalculatedGoals || hasRequiredFields) {
+                try {
+                    let nutritionGoals;
+                    let metricData;
+
+                    if (hasPreCalculatedGoals) {
+                        // Use pre-calculated values from onboarding wizard
+                        console.log("Using pre-calculated nutrition goals from wizard");
+                        nutritionGoals = {
+                            bmr: quizData.bmr,
+                            tdee: quizData.tdee,
+                            calorie_goal: quizData.calorie_goal,
+                            protein_goal_g: quizData.protein_goal_g,
+                            carbs_goal_g: quizData.carbs_goal_g,
+                            fat_goal_g: quizData.fat_goal_g
+                        };
+                        // For metric data, use direct values (wizard already uses metric)
+                        metricData = {
+                            age: quizData.age,
+                            height: quizData.height,
+                            weight: quizData.weight,
+                            goal_weight: quizData.goal_weight,
+                            sex: quizData.sex,
+                            activity_level: quizData.activity_level,
+                            goalBodyType: effectiveGoalBodyType
+                        };
+                    } else {
+                        // Convert quiz data to metric units and calculate
+                        const dataWithBodyType = { ...quizData, goalBodyType: effectiveGoalBodyType };
+                        metricData = convertQuizDataToMetric(dataWithBodyType);
+                        nutritionGoals = calculateNutritionGoals(metricData);
+                    }
 
                     if (nutritionGoals) {
                         console.log("Calculated nutrition goals:", nutritionGoals);
@@ -9083,7 +9120,7 @@ async function _syncQuizDataToDbRealImpl() {
                             cycle_description: quizData.cycle_desc,
                             activity_level: quizData.activity_level,
                             weight_storage_location: quizData.weight_gain_location,
-                            goal_body_type: quizData.goalBodyType,
+                            goal_body_type: effectiveGoalBodyType,
                             sleep_hours: quizData.sleep_hours,
                             sleep_quality: quizData.wake_feel,
                             energy_level: quizData.energy_level || quizData.energy_status, // Support both field names
