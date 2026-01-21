@@ -22103,6 +22103,66 @@ async function loadTodayNutrition() {
             console.error('Error loading daily nutrition:', dailyError);
         }
 
+        // Check if we need to fetch personalized goals from quiz_results
+        // This handles the case where daily_nutrition doesn't exist for today
+        // or has default goals instead of personalized ones
+        let nutritionDataWithGoals = dailyData;
+        const hasPersonalizedGoals = dailyData && dailyData.calorie_goal && dailyData.calorie_goal !== 2000;
+
+        if (!hasPersonalizedGoals) {
+            console.log('No personalized goals in daily_nutrition, fetching from quiz_results...');
+
+            // Fetch user's personalized goals from quiz_results
+            const { data: quizData, error: quizError } = await window.supabaseClient
+                .from('quiz_results')
+                .select('calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g')
+                .eq('user_id', userId)
+                .order('taken_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (quizError && quizError.code !== 'PGRST116') {
+                console.error('Error loading quiz results:', quizError);
+            }
+
+            if (quizData && quizData.calorie_goal) {
+                console.log('Found personalized goals in quiz_results:', quizData);
+
+                // Merge quiz goals with daily data (or create new object)
+                nutritionDataWithGoals = {
+                    ...(dailyData || {}),
+                    calorie_goal: quizData.calorie_goal,
+                    protein_goal_g: quizData.protein_goal_g,
+                    carbs_goal_g: quizData.carbs_goal_g,
+                    fat_goal_g: quizData.fat_goal_g
+                };
+
+                // Also save the goals to daily_nutrition for today so they persist
+                try {
+                    await window.supabaseClient
+                        .from('daily_nutrition')
+                        .upsert({
+                            user_id: userId,
+                            nutrition_date: today,
+                            calorie_goal: quizData.calorie_goal,
+                            protein_goal_g: quizData.protein_goal_g,
+                            carbs_goal_g: quizData.carbs_goal_g,
+                            fat_goal_g: quizData.fat_goal_g,
+                            total_calories: dailyData?.total_calories || 0,
+                            total_protein_g: dailyData?.total_protein_g || 0,
+                            total_carbs_g: dailyData?.total_carbs_g || 0,
+                            total_fat_g: dailyData?.total_fat_g || 0,
+                            total_fiber_g: dailyData?.total_fiber_g || 0
+                        }, {
+                            onConflict: 'user_id,nutrition_date'
+                        });
+                    console.log('Saved personalized goals to daily_nutrition for today');
+                } catch (saveError) {
+                    console.error('Error saving goals to daily_nutrition:', saveError);
+                }
+            }
+        }
+
         // Load individual meals
         const { data: mealsData, error: mealsError } = await window.supabaseClient
             .from('meal_logs')
@@ -22118,8 +22178,8 @@ async function loadTodayNutrition() {
         // Load weekly metrics
         await loadWeeklyMetrics(userId);
 
-        // Update UI
-        updateNutritionUI(dailyData, mealsData);
+        // Update UI with personalized goals
+        updateNutritionUI(nutritionDataWithGoals, mealsData);
 
     } catch (error) {
         console.error('Error in loadTodayNutrition:', error);
