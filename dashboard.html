@@ -26,6 +26,41 @@
 <script src="lib/stories.js"></script>
 <script src="lib/nutrition-calculator.js"></script>
 
+<!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
+<script>
+// Stub for userCycleData - will be overwritten with real data later
+var userCycleData = {
+    lastPeriod: null,
+    cycleLength: 28,
+    mood: null,
+    noPeriodMode: false,
+    symptoms: [],
+    logs: {},
+    dailyCheckIn: null
+};
+
+// Stub for switchAppTab - queues calls until real function loads
+var _switchAppTabQueue = [];
+var _switchAppTabReady = false;
+function switchAppTab(tabName, btn) {
+    if (_switchAppTabReady && typeof _switchAppTabReal === 'function') {
+        return _switchAppTabReal(tabName, btn);
+    }
+    // Queue the call for when the real function is ready
+    _switchAppTabQueue.push({ tabName, btn });
+}
+
+// Stub for syncQuizDataToDb - safe no-op until real function loads
+var _syncQuizDataToDbReal = null;
+async function syncQuizDataToDb() {
+    if (typeof _syncQuizDataToDbReal === 'function') {
+        return await _syncQuizDataToDbReal();
+    }
+    // Real function not loaded yet, silently skip
+    console.log('syncQuizDataToDb: waiting for initialization...');
+}
+</script>
+
 <style>
     :root {
         /* Premium Green & Gold Palette (Default) */
@@ -8957,7 +8992,8 @@ function updateDailyContent(day) {
     }
 }
 
-async function syncQuizDataToDb() {
+// Real syncQuizDataToDb implementation - replaces the early stub
+async function _syncQuizDataToDbRealImpl() {
     const user = window.currentUser;
     if (!user) return;
 
@@ -9090,6 +9126,9 @@ async function syncQuizDataToDb() {
         console.error("Failed to sync quiz data:", e);
     }
 }
+// Register real implementation
+_syncQuizDataToDbReal = _syncQuizDataToDbRealImpl;
+syncQuizDataToDb = _syncQuizDataToDbRealImpl;
 
 async function handleLogout() {
     if (confirm('Are you sure you want to log out?')) {
@@ -9480,7 +9519,8 @@ async function handleSubscriptionAction(action) {
 
 
 
-function switchAppTab(tabName, btn) {
+// Real switchAppTab implementation - replaces the early stub
+function _switchAppTabReal(tabName, btn) {
     // 1. Update Bottom Nav UI
     document.querySelectorAll('.bottom-nav .nav-item').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
@@ -9511,15 +9551,15 @@ function switchAppTab(tabName, btn) {
         }
     } else if (tabName === 'movement-tab') {
         const el = document.getElementById('movement-tab');
-        if(el) { 
-            el.classList.add('active'); 
-            el.style.display='block'; 
+        if(el) {
+            el.classList.add('active');
+            el.style.display='block';
             renderMovementView();
-            
+
             // Auto-Check-in Logic (Once per day)
             const todayStr = new Date().toDateString();
             const lastAuto = localStorage.getItem('last_auto_checkin_date');
-            
+
             // Auto check-in disabled per user request
             // if (lastAuto !== todayStr) { ... }
         }
@@ -9558,13 +9598,24 @@ function switchAppTab(tabName, btn) {
             if(typeof initCycleView === 'function') initCycleView();
         }
     }
-    
+
     // Trigger Cycle Sync Check if entering Dashboard
     if(tabName === 'dashboard' && typeof checkAndRenderCycleSync === 'function') {
         checkAndRenderCycleSync();
     }
-    
+
     window.scrollTo(0,0);
+}
+
+// Mark real implementation as ready and process any queued calls
+_switchAppTabReady = true;
+switchAppTab = _switchAppTabReal;
+if (_switchAppTabQueue && _switchAppTabQueue.length > 0) {
+    console.log('Processing ' + _switchAppTabQueue.length + ' queued switchAppTab calls');
+    _switchAppTabQueue.forEach(function(call) {
+        _switchAppTabReal(call.tabName, call.btn);
+    });
+    _switchAppTabQueue = [];
 }
 
 // --- CALENDAR & CYCLE LOGIC ---
@@ -9577,8 +9628,9 @@ const PHASE_INFO = {
     performance: { name: 'Performance Mode', color: '#3b82f6', css: 'phase-performance', rec: 'Strength, HIIT, Progressive Overload', icon: '💪' }
 };
 
-let userCycleData = {
-    lastPeriod: null, 
+// Update userCycleData (already declared early to prevent undefined errors)
+userCycleData = {
+    lastPeriod: null,
     cycleLength: 28,
     mood: null, // 'strong' or 'tired'
     noPeriodMode: false,
