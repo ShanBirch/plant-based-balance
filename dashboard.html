@@ -9220,13 +9220,18 @@ async function loadProfileData() {
         });
     }
 
-    // CRITICAL: Restore gender from database to localStorage
-    // This ensures male users get their UI on page reload
+    // CRITICAL: Always sync gender from database to localStorage
+    // Database is the source of truth - always overwrite localStorage
+    // This fixes the bug where localStorage has wrong gender value
     // Check both user_gender (from users table) and sex (from quiz_results table)
     const genderFromDb = profile?.user_gender || profile?.sex;
-    if (genderFromDb && !localStorage.getItem('userGender')) {
+    if (genderFromDb) {
+        const currentLocalGender = localStorage.getItem('userGender');
+        if (currentLocalGender !== genderFromDb) {
+            console.log("Gender mismatch detected - DB:", genderFromDb, "localStorage:", currentLocalGender);
+        }
         localStorage.setItem('userGender', genderFromDb);
-        console.log("Restored gender from DB to localStorage:", genderFromDb);
+        console.log("Synced gender from DB to localStorage:", genderFromDb);
     }
 
     // CRITICAL: Restore theme preference from database to localStorage
