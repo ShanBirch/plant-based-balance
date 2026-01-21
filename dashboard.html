@@ -9037,7 +9037,7 @@ async function _syncQuizDataToDbRealImpl() {
 
             // SPLIT DATA: Users table vs User Facts (personal_details)
             // user_gender and equipment_access are core user attributes that should be in users table
-            const userColumns = ['name', 'email', 'profile_photo', 'program_start_date', 'theme_preference', 'location', 'user_gender', 'equipment_access'];
+            const userColumns = ['name', 'email', 'profile_photo', 'program_start_date', 'theme_preference', 'location', 'user_gender', 'equipment_access', 'sex'];
             const coreData = {};
             const factsData = {};
 
@@ -9065,7 +9065,7 @@ async function _syncQuizDataToDbRealImpl() {
             }
 
             // 3. Calculate and Save Nutrition Goals if we have the required data
-            if (quizData.age && quizData.height && quizData.weight && quizData.goal_weight && quizData.activity_level && quizData.goalBodyType) {
+            if (quizData.age && quizData.height && quizData.weight && quizData.goal_weight && quizData.activity_level && quizData.goalBodyType && quizData.sex) {
                 try {
                     // Convert quiz data to metric units
                     const metricData = convertQuizDataToMetric(quizData);
@@ -11671,11 +11671,14 @@ async function finishOnboarding() {
     }, 500);
 }
 
-function closeWizardManually() {
+async function closeWizardManually() {
      document.getElementById('onboarding-wizard').style.display = 'none';
      // Warning: if they close manually without finishing, we might show it again next time?
      // For now, let's assume they want to skip it.
      localStorage.setItem('onboardingComplete', 'true');
+
+     // Sync any collected data (including gender) to database before closing
+     await syncQuizDataToDb();
 
      // Still apply gender-specific UI if they selected a gender
      if (typeof applyGenderSpecificUI === 'function') {
