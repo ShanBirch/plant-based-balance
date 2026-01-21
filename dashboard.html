@@ -9127,7 +9127,7 @@ async function _syncQuizDataToDbRealImpl() {
                             energy_crashes: quizData.midday_crash,
                             caffeine_relationship: quizData.caffeine,
                             hormone_profile: hormoneType,
-                            equipment_access: quizData.equipment_access, // Include equipment selection
+                            equipment_access: quizData.equipment_access || 'none',
                             age: metricData.age,
                             height: metricData.height,
                             weight: metricData.weight,
