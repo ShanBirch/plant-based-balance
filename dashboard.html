@@ -10000,8 +10000,29 @@ function renderWeeklyCalendar() {
     }
 
     // Helper to get workout from WORKOUT_DB or WORKOUT_LIBRARY (for gym split rotation)
-    function getWorkoutForDay(dayIdx) {
-        const scheduleItem = WEEKLY_SCHEDULE[dayIdx];
+    function getWorkoutForDay(dayIdx, checkDateStr) {
+        // Check if there's equipment selection for this specific day
+        let dayEquipment = null;
+        if (checkDateStr && userCycleData.logs && userCycleData.logs[checkDateStr] && userCycleData.logs[checkDateStr].equipment) {
+            dayEquipment = userCycleData.logs[checkDateStr].equipment;
+        }
+
+        let scheduleItem = WEEKLY_SCHEDULE[dayIdx];
+
+        // Override program based on equipment selection for this day
+        if (dayEquipment) {
+            if (dayEquipment === 'gym' && (useMaleGymSplit || useFemaleGymSplit)) {
+                // Keep gym split
+                // scheduleItem stays the same
+            } else if (dayEquipment === 'gym') {
+                // User selected gym but doesn't qualify for split - use gym program
+                scheduleItem = { ...scheduleItem, program: 'gym', dayIndex: dayIdx };
+            } else if (dayEquipment === 'dumbbells') {
+                scheduleItem = { ...scheduleItem, program: 'home', dayIndex: dayIdx };
+            } else if (dayEquipment === 'none') {
+                scheduleItem = { ...scheduleItem, program: 'bodyweight', dayIndex: dayIdx };
+            }
+        }
 
         // For gym split with muscle group, pull from WORKOUT_LIBRARY with 48-week rotation
         if ((scheduleItem.program === 'gym_split' || scheduleItem.program === 'female_gym_split') && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
@@ -10054,7 +10075,8 @@ function renderWeeklyCalendar() {
         
         let headerColor = '';
         let phaseDotHtml = '';
-        const dayWorkout = getWorkoutForDay(i);
+        const dayDateStr = d.toISOString().split('T')[0];
+        const dayWorkout = getWorkoutForDay(i, dayDateStr);
         let workoutName = dayWorkout.title;
         let phase = PHASE_INFO.wellness; // Default
         let phaseKey = 'wellness';
@@ -10081,10 +10103,17 @@ function renderWeeklyCalendar() {
         // Apply Modifiers
         const isMaleCalendar = (typeof isMaleUser === 'function' && isMaleUser());
 
+        // Check if user selected equipment in today's check-in
+        let userSelectedEquipmentForThisDay = false;
+        if (userCycleData.logs && userCycleData.logs[dayDateStr] && userCycleData.logs[dayDateStr].equipment) {
+            userSelectedEquipmentForThisDay = true;
+        }
+
         if (!isBaseline) {
             // 1. Phase Modifiers - swap to yoga on menstrual phase if doing strength (females only)
-            if (!isMaleCalendar && phaseKey === 'menstrual' && dayWorkout.programId === 'bodyweight') {
-                // Swap to gentle yoga
+            // BUT respect equipment selection from check-in
+            if (!isMaleCalendar && phaseKey === 'menstrual' && (dayWorkout.programId === 'bodyweight' || dayWorkout.programId === 'gym_library') && !userSelectedEquipmentForThisDay) {
+                // Swap to gentle yoga ONLY if user didn't explicitly select equipment
                 const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
                 if (yogaWorkout) workoutName = yogaWorkout.title;
             }
@@ -20052,6 +20081,11 @@ async function submitDailyCycleSync() {
     closeCheckInModal();
     initCycleView(); // Updates calendar
     renderWeeklyCalendar(); // Update weekly calendar view
+
+    // CRITICAL: Refresh Movement view to apply equipment selection
+    if (typeof renderMovementView === 'function') {
+        renderMovementView();
+    }
 
     // 6. Redirect to Dashboard with Animation
     switchAppTab('dashboard');
