@@ -12324,6 +12324,9 @@ async function renderMovementView() {
     const syncLabel = (typeof isMaleUser === 'function' && isMaleUser()) ? '💪 Daily Sync' : '✨ Cycle Sync';
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
 
+    // Track if user explicitly selected equipment in today's check-in
+    let userSelectedEquipmentToday = false;
+
     if (userCycleData.logs && userCycleData.logs[dateStr]) {
         const log = userCycleData.logs[dateStr];
 
@@ -12378,34 +12381,25 @@ async function renderMovementView() {
     }
     // --- END SUPERBOOST ---
 
-    if (checkin) {
-        // If low energy, always suggest yoga
-        if (checkin.energy === 'low') {
-            suggestedProgram = 'yoga';
-            workoutDayIndex = 3; // Restorative Recovery
-            personalizationReason = isMale ? '💪 Daily Sync: Active recovery for low energy' : '✨ Cycle Sync: Gentle movement for low energy today';
-        }
-        // Override equipment based on TODAY's check-in
-        else if (checkin.equipment === 'gym' && availablePrograms.includes('gym')) {
-            suggestedProgram = 'gym';
-            workoutDayIndex = calDayIndex % 7;
-        } else if (checkin.equipment === 'dumbbells' && availablePrograms.includes('home')) {
-            suggestedProgram = 'home';
-            workoutDayIndex = calDayIndex % 7;
-        }
+    // Get today's check-in symptoms (time-aware - only from recent check-ins)
+    let todaySymptoms = [];
+    if (checkin && checkin.additional_data && checkin.additional_data.symptoms) {
+        todaySymptoms = checkin.additional_data.symptoms;
+    } else if (userCycleData.logs && userCycleData.logs[dateStr] && userCycleData.logs[dateStr].symptoms) {
+        todaySymptoms = userCycleData.logs[dateStr].symptoms;
     }
 
-    // Symptoms/mood override (highest daily priority)
+    // Symptoms override - BUT only if user hasn't explicitly selected equipment
     // EXCEPTION: If mood is 'strong' (High Energy), we ignore 'fatigue' and 'anxiety' overrides to allow rigorous exercise
     const isHighEnergy = userCycleData.mood === 'strong';
 
-    if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
+    if (todaySymptoms && todaySymptoms.length > 0) {
         // Hot flash is female-specific, skip for males
-        if (!isMale && (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness'))) {
+        if (!isMale && (todaySymptoms.includes('hot_flash') || todaySymptoms.includes('dizziness'))) {
             suggestedProgram = 'yoga';
             workoutDayIndex = 3; // Restorative Recovery
             personalizationReason = '✨ Cycle Sync: Gentle recovery for your symptoms today';
-        } else if ((userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) && !isHighEnergy) {
+        } else if ((todaySymptoms.includes('fatigue') || todaySymptoms.includes('anxiety')) && !isHighEnergy) {
             suggestedProgram = 'yoga';
             workoutDayIndex = 6; // Yin & Meditation
             personalizationReason = `${syncLabel}: Restorative practice for how you feel today`;
@@ -12414,6 +12408,34 @@ async function renderMovementView() {
         suggestedProgram = 'yoga';
         workoutDayIndex = 3; // Restorative Recovery
         personalizationReason = `${syncLabel}: Recovery & restoration for low energy`;
+    }
+
+    // HIGHEST PRIORITY: Explicit equipment selection from today's check-in overrides symptoms
+    if (checkin) {
+        // If low energy, always suggest yoga (even overrides equipment choice)
+        if (checkin.energy === 'low') {
+            suggestedProgram = 'yoga';
+            workoutDayIndex = 3; // Restorative Recovery
+            personalizationReason = isMale ? '💪 Daily Sync: Active recovery for low energy' : '✨ Cycle Sync: Gentle movement for low energy today';
+        }
+        // Equipment override based on TODAY's explicit check-in choice
+        else if (checkin.equipment === 'gym' && availablePrograms.includes('gym')) {
+            suggestedProgram = 'gym';
+            workoutDayIndex = calDayIndex % 7;
+            userSelectedEquipmentToday = true;
+            // Clear symptom-based personalization if user explicitly chose equipment
+            if (personalizationReason.includes('symptoms') || personalizationReason.includes('Restorative')) {
+                personalizationReason = '';
+            }
+        } else if (checkin.equipment === 'dumbbells' && availablePrograms.includes('home')) {
+            suggestedProgram = 'home';
+            workoutDayIndex = calDayIndex % 7;
+            userSelectedEquipmentToday = true;
+            // Clear symptom-based personalization if user explicitly chose equipment
+            if (personalizationReason.includes('symptoms') || personalizationReason.includes('Restorative')) {
+                personalizationReason = '';
+            }
+        }
     }
 
     // PRIORITY 4: Cycle Phase adjustments (skip for males)
