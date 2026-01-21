@@ -12385,15 +12385,27 @@ async function renderMovementView() {
     }
 
     // HIGHEST PRIORITY: Explicit equipment selection from today's check-in overrides symptoms
-    if (checkin) {
+    // Check both database checkin AND localStorage logs for equipment selection
+    let equipmentFromCheckin = null;
+
+    // First, try to get equipment from database check-in
+    if (checkin && checkin.equipment) {
+        equipmentFromCheckin = checkin.equipment;
+    }
+    // Fallback: check localStorage if database doesn't have it
+    else if (userCycleData.logs && userCycleData.logs[dateStr] && userCycleData.logs[dateStr].equipment) {
+        equipmentFromCheckin = userCycleData.logs[dateStr].equipment;
+    }
+
+    if (checkin || equipmentFromCheckin) {
         // If low energy, always suggest yoga (even overrides equipment choice)
-        if (checkin.energy === 'low') {
+        if (checkin && checkin.energy === 'low') {
             suggestedProgram = 'yoga';
             workoutDayIndex = 3; // Restorative Recovery
             personalizationReason = isMale ? '💪 Daily Sync: Active recovery for low energy' : '✨ Cycle Sync: Gentle movement for low energy today';
         }
         // Equipment override based on TODAY's explicit check-in choice
-        else if (checkin.equipment === 'gym' && availablePrograms.includes('gym')) {
+        else if (equipmentFromCheckin === 'gym' && availablePrograms.includes('gym')) {
             suggestedProgram = 'gym';
             workoutDayIndex = calDayIndex % 7;
             userSelectedEquipmentToday = true;
@@ -12401,7 +12413,7 @@ async function renderMovementView() {
             if (personalizationReason.includes('symptoms') || personalizationReason.includes('Restorative')) {
                 personalizationReason = '';
             }
-        } else if (checkin.equipment === 'dumbbells' && availablePrograms.includes('home')) {
+        } else if (equipmentFromCheckin === 'dumbbells' && availablePrograms.includes('home')) {
             suggestedProgram = 'home';
             workoutDayIndex = calDayIndex % 7;
             userSelectedEquipmentToday = true;
