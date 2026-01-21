@@ -12638,6 +12638,8 @@ async function renderMovementView() {
     const calDayIndex = (dayOfWeek + 6) % 7; // Mon=0 index
 
     // Check if user qualifies for Gym Split (same logic as calendar for consistency)
+    // Note: isMale must be defined here before the gym_split checks
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     const userProfileLocal = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const hasHighEnergy = userProfileLocal.energy_status === 'high';
     const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
@@ -12731,9 +12733,8 @@ async function renderMovementView() {
     
     // PRIORITY 3: Daily Check-in adjustments
     // --- DAILY SYNC OVERRIDE (Local Log) ---
-    // Use gender-appropriate messaging
-    const syncLabel = (typeof isMaleUser === 'function' && isMaleUser()) ? '💪 Daily Sync' : '✨ Cycle Sync';
-    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+    // Use gender-appropriate messaging (isMale defined earlier for gym_split check)
+    const syncLabel = isMale ? '💪 Daily Sync' : '✨ Cycle Sync';
 
     // Track if user explicitly selected equipment in today's check-in
     let userSelectedEquipmentToday = false;
