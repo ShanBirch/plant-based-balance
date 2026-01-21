@@ -12400,9 +12400,11 @@ async function renderMovementView() {
     }
 
     // PRIORITY 4: Cycle Phase adjustments (skip for males)
-    if (!isMale && !personalizationReason && cyclePhaseInfo && phaseKey !== 'wellness' && phaseKey !== 'performance') {
-        if (phaseKey === 'menstrual' && suggestedProgram === 'bodyweight') {
-            // During menstrual, swap strength to gentle yoga
+    // CRITICAL: Do NOT override if user explicitly selected equipment in today's check-in
+    if (!isMale && !personalizationReason && !userSelectedEquipmentToday && cyclePhaseInfo && phaseKey !== 'wellness' && phaseKey !== 'performance') {
+        if (phaseKey === 'menstrual' && (suggestedProgram === 'bodyweight' || suggestedProgram === 'gym' || suggestedProgram === 'home')) {
+            // During menstrual, swap strength workouts to gentle yoga
+            // BUT only if user hasn't explicitly selected equipment today
             suggestedProgram = 'yoga';
             workoutDayIndex = 3; // Restorative Recovery
             personalizationReason = `✨ Cycle Sync: Gentle movement for menstrual phase`;
@@ -18967,6 +18969,16 @@ updateCoachUI();
                     <div class="check-in-chip" onclick="selectCheckInOption('recovery', 'fresh', this)" data-group="recovery">Fully Recovered 💯</div>
                     <div class="check-in-chip" onclick="selectCheckInOption('recovery', 'moderate', this)" data-group="recovery">Slightly Fatigued 😐</div>
                     <div class="check-in-chip" onclick="selectCheckInOption('recovery', 'tired', this)" data-group="recovery">Need Rest 😴</div>
+                </div>
+            </div>
+
+            <!-- Equipment Access Today -->
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Equipment Access Today</label>
+                <div class="check-in-options" style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'none', this)" data-group="equipment">None 🧘</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'dumbbells', this)" data-group="equipment">Dumbbells 🏋️</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'gym', this)" data-group="equipment">Full Gym 💪</div>
                 </div>
             </div>
 
