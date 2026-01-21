@@ -2305,7 +2305,7 @@ async function loadProfileData() {
                     try {
                         // 1. Core Profile (users table)
                         try {
-                            await dbHelpers.users.upsert(window.currentUser.id, coreUpdates);
+                            await dbHelpers.users.update(window.currentUser.id, coreUpdates);
                         } catch (coreError) {
                             console.warn("⚠️ Could not update core 'users' table (likely RLS). Proceeding to 'user_facts'.", coreError);
                         }
@@ -8785,7 +8785,7 @@ function startCustomBuilderWorkout() {
 
             // 1. Core
             if (Object.keys(coreData).length > 0) {
-                 dbHelpers.users.upsert(window.currentUser.id, coreData).catch(console.error);
+                 dbHelpers.users.update(window.currentUser.id, coreData).catch(console.error);
             }
 
             // 2. Facts
