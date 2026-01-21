@@ -9992,6 +9992,23 @@ function renderWeeklyCalendar() {
     const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
     const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
+    // Determine default strength program based on equipment
+    const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home' || hasGymAccess;
+    const preferredStyle = userProfile.preferred_workout_style;
+    let defaultStrengthProgram = 'bodyweight'; // Default fallback
+
+    if (preferredStyle === 'gym' && hasGymAccess) {
+        defaultStrengthProgram = 'gym';
+    } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
+        defaultStrengthProgram = 'home';
+    } else if (preferredStyle === 'none') {
+        defaultStrengthProgram = 'bodyweight';
+    } else if (hasGymAccess) {
+        defaultStrengthProgram = 'gym';
+    } else if (hasDumbbells) {
+        defaultStrengthProgram = 'home';
+    }
+
     // Calculate which week we're in for 12 different 4-week programs (48 weeks total)
     function getGymSplitWeekNumber() {
         if (!useMaleGymSplit && !useFemaleGymSplit) return 1;
