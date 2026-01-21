@@ -59,6 +59,16 @@ async function syncQuizDataToDb() {
     // Real function not loaded yet, silently skip
     console.log('syncQuizDataToDb: waiting for initialization...');
 }
+
+// Stub for loadProfileData - safe no-op until real function loads
+var _loadProfileDataReal = null;
+async function loadProfileData() {
+    if (typeof _loadProfileDataReal === 'function') {
+        return await _loadProfileDataReal();
+    }
+    // Real function not loaded yet, silently skip
+    console.log('loadProfileData: waiting for initialization...');
+}
 </script>
 
 <style>
@@ -9147,7 +9157,8 @@ async function handleLogout() {
     }
 }
 
-async function loadProfileData() {
+// Real loadProfileData implementation - replaces the early stub
+async function _loadProfileDataRealImpl() {
     let profile = null;
     let quizResult = null;
 
@@ -9334,6 +9345,9 @@ async function loadProfileData() {
         }
     }
 }
+// Register real implementation
+_loadProfileDataReal = _loadProfileDataRealImpl;
+loadProfileData = _loadProfileDataRealImpl;
 
 function handlePhotoUpload(input) {
     if (input.files && input.files[0]) {
@@ -10291,7 +10305,7 @@ function renderWeeklyCalendar() {
     }
 }
 
-window.openCalendarWorkout = function(dayIndexFromMonday) {
+window.openCalendarWorkout = async function(dayIndexFromMonday) {
     // 1. Check if user qualifies for Gym Split (Male or Female)
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
