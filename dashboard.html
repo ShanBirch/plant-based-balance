@@ -19554,12 +19554,6 @@ function selectCheckInOption(category, value, el) {
     // 1. Update State
     checkInProgress[category] = value;
 
-    // DEBUG: Log equipment selections
-    if (category === 'equipment') {
-        console.log('🏋️ Equipment selected:', value);
-        console.log('🏋️ checkInProgress after selection:', checkInProgress);
-    }
-
     // 2. Update UI (Siblings)
     const options = document.querySelectorAll(`.check-in-chip[data-group="${category}"]`);
     options.forEach(opt => opt.classList.remove('selected'));
@@ -19586,10 +19580,6 @@ async function submitDailyCycleSync() {
     // 1. Save Log locally
     const today = new Date().toISOString().split('T')[0];
     if(!userCycleData.logs) userCycleData.logs = {};
-
-    // DEBUG: Log what we're about to save
-    console.log('🔍 DEBUG - checkInProgress:', checkInProgress);
-    console.log('🔍 DEBUG - Equipment selected:', checkInProgress.equipment);
 
     // Clone to avoid ref issues
     userCycleData.logs[today] = JSON.parse(JSON.stringify(checkInProgress));
