@@ -9047,9 +9047,9 @@ async function _syncQuizDataToDbRealImpl() {
                 else factsData[k] = quizData[k];
             });
 
-            // 1. Update Core User Data
+            // 1. Update Core User Data (user row already exists from signup)
             if (Object.keys(coreData).length > 0) {
-                await dbHelpers.users.upsert(user.id, coreData);
+                await dbHelpers.users.update(user.id, coreData);
             }
 
             // 2. Update Extension Data (User Facts)
