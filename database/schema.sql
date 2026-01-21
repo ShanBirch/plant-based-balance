@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS public.users (
   rapid_api_key TEXT,
   sex TEXT, -- 'male' or 'female' (for BMR/TDEE calculations)
 
+  -- Biometric login (stored in DB for persistence across sessions)
+  biometric_credential_id TEXT, -- Base64-encoded WebAuthn credential ID
+
   -- Tracking
   last_login TIMESTAMPTZ,
   onboarding_complete BOOLEAN DEFAULT FALSE,

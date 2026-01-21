@@ -520,6 +520,9 @@
                     .eq('user_id', user.id)
                     .maybeSingle();
 
+                // Sync biometric credentials from database (in case localStorage was cleared)
+                await BiometricAuth.syncFromDatabase(user.id, user.email);
+
                 // Already logged in - redirect to appropriate dashboard
                 const urlParams = new URLSearchParams(window.location.search);
                 let redirect = urlParams.get('redirect');
@@ -608,6 +611,10 @@
 
                 // Check if we should offer biometric setup
                 const biometricAvailable = await BiometricAuth.isAvailable();
+
+                // Try to sync biometric credentials from database (restores if localStorage was cleared)
+                const syncedFromDb = await BiometricAuth.syncFromDatabase(user.id, user.email);
+
                 const hasCredentials = BiometricAuth.hasCredentials();
                 const declinedBiometric = sessionStorage.getItem('pbb_biometric_declined');
 
@@ -615,7 +622,7 @@
                     // Offer biometric setup
                     showBiometricSetup(user, redirect);
                 } else {
-                    // Just redirect
+                    // Just redirect (biometric was either synced from DB or user has it in localStorage)
                     showSuccess('Login successful! Redirecting...');
                     setTimeout(() => {
                         window.location.href = redirect;
@@ -817,8 +824,8 @@
         }
 
         // Switch to different account (clear biometric and show password form)
-        function switchAccount() {
-            BiometricAuth.clear();
+        async function switchAccount() {
+            await BiometricAuth.clear();
             document.getElementById('biometric-section').classList.remove('visible');
             document.getElementById('login-email').value = '';
             document.getElementById('login-password').value = '';
