@@ -20137,6 +20137,32 @@ function initCycleView() {
 }
 
 function renderCycleStatus() {
+    // For male users, show Performance Mode (no cycle tracking)
+    if (typeof isMaleUser === 'function' && isMaleUser()) {
+        const phase = PHASE_INFO['performance'];
+        const dayDisplay = document.getElementById('cycle-day-display');
+        const nameDisplay = document.getElementById('cycle-phase-name');
+        const descDisplay = document.getElementById('cycle-phase-desc');
+        const tagsContainer = document.getElementById('cycle-phase-tags');
+
+        if (dayDisplay && dayDisplay.parentElement) {
+            dayDisplay.parentElement.style.display = 'none'; // Hide day counter for males
+        }
+        if (nameDisplay && phase) {
+            nameDisplay.innerText = phase.name;
+            nameDisplay.style.color = phase.color;
+        }
+        if (descDisplay) {
+            descDisplay.innerText = "Train based on energy and recovery. Push hard, recover smart.";
+        }
+        if (tagsContainer && phase) {
+            tagsContainer.innerHTML = `
+                <span style="background:${phase.color}20; color:${phase.color}; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:600;">${phase.icon} PERFORMANCE</span>
+            `;
+        }
+        return;
+    }
+
     const today = new Date();
     // Default values
     let dayNum = 1;
