@@ -8497,7 +8497,7 @@ function startCustomBuilderWorkout() {
                 <div class="setting-row" style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
                      <div>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Active Symptoms</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">Adjusts daily recommendations</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">From your latest check-in</div>
                     </div>
                     <div id="profile-symptoms-display" style="font-weight: 700; color: var(--primary); max-width: 50%; text-align: right; font-size: 0.9rem;">None</div>
                 </div>
@@ -8639,19 +8639,8 @@ function startCustomBuilderWorkout() {
     <script>
     function toggleProfileEditMode() {
         const isEditing = document.getElementById('btn-save-profile').style.display === 'inline-flex';
-        
-        const SYMPTOMS_LIST = [
-            { val: 'bloating', label: 'Bloating / Digestive' },
-            { val: 'joint_pain', label: 'Joint Pain' },
-            { val: 'mood', label: 'Mood Swings' },
-            { val: 'fatigue', label: 'Fatigue / Crash' }, // Derived/Common
-            { val: 'anxiety', label: 'Anxiety / Worry' },
-            { val: 'hair_skin', label: 'Hair / Skin Issues' },
-            { val: 'hot_flashes', label: 'Hot Flashes' },
-            { val: 'libido', label: 'Low Libido' },
-            { val: 'weight_gain', label: 'Weight Gain' },
-            { val: 'brain_fog', label: 'Brain Fog' } // Derived
-        ];
+
+        // SYMPTOMS_LIST removed - symptoms can only be updated via daily check-in
 
         const editMap = [
              { id: 'profile-name-display', type: 'text' },
@@ -8660,8 +8649,8 @@ function startCustomBuilderWorkout() {
              { id: 'profile-weight-display', type: 'text' },
              { id: 'profile-goal-display', type: 'text' },
              { id: 'profile-type-display', type: 'select', options: ['CORTISOL', 'ESTROGEN', 'ADRENAL'] },
-             { id: 'profile-equipment-display', type: 'select', options: [['none', 'No Equipment'], ['dumbbells', 'Home / Dumbbells'], ['gym', 'Full Gym Access']] },
-             { id: 'profile-symptoms-display', type: 'multiselect', options: SYMPTOMS_LIST }
+             { id: 'profile-equipment-display', type: 'select', options: [['none', 'No Equipment'], ['dumbbells', 'Home / Dumbbells'], ['gym', 'Full Gym Access']] }
+             // Symptoms removed - can only be updated via daily check-in
         ];
         
         if (!isEditing) {
@@ -8731,10 +8720,10 @@ function startCustomBuilderWorkout() {
             { id: 'profile-email-display', key: 'email' },
             { id: 'profile-age-display', key: 'age' },
             { id: 'profile-weight-display', key: 'weight' },
-            { id: 'profile-goal-display', key: 'goal_weight' }, 
+            { id: 'profile-goal-display', key: 'goal_weight' },
             { id: 'profile-type-display', key: 'profile' },
-            { id: 'profile-equipment-display', key: 'equipment_access' },
-            { id: 'profile-symptoms-display', key: 'symptoms' }
+            { id: 'profile-equipment-display', key: 'equipment_access' }
+            // Symptoms removed - can only be updated via daily check-in
         ];
         
         let quizData = {};
@@ -8743,25 +8732,8 @@ function startCustomBuilderWorkout() {
         fields.forEach(f => {
             const el = document.getElementById(f.id);
             if(!el) return;
-            
-            // Special handling for multiselect checkboxes
-            if (f.key === 'symptoms') {
-                const checkedBoxes = el.querySelectorAll('input[type="checkbox"]:checked');
-                if (checkedBoxes.length > 0) {
-                    const vals = Array.from(checkedBoxes).map(cb => cb.value);
-                    quizData[f.key] = vals; // Save as array
-                    
-                    // Update UI Display immediately
-                    el.innerText = vals.join(', '); // Show codes or maybe map back to labels?
-                    // Better: Map back to readable labels
-                    const SYMPTOMS_LIST = { 'bloating': 'Bloating', 'joint_pain': 'Joint Pain', 'mood': 'Mood', 'fatigue': 'Fatigue', 'anxiety': 'Anxiety', 'hair_skin': 'Hair/Skin', 'hot_flashes': 'Hot Flashes', 'libido': 'Low Libido', 'weight_gain': 'Weight Gain', 'brain_fog': 'Brain Fog' };
-                    el.innerText = vals.map(v => SYMPTOMS_LIST[v] || v).join(', ');
-                } else {
-                    quizData[f.key] = [];
-                    el.innerText = 'None';
-                }
-                return; // Done for this field
-            }
+
+            // NOTE: Symptoms handling removed - symptoms can only be updated via daily check-in
 
             const input = el.querySelector('input, select');
             if(input) {
@@ -9039,17 +9011,9 @@ async function syncQuizDataToDb() {
             localStorage.setItem('userGender', quizData.sex);
         }
 
-        // Derive symptoms from quiz answers for workout personalization
-        const derivedSymptoms = [];
-        if (quizData.keeps_awake === 'stress' || quizData.keeps_awake === 'worry') derivedSymptoms.push('anxiety');
-        if (quizData.midday_crash === 'yes' || quizData.midday_crash === 'crash') derivedSymptoms.push('fatigue');
-        if (quizData.brain_fog === 'yes' || quizData.brain_fog === 'forgetful') derivedSymptoms.push('fatigue');
-
-        if (derivedSymptoms.length > 0) {
-            // merge with existing symptoms if any, avoiding duplicates
-            const existing = Array.isArray(quizData.symptoms) ? quizData.symptoms : [];
-            quizData.symptoms = [...new Set([...existing, ...derivedSymptoms])];
-        }
+        // NOTE: Symptom derivation from quiz REMOVED
+        // Symptoms can ONLY be set via daily wellness check-in to prevent persistent stale data
+        // This ensures equipment selection is respected and symptoms stay current
 
         if (Object.keys(quizData).length > 0) {
             console.log("Syncing quiz data to DB...", quizData);
@@ -9210,10 +9174,8 @@ async function loadProfileData() {
     // Store energy_level globally for gender-specific UI
     window.userEnergyLevel = context.energy_level;
 
-    // Load symptoms from profile if available (from quiz)
-    if (profile?.symptoms && Array.isArray(profile.symptoms) && profile.symptoms.length > 0) {
-        userCycleData.symptoms = [...new Set([...userCycleData.symptoms, ...profile.symptoms])];
-    }
+    // NOTE: Symptoms are NO LONGER loaded from profile
+    // Symptoms now ONLY come from daily check-ins to prevent stale data from affecting recommendations
 
     if(document.getElementById('profile-name-display')) document.getElementById('profile-name-display').innerText = context.name;
     if(document.getElementById('profile-email-display')) document.getElementById('profile-email-display').innerText = context.email;
@@ -9244,15 +9206,27 @@ async function loadProfileData() {
         eqDisplay.dataset.raw = equipment; // Store raw value for edit mode mapping
     }
 
-    // Format symptoms nicely (e.g., hot_flash -> Hot Flash)
+    // Display symptoms from latest check-in (NOT from profile)
+    // Symptoms can only be updated via daily wellness check-in
     let symptomsText = 'None';
-    if (Array.isArray(profile?.symptoms) && profile.symptoms.length > 0) {
-        symptomsText = profile.symptoms.map(s =>
-            s.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-        ).join(', ');
-    } else if (typeof profile?.symptoms === 'string' && profile.symptoms) {
-        symptomsText = profile.symptoms;
+
+    // Look for most recent check-in with symptoms
+    if (userCycleData.logs && Object.keys(userCycleData.logs).length > 0) {
+        // Get all dates sorted descending (most recent first)
+        const dates = Object.keys(userCycleData.logs).sort().reverse();
+
+        // Find the most recent check-in that has symptoms
+        for (const date of dates) {
+            const log = userCycleData.logs[date];
+            if (log.symptoms && Array.isArray(log.symptoms) && log.symptoms.length > 0) {
+                symptomsText = log.symptoms.map(s =>
+                    s.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+                ).join(', ');
+                break;
+            }
+        }
     }
+
     if(document.getElementById('profile-symptoms-display')) {
         document.getElementById('profile-symptoms-display').innerText = symptomsText;
     }
