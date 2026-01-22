@@ -8688,7 +8688,7 @@ function startCustomBuilderWorkout() {
              { id: 'profile-weight-display', type: 'text' },
              { id: 'profile-goal-display', type: 'text' },
              { id: 'profile-type-display', type: 'select', options: ['CORTISOL', 'ESTROGEN', 'ADRENAL'] },
-             { id: 'profile-equipment-display', type: 'select', options: [['none', 'No Equipment'], ['dumbbells', 'Home / Dumbbells'], ['gym', 'Full Gym Access']] }
+             { id: 'profile-equipment-display', type: 'select', options: [['none', 'No Equipment'], ['bands', 'Resistance Bands'], ['dumbbells', 'Home / Dumbbells'], ['gym', 'Full Gym Access'], ['yoga_only', 'Yoga / Stretching Only']] }
              // Symptoms removed - can only be updated via daily check-in
         ];
         
@@ -8784,6 +8784,8 @@ function startCustomBuilderWorkout() {
                         'gym': 'Full Gym Access',
                         'dumbbells': 'Home / Dumbbells',
                         'home': 'Home / Dumbbells',  // Legacy value support
+                        'bands': 'Resistance Bands',
+                        'yoga_only': 'Yoga / Stretching Only',
                         'none': 'No Equipment',
                         'bodyweight': 'No Equipment'  // Legacy value support
                     };
@@ -9286,6 +9288,8 @@ async function _loadProfileDataRealImpl() {
         'gym': 'Full Gym Access',
         'dumbbells': 'Home / Dumbbells',
         'home': 'Home / Dumbbells',  // Legacy value support
+        'bands': 'Resistance Bands',
+        'yoga_only': 'Yoga / Stretching Only',
         'none': 'No Equipment',
         'bodyweight': 'No Equipment'  // Legacy value support
     };
@@ -12582,6 +12586,98 @@ window.WORKOUT_DB = {
                 ]
             }
         ]
+    },
+    'bands': {
+        name: 'Band Strength',
+        id: 'bands',
+        description: 'Build lean muscle and improve mobility using resistance bands. Perfect for home or travel.',
+        estimatedTime: '35',
+        equipment: ['Resistance Bands', 'Mat'],
+        schedule: [
+            // DAY 1: Lower Body
+            {
+                title: 'Lower Body Band Work',
+                exercises: [
+                    { name: 'Banded Squat', sets: 4, reps: '15-20', desc: 'Quad and glute activation with constant tension' },
+                    { name: 'Banded Romanian Deadlift', sets: 4, reps: '12-15', desc: 'Hamstring and glute focus' },
+                    { name: 'Banded Lateral Walk', sets: 3, reps: '15/side', desc: 'Glute medius activation' },
+                    { name: 'Banded Glute Bridge', sets: 4, reps: '20', desc: 'Glute isolation with resistance' },
+                    { name: 'Banded Clamshell', sets: 3, reps: '15/side', desc: 'Hip stability and glute activation' },
+                    { name: 'Banded Standing Kickback', sets: 3, reps: '12/leg', desc: 'Glute max isolation' }
+                ]
+            },
+            // DAY 2: Upper Body Push
+            {
+                title: 'Push & Press',
+                exercises: [
+                    { name: 'Banded Push Up', sets: 4, reps: '12-15', desc: 'Chest with added resistance' },
+                    { name: 'Banded Overhead Press', sets: 4, reps: '12-15', desc: 'Shoulder strength' },
+                    { name: 'Banded Chest Press', sets: 3, reps: '15', desc: 'Horizontal push' },
+                    { name: 'Banded Lateral Raise', sets: 3, reps: '15', desc: 'Shoulder width' },
+                    { name: 'Banded Tricep Extension', sets: 3, reps: '15', desc: 'Tricep isolation' },
+                    { name: 'Banded Front Raise', sets: 3, reps: '12', desc: 'Anterior deltoid' }
+                ]
+            },
+            // DAY 3: Core & Conditioning
+            {
+                title: 'Core & Cardio',
+                exercises: [
+                    { name: 'Banded Woodchop', sets: 3, reps: '12/side', desc: 'Rotational power' },
+                    { name: 'Banded Dead Bug', sets: 3, reps: '10/side', desc: 'Core stability with resistance' },
+                    { name: 'Banded Mountain Climber', sets: 3, reps: '30 sec', desc: 'Cardio and core' },
+                    { name: 'Banded Pallof Press', sets: 3, reps: '12/side', desc: 'Anti-rotation core' },
+                    { name: 'Plank with Band Row', sets: 3, reps: '10/side', desc: 'Core and back combo' },
+                    { name: 'Banded Bicycle Crunch', sets: 3, reps: '20', desc: 'Obliques with resistance' }
+                ]
+            },
+            // DAY 4: Full Body
+            {
+                title: 'Total Body Burn',
+                exercises: [
+                    { name: 'Banded Squat to Press', sets: 4, reps: '12', desc: 'Full body compound' },
+                    { name: 'Banded Good Morning', sets: 3, reps: '12', desc: 'Posterior chain' },
+                    { name: 'Banded Row', sets: 4, reps: '12-15', desc: 'Back thickness' },
+                    { name: 'Banded Reverse Lunge', sets: 3, reps: '10/leg', desc: 'Single leg strength' },
+                    { name: 'Banded Face Pull', sets: 3, reps: '15', desc: 'Rear delts and posture' },
+                    { name: 'Banded Glute Bridge March', sets: 3, reps: '10/leg', desc: 'Glute and core' }
+                ]
+            },
+            // DAY 5: Lower Body Glute Focus
+            {
+                title: 'Glute Sculpt',
+                exercises: [
+                    { name: 'Banded Sumo Squat', sets: 4, reps: '15', desc: 'Inner thigh and glutes' },
+                    { name: 'Banded Hip Thrust', sets: 4, reps: '20', desc: 'Glute max builder' },
+                    { name: 'Banded Fire Hydrant', sets: 3, reps: '15/side', desc: 'Glute medius' },
+                    { name: 'Banded Donkey Kick', sets: 3, reps: '15/leg', desc: 'Glute isolation' },
+                    { name: 'Banded Standing Abduction', sets: 3, reps: '15/side', desc: 'Outer glute' },
+                    { name: 'Banded Frog Pump', sets: 3, reps: '20', desc: 'Glute activation finisher' }
+                ]
+            },
+            // DAY 6: Upper Body Pull
+            {
+                title: 'Pull & Biceps',
+                exercises: [
+                    { name: 'Banded Bent Over Row', sets: 4, reps: '12-15', desc: 'Back compound' },
+                    { name: 'Banded Single Arm Row', sets: 3, reps: '12/side', desc: 'Unilateral back' },
+                    { name: 'Banded Face Pull', sets: 3, reps: '15', desc: 'Rear delts' },
+                    { name: 'Banded Bicep Curl', sets: 3, reps: '15', desc: 'Bicep mass' },
+                    { name: 'Banded Hammer Curl', sets: 3, reps: '12', desc: 'Brachialis' },
+                    { name: 'Banded Reverse Fly', sets: 3, reps: '12-15', desc: 'Upper back and posture' }
+                ]
+            },
+            // DAY 7: Active Recovery
+            {
+                title: 'Mobility & Stretch',
+                exercises: [
+                    { name: 'Banded Shoulder Dislocate', sets: 2, reps: '10', desc: 'Shoulder mobility' },
+                    { name: 'Banded Pull Apart', sets: 2, reps: '15', desc: 'Upper back activation' },
+                    { name: 'Yoga - Downward Dog', sets: 1, reps: '3 min', desc: 'Full body stretch' },
+                    { name: "Child's Pose", sets: 1, reps: '5 min', desc: 'Recovery' },
+                    { name: 'Corpse Pose', sets: 1, reps: '10 min', desc: 'Deep rest' }
+                ]
+            }
+        ]
     }
 };
 
@@ -12778,9 +12874,14 @@ async function renderMovementView() {
     const hasGymAccess = profile?.equipment_access === 'gym' || profile?.gym_access === true;
     // Support both 'dumbbells' (new) and 'home' (legacy) values for backward compatibility
     const hasDumbbells = profile?.equipment_access === 'dumbbells' || profile?.equipment_access === 'home' || hasGymAccess;
+    // Check for resistance bands only
+    const hasBands = profile?.equipment_access === 'bands';
+    // Check for yoga only preference
+    const hasYogaOnly = profile?.equipment_access === 'yoga_only';
 
     // Default available programs based on equipment
     let availablePrograms = ['yoga', 'bodyweight']; // Always available
+    if (hasBands) availablePrograms.push('bands');
     if (hasDumbbells) availablePrograms.push('home');
     if (hasGymAccess) availablePrograms.push('gym');
 
@@ -12811,14 +12912,20 @@ async function renderMovementView() {
         defaultStrengthProgram = 'gym';
     } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
         defaultStrengthProgram = 'home';
+    } else if (preferredStyle === 'bands' && hasBands) {
+        defaultStrengthProgram = 'bands';
     } else if (preferredStyle === 'none') {
         defaultStrengthProgram = 'bodyweight'; // User prefers bodyweight
     }
     // Fallback to equipment access from onboarding if no preference
-    else if (hasGymAccess) {
+    else if (hasYogaOnly) {
+        defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
+    } else if (hasGymAccess) {
         defaultStrengthProgram = 'gym';
     } else if (hasDumbbells) {
         defaultStrengthProgram = 'home';
+    } else if (hasBands) {
+        defaultStrengthProgram = 'bands';
     }
 
     // Weekly Schedule - maps each day to a program and workout
@@ -12870,6 +12977,28 @@ async function renderMovementView() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
+    } else if (defaultStrengthProgram === 'bands') {
+        // Resistance Bands Split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bands', dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 }, // Lower Body
+            { day: 'Tue', program: 'bands', dayIndex: 1, fallback: 'yoga', fallbackIdx: 5 }, // Push & Press
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 2 }, // Recovery
+            { day: 'Thu', program: 'bands', dayIndex: 3, fallback: 'yoga', fallbackIdx: 4 }, // Full Body
+            { day: 'Fri', program: 'bands', dayIndex: 4, fallback: 'yoga', fallbackIdx: 4 }, // Glute Sculpt
+            { day: 'Sat', program: 'bands', dayIndex: 5, fallback: 'yoga', fallbackIdx: 5 }, // Pull & Biceps
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 } // Rest
+        ];
+    } else if (defaultStrengthProgram === 'yoga') {
+        // Yoga Only - for users who selected yoga_only in onboarding
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power', fallback: 'yoga', fallbackIdx: 0 }, // Somatic Hormone Reset
+            { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 1 }, // Deep Hip Opening
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 2 }, // Spinal Mobility
+            { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 3 }, // Restorative Recovery
+            { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'power', fallback: 'yoga', fallbackIdx: 4 }, // Balance & Core
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 }, // Dynamic Flow
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 } // Yin & Meditation
+        ];
     } else if (defaultStrengthProgram === 'gym') {
         // BUGFIX: Full Gym Access schedule (uses WORKOUT_DB gym program)
         // This schedule is used when user has gym access but doesn't qualify for gym split
@@ -12883,7 +13012,7 @@ async function renderMovementView() {
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 } // Deep Rest
         ];
     } else {
-        // Yoga-focused (fallback)
+        // Yoga-focused (fallback for 'none' equipment or unknown)
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power', fallback: 'yoga', fallbackIdx: 0 },
             { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 1 },
@@ -13049,7 +13178,7 @@ async function renderMovementView() {
     // PRIORITY 4: Cycle Phase adjustments (skip for males)
     // CRITICAL: Do NOT override if user explicitly selected equipment in today's check-in
     if (!isMale && !personalizationReason && !userSelectedEquipmentToday && cyclePhaseInfo && phaseKey !== 'wellness' && phaseKey !== 'performance') {
-        if (phaseKey === 'menstrual' && (suggestedProgram === 'bodyweight' || suggestedProgram === 'gym' || suggestedProgram === 'home')) {
+        if (phaseKey === 'menstrual' && (suggestedProgram === 'bodyweight' || suggestedProgram === 'gym' || suggestedProgram === 'home' || suggestedProgram === 'bands')) {
             // During menstrual, swap strength workouts to gentle yoga
             // BUT only if user hasn't explicitly selected equipment today
             suggestedProgram = 'yoga';
@@ -13074,6 +13203,7 @@ async function renderMovementView() {
     const assets = {
         'yoga': { img: '/assets/somatic_yoga_hero.png', sub: 'Recovery', color: '#F59E0B' },
         'bodyweight': { img: '/assets/bodyweight_sculpt_hero.png', sub: 'No Equipment', color: '#ec4899' },
+        'bands': { img: '/assets/band_strength_hero.png', sub: 'Resistance Bands', color: '#06b6d4' },
         'home': { img: '/assets/dumbbell_strength_hero.png', sub: 'Dumbbells', color: '#8b5cf6' },
         'gym': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' },
         'gym_split': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' },
