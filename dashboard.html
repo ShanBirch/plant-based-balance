@@ -12757,7 +12757,27 @@ async function renderMovementView() {
     // Priority 4: Cycle Phase (lowest) - Adjust based on menstrual phase
     
     // profile is already loaded above at line 9238
-    
+
+    // BUGFIX: If equipment_access is missing in profile, check localStorage/sessionStorage (from quiz)
+    if (!profile?.equipment_access) {
+        let userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+
+        // If not in localStorage, check sessionStorage (from quiz)
+        if (!userProfile.equipment_access) {
+            const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            if (sessionProfile.equipment_access) {
+                userProfile.equipment_access = sessionProfile.equipment_access;
+                // Save to localStorage for future use
+                localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            }
+        }
+
+        // Update profile object with equipment_access
+        if (userProfile.equipment_access && profile) {
+            profile.equipment_access = userProfile.equipment_access;
+        }
+    }
+
     // PRIORITY 1: Determine available programs based on quiz/profile equipment
     // Check if user has gym access from their profile
     const hasGymAccess = profile?.equipment_access === 'gym' || profile?.gym_access === true;
