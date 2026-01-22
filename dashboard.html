@@ -10124,10 +10124,8 @@ function renderWeeklyCalendar() {
         defaultStrengthProgram = 'home';
     } else if (preferredStyle === 'bands' && hasBands) {
         defaultStrengthProgram = 'bands';
-    } else if (preferredStyle === 'none') {
-        defaultStrengthProgram = 'bodyweight';
     }
-    // PRIORITY 3: Fallback to equipment access
+    // PRIORITY 3: Fallback to equipment access (removed preferredStyle === 'none' - let equipment_access decide)
     else if (hasGymAccess) {
         defaultStrengthProgram = 'gym';
     } else if (hasDumbbells) {
@@ -10556,10 +10554,8 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
             defaultStrengthProgram = 'home';
         } else if (preferredStyle === 'bands' && hasBands) {
             defaultStrengthProgram = 'bands';
-        } else if (preferredStyle === 'none') {
-            defaultStrengthProgram = 'bodyweight';
         }
-        // PRIORITY 3: Fallback to equipment access
+        // PRIORITY 3: Fallback to equipment access (removed preferredStyle === 'none' - let equipment_access decide)
         else if (hasGymAccess) {
             defaultStrengthProgram = 'gym';
         } else if (hasDumbbells) {
@@ -10874,10 +10870,8 @@ function getTodaysWorkout() {
             defaultStrengthProgram = 'home';
         } else if (preferredStyle === 'bands' && hasBands) {
             defaultStrengthProgram = 'bands';
-        } else if (preferredStyle === 'none') {
-            defaultStrengthProgram = 'bodyweight';
         }
-        // PRIORITY 3: Fallback to equipment access
+        // PRIORITY 3: Fallback to equipment access (removed preferredStyle === 'none' - let equipment_access decide)
         else if (hasGymAccess) {
             defaultStrengthProgram = 'gym';
         } else if (hasDumbbells) {
@@ -13064,10 +13058,8 @@ async function renderMovementView() {
         defaultStrengthProgram = 'home';
     } else if (preferredStyle === 'bands' && hasBands) {
         defaultStrengthProgram = 'bands';
-    } else if (preferredStyle === 'none') {
-        defaultStrengthProgram = 'bodyweight'; // User prefers bodyweight
     }
-    // PRIORITY 3: Fallback to equipment access from onboarding if no preference
+    // PRIORITY 3: Fallback to equipment access from onboarding (removed preferredStyle === 'none' - let equipment_access decide)
     else if (hasGymAccess) {
         defaultStrengthProgram = 'gym';
     } else if (hasDumbbells) {
