@@ -8056,6 +8056,29 @@ function startCustomBuilderWorkout() {
     </div>
 </div>
 
+<!-- PRE-BUILT PROGRAMS VIEW -->
+<div id="view-prebuilt-programs" class="app-view" style="display:none; height: 100vh; background: white; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div onclick="switchAppTab('movement-tab')" style="cursor:pointer; width: 40px; display: flex; align-items: center;">
+            <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--text-main);">
+                <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
+            </svg>
+        </div>
+        <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Pre-built Programs</div>
+        <div style="width: 40px;"></div>
+    </div>
+
+    <div style="padding: 25px; padding-bottom: 100px;">
+        <p style="color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;">
+            Choose from our professionally designed workout programs tailored to your equipment and goals.
+        </p>
+
+        <div id="prebuilt-programs-grid" style="display: grid; gap: 20px;">
+            <!-- Programs will be dynamically inserted here -->
+        </div>
+    </div>
+</div>
+
 <!-- WORKOUT LIBRARY SUBCATEGORIES VIEW -->
 <div id="view-workout-subcategories" class="app-view" style="display:none; height: 100vh; background: white; z-index: 501; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
@@ -13122,6 +13145,21 @@ async function renderMovementView() {
     `;
     gridContainer.appendChild(libraryDiv);
 
+    // Add 'Pre-built Programs' Card as third item
+    const programsDiv = document.createElement('div');
+    programsDiv.onclick = () => openPrebuiltPrograms();
+    programsDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);";
+    programsDiv.innerHTML = `
+        <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.2), transparent);"></div>
+        <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
+            <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Browse All</div>
+            <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">Pre-built Programs</div>
+            <div style="font-size: 0.75rem; opacity: 0.9;">Gym, Home, Yoga & More</div>
+        </div>
+        <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">🏋️</div>
+    `;
+    gridContainer.appendChild(programsDiv);
+
     // Removed other workout cards - users now browse via Workout Library
     // Object.keys(WORKOUT_DB).forEach(key => {
     //     if (key === suggestedProgram) return;
@@ -13193,7 +13231,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-support', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-progress'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-support', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
@@ -13769,6 +13807,10 @@ function initializeMovementSwipeNavigation() {
         switchAppTab('movement-tab');
     });
 
+    enableSwipeBackNavigation('view-prebuilt-programs', () => {
+        switchAppTab('movement-tab');
+    });
+
     enableSwipeBackNavigation('view-workout-subcategories', () => {
         closeWorkoutSubcategories();
     });
@@ -13876,7 +13918,7 @@ function renderWorkoutLibraryCategories() {
 }
 
 function openWorkoutSubcategories(categoryKey) {
-    const category = WORKOUT_LIBRARY[categoryKey];
+    const category = WORKOUT_LIBRARY[categoryKey] || (typeof WORKOUT_LIBRARY_EXTENDED !== 'undefined' && WORKOUT_LIBRARY_EXTENDED[categoryKey]);
 
     // Set header
     document.getElementById('subcategory-header-title').textContent = category.name;
@@ -13916,7 +13958,7 @@ function closeWorkoutSubcategories() {
 }
 
 function openWorkoutList(categoryKey, subcategoryKey) {
-    const category = WORKOUT_LIBRARY[categoryKey];
+    const category = WORKOUT_LIBRARY[categoryKey] || (typeof WORKOUT_LIBRARY_EXTENDED !== 'undefined' && WORKOUT_LIBRARY_EXTENDED[categoryKey]);
     const subcategory = category.subcategories[subcategoryKey];
 
     // Set header
@@ -13969,6 +14011,227 @@ function openWorkoutList(categoryKey, subcategoryKey) {
 
 function closeWorkoutList() {
     document.getElementById('view-workout-list').style.display = 'none';
+}
+
+// ===========================
+// PRE-BUILT PROGRAMS FUNCTIONS
+// ===========================
+
+function openPrebuiltPrograms() {
+    renderPrebuiltPrograms();
+    hideAllAppViews();
+    document.getElementById('view-prebuilt-programs').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
+
+    // Push navigation state for Android back button
+    pushNavigationState('view-prebuilt-programs', () => switchAppTab('movement-tab'));
+}
+
+function renderPrebuiltPrograms() {
+    const grid = document.getElementById('prebuilt-programs-grid');
+    grid.innerHTML = '';
+
+    // Define all available workout programs with their metadata
+    const programs = [
+        {
+            key: 'gym',
+            name: 'Full Gym Access',
+            icon: '💪',
+            description: 'Complete strength training with full gym equipment',
+            gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            equipment: ['Barbell', 'Dumbbells', 'Cable Machines', 'Bench']
+        },
+        {
+            key: 'gym_split',
+            name: 'Male Gym Split',
+            icon: '🏋️',
+            description: '7-day gym program: Chest, Legs, Back, Shoulders, Arms+Core, Recovery',
+            gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            equipment: ['Gym Access Required']
+        },
+        {
+            key: 'female_gym_split',
+            name: 'Female Gym Split',
+            icon: '💫',
+            description: 'Hormone-optimized 7-day split: Legs, Push, Pull, Arms, Active Recovery',
+            gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            equipment: ['Gym Access Required']
+        },
+        {
+            key: 'home_weights',
+            name: 'At Home with Weights',
+            icon: '🏠',
+            description: 'Effective home workouts with dumbbells',
+            gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            equipment: ['Dumbbells', 'Bench (optional)']
+        },
+        {
+            key: 'bodyweight',
+            name: 'At Home Bodyweight',
+            icon: '🤸',
+            description: 'No equipment needed - train anywhere, anytime',
+            gradient: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+            equipment: ['No Equipment']
+        },
+        {
+            key: 'yoga',
+            name: 'Yoga & Mindful Movement',
+            icon: '🧘',
+            description: 'Restorative, power, yin, and vinyasa flows',
+            gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+            equipment: ['Yoga Mat', 'Optional: Blocks']
+        },
+        {
+            key: 'recovery',
+            name: 'Recovery & Mobility',
+            icon: '🌿',
+            description: 'Stretching, mobility work, and active recovery',
+            gradient: 'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)',
+            equipment: ['No Equipment']
+        },
+        {
+            key: 'bands',
+            name: 'Resistance Bands',
+            icon: '🔗',
+            description: 'Full body training with resistance bands',
+            gradient: 'linear-gradient(135deg, #fddb92 0%, #d1fdff 100%)',
+            equipment: ['Resistance Bands']
+        }
+    ];
+
+    programs.forEach(program => {
+        const programDiv = document.createElement('div');
+        programDiv.onclick = () => openProgramDetails(program.key);
+        programDiv.style.cssText = `
+            cursor:pointer;
+            position:relative;
+            min-height:200px;
+            border-radius:20px;
+            overflow:hidden;
+            box-shadow:0 10px 30px rgba(0,0,0,0.15);
+            background: ${program.gradient};
+            transition: transform 0.2s, box-shadow 0.2s;
+        `;
+
+        programDiv.onmouseenter = function() {
+            this.style.transform = 'translateY(-5px)';
+            this.style.boxShadow = '0 15px 40px rgba(0,0,0,0.2)';
+        };
+
+        programDiv.onmouseleave = function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 10px 30px rgba(0,0,0,0.15)';
+        };
+
+        programDiv.innerHTML = `
+            <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.3), transparent);"></div>
+            <div style="position: absolute; top: 20px; right: 20px; font-size: 3rem; opacity: 0.4;">${program.icon}</div>
+            <div style="position: relative; padding: 25px; color: white; z-index: 1; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px;">Program</div>
+                    <div style="font-size: 1.3rem; font-weight: 800; line-height: 1.2; margin-bottom: 12px;">${program.name}</div>
+                    <div style="font-size: 0.9rem; opacity: 0.95; line-height: 1.4; margin-bottom: 15px;">${program.description}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; opacity: 0.8; margin-bottom: 5px;">Equipment:</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        ${program.equipment.map(eq => `
+                            <span style="background: rgba(255,255,255,0.25); padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                                ${eq}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        grid.appendChild(programDiv);
+    });
+}
+
+function openProgramDetails(programKey) {
+    // Check if program exists in WORKOUT_LIBRARY or WORKOUT_LIBRARY_EXTENDED
+    let category = WORKOUT_LIBRARY[programKey] || (typeof WORKOUT_LIBRARY_EXTENDED !== 'undefined' && WORKOUT_LIBRARY_EXTENDED[programKey]);
+
+    if (category) {
+        // Open the program's subcategories view
+        openWorkoutSubcategories(programKey);
+    } else {
+        // For gym_split and female_gym_split, show info modal
+        showProgramInfoModal(programKey);
+    }
+}
+
+function showProgramInfoModal(programKey) {
+    const programInfo = {
+        'gym_split': {
+            name: 'Male Gym Split',
+            schedule: [
+                { day: 'Monday', workout: 'Chest Day', focus: 'Chest & Triceps' },
+                { day: 'Tuesday', workout: 'Leg Day', focus: 'Quads, Hamstrings, Glutes' },
+                { day: 'Wednesday', workout: 'Back Day', focus: 'Back & Biceps' },
+                { day: 'Thursday', workout: 'Shoulder Day', focus: 'Shoulders & Traps' },
+                { day: 'Friday', workout: 'Arms & Core', focus: 'Arms, Abs, Core' },
+                { day: 'Saturday', workout: 'Active Recovery', focus: 'Yin Yoga' },
+                { day: 'Sunday', workout: 'Rest', focus: 'Complete Rest' }
+            ]
+        },
+        'female_gym_split': {
+            name: 'Female Gym Split',
+            schedule: [
+                { day: 'Monday', workout: 'Leg Day', focus: 'Lower Body Strength' },
+                { day: 'Tuesday', workout: 'Push Day', focus: 'Chest, Shoulders, Triceps' },
+                { day: 'Wednesday', workout: 'Arms & Core', focus: 'Upper Body & Abs' },
+                { day: 'Thursday', workout: 'Leg Day', focus: 'Lower Body Power' },
+                { day: 'Friday', workout: 'Pull Day', focus: 'Back & Biceps' },
+                { day: 'Saturday', workout: 'Active Recovery', focus: 'Power Yoga' },
+                { day: 'Sunday', workout: 'Rest', focus: 'Yin Yoga or Rest' }
+            ]
+        }
+    };
+
+    const info = programInfo[programKey];
+    if (!info) return;
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 20px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto; padding: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--text-main);">${info.name}</h2>
+                <div onclick="this.parentElement.parentElement.parentElement.remove()" style="cursor: pointer; font-size: 1.5rem; color: var(--text-muted);">&times;</div>
+            </div>
+
+            <p style="color: var(--text-muted); margin-bottom: 25px;">This program is automatically assigned based on your profile. View your weekly schedule in the Movement tab.</p>
+
+            <div style="background: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; font-size: 1rem; color: var(--text-main);">Weekly Schedule</h3>
+                ${info.schedule.map((item, idx) => `
+                    <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: ${idx < info.schedule.length - 1 ? '1px solid #e2e8f0' : 'none'};">
+                        <div>
+                            <div style="font-weight: 700; color: var(--text-main);">${item.day}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">${item.focus}</div>
+                        </div>
+                        <div style="font-weight: 600; color: var(--primary); text-align: right;">
+                            ${item.workout}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <button onclick="this.parentElement.parentElement.remove(); switchAppTab('movement-tab');"
+                    style="width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;">
+                View Today's Workout
+            </button>
+        </div>
+    `;
+
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+
+    document.body.appendChild(modal);
 }
 
 function openLibraryWorkoutOverview(categoryKey, subcategoryKey, workoutId) {
@@ -14424,7 +14687,7 @@ function addExerciseToUI(exercise) {
 const originalHideAllAppViews = hideAllAppViews;
 hideAllAppViews = function() {
     originalHideAllAppViews();
-    const libraryViews = ['view-workout-library', 'view-workout-subcategories', 'view-workout-list'];
+    const libraryViews = ['view-workout-library', 'view-workout-subcategories', 'view-workout-list', 'view-prebuilt-programs'];
     libraryViews.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
