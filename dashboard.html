@@ -10091,15 +10091,15 @@ function renderWeeklyCalendar() {
     let WEEKLY_SCHEDULE;
 
     if (useMaleGymSplit) {
-        // Male Gym Split: Chest, Back, Legs, Shoulders, Arms+Core, Active Recovery, Rest
+        // Male Gym Split: Chest, Legs, Back, Shoulders, Arms+Core, Deep Fascia Release (Sat/Sun)
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'gym_split', dayIndex: 0, muscleGroup: 'chest' }, // Chest
-            { day: 'Tue', program: 'gym_split', dayIndex: 1, muscleGroup: 'back' }, // Back
-            { day: 'Wed', program: 'gym_split', dayIndex: 2, muscleGroup: 'legs' }, // Legs
+            { day: 'Tue', program: 'gym_split', dayIndex: 1, muscleGroup: 'legs' }, // Legs
+            { day: 'Wed', program: 'gym_split', dayIndex: 2, muscleGroup: 'back' }, // Back
             { day: 'Thu', program: 'gym_split', dayIndex: 3, muscleGroup: 'shoulders' }, // Shoulders
             { day: 'Fri', program: 'gym_split', dayIndex: 4, muscleGroup: 'armscore' }, // Arms & Core
-            { day: 'Sat', program: 'gym_split', dayIndex: 5 }, // Active Recovery
-            { day: 'Sun', program: 'gym_split', dayIndex: 6 }  // Rest
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'yin' }, // Deep Fascia Release
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }  // Deep Fascia Release
         ];
     } else if (useFemaleGymSplit) {
         // Female Gym Split: Legs, Push, Arms+Core, Legs, Pull, Active Recovery, Rest
@@ -10302,8 +10302,8 @@ function renderWeeklyCalendar() {
             }
         }
 
-        // 2. High Cortisol Safety Override - encourage yoga over HIIT
-        if (isHighCortisol && (dayWorkout.programId === 'bodyweight' || dayWorkout.programId === 'gym_library')) {
+        // 2. High Cortisol Safety Override - encourage yoga over HIIT (but not for gym split users)
+        if (isHighCortisol && !useMaleGymSplit && !useFemaleGymSplit && (dayWorkout.programId === 'bodyweight' || dayWorkout.programId === 'gym_library')) {
             const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
             if (yogaWorkout) workoutName = yogaWorkout.title;
         }
@@ -10373,15 +10373,15 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
     let WEEKLY_SCHEDULE;
 
     if (useMaleGymSplit) {
-        // Male Gym Split: Chest, Back, Legs, Shoulders, Arms+Core, Active Recovery, Rest
+        // Male Gym Split: Chest, Legs, Back, Shoulders, Arms+Core, Deep Fascia Release (Sat/Sun)
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'gym_split', dayIndex: 0, muscleGroup: 'chest' },
-            { day: 'Tue', program: 'gym_split', dayIndex: 1, muscleGroup: 'back' },
-            { day: 'Wed', program: 'gym_split', dayIndex: 2, muscleGroup: 'legs' },
+            { day: 'Tue', program: 'gym_split', dayIndex: 1, muscleGroup: 'legs' },
+            { day: 'Wed', program: 'gym_split', dayIndex: 2, muscleGroup: 'back' },
             { day: 'Thu', program: 'gym_split', dayIndex: 3, muscleGroup: 'shoulders' },
             { day: 'Fri', program: 'gym_split', dayIndex: 4, muscleGroup: 'armscore' },
-            { day: 'Sat', program: 'gym_split', dayIndex: 5 }, // Active Recovery
-            { day: 'Sun', program: 'gym_split', dayIndex: 6 }  // Rest
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'yin' }, // Deep Fascia Release
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }  // Deep Fascia Release
         ];
     } else if (useFemaleGymSplit) {
         // Female Gym Split: Legs, Push, Arms+Core, Legs, Pull, Active Recovery, Rest
@@ -10495,8 +10495,8 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
         }
     }
 
-    // Modifier: High Cortisol -> Yoga (overrides HIIT/Bodyweight/Gym)
-    if (isHighCortisol && (programId === 'bodyweight' || programId === 'gym_split' || programId === 'female_gym_split')) {
+    // Modifier: High Cortisol -> Yoga (overrides HIIT/Bodyweight, but not gym split)
+    if (isHighCortisol && !useMaleGymSplit && !useFemaleGymSplit && programId === 'bodyweight') {
         programId = 'yoga';
         dayIndex = 0; // Somatic Hormone Reset
     }
@@ -10630,12 +10630,12 @@ function getTodaysWorkout() {
         // Male Gym Split
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'gym_split', dayIndex: 0, icon: '💪', muscleGroup: 'chest' }, // Chest
-            { day: 'Tue', program: 'gym_split', dayIndex: 1, icon: '💪', muscleGroup: 'back' }, // Back
-            { day: 'Wed', program: 'gym_split', dayIndex: 2, icon: '🦵', muscleGroup: 'legs' }, // Legs
+            { day: 'Tue', program: 'gym_split', dayIndex: 1, icon: '🦵', muscleGroup: 'legs' }, // Legs
+            { day: 'Wed', program: 'gym_split', dayIndex: 2, icon: '💪', muscleGroup: 'back' }, // Back
             { day: 'Thu', program: 'gym_split', dayIndex: 3, icon: '💪', muscleGroup: 'shoulders' }, // Shoulders
             { day: 'Fri', program: 'gym_split', dayIndex: 4, icon: '💪', muscleGroup: 'armscore' }, // Arms & Core
-            { day: 'Sat', program: 'gym_split', dayIndex: 5, icon: '🧘‍♂️' }, // Active Recovery
-            { day: 'Sun', program: 'gym_split', dayIndex: 6, icon: '💤' }  // Rest
+            { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♂️', subcategory: 'yin' }, // Deep Fascia Release
+            { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '🧘‍♂️', subcategory: 'yin' }  // Deep Fascia Release
         ];
     } else if (useFemaleGymSplit) {
         // Female Gym Split
@@ -12310,18 +12310,7 @@ window.WORKOUT_DB = {
                     { name: 'Cable Rope Tricep Extension', sets: 4, reps: '12-15', desc: 'Tricep finisher' }
                 ]
             },
-            // DAY 2: BACK
-            {
-                title: 'Back Day',
-                exercises: [
-                    { name: 'Barbell Romanian Deadlift', sets: 4, reps: '8-10', desc: 'Posterior chain' },
-                    { name: 'Wide Grip Pull Up', sets: 4, reps: '8-10', desc: 'Lat width' },
-                    { name: 'Cable Seated Rotational Row', sets: 4, reps: '10-12', desc: 'Mid-back' },
-                    { name: 'Cable Rope Face Pull', sets: 4, reps: '12-15', desc: 'Rear delts' },
-                    { name: 'Dumbbell Shrug', sets: 4, reps: '12-15', desc: 'Trap work' }
-                ]
-            },
-            // DAY 3: LEGS
+            // DAY 2: LEGS
             {
                 title: 'Leg Day',
                 exercises: [
@@ -12330,6 +12319,17 @@ window.WORKOUT_DB = {
                     { name: 'Dumbbell Walking Lunge', sets: 4, reps: '10-12 each', desc: 'Unilateral' },
                     { name: 'Machine Seated Leg Curl', sets: 4, reps: '12-15', desc: 'Hamstring isolation' },
                     { name: 'Smith Machine Calf Raise', sets: 4, reps: '15-20', desc: 'Calf work' }
+                ]
+            },
+            // DAY 3: BACK
+            {
+                title: 'Back Day',
+                exercises: [
+                    { name: 'Barbell Romanian Deadlift', sets: 4, reps: '8-10', desc: 'Posterior chain' },
+                    { name: 'Wide Grip Pull Up', sets: 4, reps: '8-10', desc: 'Lat width' },
+                    { name: 'Cable Seated Rotational Row', sets: 4, reps: '10-12', desc: 'Mid-back' },
+                    { name: 'Cable Rope Face Pull', sets: 4, reps: '12-15', desc: 'Rear delts' },
+                    { name: 'Dumbbell Shrug', sets: 4, reps: '12-15', desc: 'Trap work' }
                 ]
             },
             // DAY 4: SHOULDERS
@@ -12689,11 +12689,11 @@ async function renderMovementView() {
         // Male Gym Split: Same as calendar - Chest, Back, Legs, Shoulders, Arms+Core, Active Recovery, Rest
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'gym_split', dayIndex: 0, muscleGroup: 'chest', fallback: 'yoga', fallbackIdx: 4 },
-            { day: 'Tue', program: 'gym_split', dayIndex: 1, muscleGroup: 'back', fallback: 'yoga', fallbackIdx: 5 },
-            { day: 'Wed', program: 'gym_split', dayIndex: 2, muscleGroup: 'legs', fallback: 'yoga', fallbackIdx: 2 },
+            { day: 'Tue', program: 'gym_split', dayIndex: 1, muscleGroup: 'legs', fallback: 'yoga', fallbackIdx: 2 },
+            { day: 'Wed', program: 'gym_split', dayIndex: 2, muscleGroup: 'back', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Thu', program: 'gym_split', dayIndex: 3, muscleGroup: 'shoulders', fallback: 'yoga', fallbackIdx: 4 },
             { day: 'Fri', program: 'gym_split', dayIndex: 4, muscleGroup: 'armscore', fallback: 'yoga', fallbackIdx: 4 },
-            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
     } else if (useFemaleGymSplit) {
