@@ -20517,11 +20517,21 @@ function closeCheckInModal() {
     document.getElementById('check-in-modal').style.display = 'none';
 }
 
+// Stub for submitDailyCycleSync - will be replaced by real function later
+function submitDailyCycleSync() {
+    // Call the real implementation if it exists on window
+    if (window._submitDailyCycleSyncImpl) {
+        return window._submitDailyCycleSyncImpl();
+    }
+    console.error('submitDailyCycleSync not yet loaded');
+}
+
 // Expose to global scope
 window.selectCheckInOption = selectCheckInOption;
 window.toggleCheckInOption = toggleCheckInOption;
 window.openCheckInModal = openCheckInModal;
 window.closeCheckInModal = closeCheckInModal;
+window.submitDailyCycleSync = submitDailyCycleSync;
 </script>
 
 <!-- SUPERBOOST CHECK-IN MODAL -->
@@ -21636,7 +21646,8 @@ window.closeCheckInModal = closeCheckInModal;
 window.selectCheckInOption = selectCheckInOption;
 window.toggleCheckInOption = toggleCheckInOption;
 
-async function submitDailyCycleSync() {
+// Real implementation of submitDailyCycleSync
+window._submitDailyCycleSyncImpl = async function() {
     // 1. Save Log locally
     const today = new Date().toISOString().split('T')[0];
     if(!userCycleData.logs) userCycleData.logs = {};
@@ -21782,10 +21793,7 @@ async function submitDailyCycleSync() {
 
     // Show Toast/Banner on Dashboard
     showCycleSyncBanner();
-}
-
-// Expose submitDailyCycleSync to global scope for inline onclick handlers
-window.submitDailyCycleSync = submitDailyCycleSync;
+};
 
 // Low energy yoga recommendation popup
 function showLowEnergyYogaPopup() {
