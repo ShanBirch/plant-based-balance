@@ -8827,7 +8827,7 @@ function startCustomBuilderWorkout() {
                     // 3. Also update quiz_results if equipment_access changed (it's stored there too)
                     if (factsData.equipment_access) {
                         try {
-                            await supabase.from('quiz_results')
+                            await window.supabaseClient.from('quiz_results')
                                 .update({ equipment_access: factsData.equipment_access })
                                 .eq('user_id', window.currentUser.id);
                             console.log('Updated equipment_access in quiz_results:', factsData.equipment_access);
