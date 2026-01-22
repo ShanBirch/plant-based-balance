@@ -20517,13 +20517,113 @@ function closeCheckInModal() {
     document.getElementById('check-in-modal').style.display = 'none';
 }
 
-// Stub for submitDailyCycleSync - will be replaced by real function later
-function submitDailyCycleSync() {
-    // Call the real implementation if it exists on window
-    if (window._submitDailyCycleSyncImpl) {
-        return window._submitDailyCycleSyncImpl();
+// Full implementation of submitDailyCycleSync
+async function submitDailyCycleSync() {
+    try {
+        // 1. Save Log locally
+        const today = new Date().toISOString().split('T')[0];
+        if (typeof userCycleData === 'undefined') {
+            window.userCycleData = JSON.parse(localStorage.getItem('userCycleData') || '{}');
+        }
+        if (!userCycleData.logs) userCycleData.logs = {};
+
+        // Clone to avoid ref issues
+        userCycleData.logs[today] = JSON.parse(JSON.stringify(window.checkInProgress));
+
+        // Update userCycleData.symptoms from check-in
+        userCycleData.symptoms = window.checkInProgress.symptoms || [];
+
+        // Persist to localStorage
+        localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+
+        // 2. Save to Supabase
+        if (window.currentUser && typeof dbHelpers !== 'undefined') {
+            try {
+                await dbHelpers.checkins.upsert(window.currentUser.id, today, {
+                    energy: window.checkInProgress.energy || null,
+                    equipment: window.checkInProgress.equipment || null,
+                    additional_data: {
+                        symptoms: window.checkInProgress.symptoms || [],
+                        mood: window.checkInProgress.mood || null,
+                        flow: window.checkInProgress.flow || null,
+                        fluid: window.checkInProgress.fluid || null,
+                        recovery: window.checkInProgress.recovery || null
+                    }
+                });
+                console.log('✅ Check-in saved to Supabase');
+            } catch (e) {
+                console.error('Failed to save check-in to DB:', e);
+            }
+        }
+
+        // Mark check-in as completed for today
+        localStorage.setItem('lastWellnessCheck', new Date().toDateString());
+
+        // Save equipment selection
+        if (window.checkInProgress.equipment && window.currentUser && typeof dbHelpers !== 'undefined') {
+            try {
+                await window.supabaseClient.from('quiz_results')
+                    .update({ equipment_access: window.checkInProgress.equipment })
+                    .eq('user_id', window.currentUser.id);
+
+                const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                userProfile.equipment_access = window.checkInProgress.equipment;
+                userProfile.gym_access = (window.checkInProgress.equipment === 'gym');
+                localStorage.setItem('userProfile', JSON.stringify(userProfile));
+                if (window.userProfile) {
+                    window.userProfile.equipment_access = window.checkInProgress.equipment;
+                    window.userProfile.gym_access = (window.checkInProgress.equipment === 'gym');
+                }
+                console.log('✅ Equipment access saved:', window.checkInProgress.equipment);
+            } catch (e) {
+                console.warn('Failed to save equipment access:', e);
+            }
+        }
+
+        // Update Active Symptoms display
+        const symptomsDisplay = document.getElementById('profile-symptoms-display');
+        if (symptomsDisplay) {
+            const symptoms = window.checkInProgress.symptoms || [];
+            if (symptoms.length > 0) {
+                const formattedSymptoms = symptoms.map(s =>
+                    s.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+                ).join(', ');
+                symptomsDisplay.textContent = formattedSymptoms;
+            } else {
+                symptomsDisplay.textContent = 'None';
+            }
+        }
+
+        // Trigger Cycle Sync Engine
+        if (typeof applyCycleSync === 'function') applyCycleSync(window.checkInProgress);
+
+        // Close & Refresh views
+        closeCheckInModal();
+        if (typeof initCycleView === 'function') initCycleView();
+        if (typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
+        if (typeof renderMovementView === 'function') renderMovementView();
+
+        // Handle low energy
+        if (window.checkInProgress.energy === 'low') {
+            if (typeof showLowEnergyYogaPopup === 'function') showLowEnergyYogaPopup();
+            return;
+        }
+
+        // Clear any workout override
+        localStorage.removeItem('todayWorkoutOverride');
+        if (userCycleData.logs && userCycleData.logs[today]) {
+            delete userCycleData.logs[today].workoutOverride;
+            localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+        }
+
+        if (typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
+        if (typeof switchAppTab === 'function') switchAppTab('dashboard');
+        if (typeof showCycleSyncBanner === 'function') showCycleSyncBanner();
+
+    } catch (err) {
+        console.error('Error in submitDailyCycleSync:', err);
+        alert('There was an error saving your check-in. Please try again.');
     }
-    console.error('submitDailyCycleSync not yet loaded');
 }
 
 // Expose to global scope
