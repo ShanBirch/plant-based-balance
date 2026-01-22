@@ -10945,28 +10945,47 @@ function getTodaysWorkout() {
         }
     }
 
-    // Apply mood modifiers (applies to all users including males on gym split)
-    if (userCycleData.mood === 'tired') {
-        const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
-        if (yogaWorkout) {
-            workoutName = yogaWorkout.title;
-            workoutIcon = '💤';
-        }
-    }
-    if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
-        // Hot flash and dizziness are female-specific symptoms
-        if (!isMaleHero && (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness'))) {
-            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative
+    // Apply daily check-in modifiers (read from TODAY's log, not stale global state)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayLog = userCycleData.logs?.[todayStr];
+
+    // Only apply if user hasn't already made a choice (declined yoga)
+    if (todayLog && todayLog.workoutOverride !== 'declined') {
+        // Check energy level from today's check-in
+        if (todayLog.energy === 'low') {
+            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
             if (yogaWorkout) {
                 workoutName = yogaWorkout.title;
-                workoutIcon = '🧘‍♀️';
+                workoutIcon = '💤';
             }
-        } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
-            // Fatigue/anxiety triggers yoga for everyone (males & females, gym & bodyweight)
-            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[6]; // Yin & Meditation
+        }
+
+        // Check recovery status (males)
+        if (isMaleHero && todayLog.recovery === 'tired') {
+            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
             if (yogaWorkout) {
                 workoutName = yogaWorkout.title;
-                workoutIcon = '🧘‍♀️';
+                workoutIcon = '💤';
+            }
+        }
+
+        // Check symptoms from today's log
+        const todaySymptoms = todayLog.symptoms || [];
+        if (todaySymptoms.length > 0) {
+            // Hot flash and dizziness are female-specific symptoms
+            if (!isMaleHero && (todaySymptoms.includes('hot_flash') || todaySymptoms.includes('dizziness'))) {
+                const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative
+                if (yogaWorkout) {
+                    workoutName = yogaWorkout.title;
+                    workoutIcon = '🧘‍♀️';
+                }
+            } else if (todaySymptoms.includes('fatigue') || todaySymptoms.includes('anxiety')) {
+                // Fatigue/anxiety triggers yoga for everyone (males & females, gym & bodyweight)
+                const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[6]; // Yin & Meditation
+                if (yogaWorkout) {
+                    workoutName = yogaWorkout.title;
+                    workoutIcon = '🧘‍♀️';
+                }
             }
         }
     }
