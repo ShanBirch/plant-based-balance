@@ -12712,9 +12712,9 @@ async function renderMovementView() {
     if (!user) return;
 
     // 1. Get Date Index & Profile
-    const profile = await window.getUserProfile();
-    const startDate = profile?.program_start_date;
-    
+    const dbProfile = await window.getUserProfile();
+    const startDate = dbProfile?.program_start_date;
+
     let dayIndex = 0;
     if (startDate) {
         const start = new Date(startDate);
@@ -12723,7 +12723,7 @@ async function renderMovementView() {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const currentDay = diffDays || 1;
         dayIndex = (currentDay - 1) % 7;
-        
+
         // Update header date
         const dateEl = document.getElementById('movement-today-date');
         if(dateEl) dateEl.innerText = `Day ${currentDay}`;
@@ -12755,28 +12755,23 @@ async function renderMovementView() {
     // Priority 2: WORKOUT_DB Schedules - Use actual pre-built workouts
     // Priority 3: Daily Check-in - Energy, mood, symptoms
     // Priority 4: Cycle Phase (lowest) - Adjust based on menstrual phase
-    
-    // profile is already loaded above at line 9238
 
-    // BUGFIX: If equipment_access is missing in profile, check localStorage/sessionStorage (from quiz)
-    if (!profile?.equipment_access) {
-        let userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    // BUGFIX: Load profile from localStorage (same as calendar), fallback to sessionStorage
+    // This ensures consistency with renderWeeklyCalendar which correctly shows gym split workouts
+    let profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
 
-        // If not in localStorage, check sessionStorage (from quiz)
-        if (!userProfile.equipment_access) {
-            const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
-            if (sessionProfile.equipment_access) {
-                userProfile.equipment_access = sessionProfile.equipment_access;
-                // Save to localStorage for future use
-                localStorage.setItem('userProfile', JSON.stringify(userProfile));
-            }
-        }
-
-        // Update profile object with equipment_access
-        if (userProfile.equipment_access && profile) {
-            profile.equipment_access = userProfile.equipment_access;
+    // If equipment_access is missing in localStorage, check sessionStorage (from quiz)
+    if (!profile.equipment_access) {
+        const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        if (sessionProfile.equipment_access) {
+            profile.equipment_access = sessionProfile.equipment_access;
+            // Save to localStorage for future use
+            localStorage.setItem('userProfile', JSON.stringify(profile));
         }
     }
+
+    // Merge with database profile for other fields like program_start_date
+    profile = { ...dbProfile, ...profile };
 
     // PRIORITY 1: Determine available programs based on quiz/profile equipment
     // Check if user has gym access from their profile
@@ -12797,8 +12792,7 @@ async function renderMovementView() {
     // Check if user qualifies for Gym Split (same logic as calendar for consistency)
     // Note: isMale must be defined here before the gym_split checks
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
-    const userProfileLocal = JSON.parse(localStorage.getItem('userProfile') || '{}');
-    const hasHighEnergy = userProfileLocal.energy_status === 'high';
+    const hasHighEnergy = profile.energy_status === 'high';
     // Male gym split: requires gym access only (no energy requirement)
     const useMaleGymSplit = isMale && hasGymAccess;
     // Female gym split: still requires high energy (cortisol-aware)
