@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v11'; // Load both coach and shannon chat types
+const CACHE_NAME = 'pbb-app-v12'; // Fixed check-in modal click handlers
 const ASSETS = [
   './dashboard.html',
   './assets/Logo_dots.jpg',
