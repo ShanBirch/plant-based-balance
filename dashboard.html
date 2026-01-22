@@ -20482,26 +20482,26 @@ updateCoachUI();
 
 <!-- Check-in modal functions - must be defined before modal HTML -->
 <script>
-// Initialize checkInProgress if not already defined
-if (typeof checkInProgress === 'undefined') {
-    var checkInProgress = { flow: null, symptoms: [], mood: null, energy: null, fluid: null };
+// checkInProgress will be defined later, use window reference for safety
+if (typeof window.checkInProgress === 'undefined') {
+    window.checkInProgress = { flow: null, symptoms: [], mood: null, energy: null, fluid: null };
 }
 
 function selectCheckInOption(category, value, el) {
-    checkInProgress[category] = value;
+    window.checkInProgress[category] = value;
     const options = document.querySelectorAll('.check-in-chip[data-group="' + category + '"]');
     options.forEach(function(opt) { opt.classList.remove('selected'); });
     el.classList.add('selected');
 }
 
 function toggleCheckInOption(category, value, el) {
-    if (!checkInProgress[category]) checkInProgress[category] = [];
-    var idx = checkInProgress[category].indexOf(value);
+    if (!window.checkInProgress[category]) window.checkInProgress[category] = [];
+    var idx = window.checkInProgress[category].indexOf(value);
     if (idx > -1) {
-        checkInProgress[category].splice(idx, 1);
+        window.checkInProgress[category].splice(idx, 1);
         el.classList.remove('selected');
     } else {
-        checkInProgress[category].push(value);
+        window.checkInProgress[category].push(value);
         el.classList.add('selected');
     }
 }
@@ -21499,7 +21499,11 @@ function renderExerciseChart(progress) {
 <script>
 // --- HORMONE HUB & SUPERBOOST ENGINE ---
 
-let checkInProgress = { flow:null, symptoms:[], mood:null, energy:null, fluid:null };
+// Use window.checkInProgress (may already be defined by early script)
+if (typeof window.checkInProgress === 'undefined') {
+    window.checkInProgress = { flow:null, symptoms:[], mood:null, energy:null, fluid:null };
+}
+var checkInProgress = window.checkInProgress;
 
 function initCycleView() {
     // 1. Ensure Data Loaded
