@@ -10094,10 +10094,10 @@ function renderWeeklyCalendar() {
     // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
     const hasGymAccess = userProfile.equipment_access === 'gym' || (userProfile.equipment_access === undefined && userProfile.gym_access === true);
     const hasHighEnergy = userProfile.energy_status === 'high';
-    // Male gym split: requires gym access only (no energy requirement)
+    // Male and female gym splits now have IDENTICAL requirements: gym access only
+    // Females can opt-in to cycle sync for automatic adjustments during menstrual phase
     const useMaleGymSplit = isMale && hasGymAccess;
-    // Female gym split: still requires high energy (cortisol-aware)
-    const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
+    const useFemaleGymSplit = !isMale && hasGymAccess;
 
     // Determine equipment access - simplified direct checks (like gym split)
     const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home';
@@ -10165,15 +10165,16 @@ function renderWeeklyCalendar() {
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }  // Deep Fascia Release
         ];
     } else if (useFemaleGymSplit) {
-        // Female Gym Split: Legs, Push, Arms+Core, Legs, Pull, Active Recovery, Rest
+        // Female Gym Split: Legs, Push, Arms+Core, Legs, Pull, Active Recovery (Yoga), Rest (Yoga)
+        // Same as males: yoga on weekends for active recovery
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'female_gym_split', dayIndex: 0, muscleGroup: 'legs' }, // Legs
             { day: 'Tue', program: 'female_gym_split', dayIndex: 1, muscleGroup: 'push' }, // Push
             { day: 'Wed', program: 'female_gym_split', dayIndex: 2, muscleGroup: 'armscore' }, // Arms & Core
             { day: 'Thu', program: 'female_gym_split', dayIndex: 3, muscleGroup: 'legs' }, // Legs
             { day: 'Fri', program: 'female_gym_split', dayIndex: 4, muscleGroup: 'pull' }, // Pull
-            { day: 'Sat', program: 'female_gym_split', dayIndex: 5 }, // Active Recovery
-            { day: 'Sun', program: 'female_gym_split', dayIndex: 6 }  // Rest
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' }, // Active Recovery
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }  // Rest
         ];
     } else if (useYogaOnly) {
         // Yoga Only - direct check like gym split
@@ -10454,10 +10455,10 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
     // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
     const hasGymAccess = userProfile.equipment_access === 'gym' || (userProfile.equipment_access === undefined && userProfile.gym_access === true);
     const hasHighEnergy = userProfile.energy_status === 'high';
-    // Male gym split: requires gym access only (no energy requirement)
+    // Male and female gym splits now have IDENTICAL requirements: gym access only
+    // Females can opt-in to cycle sync for automatic adjustments during menstrual phase
     const useMaleGymSplit = isMale && hasGymAccess;
-    // Female gym split: still requires high energy (cortisol-aware)
-    const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
+    const useFemaleGymSplit = !isMale && hasGymAccess;
 
     // SIMPLIFIED: Direct equipment checks (same pattern as gym split)
     const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home';
@@ -10706,15 +10707,26 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
 // --- SHARED WORKOUT LOGIC ---
 // Returns today's recommended workout based on Calendar logic (same as renderWeeklyCalendar)
 function getTodaysWorkout() {
-    // Check for today's workout override (e.g., low energy yoga recommendation)
+    // Check for today's workout override (e.g., low energy yoga recommendation or cycle sync)
     try {
         const override = JSON.parse(localStorage.getItem('todayWorkoutOverride') || 'null');
         if (override && override.date === new Date().toISOString().split('T')[0]) {
-            // Return yoga workout for low energy override
+            // Return yoga workout for override
             if (override.program === 'yoga') {
                 const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
                 const today = new Date();
                 const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+                // Determine reason-based messaging
+                let overrideReason;
+                if (override.reason === 'cycle_sync_automatic') {
+                    overrideReason = '✨ Cycle Sync: Automatic yoga during menstrual phase';
+                } else if (override.reason === 'low_energy') {
+                    overrideReason = '💤 Recovery: Yoga for low energy';
+                } else {
+                    overrideReason = '🧘‍♀️ Personalized yoga session';
+                }
+
                 return {
                     name: yogaWorkout?.title || 'Restorative Yoga',
                     icon: '🧘‍♀️',
@@ -10722,7 +10734,7 @@ function getTodaysWorkout() {
                     dayIndex: 3,
                     dayName: dayNames[today.getDay()],
                     isOverride: true,
-                    overrideReason: override.reason
+                    overrideReason: overrideReason
                 };
             }
         }
@@ -10754,10 +10766,10 @@ function getTodaysWorkout() {
     // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
     const hasGymAccess = userProfile.equipment_access === 'gym' || (userProfile.equipment_access === undefined && userProfile.gym_access === true);
     const hasHighEnergy = userProfile.energy_status === 'high';
-    // Male gym split: requires gym access only (no energy requirement)
+    // Male and female gym splits now have IDENTICAL requirements: gym access only
+    // Females can opt-in to cycle sync for automatic adjustments during menstrual phase
     const useMaleGymSplit = isMale && hasGymAccess;
-    // Female gym split: still requires high energy (cortisol-aware)
-    const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
+    const useFemaleGymSplit = !isMale && hasGymAccess;
 
     // Weekly Schedule Template - maps to WORKOUT_DB programs (same as calendar)
     let WEEKLY_SCHEDULE;
@@ -10774,15 +10786,15 @@ function getTodaysWorkout() {
             { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '🧘‍♂️', subcategory: 'yin' }  // Deep Fascia Release
         ];
     } else if (useFemaleGymSplit) {
-        // Female Gym Split
+        // Female Gym Split (same as males: yoga on weekends for active recovery)
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'female_gym_split', dayIndex: 0, icon: '🦵', muscleGroup: 'legs' },
             { day: 'Tue', program: 'female_gym_split', dayIndex: 1, icon: '💪', muscleGroup: 'push' },
             { day: 'Wed', program: 'female_gym_split', dayIndex: 2, icon: '💪', muscleGroup: 'armscore' },
             { day: 'Thu', program: 'female_gym_split', dayIndex: 3, icon: '🦵', muscleGroup: 'legs' },
             { day: 'Fri', program: 'female_gym_split', dayIndex: 4, icon: '💪', muscleGroup: 'pull' },
-            { day: 'Sat', program: 'female_gym_split', dayIndex: 5, icon: '🧘‍♀️' },
-            { day: 'Sun', program: 'female_gym_split', dayIndex: 6, icon: '💤' }
+            { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' }
         ];
     } else {
         // SIMPLIFIED: Direct equipment checks (same pattern as gym split)
@@ -11995,6 +12007,22 @@ function wizardNext() {
             return;
         }
 
+        // NEW: Validate cycle sync questions
+        const cycleSyncPref = document.querySelector('input[name="wizard-cycle-sync"]:checked')?.value;
+        if (!cycleSyncPref) {
+            alert("Please select whether you want to sync your workouts with your cycle.");
+            return;
+        }
+
+        // If cycle sync is enabled, validate period energy question
+        if (cycleSyncPref === 'yes') {
+            const periodEnergy = document.querySelector('input[name="wizard-period-energy"]:checked')?.value;
+            if (!periodEnergy) {
+                alert("Please select how your body responds during your period.");
+                return;
+            }
+        }
+
         // Save Data
         if (wellnessToggle.checked) {
             userCycleData.noPeriodMode = true;
@@ -12022,6 +12050,10 @@ function wizardNext() {
         existingData.menopause_status = menopause_status;
         existingData.last_period = wellnessToggle.checked ? null : dateInput.value;
 
+        // NEW: Save cycle sync preferences
+        existingData.cycle_sync_preference = cycleSyncPref;
+        existingData.period_energy_response = document.querySelector('input[name="wizard-period-energy"]:checked')?.value || 'high';
+
         // Calculate hormone profile (CORTISOL vs ESTROGEN)
         if (menopause_status === 'menopause' || age > 45) {
             existingData.profile = 'ESTROGEN';
@@ -12032,7 +12064,10 @@ function wizardNext() {
         sessionStorage.setItem('userProfile', JSON.stringify(existingData));
         sessionStorage.setItem('userResult', existingData.profile);
 
-        console.log("Step 3 data collected, hormone profile:", existingData.profile);
+        // NEW: Also save to localStorage for immediate use
+        localStorage.setItem('userProfile', JSON.stringify(existingData));
+
+        console.log("Step 3 data collected, hormone profile:", existingData.profile, "cycle sync:", existingData.cycle_sync_preference, "period energy:", existingData.period_energy_response);
     }
 
     if(currentWizardStep < totalWizardSteps) {
@@ -12140,6 +12175,19 @@ function toggleWizardPeriodInput() {
     } else {
         input.disabled = false;
         input.style.opacity = '1';
+    }
+}
+
+function togglePeriodEnergyQuestion() {
+    const cycleSyncValue = document.querySelector('input[name="wizard-cycle-sync"]:checked')?.value;
+    const periodEnergySection = document.getElementById('period-energy-section');
+
+    if (cycleSyncValue === 'yes') {
+        periodEnergySection.style.display = 'block';
+    } else {
+        periodEnergySection.style.display = 'none';
+        // Clear selection if hiding
+        document.querySelectorAll('input[name="wizard-period-energy"]').forEach(input => input.checked = false);
     }
 }
 
@@ -13024,10 +13072,10 @@ async function renderMovementView() {
     // Note: isMale must be defined here before the gym_split checks
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     const hasHighEnergy = profile.energy_status === 'high';
-    // Male gym split: requires gym access only (no energy requirement)
+    // Male and female gym splits now have IDENTICAL requirements: gym access only
+    // Females can opt-in to cycle sync for automatic adjustments during menstrual phase
     const useMaleGymSplit = isMale && hasGymAccess;
-    // Female gym split: still requires high energy (cortisol-aware)
-    const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
+    const useFemaleGymSplit = !isMale && hasGymAccess;
 
     // SIMPLIFIED: Direct equipment checks (same pattern as gym split - no defaultStrengthProgram complexity)
     const useYogaOnly = hasYogaOnly;
@@ -13132,13 +13180,22 @@ async function renderMovementView() {
     let hasWorkoutOverride = false;
     let overrideSubcategory = null; // Used to override scheduleItem.subcategory for energy-based upgrades
 
-    // PRIORITY 0: Check for today's workout override (e.g., user accepted yoga recommendation)
+    // PRIORITY 0: Check for today's workout override (e.g., user accepted yoga recommendation or cycle sync)
     try {
         const override = JSON.parse(localStorage.getItem('todayWorkoutOverride') || 'null');
         if (override && override.date === dateStr && override.program) {
             suggestedProgram = override.program;
             workoutDayIndex = 3; // Restorative Recovery for yoga
-            personalizationReason = isMale ? '💪 Daily Sync: Recovery session for low energy' : '✨ Cycle Sync: Restorative practice for low energy';
+
+            // Differentiate messaging based on override reason
+            if (override.reason === 'cycle_sync_automatic') {
+                personalizationReason = '✨ Cycle Sync: Automatic yoga during menstrual phase';
+            } else if (override.reason === 'low_energy') {
+                personalizationReason = isMale ? '💪 Daily Sync: Recovery session for low energy' : '✨ Cycle Sync: Restorative practice for low energy';
+            } else {
+                personalizationReason = isMale ? '💪 Daily Sync: Custom workout adjustment' : '✨ Cycle Sync: Custom workout adjustment';
+            }
+
             hasWorkoutOverride = true;
         }
     } catch (e) { /* ignore parse errors */ }
@@ -13315,21 +13372,21 @@ async function renderMovementView() {
         }
     }
 
-    // PRIORITY 4: Cycle Phase adjustments (REMOVED - now based on user preference)
-    // Check if user opted in to cycle-based recommendations
-    if (!isMale && !personalizationReason && !userSelectedEquipmentToday && profile && cyclePhaseInfo && phaseKey !== 'wellness' && phaseKey !== 'performance') {
+    // PRIORITY 4: Cycle Phase adjustments (automatic override handled at check-in)
+    // This provides fallback messaging if user navigates directly to Movement tab
+    if (!isMale && !personalizationReason && !userSelectedEquipmentToday && !hasWorkoutOverride && profile && cyclePhaseInfo && phaseKey !== 'wellness' && phaseKey !== 'performance') {
         const cycleSyncEnabled = profile.cycle_sync_preference === 'yes';
-        const bodyResponseTired = profile.cycle_body_response === 'tired';
+        const periodEnergyLow = profile.period_energy_response === 'low';
 
         // Only apply cycle-based recommendations if user opted in
-        if (cycleSyncEnabled && bodyResponseTired) {
-            // User opted in AND feels tired during cycle - recommend yoga during menstrual phase
-            if (phaseKey === 'menstrual' && (suggestedProgram === 'bodyweight' || suggestedProgram === 'gym' || suggestedProgram === 'home' || suggestedProgram === 'bands')) {
-                // Show personalization message but don't force yoga (let user decide via popup if needed)
-                personalizationReason = `✨ Cycle Sync: Consider gentle movement during menstrual phase`;
+        if (cycleSyncEnabled && periodEnergyLow) {
+            // User opted in AND has low energy during period
+            if (phaseKey === 'menstrual' && suggestedProgram !== 'yoga') {
+                // Automatic cycle sync: show user it's synced to their cycle
+                personalizationReason = `✨ Cycle Sync: Automatic yoga during menstrual phase`;
             }
         }
-        // If user opted out or feels strong, we don't add cycle-based messaging at all
+        // If user opted out or has high energy, we don't add cycle-based messaging at all
     }
 
     // For males, show performance-based recommendation if no other reason
@@ -16181,15 +16238,46 @@ function openAsClient() {
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🌸</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Cycle Syncing</h3>
                 <p style="text-align:center; color:#666; margin-bottom:25px;">We tailor your daily movement to match your hormonal phase.</p>
-                
+
                 <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
                     <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">When was your last period?</label>
                     <input type="date" id="wizard-period-date" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                 </div>
-                
-                <div class="wizard-option" style="display:flex; align-items:center; gap:10px; justify-content:center;">
+
+                <div class="wizard-option" style="display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:20px;">
                     <input type="checkbox" id="wizard-wellness-toggle" onchange="toggleWizardPeriodInput()">
                     <label for="wizard-wellness-toggle" style="font-size:0.9rem; color:#64748b;">I don't have a period (Wellness Mode)</label>
+                </div>
+
+                <!-- NEW QUESTION 1: Cycle Sync Preference -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:12px; font-size:0.9rem;">Do you want to sync your workouts with your cycle?</label>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border:1px solid #e2e8f0; border-radius:8px; background:white; transition: all 0.2s ease;">
+                            <input type="radio" name="wizard-cycle-sync" value="yes" onchange="togglePeriodEnergyQuestion()" style="margin:0;">
+                            <span style="font-size:0.9rem;">Yes, sync my workouts</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border:1px solid #e2e8f0; border-radius:8px; background:white; transition: all 0.2s ease;">
+                            <input type="radio" name="wizard-cycle-sync" value="no" onchange="togglePeriodEnergyQuestion()" style="margin:0;">
+                            <span style="font-size:0.9rem;">No, standard recommendations</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- NEW QUESTION 2: Period Energy Response (Conditional) -->
+                <div id="period-energy-section" class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; display:none;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">How does your body respond during your period?</label>
+                    <p style="font-size:0.8rem; color:#64748b; margin-bottom:12px;">We'll automatically adjust your workouts during menstruation (days 1-5).</p>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border:1px solid #e2e8f0; border-radius:8px; background:white; transition: all 0.2s ease;">
+                            <input type="radio" name="wizard-period-energy" value="high" style="margin:0;">
+                            <span style="font-size:0.9rem;">High Energy - I can push hard</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border:1px solid #e2e8f0; border-radius:8px; background:white; transition: all 0.2s ease;">
+                            <input type="radio" name="wizard-period-energy" value="low" style="margin:0;">
+                            <span style="font-size:0.9rem;">Low Energy/Tired - I need gentler workouts</span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -21762,19 +21850,46 @@ window._submitDailyCycleSyncImpl = async function() {
         // Get user profile to check cycle preferences
         const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
         const cycleSyncEnabled = userProfile.cycle_sync_preference === 'yes';
-        const bodyResponseTired = userProfile.cycle_body_response === 'tired';
+        const periodEnergyLow = userProfile.period_energy_response === 'low';
 
         // Calculate current cycle phase
-        if (cycleSyncEnabled && bodyResponseTired && userCycleData.lastPeriod && !userCycleData.noPeriodMode) {
+        if (cycleSyncEnabled && periodEnergyLow && userCycleData.lastPeriod && !userCycleData.noPeriodMode) {
             const lastPeriod = new Date(userCycleData.lastPeriod);
             const today = new Date();
             const daysSinceStart = Math.floor((today - lastPeriod) / (24 * 60 * 60 * 1000));
             const currentCycleDay = (daysSinceStart % (userCycleData.cycleLength || 28)) + 1;
 
-            // If in menstrual phase (days 1-5), show yoga recommendation popup
+            // If in menstrual phase (days 1-5), AUTOMATICALLY switch to yoga (no popup)
             if (currentCycleDay >= 1 && currentCycleDay <= 5) {
-                showLowEnergyYogaPopup(); // Reuse same popup - message is appropriate
-                return; // The popup will handle navigation
+                const todayDateStr = new Date().toISOString().split('T')[0];
+
+                // Set automatic yoga override
+                const yogaOverride = {
+                    date: todayDateStr,
+                    program: 'yoga',
+                    reason: 'cycle_sync_automatic' // Distinct from 'low_energy' popup reason
+                };
+                localStorage.setItem('todayWorkoutOverride', JSON.stringify(yogaOverride));
+
+                // Update check-in log with automatic flag
+                if (userCycleData.logs && userCycleData.logs[todayDateStr]) {
+                    userCycleData.logs[todayDateStr].workoutOverride = 'yoga';
+                    userCycleData.logs[todayDateStr].cycleAutoSync = true;
+                    localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+                }
+
+                // Save to database
+                if (typeof saveUserCycleData === 'function') {
+                    saveUserCycleData(userCycleData);
+                }
+
+                // Refresh dashboard card to show yoga
+                if (typeof updateDashboardWorkoutCard === 'function') {
+                    updateDashboardWorkoutCard();
+                }
+
+                // NO POPUP - continue to dashboard display
+                // Let it fall through to normal flow (don't return here)
             }
         }
     }
