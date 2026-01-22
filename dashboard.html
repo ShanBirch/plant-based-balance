@@ -8790,7 +8790,10 @@ function startCustomBuilderWorkout() {
                         'bodyweight': 'No Equipment'  // Legacy value support
                     };
                     el.innerText = eqMap[val] || 'No Equipment';
-                    el.dataset.raw = val; 
+                    el.dataset.raw = val;
+                    // Clear preferred_workout_style when equipment changes
+                    // This ensures the new equipment_access takes priority
+                    quizData.preferred_workout_style = null;
                 } else {
                     el.innerText = val + (f.key === 'weight' ? ' kg' : '');
                 }
@@ -10110,7 +10113,12 @@ function renderWeeklyCalendar() {
     const preferredStyle = userProfile.preferred_workout_style;
     let defaultStrengthProgram = 'bodyweight'; // Default fallback
 
-    if (preferredStyle === 'gym' && hasGymAccess) {
+    // PRIORITY 1: yoga_only equipment access ALWAYS takes precedence
+    if (hasYogaOnly) {
+        defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
+    }
+    // PRIORITY 2: Check preferred workout style if compatible with equipment
+    else if (preferredStyle === 'gym' && hasGymAccess) {
         defaultStrengthProgram = 'gym';
     } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
         defaultStrengthProgram = 'home';
@@ -10118,9 +10126,9 @@ function renderWeeklyCalendar() {
         defaultStrengthProgram = 'bands';
     } else if (preferredStyle === 'none') {
         defaultStrengthProgram = 'bodyweight';
-    } else if (hasYogaOnly) {
-        defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
-    } else if (hasGymAccess) {
+    }
+    // PRIORITY 3: Fallback to equipment access
+    else if (hasGymAccess) {
         defaultStrengthProgram = 'gym';
     } else if (hasDumbbells) {
         defaultStrengthProgram = 'home';
@@ -10537,7 +10545,12 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
         const preferredStyle = userProfile.preferred_workout_style;
         let defaultStrengthProgram = 'bodyweight'; // Default fallback
 
-        if (preferredStyle === 'gym' && hasGymAccess) {
+        // PRIORITY 1: yoga_only equipment access ALWAYS takes precedence
+        if (hasYogaOnly) {
+            defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
+        }
+        // PRIORITY 2: Check preferred workout style if compatible with equipment
+        else if (preferredStyle === 'gym' && hasGymAccess) {
             defaultStrengthProgram = 'gym';
         } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
             defaultStrengthProgram = 'home';
@@ -10545,9 +10558,9 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
             defaultStrengthProgram = 'bands';
         } else if (preferredStyle === 'none') {
             defaultStrengthProgram = 'bodyweight';
-        } else if (hasYogaOnly) {
-            defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
-        } else if (hasGymAccess) {
+        }
+        // PRIORITY 3: Fallback to equipment access
+        else if (hasGymAccess) {
             defaultStrengthProgram = 'gym';
         } else if (hasDumbbells) {
             defaultStrengthProgram = 'home';
@@ -10850,7 +10863,12 @@ function getTodaysWorkout() {
         const preferredStyle = userProfile.preferred_workout_style;
         let defaultStrengthProgram = 'bodyweight'; // Default fallback
 
-        if (preferredStyle === 'gym' && hasGymAccess) {
+        // PRIORITY 1: yoga_only equipment access ALWAYS takes precedence
+        if (hasYogaOnly) {
+            defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
+        }
+        // PRIORITY 2: Check preferred workout style if compatible with equipment
+        else if (preferredStyle === 'gym' && hasGymAccess) {
             defaultStrengthProgram = 'gym';
         } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
             defaultStrengthProgram = 'home';
@@ -10858,9 +10876,9 @@ function getTodaysWorkout() {
             defaultStrengthProgram = 'bands';
         } else if (preferredStyle === 'none') {
             defaultStrengthProgram = 'bodyweight';
-        } else if (hasYogaOnly) {
-            defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
-        } else if (hasGymAccess) {
+        }
+        // PRIORITY 3: Fallback to equipment access
+        else if (hasGymAccess) {
             defaultStrengthProgram = 'gym';
         } else if (hasDumbbells) {
             defaultStrengthProgram = 'home';
@@ -13033,8 +13051,14 @@ async function renderMovementView() {
     const preferredStyle = profile?.preferred_workout_style;
     let defaultStrengthProgram = 'bodyweight'; // Default fallback
 
-    // First, check if user has a preferred workout style (from previous check-ins)
-    if (preferredStyle === 'gym' && hasGymAccess) {
+    // PRIORITY 1: yoga_only equipment access ALWAYS takes precedence
+    // This is an explicit equipment restriction that overrides workout style preferences
+    if (hasYogaOnly) {
+        defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
+    }
+    // PRIORITY 2: Check if user has a preferred workout style (from previous check-ins)
+    // but only if it's compatible with their equipment access
+    else if (preferredStyle === 'gym' && hasGymAccess) {
         defaultStrengthProgram = 'gym';
     } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
         defaultStrengthProgram = 'home';
@@ -13043,10 +13067,8 @@ async function renderMovementView() {
     } else if (preferredStyle === 'none') {
         defaultStrengthProgram = 'bodyweight'; // User prefers bodyweight
     }
-    // Fallback to equipment access from onboarding if no preference
-    else if (hasYogaOnly) {
-        defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
-    } else if (hasGymAccess) {
+    // PRIORITY 3: Fallback to equipment access from onboarding if no preference
+    else if (hasGymAccess) {
         defaultStrengthProgram = 'gym';
     } else if (hasDumbbells) {
         defaultStrengthProgram = 'home';
