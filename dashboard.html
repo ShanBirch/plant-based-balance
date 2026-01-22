@@ -10772,6 +10772,20 @@ function getTodaysWorkout() {
         const useHome = hasDumbbells && !hasGymAccess;
         const useBands = hasBands && !hasDumbbells && !hasGymAccess;
 
+        // DEBUG: Log homepage equipment check
+        console.log('🏠 Homepage equipment check:', {
+            equipment_access: userProfile?.equipment_access,
+            hasYogaOnly,
+            useYogaOnly,
+            hasDumbbells,
+            useHome,
+            hasBands,
+            useBands,
+            hasGymAccess,
+            useMaleGymSplit,
+            useFemaleGymSplit
+        });
+
         if (useYogaOnly) {
             // Yoga Only - direct check like gym
             WEEKLY_SCHEDULE = [
@@ -10997,6 +11011,14 @@ function getTodaysWorkout() {
         }
     }
     
+    // DEBUG: Log final workout selection for homepage
+    console.log('🏠 Homepage workout result:', {
+        workoutName,
+        programId,
+        dayIndex,
+        scheduleItem: WEEKLY_SCHEDULE[dayIndex]
+    });
+
     return {
         name: workoutName,
         icon: workoutIcon,
@@ -12915,7 +12937,8 @@ async function renderMovementView() {
     const hasYogaOnly = profile?.equipment_access === 'yoga_only';
 
     // Default available programs based on equipment
-    let availablePrograms = ['yoga', 'bodyweight']; // Always available
+    // IMPORTANT: For yoga-only users, only yoga is available (no bodyweight fallback)
+    let availablePrograms = hasYogaOnly ? ['yoga'] : ['yoga', 'bodyweight'];
     if (hasBands) availablePrograms.push('bands');
     if (hasDumbbells) availablePrograms.push('home');
     if (hasGymAccess) availablePrograms.push('gym');
