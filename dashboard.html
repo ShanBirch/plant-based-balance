@@ -10106,33 +10106,15 @@ function renderWeeklyCalendar() {
     // Female gym split: still requires high energy (cortisol-aware)
     const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
-    // Determine default strength program based on equipment
-    const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home' || hasGymAccess;
+    // Determine equipment access - simplified direct checks (like gym split)
+    const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home';
     const hasBands = userProfile.equipment_access === 'bands';
     const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
-    const preferredStyle = userProfile.preferred_workout_style;
-    let defaultStrengthProgram = 'bodyweight'; // Default fallback
 
-    // PRIORITY 1: yoga_only equipment access ALWAYS takes precedence
-    if (hasYogaOnly) {
-        defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
-    }
-    // PRIORITY 2: Check preferred workout style if compatible with equipment
-    else if (preferredStyle === 'gym' && hasGymAccess) {
-        defaultStrengthProgram = 'gym';
-    } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
-        defaultStrengthProgram = 'home';
-    } else if (preferredStyle === 'bands' && hasBands) {
-        defaultStrengthProgram = 'bands';
-    }
-    // PRIORITY 3: Fallback to equipment access (removed preferredStyle === 'none' - let equipment_access decide)
-    else if (hasGymAccess) {
-        defaultStrengthProgram = 'gym';
-    } else if (hasDumbbells) {
-        defaultStrengthProgram = 'home';
-    } else if (hasBands) {
-        defaultStrengthProgram = 'bands';
-    }
+    // SIMPLIFIED: Direct equipment checks (same pattern as gym split - no defaultStrengthProgram complexity)
+    const useYogaOnly = hasYogaOnly;
+    const useHome = hasDumbbells && !hasGymAccess;
+    const useBands = hasBands && !hasDumbbells && !hasGymAccess;
 
     // Calculate which week we're in for 12 different 4-week programs (48 weeks total)
     function getGymSplitWeekNumber() {
@@ -10200,77 +10182,50 @@ function renderWeeklyCalendar() {
             { day: 'Sat', program: 'female_gym_split', dayIndex: 5 }, // Active Recovery
             { day: 'Sun', program: 'female_gym_split', dayIndex: 6 }  // Rest
         ];
+    } else if (useYogaOnly) {
+        // Yoga Only - direct check like gym split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' },
+            { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin' },
+            { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'restorative' },
+            { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'power' },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
+    } else if (useHome) {
+        // Home/Dumbbell Split - direct check like gym split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'home', dayIndex: 0, subcategory: 'lowerbody' },
+            { day: 'Tue', program: 'home', dayIndex: 1, subcategory: 'push' },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
+            { day: 'Thu', program: 'home', dayIndex: 3, subcategory: 'pull' },
+            { day: 'Fri', program: 'home', dayIndex: 4, subcategory: 'lowerbody' },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
+    } else if (useBands) {
+        // Resistance Bands Split - direct check like gym split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bands', dayIndex: 0 },
+            { day: 'Tue', program: 'bands', dayIndex: 1 },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
+            { day: 'Thu', program: 'bands', dayIndex: 3 },
+            { day: 'Fri', program: 'bands', dayIndex: 4 },
+            { day: 'Sat', program: 'bands', dayIndex: 5 },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
     } else {
-        // Default schedule - use extended library with subcategories
-        // Determine which program to use based on equipment/preference
-        if (defaultStrengthProgram === 'home') {
-            // Home/Dumbbell Split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'home', dayIndex: 0, subcategory: 'lowerbody' },
-                { day: 'Tue', program: 'home', dayIndex: 1, subcategory: 'push' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
-                { day: 'Thu', program: 'home', dayIndex: 3, subcategory: 'pull' },
-                { day: 'Fri', program: 'home', dayIndex: 4, subcategory: 'lowerbody' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
-            ];
-        } else if (defaultStrengthProgram === 'bodyweight') {
-            // Bodyweight Split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'bodyweight', dayIndex: 0, subcategory: 'lowerbody' },
-                { day: 'Tue', program: 'bodyweight', dayIndex: 1, subcategory: 'upperbody' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
-                { day: 'Thu', program: 'bodyweight', dayIndex: 3, subcategory: 'core' },
-                { day: 'Fri', program: 'bodyweight', dayIndex: 4, subcategory: 'lowerbody' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
-            ];
-        } else if (defaultStrengthProgram === 'gym') {
-            // BUGFIX: Full Gym Access schedule (uses WORKOUT_DB gym program)
-            // This schedule is used when user has gym access but doesn't qualify for gym split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'gym', dayIndex: 0 }, // Leg Day - Quads
-                { day: 'Tue', program: 'gym', dayIndex: 1 }, // Chest & Triceps
-                { day: 'Wed', program: 'gym', dayIndex: 2 }, // Back & Biceps
-                { day: 'Thu', program: 'gym', dayIndex: 3 }, // Leg Day - Glutes & Hamstrings
-                { day: 'Fri', program: 'gym', dayIndex: 4 }, // Shoulders & Core
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' }, // Active Recovery
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Deep Rest
-            ];
-        } else if (defaultStrengthProgram === 'bands') {
-            // Resistance Bands Split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'bands', dayIndex: 0 }, // Lower Body
-                { day: 'Tue', program: 'bands', dayIndex: 1 }, // Push & Press
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' }, // Recovery
-                { day: 'Thu', program: 'bands', dayIndex: 3 }, // Full Body
-                { day: 'Fri', program: 'bands', dayIndex: 4 }, // Glute Sculpt
-                { day: 'Sat', program: 'bands', dayIndex: 5 }, // Pull & Biceps
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Rest
-            ];
-        } else if (defaultStrengthProgram === 'yoga') {
-            // Yoga Only - for users who selected yoga_only in onboarding (Somatic Yoga)
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' }, // Somatic Hormone Reset
-                { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' }, // Deep Hip Opening
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin' }, // Spinal Mobility
-                { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'restorative' }, // Restorative Recovery
-                { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'power' }, // Balance & Core
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' }, // Dynamic Flow
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Yin & Meditation
-            ];
-        } else {
-            // Yoga-focused (fallback for 'none' equipment or unknown)
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' },
-                { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin' },
-                { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'power' },
-                { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'restorative' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
-            ];
-        }
+        // Bodyweight Split (fallback - no equipment)
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bodyweight', dayIndex: 0, subcategory: 'lowerbody' },
+            { day: 'Tue', program: 'bodyweight', dayIndex: 1, subcategory: 'upperbody' },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
+            { day: 'Thu', program: 'bodyweight', dayIndex: 3, subcategory: 'core' },
+            { day: 'Fri', program: 'bodyweight', dayIndex: 4, subcategory: 'lowerbody' },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
     }
 
     // Helper to get workout from WORKOUT_DB or WORKOUT_LIBRARY (for gym split rotation)
@@ -10510,6 +10465,14 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
     // Female gym split: still requires high energy (cortisol-aware)
     const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
+    // SIMPLIFIED: Direct equipment checks (same pattern as gym split)
+    const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home';
+    const hasBands = userProfile.equipment_access === 'bands';
+    const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
+    const useYogaOnly = hasYogaOnly;
+    const useHome = hasDumbbells && !hasGymAccess;
+    const useBands = hasBands && !hasDumbbells && !hasGymAccess;
+
     // 2. Schedule Definition (Same as in renderWeeklyCalendar)
     let WEEKLY_SCHEDULE;
 
@@ -10532,106 +10495,53 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
             { day: 'Wed', program: 'female_gym_split', dayIndex: 2, muscleGroup: 'armscore' },
             { day: 'Thu', program: 'female_gym_split', dayIndex: 3, muscleGroup: 'legs' },
             { day: 'Fri', program: 'female_gym_split', dayIndex: 4, muscleGroup: 'pull' },
-            { day: 'Sat', program: 'female_gym_split', dayIndex: 5 }, // Active Recovery
-            { day: 'Sun', program: 'female_gym_split', dayIndex: 6 }  // Rest
+            { day: 'Sat', program: 'female_gym_split', dayIndex: 5 },
+            { day: 'Sun', program: 'female_gym_split', dayIndex: 6 }
+        ];
+    } else if (useYogaOnly) {
+        // Yoga Only - direct check like gym split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' },
+            { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin' },
+            { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'restorative' },
+            { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'power' },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
+    } else if (useHome) {
+        // Home/Dumbbell Split - direct check like gym split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'home', dayIndex: 0, subcategory: 'lowerbody' },
+            { day: 'Tue', program: 'home', dayIndex: 1, subcategory: 'push' },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
+            { day: 'Thu', program: 'home', dayIndex: 3, subcategory: 'pull' },
+            { day: 'Fri', program: 'home', dayIndex: 4, subcategory: 'lowerbody' },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
+    } else if (useBands) {
+        // Resistance Bands Split - direct check like gym split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bands', dayIndex: 0 },
+            { day: 'Tue', program: 'bands', dayIndex: 1 },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
+            { day: 'Thu', program: 'bands', dayIndex: 3 },
+            { day: 'Fri', program: 'bands', dayIndex: 4 },
+            { day: 'Sat', program: 'bands', dayIndex: 5 },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
         ];
     } else {
-        // Determine default program based on equipment/preference (same as renderWeeklyCalendar)
-        const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home' || hasGymAccess;
-        const hasBands = userProfile.equipment_access === 'bands';
-        const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
-        const preferredStyle = userProfile.preferred_workout_style;
-        let defaultStrengthProgram = 'bodyweight'; // Default fallback
-
-        // PRIORITY 1: yoga_only equipment access ALWAYS takes precedence
-        if (hasYogaOnly) {
-            defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
-        }
-        // PRIORITY 2: Check preferred workout style if compatible with equipment
-        else if (preferredStyle === 'gym' && hasGymAccess) {
-            defaultStrengthProgram = 'gym';
-        } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
-            defaultStrengthProgram = 'home';
-        } else if (preferredStyle === 'bands' && hasBands) {
-            defaultStrengthProgram = 'bands';
-        }
-        // PRIORITY 3: Fallback to equipment access (removed preferredStyle === 'none' - let equipment_access decide)
-        else if (hasGymAccess) {
-            defaultStrengthProgram = 'gym';
-        } else if (hasDumbbells) {
-            defaultStrengthProgram = 'home';
-        } else if (hasBands) {
-            defaultStrengthProgram = 'bands';
-        }
-
-        if (defaultStrengthProgram === 'home') {
-            // Home/Dumbbell Split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'home', dayIndex: 0, subcategory: 'lowerbody' },
-                { day: 'Tue', program: 'home', dayIndex: 1, subcategory: 'push' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
-                { day: 'Thu', program: 'home', dayIndex: 3, subcategory: 'pull' },
-                { day: 'Fri', program: 'home', dayIndex: 4, subcategory: 'lowerbody' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
-            ];
-        } else if (defaultStrengthProgram === 'bodyweight') {
-            // Bodyweight Split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'bodyweight', dayIndex: 0, subcategory: 'lowerbody' },
-                { day: 'Tue', program: 'bodyweight', dayIndex: 1, subcategory: 'upperbody' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
-                { day: 'Thu', program: 'bodyweight', dayIndex: 3, subcategory: 'core' },
-                { day: 'Fri', program: 'bodyweight', dayIndex: 4, subcategory: 'lowerbody' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
-            ];
-        } else if (defaultStrengthProgram === 'gym') {
-            // BUGFIX: Full Gym Access schedule (uses WORKOUT_DB gym program)
-            // This schedule is used when user has gym access but doesn't qualify for gym split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'gym', dayIndex: 0 }, // Leg Day - Quads
-                { day: 'Tue', program: 'gym', dayIndex: 1 }, // Chest & Triceps
-                { day: 'Wed', program: 'gym', dayIndex: 2 }, // Back & Biceps
-                { day: 'Thu', program: 'gym', dayIndex: 3 }, // Leg Day - Glutes & Hamstrings
-                { day: 'Fri', program: 'gym', dayIndex: 4 }, // Shoulders & Core
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' }, // Active Recovery
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Deep Rest
-            ];
-        } else if (defaultStrengthProgram === 'bands') {
-            // Resistance Bands Split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'bands', dayIndex: 0 }, // Lower Body
-                { day: 'Tue', program: 'bands', dayIndex: 1 }, // Push & Press
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' }, // Recovery
-                { day: 'Thu', program: 'bands', dayIndex: 3 }, // Full Body
-                { day: 'Fri', program: 'bands', dayIndex: 4 }, // Glute Sculpt
-                { day: 'Sat', program: 'bands', dayIndex: 5 }, // Pull & Biceps
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Rest
-            ];
-        } else if (defaultStrengthProgram === 'yoga') {
-            // Yoga Only - for users who selected yoga_only in onboarding (Somatic Yoga)
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' }, // Somatic Hormone Reset
-                { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' }, // Deep Hip Opening
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin' }, // Spinal Mobility
-                { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'restorative' }, // Restorative Recovery
-                { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'power' }, // Balance & Core
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' }, // Dynamic Flow
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Yin & Meditation
-            ];
-        } else {
-            // Yoga-focused (fallback for 'none' equipment or unknown)
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' },
-                { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin' },
-                { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'power' },
-                { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'restorative' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
-            ];
-        }
+        // Bodyweight Split (fallback - no equipment)
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bodyweight', dayIndex: 0, subcategory: 'lowerbody' },
+            { day: 'Tue', program: 'bodyweight', dayIndex: 1, subcategory: 'upperbody' },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
+            { day: 'Thu', program: 'bodyweight', dayIndex: 3, subcategory: 'core' },
+            { day: 'Fri', program: 'bodyweight', dayIndex: 4, subcategory: 'lowerbody' },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
     }
 
     if (dayIndexFromMonday < 0 || dayIndexFromMonday >= WEEKLY_SCHEDULE.length) return;
@@ -10842,46 +10752,37 @@ function getTodaysWorkout() {
     } else if (useFemaleGymSplit) {
         // Female Gym Split
         WEEKLY_SCHEDULE = [
-            { day: 'Mon', program: 'female_gym_split', dayIndex: 0, icon: '🦵', muscleGroup: 'legs' }, // Legs
-            { day: 'Tue', program: 'female_gym_split', dayIndex: 1, icon: '💪', muscleGroup: 'push' }, // Push
-            { day: 'Wed', program: 'female_gym_split', dayIndex: 2, icon: '💪', muscleGroup: 'armscore' }, // Arms & Core
-            { day: 'Thu', program: 'female_gym_split', dayIndex: 3, icon: '🦵', muscleGroup: 'legs' }, // Legs
-            { day: 'Fri', program: 'female_gym_split', dayIndex: 4, icon: '💪', muscleGroup: 'pull' }, // Pull
-            { day: 'Sat', program: 'female_gym_split', dayIndex: 5, icon: '🧘‍♀️' }, // Active Recovery
-            { day: 'Sun', program: 'female_gym_split', dayIndex: 6, icon: '💤' }  // Rest
+            { day: 'Mon', program: 'female_gym_split', dayIndex: 0, icon: '🦵', muscleGroup: 'legs' },
+            { day: 'Tue', program: 'female_gym_split', dayIndex: 1, icon: '💪', muscleGroup: 'push' },
+            { day: 'Wed', program: 'female_gym_split', dayIndex: 2, icon: '💪', muscleGroup: 'armscore' },
+            { day: 'Thu', program: 'female_gym_split', dayIndex: 3, icon: '🦵', muscleGroup: 'legs' },
+            { day: 'Fri', program: 'female_gym_split', dayIndex: 4, icon: '💪', muscleGroup: 'pull' },
+            { day: 'Sat', program: 'female_gym_split', dayIndex: 5, icon: '🧘‍♀️' },
+            { day: 'Sun', program: 'female_gym_split', dayIndex: 6, icon: '💤' }
         ];
     } else {
-        // Determine default program based on equipment/preference (same as renderWeeklyCalendar)
-        // BUGFIX: Calculate defaultStrengthProgram properly instead of relying on stored value
-        const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home' || hasGymAccess;
+        // SIMPLIFIED: Direct equipment checks (same pattern as gym split)
+        const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home';
         const hasBands = userProfile.equipment_access === 'bands';
         const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
-        const preferredStyle = userProfile.preferred_workout_style;
-        let defaultStrengthProgram = 'bodyweight'; // Default fallback
 
-        // PRIORITY 1: yoga_only equipment access ALWAYS takes precedence
-        if (hasYogaOnly) {
-            defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
-        }
-        // PRIORITY 2: Check preferred workout style if compatible with equipment
-        else if (preferredStyle === 'gym' && hasGymAccess) {
-            defaultStrengthProgram = 'gym';
-        } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
-            defaultStrengthProgram = 'home';
-        } else if (preferredStyle === 'bands' && hasBands) {
-            defaultStrengthProgram = 'bands';
-        }
-        // PRIORITY 3: Fallback to equipment access (removed preferredStyle === 'none' - let equipment_access decide)
-        else if (hasGymAccess) {
-            defaultStrengthProgram = 'gym';
-        } else if (hasDumbbells) {
-            defaultStrengthProgram = 'home';
-        } else if (hasBands) {
-            defaultStrengthProgram = 'bands';
-        }
+        const useYogaOnly = hasYogaOnly;
+        const useHome = hasDumbbells && !hasGymAccess;
+        const useBands = hasBands && !hasDumbbells && !hasGymAccess;
 
-        if (defaultStrengthProgram === 'home') {
-            // Home/Dumbbell Split
+        if (useYogaOnly) {
+            // Yoga Only - direct check like gym
+            WEEKLY_SCHEDULE = [
+                { day: 'Mon', program: 'yoga', dayIndex: 0, icon: '🧘‍♀️', subcategory: 'power' },
+                { day: 'Tue', program: 'yoga', dayIndex: 1, icon: '🧘‍♀️', subcategory: 'restorative' },
+                { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️', subcategory: 'yin' },
+                { day: 'Thu', program: 'yoga', dayIndex: 3, icon: '🧘‍♀️', subcategory: 'restorative' },
+                { day: 'Fri', program: 'yoga', dayIndex: 4, icon: '🧘‍♀️', subcategory: 'power' },
+                { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' },
+                { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' }
+            ];
+        } else if (useHome) {
+            // Home/Dumbbell Split - direct check like gym
             WEEKLY_SCHEDULE = [
                 { day: 'Mon', program: 'home', dayIndex: 0, icon: '🦵', subcategory: 'lowerbody' },
                 { day: 'Tue', program: 'home', dayIndex: 1, icon: '💪', subcategory: 'push' },
@@ -10891,59 +10792,25 @@ function getTodaysWorkout() {
                 { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' },
                 { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' }
             ];
-        } else if (defaultStrengthProgram === 'bodyweight') {
-            // Bodyweight Split
+        } else if (useBands) {
+            // Resistance Bands Split - direct check like gym
+            WEEKLY_SCHEDULE = [
+                { day: 'Mon', program: 'bands', dayIndex: 0, icon: '🦵' },
+                { day: 'Tue', program: 'bands', dayIndex: 1, icon: '💪' },
+                { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️', subcategory: 'restorative' },
+                { day: 'Thu', program: 'bands', dayIndex: 3, icon: '💪' },
+                { day: 'Fri', program: 'bands', dayIndex: 4, icon: '🍑' },
+                { day: 'Sat', program: 'bands', dayIndex: 5, icon: '💪' },
+                { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' }
+            ];
+        } else {
+            // Bodyweight Split (fallback - no equipment)
             WEEKLY_SCHEDULE = [
                 { day: 'Mon', program: 'bodyweight', dayIndex: 0, icon: '🦵', subcategory: 'lowerbody' },
                 { day: 'Tue', program: 'bodyweight', dayIndex: 1, icon: '💪', subcategory: 'upperbody' },
                 { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️', subcategory: 'restorative' },
                 { day: 'Thu', program: 'bodyweight', dayIndex: 3, icon: '🔥', subcategory: 'core' },
                 { day: 'Fri', program: 'bodyweight', dayIndex: 4, icon: '🦵', subcategory: 'lowerbody' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' }
-            ];
-        } else if (defaultStrengthProgram === 'gym') {
-            // BUGFIX: Full Gym Access schedule (uses WORKOUT_DB gym program)
-            // This schedule is used when user has gym access but doesn't qualify for gym split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'gym', dayIndex: 0, icon: '🦵' }, // Leg Day - Quads
-                { day: 'Tue', program: 'gym', dayIndex: 1, icon: '💪' }, // Chest & Triceps
-                { day: 'Wed', program: 'gym', dayIndex: 2, icon: '💪' }, // Back & Biceps
-                { day: 'Thu', program: 'gym', dayIndex: 3, icon: '🦵' }, // Leg Day - Glutes & Hamstrings
-                { day: 'Fri', program: 'gym', dayIndex: 4, icon: '💪' }, // Shoulders & Core
-                { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' }, // Active Recovery
-                { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' } // Deep Rest
-            ];
-        } else if (defaultStrengthProgram === 'bands') {
-            // Resistance Bands Split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'bands', dayIndex: 0, icon: '🦵' }, // Lower Body
-                { day: 'Tue', program: 'bands', dayIndex: 1, icon: '💪' }, // Push & Press
-                { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️', subcategory: 'restorative' }, // Recovery
-                { day: 'Thu', program: 'bands', dayIndex: 3, icon: '💪' }, // Full Body
-                { day: 'Fri', program: 'bands', dayIndex: 4, icon: '🍑' }, // Glute Sculpt
-                { day: 'Sat', program: 'bands', dayIndex: 5, icon: '💪' }, // Pull & Biceps
-                { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' } // Rest
-            ];
-        } else if (defaultStrengthProgram === 'yoga') {
-            // Yoga Only - for users who selected yoga_only in onboarding (Somatic Yoga)
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'yoga', dayIndex: 0, icon: '🧘‍♀️', subcategory: 'power' }, // Somatic Hormone Reset
-                { day: 'Tue', program: 'yoga', dayIndex: 1, icon: '🧘‍♀️', subcategory: 'restorative' }, // Deep Hip Opening
-                { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️', subcategory: 'yin' }, // Spinal Mobility
-                { day: 'Thu', program: 'yoga', dayIndex: 3, icon: '🧘‍♀️', subcategory: 'restorative' }, // Restorative Recovery
-                { day: 'Fri', program: 'yoga', dayIndex: 4, icon: '🧘‍♀️', subcategory: 'power' }, // Balance & Core
-                { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' }, // Dynamic Flow
-                { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' } // Yin & Meditation
-            ];
-        } else {
-            // Yoga-focused (fallback for 'none' equipment or unknown)
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'yoga', dayIndex: 0, icon: '🧘‍♀️', subcategory: 'power' },
-                { day: 'Tue', program: 'yoga', dayIndex: 1, icon: '🧘‍♀️', subcategory: 'restorative' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️', subcategory: 'yin' },
-                { day: 'Thu', program: 'yoga', dayIndex: 3, icon: '🧘‍♀️', subcategory: 'power' },
-                { day: 'Fri', program: 'yoga', dayIndex: 4, icon: '🧘‍♀️', subcategory: 'restorative' },
                 { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' },
                 { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' }
             ];
@@ -13037,36 +12904,14 @@ async function renderMovementView() {
     // Female gym split: still requires high energy (cortisol-aware)
     const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
+    // SIMPLIFIED: Direct equipment checks (same pattern as gym split - no defaultStrengthProgram complexity)
+    const useYogaOnly = hasYogaOnly;
+    const useHome = hasDumbbells && !hasGymAccess; // Has dumbbells but not full gym
+    const useBands = hasBands && !hasDumbbells && !hasGymAccess; // Has bands only
+
     // Add gym_split programs to available programs if user qualifies
     if (useMaleGymSplit) availablePrograms.push('gym_split');
     if (useFemaleGymSplit) availablePrograms.push('female_gym_split');
-
-    // Determine default strength program based on preferred workout style (sticky) or equipment from onboarding
-    const preferredStyle = profile?.preferred_workout_style;
-    let defaultStrengthProgram = 'bodyweight'; // Default fallback
-
-    // PRIORITY 1: yoga_only equipment access ALWAYS takes precedence
-    // This is an explicit equipment restriction that overrides workout style preferences
-    if (hasYogaOnly) {
-        defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
-    }
-    // PRIORITY 2: Check if user has a preferred workout style (from previous check-ins)
-    // but only if it's compatible with their equipment access
-    else if (preferredStyle === 'gym' && hasGymAccess) {
-        defaultStrengthProgram = 'gym';
-    } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
-        defaultStrengthProgram = 'home';
-    } else if (preferredStyle === 'bands' && hasBands) {
-        defaultStrengthProgram = 'bands';
-    }
-    // PRIORITY 3: Fallback to equipment access from onboarding (removed preferredStyle === 'none' - let equipment_access decide)
-    else if (hasGymAccess) {
-        defaultStrengthProgram = 'gym';
-    } else if (hasDumbbells) {
-        defaultStrengthProgram = 'home';
-    } else if (hasBands) {
-        defaultStrengthProgram = 'bands';
-    }
 
     // Weekly Schedule - maps each day to a program and workout
     // Uses equipment settings from onboarding to set appropriate workouts
@@ -13095,8 +12940,19 @@ async function renderMovementView() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
-    } else if (defaultStrengthProgram === 'home') {
-        // Home/Dumbbell Split
+    } else if (useYogaOnly) {
+        // Yoga Only - direct check like gym
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power', fallback: 'yoga', fallbackIdx: 0 },
+            { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 1 },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 2 },
+            { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 3 },
+            { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'power', fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
+        ];
+    } else if (useHome) {
+        // Home/Dumbbell Split - direct check like gym
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'home', dayIndex: 0, subcategory: 'lowerbody', fallback: 'yoga', fallbackIdx: 4 },
             { day: 'Tue', program: 'home', dayIndex: 1, subcategory: 'push', fallback: 'yoga', fallbackIdx: 5 },
@@ -13106,59 +12962,25 @@ async function renderMovementView() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
-    } else if (defaultStrengthProgram === 'bodyweight') {
-        // Bodyweight Split
+    } else if (useBands) {
+        // Resistance Bands Split - direct check like gym
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bands', dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Tue', program: 'bands', dayIndex: 1, fallback: 'yoga', fallbackIdx: 5 },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 2 },
+            { day: 'Thu', program: 'bands', dayIndex: 3, fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Fri', program: 'bands', dayIndex: 4, fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Sat', program: 'bands', dayIndex: 5, fallback: 'yoga', fallbackIdx: 5 },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
+        ];
+    } else {
+        // Bodyweight Split (fallback - no equipment)
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'bodyweight', dayIndex: 0, subcategory: 'lowerbody', fallback: 'yoga', fallbackIdx: 4 },
             { day: 'Tue', program: 'bodyweight', dayIndex: 1, subcategory: 'upperbody', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 2 },
             { day: 'Thu', program: 'bodyweight', dayIndex: 3, subcategory: 'core', fallback: 'yoga', fallbackIdx: 4 },
             { day: 'Fri', program: 'bodyweight', dayIndex: 4, subcategory: 'lowerbody', fallback: 'yoga', fallbackIdx: 4 },
-            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
-            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
-        ];
-    } else if (defaultStrengthProgram === 'bands') {
-        // Resistance Bands Split
-        WEEKLY_SCHEDULE = [
-            { day: 'Mon', program: 'bands', dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 }, // Lower Body
-            { day: 'Tue', program: 'bands', dayIndex: 1, fallback: 'yoga', fallbackIdx: 5 }, // Push & Press
-            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 2 }, // Recovery
-            { day: 'Thu', program: 'bands', dayIndex: 3, fallback: 'yoga', fallbackIdx: 4 }, // Full Body
-            { day: 'Fri', program: 'bands', dayIndex: 4, fallback: 'yoga', fallbackIdx: 4 }, // Glute Sculpt
-            { day: 'Sat', program: 'bands', dayIndex: 5, fallback: 'yoga', fallbackIdx: 5 }, // Pull & Biceps
-            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 } // Rest
-        ];
-    } else if (defaultStrengthProgram === 'yoga') {
-        // Yoga Only - for users who selected yoga_only in onboarding
-        WEEKLY_SCHEDULE = [
-            { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power', fallback: 'yoga', fallbackIdx: 0 }, // Somatic Hormone Reset
-            { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 1 }, // Deep Hip Opening
-            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 2 }, // Spinal Mobility
-            { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 3 }, // Restorative Recovery
-            { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'power', fallback: 'yoga', fallbackIdx: 4 }, // Balance & Core
-            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 }, // Dynamic Flow
-            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 } // Yin & Meditation
-        ];
-    } else if (defaultStrengthProgram === 'gym') {
-        // BUGFIX: Full Gym Access schedule (uses WORKOUT_DB gym program)
-        // This schedule is used when user has gym access but doesn't qualify for gym split
-        WEEKLY_SCHEDULE = [
-            { day: 'Mon', program: 'gym', dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 }, // Leg Day - Quads
-            { day: 'Tue', program: 'gym', dayIndex: 1, fallback: 'yoga', fallbackIdx: 5 }, // Chest & Triceps
-            { day: 'Wed', program: 'gym', dayIndex: 2, fallback: 'yoga', fallbackIdx: 2 }, // Back & Biceps
-            { day: 'Thu', program: 'gym', dayIndex: 3, fallback: 'yoga', fallbackIdx: 4 }, // Leg Day - Glutes & Hamstrings
-            { day: 'Fri', program: 'gym', dayIndex: 4, fallback: 'yoga', fallbackIdx: 4 }, // Shoulders & Core
-            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 }, // Active Recovery
-            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 } // Deep Rest
-        ];
-    } else {
-        // Yoga-focused (fallback for 'none' equipment or unknown)
-        WEEKLY_SCHEDULE = [
-            { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power', fallback: 'yoga', fallbackIdx: 0 },
-            { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 1 },
-            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 2 },
-            { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'power', fallback: 'yoga', fallbackIdx: 3 },
-            { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 4 },
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
