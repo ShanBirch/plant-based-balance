@@ -12967,11 +12967,20 @@ async function renderMovementView() {
     const hasYogaOnly = profile?.equipment_access === 'yoga_only';
 
     // Default available programs based on equipment
-    // IMPORTANT: For yoga-only users, only yoga is available (no bodyweight fallback)
-    let availablePrograms = hasYogaOnly ? ['yoga'] : ['yoga', 'bodyweight'];
-    if (hasBands) availablePrograms.push('bands');
-    if (hasDumbbells) availablePrograms.push('home');
-    if (hasGymAccess) availablePrograms.push('gym');
+    // IMPORTANT: Users should only get workouts matching their equipment
+    // yoga_only: only yoga, bands: yoga + bands, dumbbells+: includes bodyweight as fallback
+    let availablePrograms = ['yoga']; // Yoga always available
+    if (hasYogaOnly) {
+        // Yoga only - no other programs
+    } else if (hasBands && !hasDumbbells && !hasGymAccess) {
+        // Bands only - add bands but NOT bodyweight
+        availablePrograms.push('bands');
+    } else {
+        // Has dumbbells or gym - bodyweight is acceptable fallback
+        availablePrograms.push('bodyweight');
+        if (hasDumbbells) availablePrograms.push('home');
+        if (hasGymAccess) availablePrograms.push('gym');
+    }
 
     // PRIORITY 2: Weekly Schedule using WORKOUT_DB
     const today = new Date();
