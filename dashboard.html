@@ -21154,22 +21154,30 @@ async function submitDailyCycleSync() {
     // Mark check-in as completed for today
     localStorage.setItem('lastWellnessCheck', new Date().toDateString());
 
-    // 2.5. Save equipment selection as preferred workout style (makes it sticky)
+    // 2.5. Save equipment selection to update workout recommendations
     if (checkInProgress.equipment && window.currentUser && typeof dbHelpers !== 'undefined') {
         try {
-            // Update user profile with preferred workout style
-            await dbHelpers.users.update(window.currentUser.id, {
-                preferred_workout_style: checkInProgress.equipment
-            });
+            // Update equipment_access in quiz_results (where it's stored)
+            await window.supabaseClient.from('quiz_results')
+                .update({ equipment_access: checkInProgress.equipment })
+                .eq('user_id', window.currentUser.id);
 
-            // Also update localStorage profile
+            // Also update localStorage profile so workout schedules pick it up immediately
             const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-            userProfile.preferred_workout_style = checkInProgress.equipment;
+            userProfile.equipment_access = checkInProgress.equipment;
+            // Clear legacy gym_access field - equipment_access is the source of truth
+            userProfile.gym_access = (checkInProgress.equipment === 'gym');
             localStorage.setItem('userProfile', JSON.stringify(userProfile));
 
-            console.log('✅ Preferred workout style saved:', checkInProgress.equipment);
+            // Update window cache too
+            if (window.userProfile) {
+                window.userProfile.equipment_access = checkInProgress.equipment;
+                window.userProfile.gym_access = (checkInProgress.equipment === 'gym');
+            }
+
+            console.log('✅ Equipment access saved:', checkInProgress.equipment);
         } catch (e) {
-            console.warn('Failed to save preferred workout style:', e);
+            console.warn('Failed to save equipment access:', e);
         }
     }
 
