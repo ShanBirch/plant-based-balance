@@ -13159,6 +13159,11 @@ async function renderMovementView() {
                  workoutDayIndex = 0; // Power Yoga (Full Body Power Flow)
                  overrideSubcategory = 'power'; // Override subcategory for WORKOUT_LIBRARY
                  personalizationReason = isMale ? '💪 Daily Sync: Power yoga for high energy!' : '✨ Cycle Sync: Power flow for high energy!';
+             } else if (useBands) {
+                 // For bands users, upgrade from yoga to bands (if they were on yoga day)
+                 suggestedProgram = 'bands';
+                 workoutDayIndex = 0;
+                 personalizationReason = isMale ? '💪 Daily Sync: High energy - bands workout!' : '✨ Cycle Sync: Matching your high energy with bands!';
              } else {
                  suggestedProgram = 'bodyweight'; // Upgrade from Yoga
                  workoutDayIndex = 1; // Dynamic Flow
@@ -13175,6 +13180,10 @@ async function renderMovementView() {
                     workoutDayIndex = 0; // Power Yoga
                     overrideSubcategory = 'power'; // Override subcategory for WORKOUT_LIBRARY
                     personalizationReason = '💪 Daily Sync: Power yoga - fully recovered!';
+                } else if (useBands) {
+                    // For bands users, keep their bands workout - don't override to bodyweight
+                    // No change to suggestedProgram, just add motivation message
+                    personalizationReason = '💪 Daily Sync: Fully recovered - let\'s crush this bands workout!';
                 } else {
                     suggestedProgram = 'bodyweight';
                     workoutDayIndex = 1;
