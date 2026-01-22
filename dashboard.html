@@ -69,6 +69,16 @@ async function loadProfileData() {
     // Real function not loaded yet, silently skip
     console.log('loadProfileData: waiting for initialization...');
 }
+
+// Stub for applyAppTheme - safe no-op until real function loads
+var _applyAppThemeReal = null;
+async function applyAppTheme(themeKey) {
+    if (typeof _applyAppThemeReal === 'function') {
+        return await _applyAppThemeReal(themeKey);
+    }
+    // Real function not loaded yet, silently skip
+    console.log('applyAppTheme: waiting for initialization with theme:', themeKey);
+}
 </script>
 
 <style>
@@ -19405,7 +19415,7 @@ function createFallingFlowerAnimation() {
     }
 }
 
-async function applyAppTheme(themeKey) {
+async function _applyAppThemeRealImpl(themeKey) {
     const theme = APP_THEMES[themeKey];
     if(!theme) return;
 
@@ -19602,6 +19612,10 @@ async function applyAppTheme(themeKey) {
     // Trigger icon toggle update
     updateSettingsIcon();
 }
+
+// Replace stub with real implementation
+_applyAppThemeReal = _applyAppThemeRealImpl;
+applyAppTheme = _applyAppThemeRealImpl;
 
 // Reusable function to toggle settings icon and profile icon based on current theme
 function updateSettingsIcon() {
