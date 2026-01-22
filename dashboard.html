@@ -10026,7 +10026,9 @@ function renderWeeklyCalendar() {
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const hasGymAccess = userProfile.equipment_access === 'gym';
     const hasHighEnergy = userProfile.energy_status === 'high';
-    const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
+    // Male gym split: requires gym access only (no energy requirement)
+    const useMaleGymSplit = isMale && hasGymAccess;
+    // Female gym split: still requires high energy (cortisol-aware)
     const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
     // Determine default strength program based on equipment
@@ -10366,7 +10368,9 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const hasGymAccess = userProfile.equipment_access === 'gym';
     const hasHighEnergy = userProfile.energy_status === 'high';
-    const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
+    // Male gym split: requires gym access only (no energy requirement)
+    const useMaleGymSplit = isMale && hasGymAccess;
+    // Female gym split: still requires high energy (cortisol-aware)
     const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
     // 2. Schedule Definition (Same as in renderWeeklyCalendar)
@@ -10621,7 +10625,9 @@ function getTodaysWorkout() {
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const hasGymAccess = userProfile.equipment_access === 'gym';
     const hasHighEnergy = userProfile.energy_status === 'high';
-    const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
+    // Male gym split: requires gym access only (no energy requirement)
+    const useMaleGymSplit = isMale && hasGymAccess;
+    // Female gym split: still requires high energy (cortisol-aware)
     const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
     // Weekly Schedule Template - maps to WORKOUT_DB programs (same as calendar)
@@ -12660,7 +12666,9 @@ async function renderMovementView() {
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     const userProfileLocal = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const hasHighEnergy = userProfileLocal.energy_status === 'high';
-    const useMaleGymSplit = isMale && hasGymAccess && hasHighEnergy;
+    // Male gym split: requires gym access only (no energy requirement)
+    const useMaleGymSplit = isMale && hasGymAccess;
+    // Female gym split: still requires high energy (cortisol-aware)
     const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
     // Determine default strength program based on preferred workout style (sticky) or equipment from onboarding
