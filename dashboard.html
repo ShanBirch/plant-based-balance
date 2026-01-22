@@ -8514,20 +8514,20 @@ function startCustomBuilderWorkout() {
                 </h3>
             </div>
             <div style="padding: 0;">
-                <!-- Hormone Type / Energy Level (gender-specific) -->
+                <!-- Hormone Type / Energy Level (gender-specific) - Read Only -->
                 <div class="setting-row" style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <div id="profile-type-label" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Hormone Type</div>
-                        <div id="profile-type-desc" style="font-size: 0.8rem; color: var(--text-muted);">Determines your nutrition plan</div>
+                        <div id="profile-type-desc" style="font-size: 0.8rem; color: var(--text-muted);">From your onboarding quiz</div>
                     </div>
                     <div id="profile-type-display" style="font-weight: 700; color: var(--primary);">Cortisol</div>
                 </div>
-                
-                <!-- Equipment -->
+
+                <!-- Equipment - Read Only, updated via daily check-in -->
                 <div class="setting-row" style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
                      <div>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Equipment Access</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">Filters your available workouts</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Updated via daily check-in</div>
                     </div>
                     <div id="profile-equipment-display" style="font-weight: 700; color: var(--primary);">No Equipment</div>
                 </div>
@@ -8686,10 +8686,8 @@ function startCustomBuilderWorkout() {
              { id: 'profile-email-display', type: 'text' },
              { id: 'profile-age-display', type: 'text' },
              { id: 'profile-weight-display', type: 'text' },
-             { id: 'profile-goal-display', type: 'text' },
-             { id: 'profile-type-display', type: 'select', options: ['CORTISOL', 'ESTROGEN', 'ADRENAL'] },
-             { id: 'profile-equipment-display', type: 'select', options: [['none', 'No Equipment'], ['bands', 'Resistance Bands'], ['dumbbells', 'Home / Dumbbells'], ['gym', 'Full Gym Access'], ['yoga_only', 'Yoga / Stretching Only']] }
-             // Symptoms removed - can only be updated via daily check-in
+             { id: 'profile-goal-display', type: 'text' }
+             // Energy Level, Equipment, and Symptoms removed - can only be updated via daily check-in
         ];
         
         if (!isEditing) {
@@ -8759,10 +8757,8 @@ function startCustomBuilderWorkout() {
             { id: 'profile-email-display', key: 'email' },
             { id: 'profile-age-display', key: 'age' },
             { id: 'profile-weight-display', key: 'weight' },
-            { id: 'profile-goal-display', key: 'goal_weight' },
-            { id: 'profile-type-display', key: 'profile' },
-            { id: 'profile-equipment-display', key: 'equipment_access' }
-            // Symptoms removed - can only be updated via daily check-in
+            { id: 'profile-goal-display', key: 'goal_weight' }
+            // Energy Level, Equipment, and Symptoms removed - can only be updated via daily check-in
         ];
         
         let quizData = {};
@@ -8772,34 +8768,14 @@ function startCustomBuilderWorkout() {
             const el = document.getElementById(f.id);
             if(!el) return;
 
-            // NOTE: Symptoms handling removed - symptoms can only be updated via daily check-in
+            // NOTE: Energy Level, Equipment, and Symptoms removed - can only be updated via daily check-in
 
             const input = el.querySelector('input, select');
             if(input) {
                 let val = input.value;
                 quizData[f.key] = val;
                 // Update UI Display properly
-                if (f.key === 'equipment_access') {
-                    const eqMap = {
-                        'gym': 'Full Gym Access',
-                        'dumbbells': 'Home / Dumbbells',
-                        'home': 'Home / Dumbbells',  // Legacy value support
-                        'bands': 'Resistance Bands',
-                        'yoga_only': 'Yoga / Stretching Only',
-                        'none': 'No Equipment',
-                        'bodyweight': 'No Equipment'  // Legacy value support
-                    };
-                    el.innerText = eqMap[val] || 'No Equipment';
-                    el.dataset.raw = val;
-                    // Clear preferred_workout_style when equipment changes
-                    // This ensures the new equipment_access takes priority
-                    quizData.preferred_workout_style = null;
-                    // Clear legacy gym_access field - equipment_access is the source of truth
-                    // This fixes the bug where gym split was still selected after changing to other equipment
-                    quizData.gym_access = (val === 'gym');
-                } else {
-                    el.innerText = val + (f.key === 'weight' ? ' kg' : '');
-                }
+                el.innerText = val + (f.key === 'weight' ? ' kg' : '');
             }
         });
         
@@ -8829,16 +8805,7 @@ function startCustomBuilderWorkout() {
                     await dbHelpers.userFacts.upsert(window.currentUser.id, {
                         personal_details: { ...currentDetails, ...factsData }
                     });
-
-                    // 3. Also update quiz_results if equipment_access changed (it's stored there too)
-                    if (factsData.equipment_access) {
-                        try {
-                            await window.supabaseClient.from('quiz_results')
-                                .update({ equipment_access: factsData.equipment_access })
-                                .eq('user_id', window.currentUser.id);
-                            console.log('Updated equipment_access in quiz_results:', factsData.equipment_access);
-                        } catch(e) { console.error('Failed to update quiz_results:', e); }
-                    }
+                    // Note: equipment_access is now only updated via daily check-in
                 })();
             }
             
