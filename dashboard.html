@@ -10772,6 +10772,20 @@ function getTodaysWorkout() {
         const useHome = hasDumbbells && !hasGymAccess;
         const useBands = hasBands && !hasDumbbells && !hasGymAccess;
 
+        // DEBUG: Log homepage equipment check
+        console.log('🏠 Homepage equipment check:', {
+            equipment_access: userProfile?.equipment_access,
+            hasYogaOnly,
+            useYogaOnly,
+            hasDumbbells,
+            useHome,
+            hasBands,
+            useBands,
+            hasGymAccess,
+            useMaleGymSplit,
+            useFemaleGymSplit
+        });
+
         if (useYogaOnly) {
             // Yoga Only - direct check like gym
             WEEKLY_SCHEDULE = [
@@ -10997,6 +11011,14 @@ function getTodaysWorkout() {
         }
     }
     
+    // DEBUG: Log final workout selection for homepage
+    console.log('🏠 Homepage workout result:', {
+        workoutName,
+        programId,
+        dayIndex,
+        scheduleItem: WEEKLY_SCHEDULE[dayIndex]
+    });
+
     return {
         name: workoutName,
         icon: workoutIcon,
