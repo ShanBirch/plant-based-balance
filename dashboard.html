@@ -13012,9 +13012,24 @@ async function renderMovementView() {
             personalizationReason = isMale ? '💪 Daily Sync: Active recovery for low energy' : '✨ Cycle Sync: Gentle movement for low energy today';
         }
         // Equipment override based on TODAY's explicit check-in choice
-        else if (equipmentFromCheckin === 'gym' && availablePrograms.includes('gym')) {
-            suggestedProgram = 'gym';
-            workoutDayIndex = calDayIndex % 7;
+        // BUGFIX: Respect gym_split programs when user selects gym equipment in check-in
+        else if (equipmentFromCheckin === 'gym' && (availablePrograms.includes('gym') || availablePrograms.includes('gym_split') || availablePrograms.includes('female_gym_split'))) {
+            // Male users qualifying for gym_split should stay on gym_split schedule
+            if (useMaleGymSplit && availablePrograms.includes('gym_split')) {
+                suggestedProgram = 'gym_split';
+                // Keep the original dayIndex from the gym_split schedule item
+                workoutDayIndex = scheduleItem.dayIndex;
+            }
+            // Female users qualifying for female_gym_split should stay on female_gym_split schedule
+            else if (useFemaleGymSplit && availablePrograms.includes('female_gym_split')) {
+                suggestedProgram = 'female_gym_split';
+                workoutDayIndex = scheduleItem.dayIndex;
+            }
+            // Fallback to regular gym program
+            else {
+                suggestedProgram = 'gym';
+                workoutDayIndex = calDayIndex % 7;
+            }
             userSelectedEquipmentToday = true;
             // Clear symptom-based personalization if user explicitly chose equipment
             if (personalizationReason.includes('symptoms') || personalizationReason.includes('Restorative')) {
