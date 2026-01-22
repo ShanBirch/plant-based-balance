@@ -12798,6 +12798,10 @@ async function renderMovementView() {
     // Female gym split: still requires high energy (cortisol-aware)
     const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
+    // Add gym_split programs to available programs if user qualifies
+    if (useMaleGymSplit) availablePrograms.push('gym_split');
+    if (useFemaleGymSplit) availablePrograms.push('female_gym_split');
+
     // Determine default strength program based on preferred workout style (sticky) or equipment from onboarding
     const preferredStyle = profile?.preferred_workout_style;
     let defaultStrengthProgram = 'bodyweight'; // Default fallback
