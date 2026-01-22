@@ -12915,7 +12915,8 @@ async function renderMovementView() {
     const hasYogaOnly = profile?.equipment_access === 'yoga_only';
 
     // Default available programs based on equipment
-    let availablePrograms = ['yoga', 'bodyweight']; // Always available
+    // IMPORTANT: For yoga-only users, only yoga is available (no bodyweight fallback)
+    let availablePrograms = hasYogaOnly ? ['yoga'] : ['yoga', 'bodyweight'];
     if (hasBands) availablePrograms.push('bands');
     if (hasDumbbells) availablePrograms.push('home');
     if (hasGymAccess) availablePrograms.push('gym');
