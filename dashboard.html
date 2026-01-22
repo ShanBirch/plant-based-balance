@@ -10985,14 +10985,11 @@ function getTodaysWorkout() {
         phaseInfo = PHASE_INFO['performance'];
     }
 
-    // Apply High Cortisol safety override (applies to bodyweight and gym split users)
-    if (isHighCortisol && (programId === 'bodyweight' || scheduleItem.program === 'gym_split' || scheduleItem.program === 'female_gym_split')) {
-        const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
-        if (yogaWorkout) {
-            workoutName = yogaWorkout.title;
-            workoutIcon = '🧘‍♀️';
-        }
-    }
+    // REMOVED: Hormone profile automatic overrides
+    // Workout selection is now based ONLY on:
+    // 1. Daily check-in data (equipment, energy, symptoms, recovery status)
+    // 2. Onboarding preferences (equipment access, cycle sync settings)
+    // Hormone profiles (cortisol/estrogen) no longer automatically override workouts
 
     // Apply daily check-in modifiers (read from TODAY's log, not stale global state)
     const todayStr = new Date().toISOString().split('T')[0];
