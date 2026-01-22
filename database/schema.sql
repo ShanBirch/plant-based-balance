@@ -73,6 +73,8 @@ CREATE TABLE IF NOT EXISTS public.quiz_results (
   -- Quiz responses
   menopause_status TEXT,
   cycle_description TEXT,
+  cycle_body_response TEXT,
+  cycle_sync_preference TEXT,
   activity_level TEXT,
   weight_storage_location TEXT,
   goal_body_type TEXT,

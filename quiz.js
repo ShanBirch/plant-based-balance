@@ -26,6 +26,26 @@ const coreQuestions = [
         ]
     },
     {
+        id: "cycle_body_response",
+        text: "How does your body respond to your cycle?",
+        subtext: "This helps us personalize your workout recommendations.",
+        type: "choice",
+        options: [
+            { text: "I feel strong and energized", value: "strong" },
+            { text: "I feel tired with low energy", value: "tired" }
+        ]
+    },
+    {
+        id: "cycle_sync_preference",
+        text: "Do you want your workouts synced to your cycle?",
+        subtext: "You can always change this later in your settings.",
+        type: "choice",
+        options: [
+            { text: "Yes, sync my workouts", value: "yes" },
+            { text: "No, I prefer standard recommendations", value: "no" }
+        ]
+    },
+    {
         id: "activity_level",
         text: "How active are you?",
         type: "choice",

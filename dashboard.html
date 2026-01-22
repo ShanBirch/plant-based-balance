@@ -10949,14 +10949,8 @@ function getTodaysWorkout() {
         phaseKey = getCyclePhase(currentCycleDay, userCycleData.cycleLength);
         phaseInfo = PHASE_INFO[phaseKey];
 
-        // Apply phase modifiers - swap to yoga on menstrual phase if doing strength (females only)
-        if (phaseKey === 'menstrual' && programId === 'bodyweight') {
-            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
-            if (yogaWorkout) {
-                workoutName = yogaWorkout.title;
-                workoutIcon = '🧘‍♀️';
-            }
-        }
+        // REMOVED: Automatic cycle phase override - now respects user preferences set in onboarding
+        // Users can opt in to cycle-based recommendations via onboarding questions
     }
 
     // For males, set performance mode
@@ -13282,18 +13276,21 @@ async function renderMovementView() {
         }
     }
 
-    // PRIORITY 4: Cycle Phase adjustments (skip for males)
-    // CRITICAL: Do NOT override if user explicitly selected equipment in today's check-in
-    if (!isMale && !personalizationReason && !userSelectedEquipmentToday && cyclePhaseInfo && phaseKey !== 'wellness' && phaseKey !== 'performance') {
-        if (phaseKey === 'menstrual' && (suggestedProgram === 'bodyweight' || suggestedProgram === 'gym' || suggestedProgram === 'home' || suggestedProgram === 'bands')) {
-            // During menstrual, swap strength workouts to gentle yoga
-            // BUT only if user hasn't explicitly selected equipment today
-            suggestedProgram = 'yoga';
-            workoutDayIndex = 3; // Restorative Recovery
-            personalizationReason = `✨ Cycle Sync: Gentle movement for menstrual phase`;
-        } else {
-            personalizationReason = `✨ Cycle Sync: ${cyclePhaseInfo.rec}`;
+    // PRIORITY 4: Cycle Phase adjustments (REMOVED - now based on user preference)
+    // Check if user opted in to cycle-based recommendations
+    if (!isMale && !personalizationReason && !userSelectedEquipmentToday && profile && cyclePhaseInfo && phaseKey !== 'wellness' && phaseKey !== 'performance') {
+        const cycleSyncEnabled = profile.cycle_sync_preference === 'yes';
+        const bodyResponseTired = profile.cycle_body_response === 'tired';
+
+        // Only apply cycle-based recommendations if user opted in
+        if (cycleSyncEnabled && bodyResponseTired) {
+            // User opted in AND feels tired during cycle - recommend yoga during menstrual phase
+            if (phaseKey === 'menstrual' && (suggestedProgram === 'bodyweight' || suggestedProgram === 'gym' || suggestedProgram === 'home' || suggestedProgram === 'bands')) {
+                // Show personalization message but don't force yoga (let user decide via popup if needed)
+                personalizationReason = `✨ Cycle Sync: Consider gentle movement during menstrual phase`;
+            }
         }
+        // If user opted out or feels strong, we don't add cycle-based messaging at all
     }
 
     // For males, show performance-based recommendation if no other reason
@@ -21422,21 +21419,43 @@ async function submitDailyCycleSync() {
         // Show yoga recommendation popup for low energy
         showLowEnergyYogaPopup();
         return; // The popup will handle navigation
-    } else {
-        // Clear any existing yoga override if energy is NOT low
-        // This handles the case where user previously accepted yoga but now has high energy
-        localStorage.removeItem('todayWorkoutOverride');
-
-        // Also clear the workoutOverride from today's log
-        const today = new Date().toISOString().split('T')[0];
-        if (userCycleData.logs && userCycleData.logs[today]) {
-            delete userCycleData.logs[today].workoutOverride;
-            localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
-        }
-
-        // Refresh views to show normal workout (not yoga)
-        if (typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
     }
+
+    // 6.5. Handle cycle-based workout recommendations (for women who opted in)
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+    if (!isMale) {
+        // Get user profile to check cycle preferences
+        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        const cycleSyncEnabled = userProfile.cycle_sync_preference === 'yes';
+        const bodyResponseTired = userProfile.cycle_body_response === 'tired';
+
+        // Calculate current cycle phase
+        if (cycleSyncEnabled && bodyResponseTired && userCycleData.lastPeriod && !userCycleData.noPeriodMode) {
+            const lastPeriod = new Date(userCycleData.lastPeriod);
+            const today = new Date();
+            const daysSinceStart = Math.floor((today - lastPeriod) / (24 * 60 * 60 * 1000));
+            const currentCycleDay = (daysSinceStart % (userCycleData.cycleLength || 28)) + 1;
+
+            // If in menstrual phase (days 1-5), show yoga recommendation popup
+            if (currentCycleDay >= 1 && currentCycleDay <= 5) {
+                showLowEnergyYogaPopup(); // Reuse same popup - message is appropriate
+                return; // The popup will handle navigation
+            }
+        }
+    }
+
+    // Clear any existing yoga override if energy is NOT low and not in menstrual phase
+    localStorage.removeItem('todayWorkoutOverride');
+
+    // Also clear the workoutOverride from today's log
+    const today = new Date().toISOString().split('T')[0];
+    if (userCycleData.logs && userCycleData.logs[today]) {
+        delete userCycleData.logs[today].workoutOverride;
+        localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+    }
+
+    // Refresh views to show normal workout (not yoga)
+    if (typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
 
     // 7. Redirect to Dashboard with Animation
     switchAppTab('dashboard');
