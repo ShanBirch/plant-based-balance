@@ -8794,6 +8794,9 @@ function startCustomBuilderWorkout() {
                     // Clear preferred_workout_style when equipment changes
                     // This ensures the new equipment_access takes priority
                     quizData.preferred_workout_style = null;
+                    // Clear legacy gym_access field - equipment_access is the source of truth
+                    // This fixes the bug where gym split was still selected after changing to other equipment
+                    quizData.gym_access = (val === 'gym');
                 } else {
                     el.innerText = val + (f.key === 'weight' ? ' kg' : '');
                 }
@@ -10099,7 +10102,8 @@ function renderWeeklyCalendar() {
         }
     }
 
-    const hasGymAccess = userProfile.equipment_access === 'gym' || userProfile.gym_access === true;
+    // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
+    const hasGymAccess = userProfile.equipment_access === 'gym' || (userProfile.equipment_access === undefined && userProfile.gym_access === true);
     const hasHighEnergy = userProfile.energy_status === 'high';
     // Male gym split: requires gym access only (no energy requirement)
     const useMaleGymSplit = isMale && hasGymAccess;
@@ -10458,7 +10462,8 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
         }
     }
 
-    const hasGymAccess = userProfile.equipment_access === 'gym' || userProfile.gym_access === true;
+    // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
+    const hasGymAccess = userProfile.equipment_access === 'gym' || (userProfile.equipment_access === undefined && userProfile.gym_access === true);
     const hasHighEnergy = userProfile.energy_status === 'high';
     // Male gym split: requires gym access only (no energy requirement)
     const useMaleGymSplit = isMale && hasGymAccess;
@@ -10712,6 +10717,28 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
 // --- SHARED WORKOUT LOGIC ---
 // Returns today's recommended workout based on Calendar logic (same as renderWeeklyCalendar)
 function getTodaysWorkout() {
+    // Check for today's workout override (e.g., low energy yoga recommendation)
+    try {
+        const override = JSON.parse(localStorage.getItem('todayWorkoutOverride') || 'null');
+        if (override && override.date === new Date().toISOString().split('T')[0]) {
+            // Return yoga workout for low energy override
+            if (override.program === 'yoga') {
+                const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
+                const today = new Date();
+                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                return {
+                    name: yogaWorkout?.title || 'Restorative Yoga',
+                    icon: '🧘‍♀️',
+                    program: 'yoga',
+                    dayIndex: 3,
+                    dayName: dayNames[today.getDay()],
+                    isOverride: true,
+                    overrideReason: override.reason
+                };
+            }
+        }
+    } catch (e) { /* ignore parse errors */ }
+
     // Check if user qualifies for Gym Split (Male or Female)
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
 
@@ -10728,7 +10755,8 @@ function getTodaysWorkout() {
         }
     }
 
-    const hasGymAccess = userProfile.equipment_access === 'gym' || userProfile.gym_access === true;
+    // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
+    const hasGymAccess = userProfile.equipment_access === 'gym' || (userProfile.equipment_access === undefined && userProfile.gym_access === true);
     const hasHighEnergy = userProfile.energy_status === 'high';
     // Male gym split: requires gym access only (no energy requirement)
     const useMaleGymSplit = isMale && hasGymAccess;
@@ -12876,7 +12904,8 @@ async function renderMovementView() {
 
     // PRIORITY 1: Determine available programs based on quiz/profile equipment
     // Check if user has gym access from their profile
-    const hasGymAccess = profile?.equipment_access === 'gym' || profile?.gym_access === true;
+    // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
+    const hasGymAccess = profile?.equipment_access === 'gym' || (profile?.equipment_access === undefined && profile?.gym_access === true);
     // Support both 'dumbbells' (new) and 'home' (legacy) values for backward compatibility
     const hasDumbbells = profile?.equipment_access === 'dumbbells' || profile?.equipment_access === 'home' || hasGymAccess;
     // Check for resistance bands only
@@ -12990,8 +13019,20 @@ async function renderMovementView() {
     let suggestedProgram = scheduleItem.program;
     let workoutDayIndex = scheduleItem.dayIndex;
     let personalizationReason = '';
-    
-    // PRIORITY 3: Daily Check-in adjustments
+    let hasWorkoutOverride = false;
+
+    // PRIORITY 0: Check for today's workout override (e.g., user accepted yoga recommendation)
+    try {
+        const override = JSON.parse(localStorage.getItem('todayWorkoutOverride') || 'null');
+        if (override && override.date === dateStr && override.program) {
+            suggestedProgram = override.program;
+            workoutDayIndex = 3; // Restorative Recovery for yoga
+            personalizationReason = isMale ? '💪 Daily Sync: Recovery session for low energy' : '✨ Cycle Sync: Restorative practice for low energy';
+            hasWorkoutOverride = true;
+        }
+    } catch (e) { /* ignore parse errors */ }
+
+    // PRIORITY 3: Daily Check-in adjustments (skip if override is active)
     // --- DAILY SYNC OVERRIDE (Local Log) ---
     // Use gender-appropriate messaging (isMale defined earlier for gym_split check)
     const syncLabel = isMale ? '💪 Daily Sync' : '✨ Cycle Sync';
@@ -12999,11 +13040,12 @@ async function renderMovementView() {
     // Track if user explicitly selected equipment in today's check-in
     let userSelectedEquipmentToday = false;
 
-    if (userCycleData.logs && userCycleData.logs[dateStr]) {
+    if (userCycleData.logs && userCycleData.logs[dateStr] && !hasWorkoutOverride) {
         const log = userCycleData.logs[dateStr];
 
-        // Map Energy
-        if (log.energy === 'low') {
+        // Map Energy - only auto-apply if user hasn't already made a choice via popup
+        if (log.energy === 'low' && !log.workoutOverride) {
+             // Low energy is now handled by popup - this is fallback for older check-ins
              suggestedProgram = 'yoga';
              workoutDayIndex = 3;
              personalizationReason = isMale ? '💪 Daily Sync: Active recovery for low energy.' : '✨ Cycle Sync: Gentle flow for low energy.';
@@ -21192,10 +21234,114 @@ async function submitDailyCycleSync() {
         renderMovementView();
     }
 
-    // 6. Redirect to Dashboard with Animation
+    // 6. Check for low energy and show yoga recommendation popup
+    if (checkInProgress.energy === 'low') {
+        showLowEnergyYogaPopup();
+        return; // The popup will handle navigation
+    }
+
+    // 7. Redirect to Dashboard with Animation
     switchAppTab('dashboard');
 
     // Show Toast/Banner on Dashboard
+    showCycleSyncBanner();
+}
+
+// Low energy yoga recommendation popup
+function showLowEnergyYogaPopup() {
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+    const syncLabel = isMale ? '💪 Daily Sync' : '✨ Cycle Sync';
+
+    // Create popup overlay
+    const popup = document.createElement('div');
+    popup.id = 'low-energy-popup';
+    popup.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6); z-index: 3000;
+        display: flex; align-items: center; justify-content: center;
+        animation: fadeIn 0.3s ease;
+    `;
+
+    popup.innerHTML = `
+        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 340px; margin: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">🧘‍♀️</div>
+            <h3 style="margin: 0 0 10px 0; color: var(--primary); font-size: 1.3rem;">${syncLabel}</h3>
+            <p style="color: #64748b; margin: 0 0 20px 0; line-height: 1.5;">
+                We noticed you're feeling low energy today. We recommend <strong>Restorative Yoga</strong> to help you recover and recharge.
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="acceptYogaRecommendation()" style="
+                    flex: 1; padding: 14px 20px; background: var(--primary); color: white;
+                    border: none; border-radius: 12px; font-weight: 600; cursor: pointer;
+                    font-size: 1rem;
+                ">Yes, switch to Yoga</button>
+                <button onclick="declineYogaRecommendation()" style="
+                    flex: 1; padding: 14px 20px; background: #f1f5f9; color: #64748b;
+                    border: none; border-radius: 12px; font-weight: 600; cursor: pointer;
+                    font-size: 1rem;
+                ">Keep my workout</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+}
+
+function acceptYogaRecommendation() {
+    // Save yoga override for today
+    const today = new Date().toISOString().split('T')[0];
+    const yogaOverride = { date: today, program: 'yoga', reason: 'low_energy' };
+    localStorage.setItem('todayWorkoutOverride', JSON.stringify(yogaOverride));
+
+    // Also update the check-in log to reflect yoga choice
+    if (userCycleData.logs && userCycleData.logs[today]) {
+        userCycleData.logs[today].workoutOverride = 'yoga';
+        localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+    }
+
+    // Save to database if possible
+    if (window.currentUser && typeof dbHelpers !== 'undefined') {
+        dbHelpers.checkins.upsert(window.currentUser.id, today, {
+            workout_override: 'yoga'
+        }).catch(e => console.warn('Failed to save workout override:', e));
+    }
+
+    // Close popup
+    const popup = document.getElementById('low-energy-popup');
+    if (popup) popup.remove();
+
+    // Refresh views to show yoga
+    if (typeof renderMovementView === 'function') renderMovementView();
+    if (typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
+    if (typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
+
+    // Navigate to dashboard
+    switchAppTab('dashboard');
+
+    // Show confirmation banner
+    const banner = document.createElement('div');
+    banner.innerText = "🧘 Switched to Restorative Yoga for today!";
+    banner.style.cssText = "position:fixed; top:80px; left:50%; transform:translateX(-50%); background:var(--accent-green); color:white; padding:12px 24px; border-radius:20px; z-index:2000; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.2);";
+    document.body.appendChild(banner);
+    setTimeout(() => { banner.style.opacity = '0'; setTimeout(() => banner.remove(), 500); }, 3000);
+}
+
+function declineYogaRecommendation() {
+    // Record that user declined - so we don't force yoga on them
+    const today = new Date().toISOString().split('T')[0];
+    if (userCycleData.logs && userCycleData.logs[today]) {
+        userCycleData.logs[today].workoutOverride = 'declined';
+        localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+    }
+
+    // Close popup without changing workout
+    const popup = document.getElementById('low-energy-popup');
+    if (popup) popup.remove();
+
+    // Navigate to dashboard
+    switchAppTab('dashboard');
+
+    // Show regular banner
     showCycleSyncBanner();
 }
 
