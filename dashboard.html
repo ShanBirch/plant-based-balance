@@ -12793,7 +12793,11 @@ let selectedEnergy = null;
 let selectedEquipment = null;
 
 function openCheckInModal() {
-    document.getElementById('checkin-modal').style.display = 'flex';
+    // Use the new check-in modal (with hyphen) instead of old one
+    if (typeof applyGenderSpecificUI === 'function') {
+        applyGenderSpecificUI();
+    }
+    document.getElementById('check-in-modal').style.display = 'flex';
 }
 
 function selectEnergy(level) {
