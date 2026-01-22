@@ -21209,10 +21209,25 @@ async function submitDailyCycleSync() {
         renderMovementView();
     }
 
-    // 6. Check for low energy and show yoga recommendation popup
+    // 6. Handle energy-based workout override
     if (checkInProgress.energy === 'low') {
+        // Show yoga recommendation popup for low energy
         showLowEnergyYogaPopup();
         return; // The popup will handle navigation
+    } else {
+        // Clear any existing yoga override if energy is NOT low
+        // This handles the case where user previously accepted yoga but now has high energy
+        localStorage.removeItem('todayWorkoutOverride');
+
+        // Also clear the workoutOverride from today's log
+        const today = new Date().toISOString().split('T')[0];
+        if (userCycleData.logs && userCycleData.logs[today]) {
+            delete userCycleData.logs[today].workoutOverride;
+            localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+        }
+
+        // Refresh views to show normal workout (not yoga)
+        if (typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
     }
 
     // 7. Redirect to Dashboard with Animation
