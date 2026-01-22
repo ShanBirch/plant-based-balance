@@ -10985,8 +10985,11 @@ function getTodaysWorkout() {
         phaseInfo = PHASE_INFO['performance'];
     }
 
-    // Apply High Cortisol safety override (applies to bodyweight and gym split users)
-    if (isHighCortisol && (programId === 'bodyweight' || scheduleItem.program === 'gym_split' || scheduleItem.program === 'female_gym_split')) {
+    // REMOVED: High Cortisol automatic override for gym split users
+    // Females now work like males - gym split access is based on equipment only
+    // Cycle sync is opt-in via onboarding, not automatic based on hormone profile
+    // Only apply cortisol override to bodyweight users (no gym access)
+    if (isHighCortisol && programId === 'bodyweight') {
         const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Somatic Hormone Reset
         if (yogaWorkout) {
             workoutName = yogaWorkout.title;
