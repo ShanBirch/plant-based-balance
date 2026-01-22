@@ -13298,7 +13298,15 @@ async function renderMovementView() {
         workoutDayIndex = scheduleItem.fallbackIdx;
     }
 
-    // Muscle group specific images for gym splits (male users)
+    // DEBUG: Log final program before hero rendering
+    console.log('🎯 Movement final program:', {
+        suggestedProgram,
+        workoutDayIndex,
+        availablePrograms,
+        scheduleItem,
+        overrideSubcategory
+    });
+
     // Muscle group specific images for gym splits (male users)
     let isDbzTheme = false;
     try {
