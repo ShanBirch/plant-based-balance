@@ -8816,20 +8816,42 @@ function startCustomBuilderWorkout() {
             // 2. Facts
             if (Object.keys(factsData).length > 0) {
                 (async () => {
-                    let existingFacts = {}; 
+                    let existingFacts = {};
                     try { existingFacts = await dbHelpers.userFacts.get(window.currentUser.id); } catch(e){}
                     const currentDetails = existingFacts?.personal_details || {};
-                    
+
                     await dbHelpers.userFacts.upsert(window.currentUser.id, {
                         personal_details: { ...currentDetails, ...factsData }
                     });
+
+                    // 3. Also update quiz_results if equipment_access changed (it's stored there too)
+                    if (factsData.equipment_access) {
+                        try {
+                            await supabase.from('quiz_results')
+                                .update({ equipment_access: factsData.equipment_access })
+                                .eq('user_id', window.currentUser.id);
+                            console.log('Updated equipment_access in quiz_results:', factsData.equipment_access);
+                        } catch(e) { console.error('Failed to update quiz_results:', e); }
+                    }
                 })();
             }
             
             window.userProfile = { ...window.userProfile, ...quizData }; // Update cache
-            
-            // Refresh views immediately to reflect new settings
+
+            // IMPORTANT: Also update localStorage so workout schedules pick up the change
+            try {
+                const stored = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                Object.assign(stored, quizData);
+                localStorage.setItem('userProfile', JSON.stringify(stored));
+            } catch(e) { console.error('Failed to update localStorage:', e); }
+
+            // Update sessionStorage as well
+            sessionStorage.setItem('userProfile', JSON.stringify(quizData));
+
+            // Refresh ALL views to reflect new equipment settings
             if(typeof renderMovementView === 'function') setTimeout(renderMovementView, 100);
+            if(typeof renderWeeklyCalendar === 'function') setTimeout(renderWeeklyCalendar, 150); // Refresh calendar
+            if(typeof loadDashboardData === 'function') setTimeout(loadDashboardData, 200); // Refresh home page hero
             if(typeof loadProfileData === 'function') loadProfileData(); // Refresh profile display logic
         }
 
