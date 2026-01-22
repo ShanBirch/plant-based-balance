@@ -8514,20 +8514,20 @@ function startCustomBuilderWorkout() {
                 </h3>
             </div>
             <div style="padding: 0;">
-                <!-- Hormone Type / Energy Level (gender-specific) -->
+                <!-- Hormone Type / Energy Level (gender-specific) - Read Only -->
                 <div class="setting-row" style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <div id="profile-type-label" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Hormone Type</div>
-                        <div id="profile-type-desc" style="font-size: 0.8rem; color: var(--text-muted);">Determines your nutrition plan</div>
+                        <div id="profile-type-desc" style="font-size: 0.8rem; color: var(--text-muted);">From your onboarding quiz</div>
                     </div>
                     <div id="profile-type-display" style="font-weight: 700; color: var(--primary);">Cortisol</div>
                 </div>
-                
-                <!-- Equipment -->
+
+                <!-- Equipment - Read Only, updated via daily check-in -->
                 <div class="setting-row" style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
                      <div>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Equipment Access</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">Filters your available workouts</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Updated via daily check-in</div>
                     </div>
                     <div id="profile-equipment-display" style="font-weight: 700; color: var(--primary);">No Equipment</div>
                 </div>
@@ -8686,10 +8686,8 @@ function startCustomBuilderWorkout() {
              { id: 'profile-email-display', type: 'text' },
              { id: 'profile-age-display', type: 'text' },
              { id: 'profile-weight-display', type: 'text' },
-             { id: 'profile-goal-display', type: 'text' },
-             { id: 'profile-type-display', type: 'select', options: ['CORTISOL', 'ESTROGEN', 'ADRENAL'] },
-             { id: 'profile-equipment-display', type: 'select', options: [['none', 'No Equipment'], ['dumbbells', 'Home / Dumbbells'], ['gym', 'Full Gym Access']] }
-             // Symptoms removed - can only be updated via daily check-in
+             { id: 'profile-goal-display', type: 'text' }
+             // Energy Level, Equipment, and Symptoms removed - can only be updated via daily check-in
         ];
         
         if (!isEditing) {
@@ -8759,10 +8757,8 @@ function startCustomBuilderWorkout() {
             { id: 'profile-email-display', key: 'email' },
             { id: 'profile-age-display', key: 'age' },
             { id: 'profile-weight-display', key: 'weight' },
-            { id: 'profile-goal-display', key: 'goal_weight' },
-            { id: 'profile-type-display', key: 'profile' },
-            { id: 'profile-equipment-display', key: 'equipment_access' }
-            // Symptoms removed - can only be updated via daily check-in
+            { id: 'profile-goal-display', key: 'goal_weight' }
+            // Energy Level, Equipment, and Symptoms removed - can only be updated via daily check-in
         ];
         
         let quizData = {};
@@ -8772,26 +8768,14 @@ function startCustomBuilderWorkout() {
             const el = document.getElementById(f.id);
             if(!el) return;
 
-            // NOTE: Symptoms handling removed - symptoms can only be updated via daily check-in
+            // NOTE: Energy Level, Equipment, and Symptoms removed - can only be updated via daily check-in
 
             const input = el.querySelector('input, select');
             if(input) {
                 let val = input.value;
                 quizData[f.key] = val;
                 // Update UI Display properly
-                if (f.key === 'equipment_access') {
-                    const eqMap = {
-                        'gym': 'Full Gym Access',
-                        'dumbbells': 'Home / Dumbbells',
-                        'home': 'Home / Dumbbells',  // Legacy value support
-                        'none': 'No Equipment',
-                        'bodyweight': 'No Equipment'  // Legacy value support
-                    };
-                    el.innerText = eqMap[val] || 'No Equipment';
-                    el.dataset.raw = val; 
-                } else {
-                    el.innerText = val + (f.key === 'weight' ? ' kg' : '');
-                }
+                el.innerText = val + (f.key === 'weight' ? ' kg' : '');
             }
         });
         
@@ -8814,20 +8798,43 @@ function startCustomBuilderWorkout() {
             // 2. Facts
             if (Object.keys(factsData).length > 0) {
                 (async () => {
-                    let existingFacts = {}; 
+                    let existingFacts = {};
                     try { existingFacts = await dbHelpers.userFacts.get(window.currentUser.id); } catch(e){}
                     const currentDetails = existingFacts?.personal_details || {};
-                    
+
                     await dbHelpers.userFacts.upsert(window.currentUser.id, {
                         personal_details: { ...currentDetails, ...factsData }
                     });
+                    // Note: equipment_access is now only updated via daily check-in
                 })();
             }
             
             window.userProfile = { ...window.userProfile, ...quizData }; // Update cache
-            
-            // Refresh views immediately to reflect new settings
+
+            // IMPORTANT: Also update localStorage so workout schedules pick up the change
+            try {
+                const stored = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                Object.assign(stored, quizData);
+                localStorage.setItem('userProfile', JSON.stringify(stored));
+            } catch(e) { console.error('Failed to update localStorage:', e); }
+
+            // Update sessionStorage as well (merge with existing to preserve data)
+            try {
+                const sessionStored = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+                Object.assign(sessionStored, quizData);
+                sessionStorage.setItem('userProfile', JSON.stringify(sessionStored));
+            } catch(e) { sessionStorage.setItem('userProfile', JSON.stringify(quizData)); }
+
+            // Clear cached profile to force reload with new values
+            // This ensures renderMovementView and other functions get fresh data
+            if (window.userProfile) {
+                window.userProfile = { ...window.userProfile, ...quizData };
+            }
+
+            // Refresh ALL views to reflect new equipment settings
             if(typeof renderMovementView === 'function') setTimeout(renderMovementView, 100);
+            if(typeof renderWeeklyCalendar === 'function') setTimeout(renderWeeklyCalendar, 150); // Refresh calendar
+            if(typeof updateDashboardWorkoutCard === 'function') setTimeout(updateDashboardWorkoutCard, 200); // Refresh home page hero
             if(typeof loadProfileData === 'function') loadProfileData(); // Refresh profile display logic
         }
 
@@ -9286,6 +9293,8 @@ async function _loadProfileDataRealImpl() {
         'gym': 'Full Gym Access',
         'dumbbells': 'Home / Dumbbells',
         'home': 'Home / Dumbbells',  // Legacy value support
+        'bands': 'Resistance Bands',
+        'yoga_only': 'Yoga / Stretching Only',
         'none': 'No Equipment',
         'bodyweight': 'No Equipment'  // Legacy value support
     };
@@ -10060,29 +10069,31 @@ function renderWeeklyCalendar() {
         }
     }
 
-    const hasGymAccess = userProfile.equipment_access === 'gym' || userProfile.gym_access === true;
+    // Check for today's equipment from daily check-in (overrides profile)
+    // This ensures consistency with Homepage and Movement view
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    if (userCycleData.logs && userCycleData.logs[todayDateStr] && userCycleData.logs[todayDateStr].equipment) {
+        userProfile.equipment_access = userCycleData.logs[todayDateStr].equipment;
+        console.log('📅 Calendar using today\'s check-in equipment:', userProfile.equipment_access);
+    }
+
+    // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
+    const hasGymAccess = userProfile.equipment_access === 'gym' || (userProfile.equipment_access === undefined && userProfile.gym_access === true);
     const hasHighEnergy = userProfile.energy_status === 'high';
     // Male gym split: requires gym access only (no energy requirement)
     const useMaleGymSplit = isMale && hasGymAccess;
     // Female gym split: still requires high energy (cortisol-aware)
     const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
-    // Determine default strength program based on equipment
-    const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home' || hasGymAccess;
-    const preferredStyle = userProfile.preferred_workout_style;
-    let defaultStrengthProgram = 'bodyweight'; // Default fallback
+    // Determine equipment access - simplified direct checks (like gym split)
+    const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home';
+    const hasBands = userProfile.equipment_access === 'bands';
+    const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
 
-    if (preferredStyle === 'gym' && hasGymAccess) {
-        defaultStrengthProgram = 'gym';
-    } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
-        defaultStrengthProgram = 'home';
-    } else if (preferredStyle === 'none') {
-        defaultStrengthProgram = 'bodyweight';
-    } else if (hasGymAccess) {
-        defaultStrengthProgram = 'gym';
-    } else if (hasDumbbells) {
-        defaultStrengthProgram = 'home';
-    }
+    // SIMPLIFIED: Direct equipment checks (same pattern as gym split - no defaultStrengthProgram complexity)
+    const useYogaOnly = hasYogaOnly;
+    const useHome = hasDumbbells && !hasGymAccess;
+    const useBands = hasBands && !hasDumbbells && !hasGymAccess;
 
     // Calculate which week we're in for 12 different 4-week programs (48 weeks total)
     function getGymSplitWeekNumber() {
@@ -10150,55 +10161,50 @@ function renderWeeklyCalendar() {
             { day: 'Sat', program: 'female_gym_split', dayIndex: 5 }, // Active Recovery
             { day: 'Sun', program: 'female_gym_split', dayIndex: 6 }  // Rest
         ];
+    } else if (useYogaOnly) {
+        // Yoga Only - direct check like gym split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' },
+            { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin' },
+            { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'restorative' },
+            { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'power' },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
+    } else if (useHome) {
+        // Home/Dumbbell Split - direct check like gym split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'home', dayIndex: 0, subcategory: 'lowerbody' },
+            { day: 'Tue', program: 'home', dayIndex: 1, subcategory: 'push' },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
+            { day: 'Thu', program: 'home', dayIndex: 3, subcategory: 'pull' },
+            { day: 'Fri', program: 'home', dayIndex: 4, subcategory: 'lowerbody' },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
+    } else if (useBands) {
+        // Resistance Bands Split - direct check like gym split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bands', dayIndex: 0 },
+            { day: 'Tue', program: 'bands', dayIndex: 1 },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
+            { day: 'Thu', program: 'bands', dayIndex: 3 },
+            { day: 'Fri', program: 'bands', dayIndex: 4 },
+            { day: 'Sat', program: 'bands', dayIndex: 5 },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
     } else {
-        // Default schedule - use extended library with subcategories
-        // Determine which program to use based on equipment/preference
-        if (defaultStrengthProgram === 'home') {
-            // Home/Dumbbell Split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'home', dayIndex: 0, subcategory: 'lowerbody' },
-                { day: 'Tue', program: 'home', dayIndex: 1, subcategory: 'push' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
-                { day: 'Thu', program: 'home', dayIndex: 3, subcategory: 'pull' },
-                { day: 'Fri', program: 'home', dayIndex: 4, subcategory: 'lowerbody' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
-            ];
-        } else if (defaultStrengthProgram === 'bodyweight') {
-            // Bodyweight Split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'bodyweight', dayIndex: 0, subcategory: 'lowerbody' },
-                { day: 'Tue', program: 'bodyweight', dayIndex: 1, subcategory: 'upperbody' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
-                { day: 'Thu', program: 'bodyweight', dayIndex: 3, subcategory: 'core' },
-                { day: 'Fri', program: 'bodyweight', dayIndex: 4, subcategory: 'lowerbody' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
-            ];
-        } else if (defaultStrengthProgram === 'gym') {
-            // BUGFIX: Full Gym Access schedule (uses WORKOUT_DB gym program)
-            // This schedule is used when user has gym access but doesn't qualify for gym split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'gym', dayIndex: 0 }, // Leg Day - Quads
-                { day: 'Tue', program: 'gym', dayIndex: 1 }, // Chest & Triceps
-                { day: 'Wed', program: 'gym', dayIndex: 2 }, // Back & Biceps
-                { day: 'Thu', program: 'gym', dayIndex: 3 }, // Leg Day - Glutes & Hamstrings
-                { day: 'Fri', program: 'gym', dayIndex: 4 }, // Shoulders & Core
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' }, // Active Recovery
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Deep Rest
-            ];
-        } else {
-            // Yoga-focused (fallback)
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' },
-                { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin' },
-                { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'power' },
-                { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'restorative' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
-            ];
-        }
+        // Bodyweight Split (fallback - no equipment)
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bodyweight', dayIndex: 0, subcategory: 'lowerbody' },
+            { day: 'Tue', program: 'bodyweight', dayIndex: 1, subcategory: 'upperbody' },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
+            { day: 'Thu', program: 'bodyweight', dayIndex: 3, subcategory: 'core' },
+            { day: 'Fri', program: 'bodyweight', dayIndex: 4, subcategory: 'lowerbody' },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
     }
 
     // Helper to get workout from WORKOUT_DB or WORKOUT_LIBRARY (for gym split rotation)
@@ -10221,8 +10227,12 @@ function renderWeeklyCalendar() {
                 scheduleItem = { ...scheduleItem, program: 'gym', dayIndex: dayIdx };
             } else if (dayEquipment === 'dumbbells') {
                 scheduleItem = { ...scheduleItem, program: 'home', dayIndex: dayIdx };
+            } else if (dayEquipment === 'bands') {
+                scheduleItem = { ...scheduleItem, program: 'bands', dayIndex: dayIdx };
             } else if (dayEquipment === 'none') {
                 scheduleItem = { ...scheduleItem, program: 'bodyweight', dayIndex: dayIdx };
+            } else if (dayEquipment === 'yoga_only') {
+                scheduleItem = { ...scheduleItem, program: 'yoga', dayIndex: dayIdx, subcategory: 'power' };
             }
         }
 
@@ -10427,12 +10437,21 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
         }
     }
 
-    const hasGymAccess = userProfile.equipment_access === 'gym' || userProfile.gym_access === true;
+    // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
+    const hasGymAccess = userProfile.equipment_access === 'gym' || (userProfile.equipment_access === undefined && userProfile.gym_access === true);
     const hasHighEnergy = userProfile.energy_status === 'high';
     // Male gym split: requires gym access only (no energy requirement)
     const useMaleGymSplit = isMale && hasGymAccess;
     // Female gym split: still requires high energy (cortisol-aware)
     const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
+
+    // SIMPLIFIED: Direct equipment checks (same pattern as gym split)
+    const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home';
+    const hasBands = userProfile.equipment_access === 'bands';
+    const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
+    const useYogaOnly = hasYogaOnly;
+    const useHome = hasDumbbells && !hasGymAccess;
+    const useBands = hasBands && !hasDumbbells && !hasGymAccess;
 
     // 2. Schedule Definition (Same as in renderWeeklyCalendar)
     let WEEKLY_SCHEDULE;
@@ -10456,73 +10475,53 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
             { day: 'Wed', program: 'female_gym_split', dayIndex: 2, muscleGroup: 'armscore' },
             { day: 'Thu', program: 'female_gym_split', dayIndex: 3, muscleGroup: 'legs' },
             { day: 'Fri', program: 'female_gym_split', dayIndex: 4, muscleGroup: 'pull' },
-            { day: 'Sat', program: 'female_gym_split', dayIndex: 5 }, // Active Recovery
-            { day: 'Sun', program: 'female_gym_split', dayIndex: 6 }  // Rest
+            { day: 'Sat', program: 'female_gym_split', dayIndex: 5 },
+            { day: 'Sun', program: 'female_gym_split', dayIndex: 6 }
+        ];
+    } else if (useYogaOnly) {
+        // Yoga Only - direct check like gym split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' },
+            { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin' },
+            { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'restorative' },
+            { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'power' },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
+    } else if (useHome) {
+        // Home/Dumbbell Split - direct check like gym split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'home', dayIndex: 0, subcategory: 'lowerbody' },
+            { day: 'Tue', program: 'home', dayIndex: 1, subcategory: 'push' },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
+            { day: 'Thu', program: 'home', dayIndex: 3, subcategory: 'pull' },
+            { day: 'Fri', program: 'home', dayIndex: 4, subcategory: 'lowerbody' },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
+    } else if (useBands) {
+        // Resistance Bands Split - direct check like gym split
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bands', dayIndex: 0 },
+            { day: 'Tue', program: 'bands', dayIndex: 1 },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
+            { day: 'Thu', program: 'bands', dayIndex: 3 },
+            { day: 'Fri', program: 'bands', dayIndex: 4 },
+            { day: 'Sat', program: 'bands', dayIndex: 5 },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
         ];
     } else {
-        // Determine default program based on equipment/preference (same as renderWeeklyCalendar)
-        const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home' || hasGymAccess;
-        const preferredStyle = userProfile.preferred_workout_style;
-        let defaultStrengthProgram = 'bodyweight'; // Default fallback
-
-        if (preferredStyle === 'gym' && hasGymAccess) {
-            defaultStrengthProgram = 'gym';
-        } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
-            defaultStrengthProgram = 'home';
-        } else if (preferredStyle === 'none') {
-            defaultStrengthProgram = 'bodyweight';
-        } else if (hasGymAccess) {
-            defaultStrengthProgram = 'gym';
-        } else if (hasDumbbells) {
-            defaultStrengthProgram = 'home';
-        }
-
-        if (defaultStrengthProgram === 'home') {
-            // Home/Dumbbell Split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'home', dayIndex: 0, subcategory: 'lowerbody' },
-                { day: 'Tue', program: 'home', dayIndex: 1, subcategory: 'push' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
-                { day: 'Thu', program: 'home', dayIndex: 3, subcategory: 'pull' },
-                { day: 'Fri', program: 'home', dayIndex: 4, subcategory: 'lowerbody' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
-            ];
-        } else if (defaultStrengthProgram === 'bodyweight') {
-            // Bodyweight Split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'bodyweight', dayIndex: 0, subcategory: 'lowerbody' },
-                { day: 'Tue', program: 'bodyweight', dayIndex: 1, subcategory: 'upperbody' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
-                { day: 'Thu', program: 'bodyweight', dayIndex: 3, subcategory: 'core' },
-                { day: 'Fri', program: 'bodyweight', dayIndex: 4, subcategory: 'lowerbody' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
-            ];
-        } else if (defaultStrengthProgram === 'gym') {
-            // BUGFIX: Full Gym Access schedule (uses WORKOUT_DB gym program)
-            // This schedule is used when user has gym access but doesn't qualify for gym split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'gym', dayIndex: 0 }, // Leg Day - Quads
-                { day: 'Tue', program: 'gym', dayIndex: 1 }, // Chest & Triceps
-                { day: 'Wed', program: 'gym', dayIndex: 2 }, // Back & Biceps
-                { day: 'Thu', program: 'gym', dayIndex: 3 }, // Leg Day - Glutes & Hamstrings
-                { day: 'Fri', program: 'gym', dayIndex: 4 }, // Shoulders & Core
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' }, // Active Recovery
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Deep Rest
-            ];
-        } else {
-            // Yoga-focused (fallback)
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' },
-                { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin' },
-                { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'power' },
-                { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'restorative' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
-            ];
-        }
+        // Bodyweight Split (fallback - no equipment)
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bodyweight', dayIndex: 0, subcategory: 'lowerbody' },
+            { day: 'Tue', program: 'bodyweight', dayIndex: 1, subcategory: 'upperbody' },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' },
+            { day: 'Thu', program: 'bodyweight', dayIndex: 3, subcategory: 'core' },
+            { day: 'Fri', program: 'bodyweight', dayIndex: 4, subcategory: 'lowerbody' },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
     }
 
     if (dayIndexFromMonday < 0 || dayIndexFromMonday >= WEEKLY_SCHEDULE.length) return;
@@ -10693,6 +10692,28 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
 // --- SHARED WORKOUT LOGIC ---
 // Returns today's recommended workout based on Calendar logic (same as renderWeeklyCalendar)
 function getTodaysWorkout() {
+    // Check for today's workout override (e.g., low energy yoga recommendation)
+    try {
+        const override = JSON.parse(localStorage.getItem('todayWorkoutOverride') || 'null');
+        if (override && override.date === new Date().toISOString().split('T')[0]) {
+            // Return yoga workout for low energy override
+            if (override.program === 'yoga') {
+                const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
+                const today = new Date();
+                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                return {
+                    name: yogaWorkout?.title || 'Restorative Yoga',
+                    icon: '🧘‍♀️',
+                    program: 'yoga',
+                    dayIndex: 3,
+                    dayName: dayNames[today.getDay()],
+                    isOverride: true,
+                    overrideReason: override.reason
+                };
+            }
+        }
+    } catch (e) { /* ignore parse errors */ }
+
     // Check if user qualifies for Gym Split (Male or Female)
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
 
@@ -10709,7 +10730,15 @@ function getTodaysWorkout() {
         }
     }
 
-    const hasGymAccess = userProfile.equipment_access === 'gym' || userProfile.gym_access === true;
+    // Check for today's equipment from daily check-in (overrides profile)
+    // This ensures consistency with Perform tab and Movement view
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    if (userCycleData.logs && userCycleData.logs[todayDateStr] && userCycleData.logs[todayDateStr].equipment) {
+        userProfile.equipment_access = userCycleData.logs[todayDateStr].equipment;
+    }
+
+    // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
+    const hasGymAccess = userProfile.equipment_access === 'gym' || (userProfile.equipment_access === undefined && userProfile.gym_access === true);
     const hasHighEnergy = userProfile.energy_status === 'high';
     // Male gym split: requires gym access only (no energy requirement)
     const useMaleGymSplit = isMale && hasGymAccess;
@@ -10733,35 +10762,51 @@ function getTodaysWorkout() {
     } else if (useFemaleGymSplit) {
         // Female Gym Split
         WEEKLY_SCHEDULE = [
-            { day: 'Mon', program: 'female_gym_split', dayIndex: 0, icon: '🦵', muscleGroup: 'legs' }, // Legs
-            { day: 'Tue', program: 'female_gym_split', dayIndex: 1, icon: '💪', muscleGroup: 'push' }, // Push
-            { day: 'Wed', program: 'female_gym_split', dayIndex: 2, icon: '💪', muscleGroup: 'armscore' }, // Arms & Core
-            { day: 'Thu', program: 'female_gym_split', dayIndex: 3, icon: '🦵', muscleGroup: 'legs' }, // Legs
-            { day: 'Fri', program: 'female_gym_split', dayIndex: 4, icon: '💪', muscleGroup: 'pull' }, // Pull
-            { day: 'Sat', program: 'female_gym_split', dayIndex: 5, icon: '🧘‍♀️' }, // Active Recovery
-            { day: 'Sun', program: 'female_gym_split', dayIndex: 6, icon: '💤' }  // Rest
+            { day: 'Mon', program: 'female_gym_split', dayIndex: 0, icon: '🦵', muscleGroup: 'legs' },
+            { day: 'Tue', program: 'female_gym_split', dayIndex: 1, icon: '💪', muscleGroup: 'push' },
+            { day: 'Wed', program: 'female_gym_split', dayIndex: 2, icon: '💪', muscleGroup: 'armscore' },
+            { day: 'Thu', program: 'female_gym_split', dayIndex: 3, icon: '🦵', muscleGroup: 'legs' },
+            { day: 'Fri', program: 'female_gym_split', dayIndex: 4, icon: '💪', muscleGroup: 'pull' },
+            { day: 'Sat', program: 'female_gym_split', dayIndex: 5, icon: '🧘‍♀️' },
+            { day: 'Sun', program: 'female_gym_split', dayIndex: 6, icon: '💤' }
         ];
     } else {
-        // Determine default program based on equipment/preference (same as renderWeeklyCalendar)
-        // BUGFIX: Calculate defaultStrengthProgram properly instead of relying on stored value
-        const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home' || hasGymAccess;
-        const preferredStyle = userProfile.preferred_workout_style;
-        let defaultStrengthProgram = 'bodyweight'; // Default fallback
+        // SIMPLIFIED: Direct equipment checks (same pattern as gym split)
+        const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home';
+        const hasBands = userProfile.equipment_access === 'bands';
+        const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
 
-        if (preferredStyle === 'gym' && hasGymAccess) {
-            defaultStrengthProgram = 'gym';
-        } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
-            defaultStrengthProgram = 'home';
-        } else if (preferredStyle === 'none') {
-            defaultStrengthProgram = 'bodyweight';
-        } else if (hasGymAccess) {
-            defaultStrengthProgram = 'gym';
-        } else if (hasDumbbells) {
-            defaultStrengthProgram = 'home';
-        }
+        const useYogaOnly = hasYogaOnly;
+        const useHome = hasDumbbells && !hasGymAccess;
+        const useBands = hasBands && !hasDumbbells && !hasGymAccess;
 
-        if (defaultStrengthProgram === 'home') {
-            // Home/Dumbbell Split
+        // DEBUG: Log homepage equipment check
+        console.log('🏠 Homepage equipment check:', {
+            equipment_access: userProfile?.equipment_access,
+            hasYogaOnly,
+            useYogaOnly,
+            hasDumbbells,
+            useHome,
+            hasBands,
+            useBands,
+            hasGymAccess,
+            useMaleGymSplit,
+            useFemaleGymSplit
+        });
+
+        if (useYogaOnly) {
+            // Yoga Only - direct check like gym
+            WEEKLY_SCHEDULE = [
+                { day: 'Mon', program: 'yoga', dayIndex: 0, icon: '🧘‍♀️', subcategory: 'power' },
+                { day: 'Tue', program: 'yoga', dayIndex: 1, icon: '🧘‍♀️', subcategory: 'restorative' },
+                { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️', subcategory: 'yin' },
+                { day: 'Thu', program: 'yoga', dayIndex: 3, icon: '🧘‍♀️', subcategory: 'restorative' },
+                { day: 'Fri', program: 'yoga', dayIndex: 4, icon: '🧘‍♀️', subcategory: 'power' },
+                { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' },
+                { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' }
+            ];
+        } else if (useHome) {
+            // Home/Dumbbell Split - direct check like gym
             WEEKLY_SCHEDULE = [
                 { day: 'Mon', program: 'home', dayIndex: 0, icon: '🦵', subcategory: 'lowerbody' },
                 { day: 'Tue', program: 'home', dayIndex: 1, icon: '💪', subcategory: 'push' },
@@ -10771,37 +10816,25 @@ function getTodaysWorkout() {
                 { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' },
                 { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' }
             ];
-        } else if (defaultStrengthProgram === 'bodyweight') {
-            // Bodyweight Split
+        } else if (useBands) {
+            // Resistance Bands Split - direct check like gym
+            WEEKLY_SCHEDULE = [
+                { day: 'Mon', program: 'bands', dayIndex: 0, icon: '🦵' },
+                { day: 'Tue', program: 'bands', dayIndex: 1, icon: '💪' },
+                { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️', subcategory: 'restorative' },
+                { day: 'Thu', program: 'bands', dayIndex: 3, icon: '💪' },
+                { day: 'Fri', program: 'bands', dayIndex: 4, icon: '🍑' },
+                { day: 'Sat', program: 'bands', dayIndex: 5, icon: '💪' },
+                { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' }
+            ];
+        } else {
+            // Bodyweight Split (fallback - no equipment)
             WEEKLY_SCHEDULE = [
                 { day: 'Mon', program: 'bodyweight', dayIndex: 0, icon: '🦵', subcategory: 'lowerbody' },
                 { day: 'Tue', program: 'bodyweight', dayIndex: 1, icon: '💪', subcategory: 'upperbody' },
                 { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️', subcategory: 'restorative' },
                 { day: 'Thu', program: 'bodyweight', dayIndex: 3, icon: '🔥', subcategory: 'core' },
                 { day: 'Fri', program: 'bodyweight', dayIndex: 4, icon: '🦵', subcategory: 'lowerbody' },
-                { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' },
-                { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' }
-            ];
-        } else if (defaultStrengthProgram === 'gym') {
-            // BUGFIX: Full Gym Access schedule (uses WORKOUT_DB gym program)
-            // This schedule is used when user has gym access but doesn't qualify for gym split
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'gym', dayIndex: 0, icon: '🦵' }, // Leg Day - Quads
-                { day: 'Tue', program: 'gym', dayIndex: 1, icon: '💪' }, // Chest & Triceps
-                { day: 'Wed', program: 'gym', dayIndex: 2, icon: '💪' }, // Back & Biceps
-                { day: 'Thu', program: 'gym', dayIndex: 3, icon: '🦵' }, // Leg Day - Glutes & Hamstrings
-                { day: 'Fri', program: 'gym', dayIndex: 4, icon: '💪' }, // Shoulders & Core
-                { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' }, // Active Recovery
-                { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' } // Deep Rest
-            ];
-        } else {
-            // Yoga-focused (fallback)
-            WEEKLY_SCHEDULE = [
-                { day: 'Mon', program: 'yoga', dayIndex: 0, icon: '🧘‍♀️', subcategory: 'power' },
-                { day: 'Tue', program: 'yoga', dayIndex: 1, icon: '🧘‍♀️', subcategory: 'restorative' },
-                { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️', subcategory: 'yin' },
-                { day: 'Thu', program: 'yoga', dayIndex: 3, icon: '🧘‍♀️', subcategory: 'power' },
-                { day: 'Fri', program: 'yoga', dayIndex: 4, icon: '🧘‍♀️', subcategory: 'restorative' },
                 { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' },
                 { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' }
             ];
@@ -10941,32 +10974,78 @@ function getTodaysWorkout() {
         }
     }
 
-    // Apply mood modifiers (applies to all users including males on gym split)
-    if (userCycleData.mood === 'tired') {
-        const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
-        if (yogaWorkout) {
-            workoutName = yogaWorkout.title;
-            workoutIcon = '💤';
-        }
-    }
-    if (userCycleData.symptoms && userCycleData.symptoms.length > 0) {
-        // Hot flash and dizziness are female-specific symptoms
-        if (!isMaleHero && (userCycleData.symptoms.includes('hot_flash') || userCycleData.symptoms.includes('dizziness'))) {
-            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative
+    // Apply daily check-in modifiers (read from TODAY's log, not stale global state)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayLog = userCycleData.logs?.[todayStr];
+
+    // Only apply if user hasn't already made a choice (declined yoga)
+    if (todayLog && todayLog.workoutOverride !== 'declined') {
+        // Check energy level from today's check-in
+        if (todayLog.energy === 'low') {
+            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
             if (yogaWorkout) {
                 workoutName = yogaWorkout.title;
-                workoutIcon = '🧘‍♀️';
+                workoutIcon = '💤';
             }
-        } else if (userCycleData.symptoms.includes('fatigue') || userCycleData.symptoms.includes('anxiety')) {
-            // Fatigue/anxiety triggers yoga for everyone (males & females, gym & bodyweight)
-            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[6]; // Yin & Meditation
+        }
+
+        // High energy upgrade - for yoga-only users, upgrade to power yoga
+        const isYogaOnlyUser = userProfile.equipment_access === 'yoga_only';
+        if (todayLog.energy === 'high' && isYogaOnlyUser) {
+            const powerYogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Power Yoga (Full Body Power Flow)
+            if (powerYogaWorkout) {
+                workoutName = powerYogaWorkout.title;
+                workoutIcon = '🔥';
+            }
+        }
+
+        // High energy upgrade - for yoga-only males with fresh recovery
+        if (isMaleHero && todayLog.recovery === 'fresh' && isYogaOnlyUser) {
+            const powerYogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Power Yoga
+            if (powerYogaWorkout) {
+                workoutName = powerYogaWorkout.title;
+                workoutIcon = '🔥';
+            }
+        }
+
+        // Check recovery status (males)
+        if (isMaleHero && todayLog.recovery === 'tired') {
+            const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
             if (yogaWorkout) {
                 workoutName = yogaWorkout.title;
-                workoutIcon = '🧘‍♀️';
+                workoutIcon = '💤';
+            }
+        }
+
+        // Check symptoms from today's log
+        const todaySymptoms = todayLog.symptoms || [];
+        if (todaySymptoms.length > 0) {
+            // Hot flash and dizziness are female-specific symptoms
+            if (!isMaleHero && (todaySymptoms.includes('hot_flash') || todaySymptoms.includes('dizziness'))) {
+                const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative
+                if (yogaWorkout) {
+                    workoutName = yogaWorkout.title;
+                    workoutIcon = '🧘‍♀️';
+                }
+            } else if (todaySymptoms.includes('fatigue') || todaySymptoms.includes('anxiety')) {
+                // Fatigue/anxiety triggers yoga for everyone (males & females, gym & bodyweight)
+                const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[6]; // Yin & Meditation
+                if (yogaWorkout) {
+                    workoutName = yogaWorkout.title;
+                    workoutIcon = '🧘‍♀️';
+                }
             }
         }
     }
     
+    // DEBUG: Log final workout selection for homepage
+    console.log('🏠 Homepage workout result:', {
+        workoutName,
+        programId,
+        dayIndex,
+        scheduleItem: WEEKLY_SCHEDULE[dayIndex]
+    });
+
     return {
         name: workoutName,
         icon: workoutIcon,
@@ -12582,6 +12661,98 @@ window.WORKOUT_DB = {
                 ]
             }
         ]
+    },
+    'bands': {
+        name: 'Band Strength',
+        id: 'bands',
+        description: 'Build lean muscle and improve mobility using resistance bands. Perfect for home or travel.',
+        estimatedTime: '35',
+        equipment: ['Resistance Bands', 'Mat'],
+        schedule: [
+            // DAY 1: Lower Body
+            {
+                title: 'Lower Body Band Work',
+                exercises: [
+                    { name: 'Banded Squat', sets: 4, reps: '15-20', desc: 'Quad and glute activation with constant tension' },
+                    { name: 'Banded Romanian Deadlift', sets: 4, reps: '12-15', desc: 'Hamstring and glute focus' },
+                    { name: 'Banded Lateral Walk', sets: 3, reps: '15/side', desc: 'Glute medius activation' },
+                    { name: 'Banded Glute Bridge', sets: 4, reps: '20', desc: 'Glute isolation with resistance' },
+                    { name: 'Banded Clamshell', sets: 3, reps: '15/side', desc: 'Hip stability and glute activation' },
+                    { name: 'Banded Standing Kickback', sets: 3, reps: '12/leg', desc: 'Glute max isolation' }
+                ]
+            },
+            // DAY 2: Upper Body Push
+            {
+                title: 'Push & Press',
+                exercises: [
+                    { name: 'Banded Push Up', sets: 4, reps: '12-15', desc: 'Chest with added resistance' },
+                    { name: 'Banded Overhead Press', sets: 4, reps: '12-15', desc: 'Shoulder strength' },
+                    { name: 'Banded Chest Press', sets: 3, reps: '15', desc: 'Horizontal push' },
+                    { name: 'Banded Lateral Raise', sets: 3, reps: '15', desc: 'Shoulder width' },
+                    { name: 'Banded Tricep Extension', sets: 3, reps: '15', desc: 'Tricep isolation' },
+                    { name: 'Banded Front Raise', sets: 3, reps: '12', desc: 'Anterior deltoid' }
+                ]
+            },
+            // DAY 3: Core & Conditioning
+            {
+                title: 'Core & Cardio',
+                exercises: [
+                    { name: 'Banded Woodchop', sets: 3, reps: '12/side', desc: 'Rotational power' },
+                    { name: 'Banded Dead Bug', sets: 3, reps: '10/side', desc: 'Core stability with resistance' },
+                    { name: 'Banded Mountain Climber', sets: 3, reps: '30 sec', desc: 'Cardio and core' },
+                    { name: 'Banded Pallof Press', sets: 3, reps: '12/side', desc: 'Anti-rotation core' },
+                    { name: 'Plank with Band Row', sets: 3, reps: '10/side', desc: 'Core and back combo' },
+                    { name: 'Banded Bicycle Crunch', sets: 3, reps: '20', desc: 'Obliques with resistance' }
+                ]
+            },
+            // DAY 4: Full Body
+            {
+                title: 'Total Body Burn',
+                exercises: [
+                    { name: 'Banded Squat to Press', sets: 4, reps: '12', desc: 'Full body compound' },
+                    { name: 'Banded Good Morning', sets: 3, reps: '12', desc: 'Posterior chain' },
+                    { name: 'Banded Row', sets: 4, reps: '12-15', desc: 'Back thickness' },
+                    { name: 'Banded Reverse Lunge', sets: 3, reps: '10/leg', desc: 'Single leg strength' },
+                    { name: 'Banded Face Pull', sets: 3, reps: '15', desc: 'Rear delts and posture' },
+                    { name: 'Banded Glute Bridge March', sets: 3, reps: '10/leg', desc: 'Glute and core' }
+                ]
+            },
+            // DAY 5: Lower Body Glute Focus
+            {
+                title: 'Glute Sculpt',
+                exercises: [
+                    { name: 'Banded Sumo Squat', sets: 4, reps: '15', desc: 'Inner thigh and glutes' },
+                    { name: 'Banded Hip Thrust', sets: 4, reps: '20', desc: 'Glute max builder' },
+                    { name: 'Banded Fire Hydrant', sets: 3, reps: '15/side', desc: 'Glute medius' },
+                    { name: 'Banded Donkey Kick', sets: 3, reps: '15/leg', desc: 'Glute isolation' },
+                    { name: 'Banded Standing Abduction', sets: 3, reps: '15/side', desc: 'Outer glute' },
+                    { name: 'Banded Frog Pump', sets: 3, reps: '20', desc: 'Glute activation finisher' }
+                ]
+            },
+            // DAY 6: Upper Body Pull
+            {
+                title: 'Pull & Biceps',
+                exercises: [
+                    { name: 'Banded Bent Over Row', sets: 4, reps: '12-15', desc: 'Back compound' },
+                    { name: 'Banded Single Arm Row', sets: 3, reps: '12/side', desc: 'Unilateral back' },
+                    { name: 'Banded Face Pull', sets: 3, reps: '15', desc: 'Rear delts' },
+                    { name: 'Banded Bicep Curl', sets: 3, reps: '15', desc: 'Bicep mass' },
+                    { name: 'Banded Hammer Curl', sets: 3, reps: '12', desc: 'Brachialis' },
+                    { name: 'Banded Reverse Fly', sets: 3, reps: '12-15', desc: 'Upper back and posture' }
+                ]
+            },
+            // DAY 7: Active Recovery
+            {
+                title: 'Mobility & Stretch',
+                exercises: [
+                    { name: 'Banded Shoulder Dislocate', sets: 2, reps: '10', desc: 'Shoulder mobility' },
+                    { name: 'Banded Pull Apart', sets: 2, reps: '15', desc: 'Upper back activation' },
+                    { name: 'Yoga - Downward Dog', sets: 1, reps: '3 min', desc: 'Full body stretch' },
+                    { name: "Child's Pose", sets: 1, reps: '5 min', desc: 'Recovery' },
+                    { name: 'Corpse Pose', sets: 1, reps: '10 min', desc: 'Deep rest' }
+                ]
+            }
+        ]
     }
 };
 
@@ -12773,14 +12944,29 @@ async function renderMovementView() {
     // Merge with database profile for other fields like program_start_date
     profile = { ...dbProfile, ...profile };
 
+    // PRIORITY 0.5: Check for today's equipment from daily check-in (overrides profile)
+    // This ensures consistency with Perform tab which also reads from daily check-in
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    if (userCycleData.logs && userCycleData.logs[todayDateStr] && userCycleData.logs[todayDateStr].equipment) {
+        profile.equipment_access = userCycleData.logs[todayDateStr].equipment;
+        console.log('📱 Movement view using today\'s check-in equipment:', profile.equipment_access);
+    }
+
     // PRIORITY 1: Determine available programs based on quiz/profile equipment
     // Check if user has gym access from their profile
-    const hasGymAccess = profile?.equipment_access === 'gym' || profile?.gym_access === true;
+    // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
+    const hasGymAccess = profile?.equipment_access === 'gym' || (profile?.equipment_access === undefined && profile?.gym_access === true);
     // Support both 'dumbbells' (new) and 'home' (legacy) values for backward compatibility
     const hasDumbbells = profile?.equipment_access === 'dumbbells' || profile?.equipment_access === 'home' || hasGymAccess;
+    // Check for resistance bands only
+    const hasBands = profile?.equipment_access === 'bands';
+    // Check for yoga only preference
+    const hasYogaOnly = profile?.equipment_access === 'yoga_only';
 
     // Default available programs based on equipment
-    let availablePrograms = ['yoga', 'bodyweight']; // Always available
+    // IMPORTANT: For yoga-only users, only yoga is available (no bodyweight fallback)
+    let availablePrograms = hasYogaOnly ? ['yoga'] : ['yoga', 'bodyweight'];
+    if (hasBands) availablePrograms.push('bands');
     if (hasDumbbells) availablePrograms.push('home');
     if (hasGymAccess) availablePrograms.push('gym');
 
@@ -12798,28 +12984,28 @@ async function renderMovementView() {
     // Female gym split: still requires high energy (cortisol-aware)
     const useFemaleGymSplit = !isMale && hasGymAccess && hasHighEnergy;
 
+    // SIMPLIFIED: Direct equipment checks (same pattern as gym split - no defaultStrengthProgram complexity)
+    const useYogaOnly = hasYogaOnly;
+    const useHome = hasDumbbells && !hasGymAccess; // Has dumbbells but not full gym
+    const useBands = hasBands && !hasDumbbells && !hasGymAccess; // Has bands only
+
+    // DEBUG: Log equipment selection values
+    console.log('🔍 Movement equipment check:', {
+        equipment_access: profile?.equipment_access,
+        hasYogaOnly,
+        useYogaOnly,
+        hasDumbbells,
+        useHome,
+        hasBands,
+        useBands,
+        hasGymAccess,
+        useMaleGymSplit,
+        useFemaleGymSplit
+    });
+
     // Add gym_split programs to available programs if user qualifies
     if (useMaleGymSplit) availablePrograms.push('gym_split');
     if (useFemaleGymSplit) availablePrograms.push('female_gym_split');
-
-    // Determine default strength program based on preferred workout style (sticky) or equipment from onboarding
-    const preferredStyle = profile?.preferred_workout_style;
-    let defaultStrengthProgram = 'bodyweight'; // Default fallback
-
-    // First, check if user has a preferred workout style (from previous check-ins)
-    if (preferredStyle === 'gym' && hasGymAccess) {
-        defaultStrengthProgram = 'gym';
-    } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
-        defaultStrengthProgram = 'home';
-    } else if (preferredStyle === 'none') {
-        defaultStrengthProgram = 'bodyweight'; // User prefers bodyweight
-    }
-    // Fallback to equipment access from onboarding if no preference
-    else if (hasGymAccess) {
-        defaultStrengthProgram = 'gym';
-    } else if (hasDumbbells) {
-        defaultStrengthProgram = 'home';
-    }
 
     // Weekly Schedule - maps each day to a program and workout
     // Uses equipment settings from onboarding to set appropriate workouts
@@ -12848,8 +13034,19 @@ async function renderMovementView() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
-    } else if (defaultStrengthProgram === 'home') {
-        // Home/Dumbbell Split
+    } else if (useYogaOnly) {
+        // Yoga Only - direct check like gym
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power', fallback: 'yoga', fallbackIdx: 0 },
+            { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 1 },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 2 },
+            { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 3 },
+            { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'power', fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
+        ];
+    } else if (useHome) {
+        // Home/Dumbbell Split - direct check like gym
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'home', dayIndex: 0, subcategory: 'lowerbody', fallback: 'yoga', fallbackIdx: 4 },
             { day: 'Tue', program: 'home', dayIndex: 1, subcategory: 'push', fallback: 'yoga', fallbackIdx: 5 },
@@ -12859,8 +13056,19 @@ async function renderMovementView() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
-    } else if (defaultStrengthProgram === 'bodyweight') {
-        // Bodyweight Split
+    } else if (useBands) {
+        // Resistance Bands Split - direct check like gym
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'bands', dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Tue', program: 'bands', dayIndex: 1, fallback: 'yoga', fallbackIdx: 5 },
+            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 2 },
+            { day: 'Thu', program: 'bands', dayIndex: 3, fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Fri', program: 'bands', dayIndex: 4, fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Sat', program: 'bands', dayIndex: 5, fallback: 'yoga', fallbackIdx: 5 },
+            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
+        ];
+    } else {
+        // Bodyweight Split (fallback - no equipment)
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'bodyweight', dayIndex: 0, subcategory: 'lowerbody', fallback: 'yoga', fallbackIdx: 4 },
             { day: 'Tue', program: 'bodyweight', dayIndex: 1, subcategory: 'upperbody', fallback: 'yoga', fallbackIdx: 5 },
@@ -12870,37 +13078,26 @@ async function renderMovementView() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
-    } else if (defaultStrengthProgram === 'gym') {
-        // BUGFIX: Full Gym Access schedule (uses WORKOUT_DB gym program)
-        // This schedule is used when user has gym access but doesn't qualify for gym split
-        WEEKLY_SCHEDULE = [
-            { day: 'Mon', program: 'gym', dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 }, // Leg Day - Quads
-            { day: 'Tue', program: 'gym', dayIndex: 1, fallback: 'yoga', fallbackIdx: 5 }, // Chest & Triceps
-            { day: 'Wed', program: 'gym', dayIndex: 2, fallback: 'yoga', fallbackIdx: 2 }, // Back & Biceps
-            { day: 'Thu', program: 'gym', dayIndex: 3, fallback: 'yoga', fallbackIdx: 4 }, // Leg Day - Glutes & Hamstrings
-            { day: 'Fri', program: 'gym', dayIndex: 4, fallback: 'yoga', fallbackIdx: 4 }, // Shoulders & Core
-            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 }, // Active Recovery
-            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 } // Deep Rest
-        ];
-    } else {
-        // Yoga-focused (fallback)
-        WEEKLY_SCHEDULE = [
-            { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power', fallback: 'yoga', fallbackIdx: 0 },
-            { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 1 },
-            { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 2 },
-            { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'power', fallback: 'yoga', fallbackIdx: 3 },
-            { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'restorative', fallback: 'yoga', fallbackIdx: 4 },
-            { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
-            { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
-        ];
     }
 
     const scheduleItem = WEEKLY_SCHEDULE[calDayIndex];
     let suggestedProgram = scheduleItem.program;
     let workoutDayIndex = scheduleItem.dayIndex;
     let personalizationReason = '';
-    
-    // PRIORITY 3: Daily Check-in adjustments
+    let hasWorkoutOverride = false;
+
+    // PRIORITY 0: Check for today's workout override (e.g., user accepted yoga recommendation)
+    try {
+        const override = JSON.parse(localStorage.getItem('todayWorkoutOverride') || 'null');
+        if (override && override.date === dateStr && override.program) {
+            suggestedProgram = override.program;
+            workoutDayIndex = 3; // Restorative Recovery for yoga
+            personalizationReason = isMale ? '💪 Daily Sync: Recovery session for low energy' : '✨ Cycle Sync: Restorative practice for low energy';
+            hasWorkoutOverride = true;
+        }
+    } catch (e) { /* ignore parse errors */ }
+
+    // PRIORITY 3: Daily Check-in adjustments (skip if override is active)
     // --- DAILY SYNC OVERRIDE (Local Log) ---
     // Use gender-appropriate messaging (isMale defined earlier for gym_split check)
     const syncLabel = isMale ? '💪 Daily Sync' : '✨ Cycle Sync';
@@ -12908,11 +13105,12 @@ async function renderMovementView() {
     // Track if user explicitly selected equipment in today's check-in
     let userSelectedEquipmentToday = false;
 
-    if (userCycleData.logs && userCycleData.logs[dateStr]) {
+    if (userCycleData.logs && userCycleData.logs[dateStr] && !hasWorkoutOverride) {
         const log = userCycleData.logs[dateStr];
 
-        // Map Energy
-        if (log.energy === 'low') {
+        // Map Energy - only auto-apply if user hasn't already made a choice via popup
+        if (log.energy === 'low' && !log.workoutOverride) {
+             // Low energy is now handled by popup - this is fallback for older check-ins
              suggestedProgram = 'yoga';
              workoutDayIndex = 3;
              personalizationReason = isMale ? '💪 Daily Sync: Active recovery for low energy.' : '✨ Cycle Sync: Gentle flow for low energy.';
@@ -12942,17 +13140,31 @@ async function renderMovementView() {
         // High Energy Bonus - check for menstrual only if female
         const skipMenstrualCheck = isMale || !cyclePhaseInfo?.name.includes('Menstrual');
         if (log.energy === 'high' && suggestedProgram === 'yoga' && skipMenstrualCheck) {
-             suggestedProgram = 'bodyweight'; // Upgrade from Yoga
-             workoutDayIndex = 1; // Dynamic Flow
-             personalizationReason = isMale ? '💪 Daily Sync: Let\'s crush it with high energy!' : '✨ Cycle Sync: Matching your high energy!';
+             // For yoga-only users, upgrade to power yoga instead of bodyweight
+             if (useYogaOnly) {
+                 suggestedProgram = 'yoga';
+                 workoutDayIndex = 0; // Power Yoga (Full Body Power Flow)
+                 personalizationReason = isMale ? '💪 Daily Sync: Power yoga for high energy!' : '✨ Cycle Sync: Power flow for high energy!';
+             } else {
+                 suggestedProgram = 'bodyweight'; // Upgrade from Yoga
+                 workoutDayIndex = 1; // Dynamic Flow
+                 personalizationReason = isMale ? '💪 Daily Sync: Let\'s crush it with high energy!' : '✨ Cycle Sync: Matching your high energy!';
+             }
         }
 
         // Recovery status for males
         if (isMale && log.recovery) {
             if (log.recovery === 'fresh') {
-                suggestedProgram = 'bodyweight';
-                workoutDayIndex = 1;
-                personalizationReason = '💪 Daily Sync: Fully recovered - time to push hard!';
+                // For yoga-only users, upgrade to power yoga instead of bodyweight
+                if (useYogaOnly) {
+                    suggestedProgram = 'yoga';
+                    workoutDayIndex = 0; // Power Yoga
+                    personalizationReason = '💪 Daily Sync: Power yoga - fully recovered!';
+                } else {
+                    suggestedProgram = 'bodyweight';
+                    workoutDayIndex = 1;
+                    personalizationReason = '💪 Daily Sync: Fully recovered - time to push hard!';
+                }
             } else if (log.recovery === 'tired') {
                 suggestedProgram = 'yoga';
                 workoutDayIndex = 3;
@@ -13049,7 +13261,7 @@ async function renderMovementView() {
     // PRIORITY 4: Cycle Phase adjustments (skip for males)
     // CRITICAL: Do NOT override if user explicitly selected equipment in today's check-in
     if (!isMale && !personalizationReason && !userSelectedEquipmentToday && cyclePhaseInfo && phaseKey !== 'wellness' && phaseKey !== 'performance') {
-        if (phaseKey === 'menstrual' && (suggestedProgram === 'bodyweight' || suggestedProgram === 'gym' || suggestedProgram === 'home')) {
+        if (phaseKey === 'menstrual' && (suggestedProgram === 'bodyweight' || suggestedProgram === 'gym' || suggestedProgram === 'home' || suggestedProgram === 'bands')) {
             // During menstrual, swap strength workouts to gentle yoga
             // BUT only if user hasn't explicitly selected equipment today
             suggestedProgram = 'yoga';
@@ -13096,6 +13308,7 @@ async function renderMovementView() {
     const assets = {
         'yoga': { img: '/assets/somatic_yoga_hero.png', sub: 'Recovery', color: '#F59E0B' },
         'bodyweight': { img: '/assets/bodyweight_sculpt_hero.png', sub: 'No Equipment', color: '#ec4899' },
+        'bands': { img: '/assets/band_strength_hero.png', sub: 'Resistance Bands', color: '#06b6d4' },
         'home': { img: '/assets/dumbbell_strength_hero.png', sub: 'Dumbbells', color: '#8b5cf6' },
         'gym': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' },
         'gym_split': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' },
@@ -15862,8 +16075,10 @@ function openAsClient() {
                     <select id="wizard-equipment" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                         <option value="">Select</option>
                         <option value="gym">Full Gym Access</option>
-                        <option value="dumbbells">Home Equipment (Dumbbells/Bands)</option>
-                        <option value="none">Bodyweight Only</option>
+                        <option value="dumbbells">Dumbbells (or Dumbbells + Bands)</option>
+                        <option value="bands">Resistance Bands Only</option>
+                        <option value="none">Just a Mat (No Equipment)</option>
+                        <option value="yoga_only">Yoga / Stretching Only</option>
                     </select>
                 </div>
 
@@ -20047,9 +20262,11 @@ updateCoachUI();
             <div style="margin-bottom: 15px;">
                 <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Equipment Access Today</label>
                 <div class="check-in-options" style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'none', this)" data-group="equipment">None 🧘</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'none', this)" data-group="equipment">Mat Only 🧘</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'bands', this)" data-group="equipment">Bands 🔗</div>
                     <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'dumbbells', this)" data-group="equipment">Dumbbells 🏋️</div>
                     <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'gym', this)" data-group="equipment">Full Gym 💪</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'yoga_only', this)" data-group="equipment">Yoga Only 🧘‍♀️</div>
                 </div>
             </div>
 
@@ -21105,22 +21322,36 @@ async function submitDailyCycleSync() {
     // Mark check-in as completed for today
     localStorage.setItem('lastWellnessCheck', new Date().toDateString());
 
-    // 2.5. Save equipment selection as preferred workout style (makes it sticky)
+    // 2.5. Save equipment selection to update workout recommendations
     if (checkInProgress.equipment && window.currentUser && typeof dbHelpers !== 'undefined') {
         try {
-            // Update user profile with preferred workout style
-            await dbHelpers.users.update(window.currentUser.id, {
-                preferred_workout_style: checkInProgress.equipment
-            });
+            // Update equipment_access in quiz_results (where it's stored)
+            await window.supabaseClient.from('quiz_results')
+                .update({ equipment_access: checkInProgress.equipment })
+                .eq('user_id', window.currentUser.id);
 
-            // Also update localStorage profile
+            // Also update localStorage profile so workout schedules pick it up immediately
             const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-            userProfile.preferred_workout_style = checkInProgress.equipment;
+            userProfile.equipment_access = checkInProgress.equipment;
+            // Clear legacy gym_access field - equipment_access is the source of truth
+            userProfile.gym_access = (checkInProgress.equipment === 'gym');
             localStorage.setItem('userProfile', JSON.stringify(userProfile));
 
-            console.log('✅ Preferred workout style saved:', checkInProgress.equipment);
+            // Update window cache too
+            if (window.userProfile) {
+                window.userProfile.equipment_access = checkInProgress.equipment;
+                window.userProfile.gym_access = (checkInProgress.equipment === 'gym');
+            }
+
+            // Also update sessionStorage for consistency across all views
+            const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            sessionProfile.equipment_access = checkInProgress.equipment;
+            sessionProfile.gym_access = (checkInProgress.equipment === 'gym');
+            sessionStorage.setItem('userProfile', JSON.stringify(sessionProfile));
+
+            console.log('✅ Equipment access saved:', checkInProgress.equipment);
         } catch (e) {
-            console.warn('Failed to save preferred workout style:', e);
+            console.warn('Failed to save equipment access:', e);
         }
     }
 
@@ -21152,10 +21383,129 @@ async function submitDailyCycleSync() {
         renderMovementView();
     }
 
-    // 6. Redirect to Dashboard with Animation
+    // 6. Handle energy-based workout override
+    if (checkInProgress.energy === 'low') {
+        // Show yoga recommendation popup for low energy
+        showLowEnergyYogaPopup();
+        return; // The popup will handle navigation
+    } else {
+        // Clear any existing yoga override if energy is NOT low
+        // This handles the case where user previously accepted yoga but now has high energy
+        localStorage.removeItem('todayWorkoutOverride');
+
+        // Also clear the workoutOverride from today's log
+        const today = new Date().toISOString().split('T')[0];
+        if (userCycleData.logs && userCycleData.logs[today]) {
+            delete userCycleData.logs[today].workoutOverride;
+            localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+        }
+
+        // Refresh views to show normal workout (not yoga)
+        if (typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
+    }
+
+    // 7. Redirect to Dashboard with Animation
     switchAppTab('dashboard');
 
     // Show Toast/Banner on Dashboard
+    showCycleSyncBanner();
+}
+
+// Low energy yoga recommendation popup
+function showLowEnergyYogaPopup() {
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+    const syncLabel = isMale ? '💪 Daily Sync' : '✨ Cycle Sync';
+
+    // Create popup overlay
+    const popup = document.createElement('div');
+    popup.id = 'low-energy-popup';
+    popup.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6); z-index: 3000;
+        display: flex; align-items: center; justify-content: center;
+        animation: fadeIn 0.3s ease;
+    `;
+
+    popup.innerHTML = `
+        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 340px; margin: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">🧘‍♀️</div>
+            <h3 style="margin: 0 0 10px 0; color: var(--primary); font-size: 1.3rem;">${syncLabel}</h3>
+            <p style="color: #64748b; margin: 0 0 20px 0; line-height: 1.5;">
+                We noticed you're feeling low energy today. We recommend <strong>Restorative Yoga</strong> to help you recover and recharge.
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="acceptYogaRecommendation()" style="
+                    flex: 1; padding: 14px 20px; background: var(--primary); color: white;
+                    border: none; border-radius: 12px; font-weight: 600; cursor: pointer;
+                    font-size: 1rem;
+                ">Yes, switch to Yoga</button>
+                <button onclick="declineYogaRecommendation()" style="
+                    flex: 1; padding: 14px 20px; background: #f1f5f9; color: #64748b;
+                    border: none; border-radius: 12px; font-weight: 600; cursor: pointer;
+                    font-size: 1rem;
+                ">Keep my workout</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+}
+
+function acceptYogaRecommendation() {
+    // Save yoga override for today
+    const today = new Date().toISOString().split('T')[0];
+    const yogaOverride = { date: today, program: 'yoga', reason: 'low_energy' };
+    localStorage.setItem('todayWorkoutOverride', JSON.stringify(yogaOverride));
+
+    // Also update the check-in log to reflect yoga choice
+    if (userCycleData.logs && userCycleData.logs[today]) {
+        userCycleData.logs[today].workoutOverride = 'yoga';
+        localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+    }
+
+    // Save to database if possible
+    if (window.currentUser && typeof dbHelpers !== 'undefined') {
+        dbHelpers.checkins.upsert(window.currentUser.id, today, {
+            workout_override: 'yoga'
+        }).catch(e => console.warn('Failed to save workout override:', e));
+    }
+
+    // Close popup
+    const popup = document.getElementById('low-energy-popup');
+    if (popup) popup.remove();
+
+    // Refresh views to show yoga
+    if (typeof renderMovementView === 'function') renderMovementView();
+    if (typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
+    if (typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
+
+    // Navigate to dashboard
+    switchAppTab('dashboard');
+
+    // Show confirmation banner
+    const banner = document.createElement('div');
+    banner.innerText = "🧘 Switched to Restorative Yoga for today!";
+    banner.style.cssText = "position:fixed; top:80px; left:50%; transform:translateX(-50%); background:var(--accent-green); color:white; padding:12px 24px; border-radius:20px; z-index:2000; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.2);";
+    document.body.appendChild(banner);
+    setTimeout(() => { banner.style.opacity = '0'; setTimeout(() => banner.remove(), 500); }, 3000);
+}
+
+function declineYogaRecommendation() {
+    // Record that user declined - so we don't force yoga on them
+    const today = new Date().toISOString().split('T')[0];
+    if (userCycleData.logs && userCycleData.logs[today]) {
+        userCycleData.logs[today].workoutOverride = 'declined';
+        localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+    }
+
+    // Close popup without changing workout
+    const popup = document.getElementById('low-energy-popup');
+    if (popup) popup.remove();
+
+    // Navigate to dashboard
+    switchAppTab('dashboard');
+
+    // Show regular banner
     showCycleSyncBanner();
 }
 

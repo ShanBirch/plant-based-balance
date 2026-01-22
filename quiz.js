@@ -148,8 +148,10 @@ const coreQuestions = [
         type: "choice",
         options: [
             { text: "Just a mat (No Equipment)", value: "none" },
-            { text: "Dumbbells / Resistance Bands", value: "dumbbells" },
-            { text: "Full Gym Access", value: "gym" }
+            { text: "Resistance Bands Only", value: "bands" },
+            { text: "Dumbbells (or Dumbbells + Bands)", value: "dumbbells" },
+            { text: "Full Gym Access", value: "gym" },
+            { text: "Yoga / Stretching Only", value: "yoga_only" }
         ]
     },
     {
@@ -3304,10 +3306,14 @@ function finishQuiz() {
 
         if (energy === 'low' || answers.cycle_change === 'skipping' || parseInt(answers.age) > 50) {
             workoutLabel = 'Somatic Yoga';
+        } else if (equip === 'yoga_only') {
+            workoutLabel = 'Somatic Yoga';
         } else if (equip === 'gym') {
             workoutLabel = 'Gym Transformation';
         } else if (equip === 'dumbbells') {
             workoutLabel = 'Home Strength';
+        } else if (equip === 'bands') {
+            workoutLabel = 'Band Strength';
         }
     }
 
@@ -3473,7 +3479,11 @@ function syncLead(data) {
     // Map Workout Preference for lead consistency
     const workoutMap = {
         'yoga': 'Somatic Yoga',
+        'yoga_only': 'Somatic Yoga',
         'bodyweight': 'Bodyweight Sculpt',
+        'none': 'Bodyweight Sculpt',
+        'bands': 'Band Strength',
+        'dumbbells': 'Home Strength (Weights/Bands)',
         'home_strength': 'Home Strength (Weights/Bands)',
         'gym': 'Full Gym Protocol'
     };
