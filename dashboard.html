@@ -10722,6 +10722,13 @@ function getTodaysWorkout() {
         }
     }
 
+    // Check for today's equipment from daily check-in (overrides profile)
+    // This ensures consistency with Perform tab and Movement view
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    if (userCycleData.logs && userCycleData.logs[todayDateStr] && userCycleData.logs[todayDateStr].equipment) {
+        userProfile.equipment_access = userCycleData.logs[todayDateStr].equipment;
+    }
+
     // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
     const hasGymAccess = userProfile.equipment_access === 'gym' || (userProfile.equipment_access === undefined && userProfile.gym_access === true);
     const hasHighEnergy = userProfile.energy_status === 'high';
@@ -12887,6 +12894,14 @@ async function renderMovementView() {
 
     // Merge with database profile for other fields like program_start_date
     profile = { ...dbProfile, ...profile };
+
+    // PRIORITY 0.5: Check for today's equipment from daily check-in (overrides profile)
+    // This ensures consistency with Perform tab which also reads from daily check-in
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    if (userCycleData.logs && userCycleData.logs[todayDateStr] && userCycleData.logs[todayDateStr].equipment) {
+        profile.equipment_access = userCycleData.logs[todayDateStr].equipment;
+        console.log('📱 Movement view using today\'s check-in equipment:', profile.equipment_access);
+    }
 
     // PRIORITY 1: Determine available programs based on quiz/profile equipment
     // Check if user has gym access from their profile
@@ -21193,6 +21208,12 @@ async function submitDailyCycleSync() {
                 window.userProfile.equipment_access = checkInProgress.equipment;
                 window.userProfile.gym_access = (checkInProgress.equipment === 'gym');
             }
+
+            // Also update sessionStorage for consistency across all views
+            const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            sessionProfile.equipment_access = checkInProgress.equipment;
+            sessionProfile.gym_access = (checkInProgress.equipment === 'gym');
+            sessionStorage.setItem('userProfile', JSON.stringify(sessionProfile));
 
             console.log('✅ Equipment access saved:', checkInProgress.equipment);
         } catch (e) {
