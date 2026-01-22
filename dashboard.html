@@ -10073,6 +10073,8 @@ function renderWeeklyCalendar() {
 
     // Determine default strength program based on equipment
     const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home' || hasGymAccess;
+    const hasBands = userProfile.equipment_access === 'bands';
+    const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
     const preferredStyle = userProfile.preferred_workout_style;
     let defaultStrengthProgram = 'bodyweight'; // Default fallback
 
@@ -10080,12 +10082,18 @@ function renderWeeklyCalendar() {
         defaultStrengthProgram = 'gym';
     } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
         defaultStrengthProgram = 'home';
+    } else if (preferredStyle === 'bands' && hasBands) {
+        defaultStrengthProgram = 'bands';
     } else if (preferredStyle === 'none') {
         defaultStrengthProgram = 'bodyweight';
+    } else if (hasYogaOnly) {
+        defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
     } else if (hasGymAccess) {
         defaultStrengthProgram = 'gym';
     } else if (hasDumbbells) {
         defaultStrengthProgram = 'home';
+    } else if (hasBands) {
+        defaultStrengthProgram = 'bands';
     }
 
     // Calculate which week we're in for 12 different 4-week programs (48 weeks total)
@@ -10191,8 +10199,30 @@ function renderWeeklyCalendar() {
                 { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' }, // Active Recovery
                 { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Deep Rest
             ];
+        } else if (defaultStrengthProgram === 'bands') {
+            // Resistance Bands Split
+            WEEKLY_SCHEDULE = [
+                { day: 'Mon', program: 'bands', dayIndex: 0 }, // Lower Body
+                { day: 'Tue', program: 'bands', dayIndex: 1 }, // Push & Press
+                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' }, // Recovery
+                { day: 'Thu', program: 'bands', dayIndex: 3 }, // Full Body
+                { day: 'Fri', program: 'bands', dayIndex: 4 }, // Glute Sculpt
+                { day: 'Sat', program: 'bands', dayIndex: 5 }, // Pull & Biceps
+                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Rest
+            ];
+        } else if (defaultStrengthProgram === 'yoga') {
+            // Yoga Only - for users who selected yoga_only in onboarding (Somatic Yoga)
+            WEEKLY_SCHEDULE = [
+                { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' }, // Somatic Hormone Reset
+                { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' }, // Deep Hip Opening
+                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin' }, // Spinal Mobility
+                { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'restorative' }, // Restorative Recovery
+                { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'power' }, // Balance & Core
+                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' }, // Dynamic Flow
+                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Yin & Meditation
+            ];
         } else {
-            // Yoga-focused (fallback)
+            // Yoga-focused (fallback for 'none' equipment or unknown)
             WEEKLY_SCHEDULE = [
                 { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' },
                 { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' },
@@ -10225,8 +10255,12 @@ function renderWeeklyCalendar() {
                 scheduleItem = { ...scheduleItem, program: 'gym', dayIndex: dayIdx };
             } else if (dayEquipment === 'dumbbells') {
                 scheduleItem = { ...scheduleItem, program: 'home', dayIndex: dayIdx };
+            } else if (dayEquipment === 'bands') {
+                scheduleItem = { ...scheduleItem, program: 'bands', dayIndex: dayIdx };
             } else if (dayEquipment === 'none') {
                 scheduleItem = { ...scheduleItem, program: 'bodyweight', dayIndex: dayIdx };
+            } else if (dayEquipment === 'yoga_only') {
+                scheduleItem = { ...scheduleItem, program: 'yoga', dayIndex: dayIdx, subcategory: 'power' };
             }
         }
 
@@ -10466,6 +10500,8 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
     } else {
         // Determine default program based on equipment/preference (same as renderWeeklyCalendar)
         const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home' || hasGymAccess;
+        const hasBands = userProfile.equipment_access === 'bands';
+        const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
         const preferredStyle = userProfile.preferred_workout_style;
         let defaultStrengthProgram = 'bodyweight'; // Default fallback
 
@@ -10473,12 +10509,18 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
             defaultStrengthProgram = 'gym';
         } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
             defaultStrengthProgram = 'home';
+        } else if (preferredStyle === 'bands' && hasBands) {
+            defaultStrengthProgram = 'bands';
         } else if (preferredStyle === 'none') {
             defaultStrengthProgram = 'bodyweight';
+        } else if (hasYogaOnly) {
+            defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
         } else if (hasGymAccess) {
             defaultStrengthProgram = 'gym';
         } else if (hasDumbbells) {
             defaultStrengthProgram = 'home';
+        } else if (hasBands) {
+            defaultStrengthProgram = 'bands';
         }
 
         if (defaultStrengthProgram === 'home') {
@@ -10515,8 +10557,30 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
                 { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' }, // Active Recovery
                 { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Deep Rest
             ];
+        } else if (defaultStrengthProgram === 'bands') {
+            // Resistance Bands Split
+            WEEKLY_SCHEDULE = [
+                { day: 'Mon', program: 'bands', dayIndex: 0 }, // Lower Body
+                { day: 'Tue', program: 'bands', dayIndex: 1 }, // Push & Press
+                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'restorative' }, // Recovery
+                { day: 'Thu', program: 'bands', dayIndex: 3 }, // Full Body
+                { day: 'Fri', program: 'bands', dayIndex: 4 }, // Glute Sculpt
+                { day: 'Sat', program: 'bands', dayIndex: 5 }, // Pull & Biceps
+                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Rest
+            ];
+        } else if (defaultStrengthProgram === 'yoga') {
+            // Yoga Only - for users who selected yoga_only in onboarding (Somatic Yoga)
+            WEEKLY_SCHEDULE = [
+                { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' }, // Somatic Hormone Reset
+                { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' }, // Deep Hip Opening
+                { day: 'Wed', program: 'yoga', dayIndex: 2, subcategory: 'yin' }, // Spinal Mobility
+                { day: 'Thu', program: 'yoga', dayIndex: 3, subcategory: 'restorative' }, // Restorative Recovery
+                { day: 'Fri', program: 'yoga', dayIndex: 4, subcategory: 'power' }, // Balance & Core
+                { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' }, // Dynamic Flow
+                { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' } // Yin & Meditation
+            ];
         } else {
-            // Yoga-focused (fallback)
+            // Yoga-focused (fallback for 'none' equipment or unknown)
             WEEKLY_SCHEDULE = [
                 { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' },
                 { day: 'Tue', program: 'yoga', dayIndex: 1, subcategory: 'restorative' },
@@ -10749,6 +10813,8 @@ function getTodaysWorkout() {
         // Determine default program based on equipment/preference (same as renderWeeklyCalendar)
         // BUGFIX: Calculate defaultStrengthProgram properly instead of relying on stored value
         const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home' || hasGymAccess;
+        const hasBands = userProfile.equipment_access === 'bands';
+        const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
         const preferredStyle = userProfile.preferred_workout_style;
         let defaultStrengthProgram = 'bodyweight'; // Default fallback
 
@@ -10756,12 +10822,18 @@ function getTodaysWorkout() {
             defaultStrengthProgram = 'gym';
         } else if (preferredStyle === 'dumbbells' && hasDumbbells) {
             defaultStrengthProgram = 'home';
+        } else if (preferredStyle === 'bands' && hasBands) {
+            defaultStrengthProgram = 'bands';
         } else if (preferredStyle === 'none') {
             defaultStrengthProgram = 'bodyweight';
+        } else if (hasYogaOnly) {
+            defaultStrengthProgram = 'yoga'; // Yoga only users get yoga program
         } else if (hasGymAccess) {
             defaultStrengthProgram = 'gym';
         } else if (hasDumbbells) {
             defaultStrengthProgram = 'home';
+        } else if (hasBands) {
+            defaultStrengthProgram = 'bands';
         }
 
         if (defaultStrengthProgram === 'home') {
@@ -10798,8 +10870,30 @@ function getTodaysWorkout() {
                 { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' }, // Active Recovery
                 { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' } // Deep Rest
             ];
+        } else if (defaultStrengthProgram === 'bands') {
+            // Resistance Bands Split
+            WEEKLY_SCHEDULE = [
+                { day: 'Mon', program: 'bands', dayIndex: 0, icon: '🦵' }, // Lower Body
+                { day: 'Tue', program: 'bands', dayIndex: 1, icon: '💪' }, // Push & Press
+                { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️', subcategory: 'restorative' }, // Recovery
+                { day: 'Thu', program: 'bands', dayIndex: 3, icon: '💪' }, // Full Body
+                { day: 'Fri', program: 'bands', dayIndex: 4, icon: '🍑' }, // Glute Sculpt
+                { day: 'Sat', program: 'bands', dayIndex: 5, icon: '💪' }, // Pull & Biceps
+                { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' } // Rest
+            ];
+        } else if (defaultStrengthProgram === 'yoga') {
+            // Yoga Only - for users who selected yoga_only in onboarding (Somatic Yoga)
+            WEEKLY_SCHEDULE = [
+                { day: 'Mon', program: 'yoga', dayIndex: 0, icon: '🧘‍♀️', subcategory: 'power' }, // Somatic Hormone Reset
+                { day: 'Tue', program: 'yoga', dayIndex: 1, icon: '🧘‍♀️', subcategory: 'restorative' }, // Deep Hip Opening
+                { day: 'Wed', program: 'yoga', dayIndex: 2, icon: '🧘‍♀️', subcategory: 'yin' }, // Spinal Mobility
+                { day: 'Thu', program: 'yoga', dayIndex: 3, icon: '🧘‍♀️', subcategory: 'restorative' }, // Restorative Recovery
+                { day: 'Fri', program: 'yoga', dayIndex: 4, icon: '🧘‍♀️', subcategory: 'power' }, // Balance & Core
+                { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' }, // Dynamic Flow
+                { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' } // Yin & Meditation
+            ];
         } else {
-            // Yoga-focused (fallback)
+            // Yoga-focused (fallback for 'none' equipment or unknown)
             WEEKLY_SCHEDULE = [
                 { day: 'Mon', program: 'yoga', dayIndex: 0, icon: '🧘‍♀️', subcategory: 'power' },
                 { day: 'Tue', program: 'yoga', dayIndex: 1, icon: '🧘‍♀️', subcategory: 'restorative' },
@@ -15936,8 +16030,10 @@ function openAsClient() {
                     <select id="wizard-equipment" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                         <option value="">Select</option>
                         <option value="gym">Full Gym Access</option>
-                        <option value="dumbbells">Home Equipment (Dumbbells/Bands)</option>
-                        <option value="none">Bodyweight Only</option>
+                        <option value="dumbbells">Dumbbells (or Dumbbells + Bands)</option>
+                        <option value="bands">Resistance Bands Only</option>
+                        <option value="none">Just a Mat (No Equipment)</option>
+                        <option value="yoga_only">Yoga / Stretching Only</option>
                     </select>
                 </div>
 
@@ -20121,9 +20217,11 @@ updateCoachUI();
             <div style="margin-bottom: 15px;">
                 <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Equipment Access Today</label>
                 <div class="check-in-options" style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'none', this)" data-group="equipment">None 🧘</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'none', this)" data-group="equipment">Mat Only 🧘</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'bands', this)" data-group="equipment">Bands 🔗</div>
                     <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'dumbbells', this)" data-group="equipment">Dumbbells 🏋️</div>
                     <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'gym', this)" data-group="equipment">Full Gym 💪</div>
+                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'yoga_only', this)" data-group="equipment">Yoga Only 🧘‍♀️</div>
                 </div>
             </div>
 
