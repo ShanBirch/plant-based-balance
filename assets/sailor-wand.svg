@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="wandGlow">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#FFC0E0;stop-opacity:0.5" />
+      <stop offset="100%" style="stop-color:#FF69B4;stop-opacity:0" />
+    </radialGradient>
+    <filter id="magicGlow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Glow -->
+  <circle cx="30" cy="30" r="35" fill="url(#wandGlow)"/>
+
+  <!-- Crescent moon at top -->
+  <g filter="url(#magicGlow)">
+    <circle cx="30" cy="30" r="18" fill="#FFD700"/>
+    <circle cx="38" cy="30" r="15" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Wand stick -->
+  <line x1="35" y1="40" x2="80" y2="85" stroke="#FFD700" stroke-width="4" stroke-linecap="round" filter="url(#magicGlow)"/>
+  <line x1="35" y1="40" x2="80" y2="85" stroke="#FFC0E0" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Magic trail sparkles -->
+  <g fill="#FFD700" opacity="0.7">
+    <circle cx="50" cy="55" r="2"/>
+    <circle cx="60" cy="65" r="3"/>
+    <circle cx="70" cy="75" r="2"/>
+    <circle cx="45" cy="60" r="1.5"/>
+    <circle cx="65" cy="70" r="1.5"/>
+  </g>
+</svg>
