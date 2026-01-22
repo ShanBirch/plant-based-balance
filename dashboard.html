@@ -13355,7 +13355,7 @@ async function renderMovementView() {
     // Muscle group specific images for gym splits (male users)
     let isDbzTheme = false;
     try {
-        const currentTheme = localStorage.getItem('app_theme') || localStorage.getItem('theme') || 'default';
+        const currentTheme = localStorage.getItem('userThemePreference') || localStorage.getItem('app_theme') || localStorage.getItem('theme') || 'default';
         isDbzTheme = currentTheme && currentTheme.startsWith('dbz-');
     } catch (e) { console.error('Error checking theme', e); }
 
@@ -14378,7 +14378,7 @@ function openWorkoutSubcategories(categoryKey) {
     // Muscle group images for gym subcategories
     let isDbzTheme = false;
     try {
-        const currentTheme = localStorage.getItem('app_theme') || localStorage.getItem('theme') || 'default';
+        const currentTheme = localStorage.getItem('userThemePreference') || localStorage.getItem('app_theme') || localStorage.getItem('theme') || 'default';
         isDbzTheme = currentTheme && currentTheme.startsWith('dbz-');
     } catch (e) { console.error('Error checking theme', e); }
 
