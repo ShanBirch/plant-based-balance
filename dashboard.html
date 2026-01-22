@@ -10990,20 +10990,23 @@ function getTodaysWorkout() {
         }
 
         // High energy upgrade - for yoga-only users, upgrade to power yoga
+        // Use WORKOUT_LIBRARY for consistency with Movement tab and Calendar
         const isYogaOnlyUser = userProfile.equipment_access === 'yoga_only';
         if (todayLog.energy === 'high' && isYogaOnlyUser) {
-            const powerYogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Power Yoga (Full Body Power Flow)
-            if (powerYogaWorkout) {
-                workoutName = powerYogaWorkout.title;
+            const yogaCategory = typeof WORKOUT_LIBRARY !== 'undefined' ? WORKOUT_LIBRARY['yoga'] : null;
+            const powerSubcategory = yogaCategory?.subcategories?.['power'];
+            if (powerSubcategory && powerSubcategory.workouts && powerSubcategory.workouts.length > 0) {
+                workoutName = powerSubcategory.workouts[0].name; // "Full Body Power Flow"
                 workoutIcon = '🔥';
             }
         }
 
         // High energy upgrade - for yoga-only males with fresh recovery
         if (isMaleHero && todayLog.recovery === 'fresh' && isYogaOnlyUser) {
-            const powerYogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Power Yoga
-            if (powerYogaWorkout) {
-                workoutName = powerYogaWorkout.title;
+            const yogaCategory = typeof WORKOUT_LIBRARY !== 'undefined' ? WORKOUT_LIBRARY['yoga'] : null;
+            const powerSubcategory = yogaCategory?.subcategories?.['power'];
+            if (powerSubcategory && powerSubcategory.workouts && powerSubcategory.workouts.length > 0) {
+                workoutName = powerSubcategory.workouts[0].name; // "Full Body Power Flow"
                 workoutIcon = '🔥';
             }
         }
@@ -13085,6 +13088,7 @@ async function renderMovementView() {
     let workoutDayIndex = scheduleItem.dayIndex;
     let personalizationReason = '';
     let hasWorkoutOverride = false;
+    let overrideSubcategory = null; // Used to override scheduleItem.subcategory for energy-based upgrades
 
     // PRIORITY 0: Check for today's workout override (e.g., user accepted yoga recommendation)
     try {
@@ -13144,6 +13148,7 @@ async function renderMovementView() {
              if (useYogaOnly) {
                  suggestedProgram = 'yoga';
                  workoutDayIndex = 0; // Power Yoga (Full Body Power Flow)
+                 overrideSubcategory = 'power'; // Override subcategory for WORKOUT_LIBRARY
                  personalizationReason = isMale ? '💪 Daily Sync: Power yoga for high energy!' : '✨ Cycle Sync: Power flow for high energy!';
              } else {
                  suggestedProgram = 'bodyweight'; // Upgrade from Yoga
@@ -13159,6 +13164,7 @@ async function renderMovementView() {
                 if (useYogaOnly) {
                     suggestedProgram = 'yoga';
                     workoutDayIndex = 0; // Power Yoga
+                    overrideSubcategory = 'power'; // Override subcategory for WORKOUT_LIBRARY
                     personalizationReason = '💪 Daily Sync: Power yoga - fully recovered!';
                 } else {
                     suggestedProgram = 'bodyweight';
@@ -13371,10 +13377,12 @@ async function renderMovementView() {
             heroMeta = assets['gym'];
             heroSched = heroProg.schedule[workoutDayIndex % heroProg.schedule.length];
         }
-    } else if (scheduleItem.subcategory && !wasOverriddenToYoga && typeof WORKOUT_LIBRARY !== 'undefined') {
+    } else if ((scheduleItem.subcategory || overrideSubcategory) && !wasOverriddenToYoga && typeof WORKOUT_LIBRARY !== 'undefined') {
         // For yoga/bodyweight/home with subcategories, use WORKOUT_LIBRARY with rotation
+        // Use overrideSubcategory if set (e.g., high energy upgrade to power yoga)
+        const effectiveSubcategory = overrideSubcategory || scheduleItem.subcategory;
         const category = WORKOUT_LIBRARY[suggestedProgram];
-        const subcategory = category?.subcategories?.[scheduleItem.subcategory];
+        const subcategory = category?.subcategories?.[effectiveSubcategory];
 
         if (subcategory && subcategory.workouts && subcategory.workouts.length > 0) {
             // Calculate which week in rotation cycle
@@ -13410,7 +13418,7 @@ async function renderMovementView() {
             // Store library info for onclick
             heroLibraryInfo = {
                 category: suggestedProgram,
-                subcategory: scheduleItem.subcategory,
+                subcategory: effectiveSubcategory,
                 workoutId: workout?.id
             };
         } else {
