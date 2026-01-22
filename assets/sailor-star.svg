@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="starGlow">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FFC0E0;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#FF69B4;stop-opacity:0" />
+    </radialGradient>
+    <filter id="sparkleGlow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Glow effect -->
+  <circle cx="50" cy="50" r="40" fill="url(#starGlow)"/>
+
+  <!-- Main star -->
+  <g filter="url(#sparkleGlow)">
+    <path d="M50,10 L55,40 L85,45 L60,60 L65,90 L50,75 L35,90 L40,60 L15,45 L45,40 Z"
+          fill="#FFD700" stroke="#FFFFFF" stroke-width="2"/>
+  </g>
+
+  <!-- Small sparkles -->
+  <g fill="#FFFFFF" opacity="0.9">
+    <circle cx="25" cy="25" r="3"/>
+    <circle cx="75" cy="25" r="2"/>
+    <circle cx="25" cy="75" r="2"/>
+    <circle cx="75" cy="75" r="3"/>
+  </g>
+</svg>

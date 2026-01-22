@@ -8580,6 +8580,8 @@ function startCustomBuilderWorkout() {
             <svg id="settings-icon-gear" class="settings-icon-gear" viewBox="0 0 24 24" style="width:24px; height:24px; fill:var(--text-main);"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
             <!-- Dragon Ball Icon (for DBZ themes) -->
             <img id="settings-icon-dragonball" class="settings-icon-dragonball" src="assets/dragon-ball.svg" alt="Dragon Ball" style="width:24px; height:24px; vertical-align:middle;" />
+            <!-- Sailor Moon Icon (for Sailor Moon themes) -->
+            <img id="settings-icon-sailormoon" class="settings-icon-sailormoon" src="assets/sailor-moon.svg" alt="Sailor Moon" style="width:24px; height:24px; vertical-align:middle;" />
             Settings
         </h3>
         <div style="padding: 0 25px; margin-bottom: 30px;">
@@ -8593,6 +8595,8 @@ function startCustomBuilderWorkout() {
                          <option value="sunset">Sunset Glow</option>
                          <option value="cycle-pink" class="female-only-theme">Cycle Harmony</option>
                          <option value="flower-garden" class="female-only-theme">Flower Garden</option>
+                         <option value="sailor-moon" class="female-only-theme">Moon Princess</option>
+                         <option value="sailor-venus" class="female-only-theme">Goddess of Love</option>
                          <option value="monochrome">Monochrome</option>
                          <option value="dbz-warrior" class="male-only-theme">Super Saiyan</option>
                          <option value="dbz-vegeta" class="male-only-theme">Saiyan Prince</option>
@@ -11742,6 +11746,14 @@ function applyGenderSpecificUI() {
         const currentTheme = localStorage.getItem('userThemePreference') || 'default';
         const isDbzTheme = currentTheme.startsWith('dbz-');
         dbzDecorations.style.display = (isMale && isDbzTheme) ? 'block' : 'none';
+    }
+
+    // Show/hide Sailor Moon character decorations based on theme and gender
+    const sailorDecorations = document.getElementById('sailor-decorations');
+    if (sailorDecorations) {
+        const currentTheme = localStorage.getItem('userThemePreference') || 'default';
+        const isSailorMoonTheme = currentTheme.startsWith('sailor-');
+        sailorDecorations.style.display = (!isMale && isSailorMoonTheme) ? 'block' : 'none';
     }
 
     // Update Hormone Hub for males
@@ -16419,6 +16431,118 @@ function openAsClient() {
     will-change: transform, opacity;
 }
 
+/* Sailor Moon Character Decorations (Female users only) */
+#sailor-decorations {
+    display: none;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.sailor-character-corner {
+    position: fixed;
+    bottom: 70px;
+    right: 5px;
+    width: 100px;
+    height: auto;
+    max-height: 180px;
+    object-fit: contain;
+    opacity: 0.95;
+    z-index: 100;
+    animation: sailorFloat 3.5s ease-in-out infinite;
+    filter: drop-shadow(0 4px 15px rgba(255, 105, 180, 0.4));
+    border-radius: 8px;
+}
+
+.sailor-star-left {
+    position: fixed;
+    top: 100px;
+    left: 10px;
+    width: 40px;
+    height: 40px;
+    opacity: 0.6;
+    z-index: 100;
+    animation: sailorSparkle 2s ease-in-out infinite;
+}
+
+.sailor-star-right {
+    position: fixed;
+    top: 180px;
+    right: 15px;
+    width: 35px;
+    height: 35px;
+    opacity: 0.5;
+    z-index: 100;
+    animation: sailorSparkle 2.5s ease-in-out infinite 0.5s;
+}
+
+.sailor-heart-float {
+    position: fixed;
+    top: 250px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 30px;
+    opacity: 0.4;
+    z-index: 100;
+    animation: sailorHeartFloat 3s ease-in-out infinite 1s;
+}
+
+@keyframes sailorFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-12px) scale(1.05); }
+}
+
+@keyframes sailorSparkle {
+    0%, 100% { opacity: 0.3; transform: scale(1) rotate(0deg); }
+    50% { opacity: 0.9; transform: scale(1.2) rotate(15deg); }
+}
+
+@keyframes sailorHeartFloat {
+    0%, 100% { opacity: 0.3; transform: translateX(-50%) translateY(0) scale(1); }
+    50% { opacity: 0.7; transform: translateX(-50%) translateY(-15px) scale(1.15); }
+}
+
+/* Sailor Moon theme specific gradient for welcome section */
+body.sailor-theme-active .dashboard-welcome {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--primary-light) 100%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Sailor Moon theme - pink/gold gradient with character in welcome */
+body.sailor-moon-theme .dashboard-welcome::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('assets/sailor-moon-character.svg');
+    background-size: auto 90px;
+    background-repeat: no-repeat;
+    background-position: right -15px bottom -15px;
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Sailor Venus theme - orange/gold gradient with character in welcome */
+body.sailor-venus-theme .dashboard-welcome::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('assets/sailor-venus-character.svg');
+    background-size: auto 85px;
+    background-repeat: no-repeat;
+    background-position: right -20px bottom -10px;
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 0;
+}
+
 /* DBZ theme specific gradient for welcome section */
 body.dbz-theme-active .dashboard-welcome {
     background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--primary-light) 100%) !important;
@@ -16479,6 +16603,27 @@ body.dbz-theme-active .settings-icon-gear {
 
 body.dbz-theme-active .settings-icon-dragonball {
     display: inline-block !important;
+}
+
+/* Settings icon toggle for Sailor Moon themes */
+.settings-icon-sailormoon {
+    display: none !important;
+}
+
+body.sailor-theme-active .settings-icon-gear {
+    display: none !important;
+}
+
+body.sailor-theme-active .settings-icon-sailormoon {
+    display: inline-block !important;
+}
+
+/* Profile icon Sailor Moon for Sailor Moon themes */
+body.sailor-theme-active .profile-icon {
+    background-image: url('assets/sailor-moon.svg');
+    background-size: cover;
+    background-position: center;
+    color: transparent !important; /* Hide the "S" text */
 }
 
 /* Profile icon Dragon Ball for DBZ themes */
@@ -19158,6 +19303,44 @@ const APP_THEMES = {
             '--chat-text-coach': '#0a1628',
             '--chat-border-coach': '#87CEEB'
         }
+    },
+    'sailor-moon': {
+        name: 'Moon Princess',
+        femaleOnly: true,
+        colors: {
+            '--primary': '#FF69B4', // Hot pink (Sailor Moon's theme)
+            '--primary-light': '#FFB6C1', // Light pink
+            '--secondary': '#FFD700', // Gold (tiara and accents)
+            '--accent-green': '#FFF0F5', // Lavender blush
+            '--bg': '#FFF5FA', // Light pink background
+            '--surface': '#ffffff',
+            '--text-main': '#1a1a1a',
+            '--text-muted': '#8B4789', // Purple-ish
+            '--chat-bg-user': '#FF69B4',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#FFF0F5',
+            '--chat-text-coach': '#1a1a1a',
+            '--chat-border-coach': '#FFD700'
+        }
+    },
+    'sailor-venus': {
+        name: 'Goddess of Love',
+        femaleOnly: true,
+        colors: {
+            '--primary': '#FFA500', // Orange (Sailor Venus's theme)
+            '--primary-light': '#FFB84D', // Light orange
+            '--secondary': '#FFD700', // Gold
+            '--accent-green': '#FFF8DC', // Cornsilk
+            '--bg': '#FFFAF0', // Floral white
+            '--surface': '#ffffff',
+            '--text-main': '#1a1a1a',
+            '--text-muted': '#B8860B', // Dark goldenrod
+            '--chat-bg-user': '#FFA500',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#FFF8DC',
+            '--chat-text-coach': '#1a1a1a',
+            '--chat-border-coach': '#FFD700'
+        }
     }
 };
 
@@ -19216,10 +19399,11 @@ async function applyAppTheme(themeKey) {
     const theme = APP_THEMES[themeKey];
     if(!theme) return;
 
-    // DBZ themes are restricted to male users only
+    // DBZ themes are restricted to male users only, Sailor Moon themes to female users only
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
-    if (theme.maleOnly && !isMale) {
-        // Non-male user trying to use male-only theme - fall back to default
+    const isFemale = !isMale;
+    if ((theme.maleOnly && !isMale) || (theme.femaleOnly && !isFemale)) {
+        // User trying to use gender-restricted theme - fall back to default
         themeKey = 'default';
         const defaultTheme = APP_THEMES['default'];
         for (const [key, value] of Object.entries(defaultTheme.colors)) {
@@ -19271,6 +19455,9 @@ async function applyAppTheme(themeKey) {
 
     // Handle DBZ theme decorations (male users only)
     const isDbzTheme = themeKey.startsWith('dbz-');
+
+    // Handle Sailor Moon theme decorations (female users only)
+    const isSailorMoonTheme = themeKey.startsWith('sailor-');
 
     // Easter egg: Show video on first theme selection (male users only)
     if (isMale && isDbzTheme) {
@@ -19357,6 +19544,38 @@ async function applyAppTheme(themeKey) {
         document.body.classList.remove('dbz-theme-active', 'dbz-goku-theme', 'dbz-vegeta-theme');
     }
 
+    // Handle Sailor Moon decorations (female users only)
+    const sailorDecorations = document.getElementById('sailor-decorations');
+    const sailorMoonImg = document.getElementById('sailor-moon-character');
+    const sailorVenusImg = document.getElementById('sailor-venus-character');
+
+    if (sailorDecorations) {
+        sailorDecorations.style.display = (isSailorMoonTheme && isFemale) ? 'block' : 'none';
+
+        // Show the correct character based on theme
+        if (sailorMoonImg && sailorVenusImg) {
+            if (themeKey === 'sailor-moon') {
+                // Moon Princess theme - show Sailor Moon
+                sailorMoonImg.style.display = 'block';
+                sailorVenusImg.style.display = 'none';
+            } else if (themeKey === 'sailor-venus') {
+                // Goddess of Love theme - show Sailor Venus
+                sailorMoonImg.style.display = 'none';
+                sailorVenusImg.style.display = 'block';
+            }
+        }
+    }
+
+    // Toggle Sailor Moon body class for additional styling
+    if (isSailorMoonTheme && isFemale) {
+        document.body.classList.add('sailor-theme-active');
+        // Add specific class for each character's theme
+        document.body.classList.remove('sailor-moon-theme', 'sailor-venus-theme');
+        document.body.classList.add(themeKey === 'sailor-moon' ? 'sailor-moon-theme' : 'sailor-venus-theme');
+    } else {
+        document.body.classList.remove('sailor-theme-active', 'sailor-moon-theme', 'sailor-venus-theme');
+    }
+
     // Handle Flower Garden decorations (female users only)
     const flowerDecorations = document.getElementById('flower-decorations');
     if (flowerDecorations) {
@@ -19378,24 +19597,35 @@ async function applyAppTheme(themeKey) {
 function updateSettingsIcon() {
     const savedTheme = localStorage.getItem('userThemePreference') || 'default';
     const isDbzTheme = savedTheme.startsWith('dbz-');
+    const isSailorMoonTheme = savedTheme.startsWith('sailor-');
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+    const isFemale = !isMale;
 
     setTimeout(() => {
-        // Update settings icon (gear vs dragon ball)
+        // Update settings icon (gear vs dragon ball vs sailor moon)
         const gearIcon = document.getElementById('settings-icon-gear');
         const dragonBallIcon = document.getElementById('settings-icon-dragonball');
+        const sailorMoonIcon = document.getElementById('settings-icon-sailormoon');
 
-        if (gearIcon && dragonBallIcon) {
+        if (gearIcon && dragonBallIcon && sailorMoonIcon) {
             if (isDbzTheme && isMale) {
-                // DBZ theme: show dragon ball, hide gear
+                // DBZ theme: show dragon ball, hide others
                 gearIcon.style.setProperty('display', 'none', 'important');
                 dragonBallIcon.style.setProperty('display', 'inline-block', 'important');
+                sailorMoonIcon.style.setProperty('display', 'none', 'important');
                 console.log('✅ Dragon Ball settings icon activated');
+            } else if (isSailorMoonTheme && isFemale) {
+                // Sailor Moon theme: show moon, hide others
+                gearIcon.style.setProperty('display', 'none', 'important');
+                dragonBallIcon.style.setProperty('display', 'none', 'important');
+                sailorMoonIcon.style.setProperty('display', 'inline-block', 'important');
+                console.log('✅ Sailor Moon settings icon activated');
             } else {
-                // Default: show gear, hide dragon ball
+                // Default: show gear, hide themed icons
                 gearIcon.style.setProperty('display', 'inline-block', 'important');
                 dragonBallIcon.style.setProperty('display', 'none', 'important');
-                console.log('✅ Gear settings icon activated (theme: ' + savedTheme + ', male: ' + isMale + ')');
+                sailorMoonIcon.style.setProperty('display', 'none', 'important');
+                console.log('✅ Gear settings icon activated (theme: ' + savedTheme + ')');
             }
         } else {
             console.warn('⚠️ Settings icons not found in DOM yet');
@@ -19559,6 +19789,15 @@ document.addEventListener('DOMContentLoaded', () => {
     <img src="assets/flower-rose.svg" alt="Rose" class="flower-corner flower-bottom-left" />
     <img src="assets/flower-peony.svg" alt="Peony" class="flower-corner flower-top-left" />
     <img src="assets/flower-daisy.svg" alt="Daisy" class="flower-corner flower-bottom-right" />
+</div>
+
+<!-- Sailor Moon Character Decorations (Female Only) -->
+<div id="sailor-decorations" style="display:none;">
+    <img src="assets/sailor-moon-character.svg" alt="Sailor Moon" class="sailor-character-corner" id="sailor-moon-character" />
+    <img src="assets/sailor-venus-character.svg" alt="Sailor Venus" class="sailor-character-corner" id="sailor-venus-character" style="display:none;" />
+    <img src="assets/sailor-star.svg" alt="Star" class="sailor-star-left" />
+    <img src="assets/sailor-star.svg" alt="Star" class="sailor-star-right" />
+    <img src="assets/sailor-heart.svg" alt="Heart" class="sailor-heart-float" />
 </div>
 
 <!-- PWA INSTALL BANNER (Fixed Floating) -->
