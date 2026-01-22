@@ -10047,7 +10047,7 @@ function renderWeeklyCalendar() {
     const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
     const isHighCortisol = !isMale && (profileType.includes('CORTISOL') || profileType.includes('ADRENAL'));
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-    const hasGymAccess = userProfile.equipment_access === 'gym';
+    const hasGymAccess = userProfile.equipment_access === 'gym' || userProfile.gym_access === true;
     const hasHighEnergy = userProfile.energy_status === 'high';
     // Male gym split: requires gym access only (no energy requirement)
     const useMaleGymSplit = isMale && hasGymAccess;
@@ -10389,7 +10389,7 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
     // 1. Check if user qualifies for Gym Split (Male or Female)
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-    const hasGymAccess = userProfile.equipment_access === 'gym';
+    const hasGymAccess = userProfile.equipment_access === 'gym' || userProfile.gym_access === true;
     const hasHighEnergy = userProfile.energy_status === 'high';
     // Male gym split: requires gym access only (no energy requirement)
     const useMaleGymSplit = isMale && hasGymAccess;
@@ -10646,7 +10646,7 @@ function getTodaysWorkout() {
     // Check if user qualifies for Gym Split (Male or Female)
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-    const hasGymAccess = userProfile.equipment_access === 'gym';
+    const hasGymAccess = userProfile.equipment_access === 'gym' || userProfile.gym_access === true;
     const hasHighEnergy = userProfile.energy_status === 'high';
     // Male gym split: requires gym access only (no energy requirement)
     const useMaleGymSplit = isMale && hasGymAccess;
