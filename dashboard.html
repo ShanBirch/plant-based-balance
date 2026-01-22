@@ -10017,12 +10017,12 @@ function renderWeeklyCalendar() {
     // Start date for cycle calc
     const start = userCycleData.lastPeriod ? new Date(userCycleData.lastPeriod) : new Date();
 
-    // Check High Cortisol Profile
-    const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
-    const isHighCortisol = profileType.includes('CORTISOL') || profileType.includes('ADRENAL');
-
     // Check if user qualifies for Gym Split (Male or Female)
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+
+    // Check High Cortisol Profile (females only)
+    const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
+    const isHighCortisol = !isMale && (profileType.includes('CORTISOL') || profileType.includes('ADRENAL'));
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const hasGymAccess = userProfile.equipment_access === 'gym';
     const hasHighEnergy = userProfile.energy_status === 'high';
@@ -10468,12 +10468,13 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
     
     // 3. Apply Modifiers (Cycle, Cortisol, etc.)
     const isBaseline = !userCycleData.lastPeriod;
-    const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
-    const isHighCortisol = profileType.includes('CORTISOL') || profileType.includes('ADRENAL');
-    
-    let phaseKey = 'wellness';
-    
     const isMaleWorkout = (typeof isMaleUser === 'function' && isMaleUser());
+
+    // Check High Cortisol Profile (females only)
+    const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
+    const isHighCortisol = !isMaleWorkout && (profileType.includes('CORTISOL') || profileType.includes('ADRENAL'));
+
+    let phaseKey = 'wellness';
 
     // Skip cycle phase modifiers for males
     if (!isMaleWorkout && !isBaseline && !userCycleData.noPeriodMode) {
@@ -10778,10 +10779,11 @@ function getTodaysWorkout() {
     let phaseKey = 'wellness';
     
     const isBaseline = !userCycleData.lastPeriod;
-    const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
-    const isHighCortisol = profileType.includes('CORTISOL') || profileType.includes('ADRENAL');
-    
     const isMaleHero = (typeof isMaleUser === 'function' && isMaleUser());
+
+    // Check High Cortisol Profile (females only)
+    const profileType = (sessionStorage.getItem('userResult') || '').toUpperCase();
+    const isHighCortisol = !isMaleHero && (profileType.includes('CORTISOL') || profileType.includes('ADRENAL'));
 
     // Calculate phase if we have period data (skip for males)
     if (!isMaleHero && !isBaseline && !userCycleData.noPeriodMode) {
@@ -11738,13 +11740,13 @@ function wizardNext() {
 
         // If male, skip cycle tracking (step 3) and go directly to step 4
         if (selectedGender === 'male') {
-            // Set default values for males (no cycle tracking)
+            // Set default values for males (no cycle tracking, no hormone profile)
             const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
             existingData.menopause_status = 'not_applicable';
             existingData.last_period = null;
-            existingData.profile = 'CORTISOL'; // Default profile for males
+            existingData.profile = null; // Males don't have hormone profiles
             sessionStorage.setItem('userProfile', JSON.stringify(existingData));
-            sessionStorage.setItem('userResult', 'CORTISOL');
+            sessionStorage.removeItem('userResult'); // Remove any existing hormone profile
 
             // Skip to step 4 (nutrition logic)
             currentWizardStep = 4;
