@@ -8845,13 +8845,23 @@ function startCustomBuilderWorkout() {
                 localStorage.setItem('userProfile', JSON.stringify(stored));
             } catch(e) { console.error('Failed to update localStorage:', e); }
 
-            // Update sessionStorage as well
-            sessionStorage.setItem('userProfile', JSON.stringify(quizData));
+            // Update sessionStorage as well (merge with existing to preserve data)
+            try {
+                const sessionStored = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+                Object.assign(sessionStored, quizData);
+                sessionStorage.setItem('userProfile', JSON.stringify(sessionStored));
+            } catch(e) { sessionStorage.setItem('userProfile', JSON.stringify(quizData)); }
+
+            // Clear cached profile to force reload with new values
+            // This ensures renderMovementView and other functions get fresh data
+            if (window.userProfile) {
+                window.userProfile = { ...window.userProfile, ...quizData };
+            }
 
             // Refresh ALL views to reflect new equipment settings
             if(typeof renderMovementView === 'function') setTimeout(renderMovementView, 100);
             if(typeof renderWeeklyCalendar === 'function') setTimeout(renderWeeklyCalendar, 150); // Refresh calendar
-            if(typeof loadDashboardData === 'function') setTimeout(loadDashboardData, 200); // Refresh home page hero
+            if(typeof updateDashboardWorkoutCard === 'function') setTimeout(updateDashboardWorkoutCard, 200); // Refresh home page hero
             if(typeof loadProfileData === 'function') loadProfileData(); // Refresh profile display logic
         }
 
