@@ -11726,12 +11726,25 @@ function applyGenderSpecificUI() {
     });
 
     // Handle gender-specific theme options
+    // Use disabled attribute instead of display:none for <option> elements (browser compatibility)
     document.querySelectorAll('.female-only-theme').forEach(el => {
-        el.style.display = isMale ? 'none' : '';
+        if (isMale) {
+            el.disabled = true;
+            el.style.display = 'none'; // Hide in browsers that support it
+        } else {
+            el.disabled = false;
+            el.style.display = '';
+        }
     });
 
     document.querySelectorAll('.male-only-theme').forEach(el => {
-        el.style.display = isMale ? '' : 'none';
+        if (!isMale) {
+            el.disabled = true;
+            el.style.display = 'none'; // Hide in browsers that support it
+        } else {
+            el.disabled = false;
+            el.style.display = '';
+        }
     });
 
     // Show/hide DBZ character decorations based on theme and gender
