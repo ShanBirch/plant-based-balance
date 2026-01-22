@@ -19514,7 +19514,7 @@ async function _applyAppThemeRealImpl(themeKey) {
 
     // Flower Garden theme animation - falling flowers on first selection (female users only)
     const isFlowerTheme = (themeKey === 'flower-garden');
-    const isFemale = !isMale; // Female users get flower themes
+    // isFemale is already defined above
 
     if (isFemale && isFlowerTheme) {
         const flowerEasterEggKey = 'flower_garden_animation_seen';
