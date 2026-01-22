@@ -12939,6 +12939,20 @@ async function renderMovementView() {
     const useHome = hasDumbbells && !hasGymAccess; // Has dumbbells but not full gym
     const useBands = hasBands && !hasDumbbells && !hasGymAccess; // Has bands only
 
+    // DEBUG: Log equipment selection values
+    console.log('🔍 Movement equipment check:', {
+        equipment_access: profile?.equipment_access,
+        hasYogaOnly,
+        useYogaOnly,
+        hasDumbbells,
+        useHome,
+        hasBands,
+        useBands,
+        hasGymAccess,
+        useMaleGymSplit,
+        useFemaleGymSplit
+    });
+
     // Add gym_split programs to available programs if user qualifies
     if (useMaleGymSplit) availablePrograms.push('gym_split');
     if (useFemaleGymSplit) availablePrograms.push('female_gym_split');
