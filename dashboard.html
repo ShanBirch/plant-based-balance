@@ -10069,6 +10069,14 @@ function renderWeeklyCalendar() {
         }
     }
 
+    // Check for today's equipment from daily check-in (overrides profile)
+    // This ensures consistency with Homepage and Movement view
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    if (userCycleData.logs && userCycleData.logs[todayDateStr] && userCycleData.logs[todayDateStr].equipment) {
+        userProfile.equipment_access = userCycleData.logs[todayDateStr].equipment;
+        console.log('📅 Calendar using today\'s check-in equipment:', userProfile.equipment_access);
+    }
+
     // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
     const hasGymAccess = userProfile.equipment_access === 'gym' || (userProfile.equipment_access === undefined && userProfile.gym_access === true);
     const hasHighEnergy = userProfile.energy_status === 'high';
@@ -10978,6 +10986,25 @@ function getTodaysWorkout() {
             if (yogaWorkout) {
                 workoutName = yogaWorkout.title;
                 workoutIcon = '💤';
+            }
+        }
+
+        // High energy upgrade - for yoga-only users, upgrade to power yoga
+        const isYogaOnlyUser = userProfile.equipment_access === 'yoga_only';
+        if (todayLog.energy === 'high' && isYogaOnlyUser) {
+            const powerYogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Power Yoga (Full Body Power Flow)
+            if (powerYogaWorkout) {
+                workoutName = powerYogaWorkout.title;
+                workoutIcon = '🔥';
+            }
+        }
+
+        // High energy upgrade - for yoga-only males with fresh recovery
+        if (isMaleHero && todayLog.recovery === 'fresh' && isYogaOnlyUser) {
+            const powerYogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[0]; // Power Yoga
+            if (powerYogaWorkout) {
+                workoutName = powerYogaWorkout.title;
+                workoutIcon = '🔥';
             }
         }
 
@@ -13113,17 +13140,31 @@ async function renderMovementView() {
         // High Energy Bonus - check for menstrual only if female
         const skipMenstrualCheck = isMale || !cyclePhaseInfo?.name.includes('Menstrual');
         if (log.energy === 'high' && suggestedProgram === 'yoga' && skipMenstrualCheck) {
-             suggestedProgram = 'bodyweight'; // Upgrade from Yoga
-             workoutDayIndex = 1; // Dynamic Flow
-             personalizationReason = isMale ? '💪 Daily Sync: Let\'s crush it with high energy!' : '✨ Cycle Sync: Matching your high energy!';
+             // For yoga-only users, upgrade to power yoga instead of bodyweight
+             if (useYogaOnly) {
+                 suggestedProgram = 'yoga';
+                 workoutDayIndex = 0; // Power Yoga (Full Body Power Flow)
+                 personalizationReason = isMale ? '💪 Daily Sync: Power yoga for high energy!' : '✨ Cycle Sync: Power flow for high energy!';
+             } else {
+                 suggestedProgram = 'bodyweight'; // Upgrade from Yoga
+                 workoutDayIndex = 1; // Dynamic Flow
+                 personalizationReason = isMale ? '💪 Daily Sync: Let\'s crush it with high energy!' : '✨ Cycle Sync: Matching your high energy!';
+             }
         }
 
         // Recovery status for males
         if (isMale && log.recovery) {
             if (log.recovery === 'fresh') {
-                suggestedProgram = 'bodyweight';
-                workoutDayIndex = 1;
-                personalizationReason = '💪 Daily Sync: Fully recovered - time to push hard!';
+                // For yoga-only users, upgrade to power yoga instead of bodyweight
+                if (useYogaOnly) {
+                    suggestedProgram = 'yoga';
+                    workoutDayIndex = 0; // Power Yoga
+                    personalizationReason = '💪 Daily Sync: Power yoga - fully recovered!';
+                } else {
+                    suggestedProgram = 'bodyweight';
+                    workoutDayIndex = 1;
+                    personalizationReason = '💪 Daily Sync: Fully recovered - time to push hard!';
+                }
             } else if (log.recovery === 'tired') {
                 suggestedProgram = 'yoga';
                 workoutDayIndex = 3;
