@@ -20472,8 +20472,52 @@ updateCoachUI();
         
         hideAllAppViews();
         document.getElementById('view-active-workout').style.display = 'block';
-        window.activeWorkoutSessions = customWorkout; 
+        window.activeWorkoutSessions = customWorkout;
     }
+</script>
+
+<!-- Check-in modal functions - must be defined before modal HTML -->
+<script>
+// Initialize checkInProgress if not already defined
+if (typeof checkInProgress === 'undefined') {
+    var checkInProgress = { flow: null, symptoms: [], mood: null, energy: null, fluid: null };
+}
+
+function selectCheckInOption(category, value, el) {
+    checkInProgress[category] = value;
+    const options = document.querySelectorAll('.check-in-chip[data-group="' + category + '"]');
+    options.forEach(function(opt) { opt.classList.remove('selected'); });
+    el.classList.add('selected');
+}
+
+function toggleCheckInOption(category, value, el) {
+    if (!checkInProgress[category]) checkInProgress[category] = [];
+    var idx = checkInProgress[category].indexOf(value);
+    if (idx > -1) {
+        checkInProgress[category].splice(idx, 1);
+        el.classList.remove('selected');
+    } else {
+        checkInProgress[category].push(value);
+        el.classList.add('selected');
+    }
+}
+
+function openCheckInModal() {
+    if (typeof applyGenderSpecificUI === 'function') {
+        applyGenderSpecificUI();
+    }
+    document.getElementById('check-in-modal').style.display = 'flex';
+}
+
+function closeCheckInModal() {
+    document.getElementById('check-in-modal').style.display = 'none';
+}
+
+// Expose to global scope
+window.selectCheckInOption = selectCheckInOption;
+window.toggleCheckInOption = toggleCheckInOption;
+window.openCheckInModal = openCheckInModal;
+window.closeCheckInModal = closeCheckInModal;
 </script>
 
 <!-- SUPERBOOST CHECK-IN MODAL -->
