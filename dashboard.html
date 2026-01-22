@@ -21571,7 +21571,7 @@ function selectCheckInOption(category, value, el) {
 function toggleCheckInOption(category, value, el) {
     // 1. Update State (Array)
     if(!checkInProgress[category]) checkInProgress[category] = [];
-    
+
     const idx = checkInProgress[category].indexOf(value);
     if(idx > -1) {
         checkInProgress[category].splice(idx, 1); // Remove
@@ -21581,6 +21581,12 @@ function toggleCheckInOption(category, value, el) {
         el.classList.add('selected');
     }
 }
+
+// Expose check-in functions to global scope for inline onclick handlers
+window.openCheckInModal = openCheckInModal;
+window.closeCheckInModal = closeCheckInModal;
+window.selectCheckInOption = selectCheckInOption;
+window.toggleCheckInOption = toggleCheckInOption;
 
 async function submitDailyCycleSync() {
     // 1. Save Log locally
@@ -21730,6 +21736,9 @@ async function submitDailyCycleSync() {
     showCycleSyncBanner();
 }
 
+// Expose submitDailyCycleSync to global scope for inline onclick handlers
+window.submitDailyCycleSync = submitDailyCycleSync;
+
 // Low energy yoga recommendation popup
 function showLowEnergyYogaPopup() {
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
@@ -21827,6 +21836,10 @@ function declineYogaRecommendation() {
     // Show regular banner
     showCycleSyncBanner();
 }
+
+// Expose yoga recommendation functions to global scope for inline onclick handlers
+window.acceptYogaRecommendation = acceptYogaRecommendation;
+window.declineYogaRecommendation = declineYogaRecommendation;
 
 function applyCycleSync(data) {
     console.log("🚀 Applying Cycle Sync:", data);
