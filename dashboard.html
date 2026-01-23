@@ -2055,6 +2055,30 @@ async function applyAppTheme(themeKey) {
                     </button>
                 </div>
 
+                <!-- Quick Text Entry -->
+                <div style="max-width: 500px; margin: 0 auto 30px auto; padding: 0 20px;">
+                    <div style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px;">
+                        Or quickly type what you ate
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input
+                            type="text"
+                            id="quick-meal-text-input"
+                            placeholder="e.g., chicken breast with rice and broccoli"
+                            style="flex: 1; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 1rem; outline: none; transition: border-color 0.3s;"
+                            onkeypress="if(event.key === 'Enter') submitQuickMealText()"
+                        >
+                        <button
+                            onclick="submitQuickMealText()"
+                            style="background: var(--secondary); color: white; padding: 12px 24px; border: none; border-radius: 25px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: transform 0.2s;"
+                            onmouseover="this.style.transform='scale(1.05)'"
+                            onmouseout="this.style.transform='scale(1)'"
+                        >
+                            Add Meal
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Today's Meals List -->
                 <h3 style="margin: 30px 0 15px 0;">Today's Meals</h3>
                 <div id="meals-log-list">
@@ -23534,6 +23558,127 @@ async function useMealPhoto() {
     }
 }
 
+// Submit quick text-based meal entry
+async function submitQuickMealText() {
+    const textInput = document.getElementById('quick-meal-text-input');
+    const mealDescription = textInput?.value?.trim();
+
+    if (!mealDescription) {
+        alert('Please enter a meal description');
+        return;
+    }
+
+    // Clear input
+    textInput.value = '';
+
+    // Show loading state
+    showMealAnalysisLoading('Analyzing meal from description...');
+
+    // Retry logic - try up to 5 times
+    const maxAttempts = 5;
+    let attempt = 1;
+    let success = false;
+    let nutritionData = null;
+    let lastError = null;
+
+    while (!success && attempt <= maxAttempts) {
+        try {
+            // Update loading message with retry attempt
+            if (attempt > 1) {
+                showMealAnalysisLoading(`Analyzing meal... (attempt ${attempt})`);
+            }
+
+            // Call Gemini API via edge function with text only
+            console.log(`Analyzing meal from text (attempt ${attempt}):`, mealDescription);
+            const response = await fetch('/.netlify/functions/analyze-food', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    description: mealDescription
+                    // No imageBase64 or mimeType - text only
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
+                throw new Error(errorData.error || `Failed to analyze meal (${response.status})`);
+            }
+
+            const result = await response.json();
+
+            if (!result.success || !result.data) {
+                throw new Error('Invalid response from analysis');
+            }
+
+            nutritionData = result.data;
+            success = true;
+            console.log('Text-based meal analysis complete:', nutritionData);
+
+        } catch (error) {
+            console.error(`Error analyzing text meal (attempt ${attempt}):`, error);
+            lastError = error;
+
+            // If not the last attempt, wait before retrying (exponential backoff)
+            if (attempt < maxAttempts) {
+                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10 seconds
+                console.log(`Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+            attempt++;
+        }
+    }
+
+    // Check if we failed after all attempts
+    if (!success) {
+        const errorDetails = lastError?.message || "Unknown error";
+        showMealAnalysisError(`Failed after ${maxAttempts} attempts. Error: ${errorDetails}`);
+        return;
+    }
+
+    // Success - save meal to database (without photo)
+    try {
+        // Save meal log to database with null photo URL
+        const savedMeal = await saveMealLog({
+            photoUrl: null, // No photo for text-based entry
+            foodItems: nutritionData.foodItems,
+            totals: nutritionData.totals,
+            micronutrients: nutritionData.micronutrients,
+            confidence: nutritionData.confidence,
+            notes: `Text entry: ${mealDescription}${nutritionData.notes ? ' | ' + nutritionData.notes : ''}`
+        });
+
+        // Award points for text-based meal entry
+        if (savedMeal && savedMeal[0]?.id) {
+            try {
+                await awardPointsForMeal(
+                    savedMeal[0].id,
+                    null, // No photo timestamp
+                    nutritionData.confidence,
+                    null  // No photo hash
+                );
+            } catch (pointsError) {
+                console.error('Error awarding points (meal still saved):', pointsError);
+                // Don't throw - meal was saved successfully, points are bonus
+            }
+        }
+
+        // Recalculate daily nutrition totals
+        await recalculateDailyNutrition();
+
+        // Refresh display
+        await loadTodayNutrition();
+
+        // Show success message
+        showMealAnalysisSuccess(nutritionData);
+
+    } catch (error) {
+        console.error('Error saving text-based meal:', error);
+        showMealAnalysisError(error.message);
+    }
+}
+
 // Handle meal photo selection
 async function handleMealPhotoSelect(event) {
     const file = event.target.files[0];
@@ -24181,7 +24326,7 @@ function renderMealsList(meals) {
             <div class="empty-state">
                 <p style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
                     📸 No meals logged yet today.<br>
-                    <span style="font-size: 0.9rem;">Take a photo of your meal to get started!</span>
+                    <span style="font-size: 0.9rem;">Take a photo or type what you ate to get started!</span>
                 </p>
             </div>
         `;
@@ -24200,9 +24345,16 @@ function renderMealsList(meals) {
             ? meal.food_items.map(item => item.name).join(', ')
             : 'Food';
 
+        // Handle text-based entries without photos
+        const hasPhoto = meal.photo_url && meal.photo_url !== 'null';
+        const imageStyle = hasPhoto
+            ? `background-image: url('${meal.photo_url}')`
+            : `background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 2rem;`;
+        const imageContent = hasPhoto ? '' : '📝';
+
         html += `
             <div class="meal-log-card">
-                <div class="meal-log-image" style="background-image: url('${meal.photo_url}')"></div>
+                <div class="meal-log-image" style="${imageStyle}">${imageContent}</div>
                 <div class="meal-log-content">
                     <div class="meal-log-time">${time}</div>
                     <div class="meal-log-foods">${foodItemsText}</div>

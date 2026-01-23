@@ -19,8 +19,9 @@ export default async function (request: Request, context: Context) {
       });
     }
 
-    if (!imageBase64) {
-      return new Response(JSON.stringify({ error: "No image provided" }), {
+    // Allow either image OR text description
+    if (!imageBase64 && !description) {
+      return new Response(JSON.stringify({ error: "No image or meal description provided" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -29,7 +30,55 @@ export default async function (request: Request, context: Context) {
     // Prepare the Gemini API request
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
-    const systemPrompt = `You are a nutrition analysis AI. Analyze the food in this image and provide detailed nutritional information.
+    const isTextOnly = !imageBase64;
+    const systemPrompt = isTextOnly
+      ? `You are a nutrition analysis AI. Analyze the meal based on the text description provided and estimate nutritional information.
+
+USER'S MEAL DESCRIPTION: "${description}"
+
+INSTRUCTIONS:
+1. Identify all food items mentioned in the description
+2. Estimate reasonable portion sizes based on the description (use standard serving sizes if not specified)
+3. Calculate nutritional values (calories, macros, and key micronutrients)
+4. Provide your confidence level (high/medium/low based on how detailed the description is)
+
+RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
+{
+  "foodItems": [
+    {
+      "name": "Food item name",
+      "portion": "estimated portion size",
+      "calories": number,
+      "protein_g": number,
+      "carbs_g": number,
+      "fat_g": number,
+      "fiber_g": number
+    }
+  ],
+  "totals": {
+    "calories": number,
+    "protein_g": number,
+    "carbs_g": number,
+    "fat_g": number,
+    "fiber_g": number
+  },
+  "micronutrients": {
+    "vitamin_c_mg": number,
+    "iron_mg": number,
+    "calcium_mg": number,
+    "potassium_mg": number
+  },
+  "confidence": "high/medium/low",
+  "notes": "Any additional observations or caveats about the analysis"
+}
+
+IMPORTANT:
+- Be realistic with portion sizes
+- If you're unsure, estimate conservatively and indicate lower confidence
+- Round numbers to 1 decimal place
+- Only include micronutrients if they're significant in the foods present
+- If the description is vague, use standard serving sizes and set confidence to "medium" or "low"`
+      : `You are a nutrition analysis AI. Analyze the food in this image and provide detailed nutritional information.
 ${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : ''}
 INSTRUCTIONS:
 1. Identify all food items visible in the image
@@ -74,20 +123,21 @@ IMPORTANT:
 - Only include micronutrients if they're significant in the foods present
 - If the image doesn't contain food, set confidence to "low" and explain in notes`;
 
+    // Build parts array conditionally
+    const parts = [{ text: systemPrompt }];
+    if (imageBase64) {
+      parts.push({
+        inline_data: {
+          mime_type: mimeType || "image/jpeg",
+          data: imageBase64
+        }
+      });
+    }
+
     const payload = {
       contents: [
         {
-          parts: [
-            {
-              text: systemPrompt
-            },
-            {
-              inline_data: {
-                mime_type: mimeType || "image/jpeg",
-                data: imageBase64
-              }
-            }
-          ]
+          parts: parts
         }
       ],
       generationConfig: {
