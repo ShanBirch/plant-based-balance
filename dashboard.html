@@ -12254,6 +12254,7 @@ function wizardPrev() {
 
 async function finishOnboarding() {
     localStorage.setItem('onboardingComplete', 'true');
+    localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
     document.getElementById('onboarding-wizard').style.display = 'none';
 
     // Apply gender-specific UI changes NOW that gender is selected
@@ -12269,6 +12270,41 @@ async function finishOnboarding() {
     // Update daily content with gender-appropriate tips
     if (typeof initProgramDate === 'function') {
         initProgramDate();
+    }
+
+    // CRITICAL: Ensure cycle data is saved to database before completing onboarding
+    // This fixes the issue where cycle data disappears after page refresh
+    if (window.currentUser && userCycleData) {
+        try {
+            const userId = window.currentUser.id || window.currentUser.user_id;
+            let existingFacts = {};
+            try {
+                existingFacts = await dbHelpers.userFacts.get(userId);
+            } catch(err) { /* ignore not found */ }
+
+            const currentAdditional = existingFacts?.additional_data || {};
+
+            // Only save cycle data if we have valid data (lastPeriod or noPeriodMode)
+            if (userCycleData.lastPeriod || userCycleData.noPeriodMode) {
+                const dataToSave = {
+                    additional_data: {
+                        ...currentAdditional,
+                        last_period_start: userCycleData.lastPeriod,
+                        cycle_length: userCycleData.cycleLength || 28,
+                        no_period_mode: userCycleData.noPeriodMode || false
+                    }
+                };
+
+                console.log('💾 finishOnboarding: Ensuring cycle data is saved to database:', dataToSave);
+                await dbHelpers.userFacts.upsert(userId, dataToSave);
+                console.log('✅ finishOnboarding: Cycle data saved to database successfully');
+
+                // Also ensure localStorage is in sync
+                localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+            }
+        } catch (e) {
+            console.error('❌ finishOnboarding: Failed to save cycle data to database:', e);
+        }
     }
 
     // Sync quiz data to database
@@ -12307,6 +12343,7 @@ async function closeWizardManually() {
      // Warning: if they close manually without finishing, we might show it again next time?
      // For now, let's assume they want to skip it.
      localStorage.setItem('onboardingComplete', 'true');
+     localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
 
      // Sync any collected data (including gender) to database before closing
      await syncQuizDataToDb();
@@ -17017,9 +17054,9 @@ window.submitCoachMessage = async function() {
 <script>
     // Initialize Onboarding
     function initOnboarding() {
-        // Check if user has seen onboarding
-        const hasSeenOnboarding = localStorage.getItem('plantbased_onboarding_complete');
-        
+        // Check if user has seen onboarding (check both keys for backwards compatibility)
+        const hasSeenOnboarding = localStorage.getItem('plantbased_onboarding_complete') || localStorage.getItem('onboardingComplete');
+
         if (!hasSeenOnboarding) {
             // Show modal immediately
             setTimeout(() => {
@@ -17037,12 +17074,13 @@ window.submitCoachMessage = async function() {
     function completeOnboarding() {
         const overlay = document.getElementById('onboarding-overlay');
         overlay.classList.remove('active');
-        
+
         // Wait for animation
         setTimeout(() => {
             overlay.style.display = 'none';
-            // Set flag in localStorage
+            // Set flags in localStorage (both keys for consistency)
             localStorage.setItem('plantbased_onboarding_complete', 'true');
+            localStorage.setItem('onboardingComplete', 'true');
         }, 400);
     }
     
