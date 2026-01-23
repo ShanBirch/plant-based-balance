@@ -21925,23 +21925,25 @@ if (typeof window.checkInProgress === 'undefined') {
 }
 var checkInProgress = window.checkInProgress;
 
-function initCycleView() {
-    // 1. Ensure Data Loaded
-    if(typeof initCalendarView === 'function') initCalendarView(); // Legacy loader
-    
-    // 2. Render Wheel
+async function initCycleView() {
+    // 1. Ensure Data Loaded - MUST await this to load from DB before rendering
+    if(typeof initCalendarView === 'function') {
+        await initCalendarView();
+    }
+
+    // 2. Render Wheel (now data is loaded)
     renderCycleStatus();
-    
+
     // 3. Render Calendar
     if(typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
-    
+
     // 4. Check Daily Log Status
     const today = new Date().toISOString().split('T')[0];
     const hasLog = userCycleData.logs && userCycleData.logs[today];
-    
+
     const promptCard = document.getElementById('check-in-prompt-card');
     const completeCard = document.getElementById('check-in-completed-card');
-    
+
     if(promptCard && completeCard) {
         if(hasLog) {
             promptCard.style.display = 'none';
