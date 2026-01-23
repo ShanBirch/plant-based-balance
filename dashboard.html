@@ -20999,11 +20999,8 @@ async function submitDailyCycleSync() {
             }
         }
 
-        // Trigger Cycle Sync Engine
-        if (typeof applyCycleSync === 'function') applyCycleSync(window.checkInProgress);
-
         // Handle rest-indicating conditions - show yoga recommendation popup
-        // IMPORTANT: Check this BEFORE refreshing views, as view refreshes may interfere
+        // IMPORTANT: Check this BEFORE applyCycleSync which triggers view refreshes
         const isMale = (typeof isMaleUser === 'function' && isMaleUser());
         const symptoms = window.checkInProgress.symptoms || [];
         let yogaPopupReason = null;
@@ -21041,7 +21038,10 @@ async function submitDailyCycleSync() {
             console.log('🧘 No yoga popup needed');
         }
 
-        // Close & Refresh views (only if no yoga popup shown)
+        // Trigger Cycle Sync Engine (this triggers view refreshes)
+        if (typeof applyCycleSync === 'function') applyCycleSync(window.checkInProgress);
+
+        // Close modal and refresh remaining views
         closeCheckInModal();
         if (typeof initCycleView === 'function') initCycleView();
         if (typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
