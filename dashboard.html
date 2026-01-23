@@ -13070,29 +13070,45 @@ function selectEquipment(type) {
 }
 
 async function submitCheckIn() {
+    // DEPRECATED: This is the old check-in function - redirect to new submitDailyCycleSync
     if(!selectedEnergy || !selectedEquipment) {
         alert("Please select both energy level and equipment access.");
         return;
     }
 
-    try {
-        const user = window.currentUser;
-        if (user) {
-            const dateStr = new Date().toISOString().split('T')[0];
-            await dbHelpers.checkins.upsert(user.id, dateStr, {
-                energy: selectedEnergy,
-                equipment: selectedEquipment
-            });
-            console.log('✅ Check-in saved to DB');
-        }
-    } catch (e) {
-        console.error('Failed to save check-in:', e);
-        alert('Failed to save check-in. Please try again.');
-        return;
+    // Populate new checkInProgress object with old modal values
+    if (typeof window.checkInProgress === 'undefined') {
+        window.checkInProgress = { flow: null, symptoms: [], mood: null, energy: null, fluid: null, equipment: null, recovery: null };
     }
+    window.checkInProgress.energy = selectedEnergy;
+    window.checkInProgress.equipment = selectedEquipment;
 
-    document.getElementById('checkin-modal').style.display = 'none';
-    renderMovementView();
+    // Close old modal
+    const oldModal = document.getElementById('checkin-modal');
+    if (oldModal) oldModal.style.display = 'none';
+
+    // Call new submit function which handles all persistence
+    if (typeof submitDailyCycleSync === 'function') {
+        await submitDailyCycleSync();
+    } else {
+        // Fallback if new function not available
+        try {
+            const user = window.currentUser;
+            if (user) {
+                const dateStr = new Date().toISOString().split('T')[0];
+                await dbHelpers.checkins.upsert(user.id, dateStr, {
+                    energy: selectedEnergy,
+                    equipment: selectedEquipment
+                });
+                console.log('✅ Check-in saved to DB (legacy)');
+            }
+        } catch (e) {
+            console.error('Failed to save check-in:', e);
+            alert('Failed to save check-in. Please try again.');
+            return;
+        }
+        renderMovementView();
+    }
 }
 
 // Cycle Tracking Modal Functions
@@ -13605,6 +13621,20 @@ async function renderMovementView() {
             if (personalizationReason.includes('symptoms') || personalizationReason.includes('Restorative')) {
                 personalizationReason = '';
             }
+        } else if (equipmentFromCheckin === 'bands' && availablePrograms.includes('bands')) {
+            suggestedProgram = 'bands';
+            workoutDayIndex = calDayIndex % 7;
+            userSelectedEquipmentToday = true;
+            // Clear symptom-based personalization if user explicitly chose equipment
+            if (personalizationReason.includes('symptoms') || personalizationReason.includes('Restorative')) {
+                personalizationReason = '';
+            }
+        } else if (equipmentFromCheckin === 'yoga_only' || equipmentFromCheckin === 'none') {
+            suggestedProgram = 'yoga';
+            // Use schedule-based yoga index if available, otherwise default to restorative
+            workoutDayIndex = scheduleItem?.subcategory ? scheduleItem.dayIndex : 3;
+            userSelectedEquipmentToday = true;
+            // Don't clear personalization for yoga - it's a valid symptom response too
         }
     }
 
@@ -13618,7 +13648,9 @@ async function renderMovementView() {
         if (cycleSyncEnabled && periodEnergyLow) {
             // User opted in AND has low energy during period
             if (phaseKey === 'menstrual' && suggestedProgram !== 'yoga') {
-                // Automatic cycle sync: show user it's synced to their cycle
+                // Automatic cycle sync: switch to yoga AND show user it's synced to their cycle
+                suggestedProgram = 'yoga';
+                workoutDayIndex = 6; // Yin yoga - gentle for menstrual phase
                 personalizationReason = `✨ Cycle Sync: Automatic yoga during menstrual phase`;
             }
         }
@@ -20813,7 +20845,7 @@ updateCoachUI();
 <script>
 // checkInProgress will be defined later, use window reference for safety
 if (typeof window.checkInProgress === 'undefined') {
-    window.checkInProgress = { flow: null, symptoms: [], mood: null, energy: null, fluid: null };
+    window.checkInProgress = { flow: null, symptoms: [], mood: null, energy: null, fluid: null, equipment: null, recovery: null };
 }
 
 function selectCheckInOption(category, value, el) {
@@ -20856,8 +20888,9 @@ async function submitDailyCycleSync() {
         }
         if (!userCycleData.logs) userCycleData.logs = {};
 
-        // Clone to avoid ref issues
+        // Clone to avoid ref issues and add timestamp for priority comparisons
         userCycleData.logs[today] = JSON.parse(JSON.stringify(window.checkInProgress));
+        userCycleData.logs[today].timestamp = new Date().toISOString();
 
         // Update userCycleData.symptoms from check-in
         userCycleData.symptoms = window.checkInProgress.symptoms || [];
@@ -21930,7 +21963,7 @@ function renderExerciseChart(progress) {
 
 // Use window.checkInProgress (may already be defined by early script)
 if (typeof window.checkInProgress === 'undefined') {
-    window.checkInProgress = { flow:null, symptoms:[], mood:null, energy:null, fluid:null };
+    window.checkInProgress = { flow: null, symptoms: [], mood: null, energy: null, fluid: null, equipment: null, recovery: null };
 }
 var checkInProgress = window.checkInProgress;
 
