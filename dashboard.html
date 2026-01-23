@@ -20965,9 +20965,26 @@ async function submitDailyCycleSync() {
         if (typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
         if (typeof renderMovementView === 'function') renderMovementView();
 
-        // Handle low energy
+        // Handle rest-indicating conditions - show yoga recommendation popup
+        const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+        const symptoms = window.checkInProgress.symptoms || [];
+        let yogaPopupReason = null;
+
+        // Check for conditions that should trigger yoga recommendation
         if (window.checkInProgress.energy === 'low') {
-            if (typeof showLowEnergyYogaPopup === 'function') showLowEnergyYogaPopup();
+            yogaPopupReason = 'low_energy';
+        } else if (isMale && window.checkInProgress.recovery === 'tired') {
+            yogaPopupReason = 'tired';
+        } else if (isMale && symptoms.includes('muscle_soreness')) {
+            yogaPopupReason = 'muscle_soreness';
+        } else if (symptoms.includes('back_pain')) {
+            yogaPopupReason = 'back_pain';
+        } else if (!isMale && symptoms.includes('cramps')) {
+            yogaPopupReason = 'cramps';
+        }
+
+        if (yogaPopupReason) {
+            if (typeof showLowEnergyYogaPopup === 'function') showLowEnergyYogaPopup(yogaPopupReason);
             return;
         }
 
@@ -22222,15 +22239,31 @@ window._submitDailyCycleSyncImpl = async function() {
         renderMovementView();
     }
 
-    // 6. Handle energy-based workout override
+    // 6. Handle rest-indicating conditions - show yoga recommendation popup
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+    const checkInSymptoms = checkInProgress.symptoms || [];
+    let yogaPopupReason = null;
+
+    // Check for conditions that should trigger yoga recommendation
     if (checkInProgress.energy === 'low') {
-        // Show yoga recommendation popup for low energy
-        showLowEnergyYogaPopup();
+        yogaPopupReason = 'low_energy';
+    } else if (isMale && checkInProgress.recovery === 'tired') {
+        yogaPopupReason = 'tired';
+    } else if (isMale && checkInSymptoms.includes('muscle_soreness')) {
+        yogaPopupReason = 'muscle_soreness';
+    } else if (checkInSymptoms.includes('back_pain')) {
+        yogaPopupReason = 'back_pain';
+    } else if (!isMale && checkInSymptoms.includes('cramps')) {
+        yogaPopupReason = 'cramps';
+    }
+
+    if (yogaPopupReason) {
+        // Show yoga recommendation popup with context-aware message
+        showLowEnergyYogaPopup(yogaPopupReason);
         return; // The popup will handle navigation
     }
 
     // 6.5. Handle cycle-based workout recommendations (for women who opted in)
-    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     if (!isMale) {
         // Get user profile to check cycle preferences
         const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
@@ -22299,10 +22332,39 @@ window._submitDailyCycleSyncImpl = async function() {
     showCycleSyncBanner();
 };
 
-// Low energy yoga recommendation popup
-function showLowEnergyYogaPopup() {
+// Recovery/Rest yoga recommendation popup - supports multiple trigger reasons
+function showLowEnergyYogaPopup(reason = 'low_energy') {
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     const syncLabel = isMale ? '💪 Daily Sync' : '✨ Cycle Sync';
+
+    // Context-aware messaging based on why the popup was triggered
+    let messageText;
+    switch(reason) {
+        case 'tired':
+        case 'need_rest':
+            messageText = isMale
+                ? "You indicated you need rest today. We recommend <strong>Somatic Yoga</strong> to help your body recover and rebuild."
+                : "You indicated you need rest today. We recommend <strong>Somatic Yoga</strong> to support your recovery.";
+            break;
+        case 'muscle_soreness':
+            messageText = "You're feeling sore today. We recommend <strong>Somatic Yoga</strong> to ease tension, improve mobility, and speed up recovery.";
+            break;
+        case 'back_pain':
+            messageText = "Back pain can benefit from gentle movement. We recommend <strong>Somatic Yoga</strong> to release tension and support healing.";
+            break;
+        case 'cramps':
+            messageText = "Gentle movement can help with cramps. We recommend <strong>Somatic Yoga</strong> designed to ease discomfort and relax your body.";
+            break;
+        case 'low_energy':
+        default:
+            messageText = isMale
+                ? "We noticed you're feeling low energy today. We recommend <strong>Somatic Yoga</strong> to help you recover and recharge."
+                : "We noticed you're feeling low energy today. We recommend <strong>Somatic Yoga</strong> to help you recover and recharge.";
+            break;
+    }
+
+    // Store the reason for acceptYogaRecommendation to use
+    window._yogaPopupReason = reason;
 
     // Create popup overlay
     const popup = document.createElement('div');
@@ -22319,7 +22381,7 @@ function showLowEnergyYogaPopup() {
             <div style="font-size: 3rem; margin-bottom: 15px;">🧘‍♀️</div>
             <h3 style="margin: 0 0 10px 0; color: var(--primary); font-size: 1.3rem;">${syncLabel}</h3>
             <p style="color: #64748b; margin: 0 0 20px 0; line-height: 1.5;">
-                We noticed you're feeling low energy today. We recommend <strong>Restorative Yoga</strong> to help you recover and recharge.
+                ${messageText}
             </p>
             <div style="display: flex; gap: 12px; justify-content: center;">
                 <button onclick="acceptYogaRecommendation()" style="
@@ -22340,9 +22402,10 @@ function showLowEnergyYogaPopup() {
 }
 
 function acceptYogaRecommendation() {
-    // Save yoga override for today
+    // Save yoga override for today - use the reason from popup trigger
     const today = new Date().toISOString().split('T')[0];
-    const yogaOverride = { date: today, program: 'yoga', reason: 'low_energy' };
+    const reason = window._yogaPopupReason || 'low_energy';
+    const yogaOverride = { date: today, program: 'yoga', reason: reason };
     localStorage.setItem('todayWorkoutOverride', JSON.stringify(yogaOverride));
 
     // Also update the check-in log to reflect yoga choice
@@ -22372,7 +22435,7 @@ function acceptYogaRecommendation() {
 
     // Show confirmation banner
     const banner = document.createElement('div');
-    banner.innerText = "🧘 Switched to Restorative Yoga for today!";
+    banner.innerText = "🧘 Switched to Somatic Yoga for today!";
     banner.style.cssText = "position:fixed; top:80px; left:50%; transform:translateX(-50%); background:var(--accent-green); color:white; padding:12px 24px; border-radius:20px; z-index:2000; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.2);";
     document.body.appendChild(banner);
     setTimeout(() => { banner.style.opacity = '0'; setTimeout(() => banner.remove(), 500); }, 3000);
