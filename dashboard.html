@@ -20975,6 +20975,8 @@ async function submitDailyCycleSync() {
             yogaPopupReason = 'low_energy';
         } else if (isMale && window.checkInProgress.recovery === 'tired') {
             yogaPopupReason = 'tired';
+        } else if (isMale && window.checkInProgress.recovery === 'moderate') {
+            yogaPopupReason = 'fatigued';
         } else if (isMale && symptoms.includes('muscle_soreness')) {
             yogaPopupReason = 'muscle_soreness';
         } else if (symptoms.includes('back_pain')) {
@@ -22249,6 +22251,8 @@ window._submitDailyCycleSyncImpl = async function() {
         yogaPopupReason = 'low_energy';
     } else if (isMale && checkInProgress.recovery === 'tired') {
         yogaPopupReason = 'tired';
+    } else if (isMale && checkInProgress.recovery === 'moderate') {
+        yogaPopupReason = 'fatigued';
     } else if (isMale && checkInSymptoms.includes('muscle_soreness')) {
         yogaPopupReason = 'muscle_soreness';
     } else if (checkInSymptoms.includes('back_pain')) {
@@ -22345,6 +22349,9 @@ function showLowEnergyYogaPopup(reason = 'low_energy') {
             messageText = isMale
                 ? "You indicated you need rest today. We recommend <strong>Somatic Yoga</strong> to help your body recover and rebuild."
                 : "You indicated you need rest today. We recommend <strong>Somatic Yoga</strong> to support your recovery.";
+            break;
+        case 'fatigued':
+            messageText = "You're feeling a bit fatigued today. We recommend <strong>Somatic Yoga</strong> to help restore your energy and support recovery.";
             break;
         case 'muscle_soreness':
             messageText = "You're feeling sore today. We recommend <strong>Somatic Yoga</strong> to ease tension, improve mobility, and speed up recovery.";
