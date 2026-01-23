@@ -11473,9 +11473,28 @@ async function checkAndTriggerOnboarding() {
     // Check if user has completed onboarding before (localStorage)
     const onboardingComplete = localStorage.getItem('onboardingComplete');
 
-    // If onboarding is already complete in localStorage, skip
+    // SELF-HEALING: Even if localStorage says complete, verify cycle data exists for females
     if (onboardingComplete === 'true') {
-        return;
+        const userGender = localStorage.getItem('userGender');
+        if (userGender === 'female') {
+            // Check if cycle data exists in localStorage
+            try {
+                const cycleData = JSON.parse(localStorage.getItem('userCycleData') || '{}');
+                if (!cycleData.lastPeriod) {
+                    console.warn('⚠️ Onboarding marked complete but no cycle data in localStorage - allowing re-onboarding');
+                    // Don't return - continue to check database and possibly show wizard
+                } else {
+                    // Data exists in localStorage - skip wizard
+                    return;
+                }
+            } catch (e) {
+                console.warn('Error checking localStorage cycle data:', e);
+                // If we can't check, allow wizard to show
+            }
+        } else {
+            // Male user or gender not set - respect onboarding flag
+            return;
+        }
     }
 
     // If user is logged in, check the database for onboarding_complete flag
@@ -11484,10 +11503,33 @@ async function checkAndTriggerOnboarding() {
         try {
             const userData = await dbHelpers.users.get(window.currentUser.id);
             if (userData && userData.onboarding_complete) {
-                // Sync localStorage with database state
-                localStorage.setItem('onboardingComplete', 'true');
-                console.log("Onboarding already completed (from database), skipping wizard");
-                return;
+                // SELF-HEALING: Check if cycle data actually exists for female users
+                // If onboarding is marked complete but data is missing, allow re-onboarding
+                const userGender = localStorage.getItem('userGender') || userData.sex;
+                if (userGender === 'female') {
+                    try {
+                        const facts = await dbHelpers.userFacts.get(window.currentUser.id);
+                        const hasCycleData = facts?.additional_data?.last_period_start;
+
+                        if (!hasCycleData) {
+                            console.warn('⚠️ Onboarding marked complete but cycle data missing - allowing re-onboarding');
+                            // Don't return - allow wizard to show
+                        } else {
+                            // Data exists - skip wizard
+                            localStorage.setItem('onboardingComplete', 'true');
+                            console.log("Onboarding already completed (from database), skipping wizard");
+                            return;
+                        }
+                    } catch (e) {
+                        console.warn("Error checking cycle data:", e);
+                        // If we can't check, allow wizard to show to be safe
+                    }
+                } else {
+                    // Male user - just check onboarding flag
+                    localStorage.setItem('onboardingComplete', 'true');
+                    console.log("Onboarding already completed (from database), skipping wizard");
+                    return;
+                }
             }
         } catch(e) {
             console.warn("Error checking onboarding status from database:", e);
