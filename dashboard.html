@@ -9952,8 +9952,8 @@ function renderCycleStatus() {
 
     if (!userCycleData.lastPeriod) {
         document.getElementById('cycle-phase-name').innerText = "Setup Required";
-        document.getElementById('cycle-day-display').innerText = "Enter details below";
-        document.getElementById('cycle-phase-desc').innerText = "Enter your details above to see your cycle insights.";
+        document.getElementById('cycle-day-display').innerText = "Complete onboarding";
+        document.getElementById('cycle-phase-desc').innerText = "Go to Settings > Edit Profile to complete your onboarding and see your cycle insights.";
         return;
     }
 
@@ -10083,12 +10083,39 @@ function renderWeeklyCalendar() {
         }
     }
 
-    // Check for today's equipment from daily check-in (overrides profile)
-    // This ensures consistency with Homepage and Movement view
+    // NEW: Smart equipment override - most recent selection wins (check-in vs onboarding)
     const todayDateStr = new Date().toISOString().split('T')[0];
-    if (userCycleData.logs && userCycleData.logs[todayDateStr] && userCycleData.logs[todayDateStr].equipment) {
-        userProfile.equipment_access = userCycleData.logs[todayDateStr].equipment;
-        console.log('📅 Calendar using today\'s check-in equipment:', userProfile.equipment_access);
+    const todayCheckIn = userCycleData.logs?.[todayDateStr];
+    const checkInTimestamp = todayCheckIn?.timestamp;
+    const onboardingTimestamp = localStorage.getItem('onboardingCompletedAt');
+
+    if (todayCheckIn?.equipment) {
+        // Both timestamps exist - compare them
+        if (checkInTimestamp && onboardingTimestamp) {
+            const checkInTime = new Date(checkInTimestamp).getTime();
+            const onboardingTime = new Date(onboardingTimestamp).getTime();
+
+            if (checkInTime > onboardingTime) {
+                // Check-in is more recent - use check-in equipment
+                userProfile.equipment_access = todayCheckIn.equipment;
+                console.log('📅 Calendar using today\'s check-in equipment (more recent):', userProfile.equipment_access);
+            } else {
+                // Onboarding is more recent - keep profile equipment
+                console.log('📅 Calendar using onboarding equipment (more recent):', userProfile.equipment_access);
+            }
+        } else {
+            // No onboarding timestamp - use check-in equipment (backward compatibility)
+            userProfile.equipment_access = todayCheckIn.equipment;
+            console.log('📅 Calendar using today\'s check-in equipment:', userProfile.equipment_access);
+        }
+    } else if (!todayCheckIn && userCycleData.logs) {
+        // No check-in today - use last check-in data (don't reset to defaults)
+        const dates = Object.keys(userCycleData.logs).sort().reverse();
+        const lastCheckIn = dates.find(date => userCycleData.logs[date]?.equipment);
+        if (lastCheckIn) {
+            userProfile.equipment_access = userCycleData.logs[lastCheckIn].equipment;
+            console.log('📅 Calendar using last check-in equipment from', lastCheckIn, ':', userProfile.equipment_access);
+        }
     }
 
     // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
@@ -10756,11 +10783,34 @@ function getTodaysWorkout() {
         }
     }
 
-    // Check for today's equipment from daily check-in (overrides profile)
-    // This ensures consistency with Perform tab and Movement view
+    // NEW: Smart equipment override - most recent selection wins (check-in vs onboarding)
     const todayDateStr = new Date().toISOString().split('T')[0];
-    if (userCycleData.logs && userCycleData.logs[todayDateStr] && userCycleData.logs[todayDateStr].equipment) {
-        userProfile.equipment_access = userCycleData.logs[todayDateStr].equipment;
+    const todayCheckIn = userCycleData.logs?.[todayDateStr];
+    const checkInTimestamp = todayCheckIn?.timestamp;
+    const onboardingTimestamp = localStorage.getItem('onboardingCompletedAt');
+
+    if (todayCheckIn?.equipment) {
+        // Both timestamps exist - compare them
+        if (checkInTimestamp && onboardingTimestamp) {
+            const checkInTime = new Date(checkInTimestamp).getTime();
+            const onboardingTime = new Date(onboardingTimestamp).getTime();
+
+            if (checkInTime > onboardingTime) {
+                // Check-in is more recent - use check-in equipment
+                userProfile.equipment_access = todayCheckIn.equipment;
+            }
+            // else: Onboarding is more recent - keep profile equipment
+        } else {
+            // No onboarding timestamp - use check-in equipment (backward compatibility)
+            userProfile.equipment_access = todayCheckIn.equipment;
+        }
+    } else if (!todayCheckIn && userCycleData.logs) {
+        // No check-in today - use last check-in data (don't reset to defaults)
+        const dates = Object.keys(userCycleData.logs).sort().reverse();
+        const lastCheckIn = dates.find(date => userCycleData.logs[date]?.equipment);
+        if (lastCheckIn) {
+            userProfile.equipment_access = userCycleData.logs[lastCheckIn].equipment;
+        }
     }
 
     // equipment_access is the source of truth; gym_access is legacy fallback only if equipment_access is undefined
@@ -12034,6 +12084,14 @@ function wizardNext() {
             updateCycleData(); // Trigger calculations
         }
 
+        // CRITICAL: Save userCycleData to localStorage so it persists
+        localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+
+        // Save to database if possible
+        if (typeof saveUserCycleData === 'function') {
+            saveUserCycleData(userCycleData);
+        }
+
         // Add menopause status to quizData
         const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
         const age = existingData.age || 0;
@@ -12063,6 +12121,10 @@ function wizardNext() {
 
         // NEW: Also save to localStorage for immediate use
         localStorage.setItem('userProfile', JSON.stringify(existingData));
+
+        // NEW: Add timestamp for when onboarding was completed (for equipment override priority)
+        existingData.onboarding_completed_at = new Date().toISOString();
+        localStorage.setItem('onboardingCompletedAt', existingData.onboarding_completed_at);
 
         console.log("Step 3 data collected, hormone profile:", existingData.profile, "cycle sync:", existingData.cycle_sync_preference, "period energy:", existingData.period_energy_response);
     }
@@ -13025,12 +13087,39 @@ async function renderMovementView() {
     // Merge with database profile for other fields like program_start_date
     profile = { ...dbProfile, ...profile };
 
-    // PRIORITY 0.5: Check for today's equipment from daily check-in (overrides profile)
-    // This ensures consistency with Perform tab which also reads from daily check-in
+    // PRIORITY 0.5: Smart equipment override - most recent selection wins (check-in vs onboarding)
     const todayDateStr = new Date().toISOString().split('T')[0];
-    if (userCycleData.logs && userCycleData.logs[todayDateStr] && userCycleData.logs[todayDateStr].equipment) {
-        profile.equipment_access = userCycleData.logs[todayDateStr].equipment;
-        console.log('📱 Movement view using today\'s check-in equipment:', profile.equipment_access);
+    const todayCheckIn = userCycleData.logs?.[todayDateStr];
+    const checkInTimestamp = todayCheckIn?.timestamp;
+    const onboardingTimestamp = localStorage.getItem('onboardingCompletedAt');
+
+    if (todayCheckIn?.equipment) {
+        // Both timestamps exist - compare them
+        if (checkInTimestamp && onboardingTimestamp) {
+            const checkInTime = new Date(checkInTimestamp).getTime();
+            const onboardingTime = new Date(onboardingTimestamp).getTime();
+
+            if (checkInTime > onboardingTime) {
+                // Check-in is more recent - use check-in equipment
+                profile.equipment_access = todayCheckIn.equipment;
+                console.log('📱 Movement view using today\'s check-in equipment (more recent):', profile.equipment_access);
+            } else {
+                // Onboarding is more recent - keep profile equipment
+                console.log('📱 Movement view using onboarding equipment (more recent):', profile.equipment_access);
+            }
+        } else {
+            // No onboarding timestamp - use check-in equipment (backward compatibility)
+            profile.equipment_access = todayCheckIn.equipment;
+            console.log('📱 Movement view using today\'s check-in equipment:', profile.equipment_access);
+        }
+    } else if (!todayCheckIn && userCycleData.logs) {
+        // No check-in today - use last check-in data (don't reset to defaults)
+        const dates = Object.keys(userCycleData.logs).sort().reverse();
+        const lastCheckIn = dates.find(date => userCycleData.logs[date]?.equipment);
+        if (lastCheckIn) {
+            profile.equipment_access = userCycleData.logs[lastCheckIn].equipment;
+            console.log('📱 Movement view using last check-in equipment from', lastCheckIn, ':', profile.equipment_access);
+        }
     }
 
     // PRIORITY 1: Determine available programs based on quiz/profile equipment
@@ -21744,6 +21833,9 @@ window._submitDailyCycleSyncImpl = async function() {
     // Clone to avoid ref issues
     userCycleData.logs[today] = JSON.parse(JSON.stringify(checkInProgress));
 
+    // NEW: Add timestamp for when check-in was completed (for equipment override priority)
+    userCycleData.logs[today].timestamp = new Date().toISOString();
+
     // Update userCycleData.symptoms from check-in
     userCycleData.symptoms = checkInProgress.symptoms || [];
 
@@ -21786,21 +21878,27 @@ window._submitDailyCycleSyncImpl = async function() {
             userProfile.equipment_access = checkInProgress.equipment;
             // Clear legacy gym_access field - equipment_access is the source of truth
             userProfile.gym_access = (checkInProgress.equipment === 'gym');
+
+            // NEW: Add timestamp for equipment update (for override priority)
+            userProfile.equipment_updated_at = new Date().toISOString();
+            localStorage.setItem('equipmentUpdatedAt', userProfile.equipment_updated_at);
             localStorage.setItem('userProfile', JSON.stringify(userProfile));
 
             // Update window cache too
             if (window.userProfile) {
                 window.userProfile.equipment_access = checkInProgress.equipment;
                 window.userProfile.gym_access = (checkInProgress.equipment === 'gym');
+                window.userProfile.equipment_updated_at = userProfile.equipment_updated_at;
             }
 
             // Also update sessionStorage for consistency across all views
             const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
             sessionProfile.equipment_access = checkInProgress.equipment;
             sessionProfile.gym_access = (checkInProgress.equipment === 'gym');
+            sessionProfile.equipment_updated_at = userProfile.equipment_updated_at;
             sessionStorage.setItem('userProfile', JSON.stringify(sessionProfile));
 
-            console.log('✅ Equipment access saved:', checkInProgress.equipment);
+            console.log('✅ Equipment access saved:', checkInProgress.equipment, 'at', userProfile.equipment_updated_at);
         } catch (e) {
             console.warn('Failed to save equipment access:', e);
         }
