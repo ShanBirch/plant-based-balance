@@ -13424,8 +13424,8 @@ async function renderMovementView() {
                 name: 'Gym Split',
                 estimatedTime: workout?.estimatedTime || 45
             };
-            // Use muscle-specific image if available (male users only for now)
-            const muscleImg = muscleGroupImages[muscleGroup];
+            // Use muscle-specific image for male users only (these are male photos)
+            const muscleImg = isMale ? muscleGroupImages[muscleGroup] : null;
             heroMeta = {
                 ...assets[suggestedProgram],
                 img: muscleImg || assets[suggestedProgram].img
@@ -14374,13 +14374,14 @@ function openWorkoutSubcategories(categoryKey) {
     const grid = document.getElementById('subcategories-grid');
     grid.innerHTML = '';
 
-    // Muscle group images for gym subcategories
-    // Muscle group images for gym subcategories
+    // Muscle group images for gym subcategories (male users only)
     let isDbzTheme = false;
     try {
         const currentTheme = localStorage.getItem('userThemePreference') || localStorage.getItem('app_theme') || localStorage.getItem('theme') || 'default';
         isDbzTheme = currentTheme && currentTheme.startsWith('dbz-');
     } catch (e) { console.error('Error checking theme', e); }
+
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
 
     const muscleImages = {
         'back': isDbzTheme ? '/assets/dbz_back_day.png' : '/assets/back.jpg',
@@ -14401,7 +14402,8 @@ function openWorkoutSubcategories(categoryKey) {
         const subcategory = category.subcategories[subKey];
         const workoutCount = subcategory.workouts.length;
         const muscleImg = muscleImages[subKey];
-        const hasImage = categoryKey === 'gym' && muscleImg;
+        // Only show muscle photos for male users (these are male photos)
+        const hasImage = categoryKey === 'gym' && muscleImg && isMale;
 
         grid.innerHTML += `
             <div class="library-category-card" onclick="openWorkoutList('${categoryKey}', '${subKey}')" style="${hasImage ? 'display: flex; align-items: center; gap: 15px;' : ''}">
