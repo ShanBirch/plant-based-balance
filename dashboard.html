@@ -22518,9 +22518,25 @@ function checkAndRenderCycleSync() {
     }
 }
 
-// Initial Load
-document.addEventListener('DOMContentLoaded', () => {
-    // Load cycle data from localStorage first
+// Initial Load - MUST wait for auth before loading cycle data from DB
+document.addEventListener('DOMContentLoaded', async () => {
+    // Wait for auth to complete before loading user-specific data
+    const waitForAuth = () => new Promise(resolve => {
+        if(window.currentUser) return resolve(window.currentUser);
+        const check = setInterval(() => {
+            if(window.currentUser) {
+                clearInterval(check);
+                resolve(window.currentUser);
+            }
+        }, 100);
+        // Timeout after 5s just in case
+        setTimeout(() => { clearInterval(check); resolve(null); }, 5000);
+    });
+
+    await waitForAuth();
+    console.log('🔐 Auth ready for cycle data load, currentUser:', window.currentUser?.id);
+
+    // Load cycle data from localStorage AND database (now that auth is ready)
     if(typeof initCalendarView === 'function') {
         initCalendarView().then(() => {
             // After data is loaded, check for Cycle Sync
