@@ -11959,7 +11959,7 @@ function applyGenderSpecificUI() {
     }
 }
 
-function wizardNext() {
+async function wizardNext() {
     // Validation for Step 1: Gender Selection
     if(currentWizardStep === 1) {
         if (!selectedGender) {
@@ -12104,31 +12104,29 @@ function wizardNext() {
         // CRITICAL: Save userCycleData to localStorage AND database
         localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
 
-        // Save to database for cross-device persistence
+        // Save to database for cross-device persistence (WAIT for this to complete)
         if (window.currentUser) {
-            (async () => {
+            try {
+                const userId = window.currentUser.id || window.currentUser.user_id;
+                let existingFacts = {};
                 try {
-                    const userId = window.currentUser.id || window.currentUser.user_id;
-                    let existingFacts = {};
-                    try {
-                        existingFacts = await dbHelpers.userFacts.get(userId);
-                    } catch(err) { /* ignore not found */ }
+                    existingFacts = await dbHelpers.userFacts.get(userId);
+                } catch(err) { /* ignore not found */ }
 
-                    const currentAdditional = existingFacts?.additional_data || {};
+                const currentAdditional = existingFacts?.additional_data || {};
 
-                    await dbHelpers.userFacts.upsert(userId, {
-                        additional_data: {
-                            ...currentAdditional,
-                            last_period_start: userCycleData.lastPeriod,
-                            cycle_length: userCycleData.cycleLength,
-                            no_period_mode: userCycleData.noPeriodMode
-                        }
-                    });
-                    console.log('✅ Cycle data saved to database');
-                } catch (e) {
-                    console.warn('Cycle data saved locally, database sync pending:', e);
-                }
-            })();
+                await dbHelpers.userFacts.upsert(userId, {
+                    additional_data: {
+                        ...currentAdditional,
+                        last_period_start: userCycleData.lastPeriod,
+                        cycle_length: userCycleData.cycleLength,
+                        no_period_mode: userCycleData.noPeriodMode
+                    }
+                });
+                console.log('✅ Cycle data saved to database');
+            } catch (e) {
+                console.warn('Cycle data saved locally, database sync pending:', e);
+            }
         }
 
         // Add menopause status to quizData
@@ -12165,21 +12163,19 @@ function wizardNext() {
         existingData.onboarding_completed_at = new Date().toISOString();
         localStorage.setItem('onboardingCompletedAt', existingData.onboarding_completed_at);
 
-        // CRITICAL: Save cycle sync preferences to quiz_results table for database persistence
+        // CRITICAL: Save cycle sync preferences to quiz_results table for database persistence (WAIT for this)
         if (window.currentUser && typeof window.supabaseClient !== 'undefined') {
-            (async () => {
-                try {
-                    await window.supabaseClient.from('quiz_results')
-                        .update({
-                            cycle_sync_preference: existingData.cycle_sync_preference,
-                            period_energy_response: existingData.period_energy_response
-                        })
-                        .eq('user_id', window.currentUser.id);
-                    console.log('✅ Cycle sync preferences saved to database');
-                } catch (e) {
-                    console.warn('Cycle sync preferences saved locally, database sync pending:', e);
-                }
-            })();
+            try {
+                await window.supabaseClient.from('quiz_results')
+                    .update({
+                        cycle_sync_preference: existingData.cycle_sync_preference,
+                        period_energy_response: existingData.period_energy_response
+                    })
+                    .eq('user_id', window.currentUser.id);
+                console.log('✅ Cycle sync preferences saved to database');
+            } catch (e) {
+                console.warn('Cycle sync preferences saved locally, database sync pending:', e);
+            }
         }
 
         console.log("Step 3 data collected, hormone profile:", existingData.profile, "cycle sync:", existingData.cycle_sync_preference, "period energy:", existingData.period_energy_response);
