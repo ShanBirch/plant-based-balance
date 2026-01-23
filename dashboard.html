@@ -18,6 +18,41 @@
   }
 </script>
 
+<!-- CRITICAL: Early theme application to prevent flash of default theme -->
+<script>
+(function() {
+    // Immediately apply saved theme from localStorage before page renders
+    const savedTheme = localStorage.getItem('userThemePreference');
+    if (!savedTheme || savedTheme === 'default') return; // Default is already in CSS
+
+    // Minimal theme definitions for instant application
+    const EARLY_THEMES = {
+        'flower-garden': {'--primary':'#D98B9C','--primary-light':'#F4B4C4','--secondary':'#B4A7D6','--accent-green':'#FFF8F5','--bg':'#FFFBF9','--surface':'#ffffff','--text-main':'#4A3F44','--text-muted':'#8B7D82','--chat-bg-user':'#D98B9C','--chat-text-user':'#ffffff','--chat-bg-coach':'#FFF8F5','--chat-text-coach':'#4A3F44','--chat-border-coach':'#F4B4C4'},
+        'antigravity-light': {'--primary':'#4f46e5','--primary-light':'#6366f1','--secondary':'#0891b2','--accent-green':'#eff6ff','--bg':'#ffffff','--surface':'#f8fafc','--text-main':'#0f172a','--text-muted':'#64748b','--chat-bg-user':'#4f46e5','--chat-text-user':'#ffffff','--chat-bg-coach':'#f1f5f9','--chat-text-coach':'#0f172a','--chat-border-coach':'#e2e8f0'},
+        'ocean': {'--primary':'#0369a1','--primary-light':'#0ea5e9','--secondary':'#db2777','--accent-green':'#f0f9ff','--bg':'#f0f9ff','--surface':'#ffffff','--text-main':'#082f49','--text-muted':'#64748b','--chat-bg-user':'#0369a1','--chat-text-user':'#ffffff','--chat-bg-coach':'#f1f5f9','--chat-text-coach':'#082f49','--chat-border-coach':'#e0f2fe'},
+        'sunset': {'--primary':'#9d174d','--primary-light':'#be123c','--secondary':'#ea580c','--accent-green':'#fff1f2','--bg':'#fff1f2','--surface':'#ffffff','--text-main':'#500724','--text-muted':'#9d174d','--chat-bg-user':'#9d174d','--chat-text-user':'#ffffff','--chat-bg-coach':'#fff5f5','--chat-text-coach':'#500724','--chat-border-coach':'#ffe4e6'},
+        'cycle-pink': {'--primary':'#D81B60','--primary-light':'#F06292','--secondary':'#AB47BC','--accent-green':'#FCE4EC','--bg':'#FCE4EC','--surface':'#ffffff','--text-main':'#880E4F','--text-muted':'#AD1457','--chat-bg-user':'#D81B60','--chat-text-user':'#ffffff','--chat-bg-coach':'#F8BBD0','--chat-text-coach':'#880E4F','--chat-border-coach':'#F48FB1'},
+        'midnight': {'--primary':'#0f172a','--primary-light':'#1e293b','--secondary':'#fbbf24','--accent-green':'#334155','--bg':'#020617','--surface':'#1e293b','--text-main':'#f8fafc','--text-muted':'#94a3b8','--chat-bg-user':'#3b82f6','--chat-text-user':'#ffffff','--chat-bg-coach':'#1e293b','--chat-text-coach':'#f8fafc','--chat-border-coach':'#334155'},
+        'lavender': {'--primary':'#6b21a8','--primary-light':'#7e22ce','--secondary':'#fcd34d','--accent-green':'#faf5ff','--bg':'#faf5ff','--surface':'#ffffff','--text-main':'#4c1d95','--text-muted':'#9333ea','--chat-bg-user':'#6b21a8','--chat-text-user':'#ffffff','--chat-bg-coach':'#f3e8ff','--chat-text-coach':'#4c1d95','--chat-border-coach':'#e9d5ff'},
+        'matcha': {'--primary':'#3f6212','--primary-light':'#4d7c0f','--secondary':'#a3e635','--accent-green':'#f7fee7','--bg':'#f7fee7','--surface':'#ffffff','--text-main':'#1a2e05','--text-muted':'#4d7c0f','--chat-bg-user':'#3f6212','--chat-text-user':'#ffffff','--chat-bg-coach':'#ecfccb','--chat-text-coach':'#1a2e05','--chat-border-coach':'#d9f99d'},
+        'monochrome': {'--primary':'#1a1a1a','--primary-light':'#333333','--secondary':'#666666','--accent-green':'#f5f5f5','--bg':'#ffffff','--surface':'#fafafa','--text-main':'#1a1a1a','--text-muted':'#737373','--chat-bg-user':'#1a1a1a','--chat-text-user':'#ffffff','--chat-bg-coach':'#f5f5f5','--chat-text-coach':'#1a1a1a','--chat-border-coach':'#e5e5e5'},
+        'dbz-warrior': {'--primary':'#FF6B00','--primary-light':'#FF8C00','--secondary':'#FFD700','--accent-green':'#FFF8E7','--bg':'#FFFAF0','--surface':'#ffffff','--text-main':'#1a1a1a','--text-muted':'#8B4513','--chat-bg-user':'#FF6B00','--chat-text-user':'#ffffff','--chat-bg-coach':'#FFF8E7','--chat-text-coach':'#1a1a1a','--chat-border-coach':'#FFD700'},
+        'dbz-vegeta': {'--primary':'#0047AB','--primary-light':'#1E90FF','--secondary':'#FFD700','--accent-green':'#F0F8FF','--bg':'#F5F9FF','--surface':'#ffffff','--text-main':'#0a1628','--text-muted':'#4a5568','--chat-bg-user':'#0047AB','--chat-text-user':'#ffffff','--chat-bg-coach':'#F0F8FF','--chat-text-coach':'#0a1628','--chat-border-coach':'#87CEEB'},
+        'sailor-moon': {'--primary':'#FF69B4','--primary-light':'#FFB6C1','--secondary':'#FFD700','--accent-green':'#FFF0F5','--bg':'#FFF5FA','--surface':'#ffffff','--text-main':'#1a1a1a','--text-muted':'#8B4789','--chat-bg-user':'#FF69B4','--chat-text-user':'#ffffff','--chat-bg-coach':'#FFF0F5','--chat-text-coach':'#1a1a1a','--chat-border-coach':'#FFD700'},
+        'sailor-venus': {'--primary':'#FFA500','--primary-light':'#FFB84D','--secondary':'#FFD700','--accent-green':'#FFF8DC','--bg':'#FFFAF0','--surface':'#ffffff','--text-main':'#1a1a1a','--text-muted':'#B8860B','--chat-bg-user':'#FFA500','--chat-text-user':'#ffffff','--chat-bg-coach':'#FFF8DC','--chat-text-coach':'#1a1a1a','--chat-border-coach':'#FFD700'}
+    };
+
+    const theme = EARLY_THEMES[savedTheme];
+    if (theme) {
+        const root = document.documentElement;
+        for (const [key, value] of Object.entries(theme)) {
+            root.style.setProperty(key, value);
+        }
+        console.log('✅ Early theme applied:', savedTheme);
+    }
+})();
+</script>
+
 <!-- Supabase & Auth Guard -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="lib/supabase.js?v=3"></script>
@@ -8606,7 +8641,7 @@ function startCustomBuilderWorkout() {
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                      <div>Color Theme</div>
                      <select id="theme-selector" onchange="applyAppTheme(this.value)" style="border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; color:var(--primary); font-weight:600; outline:none; background:transparent; font-family: 'Inter', sans-serif; cursor: pointer;">
-                         <option value="default" selected>Forest (Original)</option>
+                         <option value="default">Forest (Original)</option>
                          <option value="antigravity-light">Antigravity Light</option>
                          <option value="ocean">Ocean Calm</option>
                          <option value="sunset">Sunset Glow</option>
@@ -8618,6 +8653,14 @@ function startCustomBuilderWorkout() {
                          <option value="dbz-warrior" class="male-only-theme">Super Saiyan</option>
                          <option value="dbz-vegeta" class="male-only-theme">Saiyan Prince</option>
                      </select>
+                     <script>
+                         // Initialize theme selector with saved value immediately
+                         (function() {
+                             var savedTheme = localStorage.getItem('userThemePreference') || 'default';
+                             var selector = document.getElementById('theme-selector');
+                             if (selector) selector.value = savedTheme;
+                         })();
+                     </script>
                  </div>
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                      <div>Units</div>
