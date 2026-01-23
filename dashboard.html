@@ -9812,16 +9812,20 @@ async function initCalendarView() {
         try {
             const userId = window.currentUser.id || window.currentUser.user_id;
             const facts = await dbHelpers.userFacts.get(userId);
+            console.log('📊 Loaded user_facts from DB:', facts);
+            console.log('📊 additional_data:', facts?.additional_data);
             if (facts && facts.additional_data) {
                 if (facts.additional_data.last_period_start) {
                     userCycleData.lastPeriod = facts.additional_data.last_period_start;
                     const lastPeriodInput = document.getElementById('last-period-input-profile');
                     if (lastPeriodInput) lastPeriodInput.value = userCycleData.lastPeriod;
+                    console.log('✅ Loaded lastPeriod from DB:', userCycleData.lastPeriod);
                 }
                 if (facts.additional_data.cycle_length) {
                     userCycleData.cycleLength = parseInt(facts.additional_data.cycle_length);
                     const cycleLengthInput = document.getElementById('cycle-length-input-profile');
                     if (cycleLengthInput) cycleLengthInput.value = userCycleData.cycleLength;
+                    console.log('✅ Loaded cycleLength from DB:', userCycleData.cycleLength);
                 }
                 if (facts.additional_data.no_period_mode) {
                     userCycleData.noPeriodMode = true;
@@ -9829,10 +9833,13 @@ async function initCalendarView() {
                     if (noPeriodToggle) noPeriodToggle.checked = true;
                     const lastPeriodInput = document.getElementById('last-period-input-profile');
                     if (lastPeriodInput) lastPeriodInput.disabled = true;
+                    console.log('✅ Loaded noPeriodMode from DB:', userCycleData.noPeriodMode);
                 }
+            } else {
+                console.warn('⚠️ No additional_data found in user_facts');
             }
         } catch (e) {
-            console.log("No existing cycle data found or error fetching", e);
+            console.log("❌ No existing cycle data found or error fetching", e);
         }
     }
 
@@ -12115,16 +12122,20 @@ async function wizardNext() {
 
                 const currentAdditional = existingFacts?.additional_data || {};
 
-                await dbHelpers.userFacts.upsert(userId, {
+                const dataToSave = {
                     additional_data: {
                         ...currentAdditional,
                         last_period_start: userCycleData.lastPeriod,
                         cycle_length: userCycleData.cycleLength,
                         no_period_mode: userCycleData.noPeriodMode
                     }
-                });
-                console.log('✅ Cycle data saved to database');
+                };
+
+                console.log('💾 Saving cycle data to database:', dataToSave);
+                await dbHelpers.userFacts.upsert(userId, dataToSave);
+                console.log('✅ Cycle data saved to database successfully');
             } catch (e) {
+                console.error('❌ Failed to save cycle data to database:', e);
                 console.warn('Cycle data saved locally, database sync pending:', e);
             }
         }
