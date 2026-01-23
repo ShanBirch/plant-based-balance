@@ -21029,6 +21029,8 @@ async function submitDailyCycleSync() {
         }
 
         if (yogaPopupReason) {
+            // Close the check-in modal first so the yoga popup is visible
+            closeCheckInModal();
             if (typeof showLowEnergyYogaPopup === 'function') showLowEnergyYogaPopup(yogaPopupReason);
             return;
         }
@@ -21039,6 +21041,9 @@ async function submitDailyCycleSync() {
             delete userCycleData.logs[today].workoutOverride;
             localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
         }
+
+        // Close the check-in modal
+        closeCheckInModal();
 
         if (typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
         if (typeof switchAppTab === 'function') switchAppTab('dashboard');
