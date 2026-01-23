@@ -2267,6 +2267,13 @@ async function applyAppTheme(themeKey) {
             loadJournalHistory();
             await syncQuizDataToDb(); // Sync quiz data first
             await seedTestAccount(); // Inject fake data for test user
+
+            // CRITICAL: Load cycle data BEFORE loadProfileData, since loadProfileData calls renderCycleStatus
+            if(typeof initCalendarView === 'function') {
+                await initCalendarView();
+                console.log('✅ Cycle data loaded before profile rendering');
+            }
+
             await loadProfileData(); // Ensure profile is loaded (includes gender restore)
             initProgramDate(); // Ensure program date is synced
 
