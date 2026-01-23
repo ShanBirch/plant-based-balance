@@ -9262,6 +9262,23 @@ async function _loadProfileDataRealImpl() {
     // Merge quiz results into profile for easy access
     if (quizResult) {
         profile = { ...profile, ...quizResult };
+
+        // NEW: Sync cycle sync preferences from database to localStorage
+        if (quizResult.cycle_sync_preference || quizResult.period_energy_response) {
+            try {
+                const localProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                if (quizResult.cycle_sync_preference) {
+                    localProfile.cycle_sync_preference = quizResult.cycle_sync_preference;
+                }
+                if (quizResult.period_energy_response) {
+                    localProfile.period_energy_response = quizResult.period_energy_response;
+                }
+                localStorage.setItem('userProfile', JSON.stringify(localProfile));
+                console.log('✅ Cycle sync preferences loaded from database');
+            } catch (e) {
+                console.warn('Error syncing cycle preferences to localStorage:', e);
+            }
+        }
     }
 
     // Fallback if DB fetch fail
@@ -12084,12 +12101,34 @@ function wizardNext() {
             updateCycleData(); // Trigger calculations
         }
 
-        // CRITICAL: Save userCycleData to localStorage so it persists
+        // CRITICAL: Save userCycleData to localStorage AND database
         localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
 
-        // Save to database if possible
-        if (typeof saveUserCycleData === 'function') {
-            saveUserCycleData(userCycleData);
+        // Save to database for cross-device persistence
+        if (window.currentUser) {
+            (async () => {
+                try {
+                    const userId = window.currentUser.id || window.currentUser.user_id;
+                    let existingFacts = {};
+                    try {
+                        existingFacts = await dbHelpers.userFacts.get(userId);
+                    } catch(err) { /* ignore not found */ }
+
+                    const currentAdditional = existingFacts?.additional_data || {};
+
+                    await dbHelpers.userFacts.upsert(userId, {
+                        additional_data: {
+                            ...currentAdditional,
+                            last_period_start: userCycleData.lastPeriod,
+                            cycle_length: userCycleData.cycleLength,
+                            no_period_mode: userCycleData.noPeriodMode
+                        }
+                    });
+                    console.log('✅ Cycle data saved to database');
+                } catch (e) {
+                    console.warn('Cycle data saved locally, database sync pending:', e);
+                }
+            })();
         }
 
         // Add menopause status to quizData
@@ -12125,6 +12164,23 @@ function wizardNext() {
         // NEW: Add timestamp for when onboarding was completed (for equipment override priority)
         existingData.onboarding_completed_at = new Date().toISOString();
         localStorage.setItem('onboardingCompletedAt', existingData.onboarding_completed_at);
+
+        // CRITICAL: Save cycle sync preferences to quiz_results table for database persistence
+        if (window.currentUser && typeof window.supabaseClient !== 'undefined') {
+            (async () => {
+                try {
+                    await window.supabaseClient.from('quiz_results')
+                        .update({
+                            cycle_sync_preference: existingData.cycle_sync_preference,
+                            period_energy_response: existingData.period_energy_response
+                        })
+                        .eq('user_id', window.currentUser.id);
+                    console.log('✅ Cycle sync preferences saved to database');
+                } catch (e) {
+                    console.warn('Cycle sync preferences saved locally, database sync pending:', e);
+                }
+            })();
+        }
 
         console.log("Step 3 data collected, hormone profile:", existingData.profile, "cycle sync:", existingData.cycle_sync_preference, "period energy:", existingData.period_energy_response);
     }
