@@ -21002,16 +21002,19 @@ async function submitDailyCycleSync() {
         // Trigger Cycle Sync Engine
         if (typeof applyCycleSync === 'function') applyCycleSync(window.checkInProgress);
 
-        // Close & Refresh views
-        closeCheckInModal();
-        if (typeof initCycleView === 'function') initCycleView();
-        if (typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
-        if (typeof renderMovementView === 'function') renderMovementView();
-
         // Handle rest-indicating conditions - show yoga recommendation popup
+        // IMPORTANT: Check this BEFORE refreshing views, as view refreshes may interfere
         const isMale = (typeof isMaleUser === 'function' && isMaleUser());
         const symptoms = window.checkInProgress.symptoms || [];
         let yogaPopupReason = null;
+
+        // Debug logging for yoga popup trigger
+        console.log('🧘 Yoga popup check:', {
+            energy: window.checkInProgress.energy,
+            recovery: window.checkInProgress.recovery,
+            symptoms: symptoms,
+            isMale: isMale
+        });
 
         // Check for conditions that should trigger yoga recommendation
         if (window.checkInProgress.energy === 'low') {
@@ -21029,11 +21032,20 @@ async function submitDailyCycleSync() {
         }
 
         if (yogaPopupReason) {
+            console.log('🧘 Triggering yoga popup with reason:', yogaPopupReason);
             // Close the check-in modal first so the yoga popup is visible
             closeCheckInModal();
             if (typeof showLowEnergyYogaPopup === 'function') showLowEnergyYogaPopup(yogaPopupReason);
             return;
+        } else {
+            console.log('🧘 No yoga popup needed');
         }
+
+        // Close & Refresh views (only if no yoga popup shown)
+        closeCheckInModal();
+        if (typeof initCycleView === 'function') initCycleView();
+        if (typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
+        if (typeof renderMovementView === 'function') renderMovementView();
 
         // Clear any workout override
         localStorage.removeItem('todayWorkoutOverride');
@@ -21041,9 +21053,6 @@ async function submitDailyCycleSync() {
             delete userCycleData.logs[today].workoutOverride;
             localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
         }
-
-        // Close the check-in modal
-        closeCheckInModal();
 
         if (typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
         if (typeof switchAppTab === 'function') switchAppTab('dashboard');
