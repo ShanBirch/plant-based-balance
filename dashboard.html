@@ -12164,12 +12164,18 @@ async function wizardNext() {
 
                 const currentAdditional = existingFacts?.additional_data || {};
 
+                // Get cycle sync preferences from sessionStorage/localStorage
+                const userProfile = JSON.parse(sessionStorage.getItem('userProfile') || localStorage.getItem('userProfile') || '{}');
+
                 const dataToSave = {
                     additional_data: {
                         ...currentAdditional,
                         last_period_start: userCycleData.lastPeriod,
                         cycle_length: userCycleData.cycleLength,
-                        no_period_mode: userCycleData.noPeriodMode
+                        no_period_mode: userCycleData.noPeriodMode,
+                        // Also save cycle sync preferences here (avoids quiz_results update issues)
+                        cycle_sync_preference: userProfile.cycle_sync_preference,
+                        period_energy_response: userProfile.period_energy_response
                     }
                 };
 
@@ -12216,20 +12222,9 @@ async function wizardNext() {
         existingData.onboarding_completed_at = new Date().toISOString();
         localStorage.setItem('onboardingCompletedAt', existingData.onboarding_completed_at);
 
-        // CRITICAL: Save cycle sync preferences to quiz_results table for database persistence (WAIT for this)
-        if (window.currentUser && typeof window.supabaseClient !== 'undefined') {
-            try {
-                await window.supabaseClient.from('quiz_results')
-                    .update({
-                        cycle_sync_preference: existingData.cycle_sync_preference,
-                        period_energy_response: existingData.period_energy_response
-                    })
-                    .eq('user_id', window.currentUser.id);
-                console.log('✅ Cycle sync preferences saved to database');
-            } catch (e) {
-                console.warn('Cycle sync preferences saved locally, database sync pending:', e);
-            }
-        }
+        // NOTE: Cycle sync preferences are now saved to user_facts.additional_data (via the cycle data save above)
+        // This is more reliable as user_facts uses upsert and doesn't require an existing quiz_results row
+        console.log('✅ Cycle sync preferences included in cycle data save');
 
         console.log("Step 3 data collected, hormone profile:", existingData.profile, "cycle sync:", existingData.cycle_sync_preference, "period energy:", existingData.period_energy_response);
     }
@@ -12286,12 +12281,18 @@ async function finishOnboarding() {
 
             // Only save cycle data if we have valid data (lastPeriod or noPeriodMode)
             if (userCycleData.lastPeriod || userCycleData.noPeriodMode) {
+                // Get cycle sync preferences from sessionStorage/localStorage
+                const userProfile = JSON.parse(sessionStorage.getItem('userProfile') || localStorage.getItem('userProfile') || '{}');
+
                 const dataToSave = {
                     additional_data: {
                         ...currentAdditional,
                         last_period_start: userCycleData.lastPeriod,
                         cycle_length: userCycleData.cycleLength || 28,
-                        no_period_mode: userCycleData.noPeriodMode || false
+                        no_period_mode: userCycleData.noPeriodMode || false,
+                        // Also save cycle sync preferences here
+                        cycle_sync_preference: userProfile.cycle_sync_preference,
+                        period_energy_response: userProfile.period_energy_response
                     }
                 };
 
@@ -22519,9 +22520,25 @@ function checkAndRenderCycleSync() {
     }
 }
 
-// Initial Load
-document.addEventListener('DOMContentLoaded', () => {
-    // Load cycle data from localStorage first
+// Initial Load - MUST wait for auth before loading cycle data from DB
+document.addEventListener('DOMContentLoaded', async () => {
+    // Wait for auth to complete before loading user-specific data
+    const waitForAuth = () => new Promise(resolve => {
+        if(window.currentUser) return resolve(window.currentUser);
+        const check = setInterval(() => {
+            if(window.currentUser) {
+                clearInterval(check);
+                resolve(window.currentUser);
+            }
+        }, 100);
+        // Timeout after 5s just in case
+        setTimeout(() => { clearInterval(check); resolve(null); }, 5000);
+    });
+
+    await waitForAuth();
+    console.log('🔐 Auth ready for cycle data load, currentUser:', window.currentUser?.id);
+
+    // Load cycle data from localStorage AND database (now that auth is ready)
     if(typeof initCalendarView === 'function') {
         initCalendarView().then(() => {
             // After data is loaded, check for Cycle Sync
