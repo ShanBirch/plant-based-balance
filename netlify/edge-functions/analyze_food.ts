@@ -1,5 +1,5 @@
 
-import { Context } from "@netlify/edge-functions";
+import type { Context } from "https://edge.netlify.com";
 
 export default async function (request: Request, context: Context) {
   // Only accept POST
