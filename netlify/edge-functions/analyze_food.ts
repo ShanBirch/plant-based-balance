@@ -124,7 +124,9 @@ IMPORTANT:
 - If the image doesn't contain food, set confidence to "low" and explain in notes`;
 
     // Build parts array conditionally
-    const parts = [{ text: systemPrompt }];
+    const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = [
+      { text: systemPrompt }
+    ];
     if (imageBase64) {
       parts.push({
         inline_data: {
