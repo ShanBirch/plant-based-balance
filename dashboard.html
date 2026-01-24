@@ -7286,11 +7286,17 @@ async function applyAppTheme(themeKey) {
             <!-- COMMUNITY INTERFACE (Messenger Style) -->
             <div id="support-community" style="display: none; flex-direction: column; height: 100vh; background: #fff; position: relative; padding-bottom: 0; overflow: hidden;">
                 <!-- Fixed Chat Header -->
-                <div style="height: 60px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); z-index: 50;">
+                <div style="height: 60px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); z-index: 50; padding: 0 15px;">
+                    <div style="width: 40px;"></div>
                     <div style="text-align: center;">
-                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Your Referral Network</div>
+                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Your Network</div>
                         <div id="referral-network-count" style="font-size: 0.75rem; color: #94a3b8;">Loading...</div>
                     </div>
+                    <button onclick="openAddFriendModal()" style="width: 40px; height: 40px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);" title="Add Friend">
+                        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white;">
+                            <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- Referral Invite Banner -->
@@ -8677,6 +8683,16 @@ function startCustomBuilderWorkout() {
                          <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:0.3s;" class="knob"></span>
                      </label>
                      <style> input:checked + .slider { background: var(--primary) !important; } input:checked + .slider + .knob { transform: translateX(16px); } </style>
+                 </div>
+                 <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                     <div>
+                         <div>Add Friend</div>
+                         <div style="font-size:0.75rem; color:var(--text-muted);">Search and connect with friends</div>
+                     </div>
+                     <button onclick="openAddFriendModal()" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                         <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:white;"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                         Add
+                     </button>
                  </div>
                  <div style="padding:15px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                      <div>
@@ -19311,13 +19327,26 @@ async function loadReferralStats() {
             document.getElementById('free-days-count').textContent = stats.freeDaysEarned || 0;
         }
 
-        // Update network count in header
-        const networkCount = stats.totalReferrals || 0;
+        // Update network count in header (will be updated with friends count in updateFriendsCount)
+        // Initial display from referrals, friends count will combine
+        const referralCount = stats.totalReferrals || 0;
         if (document.getElementById('referral-network-count')) {
-            document.getElementById('referral-network-count').textContent =
-                networkCount === 0 ? 'Invite your first friend' :
-                networkCount === 1 ? '1 friend in your network' :
-                `${networkCount} friends in your network`;
+            // Try to get friends count too for a combined network number
+            try {
+                const friends = await window.dbHelpers.friends.getFriends(window.currentUser.id);
+                const friendCount = friends.length;
+                const totalNetwork = referralCount + friendCount;
+                document.getElementById('referral-network-count').textContent =
+                    totalNetwork === 0 ? 'Add your first friend' :
+                    totalNetwork === 1 ? '1 connection in your network' :
+                    `${totalNetwork} connections in your network`;
+            } catch (friendError) {
+                // If friends fetch fails, just show referral count
+                document.getElementById('referral-network-count').textContent =
+                    referralCount === 0 ? 'Invite your first friend' :
+                    referralCount === 1 ? '1 friend in your network' :
+                    `${referralCount} friends in your network`;
+            }
         }
 
         // Store code for modal
@@ -19497,7 +19526,380 @@ function shareViaSMS() {
     window.location.href = smsUrl;
 }
 
-// Load referral stats when community tab is opened
+// ============================================================
+// FRIENDS SYSTEM
+// ============================================================
+
+let friendSearchTimeout = null;
+
+// Open Add Friend Modal
+function openAddFriendModal() {
+    const modal = document.getElementById('add-friend-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        showFriendTab('search');
+        loadPendingFriendRequests();
+        loadFriendsList();
+    }
+}
+
+// Close Add Friend Modal
+function closeAddFriendModal() {
+    const modal = document.getElementById('add-friend-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Show friend tab
+function showFriendTab(tab) {
+    // Update tab buttons
+    const tabs = ['search', 'requests', 'friends'];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`friend-tab-${t}`);
+        const content = document.getElementById(t === 'search' ? 'friend-search-content' :
+                                                  t === 'requests' ? 'friend-requests-content' :
+                                                  'friend-list-content');
+        if (btn) {
+            btn.style.background = t === tab ? 'white' : 'transparent';
+            btn.style.color = t === tab ? 'var(--primary)' : '#64748b';
+        }
+        if (content) {
+            content.style.display = t === tab ? 'block' : 'none';
+        }
+    });
+}
+
+// Debounced search
+function debouncedFriendSearch() {
+    clearTimeout(friendSearchTimeout);
+    friendSearchTimeout = setTimeout(() => {
+        searchForFriends();
+    }, 300);
+}
+
+// Search for friends
+async function searchForFriends() {
+    const input = document.getElementById('friend-search-input');
+    const resultsContainer = document.getElementById('friend-search-results');
+    const query = input.value.trim();
+
+    if (query.length < 2) {
+        resultsContainer.innerHTML = `
+            <div style="text-align:center; padding:40px 20px; color:#94a3b8;">
+                <svg viewBox="0 0 24 24" style="width:48px; height:48px; fill:#cbd5e1; margin-bottom:12px;">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                <p style="margin:0; font-size:0.95rem;">Enter at least 2 characters to search</p>
+            </div>
+        `;
+        return;
+    }
+
+    resultsContainer.innerHTML = `
+        <div style="text-align:center; padding:40px 20px; color:#94a3b8;">
+            <div style="width:32px; height:32px; border:3px solid #e2e8f0; border-top-color:var(--primary); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 12px;"></div>
+            <p style="margin:0; font-size:0.95rem;">Searching...</p>
+        </div>
+    `;
+
+    try {
+        const results = await window.dbHelpers.friends.searchUsers(query, window.currentUser.id);
+
+        if (results.length === 0) {
+            resultsContainer.innerHTML = `
+                <div style="text-align:center; padding:40px 20px; color:#94a3b8;">
+                    <svg viewBox="0 0 24 24" style="width:48px; height:48px; fill:#cbd5e1; margin-bottom:12px;">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                    <p style="margin:0; font-size:0.95rem;">No users found matching "${query}"</p>
+                </div>
+            `;
+            return;
+        }
+
+        resultsContainer.innerHTML = results.map(user => {
+            const initials = (user.user_name || user.user_email || '?').charAt(0).toUpperCase();
+            const statusButton = getStatusButton(user.user_id, user.friendship_status);
+
+            return `
+                <div style="display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; background:#f8fafc; margin-bottom:10px;">
+                    <div style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, var(--primary), #10b981); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:1.2rem; flex-shrink:0;">
+                        ${user.user_photo ? `<img src="${user.user_photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">` : initials}
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${user.user_name || 'Unknown User'}</div>
+                        <div style="font-size:0.85rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${user.user_email}</div>
+                    </div>
+                    ${statusButton}
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error searching for friends:', error);
+        resultsContainer.innerHTML = `
+            <div style="text-align:center; padding:40px 20px; color:#ef4444;">
+                <p style="margin:0; font-size:0.95rem;">Error searching. Please try again.</p>
+            </div>
+        `;
+    }
+}
+
+// Get status button HTML
+function getStatusButton(userId, status) {
+    switch(status) {
+        case 'accepted':
+            return `<div style="padding:8px 16px; background:#f0fdf4; color:#22c55e; border-radius:8px; font-weight:600; font-size:0.85rem;">Friends</div>`;
+        case 'pending':
+            return `<div style="padding:8px 16px; background:#fef3c7; color:#f59e0b; border-radius:8px; font-weight:600; font-size:0.85rem;">Pending</div>`;
+        default:
+            return `<button onclick="sendFriendRequest('${userId}')" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.2s;">Add</button>`;
+    }
+}
+
+// Send friend request
+async function sendFriendRequest(friendId) {
+    try {
+        await window.dbHelpers.friends.sendRequest(window.currentUser.id, friendId);
+
+        // Show success feedback
+        showToast('Friend request sent!', 'success');
+
+        // Refresh search results
+        searchForFriends();
+    } catch (error) {
+        console.error('Error sending friend request:', error);
+        if (error.message.includes('duplicate')) {
+            showToast('Friend request already sent', 'warning');
+        } else {
+            showToast('Failed to send request. Please try again.', 'error');
+        }
+    }
+}
+
+// Load pending friend requests
+async function loadPendingFriendRequests() {
+    const container = document.getElementById('friend-requests-list');
+    const badge = document.getElementById('friend-request-badge');
+
+    try {
+        const requests = await window.dbHelpers.friends.getPendingRequests(window.currentUser.id);
+
+        // Update badge
+        if (badge) {
+            if (requests.length > 0) {
+                badge.style.display = 'inline';
+                badge.textContent = requests.length;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        if (requests.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:40px 20px; color:#94a3b8;">
+                    <svg viewBox="0 0 24 24" style="width:48px; height:48px; fill:#cbd5e1; margin-bottom:12px;">
+                        <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                    <p style="margin:0; font-size:0.95rem;">No pending friend requests</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = requests.map(request => {
+            const initials = (request.sender_name || request.sender_email || '?').charAt(0).toUpperCase();
+            return `
+                <div style="display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; background:#f8fafc; margin-bottom:10px;">
+                    <div style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, var(--primary), #10b981); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:1.2rem; flex-shrink:0;">
+                        ${request.sender_photo ? `<img src="${request.sender_photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">` : initials}
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${request.sender_name || 'Unknown User'}</div>
+                        <div style="font-size:0.85rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${request.sender_email}</div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button onclick="acceptFriendRequest('${request.request_id}')" style="padding:8px 14px; background:#22c55e; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.2s;">Accept</button>
+                        <button onclick="declineFriendRequest('${request.request_id}')" style="padding:8px 14px; background:#f1f5f9; color:#64748b; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.2s;">Decline</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading friend requests:', error);
+        container.innerHTML = `
+            <div style="text-align:center; padding:40px 20px; color:#ef4444;">
+                <p style="margin:0; font-size:0.95rem;">Error loading requests. Please try again.</p>
+            </div>
+        `;
+    }
+}
+
+// Accept friend request
+async function acceptFriendRequest(requestId) {
+    try {
+        await window.dbHelpers.friends.acceptRequest(requestId);
+        showToast('Friend request accepted!', 'success');
+        loadPendingFriendRequests();
+        loadFriendsList();
+        updateFriendsCount();
+    } catch (error) {
+        console.error('Error accepting friend request:', error);
+        showToast('Failed to accept request. Please try again.', 'error');
+    }
+}
+
+// Decline friend request
+async function declineFriendRequest(requestId) {
+    try {
+        await window.dbHelpers.friends.declineRequest(requestId);
+        showToast('Friend request declined', 'info');
+        loadPendingFriendRequests();
+    } catch (error) {
+        console.error('Error declining friend request:', error);
+        showToast('Failed to decline request. Please try again.', 'error');
+    }
+}
+
+// Load friends list
+async function loadFriendsList() {
+    const container = document.getElementById('friends-list');
+
+    try {
+        const friends = await window.dbHelpers.friends.getFriends(window.currentUser.id);
+
+        if (friends.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:40px 20px; color:#94a3b8;">
+                    <svg viewBox="0 0 24 24" style="width:48px; height:48px; fill:#cbd5e1; margin-bottom:12px;">
+                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                    </svg>
+                    <p style="margin:0; font-size:0.95rem;">No friends yet. Start by adding some!</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = friends.map(friend => {
+            const initials = (friend.friend_name || friend.friend_email || '?').charAt(0).toUpperCase();
+            return `
+                <div style="display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; background:#f8fafc; margin-bottom:10px;">
+                    <div style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, var(--primary), #10b981); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:1.2rem; flex-shrink:0;">
+                        ${friend.friend_photo ? `<img src="${friend.friend_photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">` : initials}
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${friend.friend_name || 'Unknown User'}</div>
+                        <div style="font-size:0.85rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${friend.friend_email}</div>
+                    </div>
+                    <button onclick="removeFriend('${friend.friend_id}')" style="padding:8px 14px; background:#fee2e2; color:#ef4444; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.2s;">Remove</button>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading friends:', error);
+        container.innerHTML = `
+            <div style="text-align:center; padding:40px 20px; color:#ef4444;">
+                <p style="margin:0; font-size:0.95rem;">Error loading friends. Please try again.</p>
+            </div>
+        `;
+    }
+}
+
+// Remove friend
+async function removeFriend(friendId) {
+    if (!confirm('Are you sure you want to remove this friend?')) return;
+
+    try {
+        await window.dbHelpers.friends.removeFriend(window.currentUser.id, friendId);
+        showToast('Friend removed', 'info');
+        loadFriendsList();
+        updateFriendsCount();
+    } catch (error) {
+        console.error('Error removing friend:', error);
+        showToast('Failed to remove friend. Please try again.', 'error');
+    }
+}
+
+// Update network count in header (friends + referrals)
+async function updateFriendsCount() {
+    try {
+        const friends = await window.dbHelpers.friends.getFriends(window.currentUser.id);
+        const referralStats = await window.dbHelpers.referrals.getStats(window.currentUser.id);
+        const friendCount = friends.length;
+        const referralCount = referralStats.totalReferrals || 0;
+        const totalNetwork = friendCount + referralCount;
+
+        const countEl = document.getElementById('referral-network-count');
+        if (countEl) {
+            countEl.textContent = totalNetwork === 0 ? 'Add your first friend' :
+                                  totalNetwork === 1 ? '1 connection in your network' :
+                                  `${totalNetwork} connections in your network`;
+        }
+    } catch (error) {
+        console.error('Error updating network count:', error);
+    }
+}
+
+// Simple toast notification
+function showToast(message, type = 'info') {
+    // Remove any existing toast
+    const existingToast = document.querySelector('.friend-toast');
+    if (existingToast) existingToast.remove();
+
+    const colors = {
+        success: '#22c55e',
+        error: '#ef4444',
+        warning: '#f59e0b',
+        info: '#3b82f6'
+    };
+
+    const toast = document.createElement('div');
+    toast.className = 'friend-toast';
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        background: ${colors[type]};
+        color: white;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        z-index: 10010;
+        animation: fadeInUp 0.3s ease-out;
+    `;
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'fadeOutDown 0.3s ease-out';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Add CSS for toast animations if not already present
+if (!document.getElementById('friend-toast-styles')) {
+    const style = document.createElement('style');
+    style.id = 'friend-toast-styles';
+    style.textContent = `
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes fadeOutDown {
+            from { opacity: 1; transform: translateX(-50%) translateY(0); }
+            to { opacity: 0; transform: translateX(-50%) translateY(20px); }
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Load referral stats and friends when community tab is opened
 window.addEventListener('DOMContentLoaded', () => {
     // Attach to tab switching logic
     const originalShowSupportTab = window.showSupportTab;
@@ -19506,6 +19908,8 @@ window.addEventListener('DOMContentLoaded', () => {
             originalShowSupportTab(tab, element);
             if (tab === 'community') {
                 loadReferralStats();
+                updateFriendsCount();
+                loadPendingFriendRequests(); // Check for new friend requests
             }
         };
     }
@@ -21273,6 +21677,78 @@ window.submitDailyCycleSync = submitDailyCycleSync;
                     <div style="font-size:0.875rem; color:#15803d; line-height:1.5;">
                         <strong>How it works:</strong> When your friend signs up using your code, you BOTH automatically get 2 weeks (14 days) free! The more friends you invite, the more free time you unlock. Share away!
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Friend Modal -->
+<div id="add-friend-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:10006; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
+    <div style="background:white; border-radius:20px; max-width:500px; width:90%; max-height:85vh; overflow-y:auto; animation:fadeInScale 0.3s ease-out; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <!-- Header -->
+        <div style="padding:24px 24px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+                <h2 style="margin:0 0 4px 0; font-size:1.5rem; color:var(--text-main);">Add Friends</h2>
+                <p style="margin:0; font-size:0.875rem; color:#64748b;">Search by name or email</p>
+            </div>
+            <button onclick="closeAddFriendModal()" style="background:none; border:none; font-size:1.8rem; color:#94a3b8; cursor:pointer; padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:all 0.2s;">×</button>
+        </div>
+
+        <!-- Tab Switcher -->
+        <div style="padding:16px 24px; border-bottom:1px solid #f1f5f9;">
+            <div style="display:flex; background:#f1f5f9; padding:4px; border-radius:10px;">
+                <button id="friend-tab-search" onclick="showFriendTab('search')" style="flex:1; padding:10px; border:none; background:white; color:var(--primary); font-weight:600; border-radius:8px; cursor:pointer; transition:all 0.2s;">Search</button>
+                <button id="friend-tab-requests" onclick="showFriendTab('requests')" style="flex:1; padding:10px; border:none; background:transparent; color:#64748b; font-weight:600; border-radius:8px; cursor:pointer; transition:all 0.2s;">Requests <span id="friend-request-badge" style="display:none; background:#ef4444; color:white; font-size:0.7rem; padding:2px 6px; border-radius:10px; margin-left:4px;">0</span></button>
+                <button id="friend-tab-friends" onclick="showFriendTab('friends')" style="flex:1; padding:10px; border:none; background:transparent; color:#64748b; font-weight:600; border-radius:8px; cursor:pointer; transition:all 0.2s;">Friends</button>
+            </div>
+        </div>
+
+        <!-- Search Tab Content -->
+        <div id="friend-search-content" style="padding:24px;">
+            <!-- Search Input -->
+            <div style="margin-bottom:20px;">
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="text" id="friend-search-input" placeholder="Search by name or email..." oninput="debouncedFriendSearch()" style="flex:1; padding:14px 16px; background:#f8fafc; border:2px solid #e2e8f0; border-radius:12px; font-size:1rem; outline:none; transition:all 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='#e2e8f0'">
+                    <button onclick="searchForFriends()" style="padding:14px 20px; background:var(--primary); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:600; transition:all 0.2s;">
+                        <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Results -->
+            <div id="friend-search-results" style="min-height:100px;">
+                <div style="text-align:center; padding:40px 20px; color:#94a3b8;">
+                    <svg viewBox="0 0 24 24" style="width:48px; height:48px; fill:#cbd5e1; margin-bottom:12px;">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                    <p style="margin:0; font-size:0.95rem;">Search for friends by their name or email address</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Requests Tab Content -->
+        <div id="friend-requests-content" style="display:none; padding:24px;">
+            <div id="friend-requests-list" style="min-height:100px;">
+                <div style="text-align:center; padding:40px 20px; color:#94a3b8;">
+                    <svg viewBox="0 0 24 24" style="width:48px; height:48px; fill:#cbd5e1; margin-bottom:12px;">
+                        <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                    <p style="margin:0; font-size:0.95rem;">No pending friend requests</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Friends List Tab Content -->
+        <div id="friend-list-content" style="display:none; padding:24px;">
+            <div id="friends-list" style="min-height:100px;">
+                <div style="text-align:center; padding:40px 20px; color:#94a3b8;">
+                    <svg viewBox="0 0 24 24" style="width:48px; height:48px; fill:#cbd5e1; margin-bottom:12px;">
+                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                    </svg>
+                    <p style="margin:0; font-size:0.95rem;">No friends yet. Start by adding some!</p>
                 </div>
             </div>
         </div>
