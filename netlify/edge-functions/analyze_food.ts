@@ -30,11 +30,15 @@ export default async function (request: Request, context: Context) {
     // Prepare the Gemini API request
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
+    // Build the system prompt
+    let systemPrompt = "";
     const isTextOnly = !imageBase64;
-    const systemPrompt = isTextOnly
-      ? `You are a nutrition analysis AI. Analyze the meal based on the text description provided and estimate nutritional information.
 
-USER'S MEAL DESCRIPTION: "${description}"
+    if (isTextOnly) {
+      // Text-only prompt
+      systemPrompt = `You are a nutrition analysis AI. Analyze the meal based on the text description provided and estimate nutritional information.
+
+USER'S MEAL DESCRIPTION: "${description || ''}"
 
 INSTRUCTIONS:
 1. Identify all food items mentioned in the description
@@ -77,9 +81,12 @@ IMPORTANT:
 - If you're unsure, estimate conservatively and indicate lower confidence
 - Round numbers to 1 decimal place
 - Only include micronutrients if they're significant in the foods present
-- If the description is vague, use standard serving sizes and set confidence to "medium" or "low"`
-      : `You are a nutrition analysis AI. Analyze the food in this image and provide detailed nutritional information.
-${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : ''}
+- If the description is vague, use standard serving sizes and set confidence to "medium" or "low"`;
+    } else {
+      // Image-based prompt
+      const descriptionText = description ? `\n\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : '';
+      systemPrompt = `You are a nutrition analysis AI. Analyze the food in this image and provide detailed nutritional information.${descriptionText}
+
 INSTRUCTIONS:
 1. Identify all food items visible in the image
 2. Estimate portion sizes
@@ -122,9 +129,10 @@ IMPORTANT:
 - Round numbers to 1 decimal place
 - Only include micronutrients if they're significant in the foods present
 - If the image doesn't contain food, set confidence to "low" and explain in notes`;
+    }
 
-    // Build parts array conditionally
-    const parts = [{ text: systemPrompt }];
+    // Build payload with conditional parts
+    const parts: any[] = [{ text: systemPrompt }];
     if (imageBase64) {
       parts.push({
         inline_data: {
