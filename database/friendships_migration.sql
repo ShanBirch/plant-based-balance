@@ -92,33 +92,33 @@ RETURNS TABLE(
 ) AS $$
 BEGIN
   RETURN QUERY
+  SELECT * FROM (
+    -- Friends where user sent the request
+    SELECT
+      u.id as friend_id,
+      u.name as friend_name,
+      u.email as friend_email,
+      u.profile_photo as friend_photo,
+      f.created_at as friendship_created_at
+    FROM public.friendships f
+    JOIN public.users u ON u.id = f.friend_id
+    WHERE f.user_id = user_uuid
+    AND f.status = 'accepted'
 
-  -- Friends where user sent the request
-  SELECT
-    u.id as friend_id,
-    u.name as friend_name,
-    u.email as friend_email,
-    u.profile_photo as friend_photo,
-    f.created_at as friendship_created_at
-  FROM public.friendships f
-  JOIN public.users u ON u.id = f.friend_id
-  WHERE f.user_id = user_uuid
-  AND f.status = 'accepted'
+    UNION
 
-  UNION
-
-  -- Friends where user received the request
-  SELECT
-    u.id as friend_id,
-    u.name as friend_name,
-    u.email as friend_email,
-    u.profile_photo as friend_photo,
-    f.created_at as friendship_created_at
-  FROM public.friendships f
-  JOIN public.users u ON u.id = f.user_id
-  WHERE f.friend_id = user_uuid
-  AND f.status = 'accepted'
-
+    -- Friends where user received the request
+    SELECT
+      u.id as friend_id,
+      u.name as friend_name,
+      u.email as friend_email,
+      u.profile_photo as friend_photo,
+      f.created_at as friendship_created_at
+    FROM public.friendships f
+    JOIN public.users u ON u.id = f.user_id
+    WHERE f.friend_id = user_uuid
+    AND f.status = 'accepted'
+  ) AS friends_union
   ORDER BY friend_name;
 
 END;
