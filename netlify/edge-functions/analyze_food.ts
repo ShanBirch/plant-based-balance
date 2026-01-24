@@ -3,7 +3,7 @@
  * Uses Gemini AI to analyze food photos for calorie tracking
  */
 
-import type { Context } from "https://edge.netlify.com";
+import { Context } from "@netlify/edge-functions";
 
 export default async function (request: Request, context: Context) {
   // Only accept POST
