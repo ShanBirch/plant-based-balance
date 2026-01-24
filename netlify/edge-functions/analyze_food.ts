@@ -28,7 +28,7 @@ export default async function (request: Request, context: Context) {
     }
 
     // Prepare the Gemini API request
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
     const isTextOnly = !imageBase64;
     const systemPrompt = isTextOnly
