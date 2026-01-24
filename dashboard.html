@@ -1853,12 +1853,6 @@ async function applyAppTheme(themeKey) {
         <div class="calorie-widget-card">
             <div class="calorie-widget-header">
                 <h3 style="margin: 0; font-size: 1.1rem;">Today's Nutrition</h3>
-                <button class="camera-btn-widget" onclick="openMealCamera('widget')" title="Log a meal">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                        <circle cx="12" cy="13" r="4"></circle>
-                    </svg>
-                </button>
             </div>
 
             <div id="calorie-widget-content">
@@ -1900,9 +1894,67 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
 
+                <!-- Meal Entry Buttons in Widget -->
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 15px 0;">
+                    <button class="camera-btn-widget" onclick="openMealCamera('widget')" style="flex: 1; min-width: 80px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                        <span>Photo</span>
+                    </button>
+                    <button class="camera-btn-widget" onclick="showTextMealInput()" style="flex: 1; min-width: 80px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px; background: var(--secondary); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4h4v16h-4z"></path>
+                            <line x1="9" y1="9" x2="15" y2="9"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
+                        <span>Type</span>
+                    </button>
+                    <button class="camera-btn-widget" onclick="startVoiceMealEntry()" style="flex: 1; min-width: 80px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px; background: #10b981; color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                        <span>Voice</span>
+                    </button>
+                </div>
+
                 <div class="calorie-widget-footer">
                     <button class="view-details-btn" onclick="switchAppTab('meals', this); setTimeout(() => switchWeek('calorie-tracker', document.querySelector('.pill-btn')), 100)">
                         View Details →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Text Entry (Hidden by default, shown when Type button clicked) - Widget Version -->
+        <div id="text-meal-entry-widget" style="max-width: 500px; margin: -10px auto 20px auto; padding: 0 20px; display: none;">
+            <div style="background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <div style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px;">
+                    Type what you ate
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input
+                        type="text"
+                        id="widget-meal-text-input"
+                        placeholder="e.g., salmon with quinoa"
+                        style="flex: 1; padding: 10px 12px; border: 2px solid var(--secondary); border-radius: 20px; font-size: 0.95rem; outline: none;"
+                        onkeypress="if(event.key === 'Enter') submitWidgetMealText()"
+                    >
+                    <button
+                        onclick="submitWidgetMealText()"
+                        style="background: var(--secondary); color: white; padding: 10px 20px; border: none; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 0.9rem;"
+                    >
+                        Add
+                    </button>
+                    <button
+                        onclick="hideWidgetTextInput()"
+                        style="background: #6b7280; color: white; padding: 10px 16px; border: none; border-radius: 20px; font-weight: 600; cursor: pointer;"
+                    >
+                        ✕
                     </button>
                 </div>
             </div>
@@ -2078,28 +2130,52 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
 
-                <!-- Camera Button -->
+                <!-- Meal Entry Buttons -->
                 <div style="text-align: center; margin: 30px 0;">
-                    <button class="camera-btn-large" onclick="openMealCamera('tracker')">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                            <circle cx="12" cy="13" r="4"></circle>
-                        </svg>
-                        <span>Log a Meal</span>
-                    </button>
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center;">
+                        <!-- Camera Button -->
+                        <button class="camera-btn-large" onclick="openMealCamera('tracker')">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                <circle cx="12" cy="13" r="4"></circle>
+                            </svg>
+                            <span>Photo</span>
+                        </button>
+
+                        <!-- Type Meal Button -->
+                        <button class="camera-btn-large" onclick="showTextMealInput()" style="background: var(--secondary);">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4h4v16h-4z"></path>
+                                <line x1="9" y1="9" x2="15" y2="9"></line>
+                                <line x1="9" y1="15" x2="15" y2="15"></line>
+                            </svg>
+                            <span>Type</span>
+                        </button>
+
+                        <!-- Voice Entry Button -->
+                        <button class="camera-btn-large" onclick="startVoiceMealEntry()" style="background: #10b981;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                            <span>Voice</span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Quick Text Entry -->
-                <div style="max-width: 500px; margin: 0 auto 30px auto; padding: 0 20px;">
+                <!-- Quick Text Entry (Hidden by default, shown when Type button clicked) -->
+                <div id="text-meal-entry-container" style="max-width: 500px; margin: 0 auto 30px auto; padding: 0 20px; display: none;">
                     <div style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px;">
-                        Or quickly type what you ate
+                        Type what you ate
                     </div>
                     <div style="display: flex; gap: 10px; align-items: center;">
                         <input
                             type="text"
                             id="quick-meal-text-input"
                             placeholder="e.g., chicken breast with rice and broccoli"
-                            style="flex: 1; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 1rem; outline: none; transition: border-color 0.3s;"
+                            style="flex: 1; padding: 12px 15px; border: 2px solid var(--secondary); border-radius: 25px; font-size: 1rem; outline: none; transition: border-color 0.3s;"
                             onkeypress="if(event.key === 'Enter') submitQuickMealText()"
                         >
                         <button
@@ -2108,7 +2184,13 @@ async function applyAppTheme(themeKey) {
                             onmouseover="this.style.transform='scale(1.05)'"
                             onmouseout="this.style.transform='scale(1)'"
                         >
-                            Add Meal
+                            Add
+                        </button>
+                        <button
+                            onclick="hideTextMealInput()"
+                            style="background: #6b7280; color: white; padding: 12px 20px; border: none; border-radius: 25px; font-weight: 600; cursor: pointer; white-space: nowrap;"
+                        >
+                            ✕
                         </button>
                     </div>
                 </div>
@@ -24787,6 +24869,140 @@ async function useMealPhoto() {
     }
 }
 
+// Show text meal input
+function showTextMealInput() {
+    // Show widget version (on home page)
+    const widgetContainer = document.getElementById('text-meal-entry-widget');
+    const widgetInput = document.getElementById('widget-meal-text-input');
+
+    // Show tracker version (on full tracker page)
+    const trackerContainer = document.getElementById('text-meal-entry-container');
+    const trackerInput = document.getElementById('quick-meal-text-input');
+
+    if (widgetContainer) {
+        widgetContainer.style.display = 'block';
+        if (widgetInput) {
+            widgetInput.focus();
+        }
+    }
+
+    if (trackerContainer) {
+        trackerContainer.style.display = 'block';
+        if (trackerInput) {
+            trackerInput.focus();
+        }
+    }
+}
+
+// Hide text meal input
+function hideTextMealInput() {
+    const trackerContainer = document.getElementById('text-meal-entry-container');
+    const trackerInput = document.getElementById('quick-meal-text-input');
+    if (trackerContainer) {
+        trackerContainer.style.display = 'none';
+    }
+    if (trackerInput) {
+        trackerInput.value = '';
+    }
+}
+
+// Hide widget text input
+function hideWidgetTextInput() {
+    const widgetContainer = document.getElementById('text-meal-entry-widget');
+    const widgetInput = document.getElementById('widget-meal-text-input');
+    if (widgetContainer) {
+        widgetContainer.style.display = 'none';
+    }
+    if (widgetInput) {
+        widgetInput.value = '';
+    }
+}
+
+// Submit meal from widget text input
+async function submitWidgetMealText() {
+    const textInput = document.getElementById('widget-meal-text-input');
+    const mealDescription = textInput?.value?.trim();
+
+    if (!mealDescription) {
+        alert('Please enter a meal description');
+        return;
+    }
+
+    // Clear input and hide container
+    textInput.value = '';
+    hideWidgetTextInput();
+
+    // Show loading state
+    showMealAnalysisLoading('Analyzing meal from description...');
+
+    // Analyze the meal
+    await analyzeMealFromText(mealDescription);
+}
+
+// Start voice meal entry
+function startVoiceMealEntry() {
+    // Check if speech recognition is supported
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert('Sorry, voice input is not supported in your browser. Please use Chrome, Edge, or Safari.');
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    showToast('Listening... Speak now!', 'info', 5000);
+
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        console.log('Voice input:', transcript);
+
+        // Show what was heard
+        showToast(`Heard: "${transcript}"`, 'info', 2000);
+
+        // Submit as meal
+        submitVoiceMeal(transcript);
+    };
+
+    recognition.onerror = function(event) {
+        console.error('Speech recognition error:', event.error);
+        if (event.error === 'no-speech') {
+            showToast('No speech detected. Please try again.', 'error');
+        } else if (event.error === 'not-allowed') {
+            showToast('Microphone access denied. Please enable microphone permissions.', 'error');
+        } else {
+            showToast(`Voice error: ${event.error}`, 'error');
+        }
+    };
+
+    recognition.onend = function() {
+        console.log('Speech recognition ended');
+    };
+
+    try {
+        recognition.start();
+    } catch (error) {
+        console.error('Error starting voice recognition:', error);
+        showToast('Could not start voice input. Please try again.', 'error');
+    }
+}
+
+// Submit meal from voice input
+async function submitVoiceMeal(mealDescription) {
+    if (!mealDescription || mealDescription.trim().length === 0) {
+        alert('No meal description detected');
+        return;
+    }
+
+    // Show loading state
+    showMealAnalysisLoading('Analyzing meal from voice...');
+
+    // Use the same logic as text entry
+    await analyzeMealFromText(mealDescription);
+}
+
 // Submit quick text-based meal entry
 async function submitQuickMealText() {
     const textInput = document.getElementById('quick-meal-text-input');
@@ -24797,11 +25013,19 @@ async function submitQuickMealText() {
         return;
     }
 
-    // Clear input
+    // Clear input and hide container
     textInput.value = '';
+    hideTextMealInput();
 
     // Show loading state
     showMealAnalysisLoading('Analyzing meal from description...');
+
+    // Analyze the meal
+    await analyzeMealFromText(mealDescription);
+}
+
+// Analyze meal from text description (shared by text and voice entry)
+async function analyzeMealFromText(mealDescription) {
 
     // Retry logic - try up to 5 times
     const maxAttempts = 5;
