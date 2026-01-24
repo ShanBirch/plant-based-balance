@@ -1,7 +1,3 @@
-/**
- * Netlify Edge Function: Analyze Food Photo
- * Uses Gemini AI to analyze food photos for calorie tracking
- */
 
 import { Context } from "@netlify/edge-functions";
 
@@ -127,11 +123,8 @@ IMPORTANT:
 - Only include micronutrients if they're significant in the foods present
 - If the image doesn't contain food, set confidence to "low" and explain in notes`;
 
-    // Build parts array for Gemini API
-    const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = [
-      { text: systemPrompt }
-    ];
-
+    // Build parts array conditionally
+    const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = [{ text: systemPrompt }];
     if (imageBase64) {
       parts.push({
         inline_data: {
@@ -142,9 +135,13 @@ IMPORTANT:
     }
 
     const payload = {
-      contents: [{ parts }],
+      contents: [
+        {
+          parts: parts
+        }
+      ],
       generationConfig: {
-        temperature: 0.3,
+        temperature: 0.3, // Lower temperature for more consistent analysis
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 2048,
@@ -155,13 +152,15 @@ IMPORTANT:
 
     const geminiResponse = await fetch(geminiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(payload),
     });
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
-      console.error("Gemini API error:", geminiResponse.status, errorText);
+      console.error("Gemini API error (Status:", geminiResponse.status, "):", errorText);
 
       let userMessage = "Failed to analyze image";
       if (geminiResponse.status === 400) {
@@ -189,7 +188,7 @@ IMPORTANT:
     const aiText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!aiText) {
-      console.error("No AI text in response:", JSON.stringify(geminiData));
+      console.error("No AI text in response. Full response:", JSON.stringify(geminiData));
       return new Response(JSON.stringify({
         error: "The AI couldn't analyze this image. Please try a clearer photo of the food.",
         geminiResponse: geminiData
@@ -206,10 +205,12 @@ IMPORTANT:
       const cleanedText = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       nutritionData = JSON.parse(cleanedText);
     } catch (parseError) {
-      console.error("Failed to parse AI response:", aiText);
+      console.error("Failed to parse AI response as JSON:", aiText);
+      console.error("Parse error:", parseError);
       return new Response(JSON.stringify({
         error: "The AI's response couldn't be processed. Retrying might help.",
-        rawResponse: aiText.substring(0, 500)
+        parseError: parseError.message,
+        rawResponse: aiText.substring(0, 500) // Limit to first 500 chars
       }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -226,10 +227,10 @@ IMPORTANT:
     });
 
   } catch (error) {
-    console.error("Error in analyze_food:", error);
+    console.error("Error in analyze_food function:", error);
     return new Response(JSON.stringify({
       error: "Internal server error",
-      message: error instanceof Error ? error.message : String(error)
+      message: error.message
     }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
