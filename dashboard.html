@@ -1465,6 +1465,40 @@ async function applyAppTheme(themeKey) {
         opacity: 0.9;
     }
 
+    /* Generic Toast Notifications */
+    .toast {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: #333;
+        color: white;
+        border-radius: 12px;
+        padding: 16px 24px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        z-index: 10010;
+        transition: transform 0.3s ease;
+        max-width: 90%;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .toast.show {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.toast-info {
+        background: var(--primary);
+    }
+
+    .toast.toast-success {
+        background: #10b981;
+    }
+
+    .toast.toast-error {
+        background: #ef4444;
+    }
+
     /* Calorie Tracker Summary (Full View) */
     .calorie-tracker-summary {
         background: white;
@@ -24103,6 +24137,28 @@ function showPointsEarnedToast(points, bonusPoints = 0, streak = 0) {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// Show generic toast notification
+function showToast(message, type = 'info', duration = 3000) {
+    // Remove any existing toasts first
+    const existingToasts = document.querySelectorAll('.toast');
+    existingToasts.forEach(t => t.remove());
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // Remove after duration
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
 }
 
 // Award points for a meal (called after successful meal logging)
