@@ -61,8 +61,8 @@ export default async (request, context) => {
 
         // 3. Construct Payload for Gemini API (REST)
         // We use the REST API directly to avoid 'esm.sh' dependency issues in Edge
-        // Model: gemini-flash-latest
-        const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
+        // Model: gemini-2.0-flash
+        const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
         
         // Format history for API
         const contents = [];
