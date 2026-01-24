@@ -696,6 +696,20 @@
                                 referred_by_user_id: referrer.id
                             });
 
+                            // Automatically add them as friends!
+                            try {
+                                await window.supabaseClient
+                                    .from('friendships')
+                                    .insert([{
+                                        user_id: referrer.id,
+                                        friend_id: newUserId,
+                                        status: 'accepted' // Auto-accept since they used their code
+                                    }]);
+                                console.log('Auto-added referrer as friend!');
+                            } catch (friendError) {
+                                console.error('Could not auto-add friend:', friendError);
+                            }
+
                             console.log('Referral processed successfully!');
                         }
                     } catch (referralError) {

@@ -101,8 +101,10 @@ export default async function (request: Request, context: Context) {
         '- If the image does not contain food, set confidence to low and explain in notes';
     }
 
-    // Build payload with conditional parts
-    const parts: Array<{text?: string; inline_data?: {mime_type: string; data: string}}> = [{ text: systemPrompt }];
+    // Build parts array conditionally
+    const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = [
+      { text: systemPrompt }
+    ];
     if (imageBase64) {
       parts.push({
         inline_data: {
