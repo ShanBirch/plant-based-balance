@@ -23758,6 +23758,9 @@ async function loadPointsWidget() {
     }
 }
 
+// Expose to window for other scripts (stories.js) to refresh points
+window.loadUserPoints = loadPointsWidget;
+
 // Update points display with current data
 function updatePointsDisplay(pointsData) {
     const currentPoints = pointsData.current_points || 0;
