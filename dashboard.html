@@ -15531,6 +15531,11 @@ function initializeMovementSwipeNavigation() {
     enableSwipeBackNavigation('view-workout-success', () => {
         closeSuccessScreen();
     });
+
+    // Challenge views
+    enableSwipeBackNavigation('challenge-leaderboard-modal', () => {
+        closeChallengeLeaderboard();
+    });
 }
 
 // Initialize swipe navigation when DOM is ready
