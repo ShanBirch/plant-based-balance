@@ -1113,6 +1113,207 @@ async function applyAppTheme(themeKey) {
     }
 
     /* ========================================== */
+    /* MEAL PLAN STORE STYLES */
+    /* ========================================== */
+
+    .meal-store-container {
+        padding: 20px;
+    }
+
+    .meal-store-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .meal-store-header h2 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.8rem;
+        color: var(--primary);
+        margin-bottom: 10px;
+    }
+
+    .meal-store-header p {
+        color: var(--text-muted);
+        font-size: 1rem;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .meal-plan-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .meal-plan-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+        position: relative;
+    }
+
+    .meal-plan-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+
+    .meal-plan-card.featured {
+        border: 2px solid var(--secondary);
+    }
+
+    .meal-plan-card .featured-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: var(--secondary);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .meal-plan-thumbnail {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+        background: linear-gradient(135deg, var(--accent-green) 0%, var(--primary-light) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .meal-plan-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .meal-plan-thumbnail .plan-icon {
+        font-size: 4rem;
+    }
+
+    .meal-plan-info {
+        padding: 20px;
+    }
+
+    .meal-plan-info h3 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.3rem;
+        color: var(--primary);
+        margin-bottom: 8px;
+    }
+
+    .meal-plan-info .tagline {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 12px;
+        line-height: 1.4;
+    }
+
+    .meal-plan-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 15px;
+    }
+
+    .meal-plan-tag {
+        background: var(--accent-green);
+        color: var(--primary);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .meal-plan-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 15px;
+        border-top: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .meal-plan-price {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .meal-plan-price span {
+        font-size: 0.85rem;
+        font-weight: 400;
+        color: var(--text-muted);
+    }
+
+    .meal-plan-cta {
+        background: var(--secondary);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .meal-plan-cta:hover {
+        background: #bfa64d;
+        transform: scale(1.02);
+    }
+
+    /* Diet variant pills for store */
+    .diet-variants {
+        display: flex;
+        gap: 6px;
+        margin-top: 10px;
+    }
+
+    .diet-variant-pill {
+        font-size: 0.65rem;
+        padding: 3px 8px;
+        border-radius: 10px;
+        background: rgba(123, 168, 131, 0.15);
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+    /* Quiz user banner */
+    .quiz-meal-plan-banner {
+        background: linear-gradient(135deg, var(--accent-green) 0%, rgba(123, 168, 131, 0.3) 100%);
+        border-radius: 16px;
+        padding: 20px;
+        margin: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .quiz-meal-plan-banner .banner-icon {
+        font-size: 2.5rem;
+    }
+
+    .quiz-meal-plan-banner .banner-content h3 {
+        font-family: 'Playfair Display', serif;
+        color: var(--primary);
+        margin-bottom: 5px;
+    }
+
+    .quiz-meal-plan-banner .banner-content p {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    /* ========================================== */
     /* CALORIE TRACKER STYLES */
     /* ========================================== */
 
@@ -1940,6 +2141,25 @@ async function applyAppTheme(themeKey) {
                 <!-- Current day's meals will be injected here -->
                 <div style="text-align:center; padding:40px; color:var(--text-muted);">
                     <p>Loading your meals for today...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meal Plan Store View (for non-quiz users) -->
+        <div class="view-section" id="meal-plan-store" style="display: none;">
+            <div class="meal-store-container">
+                <div class="meal-store-header">
+                    <h2>Choose Your Meal Plan</h2>
+                    <p>Personalized nutrition plans designed by experts. Pick the plan that matches your goals.</p>
+                </div>
+
+                <div class="meal-plan-grid" id="meal-plan-grid">
+                    <!-- Plans will be injected by JavaScript -->
+                </div>
+
+                <div style="text-align: center; padding: 20px; color: var(--text-muted);">
+                    <p style="font-size: 0.9rem;">All plans include 4 weeks of meals, shopping lists, and nutrition tracking.</p>
+                    <p style="font-size: 0.85rem;">Dietary options: Vegan, Vegetarian, Pescatarian, Omnivore</p>
                 </div>
             </div>
         </div>
@@ -9925,8 +10145,20 @@ function _switchAppTabReal(tabName, btn) {
         document.getElementById('view-dashboard').style.display = 'block';
     } else if (tabName === 'meals') {
         document.getElementById('view-meals').style.display = 'block';
+
+        // Initialize meal plan view (handles quiz vs non-quiz users)
+        if (typeof initializeMealPlanView === 'function') {
+            initializeMealPlanView();
+        }
+
         if (!document.querySelector('#meals-content-container .view-section.active')) {
-            switchWeek('today');
+            // For non-quiz users, default to store; for quiz users, default to today
+            const access = typeof checkMealPlanAccess === 'function' ? checkMealPlanAccess() : { hasAccess: true };
+            if (!access.hasAccess) {
+                switchWeek('meal-plan-store');
+            } else {
+                switchWeek('today');
+            }
         } else if (document.getElementById('today').classList.contains('active')) {
             renderTodayMeals(); // Refresh today view if active
         }
@@ -11537,6 +11769,9 @@ function switchWeek(id, btn) {
                 await recalculateDailyNutrition();
                 loadTodayNutrition();
             })();
+        } else if (id === 'meal-plan-store') {
+            // Render the meal plan store
+            renderMealPlanStore();
         } else {
             // For week views, add cycle sync indicators
             markCycleSyncMeals();
@@ -11558,6 +11793,240 @@ function switchWeek(id, btn) {
         });
     }
 }
+
+// ============================================================
+// MEAL PLAN STORE LOGIC
+// ============================================================
+
+/**
+ * Check if user has access to meal plans (quiz onboarding or purchase)
+ * Returns: { hasAccess: boolean, source: 'quiz'|'purchase'|'subscription'|null, planSlug: string|null }
+ */
+function checkMealPlanAccess() {
+    // Check for quiz onboarding (hormone profile assigned)
+    const hormoneProfile = sessionStorage.getItem('userResult');
+    const programStartDate = localStorage.getItem('pbb_start_date');
+    const onboardingComplete = localStorage.getItem('onboardingComplete');
+
+    // Check subscription status (would be set by Stripe webhook)
+    const subscriptionStatus = localStorage.getItem('subscription_status');
+
+    // Check for purchased meal plans (would be set after Stripe purchase)
+    const purchasedPlans = JSON.parse(localStorage.getItem('purchased_meal_plans') || '[]');
+
+    // Quiz onboarders get hormone plan
+    if (hormoneProfile && programStartDate) {
+        const planSlug = hormoneProfile === 'ESTROGEN' ? 'hormone-estrogen' : 'hormone-cortisol';
+        return { hasAccess: true, source: 'quiz', planSlug: planSlug };
+    }
+
+    // Subscribers get all plans
+    if (subscriptionStatus === 'active') {
+        return { hasAccess: true, source: 'subscription', planSlug: null };
+    }
+
+    // Check individual purchases
+    if (purchasedPlans.length > 0) {
+        return { hasAccess: true, source: 'purchase', planSlug: purchasedPlans[0] };
+    }
+
+    // No access - show store
+    return { hasAccess: false, source: null, planSlug: null };
+}
+
+/**
+ * Initialize meal plan view based on user access
+ */
+function initializeMealPlanView() {
+    const access = checkMealPlanAccess();
+    const navPills = document.getElementById('meals-nav-pills');
+    const storeSection = document.getElementById('meal-plan-store');
+    const todaySection = document.getElementById('today');
+
+    if (!access.hasAccess) {
+        // User needs to buy a plan - show store, hide week pills
+        if (navPills) {
+            // Hide week-specific pills, keep Today and Calorie Tracker
+            const weekPills = navPills.querySelectorAll('.pill-btn');
+            weekPills.forEach(pill => {
+                const text = pill.textContent.toLowerCase();
+                if (text.includes('week') || text === 'dining out' || text.includes('shopping')) {
+                    pill.style.display = 'none';
+                }
+            });
+
+            // Add "Browse Plans" pill if not exists
+            if (!document.getElementById('browse-plans-pill')) {
+                const browsePill = document.createElement('button');
+                browsePill.id = 'browse-plans-pill';
+                browsePill.className = 'pill-btn';
+                browsePill.style.cssText = 'background: var(--secondary); color: white; font-weight: 600;';
+                browsePill.textContent = '🛒 Browse Plans';
+                browsePill.onclick = function() { switchWeek('meal-plan-store', this); };
+                navPills.appendChild(browsePill);
+            }
+        }
+
+        // Show store by default for non-quiz users
+        if (storeSection) {
+            storeSection.style.display = 'block';
+            // Render the store cards
+            renderMealPlanStore();
+        }
+
+        // Update today section with a prompt
+        if (todaySection) {
+            const todayContent = document.getElementById('today-meals-content');
+            if (todayContent) {
+                todayContent.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <div style="font-size: 4rem; margin-bottom: 20px;">🍽️</div>
+                        <h2 style="font-family: 'Playfair Display', serif; color: var(--primary); margin-bottom: 15px;">Get Your Personalized Meal Plan</h2>
+                        <p style="color: var(--text-muted); max-width: 350px; margin: 0 auto 25px;">Choose a meal plan tailored to your goals. Each plan includes 4 weeks of delicious recipes, shopping lists, and nutrition tracking.</p>
+                        <button onclick="switchWeek('meal-plan-store', this)" style="background: var(--secondary); color: white; border: none; padding: 15px 35px; border-radius: 30px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.2s;">
+                            Browse Meal Plans →
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    } else {
+        // User has access - ensure store is hidden and week pills are visible
+        if (storeSection) {
+            storeSection.style.display = 'none';
+        }
+    }
+}
+
+/**
+ * Render the meal plan store grid
+ */
+function renderMealPlanStore() {
+    const grid = document.getElementById('meal-plan-grid');
+    if (!grid) return;
+
+    // Meal plan data (would come from meal_plan_library.js in production)
+    const mealPlans = [
+        {
+            slug: 'summer-shred',
+            name: 'Summer Shred 28-Day',
+            icon: '☀️',
+            tagline: 'Lean out with delicious, high-protein meals',
+            tags: ['Weight Loss', 'High Protein'],
+            price: 9.99,
+            featured: true,
+            variants: ['Vegan', 'Vegetarian', 'Pescatarian', 'Omnivore']
+        },
+        {
+            slug: 'clean-bulk',
+            name: 'Clean Bulk Protocol',
+            icon: '💪',
+            tagline: 'Build muscle with clean, whole-food nutrition',
+            tags: ['Muscle Gain', 'Strength'],
+            price: 9.99,
+            featured: true,
+            variants: ['Vegan', 'Vegetarian', 'Pescatarian', 'Omnivore']
+        },
+        {
+            slug: 'quick-easy',
+            name: 'Quick & Easy Meals',
+            icon: '⏱️',
+            tagline: 'Healthy eating made simple - all meals under 20 mins',
+            tags: ['Time-Saving', 'Beginner'],
+            price: 9.99,
+            featured: true,
+            variants: ['Vegan', 'Vegetarian', 'Pescatarian', 'Omnivore']
+        },
+        {
+            slug: 'energy-boost',
+            name: 'Energy Boost 28-Day',
+            icon: '⚡',
+            tagline: 'All-day energy through balanced, energizing meals',
+            tags: ['Energy', 'Focus'],
+            price: 9.99,
+            featured: false,
+            variants: ['Vegan', 'Vegetarian', 'Pescatarian', 'Omnivore']
+        },
+        {
+            slug: 'gut-reset',
+            name: 'Gut Reset Protocol',
+            icon: '🌱',
+            tagline: 'Heal your gut with nourishing, easy-to-digest meals',
+            tags: ['Gut Health', 'Healing'],
+            price: 9.99,
+            featured: false,
+            variants: ['Vegan', 'Vegetarian', 'Gluten-Free']
+        }
+    ];
+
+    grid.innerHTML = mealPlans.map(plan => `
+        <div class="meal-plan-card ${plan.featured ? 'featured' : ''}" onclick="openMealPlanPreview('${plan.slug}')">
+            ${plan.featured ? '<div class="featured-badge">Popular</div>' : ''}
+            <div class="meal-plan-thumbnail">
+                <span class="plan-icon">${plan.icon}</span>
+            </div>
+            <div class="meal-plan-info">
+                <h3>${plan.name}</h3>
+                <p class="tagline">${plan.tagline}</p>
+                <div class="meal-plan-tags">
+                    ${plan.tags.map(tag => `<span class="meal-plan-tag">${tag}</span>`).join('')}
+                </div>
+                <div class="diet-variants">
+                    ${plan.variants.slice(0, 3).map(v => `<span class="diet-variant-pill">${v}</span>`).join('')}
+                    ${plan.variants.length > 3 ? `<span class="diet-variant-pill">+${plan.variants.length - 3}</span>` : ''}
+                </div>
+                <div class="meal-plan-footer">
+                    <div class="meal-plan-price">$${plan.price.toFixed(2)} <span>AUD</span></div>
+                    <button class="meal-plan-cta" onclick="event.stopPropagation(); startMealPlanPurchase('${plan.slug}')">Get Plan</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+/**
+ * Open meal plan preview modal
+ */
+function openMealPlanPreview(planSlug) {
+    // TODO: Implement preview modal with sample meals
+    console.log('Preview plan:', planSlug);
+    alert(`Preview coming soon for ${planSlug}! Click "Get Plan" to purchase.`);
+}
+
+/**
+ * Start the meal plan purchase flow
+ */
+function startMealPlanPurchase(planSlug) {
+    // TODO: Implement preference wizard then Stripe checkout
+    console.log('Purchase plan:', planSlug);
+
+    // For now, show a message
+    if (confirm(`Ready to purchase the ${planSlug} plan for $9.99 AUD?\n\nThis will open the preference wizard where you can select your dietary preferences.`)) {
+        openPreferenceWizard(planSlug);
+    }
+}
+
+/**
+ * Open the preference wizard modal
+ */
+function openPreferenceWizard(planSlug) {
+    // TODO: Implement full wizard modal
+    // For now, simple diet selection
+    const dietChoice = prompt('Select your diet type:\n1. Vegan\n2. Vegetarian\n3. Pescatarian\n4. Omnivore\n\nEnter 1, 2, 3, or 4:');
+
+    const dietMap = { '1': 'vegan', '2': 'vegetarian', '3': 'pescatarian', '4': 'omnivore' };
+    const selectedDiet = dietMap[dietChoice] || 'vegan';
+
+    // Store preferences
+    localStorage.setItem('selected_meal_plan', planSlug);
+    localStorage.setItem('selected_diet_type', selectedDiet);
+
+    // Redirect to checkout (TODO: Implement Stripe checkout)
+    alert(`Great choice! You selected ${selectedDiet} for the ${planSlug} plan.\n\nStripe checkout integration coming soon!`);
+}
+
+// Initialize meal plan view when meals tab is opened
+// This is called from switchAppTab when 'meals' is selected
 
 // Add stars to cycle sync meals in static week views
 function markCycleSyncMeals() {
