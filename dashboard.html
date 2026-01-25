@@ -7919,8 +7919,6 @@ function startCustomBuilderWorkout() {
         <!-- Improvements Container -->
         <div id="success-improvements" style="display: none; margin: 30px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px;"></div>
 
-        <p style="max-width: 300px; margin: 30px auto 40px; line-height: 1.6; opacity: 0.9;">Great job signaling safety to your body. Your cortisol levels are thanking you.</p>
-
         <!-- Workout Photo Section -->
         <div id="workout-photo-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin-bottom: 30px; backdrop-filter: blur(10px);">
             <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;">Earn a Point!</div>
@@ -24621,38 +24619,66 @@ let workoutPhotoBase64 = null;
 async function captureAndShareWorkout() {
     const captureArea = document.getElementById('workout-capture-area');
     if (!captureArea) {
-        alert('Unable to capture workout screen');
+        console.error('Capture area not found');
+        // Fall back to just awarding the point
+        awardWorkoutPoint();
         return;
     }
 
     try {
         // Capture the workout completion area
         const canvas = await html2canvas(captureArea, {
-            backgroundColor: null,
+            backgroundColor: '#8fbc8f',
             scale: 2,
             useCORS: true,
             logging: false
         });
 
-        // Convert canvas to blob
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-        capturedWorkoutFile = new File([blob], 'workout-complete.png', { type: 'image/png' });
-
-        // Convert to base64 for preview
+        // Convert to base64 for sharing
         workoutPhotoBase64 = canvas.toDataURL('image/png');
 
-        // Show preview modal
-        const previewModal = document.getElementById('workout-preview-modal');
-        const previewPhoto = document.getElementById('workout-preview-photo');
+        // Try to share using Web Share API if available
+        if (navigator.share && navigator.canShare) {
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const file = new File([blob], 'workout-complete.png', { type: 'image/png' });
 
-        if (previewModal && previewPhoto) {
-            previewPhoto.src = workoutPhotoBase64;
-            previewModal.style.display = 'flex';
+            if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'Workout Complete!',
+                    text: 'I just completed my workout!'
+                });
+            }
         }
+
+        // Award the point
+        awardWorkoutPoint();
     } catch (error) {
-        console.error('Error capturing workout screen:', error);
-        alert('Unable to capture workout screen. Please try again.');
+        console.error('Error capturing/sharing workout screen:', error);
+        // Still award the point even if share fails
+        awardWorkoutPoint();
     }
+}
+
+// Award workout point directly
+function awardWorkoutPoint() {
+    // Hide photo section, show points awarded
+    const photoSection = document.getElementById('workout-photo-section');
+    const pointsAwarded = document.getElementById('workout-points-awarded');
+
+    if (photoSection) photoSection.style.display = 'none';
+    if (pointsAwarded) pointsAwarded.style.display = 'block';
+
+    // Update points in storage
+    let currentPoints = parseInt(localStorage.getItem('userPoints') || '0');
+    currentPoints += 1;
+    localStorage.setItem('userPoints', currentPoints.toString());
+
+    // Update UI if points display exists
+    const pointsDisplay = document.getElementById('points-display');
+    if (pointsDisplay) pointsDisplay.textContent = currentPoints;
+
+    console.log('Workout point awarded! Total points:', currentPoints);
 }
 
 // Handle workout photo selection
