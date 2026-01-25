@@ -89,7 +89,7 @@ BEGIN
         AND n.created_at > NOW() - INTERVAL '24 hours'
       ) as can_nudge,
       COALESCE((
-        SELECT SUM(pt.points)::INT
+        SELECT SUM(pt.points_amount)::INT
         FROM public.point_transactions pt
         WHERE pt.user_id = u.id
         AND pt.created_at >= week_start
@@ -122,7 +122,7 @@ BEGIN
         AND n.created_at > NOW() - INTERVAL '24 hours'
       ) as can_nudge,
       COALESCE((
-        SELECT SUM(pt.points)::INT
+        SELECT SUM(pt.points_amount)::INT
         FROM public.point_transactions pt
         WHERE pt.user_id = u.id
         AND pt.created_at >= week_start
@@ -162,7 +162,7 @@ BEGIN
       u.profile_photo as user_photo,
       COALESCE(w.exercise_name, 'Workout')::TEXT as activity_title,
       COALESCE(w.time_duration || ' mins', '')::TEXT as activity_details,
-      COALESCE(w.time_duration, 0)::INT as activity_value,
+      COALESCE(NULLIF(w.time_duration, '')::INT, 0) as activity_value,
       w.created_at as activity_time
     FROM public.workouts w
     JOIN public.users u ON u.id = w.user_id
@@ -184,8 +184,8 @@ BEGIN
       u.name as user_name,
       u.profile_photo as user_photo,
       'Tracked nutrition'::TEXT as activity_title,
-      COALESCE(dn.calorie_goal || ' cal goal', 'Logged today')::TEXT as activity_details,
-      COALESCE(dn.calorie_goal, 0)::INT as activity_value,
+      COALESCE(dn.calorie_goal::INT || ' cal goal', 'Logged today')::TEXT as activity_details,
+      COALESCE(dn.calorie_goal::INT, 0) as activity_value,
       dn.updated_at as activity_time
     FROM public.daily_nutrition dn
     JOIN public.users u ON u.id = dn.user_id

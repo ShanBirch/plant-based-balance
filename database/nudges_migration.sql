@@ -150,7 +150,7 @@ BEGIN
         AND n.created_at > NOW() - INTERVAL '24 hours'
       ) as can_nudge,
       COALESCE((
-        SELECT SUM(pt.points)::INT
+        SELECT SUM(pt.points_amount)::INT
         FROM public.point_transactions pt
         WHERE pt.user_id = u.id
         AND pt.created_at >= week_start
@@ -183,7 +183,7 @@ BEGIN
         AND n.created_at > NOW() - INTERVAL '24 hours'
       ) as can_nudge,
       COALESCE((
-        SELECT SUM(pt.points)::INT
+        SELECT SUM(pt.points_amount)::INT
         FROM public.point_transactions pt
         WHERE pt.user_id = u.id
         AND pt.created_at >= week_start
