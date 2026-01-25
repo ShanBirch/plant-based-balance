@@ -25019,6 +25019,25 @@ async function verifyWorkoutPhoto() {
     const errorEl = document.getElementById('workout-photo-error');
     const verifyBtn = document.getElementById('workout-verify-btn');
 
+    // Check workout duration first - must be at least 15 minutes for points
+    // Try success-duration first (on success screen), then fallback to workout-timer
+    const successDurationEl = document.getElementById('success-duration');
+    const workoutTimerEl = document.getElementById('workout-timer');
+    const durationText = (successDurationEl && successDurationEl.textContent !== '00:00')
+        ? successDurationEl.textContent
+        : (workoutTimerEl ? workoutTimerEl.textContent : '00:00');
+    const [mins, secs] = durationText.split(':').map(Number);
+    const totalMinutes = mins + (secs / 60);
+
+    if (totalMinutes < 15) {
+        if (errorEl) {
+            document.getElementById('workout-photo-error-text').textContent =
+                `Workouts need to be at least 15 minutes to earn points. Your workout was ${mins} minute${mins !== 1 ? 's' : ''} ${secs} second${secs !== 1 ? 's' : ''}. Keep going next time!`;
+            errorEl.style.display = 'block';
+        }
+        return;
+    }
+
     // Show loading
     if (loadingEl) loadingEl.style.display = 'block';
     if (verifyBtn) verifyBtn.disabled = true;
