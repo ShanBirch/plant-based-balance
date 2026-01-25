@@ -139,8 +139,8 @@ BEGIN
         WHERE w.user_id = u.id AND w.workout_type = 'history' AND w.workout_date = today
       ) as has_workout_today,
       EXISTS(
-        SELECT 1 FROM public.calorie_logs cl
-        WHERE cl.user_id = u.id AND DATE(cl.logged_at) = today
+        SELECT 1 FROM public.daily_nutrition dn
+        WHERE dn.user_id = u.id AND dn.nutrition_date = today
       ) as has_meal_today,
       COALESCE((SELECT up.current_streak FROM public.user_points up WHERE up.user_id = u.id), 0)::INT as current_streak,
       (SELECT MAX(w.workout_date)::DATE FROM public.workouts w WHERE w.user_id = u.id AND w.workout_type = 'history') as last_workout_date,
@@ -172,8 +172,8 @@ BEGIN
         WHERE w.user_id = u.id AND w.workout_type = 'history' AND w.workout_date = today
       ) as has_workout_today,
       EXISTS(
-        SELECT 1 FROM public.calorie_logs cl
-        WHERE cl.user_id = u.id AND DATE(cl.logged_at) = today
+        SELECT 1 FROM public.daily_nutrition dn
+        WHERE dn.user_id = u.id AND dn.nutrition_date = today
       ) as has_meal_today,
       COALESCE((SELECT up.current_streak FROM public.user_points up WHERE up.user_id = u.id), 0)::INT as current_streak,
       (SELECT MAX(w.workout_date)::DATE FROM public.workouts w WHERE w.user_id = u.id AND w.workout_type = 'history') as last_workout_date,

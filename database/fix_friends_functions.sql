@@ -47,6 +47,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Fix get_friends_with_status function (wrap UNION in subquery for ORDER BY)
+-- Uses daily_nutrition instead of calorie_logs
 CREATE OR REPLACE FUNCTION get_friends_with_status(user_uuid UUID)
 RETURNS TABLE(
   friend_id UUID,
@@ -77,8 +78,8 @@ BEGIN
         WHERE w.user_id = u.id AND w.workout_type = 'history' AND w.workout_date = today
       ) as has_workout_today,
       EXISTS(
-        SELECT 1 FROM public.calorie_logs cl
-        WHERE cl.user_id = u.id AND DATE(cl.logged_at) = today
+        SELECT 1 FROM public.daily_nutrition dn
+        WHERE dn.user_id = u.id AND dn.nutrition_date = today
       ) as has_meal_today,
       COALESCE((SELECT up.current_streak FROM public.user_points up WHERE up.user_id = u.id), 0)::INT as current_streak,
       (SELECT MAX(w.workout_date)::DATE FROM public.workouts w WHERE w.user_id = u.id AND w.workout_type = 'history') as last_workout_date,
@@ -110,8 +111,8 @@ BEGIN
         WHERE w.user_id = u.id AND w.workout_type = 'history' AND w.workout_date = today
       ) as has_workout_today,
       EXISTS(
-        SELECT 1 FROM public.calorie_logs cl
-        WHERE cl.user_id = u.id AND DATE(cl.logged_at) = today
+        SELECT 1 FROM public.daily_nutrition dn
+        WHERE dn.user_id = u.id AND dn.nutrition_date = today
       ) as has_meal_today,
       COALESCE((SELECT up.current_streak FROM public.user_points up WHERE up.user_id = u.id), 0)::INT as current_streak,
       (SELECT MAX(w.workout_date)::DATE FROM public.workouts w WHERE w.user_id = u.id AND w.workout_type = 'history') as last_workout_date,
@@ -136,6 +137,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Get friend activity feed (workouts, meals, achievements)
+-- Uses correct column names: exercise_name, time_duration, nutrition_date
 CREATE OR REPLACE FUNCTION get_friend_activity_feed(user_uuid UUID, days_back INT DEFAULT 7)
 RETURNS TABLE(
   activity_id TEXT,
@@ -158,10 +160,10 @@ BEGIN
       u.id as user_id,
       u.name as user_name,
       u.profile_photo as user_photo,
-      COALESCE(w.workout_name, 'Workout')::TEXT as activity_title,
-      COALESCE(w.duration_minutes || ' mins', '')::TEXT as activity_details,
-      COALESCE(w.duration_minutes, 0)::INT as activity_value,
-      COALESCE(w.completed_at, w.created_at) as activity_time
+      COALESCE(w.exercise_name, 'Workout')::TEXT as activity_title,
+      COALESCE(w.time_duration || ' mins', '')::TEXT as activity_details,
+      COALESCE(w.time_duration, 0)::INT as activity_value,
+      w.created_at as activity_time
     FROM public.workouts w
     JOIN public.users u ON u.id = w.user_id
     WHERE w.workout_type = 'history'
@@ -174,21 +176,20 @@ BEGIN
 
     UNION ALL
 
-    -- Meals logged by friends (daily summary)
+    -- Meals logged by friends (using daily_nutrition with nutrition_date)
     SELECT
       'meal_' || dn.id::TEXT as activity_id,
       'meal'::TEXT as activity_type,
       u.id as user_id,
       u.name as user_name,
       u.profile_photo as user_photo,
-      'Logged meals'::TEXT as activity_title,
-      dn.total_calories || ' cal'::TEXT as activity_details,
-      COALESCE(dn.total_calories, 0)::INT as activity_value,
+      'Tracked nutrition'::TEXT as activity_title,
+      COALESCE(dn.calorie_goal || ' cal goal', 'Logged today')::TEXT as activity_details,
+      COALESCE(dn.calorie_goal, 0)::INT as activity_value,
       dn.updated_at as activity_time
     FROM public.daily_nutrition dn
     JOIN public.users u ON u.id = dn.user_id
-    WHERE dn.date >= CURRENT_DATE - days_back
-    AND dn.total_calories > 0
+    WHERE dn.nutrition_date >= CURRENT_DATE - days_back
     AND dn.user_id IN (
       SELECT f.friend_id FROM public.friendships f WHERE f.user_id = user_uuid AND f.status = 'accepted'
       UNION
