@@ -1314,6 +1314,225 @@ async function applyAppTheme(themeKey) {
     }
 
     /* ========================================== */
+    /* PREFERENCE WIZARD STYLES */
+    /* ========================================== */
+
+    .pref-wizard-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .pref-wizard-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .pref-wizard-modal {
+        background: white;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 450px;
+        max-height: 85vh;
+        overflow-y: auto;
+        transform: translateY(20px);
+        transition: transform 0.3s ease;
+    }
+
+    .pref-wizard-overlay.active .pref-wizard-modal {
+        transform: translateY(0);
+    }
+
+    .pref-wizard-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        color: white;
+        padding: 25px;
+        text-align: center;
+        border-radius: 20px 20px 0 0;
+    }
+
+    .pref-wizard-header h2 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+    }
+
+    .pref-wizard-header p {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .pref-wizard-progress {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 15px;
+    }
+
+    .pref-wizard-progress .step-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .pref-wizard-progress .step-dot.active {
+        background: white;
+        transform: scale(1.2);
+    }
+
+    .pref-wizard-progress .step-dot.completed {
+        background: var(--secondary);
+    }
+
+    .pref-wizard-body {
+        padding: 25px;
+    }
+
+    .pref-wizard-step {
+        display: none;
+    }
+
+    .pref-wizard-step.active {
+        display: block;
+        animation: fadeInUp 0.3s ease;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .pref-wizard-step h3 {
+        font-family: 'Playfair Display', serif;
+        color: var(--primary);
+        font-size: 1.2rem;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .pref-option-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .pref-option {
+        background: #f8f9fa;
+        border: 2px solid transparent;
+        border-radius: 12px;
+        padding: 20px 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .pref-option:hover {
+        border-color: var(--primary-light);
+        background: var(--accent-green);
+    }
+
+    .pref-option.selected {
+        border-color: var(--primary);
+        background: var(--accent-green);
+    }
+
+    .pref-option .option-icon {
+        font-size: 2rem;
+        margin-bottom: 8px;
+    }
+
+    .pref-option .option-label {
+        font-weight: 600;
+        color: var(--primary);
+        font-size: 0.95rem;
+    }
+
+    .pref-option .option-desc {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+
+    .pref-checkbox-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .pref-checkbox {
+        background: #f8f9fa;
+        border: 2px solid transparent;
+        border-radius: 25px;
+        padding: 10px 18px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+
+    .pref-checkbox:hover {
+        border-color: var(--primary-light);
+    }
+
+    .pref-checkbox.selected {
+        background: var(--accent-green);
+        border-color: var(--primary);
+        font-weight: 600;
+    }
+
+    .pref-wizard-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 25px;
+        border-top: 1px solid #eee;
+    }
+
+    .pref-wizard-btn {
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+    }
+
+    .pref-wizard-btn.secondary {
+        background: #f0f0f0;
+        color: var(--text-muted);
+    }
+
+    .pref-wizard-btn.secondary:hover {
+        background: #e0e0e0;
+    }
+
+    .pref-wizard-btn.primary {
+        background: var(--secondary);
+        color: white;
+    }
+
+    .pref-wizard-btn.primary:hover {
+        background: #bfa64d;
+    }
+
+    .pref-wizard-btn.primary:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+
+    /* ========================================== */
     /* CALORIE TRACKER STYLES */
     /* ========================================== */
 
@@ -11997,32 +12216,14 @@ function openMealPlanPreview(planSlug) {
  * Start the meal plan purchase flow
  */
 function startMealPlanPurchase(planSlug) {
-    // TODO: Implement preference wizard then Stripe checkout
-    console.log('Purchase plan:', planSlug);
-
-    // For now, show a message
-    if (confirm(`Ready to purchase the ${planSlug} plan for $9.99 AUD?\n\nThis will open the preference wizard where you can select your dietary preferences.`)) {
+    console.log('Starting purchase flow for:', planSlug);
+    // Open the preference wizard modal (defined in script block at bottom)
+    if (typeof openPreferenceWizard === 'function') {
         openPreferenceWizard(planSlug);
+    } else {
+        console.error('Preference wizard not loaded');
+        alert('Something went wrong. Please refresh and try again.');
     }
-}
-
-/**
- * Open the preference wizard modal
- */
-function openPreferenceWizard(planSlug) {
-    // TODO: Implement full wizard modal
-    // For now, simple diet selection
-    const dietChoice = prompt('Select your diet type:\n1. Vegan\n2. Vegetarian\n3. Pescatarian\n4. Omnivore\n\nEnter 1, 2, 3, or 4:');
-
-    const dietMap = { '1': 'vegan', '2': 'vegetarian', '3': 'pescatarian', '4': 'omnivore' };
-    const selectedDiet = dietMap[dietChoice] || 'vegan';
-
-    // Store preferences
-    localStorage.setItem('selected_meal_plan', planSlug);
-    localStorage.setItem('selected_diet_type', selectedDiet);
-
-    // Redirect to checkout (TODO: Implement Stripe checkout)
-    alert(`Great choice! You selected ${selectedDiet} for the ${planSlug} plan.\n\nStripe checkout integration coming soon!`);
 }
 
 // Initialize meal plan view when meals tab is opened
@@ -27141,6 +27342,296 @@ window.addEventListener('DOMContentLoaded', () => {
         </div>
     </div>
 </div>
+
+<!-- Preference Wizard Modal -->
+<div class="pref-wizard-overlay" id="pref-wizard-overlay">
+    <div class="pref-wizard-modal">
+        <div class="pref-wizard-header">
+            <h2 id="pref-wizard-title">Customize Your Plan</h2>
+            <p id="pref-wizard-subtitle">Tell us about your preferences</p>
+            <div class="pref-wizard-progress">
+                <div class="step-dot active" data-step="1"></div>
+                <div class="step-dot" data-step="2"></div>
+                <div class="step-dot" data-step="3"></div>
+            </div>
+        </div>
+        <div class="pref-wizard-body">
+            <!-- Step 1: Diet Type -->
+            <div class="pref-wizard-step active" data-step="1">
+                <h3>What's your diet preference?</h3>
+                <div class="pref-option-grid">
+                    <div class="pref-option" data-value="vegan" onclick="selectPrefOption(this, 'diet')">
+                        <div class="option-icon">🌱</div>
+                        <div class="option-label">Vegan</div>
+                        <div class="option-desc">100% plant-based</div>
+                    </div>
+                    <div class="pref-option" data-value="vegetarian" onclick="selectPrefOption(this, 'diet')">
+                        <div class="option-icon">🥚</div>
+                        <div class="option-label">Vegetarian</div>
+                        <div class="option-desc">Includes eggs & dairy</div>
+                    </div>
+                    <div class="pref-option" data-value="pescatarian" onclick="selectPrefOption(this, 'diet')">
+                        <div class="option-icon">🐟</div>
+                        <div class="option-label">Pescatarian</div>
+                        <div class="option-desc">Includes fish & seafood</div>
+                    </div>
+                    <div class="pref-option" data-value="omnivore" onclick="selectPrefOption(this, 'diet')">
+                        <div class="option-icon">🍗</div>
+                        <div class="option-label">Omnivore</div>
+                        <div class="option-desc">All food groups</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Allergies/Restrictions -->
+            <div class="pref-wizard-step" data-step="2">
+                <h3>Any allergies or restrictions?</h3>
+                <p style="text-align: center; color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;">Select all that apply (or skip if none)</p>
+                <div class="pref-checkbox-list" style="justify-content: center;">
+                    <div class="pref-checkbox" data-value="gluten" onclick="togglePrefCheckbox(this)">🌾 Gluten-Free</div>
+                    <div class="pref-checkbox" data-value="dairy" onclick="togglePrefCheckbox(this)">🥛 Dairy-Free</div>
+                    <div class="pref-checkbox" data-value="nuts" onclick="togglePrefCheckbox(this)">🥜 Nut-Free</div>
+                    <div class="pref-checkbox" data-value="soy" onclick="togglePrefCheckbox(this)">🫘 Soy-Free</div>
+                    <div class="pref-checkbox" data-value="eggs" onclick="togglePrefCheckbox(this)">🥚 Egg-Free</div>
+                    <div class="pref-checkbox" data-value="fodmap" onclick="togglePrefCheckbox(this)">🍎 Low FODMAP</div>
+                </div>
+            </div>
+
+            <!-- Step 3: Cooking Preference -->
+            <div class="pref-wizard-step" data-step="3">
+                <h3>How much time for cooking?</h3>
+                <div class="pref-option-grid">
+                    <div class="pref-option" data-value="quick" onclick="selectPrefOption(this, 'time')">
+                        <div class="option-icon">⚡</div>
+                        <div class="option-label">Quick</div>
+                        <div class="option-desc">Under 20 mins</div>
+                    </div>
+                    <div class="pref-option" data-value="moderate" onclick="selectPrefOption(this, 'time')">
+                        <div class="option-icon">⏱️</div>
+                        <div class="option-label">Moderate</div>
+                        <div class="option-desc">20-40 mins</div>
+                    </div>
+                    <div class="pref-option" data-value="any" onclick="selectPrefOption(this, 'time')" style="grid-column: span 2;">
+                        <div class="option-icon">👨‍🍳</div>
+                        <div class="option-label">I Love Cooking</div>
+                        <div class="option-desc">Any prep time is fine</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="pref-wizard-footer">
+            <button class="pref-wizard-btn secondary" id="pref-wizard-back" onclick="prefWizardBack()">Back</button>
+            <button class="pref-wizard-btn primary" id="pref-wizard-next" onclick="prefWizardNext()" disabled>Next</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// PREFERENCE WIZARD LOGIC
+// ============================================================
+
+let prefWizardState = {
+    currentStep: 1,
+    totalSteps: 3,
+    planSlug: null,
+    preferences: {
+        diet: null,
+        allergies: [],
+        cookingTime: null
+    }
+};
+
+function openPreferenceWizard(planSlug) {
+    prefWizardState = {
+        currentStep: 1,
+        totalSteps: 3,
+        planSlug: planSlug,
+        preferences: {
+            diet: null,
+            allergies: [],
+            cookingTime: null
+        }
+    };
+
+    // Update title with plan name
+    const planNames = {
+        'summer-shred': 'Summer Shred',
+        'clean-bulk': 'Clean Bulk',
+        'energy-boost': 'Energy Boost',
+        'gut-reset': 'Gut Reset',
+        'quick-easy': 'Quick & Easy'
+    };
+    document.getElementById('pref-wizard-title').textContent = planNames[planSlug] || 'Customize Your Plan';
+
+    // Reset UI
+    updatePrefWizardStep(1);
+    clearPrefSelections();
+
+    // Show modal
+    document.getElementById('pref-wizard-overlay').classList.add('active');
+}
+
+function closePrefWizard() {
+    document.getElementById('pref-wizard-overlay').classList.remove('active');
+}
+
+function updatePrefWizardStep(step) {
+    prefWizardState.currentStep = step;
+
+    // Update step dots
+    document.querySelectorAll('.pref-wizard-progress .step-dot').forEach(dot => {
+        const dotStep = parseInt(dot.dataset.step);
+        dot.classList.remove('active', 'completed');
+        if (dotStep === step) {
+            dot.classList.add('active');
+        } else if (dotStep < step) {
+            dot.classList.add('completed');
+        }
+    });
+
+    // Update step content
+    document.querySelectorAll('.pref-wizard-step').forEach(stepEl => {
+        stepEl.classList.remove('active');
+        if (parseInt(stepEl.dataset.step) === step) {
+            stepEl.classList.add('active');
+        }
+    });
+
+    // Update buttons
+    const backBtn = document.getElementById('pref-wizard-back');
+    const nextBtn = document.getElementById('pref-wizard-next');
+
+    backBtn.style.visibility = step === 1 ? 'hidden' : 'visible';
+    nextBtn.textContent = step === prefWizardState.totalSteps ? 'Continue to Checkout' : 'Next';
+
+    // Update next button state
+    updatePrefNextButton();
+}
+
+function updatePrefNextButton() {
+    const nextBtn = document.getElementById('pref-wizard-next');
+    const step = prefWizardState.currentStep;
+
+    let isValid = false;
+    if (step === 1) {
+        isValid = prefWizardState.preferences.diet !== null;
+    } else if (step === 2) {
+        isValid = true; // Allergies are optional
+    } else if (step === 3) {
+        isValid = prefWizardState.preferences.cookingTime !== null;
+    }
+
+    nextBtn.disabled = !isValid;
+}
+
+function selectPrefOption(el, type) {
+    // Remove selected from siblings
+    el.parentElement.querySelectorAll('.pref-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+
+    // Store value
+    if (type === 'diet') {
+        prefWizardState.preferences.diet = el.dataset.value;
+    } else if (type === 'time') {
+        prefWizardState.preferences.cookingTime = el.dataset.value;
+    }
+
+    updatePrefNextButton();
+}
+
+function togglePrefCheckbox(el) {
+    el.classList.toggle('selected');
+
+    // Update allergies array
+    const value = el.dataset.value;
+    const idx = prefWizardState.preferences.allergies.indexOf(value);
+    if (idx > -1) {
+        prefWizardState.preferences.allergies.splice(idx, 1);
+    } else {
+        prefWizardState.preferences.allergies.push(value);
+    }
+}
+
+function clearPrefSelections() {
+    document.querySelectorAll('.pref-option, .pref-checkbox').forEach(el => el.classList.remove('selected'));
+}
+
+function prefWizardBack() {
+    if (prefWizardState.currentStep > 1) {
+        updatePrefWizardStep(prefWizardState.currentStep - 1);
+    }
+}
+
+function prefWizardNext() {
+    if (prefWizardState.currentStep < prefWizardState.totalSteps) {
+        updatePrefWizardStep(prefWizardState.currentStep + 1);
+    } else {
+        // Complete - proceed to checkout
+        completePrefWizard();
+    }
+}
+
+function completePrefWizard() {
+    // Store preferences
+    localStorage.setItem('selected_meal_plan', prefWizardState.planSlug);
+    localStorage.setItem('user_food_preferences', JSON.stringify(prefWizardState.preferences));
+
+    closePrefWizard();
+
+    // Proceed to Stripe checkout
+    initiateMealPlanCheckout(prefWizardState.planSlug, prefWizardState.preferences);
+}
+
+async function initiateMealPlanCheckout(planSlug, preferences) {
+    // Show loading state
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'checkout-loading';
+    loadingDiv.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10001;';
+    loadingDiv.innerHTML = `
+        <div style="background: white; padding: 40px; border-radius: 16px; text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 15px;">🍽️</div>
+            <p style="color: var(--primary); font-weight: 600;">Preparing your checkout...</p>
+        </div>
+    `;
+    document.body.appendChild(loadingDiv);
+
+    try {
+        // TODO: Replace with actual Stripe checkout session creation
+        // For now, simulate the flow
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // Remove loading
+        loadingDiv.remove();
+
+        // Show success message (temporary - will be replaced with Stripe redirect)
+        alert(`Preferences saved!\n\nPlan: ${planSlug}\nDiet: ${preferences.diet}\nAllergies: ${preferences.allergies.join(', ') || 'None'}\nCooking Time: ${preferences.cookingTime}\n\nStripe checkout integration coming soon!`);
+
+        // For demo: Mark plan as "purchased" so UI updates
+        // In production, this would happen via Stripe webhook
+        const purchased = JSON.parse(localStorage.getItem('purchased_meal_plans') || '[]');
+        if (!purchased.includes(planSlug)) {
+            purchased.push(planSlug);
+            localStorage.setItem('purchased_meal_plans', JSON.stringify(purchased));
+        }
+
+        // Refresh the meals view
+        initializeMealPlanView();
+
+    } catch (error) {
+        loadingDiv.remove();
+        alert('Something went wrong. Please try again.');
+        console.error('Checkout error:', error);
+    }
+}
+
+// Close wizard on overlay click
+document.getElementById('pref-wizard-overlay')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePrefWizard();
+    }
+});
+</script>
 
 </body>
 </html>
