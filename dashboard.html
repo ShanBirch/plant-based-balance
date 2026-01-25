@@ -8357,7 +8357,9 @@ function startCustomBuilderWorkout() {
                     <option value="all">All Activity</option>
                     <option value="workouts">Workouts</option>
                     <option value="meals">Meals</option>
+                    <option value="stories">Stories</option>
                     <option value="achievements">Achievements</option>
+                    <option value="rewards">Rewards</option>
                 </select>
             </div>
             <div id="activity-feed-container" style="display: flex; flex-direction: column; gap: 12px;">
@@ -20064,9 +20066,16 @@ async function loadActivityFeed(filter = 'all') {
             const typeMap = {
                 'workouts': 'workout',
                 'meals': 'meal',
-                'achievements': 'achievement'
+                'stories': 'story',
+                'achievements': 'achievement',
+                'rewards': ['free_week', 'referral_reward']
             };
-            filteredActivities = filteredActivities.filter(a => a.activity_type === typeMap[filter]);
+            const filterTypes = typeMap[filter];
+            if (Array.isArray(filterTypes)) {
+                filteredActivities = filteredActivities.filter(a => filterTypes.includes(a.activity_type));
+            } else {
+                filteredActivities = filteredActivities.filter(a => a.activity_type === filterTypes);
+            }
         }
 
         if (filteredActivities.length === 0) {
@@ -20088,7 +20097,10 @@ async function loadActivityFeed(filter = 'all') {
             const typeConfig = {
                 workout: { icon: '💪', bg: '#dcfce7', color: '#16a34a', label: 'completed' },
                 meal: { icon: '🥗', bg: '#fef3c7', color: '#d97706', label: 'logged' },
-                achievement: { icon: '🏆', bg: '#fef2f2', color: '#ef4444', label: 'earned' }
+                story: { icon: '📸', bg: '#e0e7ff', color: '#6366f1', label: 'shared' },
+                achievement: { icon: '🏆', bg: '#fef2f2', color: '#ef4444', label: 'earned' },
+                free_week: { icon: '🎉', bg: '#f0fdf4', color: '#22c55e', label: 'unlocked' },
+                referral_reward: { icon: '🎁', bg: '#fdf4ff', color: '#c026d3', label: 'received' }
             };
             const config = typeConfig[activity.activity_type] || typeConfig.workout;
 
