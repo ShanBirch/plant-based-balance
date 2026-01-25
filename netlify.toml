@@ -56,6 +56,15 @@
   function = "analyze-story-points"
   path = "/api/analyze-story-points"
 
+# Meal Tracking Edge Functions
+[[edge_functions]]
+  function = "analyze-meal-text"
+  path = "/.netlify/functions/analyze-meal-text"
+
+[[edge_functions]]
+  function = "send-meal-reminders"
+  path = "/api/send-meal-reminders"
+
 # Ensure we redirect legacy URLs
 [[redirects]]
   from = "/quiz"

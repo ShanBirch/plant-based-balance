@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v12'; // Fixed check-in modal click handlers
+const CACHE_NAME = 'pbb-app-v13'; // Added meal tracking with text/voice input and reminders
 const ASSETS = [
   './dashboard.html',
   './assets/Logo_dots.jpg',
@@ -92,7 +92,7 @@ self.addEventListener('notificationclick', (e) => {
   e.notification.close();
 
   const notificationData = e.notification.data || {};
-  const action = e.action; // 'approve' or 'edit' from notification actions
+  const action = e.action; // Action button clicked
 
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUnmatched: true }).then(clientList => {
@@ -117,10 +117,43 @@ self.addEventListener('notificationclick', (e) => {
         if (clients.openWindow) {
           return clients.openWindow('./dashboard.html?openApproval=true');
         }
-      } else {
+      }
+      // Handle meal reminder notifications
+      else if (notificationData.type === 'meal_reminder') {
+        const mealType = notificationData.mealType || 'meal';
+
+        // Try to focus existing window
+        for (let client of clientList) {
+          if (client.url.includes('dashboard.html') && 'focus' in client) {
+            return client.focus().then(client => {
+              // Send message to open meal input modal
+              client.postMessage({
+                type: 'open_meal_input',
+                action: action, // 'log_photo' or 'log_text'
+                mealType: mealType
+              });
+              return client;
+            });
+          }
+        }
+
+        // If no window exists, open new one with meal logging
+        if (clients.openWindow) {
+          const inputMethod = action === 'log_text' ? 'text' : 'photo';
+          return clients.openWindow(`./dashboard.html?tab=meals&action=log&type=${mealType}&method=${inputMethod}`);
+        }
+      }
+      else {
         // Regular notification - just open dashboard
         return clients.openWindow(notificationData.url || './dashboard.html');
       }
     })
   );
+});
+
+// Listen for messages from main app
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
