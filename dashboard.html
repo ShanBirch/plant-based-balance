@@ -8041,6 +8041,23 @@ function startCustomBuilderWorkout() {
     overflow: hidden;
 }
 
+/* Yoga exercise card styles */
+.yoga-exercise-card {
+    border: 2px solid #dcfce7;
+}
+
+.yoga-exercise-card .yoga-timer-section {
+    background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+}
+
+.yoga-timer-section button:active {
+    transform: scale(0.95);
+}
+
+.yoga-timer-section button:hover {
+    opacity: 0.9;
+}
+
 .library-category-card {
     background: white;
     border: 2px solid #f1f5f9;
@@ -14493,6 +14510,7 @@ function startWorkoutTimer() {
 
 async function finishWorkout() {
     clearInterval(workoutTimerInterval);
+    clearAllYogaTimers(); // Clear any running yoga timers
     const duration = document.getElementById('workout-timer').innerText;
     document.getElementById('success-duration').innerText = duration;
 
@@ -14651,6 +14669,7 @@ function quitWorkout() {
     if(confirm('Quit workout? Your progress won\'t be saved.')) {
         console.log("Quitting workout...");
         clearInterval(workoutTimerInterval);
+        clearAllYogaTimers(); // Clear any running yoga timers
         document.getElementById('view-active-workout').style.display = 'none'; // Force hide
         closeSuccessScreen();
     }
@@ -15308,14 +15327,25 @@ function openLibraryWorkoutOverview(categoryKey, subcategoryKey, workoutId) {
         `;
     });
 
-    // Set instructions
-    const instructionsText = `This is a ${workout.difficulty.toLowerCase()} level ${subcategory.name.toLowerCase()} workout. Complete all exercises in order, resting as needed between sets.`;
+    // Set instructions - different for yoga
+    const isYogaWorkout = categoryKey === 'yoga';
+    const instructionsText = isYogaWorkout
+        ? `This is a ${workout.difficulty.toLowerCase()} level ${subcategory.name.toLowerCase()} practice. Hold each pose for the specified time, breathing deeply and moving mindfully.`
+        : `This is a ${workout.difficulty.toLowerCase()} level ${subcategory.name.toLowerCase()} workout. Complete all exercises in order, resting as needed between sets.`;
     document.getElementById('overview-instructions').textContent = instructionsText;
 
     // Set exercise list
     const exList = document.getElementById('overview-exercise-list');
     exList.innerHTML = '';
     workout.exercises.forEach(ex => {
+        // For yoga, show time icon and duration. For others, show sets x reps
+        const exerciseMetaHtml = isYogaWorkout
+            ? `<div style="color:var(--text-muted); font-size:0.85rem; display:flex; align-items:center; gap:5px;">
+                <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:currentColor;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                ${ex.reps}
+               </div>`
+            : `<div style="color:var(--text-muted); font-size:0.85rem;">${ex.sets} sets x ${ex.reps}</div>`;
+
         exList.innerHTML += `
             <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
                 <div style="width:70px; height:70px; border-radius:12px; background:#f1f5f9; flex-shrink:0; overflow:hidden;">
@@ -15323,7 +15353,7 @@ function openLibraryWorkoutOverview(categoryKey, subcategoryKey, workoutId) {
                 </div>
                 <div style="flex:1;">
                     <div style="font-weight:700; font-size:1.05rem;">${ex.name}</div>
-                    <div style="color:var(--text-muted); font-size:0.85rem;">${ex.sets} sets x ${ex.reps}</div>
+                    ${exerciseMetaHtml}
                     <div style="color:var(--text-muted); font-size:0.8rem; margin-top:3px;">${ex.desc}</div>
                 </div>
             </div>
@@ -15404,8 +15434,14 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
         document.getElementById('workout-timer').textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
     }, 1000);
 
-    // Render exercises
-    renderWorkoutExercises(exercises);
+    // Render exercises - use yoga-specific renderer for yoga workouts
+    const isYogaWorkout = categoryKey === 'yoga';
+    if (isYogaWorkout) {
+        clearAllYogaTimers();
+        renderYogaExercises(exercises);
+    } else {
+        renderWorkoutExercises(exercises);
+    }
 
     // Show workout player
     hideAllAppViews();
@@ -15476,6 +15512,109 @@ function renderWorkoutExercises(exercises) {
 
                 <div style="padding:15px; border-top:1px solid #f8fafc;">
                     <button onclick="addWorkoutSet(this, '${escapedName}', false)" style="width:100%; background:transparent; border:2px dashed #e2e8f0; color:#94a3b8; font-weight:700; font-size:0.8rem; padding:12px; border-radius:12px; cursor:pointer;">+ ADD SET</button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+// Render yoga exercises with individual timers
+function renderYogaExercises(exercises) {
+    const container = document.getElementById('workout-exercises-list');
+    container.innerHTML = '';
+
+    exercises.forEach((ex, idx) => {
+        const videoUrl = findVideoMatch(ex.name);
+        const isUserAdded = ex.isUserAdded || false;
+        const escapedName = ex.name.replace(/'/g, "\\'");
+
+        // Parse the time from the reps field
+        const timeSeconds = parseYogaTimeToSeconds(ex.reps);
+        const timeDisplay = formatYogaTime(timeSeconds);
+        const circumference = 2 * Math.PI * 54; // SVG circle radius 54
+
+        // Initialize timer state
+        window.yogaTimers[idx] = {
+            total: timeSeconds,
+            remaining: timeSeconds,
+            isRunning: false,
+            interval: null
+        };
+
+        // Check if "each" is mentioned (for bilateral poses)
+        const isEachSide = ex.reps && ex.reps.toLowerCase().includes('each');
+
+        container.innerHTML += `
+            <div class="exercise-logger-card yoga-exercise-card" data-exercise-name="${ex.name}" data-is-user-added="${isUserAdded}" data-exercise-idx="${idx}">
+                <div style="padding: 15px; background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%); border-bottom: 1px solid #e2e8f0;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                                <span style="font-weight: 700; font-size: 1.05rem;">${ex.name.replace('Yoga - ', '')}</span>
+                                ${isUserAdded ? '<span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>' : ''}
+                            </div>
+                            <div style="color: var(--text-muted); font-size: 0.85rem;">${ex.desc || ''}</div>
+                            ${isEachSide ? '<div style="color: var(--primary); font-size: 0.75rem; margin-top: 4px; font-weight: 600;">⟳ Repeat on each side</div>' : ''}
+                        </div>
+                        <button onclick="deleteExerciseFromWorkout('${escapedName}', ${isUserAdded})" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
+                            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                ${videoUrl ? `
+                <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
+                    <video style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline>
+                        <source src="${videoUrl}" type="video/mp4">
+                    </video>
+                    <div class="inline-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                        <svg viewBox="0 0 24 24" style="width: 30px; height: 30px; fill: var(--primary); margin-left: 3px;">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </div>
+                </div>` : ''}
+
+                <!-- Yoga Timer Section -->
+                <div class="yoga-timer-section" style="padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                    <!-- Circular Timer Display -->
+                    <div style="position: relative; width: 130px; height: 130px;">
+                        <svg viewBox="0 0 120 120" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                            <!-- Background circle -->
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+                            <!-- Progress circle -->
+                            <circle id="yoga-timer-progress-${idx}" cx="60" cy="60" r="54" fill="none" stroke="var(--primary)" stroke-width="8"
+                                stroke-linecap="round"
+                                stroke-dasharray="${circumference}"
+                                stroke-dashoffset="${circumference}"
+                                style="transition: stroke-dashoffset 0.5s ease;"/>
+                        </svg>
+                        <!-- Timer text in center -->
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                            <div id="yoga-timer-display-${idx}" style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); font-family: monospace;">${timeDisplay}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">${ex.reps}</div>
+                        </div>
+                    </div>
+
+                    <!-- Timer Controls -->
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button id="yoga-timer-start-${idx}" onclick="startYogaTimer(${idx})"
+                            style="background: var(--primary); color: white; border: none; padding: 12px 28px; border-radius: 25px; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(34,197,94,0.3);">
+                            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;"><path d="M8 5v14l11-7z"/></svg>
+                            Start
+                        </button>
+                        <button id="yoga-timer-pause-${idx}" onclick="pauseYogaTimer(${idx})"
+                            style="background: #f59e0b; color: white; border: none; padding: 12px 20px; border-radius: 25px; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: none; align-items: center; gap: 6px;">
+                            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            Pause
+                        </button>
+                        <button id="yoga-timer-reset-${idx}" onclick="resetYogaTimer(${idx})"
+                            style="background: #e2e8f0; color: var(--text-main); border: none; padding: 12px 20px; border-radius: 25px; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: none; align-items: center; gap: 6px;">
+                            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                            Reset
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -21907,6 +22046,180 @@ function stopInlineVideo(video) {
         const playOverlay = container.querySelector('.inline-play-overlay');
         if (playOverlay) playOverlay.style.display = 'flex';
     }
+}
+
+// =====================
+// YOGA TIMER FUNCTIONS
+// =====================
+
+// Parse yoga time string (e.g., "2 min", "45 sec each", "5 breaths") to seconds
+function parseYogaTimeToSeconds(timeStr) {
+    if (!timeStr) return 60; // default 1 min
+
+    const str = timeStr.toLowerCase().trim();
+
+    // Handle "X breaths" - assume 5 seconds per breath
+    const breathMatch = str.match(/(\d+)\s*breaths?/);
+    if (breathMatch) {
+        return parseInt(breathMatch[1]) * 5;
+    }
+
+    // Handle "X min" or "X minutes"
+    const minMatch = str.match(/(\d+)\s*min/);
+    if (minMatch) {
+        return parseInt(minMatch[1]) * 60;
+    }
+
+    // Handle "X sec" or "X seconds"
+    const secMatch = str.match(/(\d+)\s*sec/);
+    if (secMatch) {
+        return parseInt(secMatch[1]);
+    }
+
+    // Default to 60 seconds if unparseable
+    return 60;
+}
+
+// Format seconds to display string (MM:SS)
+function formatYogaTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+}
+
+// Global yoga timer state
+window.yogaTimers = {};
+
+// Start yoga timer for a specific exercise
+function startYogaTimer(exerciseIdx) {
+    const timer = window.yogaTimers[exerciseIdx];
+    if (!timer) return;
+
+    const timerDisplay = document.getElementById(`yoga-timer-display-${exerciseIdx}`);
+    const startBtn = document.getElementById(`yoga-timer-start-${exerciseIdx}`);
+    const pauseBtn = document.getElementById(`yoga-timer-pause-${exerciseIdx}`);
+    const resetBtn = document.getElementById(`yoga-timer-reset-${exerciseIdx}`);
+    const progressRing = document.getElementById(`yoga-timer-progress-${exerciseIdx}`);
+
+    if (timer.interval) {
+        clearInterval(timer.interval);
+    }
+
+    timer.isRunning = true;
+    startBtn.style.display = 'none';
+    pauseBtn.style.display = 'inline-flex';
+    resetBtn.style.display = 'inline-flex';
+
+    timer.interval = setInterval(() => {
+        timer.remaining--;
+
+        if (timer.remaining <= 0) {
+            timer.remaining = 0;
+            clearInterval(timer.interval);
+            timer.interval = null;
+            timer.isRunning = false;
+
+            // Timer complete - play sound and show completion
+            timerDisplay.textContent = '0:00';
+            timerDisplay.style.color = 'var(--primary)';
+            startBtn.textContent = '✓ Done';
+            startBtn.style.display = 'inline-flex';
+            startBtn.style.background = 'var(--primary)';
+            startBtn.disabled = true;
+            pauseBtn.style.display = 'none';
+
+            // Update progress ring
+            if (progressRing) {
+                progressRing.style.strokeDashoffset = '0';
+            }
+
+            // Play completion sound if available
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU');
+            } catch(e) {}
+
+            // Vibrate on mobile if available
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+
+            return;
+        }
+
+        timerDisplay.textContent = formatYogaTime(timer.remaining);
+
+        // Update progress ring
+        if (progressRing) {
+            const circumference = 2 * Math.PI * 54; // radius 54
+            const progress = timer.remaining / timer.total;
+            const offset = circumference * progress;
+            progressRing.style.strokeDashoffset = offset;
+        }
+    }, 1000);
+}
+
+// Pause yoga timer
+function pauseYogaTimer(exerciseIdx) {
+    const timer = window.yogaTimers[exerciseIdx];
+    if (!timer) return;
+
+    if (timer.interval) {
+        clearInterval(timer.interval);
+        timer.interval = null;
+    }
+    timer.isRunning = false;
+
+    const startBtn = document.getElementById(`yoga-timer-start-${exerciseIdx}`);
+    const pauseBtn = document.getElementById(`yoga-timer-pause-${exerciseIdx}`);
+
+    startBtn.textContent = 'Resume';
+    startBtn.style.display = 'inline-flex';
+    pauseBtn.style.display = 'none';
+}
+
+// Reset yoga timer
+function resetYogaTimer(exerciseIdx) {
+    const timer = window.yogaTimers[exerciseIdx];
+    if (!timer) return;
+
+    if (timer.interval) {
+        clearInterval(timer.interval);
+        timer.interval = null;
+    }
+    timer.remaining = timer.total;
+    timer.isRunning = false;
+
+    const timerDisplay = document.getElementById(`yoga-timer-display-${exerciseIdx}`);
+    const startBtn = document.getElementById(`yoga-timer-start-${exerciseIdx}`);
+    const pauseBtn = document.getElementById(`yoga-timer-pause-${exerciseIdx}`);
+    const resetBtn = document.getElementById(`yoga-timer-reset-${exerciseIdx}`);
+    const progressRing = document.getElementById(`yoga-timer-progress-${exerciseIdx}`);
+
+    timerDisplay.textContent = formatYogaTime(timer.total);
+    timerDisplay.style.color = 'var(--text-main)';
+    startBtn.textContent = 'Start';
+    startBtn.style.display = 'inline-flex';
+    startBtn.style.background = 'var(--primary)';
+    startBtn.disabled = false;
+    pauseBtn.style.display = 'none';
+    resetBtn.style.display = 'none';
+
+    // Reset progress ring
+    if (progressRing) {
+        const circumference = 2 * Math.PI * 54;
+        progressRing.style.strokeDashoffset = circumference;
+    }
+}
+
+// Clear all yoga timers when leaving workout
+function clearAllYogaTimers() {
+    Object.keys(window.yogaTimers).forEach(key => {
+        const timer = window.yogaTimers[key];
+        if (timer && timer.interval) {
+            clearInterval(timer.interval);
+        }
+    });
+    window.yogaTimers = {};
 }
 
 let pendingVideoUrl = '';
