@@ -52,6 +52,10 @@
   function = "analyze-workout"
   path = "/api/analyze-workout"
 
+[[edge_functions]]
+  function = "analyze-story-points"
+  path = "/api/analyze-story-points"
+
 # Ensure we redirect legacy URLs
 [[redirects]]
   from = "/quiz"
