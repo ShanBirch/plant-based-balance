@@ -23898,16 +23898,22 @@ function showPointsEarnedToast(points, bonusPoints = 0, streak = 0) {
 
 // Award points for a meal (called after successful meal logging)
 async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photoHash) {
+    console.log('awardPointsForMeal called with:', { mealLogId, photoTimestamp, aiConfidence, photoHash });
     try {
         const session = await window.authHelpers?.getSession();
-        if (!session?.user) return null;
+        if (!session?.user) {
+            console.log('No user session for points');
+            return null;
+        }
 
+        console.log('Calling window.db.points.awardPoints...');
         const result = await window.db?.points?.awardPoints(
             session.user.id,
             'meal',
             mealLogId,
             { photoTimestamp, aiConfidence, photoHash }
         );
+        console.log('awardPoints result:', result);
 
         if (result?.success) {
             // Show points earned toast
