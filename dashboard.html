@@ -12440,13 +12440,14 @@ function initializeMealPlanView() {
 
         // Show store section
         if (storeSection) {
-            storeSection.style.display = 'block';
+            // First hide all view sections
+            document.querySelectorAll('#meals-content-container .view-section').forEach(el => {
+                el.classList.remove('active');
+                el.style.display = '';
+            });
+            // Then show the store
+            storeSection.classList.add('active');
             renderMealPlanStore();
-        }
-
-        // Hide today section for users without a plan
-        if (todaySection) {
-            todaySection.classList.remove('active');
         }
     } else {
         // User has meal plan access - show full navigation
