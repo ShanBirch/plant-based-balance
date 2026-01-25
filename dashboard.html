@@ -12312,8 +12312,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function switchWeek(id, btn) {
-    // Hide all internal meal sections
-    document.querySelectorAll('#meals-content-container .view-section').forEach(el => el.classList.remove('active'));
+    // Hide all internal meal sections (reset both class and inline styles)
+    document.querySelectorAll('#meals-content-container .view-section').forEach(el => {
+        el.classList.remove('active');
+        el.style.display = '';  // Reset inline display style to let CSS take over
+    });
 
     // Show target
     const target = document.getElementById(id);
