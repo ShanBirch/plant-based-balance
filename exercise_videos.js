@@ -1963,5 +1963,185 @@ const EXERCISE_VIDEOS = {
   "Yoga - Supported Fish Pose": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Puppy%20Pose%20%28Anahatasana%29.mp4",
   "Yoga - Sphinx to Seal": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Sphinx%20Pose.mp4",
   "Yoga - Legs Up the Wall": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Shoulder%20Stand%20%28Sarvangasana%29.mp4",
-  "Yoga - Square Pose (Shoelace)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Cow%20Face%20Pose%20%28Gomukhasana%29.mp4"
+  "Yoga - Square Pose (Shoelace)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Cow%20Face%20Pose%20%28Gomukhasana%29.mp4",
+
+  // =====================================================
+  // YOGA EXERCISE MAPPINGS - Warrior & Standing Poses
+  // =====================================================
+  "Yoga - Warrior I (Virabhadrasana I)": "https://f005.backblazeb2.com/file/shannonsvideos/Warrior%20Pose%20Flow%201%2C%202%2C%203.mp4",
+  "Yoga - Warrior II (Virabhadrasana II)": "https://f005.backblazeb2.com/file/shannonsvideos/Warrior%20Pose%20Flow%201%2C%202%2C%203.mp4",
+  "Yoga - Warrior III (Virabhadrasana III)": "https://f005.backblazeb2.com/file/shannonsvideos/Warrior%20Pose%20Flow%201%2C%202%2C%203.mp4",
+  "Yoga - Humble Warrior": "https://f005.backblazeb2.com/file/shannonsvideos/Warrior%20Pose%20Flow%201%2C%202%2C%203.mp4",
+  "Yoga - Warrior II (Virabhadrasana II) to Reverse Warrior flow": "https://f005.backblazeb2.com/file/shannonsvideos/Warrior%20Pose%20Flow%201%2C%202%2C%203.mp4",
+  "Yoga - Goddess Squat": "https://f005.backblazeb2.com/file/shannonsvideos/Bodyweight%20Sumo%20Squat.mp4",
+  "Yoga - Standing Figure 4": "https://f005.backblazeb2.com/file/shannonsvideos/Standing%20Figure-4%20to%20Reverse%20Lunge.mp4",
+
+  // =====================================================
+  // YOGA EXERCISE MAPPINGS - Core & Plank Poses
+  // =====================================================
+  "Yoga - Boat Pose (Navasana)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Low%20Boat%20Pose%20%28Ardha%20Navasana%29.mp4",
+  "Yoga - Side Plank (Vasisthasana)": "https://f005.backblazeb2.com/file/shannonsvideos/Side%20Plank.mp4",
+  "Yoga - Forearm Plank": "https://f005.backblazeb2.com/file/shannonsvideos/Elbow%20Plank.mp4",
+  "Yoga - Reverse Plank": "https://f005.backblazeb2.com/file/shannonsvideos/Bodyweight%20Reverse%20Plank.mp4",
+  "Yoga - Dolphin Pose": "https://f005.backblazeb2.com/file/shannonsvideos/Dolphin%20Pose%20Extensions.mp4",
+  "Yoga - L-Sit": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Low%20Boat%20Pose%20%28Ardha%20Navasana%29.mp4",
+
+  // =====================================================
+  // YOGA EXERCISE MAPPINGS - Backbends & Heart Openers
+  // =====================================================
+  "Yoga - Wheel Pose (Urdhva Dhanurasana)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20One-Legged%20Wheel%20Pose.mp4",
+  "Yoga - Upward Facing Dog (Urdhva Mukha Svanasana)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Cobra%20Pose%20%28Bhujangasana%29.mp4",
+  "Yoga - Supported Bridge Pose": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Bridge%20Pose%20%28Setu%20Bandhasana%29.mp4",
+  "Yoga - Supported Fish Pose (Matsyasana)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Puppy%20Pose%20%28Anahatasana%29.mp4",
+
+  // =====================================================
+  // YOGA EXERCISE MAPPINGS - Hip Openers & Restorative
+  // =====================================================
+  "Yoga - Knees to Chest": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Happy%20Baby%20Pose%20%28Ananda%20Balasana%29.mp4",
+  "Yoga - Supported Forward Fold": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Seated%20Forward%20Bend%20%28Paschimottanasana%29.mp4",
+  "Yoga - Seated Forward Fold (Paschimottanasana)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Seated%20Forward%20Bend%20%28Paschimottanasana%29.mp4",
+  "Supported Child's Pose": "https://f005.backblazeb2.com/file/shannonsvideos/Child%27s%20Pose.mp4",
+  "Yoga - Supported Child's Pose": "https://f005.backblazeb2.com/file/shannonsvideos/Child%27s%20Pose.mp4",
+  "Yoga - Pigeon Pose (Eka Pada Rajakapotasana)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Pigeon%20Pose%20%28Kapotasana%29.mp4",
+  "Yoga - Legs Up the Wall (Viparita Karani)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Shoulder%20Stand%20%28Sarvangasana%29.mp4",
+
+  // =====================================================
+  // YOGA EXERCISE MAPPINGS - Yin Yoga Variations
+  // =====================================================
+  "Yoga - Banana Pose (Side Bend)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Seated%20Side%20Stretch.mp4",
+  "Yoga - Banana Pose": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Seated%20Side%20Stretch.mp4",
+  "Yoga - Half Butterfly": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Bound%20Angle%20Pose%20%28Baddha%20Konasana%29.mp4",
+  "Yoga - Caterpillar": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Seated%20Forward%20Bend%20%28Paschimottanasana%29.mp4",
+  "Yoga - Reclined Bound Angle": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Reclined%20Bound%20Angle%20Pose%20%28Supta%20Baddha%20Konasana%29.mp4",
+
+  // =====================================================
+  // YOGA EXERCISE MAPPINGS - Flows & Transitions
+  // =====================================================
+  "Plank to Chaturanga Flow": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Chaturanga%20Dandasana.mp4",
+  "Plank to Chaturanga": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Chaturanga%20Dandasana.mp4",
+  "Yoga - Crescent Lunge with twist": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Crescent%20Lunge%20%28Anjaneyasana%29.mp4",
+  "Yoga - High Lunge pulses": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Low%20Lunge%20to%20High%20Lunge%20Flow.mp4",
+  "Plank to Down Dog": "https://f005.backblazeb2.com/file/shannonsvideos/Downward%20Dog.mp4",
+  "Corpse Pose with body scan": "https://f005.backblazeb2.com/file/shannonsvideos/Corpse%20Pose.mp4",
+  "Yoga - Flying Pigeon Pose": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Crow%20Pose%20%28Bakasana%29.mp4",
+  "Yoga - Extended Side Angle (Utthita Parsvakonasana)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Extended%20Side%20Angle%20Pose%20%28Utthita%20Parsvakonasana%29.mp4",
+
+  // =====================================================
+  // BODYWEIGHT EXERCISE MAPPINGS - Core
+  // =====================================================
+  "V-Up": "https://f005.backblazeb2.com/file/shannonsvideos/Hollow%20Rock%20to%20V-Up.mp4",
+  "Hollow Hold": "https://f005.backblazeb2.com/file/shannonsvideos/Hollow%20Body%20Hold.mp4",
+  "Hollow Body Hold to Arch Hold": "https://f005.backblazeb2.com/file/shannonsvideos/Hollow%20Body%20Hold.mp4",
+  "Plank Hold": "https://f005.backblazeb2.com/file/shannonsvideos/Elbow%20Plank.mp4",
+  "Forearm Plank": "https://f005.backblazeb2.com/file/shannonsvideos/Elbow%20Plank.mp4",
+  "Plank to Pike": "https://f005.backblazeb2.com/file/shannonsvideos/Pilates%20-%20Plank%20to%20Pike.mp4",
+  "Dead Bug": "https://f005.backblazeb2.com/file/shannonsvideos/Dead%20Bug%20%28Iso%20Hold%29.mp4",
+  "Toe Touch Crunch": "https://f005.backblazeb2.com/file/shannonsvideos/Toe%20Crunch.mp4",
+  "Leg Raise (straight)": "https://f005.backblazeb2.com/file/shannonsvideos/Lying%20Straight%20Leg%20Raise.mp4",
+  "Leg Raise (bent knee)": "https://f005.backblazeb2.com/file/shannonsvideos/Lying%20Straight%20Leg%20Raise.mp4",
+  "Scissors": "https://f005.backblazeb2.com/file/shannonsvideos/Pilates%20-%20Scissors.mp4",
+  "Flutter Kick": "https://f005.backblazeb2.com/file/shannonsvideos/Hollow%20Body%20Hold%20Flutter%20Kicks.mp4",
+  "Reverse Plank": "https://f005.backblazeb2.com/file/shannonsvideos/Bodyweight%20Reverse%20Plank.mp4",
+  "Russian Twist": "https://f005.backblazeb2.com/file/shannonsvideos/Plate%20Russian%20Twist.mp4",
+
+  // =====================================================
+  // BODYWEIGHT EXERCISE MAPPINGS - Upper Body
+  // =====================================================
+  "Pike Push Up": "https://f005.backblazeb2.com/file/shannonsvideos/Piked%20Push%20Up.mp4",
+  "Tricep Dip": "https://f005.backblazeb2.com/file/shannonsvideos/Bench%20Tricep%20Dip.mp4",
+  "Tricep Dip (using chair)": "https://f005.backblazeb2.com/file/shannonsvideos/Bench%20Tricep%20Dip.mp4",
+  "Wide Push Up": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Diamond Push Up": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Close Grip Push Up": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Decline Push Up (feet elevated)": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Incline Push Up": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Archer Push Up": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Push Up Hold (bottom)": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Push Up Hold (top)": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Clapping Push Up": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Plyo Push Up": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Speed Push Up": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "One-Arm Push Up (or assisted)": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Pseudo Planche Push Up": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Push Up to Plank": "https://f005.backblazeb2.com/file/shannonsvideos/Push%20Up.mp4",
+  "Dolphin Push Up": "https://f005.backblazeb2.com/file/shannonsvideos/Dolphin%20Pose%20Extensions.mp4",
+  "Wide Grip Pull Up": "https://f005.backblazeb2.com/file/shannonsvideos/Pull%20Up.mp4",
+  "Close Grip Chin Up": "https://f005.backblazeb2.com/file/shannonsvideos/Pull%20Up.mp4",
+  "Chin Up": "https://f005.backblazeb2.com/file/shannonsvideos/Pull%20Up.mp4",
+  "Pull Up (or assisted)": "https://f005.backblazeb2.com/file/shannonsvideos/Pull%20Up.mp4",
+  "Scapular Pull Up": "https://f005.backblazeb2.com/file/shannonsvideos/Pull%20Up.mp4",
+  "Explosive Pull Up": "https://f005.backblazeb2.com/file/shannonsvideos/Pull%20Up.mp4",
+  "Typewriter Pull Up": "https://f005.backblazeb2.com/file/shannonsvideos/Pull%20Up.mp4",
+  "Inverted Row (using table)": "https://f005.backblazeb2.com/file/shannonsvideos/Pull%20Up.mp4",
+  "Inverted Row": "https://f005.backblazeb2.com/file/shannonsvideos/Pull%20Up.mp4",
+  "Superman": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Locust%20Pose%20%28Salabhasana%29%20A.mp4",
+  "Scapular Retraction": "https://f005.backblazeb2.com/file/shannonsvideos/Pull%20Up.mp4",
+  "Dead Hang": "https://f005.backblazeb2.com/file/shannonsvideos/Pull%20Up.mp4",
+  "Handstand Hold (wall-assisted)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Forearm%20Stand%20%28Pincha%20Mayurasana%29.mp4",
+  "Handstand Hold": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Forearm%20Stand%20%28Pincha%20Mayurasana%29.mp4",
+  "L-Sit Hold": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Low%20Boat%20Pose%20%28Ardha%20Navasana%29.mp4",
+  "Wall Walk": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Forearm%20Stand%20%28Pincha%20Mayurasana%29.mp4",
+  "Arm Circles": "https://f005.backblazeb2.com/file/shannonsvideos/Dumbbell%20Standing%20Around%20the%20World%20Lateral%20Raise.mp4",
+  "Isometric Bicep Hold (towel curl)": "https://f005.backblazeb2.com/file/shannonsvideos/Pull%20Up.mp4",
+
+  // =====================================================
+  // BODYWEIGHT EXERCISE MAPPINGS - Lower Body
+  // =====================================================
+  "Single Leg Glute Bridge": "https://f005.backblazeb2.com/file/shannonsvideos/Mini%20Band%20Single%20Leg%20Glute%20Bridge.mp4",
+  "Glute Bridge with pause": "https://f005.backblazeb2.com/file/shannonsvideos/Glute%20Bridge.mp4",
+  "Single Leg Bridge": "https://f005.backblazeb2.com/file/shannonsvideos/Mini%20Band%20Single%20Leg%20Glute%20Bridge.mp4",
+  "Single Leg Deadlift": "https://f005.backblazeb2.com/file/shannonsvideos/Body%20Weight%20Single%20Leg%20Deadlift.mp4",
+  "Fire Hydrant": "https://f005.backblazeb2.com/file/shannonsvideos/Fire%20Hydrant.mp4",
+  "Donkey Kick": "https://f005.backblazeb2.com/file/shannonsvideos/Donkey%20Kick.mp4",
+  "Lateral Leg Raise": "https://f005.backblazeb2.com/file/shannonsvideos/Fire%20Hydrant.mp4",
+  "Standing Glute Kickback": "https://f005.backblazeb2.com/file/shannonsvideos/Donkey%20Kick.mp4",
+  "Pistol Squat (or assisted)": "https://f005.backblazeb2.com/file/shannonsvideos/Bodyweight%20Sumo%20Squat.mp4",
+  "Lateral Lunge": "https://f005.backblazeb2.com/file/shannonsvideos/Reverse%20Lunge.mp4",
+  "Single Leg Calf Raise": "https://f005.backblazeb2.com/file/shannonsvideos/Sumo%20Squat%20to%20Calf%20Raise.mp4",
+  "Calf Raise": "https://f005.backblazeb2.com/file/shannonsvideos/Sumo%20Squat%20to%20Calf%20Raise.mp4",
+  "Body Weight Squat": "https://f005.backblazeb2.com/file/shannonsvideos/Bodyweight%20Sumo%20Squat.mp4",
+  "Body Weight Sumo Squat": "https://f005.backblazeb2.com/file/shannonsvideos/Bodyweight%20Sumo%20Squat.mp4",
+  "Body Weight Reverse Lunge": "https://f005.backblazeb2.com/file/shannonsvideos/Reverse%20Lunge.mp4",
+  "Walking Lunge": "https://f005.backblazeb2.com/file/shannonsvideos/Reverse%20Lunge.mp4",
+  "Body Weight Squat Jump": "https://f005.backblazeb2.com/file/shannonsvideos/Bodyweight%20Sumo%20Squat.mp4",
+  "Jump Lunge": "https://f005.backblazeb2.com/file/shannonsvideos/Reverse%20Lunge.mp4",
+  "Single Leg Hop": "https://f005.backblazeb2.com/file/shannonsvideos/Body%20Weight%20Single%20Leg%20Deadlift.mp4",
+  "Broad Jump": "https://f005.backblazeb2.com/file/shannonsvideos/Bodyweight%20Sumo%20Squat.mp4",
+  "Skater Jump": "https://f005.backblazeb2.com/file/shannonsvideos/Reverse%20Lunge.mp4",
+  "Jump Squat": "https://f005.backblazeb2.com/file/shannonsvideos/Bodyweight%20Sumo%20Squat.mp4",
+  "Bulgarian Split Squat (rear foot elevated)": "https://f005.backblazeb2.com/file/shannonsvideos/Reverse%20Lunge.mp4",
+  "Sissy Squat": "https://f005.backblazeb2.com/file/shannonsvideos/Bodyweight%20Sumo%20Squat.mp4",
+  "High Knees": "https://f005.backblazeb2.com/file/shannonsvideos/Mountain%20Climber.mp4",
+  "Good Morning (bodyweight)": "https://f005.backblazeb2.com/file/shannonsvideos/Body%20Weight%20Single%20Leg%20Deadlift.mp4",
+  "Reverse Hyperextension (lying)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Locust%20Pose%20%28Salabhasana%29%20A.mp4",
+  "Speed Skater": "https://f005.backblazeb2.com/file/shannonsvideos/Reverse%20Lunge.mp4",
+  "Deep Squat Hold": "https://f005.backblazeb2.com/file/shannonsvideos/Bodyweight%20Sumo%20Squat.mp4",
+  "Cossack Squat": "https://f005.backblazeb2.com/file/shannonsvideos/Bodyweight%20Sumo%20Squat.mp4",
+  "World's Greatest Stretch": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Lizard%20Pose%20%28Utthan%20Pristhasana%29.mp4",
+
+  // =====================================================
+  // BODYWEIGHT EXERCISE MAPPINGS - Plank Variations
+  // =====================================================
+  "Side Plank Hip Dip": "https://f005.backblazeb2.com/file/shannonsvideos/Side%20Plank%20Hip%20Dip.mp4",
+  "Plank with Hip Twist": "https://f005.backblazeb2.com/file/shannonsvideos/Side%20Plank%20Hip%20Dip.mp4",
+  "Cross-Body Mountain Climber": "https://f005.backblazeb2.com/file/shannonsvideos/Cross%20Body%20Mountain%20Climber.mp4",
+  "Plank with Shoulder Tap": "https://f005.backblazeb2.com/file/shannonsvideos/Elbow%20Plank.mp4",
+  "Spiderman Plank": "https://f005.backblazeb2.com/file/shannonsvideos/Elbow%20Plank.mp4",
+  "Plank with Knee to Elbow": "https://f005.backblazeb2.com/file/shannonsvideos/Mountain%20Climber.mp4",
+  "Plank Hold (max effort)": "https://f005.backblazeb2.com/file/shannonsvideos/Elbow%20Plank.mp4",
+  "Plank Jack": "https://f005.backblazeb2.com/file/shannonsvideos/Mountain%20Climbers%20to%20Plank%20Jack.mp4",
+  "Plank Alternating Arm & Leg Lift": "https://f005.backblazeb2.com/file/shannonsvideos/Elbow%20Plank.mp4",
+
+  // =====================================================
+  // BODYWEIGHT EXERCISE MAPPINGS - Ab Variations
+  // =====================================================
+  "Standing Oblique Crunch": "https://f005.backblazeb2.com/file/shannonsvideos/Standing%20Oblique%20Crunch.mp4",
+  "Standing Knee to Elbow": "https://f005.backblazeb2.com/file/shannonsvideos/Knee%20to%20Elbow%20Crunch.mp4",
+  "Standing Twist": "https://f005.backblazeb2.com/file/shannonsvideos/Plate%20Russian%20Twist.mp4",
+  "Wood Chop (no weight)": "https://f005.backblazeb2.com/file/shannonsvideos/Plate%20Russian%20Twist.mp4",
+  "March in Place": "https://f005.backblazeb2.com/file/shannonsvideos/Mountain%20Climber.mp4",
+  "Dragon Flag (progression)": "https://f005.backblazeb2.com/file/shannonsvideos/Hollow%20Body%20Hold.mp4",
+  "Windshield Wiper": "https://f005.backblazeb2.com/file/shannonsvideos/Lying%20Straight%20Leg%20Raise.mp4",
+  "Toes to Bar (or lying)": "https://f005.backblazeb2.com/file/shannonsvideos/Hanging%20Leg%20Raise.mp4",
+  "Pallof Press (isometric)": "https://f005.backblazeb2.com/file/shannonsvideos/Elbow%20Plank.mp4"
 };
