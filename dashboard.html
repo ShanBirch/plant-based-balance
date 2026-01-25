@@ -8284,7 +8284,118 @@ function startCustomBuilderWorkout() {
             <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
             <span>Support</span>
         </button>
+        <button class="nav-item" onclick="switchAppTab('friends', this)">
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            <span>Friends</span>
+        </button>
      </nav>
+
+    <!-- FRIENDS VIEW -->
+    <div id="view-friends" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc;">
+        <!-- Header -->
+        <div style="padding: 20px 25px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
+            <div>
+                <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Friends</h2>
+                <div id="friends-subtitle" style="font-size: 0.8rem; color: var(--text-muted);">See what everyone's up to</div>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <!-- Message Inbox Icon -->
+                <div onclick="openMessageInbox()" style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                    <div id="message-inbox-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center;">0</div>
+                </div>
+                <!-- Add Friend Button -->
+                <div onclick="openAddFriendModal()" style="width: 40px; height: 40px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Referral Banner -->
+        <div id="friends-referral-banner" style="margin: 15px; padding: 20px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="font-size: 2rem;">🎁</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 700; font-size: 1.1rem; color: white; margin-bottom: 4px;">You BOTH Get 2 Weeks Free!</div>
+                    <div style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Invite friends and you each get 2 weeks free when they join</div>
+                </div>
+            </div>
+            <button onclick="openShareReferralModal()" style="width: 100%; background: white; color: #059669; border: none; padding: 12px; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #059669;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                Share Your Link
+            </button>
+        </div>
+
+        <!-- Friends Cards Section (Horizontal Scroll) -->
+        <div style="padding: 0 15px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">Your Circle</h3>
+                <span id="friends-count-label" style="font-size: 0.8rem; color: var(--text-muted);">0 friends</span>
+            </div>
+            <div id="friends-cards-container" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;">
+                <!-- Coach Shannon Card (Always First) -->
+                <div onclick="openCoachChatFromFriends()" style="min-width: 140px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); border-radius: 16px; padding: 16px; cursor: pointer; scroll-snap-align: start; box-shadow: 0 4px 12px rgba(123, 168, 131, 0.3);">
+                    <div style="width: 50px; height: 50px; border-radius: 50%; background: white; margin-bottom: 10px; overflow: hidden; border: 2px solid rgba(255,255,255,0.5);">
+                        <img src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='🌱'">
+                    </div>
+                    <div style="font-weight: 700; color: white; font-size: 0.95rem; margin-bottom: 4px;">Coach Shannon</div>
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.9);">Your wellness guide</div>
+                    <div style="margin-top: 10px; display: flex; gap: 6px;">
+                        <div style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; color: white;">Chat</div>
+                    </div>
+                </div>
+                <!-- Friend cards will be injected here -->
+                <div id="friends-cards-list"></div>
+            </div>
+        </div>
+
+        <!-- Activity Feed Section -->
+        <div style="padding: 0 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">Activity Feed</h3>
+                <select id="feed-filter" onchange="filterActivityFeed(this.value)" style="padding: 6px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; color: var(--text-muted); background: white;">
+                    <option value="all">All Activity</option>
+                    <option value="workouts">Workouts</option>
+                    <option value="meals">Meals</option>
+                    <option value="achievements">Achievements</option>
+                </select>
+            </div>
+            <div id="activity-feed-container" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Activity items will be injected here -->
+                <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                    <div style="font-size: 3rem; margin-bottom: 10px;">👥</div>
+                    <div style="font-size: 0.95rem; margin-bottom: 5px;">No activity yet</div>
+                    <div style="font-size: 0.8rem;">Add friends to see what they're up to!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Direct Message Modal -->
+    <div id="direct-message-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10007; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 80vh; overflow: hidden; animation: fadeInScale 0.3s ease-out;">
+            <!-- Header -->
+            <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px;">
+                <div id="dm-recipient-photo" style="width: 44px; height: 44px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; overflow: hidden;"></div>
+                <div style="flex: 1;">
+                    <div id="dm-recipient-name" style="font-weight: 700; color: var(--text-main);"></div>
+                    <div id="dm-recipient-status" style="font-size: 0.8rem; color: var(--text-muted);"></div>
+                </div>
+                <button onclick="closeDirectMessageModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">×</button>
+            </div>
+            <!-- Messages -->
+            <div id="dm-messages-container" style="height: 300px; overflow-y: auto; padding: 15px; background: #f8fafc;">
+                <!-- Messages will be loaded here -->
+            </div>
+            <!-- Input -->
+            <div style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
+                <input type="text" id="dm-input" placeholder="Type a message..." style="flex: 1; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; outline: none;" onkeypress="if(event.key==='Enter') sendDirectMessage()">
+                <button onclick="sendDirectMessage()" style="width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- PROGRESS / ANALYTICS VIEW -->
     <div id="view-progress" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc;">
@@ -9777,6 +9888,12 @@ function _switchAppTabReal(tabName, btn) {
         if(el) {
             el.style.display = 'block';
             if(typeof initCycleView === 'function') initCycleView();
+        }
+    } else if (tabName === 'friends') {
+        const el = document.getElementById('view-friends');
+        if(el) {
+            el.style.display = 'block';
+            if(typeof initFriendsView === 'function') initFriendsView();
         }
     }
 
@@ -14061,7 +14178,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-support', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-support', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
@@ -19836,6 +19953,398 @@ async function updateFriendsCount() {
     } catch (error) {
         console.error('Error updating network count:', error);
     }
+}
+
+// ============================================================
+// FRIENDS VIEW FUNCTIONS
+// ============================================================
+
+// Initialize Friends View
+async function initFriendsView() {
+    console.log('Initializing Friends View...');
+    await loadFriendsCards();
+    await loadActivityFeed();
+}
+
+// Load friend cards for the horizontal scroll section
+async function loadFriendsCards() {
+    const container = document.getElementById('friends-cards-list');
+    const countLabel = document.getElementById('friends-count-label');
+
+    if (!container || !window.currentUser) return;
+
+    try {
+        // Use get_friends_with_status for detailed info
+        const { data: friends, error } = await window.supabaseClient
+            .rpc('get_friends_with_status', { user_uuid: window.currentUser.id });
+
+        if (error) throw error;
+
+        // Update count label
+        if (countLabel) {
+            countLabel.textContent = friends.length === 0 ? '0 friends' :
+                                     friends.length === 1 ? '1 friend' :
+                                     `${friends.length} friends`;
+        }
+
+        if (friends.length === 0) {
+            container.innerHTML = `
+                <div style="min-width: 140px; background: #f1f5f9; border-radius: 16px; padding: 20px; text-align: center; scroll-snap-align: start;">
+                    <div style="font-size: 2rem; margin-bottom: 8px;">👋</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">Add friends to see them here!</div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = friends.map(friend => {
+            const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
+            const hasActivity = friend.has_workout_today || friend.has_meal_today;
+            const streakDisplay = friend.current_streak > 0 ? `🔥 ${friend.current_streak}` : '';
+
+            return `
+                <div style="min-width: 140px; background: white; border-radius: 16px; padding: 16px; scroll-snap-align: start; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f1f5f9;">
+                    <div style="position: relative; margin-bottom: 10px;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem; overflow: hidden;">
+                            ${friend.friend_photo ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
+                        </div>
+                        ${hasActivity ? '<div style="position: absolute; bottom: 0; right: 25px; width: 14px; height: 14px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></div>' : ''}
+                    </div>
+                    <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${friend.friend_name || 'Friend'}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px;">
+                        ${streakDisplay || (hasActivity ? 'Active today' : 'Not active yet')}
+                    </div>
+                    <div style="display: flex; gap: 4px;">
+                        ${friend.has_workout_today ? '<span style="background: #dcfce7; color: #16a34a; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem;">💪</span>' : ''}
+                        ${friend.has_meal_today ? '<span style="background: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem;">🥗</span>' : ''}
+                        ${!hasActivity && friend.can_nudge ? `<button onclick="sendNudgeToFriend('${friend.friend_id}', '${friend.friend_name}')" style="background: #fef2f2; color: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; border: none; cursor: pointer;">Nudge</button>` : ''}
+                    </div>
+                    <div style="margin-top: 8px; display: flex; gap: 6px;">
+                        <button onclick="openDirectMessage('${friend.friend_id}', '${friend.friend_name}', '${friend.friend_photo || ''}')" style="flex: 1; background: #f1f5f9; border: none; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; color: var(--text-muted);">
+                            💬 Message
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading friend cards:', error);
+        container.innerHTML = `
+            <div style="min-width: 200px; background: #fef2f2; border-radius: 16px; padding: 20px; text-align: center;">
+                <div style="color: #ef4444; font-size: 0.85rem;">Failed to load friends</div>
+            </div>
+        `;
+    }
+}
+
+// Load activity feed
+async function loadActivityFeed(filter = 'all') {
+    const container = document.getElementById('activity-feed-container');
+
+    if (!container || !window.currentUser) return;
+
+    container.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <div class="loading-spinner" style="width: 30px; height: 30px; border: 3px solid #f1f5f9; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            <div style="margin-top: 10px; color: var(--text-muted); font-size: 0.85rem;">Loading activity...</div>
+        </div>
+    `;
+
+    try {
+        // Call the activity feed RPC function
+        const { data: activities, error } = await window.supabaseClient
+            .rpc('get_friend_activity_feed', { user_uuid: window.currentUser.id, days_back: 7 });
+
+        if (error) throw error;
+
+        // Filter if needed
+        let filteredActivities = activities || [];
+        if (filter !== 'all') {
+            const typeMap = {
+                'workouts': 'workout',
+                'meals': 'meal',
+                'achievements': 'achievement'
+            };
+            filteredActivities = filteredActivities.filter(a => a.activity_type === typeMap[filter]);
+        }
+
+        if (filteredActivities.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                    <div style="font-size: 3rem; margin-bottom: 10px;">👥</div>
+                    <div style="font-size: 0.95rem; margin-bottom: 5px;">No activity yet</div>
+                    <div style="font-size: 0.8rem;">Add friends to see what they're up to!</div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = filteredActivities.map(activity => {
+            const initials = (activity.user_name || '?').charAt(0).toUpperCase();
+            const timeAgo = getTimeAgo(new Date(activity.activity_time));
+
+            // Different icons/colors based on activity type
+            const typeConfig = {
+                workout: { icon: '💪', bg: '#dcfce7', color: '#16a34a', label: 'completed' },
+                meal: { icon: '🥗', bg: '#fef3c7', color: '#d97706', label: 'logged' },
+                achievement: { icon: '🏆', bg: '#fef2f2', color: '#ef4444', label: 'earned' }
+            };
+            const config = typeConfig[activity.activity_type] || typeConfig.workout;
+
+            return `
+                <div style="background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden;">
+                            ${activity.user_photo ? `<img src="${activity.user_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                                <div>
+                                    <span style="font-weight: 600; color: var(--text-main);">${activity.user_name}</span>
+                                    <span style="color: var(--text-muted);"> ${config.label} </span>
+                                    <span style="font-weight: 500; color: var(--text-main);">${activity.activity_title}</span>
+                                </div>
+                                <span style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">${timeAgo}</span>
+                            </div>
+                            ${activity.activity_details ? `<div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">${activity.activity_details}</div>` : ''}
+                            <div style="margin-top: 10px; display: flex; gap: 8px;">
+                                <button onclick="openDirectMessage('${activity.user_id}', '${activity.user_name}', '${activity.user_photo || ''}')" style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: #f1f5f9; border: none; border-radius: 8px; cursor: pointer; font-size: 0.8rem; color: var(--text-muted);">
+                                    💬 Message
+                                </button>
+                                <button onclick="sendCheers('${activity.user_id}', '${activity.activity_type}')" style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: ${config.bg}; border: none; border-radius: 8px; cursor: pointer; font-size: 0.8rem; color: ${config.color};">
+                                    ${config.icon} Cheers!
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading activity feed:', error);
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: #ef4444;">
+                <div style="font-size: 0.95rem;">Failed to load activity feed</div>
+                <button onclick="loadActivityFeed()" style="margin-top: 10px; padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// Filter activity feed
+function filterActivityFeed(filter) {
+    loadActivityFeed(filter);
+}
+
+// Get time ago string
+function getTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+    if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+    if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+    return date.toLocaleDateString();
+}
+
+// Open coach chat from friends view
+function openCoachChatFromFriends() {
+    switchAppTab('support', document.querySelector('.nav-item[onclick*="support"]'));
+    // Show coach chat tab
+    setTimeout(() => {
+        const chatBtn = document.querySelector('.sub-btn[onclick*="chat"]');
+        if (chatBtn) chatBtn.click();
+    }, 100);
+}
+
+// Send nudge to friend
+async function sendNudgeToFriend(friendId, friendName) {
+    if (!confirm(`Send a nudge to ${friendName} to remind them to work out?`)) return;
+
+    try {
+        const { error } = await window.supabaseClient
+            .from('nudges')
+            .insert({
+                sender_id: window.currentUser.id,
+                receiver_id: friendId,
+                message: `Hey! Just checking in - have you worked out today? 💪`
+            });
+
+        if (error) throw error;
+
+        showToast(`Nudge sent to ${friendName}!`, 'success');
+        loadFriendsCards(); // Refresh to update can_nudge status
+    } catch (error) {
+        console.error('Error sending nudge:', error);
+        showToast('Failed to send nudge. Try again later.', 'error');
+    }
+}
+
+// Send cheers for an activity
+async function sendCheers(userId, activityType) {
+    const messages = {
+        workout: ['Great workout! 💪', 'Crushing it! 🔥', 'Keep up the great work! ⭐'],
+        meal: ['Healthy choices! 🥗', 'Nice meal logging! 📊', 'Staying on track! 🎯'],
+        achievement: ['Amazing achievement! 🏆', 'So proud of you! 🌟', 'You\'re on fire! 🔥']
+    };
+
+    const randomMessage = messages[activityType][Math.floor(Math.random() * messages[activityType].length)];
+
+    try {
+        const { error } = await window.supabaseClient
+            .from('nudges')
+            .insert({
+                sender_id: window.currentUser.id,
+                receiver_id: userId,
+                message: randomMessage
+            });
+
+        if (error) throw error;
+
+        showToast('Cheers sent! 🎉', 'success');
+    } catch (error) {
+        console.error('Error sending cheers:', error);
+        showToast('Failed to send cheers', 'error');
+    }
+}
+
+// ============================================================
+// DIRECT MESSAGING FUNCTIONS
+// ============================================================
+
+let currentDMRecipient = null;
+
+// Open direct message modal
+function openDirectMessage(userId, userName, userPhoto) {
+    currentDMRecipient = { id: userId, name: userName, photo: userPhoto };
+
+    const modal = document.getElementById('direct-message-modal');
+    const nameEl = document.getElementById('dm-recipient-name');
+    const photoEl = document.getElementById('dm-recipient-photo');
+    const statusEl = document.getElementById('dm-recipient-status');
+
+    if (nameEl) nameEl.textContent = userName;
+    if (statusEl) statusEl.textContent = 'Friend';
+
+    if (photoEl) {
+        const initials = (userName || '?').charAt(0).toUpperCase();
+        if (userPhoto) {
+            photoEl.innerHTML = `<img src="${userPhoto}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        } else {
+            photoEl.innerHTML = initials;
+        }
+    }
+
+    if (modal) {
+        modal.style.display = 'flex';
+        loadDirectMessages(userId);
+    }
+}
+
+// Close direct message modal
+function closeDirectMessageModal() {
+    const modal = document.getElementById('direct-message-modal');
+    if (modal) modal.style.display = 'none';
+    currentDMRecipient = null;
+}
+
+// Load direct messages between current user and recipient
+async function loadDirectMessages(recipientId) {
+    const container = document.getElementById('dm-messages-container');
+    if (!container) return;
+
+    container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted);">Loading messages...</div>`;
+
+    try {
+        // Get messages from nudges table (used as DMs for now)
+        const { data: messages, error } = await window.supabaseClient
+            .from('nudges')
+            .select('*')
+            .or(`and(sender_id.eq.${window.currentUser.id},receiver_id.eq.${recipientId}),and(sender_id.eq.${recipientId},receiver_id.eq.${window.currentUser.id})`)
+            .order('created_at', { ascending: true })
+            .limit(50);
+
+        if (error) throw error;
+
+        if (!messages || messages.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">💬</div>
+                    <div style="font-size: 0.9rem;">No messages yet. Say hi!</div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = messages.map(msg => {
+            const isSent = msg.sender_id === window.currentUser.id;
+            const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            return `
+                <div style="display: flex; justify-content: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
+                    <div style="max-width: 75%; padding: 10px 14px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; background: ${isSent ? 'var(--primary)' : 'white'}; color: ${isSent ? 'white' : 'var(--text-main)'}; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <div style="font-size: 0.9rem; line-height: 1.4;">${msg.message}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px; text-align: right;">${time}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Scroll to bottom
+        container.scrollTop = container.scrollHeight;
+
+        // Mark messages as read
+        await window.supabaseClient
+            .from('nudges')
+            .update({ read_at: new Date().toISOString() })
+            .eq('receiver_id', window.currentUser.id)
+            .eq('sender_id', recipientId)
+            .is('read_at', null);
+
+    } catch (error) {
+        console.error('Error loading messages:', error);
+        container.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444;">Failed to load messages</div>`;
+    }
+}
+
+// Send direct message
+async function sendDirectMessage() {
+    const input = document.getElementById('dm-input');
+    if (!input || !currentDMRecipient) return;
+
+    const message = input.value.trim();
+    if (!message) return;
+
+    input.value = '';
+
+    try {
+        const { error } = await window.supabaseClient
+            .from('nudges')
+            .insert({
+                sender_id: window.currentUser.id,
+                receiver_id: currentDMRecipient.id,
+                message: message
+            });
+
+        if (error) throw error;
+
+        // Reload messages
+        loadDirectMessages(currentDMRecipient.id);
+
+    } catch (error) {
+        console.error('Error sending message:', error);
+        showToast('Failed to send message', 'error');
+    }
+}
+
+// Open message inbox (shows all conversations)
+function openMessageInbox() {
+    // For now, redirect to support tab with coach chat
+    // In future, this could open a full inbox modal
+    switchAppTab('support', document.querySelector('.nav-item[onclick*="support"]'));
+    showToast('Opening messages...', 'info');
 }
 
 // Simple toast notification

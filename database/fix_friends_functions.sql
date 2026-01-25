@@ -134,3 +134,92 @@ BEGIN
 
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Get friend activity feed (workouts, meals, achievements)
+CREATE OR REPLACE FUNCTION get_friend_activity_feed(user_uuid UUID, days_back INT DEFAULT 7)
+RETURNS TABLE(
+  activity_id TEXT,
+  activity_type TEXT,
+  user_id UUID,
+  user_name TEXT,
+  user_photo TEXT,
+  activity_title TEXT,
+  activity_details TEXT,
+  activity_value INT,
+  activity_time TIMESTAMPTZ
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT * FROM (
+    -- Workouts completed by friends
+    SELECT
+      'workout_' || w.id::TEXT as activity_id,
+      'workout'::TEXT as activity_type,
+      u.id as user_id,
+      u.name as user_name,
+      u.profile_photo as user_photo,
+      COALESCE(w.workout_name, 'Workout')::TEXT as activity_title,
+      COALESCE(w.duration_minutes || ' mins', '')::TEXT as activity_details,
+      COALESCE(w.duration_minutes, 0)::INT as activity_value,
+      COALESCE(w.completed_at, w.created_at) as activity_time
+    FROM public.workouts w
+    JOIN public.users u ON u.id = w.user_id
+    WHERE w.workout_type = 'history'
+    AND w.workout_date >= CURRENT_DATE - days_back
+    AND w.user_id IN (
+      SELECT f.friend_id FROM public.friendships f WHERE f.user_id = user_uuid AND f.status = 'accepted'
+      UNION
+      SELECT f.user_id FROM public.friendships f WHERE f.friend_id = user_uuid AND f.status = 'accepted'
+    )
+
+    UNION ALL
+
+    -- Meals logged by friends (daily summary)
+    SELECT
+      'meal_' || dn.id::TEXT as activity_id,
+      'meal'::TEXT as activity_type,
+      u.id as user_id,
+      u.name as user_name,
+      u.profile_photo as user_photo,
+      'Logged meals'::TEXT as activity_title,
+      dn.total_calories || ' cal'::TEXT as activity_details,
+      COALESCE(dn.total_calories, 0)::INT as activity_value,
+      dn.updated_at as activity_time
+    FROM public.daily_nutrition dn
+    JOIN public.users u ON u.id = dn.user_id
+    WHERE dn.date >= CURRENT_DATE - days_back
+    AND dn.total_calories > 0
+    AND dn.user_id IN (
+      SELECT f.friend_id FROM public.friendships f WHERE f.user_id = user_uuid AND f.status = 'accepted'
+      UNION
+      SELECT f.user_id FROM public.friendships f WHERE f.friend_id = user_uuid AND f.status = 'accepted'
+    )
+
+    UNION ALL
+
+    -- Streak milestones (7, 14, 30, 60, 100 days)
+    SELECT
+      'streak_' || up.user_id::TEXT || '_' || up.current_streak::TEXT as activity_id,
+      'achievement'::TEXT as activity_type,
+      u.id as user_id,
+      u.name as user_name,
+      u.profile_photo as user_photo,
+      (up.current_streak || '-day streak!')::TEXT as activity_title,
+      'Keep it up!'::TEXT as activity_details,
+      up.current_streak::INT as activity_value,
+      up.updated_at as activity_time
+    FROM public.user_points up
+    JOIN public.users u ON u.id = up.user_id
+    WHERE up.current_streak IN (7, 14, 21, 30, 60, 90, 100, 365)
+    AND up.updated_at >= NOW() - INTERVAL '24 hours'
+    AND up.user_id IN (
+      SELECT f.friend_id FROM public.friendships f WHERE f.user_id = user_uuid AND f.status = 'accepted'
+      UNION
+      SELECT f.user_id FROM public.friendships f WHERE f.friend_id = user_uuid AND f.status = 'accepted'
+    )
+  ) AS activity_union
+  ORDER BY activity_time DESC
+  LIMIT 50;
+
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
