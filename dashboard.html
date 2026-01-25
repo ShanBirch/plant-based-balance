@@ -1759,7 +1759,7 @@ async function applyAppTheme(themeKey) {
 <div id="view-dashboard" class="app-view">
     <div class="dashboard-welcome">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-             <span id="daily-progress-counter" class="welcome-text" style="color: white; font-weight: 700;">Day 1 of 28</span>
+             <span id="daily-progress-counter" class="welcome-text" style="display: none; color: white; font-weight: 700;">Day 1 of 28</span>
              <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div> <!-- Placeholder User Initial -->
         </div>
         <h1 class="user-name">Hello, Shannon</h1>
@@ -8368,6 +8368,27 @@ function startCustomBuilderWorkout() {
             </div>
         </div>
 
+        <!-- Challenges Section -->
+        <div style="padding: 0 15px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">Challenges</h3>
+                <button onclick="openCreateChallengeModal()" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <span style="font-size: 1rem;">+</span> New Challenge
+                </button>
+            </div>
+            <div id="challenges-container" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Challenges will be loaded here -->
+                <div id="challenges-empty" style="text-align: center; padding: 30px 20px; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🏆</div>
+                    <div style="font-size: 0.95rem; color: var(--text-main); font-weight: 600; margin-bottom: 5px;">No active challenges</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Challenge your friends to see who can earn the most points!</div>
+                    <button onclick="openCreateChallengeModal()" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+                        Start a Challenge
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Activity Feed Section -->
         <div style="padding: 0 15px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -8415,6 +8436,150 @@ function startCustomBuilderWorkout() {
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Create Challenge Modal -->
+    <div id="create-challenge-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10008; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 85vh; overflow: hidden; animation: fadeInScale 0.3s ease-out;">
+            <!-- Header -->
+            <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-main);">Create Challenge</h3>
+                <button onclick="closeCreateChallengeModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</button>
+            </div>
+            <!-- Content -->
+            <div style="padding: 20px; overflow-y: auto; max-height: calc(85vh - 140px);">
+                <!-- Challenge Name -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Challenge Name</label>
+                    <input type="text" id="challenge-name-input" placeholder="e.g., January Points Battle" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box;">
+                </div>
+
+                <!-- Duration -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Duration</label>
+                    <select id="challenge-duration-select" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; background: white;">
+                        <option value="30">1 Month (30 days)</option>
+                        <option value="45">6 Weeks (45 days)</option>
+                        <option value="60">2 Months (60 days)</option>
+                        <option value="90">3 Months (90 days)</option>
+                    </select>
+                </div>
+
+                <!-- Start Date -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Start Date</label>
+                    <input type="date" id="challenge-start-date" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box;">
+                </div>
+
+                <!-- Select Friends -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Invite Friends</label>
+                    <div id="challenge-friends-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px;">
+                        <!-- Friends will be loaded here -->
+                        <div style="padding: 20px; text-align: center; color: var(--text-muted);">Loading friends...</div>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
+                        <span id="challenge-selected-count">0</span> friend(s) selected
+                    </div>
+                </div>
+
+                <!-- Prize Info -->
+                <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.5rem;">🏆</span>
+                        <div>
+                            <div style="font-weight: 700; color: #92400e; font-size: 0.95rem;">Winner Gets 200 Points!</div>
+                            <div style="font-size: 0.8rem; color: #a16207;">That's a free week of premium access</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div style="padding: 15px 20px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
+                <button onclick="closeCreateChallengeModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: var(--text-muted); cursor: pointer;">Cancel</button>
+                <button onclick="createChallenge()" id="create-challenge-btn" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: white; cursor: pointer;">Create Challenge</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Challenge Leaderboard View -->
+    <div id="challenge-leaderboard-modal" style="display: none; position: fixed; inset: 0; background: #f0f7ff; z-index: 10009; overflow-y: auto;">
+        <!-- Header -->
+        <div style="background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;">
+            <button onclick="closeChallengeLeaderboard()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-main);">&larr;</button>
+            <h3 id="challenge-leaderboard-title" style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Challenge</h3>
+            <div style="width: 24px;"></div>
+        </div>
+
+        <!-- Podium Section -->
+        <div style="background: linear-gradient(180deg, #e0f2fe 0%, #f0f7ff 100%); padding: 20px 15px 30px;">
+            <!-- Days Remaining -->
+            <div id="challenge-days-remaining" style="text-align: center; margin-bottom: 20px; font-size: 0.9rem; color: #0369a1; font-weight: 600;">
+                -- days remaining
+            </div>
+
+            <!-- Podium -->
+            <div id="challenge-podium" style="display: flex; justify-content: center; align-items: flex-end; gap: 8px; height: 200px;">
+                <!-- 2nd Place -->
+                <div id="podium-2nd" style="text-align: center; width: 100px;">
+                    <div id="podium-2nd-name" style="font-weight: 600; font-size: 0.85rem; color: var(--text-main); margin-bottom: 5px;">--</div>
+                    <div id="podium-2nd-photo" style="width: 50px; height: 50px; border-radius: 50%; background: #e2e8f0; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #94a3b8;">
+                        <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: #94a3b8;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </div>
+                    <div style="background: #bfdbfe; border-radius: 8px 8px 0 0; padding: 15px 10px; height: 80px; display: flex; flex-direction: column; justify-content: center;">
+                        <div style="font-size: 2rem; font-weight: 700; color: #1e40af;">2</div>
+                        <div id="podium-2nd-pts" style="font-size: 0.75rem; font-weight: 600; color: #1e40af;">0 PTS</div>
+                    </div>
+                </div>
+
+                <!-- 1st Place -->
+                <div id="podium-1st" style="text-align: center; width: 110px;">
+                    <div id="podium-1st-name" style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); margin-bottom: 5px;">--</div>
+                    <div id="podium-1st-photo" style="width: 60px; height: 60px; border-radius: 50%; background: #e2e8f0; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #fbbf24;">
+                        <svg viewBox="0 0 24 24" style="width: 28px; height: 28px; fill: #94a3b8;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </div>
+                    <div style="background: #93c5fd; border-radius: 8px 8px 0 0; padding: 15px 10px; height: 110px; display: flex; flex-direction: column; justify-content: center;">
+                        <div style="font-size: 2.5rem; font-weight: 700; color: #1e40af;">1</div>
+                        <div id="podium-1st-pts" style="font-size: 0.85rem; font-weight: 600; color: #1e40af;">0 PTS</div>
+                    </div>
+                </div>
+
+                <!-- 3rd Place -->
+                <div id="podium-3rd" style="text-align: center; width: 100px;">
+                    <div id="podium-3rd-name" style="font-weight: 600; font-size: 0.85rem; color: var(--text-main); margin-bottom: 5px;">--</div>
+                    <div id="podium-3rd-photo" style="width: 50px; height: 50px; border-radius: 50%; background: #e2e8f0; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #d97706;">
+                        <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: #94a3b8;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </div>
+                    <div style="background: #dbeafe; border-radius: 8px 8px 0 0; padding: 15px 10px; height: 60px; display: flex; flex-direction: column; justify-content: center;">
+                        <div style="font-size: 1.8rem; font-weight: 700; color: #1e40af;">3</div>
+                        <div id="podium-3rd-pts" style="font-size: 0.75rem; font-weight: 600; color: #1e40af;">0 PTS</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Graph -->
+        <div style="background: white; margin: 15px; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <h4 style="margin: 0 0 15px; font-size: 0.95rem; font-weight: 600; color: var(--text-main);">Progress Over Time</h4>
+            <div id="challenge-graph-container" style="height: 200px; position: relative;">
+                <canvas id="challenge-progress-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Full Rankings List -->
+        <div style="background: white; margin: 0 15px 15px; border-radius: 16px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <h4 style="margin: 0 0 15px; font-size: 0.95rem; font-weight: 600; color: var(--text-main);">Full Rankings</h4>
+            <div id="challenge-full-rankings">
+                <!-- Rankings will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Leave Challenge Button -->
+        <div style="padding: 15px; text-align: center;">
+            <button onclick="leaveCurrentChallenge()" style="background: none; border: none; color: #ef4444; font-size: 0.9rem; cursor: pointer; text-decoration: underline;">
+                Leave Challenge
+            </button>
         </div>
     </div>
 
@@ -19988,6 +20153,7 @@ async function initFriendsView() {
         loadStoriesCarousel();
     }
     await loadFriendsCards();
+    await loadChallenges();
     await loadActivityFeed();
 }
 
@@ -20171,6 +20337,533 @@ async function loadActivityFeed(filter = 'all') {
 // Filter activity feed
 function filterActivityFeed(filter) {
     loadActivityFeed(filter);
+}
+
+// ============================================================
+// CHALLENGES FUNCTIONS
+// ============================================================
+
+let currentChallengeId = null;
+let challengeChart = null;
+
+// Load user's challenges
+async function loadChallenges() {
+    const container = document.getElementById('challenges-container');
+    const emptyState = document.getElementById('challenges-empty');
+
+    if (!container || !window.currentUser) return;
+
+    try {
+        const { data: challenges, error } = await window.supabaseClient
+            .rpc('get_user_challenges', { user_uuid: window.currentUser.id });
+
+        if (error) throw error;
+
+        if (!challenges || challenges.length === 0) {
+            if (emptyState) emptyState.style.display = 'block';
+            return;
+        }
+
+        if (emptyState) emptyState.style.display = 'none';
+
+        container.innerHTML = challenges.map(challenge => {
+            const isInvited = challenge.user_status === 'invited';
+            const statusBadge = isInvited
+                ? '<span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">INVITED</span>'
+                : challenge.status === 'active'
+                ? '<span style="background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">ACTIVE</span>'
+                : '<span style="background: #e0e7ff; color: #4f46e5; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">PENDING</span>';
+
+            return `
+                <div style="background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                        <div>
+                            <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">${challenge.challenge_name}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">by ${challenge.creator_name}</div>
+                        </div>
+                        ${statusBadge}
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted);">
+                        <div>👥 ${challenge.participant_count} participants</div>
+                        <div>⏱️ ${challenge.days_remaining} days left</div>
+                    </div>
+                    ${!isInvited && challenge.status === 'active' ? `
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 10px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Your Position</div>
+                                <div style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">#${challenge.user_rank}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Your Points</div>
+                                <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-main);">${challenge.user_points}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Leader</div>
+                                <div style="font-size: 0.9rem; font-weight: 600; color: #f59e0b;">${challenge.leader_name} (${challenge.leader_points})</div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    <div style="display: flex; gap: 8px;">
+                        ${isInvited ? `
+                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Accept</button>
+                            <button onclick="declineChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: #f1f5f9; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Decline</button>
+                        ` : `
+                            <button onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">View Leaderboard</button>
+                        `}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading challenges:', error);
+    }
+}
+
+// Open create challenge modal
+function openCreateChallengeModal() {
+    const modal = document.getElementById('create-challenge-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        loadFriendsForChallenge();
+        // Set default start date to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('challenge-start-date').value = tomorrow.toISOString().split('T')[0];
+    }
+}
+
+// Close create challenge modal
+function closeCreateChallengeModal() {
+    const modal = document.getElementById('create-challenge-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Load friends for challenge selection
+async function loadFriendsForChallenge() {
+    const container = document.getElementById('challenge-friends-list');
+    if (!container || !window.currentUser) return;
+
+    try {
+        const { data: friends, error } = await window.supabaseClient
+            .rpc('get_friends_with_status', { user_uuid: window.currentUser.id });
+
+        if (error) throw error;
+
+        if (!friends || friends.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">No friends yet. Add friends first!</div>';
+            return;
+        }
+
+        container.innerHTML = friends.map(friend => {
+            const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
+            return `
+                <label style="display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer;">
+                    <input type="checkbox" class="challenge-friend-checkbox" value="${friend.friend_id}" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem; overflow: hidden;">
+                        ${friend.friend_photo ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--text-main);">${friend.friend_name}</div>
+                        ${friend.current_streak > 0 ? `<div style="font-size: 0.75rem; color: var(--text-muted);">🔥 ${friend.current_streak} day streak</div>` : ''}
+                    </div>
+                </label>
+            `;
+        }).join('');
+
+        // Update selected count on change
+        container.querySelectorAll('.challenge-friend-checkbox').forEach(cb => {
+            cb.addEventListener('change', updateSelectedCount);
+        });
+
+    } catch (error) {
+        console.error('Error loading friends for challenge:', error);
+        container.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444;">Failed to load friends</div>';
+    }
+}
+
+// Update selected friends count
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.challenge-friend-checkbox:checked');
+    const countEl = document.getElementById('challenge-selected-count');
+    if (countEl) countEl.textContent = checkboxes.length;
+}
+
+// Create a new challenge
+async function createChallenge() {
+    const nameInput = document.getElementById('challenge-name-input');
+    const durationSelect = document.getElementById('challenge-duration-select');
+    const startDateInput = document.getElementById('challenge-start-date');
+    const selectedFriends = document.querySelectorAll('.challenge-friend-checkbox:checked');
+
+    const name = nameInput?.value.trim();
+    const duration = parseInt(durationSelect?.value) || 30;
+    const startDate = startDateInput?.value;
+
+    if (!name) {
+        alert('Please enter a challenge name');
+        return;
+    }
+
+    if (selectedFriends.length === 0) {
+        alert('Please select at least one friend to challenge');
+        return;
+    }
+
+    if (!startDate) {
+        alert('Please select a start date');
+        return;
+    }
+
+    const btn = document.getElementById('create-challenge-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Creating...';
+    }
+
+    try {
+        // Calculate end date
+        const start = new Date(startDate);
+        const end = new Date(start);
+        end.setDate(end.getDate() + duration);
+
+        // Create challenge
+        const { data: challenge, error: createError } = await window.supabaseClient
+            .from('challenges')
+            .insert({
+                name: name,
+                creator_id: window.currentUser.id,
+                start_date: startDate,
+                end_date: end.toISOString().split('T')[0],
+                duration_days: duration,
+                status: 'pending'
+            })
+            .select()
+            .single();
+
+        if (createError) throw createError;
+
+        // Add creator as participant (auto-accepted)
+        const { data: userPoints } = await window.supabaseClient
+            .from('user_points')
+            .select('current_points')
+            .eq('user_id', window.currentUser.id)
+            .single();
+
+        const currentPoints = userPoints?.current_points || 0;
+
+        await window.supabaseClient
+            .from('challenge_participants')
+            .insert({
+                challenge_id: challenge.id,
+                user_id: window.currentUser.id,
+                status: 'accepted',
+                accepted_at: new Date().toISOString(),
+                starting_points: currentPoints,
+                current_points: currentPoints,
+                challenge_points: 0
+            });
+
+        // Invite selected friends
+        const invites = Array.from(selectedFriends).map(cb => ({
+            challenge_id: challenge.id,
+            user_id: cb.value,
+            status: 'invited'
+        }));
+
+        const { error: inviteError } = await window.supabaseClient
+            .from('challenge_participants')
+            .insert(invites);
+
+        if (inviteError) throw inviteError;
+
+        closeCreateChallengeModal();
+        await loadChallenges();
+        alert('Challenge created! Invitations sent to your friends.');
+
+    } catch (error) {
+        console.error('Error creating challenge:', error);
+        alert('Failed to create challenge: ' + (error.message || 'Please try again'));
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Create Challenge';
+        }
+    }
+}
+
+// Accept challenge invitation
+async function acceptChallengeInvite(challengeId) {
+    try {
+        const { data, error } = await window.supabaseClient
+            .rpc('accept_challenge_invitation', {
+                challenge_uuid: challengeId,
+                user_uuid: window.currentUser.id
+            });
+
+        if (error) throw error;
+
+        await loadChallenges();
+        alert('Challenge accepted! Good luck!');
+
+    } catch (error) {
+        console.error('Error accepting challenge:', error);
+        alert('Failed to accept challenge');
+    }
+}
+
+// Decline challenge invitation
+async function declineChallengeInvite(challengeId) {
+    if (!confirm('Are you sure you want to decline this challenge?')) return;
+
+    try {
+        const { error } = await window.supabaseClient
+            .from('challenge_participants')
+            .update({ status: 'declined' })
+            .eq('challenge_id', challengeId)
+            .eq('user_id', window.currentUser.id);
+
+        if (error) throw error;
+
+        await loadChallenges();
+
+    } catch (error) {
+        console.error('Error declining challenge:', error);
+    }
+}
+
+// Open challenge leaderboard
+async function openChallengeLeaderboard(challengeId) {
+    currentChallengeId = challengeId;
+    const modal = document.getElementById('challenge-leaderboard-modal');
+    if (!modal) return;
+
+    modal.style.display = 'block';
+
+    try {
+        // Get challenge details
+        const { data: challenge } = await window.supabaseClient
+            .from('challenges')
+            .select('*')
+            .eq('id', challengeId)
+            .single();
+
+        if (challenge) {
+            document.getElementById('challenge-leaderboard-title').textContent = challenge.name;
+            const daysRemaining = Math.max(0, Math.ceil((new Date(challenge.end_date) - new Date()) / (1000 * 60 * 60 * 24)));
+            document.getElementById('challenge-days-remaining').textContent = `${daysRemaining} days remaining`;
+        }
+
+        // Get leaderboard
+        const { data: leaderboard, error } = await window.supabaseClient
+            .rpc('get_challenge_leaderboard', { challenge_uuid: challengeId });
+
+        if (error) throw error;
+
+        // Update podium
+        updatePodium(leaderboard);
+
+        // Update full rankings
+        updateFullRankings(leaderboard);
+
+        // Load and render graph
+        await loadChallengeGraph(challengeId);
+
+    } catch (error) {
+        console.error('Error loading leaderboard:', error);
+    }
+}
+
+// Update podium display
+function updatePodium(leaderboard) {
+    const positions = [
+        { rank: 1, prefix: '1st' },
+        { rank: 2, prefix: '2nd' },
+        { rank: 3, prefix: '3rd' }
+    ];
+
+    positions.forEach(pos => {
+        const participant = leaderboard.find(p => p.rank === pos.rank);
+        const nameEl = document.getElementById(`podium-${pos.prefix.toLowerCase().replace('st','st').replace('nd','nd').replace('rd','rd')}-name`);
+        const photoEl = document.getElementById(`podium-${pos.prefix.toLowerCase().replace('st','st').replace('nd','nd').replace('rd','rd')}-photo`);
+        const ptsEl = document.getElementById(`podium-${pos.prefix.toLowerCase().replace('st','st').replace('nd','nd').replace('rd','rd')}-pts`);
+
+        // Simpler approach - just use the rank number
+        const suffix = pos.rank === 1 ? '1st' : pos.rank === 2 ? '2nd' : '3rd';
+        const podiumNameEl = document.getElementById(`podium-${suffix}-name`);
+        const podiumPhotoEl = document.getElementById(`podium-${suffix}-photo`);
+        const podiumPtsEl = document.getElementById(`podium-${suffix}-pts`);
+
+        if (participant) {
+            if (podiumNameEl) podiumNameEl.textContent = participant.user_name;
+            if (podiumPtsEl) podiumPtsEl.textContent = `${participant.challenge_points} PTS`;
+            if (podiumPhotoEl) {
+                const initials = (participant.user_name || '?').charAt(0).toUpperCase();
+                podiumPhotoEl.innerHTML = participant.user_photo
+                    ? `<img src="${participant.user_photo}" style="width: 100%; height: 100%; object-fit: cover;">`
+                    : `<span style="font-size: 1.2rem; color: white; font-weight: 700;">${initials}</span>`;
+                podiumPhotoEl.style.background = participant.user_photo ? 'transparent' : 'linear-gradient(135deg, var(--primary), #10b981)';
+            }
+        } else {
+            if (podiumNameEl) podiumNameEl.textContent = '--';
+            if (podiumPtsEl) podiumPtsEl.textContent = '0 PTS';
+        }
+    });
+}
+
+// Update full rankings list
+function updateFullRankings(leaderboard) {
+    const container = document.getElementById('challenge-full-rankings');
+    if (!container) return;
+
+    if (leaderboard.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No participants yet</div>';
+        return;
+    }
+
+    container.innerHTML = leaderboard.map(participant => {
+        const initials = (participant.user_name || '?').charAt(0).toUpperCase();
+        const isCurrentUser = participant.user_id === window.currentUser?.id;
+        const rankColor = participant.rank === 1 ? '#fbbf24' : participant.rank === 2 ? '#94a3b8' : participant.rank === 3 ? '#d97706' : '#6b7280';
+
+        return `
+            <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; ${isCurrentUser ? 'background: #f0fdf4; margin: 0 -15px; padding: 12px 15px;' : ''}">
+                <div style="font-size: 1.1rem; font-weight: 700; color: ${rankColor}; width: 30px;">${participant.rank}</div>
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; overflow: hidden;">
+                    ${participant.user_photo ? `<img src="${participant.user_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: var(--text-main);">${participant.user_name}${isCurrentUser ? ' (You)' : ''}</div>
+                </div>
+                <div style="font-weight: 700; color: var(--text-main);">${participant.challenge_points} pts</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Load and render challenge progress graph
+async function loadChallengeGraph(challengeId) {
+    try {
+        const { data: history, error } = await window.supabaseClient
+            .rpc('get_challenge_point_history', { challenge_uuid: challengeId });
+
+        if (error) throw error;
+
+        renderChallengeChart(history);
+
+    } catch (error) {
+        console.error('Error loading challenge graph:', error);
+    }
+}
+
+// Render challenge progress chart
+function renderChallengeChart(history) {
+    const canvas = document.getElementById('challenge-progress-chart');
+    if (!canvas) return;
+
+    // Destroy existing chart
+    if (challengeChart) {
+        challengeChart.destroy();
+    }
+
+    if (!history || history.length === 0) {
+        canvas.parentElement.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Progress data will appear as the challenge progresses</div>';
+        return;
+    }
+
+    // Group data by user
+    const userColors = ['#7ba883', '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+    const users = [...new Set(history.map(h => h.user_id))];
+    const dates = [...new Set(history.map(h => h.snapshot_date))].sort();
+
+    const datasets = users.map((userId, idx) => {
+        const userData = history.filter(h => h.user_id === userId);
+        const userName = userData[0]?.user_name || 'Unknown';
+
+        return {
+            label: userName,
+            data: dates.map(date => {
+                const point = userData.find(d => d.snapshot_date === date);
+                return point ? point.challenge_points : null;
+            }),
+            borderColor: userColors[idx % userColors.length],
+            backgroundColor: userColors[idx % userColors.length] + '20',
+            tension: 0.3,
+            fill: false,
+            pointRadius: 4
+        };
+    });
+
+    // Check if Chart.js is available
+    if (typeof Chart === 'undefined') {
+        canvas.parentElement.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Chart library not loaded</div>';
+        return;
+    }
+
+    challengeChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: dates.map(d => {
+                const date = new Date(d);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }),
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12, padding: 15 }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Points' }
+                }
+            }
+        }
+    });
+}
+
+// Close challenge leaderboard
+function closeChallengeLeaderboard() {
+    const modal = document.getElementById('challenge-leaderboard-modal');
+    if (modal) modal.style.display = 'none';
+    currentChallengeId = null;
+}
+
+// Leave current challenge
+async function leaveCurrentChallenge() {
+    if (!currentChallengeId) return;
+    if (!confirm('Are you sure you want to leave this challenge? If you\'re the last participant, the challenge will be cancelled.')) return;
+
+    try {
+        const { data, error } = await window.supabaseClient
+            .rpc('leave_challenge', {
+                challenge_uuid: currentChallengeId,
+                user_uuid: window.currentUser.id
+            });
+
+        if (error) throw error;
+
+        closeChallengeLeaderboard();
+        await loadChallenges();
+
+        if (data?.cancelled) {
+            alert('You were the last participant. The challenge has been cancelled.');
+        } else {
+            alert('You have left the challenge.');
+        }
+
+    } catch (error) {
+        console.error('Error leaving challenge:', error);
+        alert('Failed to leave challenge');
+    }
 }
 
 // Get time ago string
