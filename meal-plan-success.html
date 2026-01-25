@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Successful | Plant Based Balance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4a6741;
+            --primary-light: #7ba883;
+            --secondary: #d4af37;
+            --accent-green: rgba(123, 168, 131, 0.15);
+            --text-main: #333;
+            --text-muted: #777;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8faf8 0%, #e8f0e8 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .success-container {
+            background: white;
+            border-radius: 24px;
+            padding: 50px 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            animation: scaleIn 0.5s ease-out 0.2s both;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+
+        .success-icon svg {
+            width: 50px;
+            height: 50px;
+            stroke: white;
+            stroke-width: 3;
+        }
+
+        .checkmark {
+            animation: drawCheck 0.6s ease-out 0.5s both;
+        }
+
+        @keyframes drawCheck {
+            from {
+                stroke-dashoffset: 100;
+            }
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary);
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .plan-name {
+            background: var(--accent-green);
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 25px;
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .features {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .features h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            color: var(--text-main);
+        }
+
+        .feature-item:not(:last-child) {
+            border-bottom: 1px solid #eee;
+        }
+
+        .feature-icon {
+            width: 30px;
+            height: 30px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--secondary) 0%, #bfa64d 100%);
+            color: white;
+            text-decoration: none;
+            padding: 16px 40px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
+        }
+
+        .secondary-link {
+            display: block;
+            margin-top: 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .secondary-link:hover {
+            color: var(--primary);
+        }
+
+        .confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--secondary);
+            animation: confettiFall 3s ease-out forwards;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="confetti" id="confetti"></div>
+
+    <div class="success-container">
+        <div class="success-icon">
+            <svg viewBox="0 0 50 50">
+                <path class="checkmark" fill="none" d="M14,27 L22,35 L36,17"
+                    stroke-dasharray="100" stroke-dashoffset="100" />
+            </svg>
+        </div>
+
+        <h1>You're All Set!</h1>
+
+        <div class="plan-name" id="plan-name">Loading...</div>
+
+        <p>Your meal plan is ready and waiting for you. Get started today with delicious, nutritious meals designed for your goals.</p>
+
+        <div class="features">
+            <h3>What's Included</h3>
+            <div class="feature-item">
+                <span class="feature-icon">📅</span>
+                <span>4 weeks of planned meals</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">🛒</span>
+                <span>Weekly shopping lists</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">📊</span>
+                <span>Nutrition tracking integration</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">🔄</span>
+                <span>Meal swap options</span>
+            </div>
+        </div>
+
+        <a href="/dashboard.html#meals" class="cta-button">Start Your Plan →</a>
+
+        <a href="/dashboard.html" class="secondary-link">Return to Dashboard</a>
+    </div>
+
+    <script>
+        // Get plan from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const planSlug = urlParams.get('plan');
+        const sessionId = urlParams.get('session_id');
+
+        // Plan display names
+        const planNames = {
+            'summer-shred': '☀️ Summer Shred 28-Day',
+            'clean-bulk': '💪 Clean Bulk Protocol',
+            'energy-boost': '⚡ Energy Boost 28-Day',
+            'gut-reset': '🌱 Gut Reset Protocol',
+            'quick-easy': '⏱️ Quick & Easy Meals'
+        };
+
+        // Update plan name display
+        const planNameEl = document.getElementById('plan-name');
+        if (planSlug && planNames[planSlug]) {
+            planNameEl.textContent = planNames[planSlug];
+        } else {
+            planNameEl.textContent = '🍽️ Your Meal Plan';
+        }
+
+        // Store purchased plan in localStorage (webhook will also do this server-side)
+        if (planSlug) {
+            const purchased = JSON.parse(localStorage.getItem('purchased_meal_plans') || '[]');
+            if (!purchased.includes(planSlug)) {
+                purchased.push(planSlug);
+                localStorage.setItem('purchased_meal_plans', JSON.stringify(purchased));
+            }
+        }
+
+        // Create confetti effect
+        function createConfetti() {
+            const confettiContainer = document.getElementById('confetti');
+            const colors = ['#d4af37', '#4a6741', '#7ba883', '#f0e6c8', '#333'];
+
+            for (let i = 0; i < 50; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                piece.style.left = Math.random() * 100 + 'vw';
+                piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.animationDelay = Math.random() * 2 + 's';
+                piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+                piece.style.width = (5 + Math.random() * 10) + 'px';
+                piece.style.height = (5 + Math.random() * 10) + 'px';
+                piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                confettiContainer.appendChild(piece);
+            }
+        }
+
+        // Run confetti on load
+        createConfetti();
+    </script>
+</body>
+</html>
