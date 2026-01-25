@@ -102,7 +102,7 @@ export default async function (request: Request, context: Context) {
     }
 
     // Build parts array conditionally
-    const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = [
+    const parts: any[] = [
       { text: systemPrompt }
     ];
     if (imageBase64) {
