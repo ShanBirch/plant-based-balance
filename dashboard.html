@@ -27597,31 +27597,62 @@ async function initiateMealPlanCheckout(planSlug, preferences) {
     document.body.appendChild(loadingDiv);
 
     try {
-        // TODO: Replace with actual Stripe checkout session creation
-        // For now, simulate the flow
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Get user email if logged in
+        const userEmail = window.currentUser?.email || localStorage.getItem('user_email') || null;
+        const userId = window.currentUser?.id || localStorage.getItem('user_id') || null;
+
+        // Call the Stripe checkout endpoint
+        const response = await fetch('/api/create-meal-plan-checkout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                planSlug: planSlug,
+                email: userEmail,
+                userId: userId,
+                preferences: preferences
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error?.message || 'Failed to create checkout session');
+        }
 
         // Remove loading
         loadingDiv.remove();
 
-        // Show success message (temporary - will be replaced with Stripe redirect)
-        alert(`Preferences saved!\n\nPlan: ${planSlug}\nDiet: ${preferences.diet}\nAllergies: ${preferences.allergies.join(', ') || 'None'}\nCooking Time: ${preferences.cookingTime}\n\nStripe checkout integration coming soon!`);
-
-        // For demo: Mark plan as "purchased" so UI updates
-        // In production, this would happen via Stripe webhook
-        const purchased = JSON.parse(localStorage.getItem('purchased_meal_plans') || '[]');
-        if (!purchased.includes(planSlug)) {
-            purchased.push(planSlug);
-            localStorage.setItem('purchased_meal_plans', JSON.stringify(purchased));
+        // Redirect to Stripe checkout
+        if (data.url) {
+            // Direct URL redirect (preferred)
+            window.location.href = data.url;
+        } else if (data.sessionId) {
+            // Use Stripe.js to redirect (fallback)
+            const stripe = Stripe(window.STRIPE_PUBLIC_KEY || 'pk_live_your_key');
+            await stripe.redirectToCheckout({ sessionId: data.sessionId });
+        } else {
+            throw new Error('No checkout URL returned');
         }
-
-        // Refresh the meals view
-        initializeMealPlanView();
 
     } catch (error) {
         loadingDiv.remove();
-        alert('Something went wrong. Please try again.');
         console.error('Checkout error:', error);
+
+        // For development/demo: Allow fallback to demo mode
+        if (confirm(`Checkout error: ${error.message}\n\nWould you like to continue in demo mode? (This will simulate a purchase)`)) {
+            // Demo mode - mark as purchased locally
+            const purchased = JSON.parse(localStorage.getItem('purchased_meal_plans') || '[]');
+            if (!purchased.includes(planSlug)) {
+                purchased.push(planSlug);
+                localStorage.setItem('purchased_meal_plans', JSON.stringify(purchased));
+            }
+            localStorage.setItem('user_food_preferences', JSON.stringify(preferences));
+
+            alert('Demo purchase successful! Refreshing your meal plan view...');
+            initializeMealPlanView();
+        }
     }
 }
 
