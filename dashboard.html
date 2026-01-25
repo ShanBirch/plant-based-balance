@@ -12055,6 +12055,8 @@ function checkMealPlanAccess() {
 
 /**
  * Initialize meal plan view based on user access
+ * - No meal plan: Show Calorie Tracker + Browse Plans only
+ * - Has meal plan: Show Today + Calorie Tracker + Week 1-4
  */
 function initializeMealPlanView() {
     const access = checkMealPlanAccess();
@@ -12063,13 +12065,17 @@ function initializeMealPlanView() {
     const todaySection = document.getElementById('today');
 
     if (!access.hasAccess) {
-        // User needs to buy a plan - show store, hide week pills
+        // User needs to buy a plan - show only Calorie Tracker and Browse Plans
         if (navPills) {
-            // Hide week-specific pills, keep Today and Calorie Tracker
-            const weekPills = navPills.querySelectorAll('.pill-btn');
-            weekPills.forEach(pill => {
+            const allPills = navPills.querySelectorAll('.pill-btn');
+            allPills.forEach(pill => {
                 const text = pill.textContent.toLowerCase();
-                if (text.includes('week') || text === 'dining out' || text.includes('shopping')) {
+                // Hide everything except Calorie Tracker
+                if (text.includes('calorie')) {
+                    pill.style.display = '';
+                    pill.classList.remove('active');
+                } else if (pill.id !== 'browse-plans-pill') {
+                    // Hide Today, Week 1-4, Dining Out, Shopping List
                     pill.style.display = 'none';
                 }
             });
@@ -12078,41 +12084,56 @@ function initializeMealPlanView() {
             if (!document.getElementById('browse-plans-pill')) {
                 const browsePill = document.createElement('button');
                 browsePill.id = 'browse-plans-pill';
-                browsePill.className = 'pill-btn';
+                browsePill.className = 'pill-btn active';
                 browsePill.style.cssText = 'background: var(--secondary); color: white; font-weight: 600;';
                 browsePill.textContent = '🛒 Browse Plans';
                 browsePill.onclick = function() { switchWeek('meal-plan-store', this); };
-                navPills.appendChild(browsePill);
+                // Insert at the beginning
+                navPills.insertBefore(browsePill, navPills.firstChild);
+            } else {
+                // Ensure it's active
+                document.getElementById('browse-plans-pill').classList.add('active');
             }
         }
 
-        // Show store by default for non-quiz users
+        // Show store section
         if (storeSection) {
             storeSection.style.display = 'block';
-            // Render the store cards
             renderMealPlanStore();
         }
 
-        // Update today section with a prompt
+        // Hide today section for users without a plan
         if (todaySection) {
-            const todayContent = document.getElementById('today-meals-content');
-            if (todayContent) {
-                todayContent.innerHTML = `
-                    <div style="text-align: center; padding: 60px 20px;">
-                        <div style="font-size: 4rem; margin-bottom: 20px;">🍽️</div>
-                        <h2 style="font-family: 'Playfair Display', serif; color: var(--primary); margin-bottom: 15px;">Get Your Personalized Meal Plan</h2>
-                        <p style="color: var(--text-muted); max-width: 350px; margin: 0 auto 25px;">Choose a meal plan tailored to your goals. Each plan includes 4 weeks of delicious recipes, shopping lists, and nutrition tracking.</p>
-                        <button onclick="switchWeek('meal-plan-store', this)" style="background: var(--secondary); color: white; border: none; padding: 15px 35px; border-radius: 30px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.2s;">
-                            Browse Meal Plans →
-                        </button>
-                    </div>
-                `;
-            }
+            todaySection.classList.remove('active');
         }
     } else {
-        // User has access - ensure store is hidden and week pills are visible
+        // User has meal plan access - show full navigation
+        if (navPills) {
+            const allPills = navPills.querySelectorAll('.pill-btn');
+            allPills.forEach(pill => {
+                const text = pill.textContent.toLowerCase();
+                // Show all meal-related pills
+                if (text.includes('week') || text === 'dining out' || text.includes('shopping') || text === 'today' || text.includes('calorie')) {
+                    pill.style.display = '';
+                }
+            });
+
+            // Remove browse plans pill - user already has a plan
+            const browsePill = document.getElementById('browse-plans-pill');
+            if (browsePill) {
+                browsePill.remove();
+            }
+        }
+
+        // Hide store section
         if (storeSection) {
             storeSection.style.display = 'none';
+            storeSection.classList.remove('active');
+        }
+
+        // Ensure today section can be shown
+        if (todaySection) {
+            todaySection.style.display = '';
         }
     }
 }
