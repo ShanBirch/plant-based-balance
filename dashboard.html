@@ -8326,6 +8326,25 @@ function startCustomBuilderWorkout() {
             </button>
         </div>
 
+        <!-- Stories Carousel for Friends Page -->
+        <div id="friends-stories-section" style="padding: 15px 0 5px 15px; background: transparent;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-right: 15px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">Stories</h3>
+            </div>
+            <div id="friends-stories-carousel" style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; -webkit-overflow-scrolling: touch;">
+                <!-- Add Your Story Button -->
+                <div class="story-ring add-story-btn" onclick="openStoryCamera()" style="display: inline-block; text-align: center; cursor: pointer; flex-shrink: 0;">
+                    <div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; position: relative;">
+                        <div style="width: 64px; height: 64px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center;">
+                            <span style="font-size: 2rem; color: var(--primary);">+</span>
+                        </div>
+                    </div>
+                    <p style="margin: 5px 0 0 0; font-size: 0.75rem; color: var(--text-muted); white-space: normal; width: 70px;">Your Story</p>
+                </div>
+                <!-- Friend story rings will be injected here -->
+            </div>
+        </div>
+
         <!-- Friends Cards Section (Horizontal Scroll) -->
         <div style="padding: 0 15px; margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -19964,6 +19983,10 @@ async function updateFriendsCount() {
 // Initialize Friends View
 async function initFriendsView() {
     console.log('Initializing Friends View...');
+    // Load stories carousel on friends page
+    if (typeof loadStoriesCarousel === 'function') {
+        loadStoriesCarousel();
+    }
     await loadFriendsCards();
     await loadActivityFeed();
 }
