@@ -8113,12 +8113,6 @@ function startCustomBuilderWorkout() {
 }
 </style>
 
-
-    <!-- Floating Coach Chat Button -->
-    <div id="coach-chat-fab" onclick="openCoachChatModal()" style="position: fixed; bottom: 100px; right: 20px; width: 56px; height: 56px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 9998; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 16px rgba(5, 150, 105, 0.5)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(5, 150, 105, 0.4)';">
-        <svg viewBox="0 0 24 24" style="width: 26px; height: 26px; fill: white;"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
-    </div>
-
     <!-- Bottom Navigation (Moved Outside Container) -->
     <nav class="bottom-nav" style="z-index: 9999 !important; position: fixed; bottom: 0; left: 0; width: 100%;">
         <button class="nav-item active" onclick="switchAppTab('dashboard', this)">
@@ -19276,13 +19270,6 @@ window.openCoachChat = function() {
     if ('setAppBadge' in navigator) {
         navigator.setAppBadge(0).catch(e => console.error(e));
     }
-
-    // Update floating button notification badge if any
-    const fab = document.getElementById('coach-chat-fab');
-    if (fab) {
-        const badge = fab.querySelector('.notification-badge');
-        if (badge) badge.style.display = 'none';
-    }
 };
 
 // Helper to save AI community messages to DB and Local Cache
@@ -22067,24 +22054,6 @@ function getCoachState() {
 function updateCoachUI() {
     const { isOnline } = getCoachState();
     const headerStatus = document.getElementById('coach-header-status-text');
-
-    // Check for unread messages and show badge on floating chat button
-    const hasUnread = localStorage.getItem('coach_unread_messages') === 'true';
-    const chatFab = document.getElementById('coach-chat-fab');
-    if (chatFab) {
-        let badge = chatFab.querySelector('.notification-badge');
-        if (hasUnread) {
-            if (!badge) {
-                badge = document.createElement('div');
-                badge.className = 'notification-badge';
-                badge.style.cssText = 'position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; background: #ef4444; border-radius: 50%; border: 2px solid white;';
-                chatFab.appendChild(badge);
-            }
-            badge.style.display = 'block';
-        } else if (badge) {
-            badge.style.display = 'none';
-        }
-    }
 
     const color = isOnline ? '#22c55e' : '#94a3b8'; // Green vs Slate
     const text = isOnline ? 'Active Now' : 'Offline (Back 7am)';
