@@ -172,19 +172,25 @@ WHAT COUNTS AS A WORKOUT STORY:
 - Gym selfies or photos
 - Home workout photos
 - Outdoor exercise (running, cycling, hiking)
-- Yoga or stretching sessions
+- Yoga, meditation, or stretching sessions (person on yoga mat, in poses, relaxed meditation)
+- Somatic yoga and breathwork practices
 - Sports activities
 - Before/after workout photos
 - Workout equipment being used
 - Fitness class attendance
 - Exercise accomplishment screenshots (like completing a run)
 - Post-workout photos (sweaty selfie, etc.)
+- APP WORKOUT COMPLETION SCREENS - Screenshots showing "High Five!", "Workout Completed", duration stats, or celebration screens from fitness apps ARE VALID workout posts
+- Workout timer screenshots or completion confirmations
+- Recovery activities (foam rolling, stretching, mobility work)
+
+IMPORTANT: Workout completion screens from apps (showing duration, congratulations messages, high-five graphics, etc.) are VALID workout posts and should be marked as isWorkoutRelated: true with high confidence!
 
 WHAT DOES NOT COUNT:
 - Food photos (even if healthy)
 - Random selfies without workout context
 - Promotional/spam content
-- Screenshots of other apps (unless fitness tracking)
+- Screenshots of non-fitness apps
 - Memes or text-only posts
 - Photos of pets, scenery without person exercising
 
@@ -192,17 +198,17 @@ RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
 {
   "isWorkoutRelated": true/false,
   "confidence": "high/medium/low",
-  "workoutType": "gym/home/outdoor/yoga/cardio/strength/sports/recovery/unknown",
+  "workoutType": "gym/home/outdoor/yoga/meditation/cardio/strength/sports/recovery/app_completion/unknown",
   "detectedElements": ["list", "of", "detected", "workout", "elements"],
   "notes": "Brief explanation of your assessment"
 }
 
 CONFIDENCE LEVELS:
-- "high": Clearly shows workout/exercise activity
+- "high": Clearly shows workout/exercise activity OR workout completion screen
 - "medium": Appears workout-related but some elements unclear
 - "low": Uncertain if workout-related, or missing key indicators
 
-Be encouraging but fair - we want to reward people sharing their fitness journey!`;
+Be encouraging and inclusive - yoga, meditation, and workout completion screens all count!`;
 
     const payload = {
       contents: [{

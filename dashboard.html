@@ -24928,13 +24928,24 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
 let capturedWorkoutFile = null;
 let workoutPhotoBase64 = null;
 
-// Capture workout completion screen and share
+// Capture workout completion screen and share to story
 async function captureAndShareWorkout() {
     const captureArea = document.getElementById('workout-capture-area');
     if (!captureArea) {
         console.error('Capture area not found');
         // Fall back to just awarding the point
         awardWorkoutPoint();
+        return;
+    }
+
+    // Check workout duration first - must be at least 15 minutes for points
+    const successDurationEl = document.getElementById('success-duration');
+    const durationText = successDurationEl ? successDurationEl.textContent : '00:00';
+    const [mins, secs] = durationText.split(':').map(Number);
+    const totalMinutes = mins + (secs / 60);
+
+    if (totalMinutes < 15) {
+        alert(`Workouts need to be at least 15 minutes to earn points. Your workout was ${mins} minute${mins !== 1 ? 's' : ''} ${secs} second${secs !== 1 ? 's' : ''}. Keep going next time!`);
         return;
     }
 
@@ -24947,51 +24958,238 @@ async function captureAndShareWorkout() {
             logging: false
         });
 
-        // Convert to base64 for sharing
-        workoutPhotoBase64 = canvas.toDataURL('image/png');
+        // Convert canvas to blob
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const workoutFile = new File([blob], 'workout-complete.png', { type: 'image/png' });
 
-        // Try to share using Web Share API if available
-        if (navigator.share && navigator.canShare) {
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-            const file = new File([blob], 'workout-complete.png', { type: 'image/png' });
+        // Convert to base64 for preview
+        const base64Data = canvas.toDataURL('image/png');
 
-            if (navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: 'Workout Complete!',
-                    text: 'I just completed my workout!'
-                });
-            }
-        }
-
-        // Award the point
-        awardWorkoutPoint();
+        // Open story upload modal with the captured image pre-loaded
+        openStoryUploadWithImage(workoutFile, base64Data, 'Workout completed! 💪');
     } catch (error) {
         console.error('Error capturing/sharing workout screen:', error);
-        // Still award the point even if share fails
-        awardWorkoutPoint();
     }
 }
 
-// Award workout point directly
-function awardWorkoutPoint() {
-    // Hide photo section, show points awarded
-    const photoSection = document.getElementById('workout-photo-section');
-    const pointsAwarded = document.getElementById('workout-points-awarded');
+// Open story upload modal with a pre-loaded image
+function openStoryUploadWithImage(file, base64Data, defaultCaption = '') {
+    // Store the file for upload
+    window.pendingStoryFile = file;
+    window.pendingStoryBase64 = base64Data;
+    window.pendingStoryType = 'image';
 
-    if (photoSection) photoSection.style.display = 'none';
-    if (pointsAwarded) pointsAwarded.style.display = 'block';
+    // Show the story upload modal
+    const modal = document.getElementById('story-upload-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
 
-    // Update points in storage
-    let currentPoints = parseInt(localStorage.getItem('userPoints') || '0');
-    currentPoints += 1;
-    localStorage.setItem('userPoints', currentPoints.toString());
+    // Set the preview image
+    const previewImage = document.getElementById('story-preview-image');
+    const previewVideo = document.getElementById('story-preview-video');
+    const placeholder = document.getElementById('story-preview-placeholder');
 
-    // Update UI if points display exists
-    const pointsDisplay = document.getElementById('points-display');
-    if (pointsDisplay) pointsDisplay.textContent = currentPoints;
+    if (previewImage) {
+        previewImage.src = base64Data;
+        previewImage.style.display = 'block';
+    }
+    if (previewVideo) previewVideo.style.display = 'none';
+    if (placeholder) placeholder.style.display = 'none';
 
-    console.log('Workout point awarded! Total points:', currentPoints);
+    // Set default caption
+    const captionInput = document.getElementById('story-caption-input');
+    if (captionInput) {
+        captionInput.value = defaultCaption;
+    }
+
+    // Enable the upload button
+    const uploadBtn = document.getElementById('story-upload-button');
+    if (uploadBtn) {
+        uploadBtn.disabled = false;
+        uploadBtn.style.opacity = '1';
+    }
+}
+
+// Handle story file selection (from file picker)
+function handleStoryFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const isVideo = file.type.startsWith('video/');
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        const base64Data = e.target.result;
+        window.pendingStoryFile = file;
+        window.pendingStoryBase64 = base64Data;
+        window.pendingStoryType = isVideo ? 'video' : 'image';
+
+        // Show preview
+        const previewImage = document.getElementById('story-preview-image');
+        const previewVideo = document.getElementById('story-preview-video');
+        const placeholder = document.getElementById('story-preview-placeholder');
+
+        if (isVideo) {
+            if (previewVideo) {
+                previewVideo.src = base64Data;
+                previewVideo.style.display = 'block';
+            }
+            if (previewImage) previewImage.style.display = 'none';
+        } else {
+            if (previewImage) {
+                previewImage.src = base64Data;
+                previewImage.style.display = 'block';
+            }
+            if (previewVideo) previewVideo.style.display = 'none';
+        }
+        if (placeholder) placeholder.style.display = 'none';
+
+        // Enable upload button
+        const uploadBtn = document.getElementById('story-upload-button');
+        if (uploadBtn) {
+            uploadBtn.disabled = false;
+            uploadBtn.style.opacity = '1';
+        }
+    };
+
+    reader.readAsDataURL(file);
+    event.target.value = ''; // Reset for future selections
+}
+
+// Close story upload modal
+function closeStoryUploadModal() {
+    const modal = document.getElementById('story-upload-modal');
+    if (modal) modal.style.display = 'none';
+
+    // Reset state
+    window.pendingStoryFile = null;
+    window.pendingStoryBase64 = null;
+    window.pendingStoryType = null;
+
+    // Reset preview
+    const previewImage = document.getElementById('story-preview-image');
+    const previewVideo = document.getElementById('story-preview-video');
+    const placeholder = document.getElementById('story-preview-placeholder');
+    const captionInput = document.getElementById('story-caption-input');
+    const uploadBtn = document.getElementById('story-upload-button');
+
+    if (previewImage) { previewImage.src = ''; previewImage.style.display = 'none'; }
+    if (previewVideo) { previewVideo.src = ''; previewVideo.style.display = 'none'; }
+    if (placeholder) placeholder.style.display = 'flex';
+    if (captionInput) captionInput.value = '';
+    if (uploadBtn) { uploadBtn.disabled = true; uploadBtn.style.opacity = '0.5'; }
+}
+
+// Upload story to database and storage
+async function uploadStory() {
+    if (!window.pendingStoryFile || !window.pendingStoryBase64) {
+        alert('Please select a photo or video first');
+        return;
+    }
+
+    const uploadBtn = document.getElementById('story-upload-button');
+    const captionInput = document.getElementById('story-caption-input');
+    const caption = captionInput ? captionInput.value.trim() : '';
+
+    // Disable button and show loading
+    if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Uploading...';
+    }
+
+    try {
+        const user = await window.supabaseClient.auth.getUser();
+        const userId = user?.data?.user?.id;
+
+        if (!userId) {
+            throw new Error('Please sign in to share stories');
+        }
+
+        // Upload file to storage
+        const fileName = `stories/${userId}/${Date.now()}_${window.pendingStoryFile.name}`;
+        const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
+            .from('user-uploads')
+            .upload(fileName, window.pendingStoryFile);
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: urlData } = window.supabaseClient.storage
+            .from('user-uploads')
+            .getPublicUrl(fileName);
+
+        const mediaUrl = urlData?.publicUrl;
+
+        // Save story to database
+        const { data: storyData, error: storyError } = await window.supabaseClient
+            .from('stories')
+            .insert({
+                user_id: userId,
+                media_url: mediaUrl,
+                media_type: window.pendingStoryType,
+                caption: caption,
+                expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+            })
+            .select()
+            .single();
+
+        if (storyError) throw storyError;
+
+        // Analyze story for workout points (in background)
+        if (window.pendingStoryType === 'image') {
+            analyzeStoryForPoints(userId, storyData.id, window.pendingStoryBase64);
+        }
+
+        // Close modal and show success
+        closeStoryUploadModal();
+        alert('Story shared! 🎉');
+
+        // Refresh stories if on home tab
+        if (typeof loadStories === 'function') {
+            loadStories();
+        }
+
+    } catch (error) {
+        console.error('Error uploading story:', error);
+        alert('Failed to upload story: ' + (error.message || 'Please try again'));
+    } finally {
+        if (uploadBtn) {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = 'Share Story';
+        }
+    }
+}
+
+// Analyze story for workout points
+async function analyzeStoryForPoints(userId, storyId, imageBase64) {
+    try {
+        // Extract base64 data without prefix
+        const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+
+        const response = await fetch('/api/analyze-story-points', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId,
+                storyId,
+                imageBase64: base64Data
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.pointsAwarded > 0) {
+            console.log(`Workout point awarded! Total points: ${result.newTotal}`);
+            // Optionally show a toast notification
+            if (typeof showToast === 'function') {
+                showToast(`+${result.pointsAwarded} point${result.pointsAwarded > 1 ? 's' : ''} for workout story!`, 'success');
+            }
+        }
+    } catch (error) {
+        console.error('Error analyzing story for points:', error);
+        // Don't alert - this runs in background
+    }
 }
 
 // Handle workout photo selection
