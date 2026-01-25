@@ -1963,5 +1963,7 @@ const EXERCISE_VIDEOS = {
   "Yoga - Supported Fish Pose": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Puppy%20Pose%20%28Anahatasana%29.mp4",
   "Yoga - Sphinx to Seal": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Sphinx%20Pose.mp4",
   "Yoga - Legs Up the Wall": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Shoulder%20Stand%20%28Sarvangasana%29.mp4",
-  "Yoga - Square Pose (Shoelace)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Cow%20Face%20Pose%20%28Gomukhasana%29.mp4"
+  "Yoga - Square Pose (Shoelace)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Cow%20Face%20Pose%20%28Gomukhasana%29.mp4",
+  "Yoga - Reclined Bound Angle (Supta Baddha Konasana)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Reclined%20Bound%20Angle%20Pose%20%28Supta%20Baddha%20Konasana%29.mp4",
+  "Yoga - Reclined Bound Angle": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Reclined%20Bound%20Angle%20Pose%20%28Supta%20Baddha%20Konasana%29.mp4"
 };
