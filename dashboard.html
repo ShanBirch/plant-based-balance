@@ -55,6 +55,7 @@
 
 <!-- Supabase & Auth Guard -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="lib/supabase.js?v=3"></script>
 <script src="lib/auth-guard.js?v=3"></script>
 <script src="lib/migrate-localstorage.js"></script>
@@ -7892,18 +7893,21 @@ function startCustomBuilderWorkout() {
 <div id="view-workout-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: var(--primary); color: white; overflow-y: auto;">
     <div style="padding: 40px 20px; text-align: center; max-width: 600px; margin: 0 auto;">
 
-        <div style="font-size: 5rem; margin-bottom: 20px;">🙌</div>
+        <!-- Capturable area for sharing -->
+        <div id="workout-capture-area" style="background: var(--primary); padding: 40px 20px; border-radius: 20px;">
+            <div style="font-size: 5rem; margin-bottom: 20px;">🙌</div>
 
-        <h1 style="font-family: 'Playfair Display'; font-size: 2.5rem; margin: 0; color: white;">High Five!</h1>
-        <p style="font-size: 1.2rem; opacity: 0.9; margin-top: 10px;">Workout Completed</p>
+            <h1 style="font-family: 'Playfair Display'; font-size: 2.5rem; margin: 0; color: white;">High Five!</h1>
+            <p style="font-size: 1.2rem; opacity: 0.9; margin-top: 10px;">Workout Completed</p>
 
-        <!-- Milestones Container -->
-        <div id="success-milestones" style="display: none; margin: 30px 0;"></div>
+            <!-- Milestones Container -->
+            <div id="success-milestones" style="display: none; margin: 30px 0;"></div>
 
-        <!-- Duration -->
-        <div style="margin: 30px 0; background: rgba(255,255,255,0.1); padding: 20px 40px; border-radius: 16px; backdrop-filter: blur(10px);">
-            <div style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Duration</div>
-            <div id="success-duration" style="font-size: 3rem; font-weight: 700; font-family: monospace;">00:00</div>
+            <!-- Duration -->
+            <div style="margin: 30px 0; background: rgba(255,255,255,0.1); padding: 20px 40px; border-radius: 16px; backdrop-filter: blur(10px);">
+                <div style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">DURATION</div>
+                <div id="success-duration" style="font-size: 3rem; font-weight: 700; font-family: monospace;">00:00</div>
+            </div>
         </div>
 
         <!-- Workout Count -->
@@ -7920,11 +7924,10 @@ function startCustomBuilderWorkout() {
         <!-- Workout Photo Section -->
         <div id="workout-photo-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin-bottom: 30px; backdrop-filter: blur(10px);">
             <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;">Earn a Point!</div>
-            <p style="font-size: 0.9rem; opacity: 0.85; margin-bottom: 15px;">Post a workout photo to verify and earn your point</p>
-            <label for="workout-photo-input" style="display: inline-block; background: white; color: var(--primary); padding: 12px 30px; border-radius: 25px; font-weight: 600; cursor: pointer; transition: transform 0.2s;">
-                Post Workout Photo
-            </label>
-            <input type="file" id="workout-photo-input" accept="image/*" capture="environment" style="display: none;" onchange="handleWorkoutPhotoSelect(event)">
+            <p style="font-size: 0.9rem; opacity: 0.85; margin-bottom: 15px;">Share your workout completion to earn your point</p>
+            <button onclick="captureAndShareWorkout()" style="background: white; color: var(--primary); padding: 12px 30px; border-radius: 25px; font-weight: 600; cursor: pointer; transition: transform 0.2s; border: none;">
+                Share Workout
+            </button>
         </div>
 
         <!-- Points Awarded Confirmation (shown after photo verified) -->
@@ -24613,6 +24616,44 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
 
 let capturedWorkoutFile = null;
 let workoutPhotoBase64 = null;
+
+// Capture workout completion screen and share
+async function captureAndShareWorkout() {
+    const captureArea = document.getElementById('workout-capture-area');
+    if (!captureArea) {
+        alert('Unable to capture workout screen');
+        return;
+    }
+
+    try {
+        // Capture the workout completion area
+        const canvas = await html2canvas(captureArea, {
+            backgroundColor: null,
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
+
+        // Convert canvas to blob
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        capturedWorkoutFile = new File([blob], 'workout-complete.png', { type: 'image/png' });
+
+        // Convert to base64 for preview
+        workoutPhotoBase64 = canvas.toDataURL('image/png');
+
+        // Show preview modal
+        const previewModal = document.getElementById('workout-preview-modal');
+        const previewPhoto = document.getElementById('workout-preview-photo');
+
+        if (previewModal && previewPhoto) {
+            previewPhoto.src = workoutPhotoBase64;
+            previewModal.style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Error capturing workout screen:', error);
+        alert('Unable to capture workout screen. Please try again.');
+    }
+}
 
 // Handle workout photo selection
 async function handleWorkoutPhotoSelect(event) {
