@@ -2051,6 +2051,306 @@ async function applyAppTheme(themeKey) {
         transform: translateY(0);
     }
 
+    /* Meal Input Modal Styles */
+    .meal-input-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        z-index: 10011;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+    }
+
+    .meal-input-modal.visible {
+        display: flex;
+    }
+
+    .meal-input-container {
+        width: 92%;
+        max-width: 420px;
+        background: white;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .meal-input-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .meal-input-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        color: var(--primary);
+    }
+
+    .meal-input-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-muted);
+        padding: 4px;
+    }
+
+    .meal-type-selector {
+        display: flex;
+        gap: 10px;
+        padding: 20px 24px;
+        background: #f8f9fa;
+        overflow-x: auto;
+    }
+
+    .meal-type-btn {
+        flex: 1;
+        min-width: 70px;
+        padding: 12px 8px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        background: white;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s ease;
+    }
+
+    .meal-type-btn.active {
+        border-color: var(--primary);
+        background: rgba(123, 168, 131, 0.1);
+    }
+
+    .meal-type-btn:hover:not(.active) {
+        border-color: var(--primary-light);
+    }
+
+    .meal-type-emoji {
+        font-size: 1.5rem;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .meal-type-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .meal-type-btn.active .meal-type-label {
+        color: var(--primary);
+    }
+
+    .meal-input-methods {
+        padding: 24px;
+    }
+
+    .input-method-btn {
+        width: 100%;
+        padding: 18px 20px;
+        margin-bottom: 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 16px;
+        background: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.2s ease;
+    }
+
+    .input-method-btn:hover {
+        border-color: var(--primary);
+        background: rgba(123, 168, 131, 0.05);
+        transform: translateX(4px);
+    }
+
+    .input-method-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .input-method-icon.photo { background: #e3f2fd; }
+    .input-method-icon.text { background: #fff3e0; }
+    .input-method-icon.voice { background: #fce4ec; }
+
+    .input-method-info {
+        flex: 1;
+        text-align: left;
+    }
+
+    .input-method-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 2px;
+    }
+
+    .input-method-desc {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    /* Text Input Section */
+    .meal-text-section {
+        display: none;
+        padding: 24px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .meal-text-section.visible {
+        display: block;
+    }
+
+    .meal-text-input {
+        width: 100%;
+        min-height: 100px;
+        padding: 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 16px;
+        font-size: 1rem;
+        font-family: inherit;
+        resize: vertical;
+        transition: border-color 0.2s ease;
+    }
+
+    .meal-text-input:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+
+    .meal-text-input::placeholder {
+        color: #aaa;
+    }
+
+    .meal-text-examples {
+        margin-top: 12px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 12px;
+    }
+
+    .meal-text-examples p {
+        margin: 0 0 8px 0;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .meal-text-examples ul {
+        margin: 0;
+        padding-left: 20px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .meal-text-examples li {
+        margin-bottom: 4px;
+    }
+
+    /* Voice Input Section */
+    .meal-voice-section {
+        display: none;
+        padding: 24px;
+        border-top: 1px solid #f0f0f0;
+        text-align: center;
+    }
+
+    .meal-voice-section.visible {
+        display: block;
+    }
+
+    .voice-record-btn {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        font-size: 2.5rem;
+        cursor: pointer;
+        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+        transition: all 0.2s ease;
+        margin: 20px 0;
+    }
+
+    .voice-record-btn:hover {
+        transform: scale(1.05);
+    }
+
+    .voice-record-btn.recording {
+        animation: pulse-recording 1.5s infinite;
+    }
+
+    @keyframes pulse-recording {
+        0%, 100% { transform: scale(1); box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4); }
+        50% { transform: scale(1.1); box-shadow: 0 12px 35px rgba(239, 68, 68, 0.6); }
+    }
+
+    .voice-status {
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        margin: 15px 0;
+    }
+
+    .voice-transcript {
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        min-height: 60px;
+        text-align: left;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        margin-top: 15px;
+    }
+
+    .voice-transcript.empty {
+        color: #aaa;
+        font-style: italic;
+    }
+
+    /* Submit Button */
+    .meal-submit-section {
+        padding: 20px 24px 24px;
+        display: none;
+    }
+
+    .meal-submit-section.visible {
+        display: block;
+    }
+
+    .meal-submit-btn {
+        width: 100%;
+        padding: 16px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 14px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .meal-submit-btn:hover {
+        background: var(--primary-light);
+    }
+
+    .meal-submit-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
     /* Meals Log List */
     #meals-log-list {
         display: flex;
@@ -9322,6 +9622,45 @@ function startCustomBuilderWorkout() {
                          <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:0.3s;" class="knob"></span>
                      </label>
                      <style> input:checked + .slider { background: var(--primary) !important; } input:checked + .slider + .knob { transform: translateX(16px); } </style>
+                 </div>
+                 <!-- Meal Reminders Settings -->
+                 <div style="padding:15px; border-bottom:1px solid #f1f5f9;">
+                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                         <div>
+                             <div>Meal Reminders</div>
+                             <div style="font-size:0.75rem; color:var(--text-muted);">Get reminded to log your meals</div>
+                         </div>
+                         <label class="toggle-switch" style="display:inline-block; width:40px; height:24px; position:relative;">
+                             <input type="checkbox" id="meal-reminders-toggle" onchange="toggleMealReminders(this.checked)">
+                             <span style="position:absolute; inset:0; background:#ccc; border-radius:24px; transition:0.3s;" class="slider"></span>
+                             <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:0.3s;" class="knob"></span>
+                         </label>
+                     </div>
+                     <!-- Reminder Time Settings (shown when reminders enabled) -->
+                     <div id="meal-reminder-times" style="display:none; margin-top:12px; padding:12px; background:#f8f9fa; border-radius:10px;">
+                         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                             <label style="font-size:0.9rem; display:flex; align-items:center; gap:8px;">
+                                 <input type="checkbox" id="breakfast-reminder-check" checked onchange="saveMealReminderSettings()">
+                                 <span>Breakfast</span>
+                             </label>
+                             <input type="time" id="breakfast-reminder-time" value="08:00" onchange="saveMealReminderSettings()" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;">
+                         </div>
+                         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                             <label style="font-size:0.9rem; display:flex; align-items:center; gap:8px;">
+                                 <input type="checkbox" id="lunch-reminder-check" checked onchange="saveMealReminderSettings()">
+                                 <span>Lunch</span>
+                             </label>
+                             <input type="time" id="lunch-reminder-time" value="12:30" onchange="saveMealReminderSettings()" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;">
+                         </div>
+                         <div style="display:flex; align-items:center; justify-content:space-between;">
+                             <label style="font-size:0.9rem; display:flex; align-items:center; gap:8px;">
+                                 <input type="checkbox" id="dinner-reminder-check" checked onchange="saveMealReminderSettings()">
+                                 <span>Dinner</span>
+                             </label>
+                             <input type="time" id="dinner-reminder-time" value="18:30" onchange="saveMealReminderSettings()" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;">
+                         </div>
+                         <p style="margin:12px 0 0 0; font-size:0.75rem; color:var(--text-muted);">Reminders sent ~1 hour after meal time if not logged</p>
+                     </div>
                  </div>
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                      <div>
@@ -24135,6 +24474,98 @@ window.submitDailyCycleSync = submitDailyCycleSync;
     </button>
 </div>
 
+<!-- Meal Input Modal (Photo/Text/Voice selector) -->
+<div id="meal-input-modal" class="meal-input-modal">
+    <div class="meal-input-container">
+        <!-- Header -->
+        <div class="meal-input-header">
+            <h3>Log a Meal</h3>
+            <button class="meal-input-close" onclick="closeMealInputModal()">&times;</button>
+        </div>
+
+        <!-- Meal Type Selector -->
+        <div class="meal-type-selector">
+            <button class="meal-type-btn active" data-type="breakfast" onclick="selectMealType('breakfast')">
+                <span class="meal-type-emoji">🌅</span>
+                <span class="meal-type-label">Breakfast</span>
+            </button>
+            <button class="meal-type-btn" data-type="lunch" onclick="selectMealType('lunch')">
+                <span class="meal-type-emoji">☀️</span>
+                <span class="meal-type-label">Lunch</span>
+            </button>
+            <button class="meal-type-btn" data-type="dinner" onclick="selectMealType('dinner')">
+                <span class="meal-type-emoji">🌙</span>
+                <span class="meal-type-label">Dinner</span>
+            </button>
+            <button class="meal-type-btn" data-type="snack" onclick="selectMealType('snack')">
+                <span class="meal-type-emoji">🍎</span>
+                <span class="meal-type-label">Snack</span>
+            </button>
+        </div>
+
+        <!-- Input Method Buttons -->
+        <div class="meal-input-methods" id="meal-input-methods">
+            <button class="input-method-btn" onclick="selectInputMethod('photo')">
+                <div class="input-method-icon photo">📸</div>
+                <div class="input-method-info">
+                    <div class="input-method-title">Take a Photo</div>
+                    <div class="input-method-desc">Snap your meal for instant analysis</div>
+                </div>
+            </button>
+            <button class="input-method-btn" onclick="selectInputMethod('text')">
+                <div class="input-method-icon text">📝</div>
+                <div class="input-method-info">
+                    <div class="input-method-title">Type It In</div>
+                    <div class="input-method-desc">Describe what you ate</div>
+                </div>
+            </button>
+            <button class="input-method-btn" onclick="selectInputMethod('voice')">
+                <div class="input-method-icon voice">🎤</div>
+                <div class="input-method-info">
+                    <div class="input-method-title">Voice Input</div>
+                    <div class="input-method-desc">Say what you had</div>
+                </div>
+            </button>
+        </div>
+
+        <!-- Text Input Section (hidden by default) -->
+        <div class="meal-text-section" id="meal-text-section">
+            <textarea
+                id="meal-text-input"
+                class="meal-text-input"
+                placeholder="What did you eat? Be as specific as you can about portions..."
+                maxlength="500"
+            ></textarea>
+            <div class="meal-text-examples">
+                <p>Examples:</p>
+                <ul>
+                    <li>"2 scrambled eggs, 2 slices whole wheat toast with butter, orange juice"</li>
+                    <li>"Large bowl of oatmeal with banana and almonds"</li>
+                    <li>"Chipotle burrito bowl with chicken, rice, beans, guac"</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Voice Input Section (hidden by default) -->
+        <div class="meal-voice-section" id="meal-voice-section">
+            <p class="voice-status" id="voice-status">Tap the microphone and describe your meal</p>
+            <button class="voice-record-btn" id="voice-record-btn" onclick="toggleVoiceRecording()">
+                🎤
+            </button>
+            <div class="voice-transcript empty" id="voice-transcript">
+                Your spoken words will appear here...
+            </div>
+        </div>
+
+        <!-- Submit Button (for text/voice) -->
+        <div class="meal-submit-section" id="meal-submit-section">
+            <button class="meal-submit-btn" id="meal-submit-btn" onclick="submitMealDescription()" disabled>
+                Analyze My Meal
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Workout Photo Preview Modal -->
 <div id="workout-preview-modal" style="display:none; position:fixed; inset:0; background:black; z-index:10012; flex-direction:column; align-items:center; justify-content:center;">
     <!-- Photo Preview -->
@@ -26261,10 +26692,638 @@ document.addEventListener('DOMContentLoaded', function() {
 let mealCameraSource = 'widget'; // Track where camera was opened from
 let mealCameraStream = null; // Camera stream (legacy, no longer used)
 let capturedMealFile = null; // Captured meal photo file
+let selectedMealType = 'breakfast'; // Default meal type
+let selectedInputMethod = null; // 'photo', 'text', or 'voice'
+let isRecordingVoice = false;
+let speechRecognition = null;
 
-// Open native camera for meal photos (best quality and reliability)
+// Auto-detect meal type based on current time
+function autoDetectMealType() {
+    const hour = new Date().getHours();
+    if (hour < 11) return 'breakfast';
+    if (hour < 15) return 'lunch';
+    if (hour < 21) return 'dinner';
+    return 'snack';
+}
+
+// Open the meal input modal (primary entry point)
+function openMealInputModal(source) {
+    mealCameraSource = source || 'widget';
+    selectedMealType = autoDetectMealType();
+    selectedInputMethod = null;
+
+    // Reset UI state
+    const modal = document.getElementById('meal-input-modal');
+    const methodsSection = document.getElementById('meal-input-methods');
+    const textSection = document.getElementById('meal-text-section');
+    const voiceSection = document.getElementById('meal-voice-section');
+    const submitSection = document.getElementById('meal-submit-section');
+
+    if (methodsSection) methodsSection.style.display = 'block';
+    if (textSection) textSection.classList.remove('visible');
+    if (voiceSection) voiceSection.classList.remove('visible');
+    if (submitSection) submitSection.classList.remove('visible');
+
+    // Reset text input
+    const textInput = document.getElementById('meal-text-input');
+    if (textInput) textInput.value = '';
+
+    // Reset voice transcript
+    const voiceTranscript = document.getElementById('voice-transcript');
+    if (voiceTranscript) {
+        voiceTranscript.textContent = 'Your spoken words will appear here...';
+        voiceTranscript.classList.add('empty');
+    }
+
+    // Update meal type selection UI
+    document.querySelectorAll('.meal-type-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === selectedMealType);
+    });
+
+    // Update submit button state
+    updateSubmitButtonState();
+
+    // Show modal
+    if (modal) modal.classList.add('visible');
+}
+
+// Close meal input modal
+function closeMealInputModal() {
+    const modal = document.getElementById('meal-input-modal');
+    if (modal) modal.classList.remove('visible');
+
+    // Stop voice recording if active
+    if (isRecordingVoice && speechRecognition) {
+        speechRecognition.stop();
+        isRecordingVoice = false;
+    }
+}
+
+// Select meal type
+function selectMealType(type) {
+    selectedMealType = type;
+    document.querySelectorAll('.meal-type-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === type);
+    });
+}
+
+// Select input method
+function selectInputMethod(method) {
+    selectedInputMethod = method;
+
+    const methodsSection = document.getElementById('meal-input-methods');
+    const textSection = document.getElementById('meal-text-section');
+    const voiceSection = document.getElementById('meal-voice-section');
+    const submitSection = document.getElementById('meal-submit-section');
+
+    if (method === 'photo') {
+        // Close modal and open camera
+        closeMealInputModal();
+        openMealCameraDirect(mealCameraSource);
+    } else if (method === 'text') {
+        // Show text input
+        if (methodsSection) methodsSection.style.display = 'none';
+        if (textSection) textSection.classList.add('visible');
+        if (voiceSection) voiceSection.classList.remove('visible');
+        if (submitSection) submitSection.classList.add('visible');
+
+        // Focus text input
+        setTimeout(() => {
+            const textInput = document.getElementById('meal-text-input');
+            if (textInput) textInput.focus();
+        }, 100);
+    } else if (method === 'voice') {
+        // Show voice input
+        if (methodsSection) methodsSection.style.display = 'none';
+        if (textSection) textSection.classList.remove('visible');
+        if (voiceSection) voiceSection.classList.add('visible');
+        if (submitSection) submitSection.classList.add('visible');
+
+        // Check for speech recognition support
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            alert('Voice input is not supported in your browser. Please use Chrome or Safari.');
+            selectInputMethod('text');
+        }
+    }
+
+    updateSubmitButtonState();
+}
+
+// Update submit button state
+function updateSubmitButtonState() {
+    const submitBtn = document.getElementById('meal-submit-btn');
+    if (!submitBtn) return;
+
+    let hasContent = false;
+
+    if (selectedInputMethod === 'text') {
+        const textInput = document.getElementById('meal-text-input');
+        hasContent = textInput && textInput.value.trim().length >= 3;
+    } else if (selectedInputMethod === 'voice') {
+        const voiceTranscript = document.getElementById('voice-transcript');
+        hasContent = voiceTranscript && !voiceTranscript.classList.contains('empty') && voiceTranscript.textContent.trim().length >= 3;
+    }
+
+    submitBtn.disabled = !hasContent;
+}
+
+// Toggle voice recording
+function toggleVoiceRecording() {
+    if (isRecordingVoice) {
+        stopVoiceRecording();
+    } else {
+        startVoiceRecording();
+    }
+}
+
+// Start voice recording
+function startVoiceRecording() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert('Voice input is not supported in your browser.');
+        return;
+    }
+
+    speechRecognition = new SpeechRecognition();
+    speechRecognition.continuous = true;
+    speechRecognition.interimResults = true;
+    speechRecognition.lang = 'en-US';
+
+    const recordBtn = document.getElementById('voice-record-btn');
+    const statusText = document.getElementById('voice-status');
+    const transcript = document.getElementById('voice-transcript');
+
+    speechRecognition.onstart = function() {
+        isRecordingVoice = true;
+        if (recordBtn) recordBtn.classList.add('recording');
+        if (statusText) statusText.textContent = 'Listening... Tap to stop';
+        if (transcript) {
+            transcript.textContent = '';
+            transcript.classList.remove('empty');
+        }
+    };
+
+    speechRecognition.onresult = function(event) {
+        let finalTranscript = '';
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const result = event.results[i];
+            if (result.isFinal) {
+                finalTranscript += result[0].transcript;
+            } else {
+                interimTranscript += result[0].transcript;
+            }
+        }
+
+        if (transcript) {
+            const currentFinal = transcript.dataset.final || '';
+            transcript.dataset.final = currentFinal + finalTranscript;
+            transcript.textContent = transcript.dataset.final + interimTranscript;
+        }
+
+        updateSubmitButtonState();
+    };
+
+    speechRecognition.onerror = function(event) {
+        console.error('Speech recognition error:', event.error);
+        if (statusText) {
+            if (event.error === 'not-allowed') {
+                statusText.textContent = 'Microphone access denied. Please enable it in settings.';
+            } else {
+                statusText.textContent = 'Error: ' + event.error + '. Tap to try again.';
+            }
+        }
+        stopVoiceRecording();
+    };
+
+    speechRecognition.onend = function() {
+        stopVoiceRecording();
+    };
+
+    try {
+        speechRecognition.start();
+    } catch (e) {
+        console.error('Failed to start speech recognition:', e);
+        alert('Failed to start voice input. Please check microphone permissions.');
+    }
+}
+
+// Stop voice recording
+function stopVoiceRecording() {
+    if (speechRecognition) {
+        try {
+            speechRecognition.stop();
+        } catch (e) {
+            console.log('Speech recognition already stopped');
+        }
+    }
+
+    isRecordingVoice = false;
+
+    const recordBtn = document.getElementById('voice-record-btn');
+    const statusText = document.getElementById('voice-status');
+    const transcript = document.getElementById('voice-transcript');
+
+    if (recordBtn) recordBtn.classList.remove('recording');
+    if (statusText) statusText.textContent = 'Tap the microphone to record again';
+
+    // Check if we got any content
+    if (transcript && (!transcript.textContent || transcript.textContent.trim().length === 0)) {
+        transcript.textContent = 'Your spoken words will appear here...';
+        transcript.classList.add('empty');
+    }
+
+    updateSubmitButtonState();
+}
+
+// Submit meal description (text or voice)
+async function submitMealDescription() {
+    let description = '';
+
+    if (selectedInputMethod === 'text') {
+        const textInput = document.getElementById('meal-text-input');
+        description = textInput ? textInput.value.trim() : '';
+    } else if (selectedInputMethod === 'voice') {
+        const voiceTranscript = document.getElementById('voice-transcript');
+        description = voiceTranscript ? voiceTranscript.textContent.trim() : '';
+    }
+
+    if (description.length < 3) {
+        alert('Please describe what you ate.');
+        return;
+    }
+
+    // Close the input modal
+    closeMealInputModal();
+
+    // Show loading state
+    showMealAnalysisLoading('Analyzing your meal description...');
+
+    try {
+        // Call the text analysis edge function
+        const response = await fetch('/.netlify/functions/analyze-meal-text', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                description: description,
+                mealType: selectedMealType
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(errorData.error || 'Failed to analyze meal');
+        }
+
+        const result = await response.json();
+
+        if (!result.success || !result.data) {
+            throw new Error('Invalid response from analysis');
+        }
+
+        const nutritionData = result.data;
+
+        // Save meal log to database (no photo)
+        const savedMeal = await saveMealLogWithType({
+            foodItems: nutritionData.foodItems,
+            totals: nutritionData.totals,
+            micronutrients: nutritionData.micronutrients,
+            confidence: nutritionData.confidence,
+            notes: nutritionData.notes,
+            mealType: selectedMealType,
+            inputMethod: selectedInputMethod,
+            mealDescription: description
+        });
+
+        // Award points (text/voice input gets slightly fewer points but still counts)
+        if (savedMeal && savedMeal[0]?.id) {
+            try {
+                await awardPointsForMeal(
+                    savedMeal[0].id,
+                    new Date().toISOString(),
+                    nutritionData.confidence,
+                    null // No photo hash for text input
+                );
+            } catch (pointsError) {
+                console.error('Error awarding points:', pointsError);
+            }
+        }
+
+        // Recalculate daily nutrition
+        await recalculateDailyNutrition();
+
+        // Refresh display
+        await loadTodayNutrition();
+
+        // Show success
+        showMealAnalysisSuccess(nutritionData);
+
+    } catch (error) {
+        console.error('Error analyzing meal:', error);
+        showMealAnalysisError(error.message);
+    }
+}
+
+// Save meal log with meal type and input method
+async function saveMealLogWithType(mealData) {
+    const user = await window.supabaseClient.auth.getUser();
+    const userId = user?.data?.user?.id;
+
+    if (!userId) {
+        throw new Error('User not authenticated');
+    }
+
+    const now = new Date();
+    const mealDate = getLocalDateString(now);
+    const mealTime = now.toTimeString().split(' ')[0];
+
+    const { data, error } = await window.supabaseClient
+        .from('meal_logs')
+        .insert({
+            user_id: userId,
+            meal_date: mealDate,
+            meal_time: mealTime,
+            meal_type: mealData.mealType || selectedMealType,
+            photo_url: mealData.photoUrl || null,
+            storage_path: mealData.photoUrl || null,
+            food_items: mealData.foodItems,
+            calories: mealData.totals.calories,
+            protein_g: mealData.totals.protein_g,
+            carbs_g: mealData.totals.carbs_g,
+            fat_g: mealData.totals.fat_g,
+            fiber_g: mealData.totals.fiber_g,
+            micronutrients: mealData.micronutrients,
+            notes: mealData.notes,
+            ai_confidence: mealData.confidence,
+            input_method: mealData.inputMethod || 'photo',
+            meal_description: mealData.mealDescription || null,
+            analysis_timestamp: new Date().toISOString()
+        })
+        .select();
+
+    if (error) {
+        console.error('Error saving meal log:', error);
+        throw error;
+    }
+
+    return data;
+}
+
+// Add event listener for text input
+document.addEventListener('DOMContentLoaded', function() {
+    const textInput = document.getElementById('meal-text-input');
+    if (textInput) {
+        textInput.addEventListener('input', updateSubmitButtonState);
+    }
+
+    // Initialize meal reminder settings
+    loadMealReminderSettings();
+
+    // Check for URL parameters to open meal input modal
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'log') {
+        const mealType = urlParams.get('type') || autoDetectMealType();
+        const method = urlParams.get('method') || 'photo';
+
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        // Open meal input modal after a short delay for page load
+        setTimeout(() => {
+            openMealInputModal('notification');
+            selectMealType(mealType);
+            if (method !== 'photo') {
+                selectInputMethod(method);
+            }
+        }, 500);
+    }
+});
+
+// Listen for messages from service worker (meal reminder clicks)
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'open_meal_input') {
+            const mealType = event.data.mealType || autoDetectMealType();
+            const action = event.data.action;
+
+            // Open meal input modal
+            openMealInputModal('notification');
+            selectMealType(mealType);
+
+            // If user clicked the text/describe button, go to text input
+            if (action === 'log_text') {
+                selectInputMethod('text');
+            }
+        }
+    });
+}
+
+// ==========================================
+// MEAL REMINDER SETTINGS FUNCTIONS
+// ==========================================
+
+// Toggle meal reminders on/off
+async function toggleMealReminders(enabled) {
+    const timesContainer = document.getElementById('meal-reminder-times');
+    if (timesContainer) {
+        timesContainer.style.display = enabled ? 'block' : 'none';
+    }
+
+    // Request notification permission if enabling
+    if (enabled && 'Notification' in window) {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            alert('Please enable notifications to receive meal reminders.');
+            const toggle = document.getElementById('meal-reminders-toggle');
+            if (toggle) toggle.checked = false;
+            if (timesContainer) timesContainer.style.display = 'none';
+            return;
+        }
+    }
+
+    await saveMealReminderSettings();
+}
+
+// Load meal reminder settings from database
+async function loadMealReminderSettings() {
+    try {
+        const user = await window.supabaseClient?.auth?.getUser();
+        const userId = user?.data?.user?.id;
+        if (!userId) return;
+
+        const { data, error } = await window.supabaseClient
+            .from('meal_reminder_preferences')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') {
+            console.error('Error loading meal reminder settings:', error);
+            return;
+        }
+
+        if (data) {
+            // Update UI with saved settings
+            const toggle = document.getElementById('meal-reminders-toggle');
+            const timesContainer = document.getElementById('meal-reminder-times');
+
+            if (toggle) toggle.checked = data.reminders_enabled;
+            if (timesContainer) {
+                timesContainer.style.display = data.reminders_enabled ? 'block' : 'none';
+            }
+
+            // Set checkbox states
+            const breakfastCheck = document.getElementById('breakfast-reminder-check');
+            const lunchCheck = document.getElementById('lunch-reminder-check');
+            const dinnerCheck = document.getElementById('dinner-reminder-check');
+
+            if (breakfastCheck) breakfastCheck.checked = data.breakfast_reminder;
+            if (lunchCheck) lunchCheck.checked = data.lunch_reminder;
+            if (dinnerCheck) dinnerCheck.checked = data.dinner_reminder;
+
+            // Set time inputs (convert from time to HH:MM format)
+            const breakfastTime = document.getElementById('breakfast-reminder-time');
+            const lunchTime = document.getElementById('lunch-reminder-time');
+            const dinnerTime = document.getElementById('dinner-reminder-time');
+
+            if (breakfastTime && data.breakfast_time) {
+                breakfastTime.value = data.breakfast_time.substring(0, 5);
+            }
+            if (lunchTime && data.lunch_time) {
+                lunchTime.value = data.lunch_time.substring(0, 5);
+            }
+            if (dinnerTime && data.dinner_time) {
+                dinnerTime.value = data.dinner_time.substring(0, 5);
+            }
+        }
+    } catch (e) {
+        console.error('Error loading meal reminder settings:', e);
+    }
+}
+
+// Save meal reminder settings to database
+async function saveMealReminderSettings() {
+    try {
+        const user = await window.supabaseClient?.auth?.getUser();
+        const userId = user?.data?.user?.id;
+        if (!userId) return;
+
+        // Get current UI values
+        const remindersEnabled = document.getElementById('meal-reminders-toggle')?.checked || false;
+        const breakfastEnabled = document.getElementById('breakfast-reminder-check')?.checked || false;
+        const lunchEnabled = document.getElementById('lunch-reminder-check')?.checked || false;
+        const dinnerEnabled = document.getElementById('dinner-reminder-check')?.checked || false;
+
+        const breakfastTime = document.getElementById('breakfast-reminder-time')?.value || '08:00';
+        const lunchTime = document.getElementById('lunch-reminder-time')?.value || '12:30';
+        const dinnerTime = document.getElementById('dinner-reminder-time')?.value || '18:30';
+
+        // Get user's timezone
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        const settings = {
+            user_id: userId,
+            reminders_enabled: remindersEnabled,
+            breakfast_reminder: breakfastEnabled,
+            lunch_reminder: lunchEnabled,
+            dinner_reminder: dinnerEnabled,
+            breakfast_time: breakfastTime + ':00',
+            lunch_time: lunchTime + ':00',
+            dinner_time: dinnerTime + ':00',
+            timezone: timezone,
+            updated_at: new Date().toISOString()
+        };
+
+        const { error } = await window.supabaseClient
+            .from('meal_reminder_preferences')
+            .upsert(settings, { onConflict: 'user_id' });
+
+        if (error) {
+            console.error('Error saving meal reminder settings:', error);
+        } else {
+            console.log('Meal reminder settings saved');
+        }
+    } catch (e) {
+        console.error('Error saving meal reminder settings:', e);
+    }
+}
+
+// Open native camera for meal photos (called after selecting photo method)
+function openMealCameraDirect(source) {
+    console.log('openMealCameraDirect called from:', source);
+    mealCameraSource = source || 'widget';
+
+    // Create file input to trigger native camera
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.capture = 'environment';
+    fileInput.style.display = 'none';
+
+    let hasProcessedFile = false;
+
+    fileInput.onchange = function(e) {
+        if (hasProcessedFile) return;
+        hasProcessedFile = true;
+
+        const file = e.target.files[0];
+        if (!file) {
+            cleanup();
+            return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            alert('Invalid file type. Please take a photo.');
+            cleanup();
+            return;
+        }
+
+        capturedMealFile = file;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            showMealPhotoPreview(e.target.result);
+        };
+        reader.onerror = function() {
+            alert('Failed to load photo. Please try again.');
+            cleanup();
+        };
+        reader.readAsDataURL(file);
+
+        setTimeout(cleanup, 500);
+    };
+
+    function cleanup() {
+        try {
+            if (fileInput && fileInput.parentNode) {
+                fileInput.parentNode.removeChild(fileInput);
+            }
+        } catch (e) {}
+    }
+
+    fileInput.addEventListener('cancel', cleanup);
+    setTimeout(() => { if (!hasProcessedFile) cleanup(); }, 120000);
+
+    document.body.appendChild(fileInput);
+    setTimeout(() => {
+        try { fileInput.click(); }
+        catch (e) { alert('Camera unavailable.'); cleanup(); }
+    }, 100);
+}
+
+// Keep original function name for backwards compatibility but redirect to new modal
 function openMealCamera(source) {
-    console.log('openMealCamera called from:', source);
+    console.log('openMealCamera called - opening input modal');
+    // Now opens the new meal input modal instead of directly opening camera
+    openMealInputModal(source);
+}
+
+// Legacy camera function - kept for compatibility but no longer used directly
+function _legacyOpenMealCamera(source) {
+    console.log('_legacyOpenMealCamera called from:', source);
     mealCameraSource = source || 'widget';
 
     // Create file input to trigger native camera
