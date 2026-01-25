@@ -12407,17 +12407,12 @@ function initializeMealPlanView() {
     const todaySection = document.getElementById('today');
 
     if (!access.hasAccess) {
-        // User needs to buy a plan - show only Calorie Tracker and Browse Plans
+        // User needs to buy a plan - show only Browse Plans
         if (navPills) {
             const allPills = navPills.querySelectorAll('.pill-btn');
             allPills.forEach(pill => {
-                const text = pill.textContent.toLowerCase();
-                // Hide everything except Calorie Tracker
-                if (text.includes('calorie')) {
-                    pill.style.display = '';
-                    pill.classList.remove('active');
-                } else if (pill.id !== 'browse-plans-pill') {
-                    // Hide Today, Week 1-4, Dining Out, Shopping List
+                // Hide all pills except Browse Plans
+                if (pill.id !== 'browse-plans-pill') {
                     pill.style.display = 'none';
                 }
             });
