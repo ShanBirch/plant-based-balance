@@ -68,6 +68,8 @@ RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
 }
 
 IMPORTANT:
+- Return RAW JSON only - no markdown, no code blocks, no backticks
+- Keep food item names SHORT (max 30 chars) - e.g. "Roasted Vegetables" not "Mixed Roasted Root & Starchy Vegetables with herbs"
 - Be realistic with portion sizes
 - If you're unsure, estimate conservatively and indicate lower confidence
 - Round numbers to 1 decimal place
@@ -94,7 +96,7 @@ IMPORTANT:
         temperature: 0.3, // Lower temperature for more consistent analysis
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 4096,
       }
     };
 
