@@ -7919,8 +7919,6 @@ function startCustomBuilderWorkout() {
         <!-- Improvements Container -->
         <div id="success-improvements" style="display: none; margin: 30px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px;"></div>
 
-        <p style="max-width: 300px; margin: 30px auto 40px; line-height: 1.6; opacity: 0.9;">Great job signaling safety to your body. Your cortisol levels are thanking you.</p>
-
         <!-- Workout Photo Section -->
         <div id="workout-photo-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin-bottom: 30px; backdrop-filter: blur(10px);">
             <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;">Earn a Point!</div>
@@ -24934,7 +24932,9 @@ let workoutPhotoBase64 = null;
 async function captureAndShareWorkout() {
     const captureArea = document.getElementById('workout-capture-area');
     if (!captureArea) {
-        alert('Unable to capture workout screen');
+        console.error('Capture area not found');
+        // Fall back to just awarding the point
+        awardWorkoutPoint();
         return;
     }
 
@@ -24952,7 +24952,7 @@ async function captureAndShareWorkout() {
     try {
         // Capture the workout completion area
         const canvas = await html2canvas(captureArea, {
-            backgroundColor: null,
+            backgroundColor: '#8fbc8f',
             scale: 2,
             useCORS: true,
             logging: false
@@ -24968,8 +24968,7 @@ async function captureAndShareWorkout() {
         // Open story upload modal with the captured image pre-loaded
         openStoryUploadWithImage(workoutFile, base64Data, 'Workout completed! 💪');
     } catch (error) {
-        console.error('Error capturing workout screen:', error);
-        alert('Unable to capture workout screen. Please try again.');
+        console.error('Error capturing/sharing workout screen:', error);
     }
 }
 
