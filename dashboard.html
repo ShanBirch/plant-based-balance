@@ -7231,150 +7231,7 @@ async function applyAppTheme(themeKey) {
     <!-- INSTALL APP BANNER MOVED TO FOOTER FOR FIXED POSITIONING -->
 
 
-    <!-- SUPPORT VIEW (Coach & Community) -->
-    <div id="view-support" class="app-view" style="display:none; padding-bottom: 80px;">
-        <div class="app-header">
-            <div class="app-logo">Support</div>
-            <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
-        </div>
-        
-        <div style="padding: 20px; min-height: calc(100vh - 160px); display: flex; flex-direction: column;">
-            
-            <!-- Tab Switcher for Support -->
-            <div style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px; margin-bottom: 25px; position: sticky; top: 80px; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                <button class="sub-btn active" style="flex:1; border:none; box-shadow:none; background:white; color:var(--primary); font-weight: 600;" onclick="showSupportTab('chat', this)">Coach Chat</button>
-                <button class="sub-btn" style="flex:1; border:none; box-shadow:none; background:transparent; color:#64748b;" onclick="showSupportTab('community', this)">Community</button>
-                <button class="sub-btn" style="flex:1; border:none; box-shadow:none; background:transparent; color:#64748b;" onclick="showSupportTab('reflections', this)">Reflections</button>
-            </div>
-
-            <!-- CHAT VIEW CONTAINER -->
-            <!-- CHAT VIEW CONTAINER (Messenger Style Match) -->
-            <div id="support-chat" style="display: flex; flex-direction: column; background: #fff; position: relative; padding-bottom: 0;">
-
-                <!-- Fixed Header (Matches Community) -->
-                <div style="height: 60px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); z-index: 50;">
-                    <div style="text-align: center;">
-                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Coach Shannon</div>
-                        <div id="coach-header-status-text" style="font-size: 0.75rem; color: var(--primary); font-weight: 600;">Active Now</div>
-                    </div>
-                </div>
-
-                <!-- Chat Stream -->
-                <div id="chat-messages-container" style="padding: 15px; padding-bottom: 120px; display: block;">
-                    <!-- Intro Message (re-added here as static first item, or handled by JS history load) -->
-                    <div style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; max-width: 85%;">
-                        <div style="background: #f8fafc; padding: 15px 20px; border-radius: 0 16px 16px 16px; border: 1px solid #e2e8f0; color: var(--text-main);">
-                        <p style="margin: 0; font-size: 0.95rem; line-height: 1.5;">Hey there! I'm Shannon, your reset coach. Leave a message here about your progress or any questions. I'll review it and get back to you with guidance!</p>
-                        </div>
-                        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px; margin-left: 2px;">Shannon  Always here</div>
-                    </div>
-                </div>
-
-                <!-- Input Area (Fixed above bottom nav) -->
-                <div style="position: fixed; bottom: 90px; left: 0; width: 100%; background: white; padding: 10px 15px; border-top: 1px solid #f1f5f9; z-index: 60; box-shadow: 0 -2px 10px rgba(0,0,0,0.02);">
-                    <form onsubmit="event.preventDefault(); submitCoachMessage();" style="display: flex; align-items: center; gap: 10px; width: 100%; margin: 0;">
-                        <input type="text" id="coach-chat-input" placeholder="Ask your coach..." style="flex: 1; background: #f1f5f9; border: none; padding: 12px 15px; border-radius: 20px; font-size: 1rem; outline: none; color: var(--text-main);">
-                        <div onclick="submitCoachMessage()" style="width: 40px; height: 40px; border: none; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; flex-shrink: 0;">
-                                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white; margin-left: 4px; pointer-events: none;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                        </div>
-                        <button type="submit" style="display:none;"></button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- COMMUNITY INTERFACE (Hidden by default) -->
-            <!-- COMMUNITY INTERFACE (Messenger Style) -->
-            <div id="support-community" style="display: none; flex-direction: column; height: 100vh; background: #fff; position: relative; padding-bottom: 0; overflow: hidden;">
-                <!-- Fixed Chat Header -->
-                <div style="height: 60px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); z-index: 50; padding: 0 15px;">
-                    <div style="width: 40px;"></div>
-                    <div style="text-align: center;">
-                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Your Network</div>
-                        <div id="referral-network-count" style="font-size: 0.75rem; color: #94a3b8;">Loading...</div>
-                    </div>
-                    <button onclick="openAddFriendModal()" style="width: 40px; height: 40px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);" title="Add Friend">
-                        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white;">
-                            <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Referral Invite Banner -->
-                <div id="referral-invite-banner" style="margin: 15px; padding: 20px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2); flex-shrink: 0; position: relative;">
-                    <!-- Dismiss button -->
-                    <div onclick="dismissReferralBanner()" style="position: absolute; top: 10px; right: 10px; width: 24px; height: 24px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                        <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: white;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                        <div style="font-size: 2rem;">🎁</div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 700; font-size: 1.1rem; color: white; margin-bottom: 4px;">You BOTH Get 2 Weeks Free!</div>
-                            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Invite friends and you each get 2 weeks free when they join</div>
-                        </div>
-                    </div>
-
-                    <!-- Stats -->
-                    <div id="referral-stats" style="display: flex; gap: 12px; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.15); border-radius: 10px; backdrop-filter: blur(10px);">
-                        <div style="flex: 1; text-align: center;">
-                            <div id="referral-count" style="font-size: 1.5rem; font-weight: 700; color: white;">0</div>
-                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.9); text-transform: uppercase; letter-spacing: 0.5px;">Friends</div>
-                        </div>
-                        <div style="flex: 1; text-align: center;">
-                            <div id="free-days-count" style="font-size: 1.5rem; font-weight: 700; color: white;">0</div>
-                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.9); text-transform: uppercase; letter-spacing: 0.5px;">Days Free</div>
-                        </div>
-                    </div>
-
-                    <!-- Share Button -->
-                    <button onclick="openShareReferralModal()" style="width: 100%; background: white; color: #059669; border: none; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s;">
-                        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #059669;">
-                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
-                        </svg>
-                        Share Your Link
-                    </button>
-                </div>
-
-                <!-- Chat Stream -->
-                <div id="community-chat-stream" style="padding: 15px; padding-bottom: 170px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1;">
-                    <!-- Messages injected here -->
-                </div>
-
-                <!-- Input Area (Fixed above bottom nav) -->
-                <div style="position: fixed; bottom: 90px; left: 0; width: 100%; background: white; padding: 10px 15px; border-top: 1px solid #f1f5f9; z-index: 60; box-shadow: 0 -2px 10px rgba(0,0,0,0.02);">
-                    <form onsubmit="event.preventDefault(); sendCommunityMessage();" style="display: flex; align-items: center; gap: 10px; width: 100%; margin: 0;">
-                        <input type="text" id="community-chat-input" placeholder="Message..." style="flex: 1; background: #f1f5f9; border: none; padding: 12px 15px; border-radius: 20px; font-size: 1rem; outline: none; color: var(--text-main);">
-                        <!-- Clickable container or specific button logic -->
-                        <div onclick="sendCommunityMessage()" style="width: 40px; height: 40px; border: none; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; flex-shrink: 0;">
-                             <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white; pointer-events: none;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                        </div>
-                        <button type="submit" style="display:none;"></button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- REFLECTIONS INTERFACE (Hidden by default) -->
-            <div id="support-reflections" style="display: none; flex-direction: column; height: 100vh; background: #fff; position: relative; padding-bottom: 70px; overflow: hidden;">
-
-                <!-- Header -->
-                <div style="padding: 20px 20px 15px 20px; border-bottom: 1px solid #f1f5f9;">
-                    <h2 style="margin: 0 0 5px 0; font-size: 1.5rem; color: var(--text-main);">Your Reflections</h2>
-                    <p style="margin: 0; font-size: 0.875rem; color: #64748b;">Daily journal entries and end-of-day reflections</p>
-                </div>
-
-                <!-- Add New Reflection Button -->
-                <div style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9;">
-                    <button onclick="openNewReflectionModal()" style="width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <span style="font-size: 1.2rem;">+</span> Add Reflection
-                    </button>
-                </div>
-
-                <!-- Reflections List -->
-                <div id="reflections-list" style="flex: 1; overflow-y: auto; padding: 20px;">
-                    <!-- Reflections will be injected here -->
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- SUPPORT VIEW REMOVED - Coach Chat moved to modal -->
 
     <!-- ACTIVE WORKOUT PLAYER (Hidden by default) -->
     <div id="view-active-workout-stub" class="app-view" style="display:none; background: #fff; padding-bottom: 0;">
@@ -8257,6 +8114,10 @@ function startCustomBuilderWorkout() {
 </style>
 
 
+    <!-- Floating Coach Chat Button -->
+    <div id="coach-chat-fab" onclick="openCoachChatModal()" style="position: fixed; bottom: 100px; right: 20px; width: 56px; height: 56px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 9998; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 16px rgba(5, 150, 105, 0.5)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(5, 150, 105, 0.4)';">
+        <svg viewBox="0 0 24 24" style="width: 26px; height: 26px; fill: white;"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+    </div>
 
     <!-- Bottom Navigation (Moved Outside Container) -->
     <nav class="bottom-nav" style="z-index: 9999 !important; position: fixed; bottom: 0; left: 0; width: 100%;">
@@ -8279,10 +8140,6 @@ function startCustomBuilderWorkout() {
         <button class="nav-item" id="nav-cycle-btn" onclick="switchAppTab('cycle', this)">
            <svg id="nav-cycle-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.22-7.52-3.22 3.22 7.52 3.22-7.52z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
            <span id="nav-cycle-label">Cycle</span>
-        </button>
-        <button class="nav-item" onclick="switchAppTab('support', this)">
-            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
-            <span>Support</span>
         </button>
         <button class="nav-item" onclick="switchAppTab('friends', this)">
             <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
@@ -8433,6 +8290,40 @@ function startCustomBuilderWorkout() {
             <div style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
                 <input type="text" id="dm-input" placeholder="Type a message..." style="flex: 1; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; outline: none;" onkeypress="if(event.key==='Enter') sendDirectMessage()">
                 <button onclick="sendDirectMessage()" style="width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coach Chat Modal -->
+    <div id="coach-chat-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10007; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 80vh; overflow: hidden; animation: fadeInScale 0.3s ease-out;">
+            <!-- Header -->
+            <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px;">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; overflow: hidden;">
+                    <span style="font-size: 1.2rem;">S</span>
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 700; color: var(--text-main);">Shannon</div>
+                    <div id="coach-modal-status" style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">Coach</div>
+                </div>
+                <button onclick="closeCoachChatModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">×</button>
+            </div>
+            <!-- Messages -->
+            <div id="chat-messages-container" style="height: 300px; overflow-y: auto; padding: 15px; background: #f8fafc;">
+                <!-- Intro Message -->
+                <div style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 15px; max-width: 85%;">
+                    <div style="background: white; padding: 12px 16px; border-radius: 0 16px 16px 16px; border: 1px solid #e2e8f0; color: var(--text-main);">
+                        <p style="margin: 0; font-size: 0.9rem; line-height: 1.5;">Hey there! I'm Shannon, your reset coach. Leave a message here about your progress or any questions. I'll review it and get back to you with guidance!</p>
+                    </div>
+                    <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px; margin-left: 2px;">Shannon</div>
+                </div>
+            </div>
+            <!-- Input -->
+            <div style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
+                <input type="text" id="coach-chat-input" placeholder="Ask your coach..." style="flex: 1; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; outline: none;" onkeypress="if(event.key==='Enter') submitCoachMessage()">
+                <button onclick="submitCoachMessage()" style="width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
             </div>
@@ -9230,7 +9121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Move Sections out of Meals Container
     // We want Movement and Support to be top-level app views, not sub-views of Meals
-    const moveIds = ['movement-tab', 'group', 'view-support', 'sleep', 'view-active-workout', 'view-workout-success', 'view-profile'];
+    const moveIds = ['movement-tab', 'group', 'sleep', 'view-active-workout', 'view-workout-success', 'view-profile'];
     const container = document.querySelector('.container');
     const bottomNav = document.querySelector('.bottom-nav');
     
@@ -10042,15 +9933,8 @@ function _switchAppTabReal(tabName, btn) {
             // if (lastAuto !== todayStr) { ... }
         }
     } else if (tabName === 'support') {
-        const el = document.getElementById('view-support'); // Default to Coach/Chat logic
-        if(el) {
-            el.classList.add('active');
-            el.style.display='block';
-            // Scroll chat to bottom after a short delay
-            setTimeout(() => {
-                scrollToBottomOfChat();
-            }, 100);
-        }
+        // Support view removed - open coach chat modal instead
+        openCoachChatModal();
     } else if (tabName === 'profile') {
         const el = document.getElementById('view-profile');
         if(el) {
@@ -14364,7 +14248,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-support', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
@@ -15950,16 +15834,24 @@ function showSupportTab(tab, btn) {
     }
 }
 
-// Helper function to scroll to bottom of chat messages (for single page scroll)
+// Helper function to scroll to bottom of chat messages
 function scrollToBottomOfChat() {
     const chatContainer = document.getElementById('chat-messages-container');
     if (chatContainer) {
-        const rect = chatContainer.getBoundingClientRect();
-        const absoluteBottom = rect.bottom + window.pageYOffset;
-        window.scrollTo({
-            top: absoluteBottom - window.innerHeight + 100,
-            behavior: 'smooth'
-        });
+        // Check if container is inside a modal (has overflow-y: auto)
+        const modal = document.getElementById('coach-chat-modal');
+        if (modal && modal.style.display === 'flex') {
+            // Scroll the container within the modal
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        } else {
+            // Legacy full-page scroll
+            const rect = chatContainer.getBoundingClientRect();
+            const absoluteBottom = rect.bottom + window.pageYOffset;
+            window.scrollTo({
+                top: absoluteBottom - window.innerHeight + 100,
+                behavior: 'smooth'
+            });
+        }
     }
 }
 
@@ -19371,9 +19263,10 @@ window.subscribeToCoachMessages = function(userId) {
 };
 
 window.openCoachChat = function() {
-    document.getElementById('view-support').style.display = 'block';
+    // Open the coach chat modal
+    openCoachChatModal();
 
-    // Clear unread flag (this will remove the glow effect from the Support tab)
+    // Clear unread flag
     localStorage.removeItem('coach_unread_messages');
 
     // Clear Badge
@@ -19382,6 +19275,13 @@ window.openCoachChat = function() {
     }
     if ('setAppBadge' in navigator) {
         navigator.setAppBadge(0).catch(e => console.error(e));
+    }
+
+    // Update floating button notification badge if any
+    const fab = document.getElementById('coach-chat-fab');
+    if (fab) {
+        const badge = fab.querySelector('.notification-badge');
+        if (badge) badge.style.display = 'none';
     }
 };
 
@@ -20879,12 +20779,7 @@ function getTimeAgo(date) {
 
 // Open coach chat from friends view
 function openCoachChatFromFriends() {
-    switchAppTab('support', document.querySelector('.nav-item[onclick*="support"]'));
-    // Show coach chat tab
-    setTimeout(() => {
-        const chatBtn = document.querySelector('.sub-btn[onclick*="chat"]');
-        if (chatBtn) chatBtn.click();
-    }, 100);
+    openCoachChatModal();
 }
 
 // Send nudge to friend
@@ -20978,6 +20873,29 @@ function closeDirectMessageModal() {
     currentDMRecipient = null;
 }
 
+// Open coach chat modal
+function openCoachChatModal() {
+    const modal = document.getElementById('coach-chat-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        // Load chat history when opening
+        if (typeof window.loadChatHistory === 'function') {
+            window.loadChatHistory();
+        }
+        // Focus the input
+        setTimeout(() => {
+            const input = document.getElementById('coach-chat-input');
+            if (input) input.focus();
+        }, 100);
+    }
+}
+
+// Close coach chat modal
+function closeCoachChatModal() {
+    const modal = document.getElementById('coach-chat-modal');
+    if (modal) modal.style.display = 'none';
+}
+
 // Load direct messages between current user and recipient
 async function loadDirectMessages(recipientId) {
     const container = document.getElementById('dm-messages-container');
@@ -21069,9 +20987,8 @@ async function sendDirectMessage() {
 
 // Open message inbox (shows all conversations)
 function openMessageInbox() {
-    // For now, redirect to support tab with coach chat
-    // In future, this could open a full inbox modal
-    switchAppTab('support', document.querySelector('.nav-item[onclick*="support"]'));
+    // Open coach chat modal
+    openCoachChatModal();
     showToast('Opening messages...', 'info');
 }
 
@@ -22151,14 +22068,21 @@ function updateCoachUI() {
     const { isOnline } = getCoachState();
     const headerStatus = document.getElementById('coach-header-status-text');
 
-    // Check for unread messages and apply glow to Support tab
+    // Check for unread messages and show badge on floating chat button
     const hasUnread = localStorage.getItem('coach_unread_messages') === 'true';
-    const supportTab = document.querySelector('.nav-item[onclick*="support"]');
-    if (supportTab) {
+    const chatFab = document.getElementById('coach-chat-fab');
+    if (chatFab) {
+        let badge = chatFab.querySelector('.notification-badge');
         if (hasUnread) {
-            supportTab.classList.add('has-notification');
-        } else {
-            supportTab.classList.remove('has-notification');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.className = 'notification-badge';
+                badge.style.cssText = 'position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; background: #ef4444; border-radius: 50%; border: 2px solid white;';
+                chatFab.appendChild(badge);
+            }
+            badge.style.display = 'block';
+        } else if (badge) {
+            badge.style.display = 'none';
         }
     }
 
@@ -22168,6 +22092,13 @@ function updateCoachUI() {
     if(headerStatus) {
         headerStatus.innerText = text;
         headerStatus.style.color = isOnline ? 'var(--primary)' : '#64748b';
+    }
+
+    // Also update the coach modal status
+    const modalStatus = document.getElementById('coach-modal-status');
+    if (modalStatus) {
+        modalStatus.innerText = isOnline ? 'Coach - Active Now' : 'Coach - Offline';
+        modalStatus.style.color = isOnline ? 'var(--primary)' : '#64748b';
     }
 }
 
@@ -22209,11 +22140,7 @@ async function checkCoachGreeting() {
 
 // 4. Bubble Interaction
 function openCoachChat() {
-    switchAppTab('support');
-    const btns = document.querySelectorAll('#view-support .sub-nav .sub-btn');
-    if(btns.length > 0 && typeof showSupportTab === 'function') {
-        showSupportTab('chat', btns[0]);
-    }
+    openCoachChatModal();
 }
 
 // 5. Push Notifications
