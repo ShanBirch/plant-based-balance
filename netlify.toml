@@ -61,9 +61,8 @@
   function = "analyze-meal-text"
   path = "/.netlify/functions/analyze-meal-text"
 
-[[edge_functions]]
-  function = "send-meal-reminders"
-  path = "/api/send-meal-reminders"
+# Note: send-meal-reminders is a regular Node.js function (not edge)
+# because it requires the web-push npm package
 
 # Ensure we redirect legacy URLs
 [[redirects]]
