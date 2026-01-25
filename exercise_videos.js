@@ -2143,5 +2143,6 @@ const EXERCISE_VIDEOS = {
   "Dragon Flag (progression)": "https://f005.backblazeb2.com/file/shannonsvideos/Hollow%20Body%20Hold.mp4",
   "Windshield Wiper": "https://f005.backblazeb2.com/file/shannonsvideos/Lying%20Straight%20Leg%20Raise.mp4",
   "Toes to Bar (or lying)": "https://f005.backblazeb2.com/file/shannonsvideos/Hanging%20Leg%20Raise.mp4",
-  "Pallof Press (isometric)": "https://f005.backblazeb2.com/file/shannonsvideos/Elbow%20Plank.mp4"
+  "Pallof Press (isometric)": "https://f005.backblazeb2.com/file/shannonsvideos/Elbow%20Plank.mp4",
+  "Yoga - Reclined Bound Angle (Supta Baddha Konasana)": "https://f005.backblazeb2.com/file/shannonsvideos/Yoga%20-%20Reclined%20Bound%20Angle%20Pose%20%28Supta%20Baddha%20Konasana%29.mp4"
 };
