@@ -24,9 +24,9 @@ const WORKOUT_LIBRARY_EXTENDED = {
             difficulty: "Beginner",
             equipment: ["Mat", "Optional: Blocks, Bolster"],
             exercises: [
-              { name: "Supported Child's Pose", sets: 1, reps: "5 min", desc: "Grounding and surrender" },
-              { name: "Yoga - Reclined Bound Angle (Supta Baddha Konasana)", sets: 1, reps: "5 min", desc: "Hip opening and relaxation" },
-              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "7 min", desc: "Lymphatic drainage and calm" },
+              { name: "Supported Child's Pose", sets: 1, reps: "3 min", desc: "Grounding and surrender" },
+              { name: "Yoga - Reclined Bound Angle (Supta Baddha Konasana)", sets: 1, reps: "3 min", desc: "Hip opening and relaxation" },
+              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "3 min", desc: "Lymphatic drainage and calm" },
               { name: "Yoga - Supported Fish Pose (Matsyasana)", sets: 1, reps: "4 min", desc: "Heart opener" },
               { name: "Corpse Pose", sets: 1, reps: "9 min", desc: "Complete integration" }
             ]
@@ -39,9 +39,9 @@ const WORKOUT_LIBRARY_EXTENDED = {
             equipment: ["Mat", "Optional: Blanket"],
             exercises: [
               { name: "Yoga - Puppy Pose (Anahatasana)", sets: 1, reps: "4 min", desc: "Heart opening" },
-              { name: "Yoga - Supported Forward Fold", sets: 1, reps: "5 min", desc: "Calming the mind" },
+              { name: "Yoga - Supported Forward Fold", sets: 1, reps: "3 min", desc: "Calming the mind" },
               { name: "Yoga - Reclined Twist", sets: 2, reps: "4 min/side", desc: "Spinal release" },
-              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "8 min", desc: "Restorative inversion" },
+              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "3 min", desc: "Restorative inversion" },
               { name: "Corpse Pose", sets: 1, reps: "7 min", desc: "Deep relaxation" }
             ]
           },
@@ -67,9 +67,9 @@ const WORKOUT_LIBRARY_EXTENDED = {
             equipment: ["Mat", "Optional: Bolster"],
             exercises: [
               { name: "Cat to Cow", sets: 1, reps: "3 min", desc: "Nervous system regulation" },
-              { name: "Yoga - Supported Bridge Pose", sets: 1, reps: "5 min", desc: "Passive back bend" },
-              { name: "Yoga - Reclined Bound Angle (Supta Baddha Konasana)", sets: 1, reps: "6 min", desc: "Pelvic relaxation" },
-              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "7 min", desc: "Calming inversion" },
+              { name: "Yoga - Supported Bridge Pose", sets: 1, reps: "3 min", desc: "Passive back bend" },
+              { name: "Yoga - Reclined Bound Angle (Supta Baddha Konasana)", sets: 1, reps: "3 min", desc: "Pelvic relaxation" },
+              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "3 min", desc: "Calming inversion" },
               { name: "Corpse Pose", sets: 1, reps: "7 min", desc: "Cortisol reduction" }
             ]
           },
@@ -81,9 +81,9 @@ const WORKOUT_LIBRARY_EXTENDED = {
             equipment: ["Mat"],
             exercises: [
               { name: "Child's Pose", sets: 1, reps: "4 min", desc: "Gentle compression" },
-              { name: "Yoga - Seated Forward Fold (Paschimottanasana)", sets: 1, reps: "5 min", desc: "Hamstring release" },
+              { name: "Yoga - Seated Forward Fold (Paschimottanasana)", sets: 1, reps: "3 min", desc: "Hamstring release" },
               { name: "Yoga - Reclined Twist", sets: 2, reps: "3 min/side", desc: "Spinal detox" },
-              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "6 min", desc: "Preparation for sleep" },
+              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "3 min", desc: "Preparation for sleep" },
               { name: "Corpse Pose", sets: 1, reps: "7 min", desc: "Complete rest" }
             ]
           },
@@ -98,8 +98,8 @@ const WORKOUT_LIBRARY_EXTENDED = {
               { name: "Child's Pose", sets: 1, reps: "3 min", desc: "Gentle opening" },
               { name: "Yoga - Supported Fish Pose (Matsyasana)", sets: 1, reps: "3 min", desc: "Chest opener" },
               { name: "Yoga - Supine Twist (Jathara Parivartanasana)", sets: 2, reps: "2 min/side", desc: "Wake up digestion" },
-              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "5 min", desc: "Gentle energy" },
-              { name: "Corpse Pose", sets: 1, reps: "5 min", desc: "Set intentions" }
+              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "3 min", desc: "Gentle energy" },
+              { name: "Corpse Pose", sets: 1, reps: "3 min", desc: "Set intentions" }
             ]
           },
           {
@@ -109,10 +109,10 @@ const WORKOUT_LIBRARY_EXTENDED = {
             difficulty: "Beginner",
             equipment: ["Mat", "Optional: Eye pillow"],
             exercises: [
-              { name: "Yoga - Supported Child's Pose", sets: 1, reps: "5 min", desc: "Surrender stress" },
-              { name: "Yoga - Reclined Bound Angle (Supta Baddha Konasana)", sets: 1, reps: "6 min", desc: "Open and release" },
-              { name: "Yoga - Supported Forward Fold", sets: 1, reps: "5 min", desc: "Introspection" },
-              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "7 min", desc: "Calm activation" },
+              { name: "Yoga - Supported Child's Pose", sets: 1, reps: "3 min", desc: "Surrender stress" },
+              { name: "Yoga - Reclined Bound Angle (Supta Baddha Konasana)", sets: 1, reps: "3 min", desc: "Open and release" },
+              { name: "Yoga - Supported Forward Fold", sets: 1, reps: "3 min", desc: "Introspection" },
+              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "3 min", desc: "Calm activation" },
               { name: "Corpse Pose with body scan", sets: 1, reps: "7 min", desc: "Mind-body awareness" }
             ]
           },
@@ -125,9 +125,9 @@ const WORKOUT_LIBRARY_EXTENDED = {
             exercises: [
               { name: "Adductor Stretch with Thoracic Twist", sets: 1, reps: "4 min", desc: "Pelvic floor safety signal" },
               { name: "Yoga - Happy Baby Pose (Ananda Balasana)", sets: 1, reps: "4 min", desc: "Somatic reset" },
-              { name: "Yoga - Supported Bridge Pose", sets: 1, reps: "5 min", desc: "Thyroid stimulation" },
+              { name: "Yoga - Supported Bridge Pose", sets: 1, reps: "3 min", desc: "Thyroid stimulation" },
               { name: "Yoga - Supine Twist (Jathara Parivartanasana)", sets: 2, reps: "2 min/side", desc: "Adrenal release" },
-              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "6 min", desc: "Endocrine reset" },
+              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "3 min", desc: "Endocrine reset" },
               { name: "Corpse Pose", sets: 1, reps: "7 min", desc: "Hormonal integration" }
             ]
           },
@@ -142,7 +142,7 @@ const WORKOUT_LIBRARY_EXTENDED = {
               { name: "Yoga - Knees to Chest", sets: 1, reps: "3 min", desc: "Lower back release" },
               { name: "Yoga - Supine Twist (Jathara Parivartanasana)", sets: 2, reps: "3 min/side", desc: "Spinal decompression" },
               { name: "Yoga - Happy Baby Pose (Ananda Balasana)", sets: 1, reps: "4 min", desc: "Sacrum release" },
-              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "6 min", desc: "Reverse gravity compression" },
+              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "3 min", desc: "Reverse gravity compression" },
               { name: "Corpse Pose", sets: 1, reps: "6 min", desc: "Back relaxation" }
             ]
           },
@@ -155,9 +155,9 @@ const WORKOUT_LIBRARY_EXTENDED = {
             exercises: [
               { name: "Child's Pose", sets: 1, reps: "3 min", desc: "Grounding" },
               { name: "Yoga - Pigeon Pose (Eka Pada Rajakapotasana)", sets: 2, reps: "5 min/side", desc: "Deep hip release" },
-              { name: "Yoga - Reclined Bound Angle (Supta Baddha Konasana)", sets: 1, reps: "6 min", desc: "Inner thigh opening" },
-              { name: "Yoga - Happy Baby Pose (Ananda Balasana)", sets: 1, reps: "4 min", desc: "Hip socket release" },
-              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "6 min", desc: "Gentle inversion" },
+              { name: "Yoga - Reclined Bound Angle (Supta Baddha Konasana)", sets: 1, reps: "3 min", desc: "Inner thigh opening" },
+              { name: "Yoga - Happy Baby Pose (Ananda Balasana)", sets: 1, reps: "3 min", desc: "Hip socket release" },
+              { name: "Yoga - Legs Up the Wall (Viparita Karani)", sets: 1, reps: "3 min", desc: "Gentle inversion" },
               { name: "Corpse Pose", sets: 1, reps: "6 min", desc: "Integration" }
             ]
           }
@@ -347,12 +347,12 @@ const WORKOUT_LIBRARY_EXTENDED = {
             difficulty: "Beginner",
             equipment: ["Mat", "Optional: Blocks, Bolster"],
             exercises: [
-              { name: "Yoga - Butterfly Pose (Baddha Konasana)", sets: 1, reps: "5 min", desc: "Inner thigh and hips" },
-              { name: "Yoga - Dragon Pose (Low Lunge)", sets: 2, reps: "5 min/side", desc: "Hip flexors" },
-              { name: "Yoga - Sleeping Swan (Pigeon)", sets: 2, reps: "5 min/side", desc: "Deep hip release" },
-              { name: "Yoga - Caterpillar Pose (Seated Forward Fold)", sets: 1, reps: "5 min", desc: "Hamstrings and spine" },
-              { name: "Yoga - Supine Twist", sets: 2, reps: "5 min/side", desc: "Spinal fascia" },
-              { name: "Corpse Pose", sets: 1, reps: "10 min", desc: "Deep integration" }
+              { name: "Yoga - Butterfly Pose (Baddha Konasana)", sets: 1, reps: "3 min", desc: "Inner thigh and hips" },
+              { name: "Yoga - Dragon Pose (Low Lunge)", sets: 2, reps: "3 min/side", desc: "Hip flexors" },
+              { name: "Yoga - Sleeping Swan (Pigeon)", sets: 2, reps: "3 min/side", desc: "Deep hip release" },
+              { name: "Yoga - Caterpillar Pose (Seated Forward Fold)", sets: 1, reps: "3 min", desc: "Hamstrings and spine" },
+              { name: "Yoga - Supine Twist", sets: 2, reps: "2 min/side", desc: "Spinal fascia" },
+              { name: "Corpse Pose", sets: 1, reps: "5 min", desc: "Deep integration" }
             ]
           },
           {
@@ -362,12 +362,12 @@ const WORKOUT_LIBRARY_EXTENDED = {
             difficulty: "Beginner",
             equipment: ["Mat"],
             exercises: [
-              { name: "Yoga - Butterfly Pose (Baddha Konasana)", sets: 1, reps: "6 min", desc: "Groin opening" },
-              { name: "Yoga - Dragon Pose (Low Lunge)", sets: 2, reps: "6 min/side", desc: "Psoas release" },
-              { name: "Yoga - Half Frog Pose", sets: 2, reps: "5 min/side", desc: "Quad stretch" },
-              { name: "Yoga - Saddle Pose", sets: 1, reps: "5 min", desc: "Thigh and hip flexor" },
-              { name: "Yoga - Sleeping Swan (Pigeon)", sets: 2, reps: "5 min/side", desc: "Glute and hip" },
-              { name: "Corpse Pose", sets: 1, reps: "10 min", desc: "Complete release" }
+              { name: "Yoga - Butterfly Pose (Baddha Konasana)", sets: 1, reps: "3 min", desc: "Groin opening" },
+              { name: "Yoga - Dragon Pose (Low Lunge)", sets: 2, reps: "3 min/side", desc: "Psoas release" },
+              { name: "Yoga - Half Frog Pose", sets: 2, reps: "2 min/side", desc: "Quad stretch" },
+              { name: "Yoga - Saddle Pose", sets: 1, reps: "3 min", desc: "Thigh and hip flexor" },
+              { name: "Yoga - Sleeping Swan (Pigeon)", sets: 2, reps: "3 min/side", desc: "Glute and hip" },
+              { name: "Corpse Pose", sets: 1, reps: "5 min", desc: "Complete release" }
             ]
           },
           {
@@ -377,13 +377,13 @@ const WORKOUT_LIBRARY_EXTENDED = {
             difficulty: "Beginner",
             equipment: ["Mat", "Optional: Bolster"],
             exercises: [
-              { name: "Yoga - Sphinx Pose", sets: 1, reps: "5 min", desc: "Gentle backbend" },
-              { name: "Yoga - Seal Pose", sets: 1, reps: "4 min", desc: "Deeper backbend" },
-              { name: "Child's Pose", sets: 1, reps: "3 min", desc: "Counter pose" },
-              { name: "Yoga - Dragon Pose (Low Lunge)", sets: 2, reps: "5 min/side", desc: "Hip opening" },
-              { name: "Yoga - Sleeping Swan (Pigeon)", sets: 2, reps: "5 min/side", desc: "Deep hip work" },
-              { name: "Yoga - Supine Twist", sets: 2, reps: "4 min/side", desc: "Spinal release" },
-              { name: "Corpse Pose", sets: 1, reps: "8 min", desc: "Integration" }
+              { name: "Yoga - Sphinx Pose", sets: 1, reps: "3 min", desc: "Gentle backbend" },
+              { name: "Yoga - Seal Pose", sets: 1, reps: "2 min", desc: "Deeper backbend" },
+              { name: "Child's Pose", sets: 1, reps: "2 min", desc: "Counter pose" },
+              { name: "Yoga - Dragon Pose (Low Lunge)", sets: 2, reps: "3 min/side", desc: "Hip opening" },
+              { name: "Yoga - Sleeping Swan (Pigeon)", sets: 2, reps: "3 min/side", desc: "Deep hip work" },
+              { name: "Yoga - Supine Twist", sets: 2, reps: "2 min/side", desc: "Spinal release" },
+              { name: "Corpse Pose", sets: 1, reps: "5 min", desc: "Integration" }
             ]
           },
           {
@@ -393,12 +393,12 @@ const WORKOUT_LIBRARY_EXTENDED = {
             difficulty: "Beginner",
             equipment: ["Mat", "Optional: Strap"],
             exercises: [
-              { name: "Yoga - Thread the Needle", sets: 2, reps: "5 min/side", desc: "Shoulder and upper back" },
-              { name: "Yoga - Melting Heart Pose", sets: 1, reps: "5 min", desc: "Chest and shoulders" },
-              { name: "Yoga - Eagle Arms in Seated Pose", sets: 2, reps: "4 min/side", desc: "Shoulder blades" },
-              { name: "Yoga - Reclined Twist", sets: 2, reps: "5 min/side", desc: "Upper back release" },
-              { name: "Yoga - Supported Fish Pose", sets: 1, reps: "5 min", desc: "Chest opening" },
-              { name: "Corpse Pose", sets: 1, reps: "8 min", desc: "Upper body relaxation" }
+              { name: "Yoga - Thread the Needle", sets: 2, reps: "2 min/side", desc: "Shoulder and upper back" },
+              { name: "Yoga - Melting Heart Pose", sets: 1, reps: "3 min", desc: "Chest and shoulders" },
+              { name: "Yoga - Eagle Arms in Seated Pose", sets: 2, reps: "2 min/side", desc: "Shoulder blades" },
+              { name: "Yoga - Reclined Twist", sets: 2, reps: "2 min/side", desc: "Upper back release" },
+              { name: "Yoga - Supported Fish Pose", sets: 1, reps: "3 min", desc: "Chest opening" },
+              { name: "Corpse Pose", sets: 1, reps: "5 min", desc: "Upper body relaxation" }
             ]
           },
           {
@@ -408,14 +408,14 @@ const WORKOUT_LIBRARY_EXTENDED = {
             difficulty: "Beginner",
             equipment: ["Mat", "Optional: Props"],
             exercises: [
-              { name: "Yoga - Butterfly Pose", sets: 1, reps: "6 min", desc: "Inner legs" },
-              { name: "Yoga - Caterpillar (Seated Forward Fold)", sets: 1, reps: "6 min", desc: "Hamstrings" },
-              { name: "Yoga - Dragon Pose", sets: 2, reps: "5 min/side", desc: "Hip flexors" },
-              { name: "Yoga - Sleeping Swan", sets: 2, reps: "5 min/side", desc: "Hips" },
-              { name: "Yoga - Sphinx to Seal", sets: 1, reps: "5 min", desc: "Spine" },
-              { name: "Yoga - Supine Twist", sets: 2, reps: "5 min/side", desc: "Spinal twist" },
-              { name: "Yoga - Legs Up the Wall", sets: 1, reps: "7 min", desc: "Inversion" },
-              { name: "Corpse Pose", sets: 1, reps: "10 min", desc: "Complete integration" }
+              { name: "Yoga - Butterfly Pose", sets: 1, reps: "3 min", desc: "Inner legs" },
+              { name: "Yoga - Caterpillar (Seated Forward Fold)", sets: 1, reps: "3 min", desc: "Hamstrings" },
+              { name: "Yoga - Dragon Pose", sets: 2, reps: "3 min/side", desc: "Hip flexors" },
+              { name: "Yoga - Sleeping Swan", sets: 2, reps: "3 min/side", desc: "Hips" },
+              { name: "Yoga - Sphinx to Seal", sets: 1, reps: "3 min", desc: "Spine" },
+              { name: "Yoga - Supine Twist", sets: 2, reps: "2 min/side", desc: "Spinal twist" },
+              { name: "Yoga - Legs Up the Wall", sets: 1, reps: "3 min", desc: "Inversion" },
+              { name: "Corpse Pose", sets: 1, reps: "5 min", desc: "Complete integration" }
             ]
           },
           {
@@ -425,12 +425,12 @@ const WORKOUT_LIBRARY_EXTENDED = {
             difficulty: "Intermediate",
             equipment: ["Mat", "Optional: Blocks"],
             exercises: [
-              { name: "Yoga - Butterfly Pose", sets: 1, reps: "6 min", desc: "Inner hips" },
-              { name: "Yoga - Dragon Pose with back knee down", sets: 2, reps: "6 min/side", desc: "Hip flexor depth" },
-              { name: "Yoga - Sleeping Swan", sets: 2, reps: "6 min/side", desc: "External rotation" },
-              { name: "Yoga - Saddle Pose", sets: 1, reps: "5 min", desc: "Front of hips" },
-              { name: "Yoga - Square Pose (Shoelace)", sets: 2, reps: "5 min/side", desc: "Hip stacking" },
-              { name: "Corpse Pose", sets: 1, reps: "10 min", desc: "Hip integration" }
+              { name: "Yoga - Butterfly Pose", sets: 1, reps: "3 min", desc: "Inner hips" },
+              { name: "Yoga - Dragon Pose with back knee down", sets: 2, reps: "3 min/side", desc: "Hip flexor depth" },
+              { name: "Yoga - Sleeping Swan", sets: 2, reps: "3 min/side", desc: "External rotation" },
+              { name: "Yoga - Saddle Pose", sets: 1, reps: "3 min", desc: "Front of hips" },
+              { name: "Yoga - Square Pose (Shoelace)", sets: 2, reps: "3 min/side", desc: "Hip stacking" },
+              { name: "Corpse Pose", sets: 1, reps: "5 min", desc: "Hip integration" }
             ]
           },
           {
@@ -440,13 +440,13 @@ const WORKOUT_LIBRARY_EXTENDED = {
             difficulty: "Beginner",
             equipment: ["Mat", "Optional: Eye pillow"],
             exercises: [
-              { name: "Child's Pose", sets: 1, reps: "5 min", desc: "Grounding" },
-              { name: "Yoga - Caterpillar (Seated Forward Fold)", sets: 1, reps: "6 min", desc: "Calming fold" },
-              { name: "Yoga - Reclined Bound Angle", sets: 1, reps: "7 min", desc: "Heart opening" },
-              { name: "Yoga - Banana Pose (Side Bend)", sets: 2, reps: "4 min/side", desc: "Side body stretch" },
-              { name: "Yoga - Supine Twist", sets: 2, reps: "5 min/side", desc: "Release tension" },
-              { name: "Yoga - Legs Up the Wall", sets: 1, reps: "7 min", desc: "Calming inversion" },
-              { name: "Corpse Pose", sets: 1, reps: "8 min", desc: "Nervous system rest" }
+              { name: "Child's Pose", sets: 1, reps: "3 min", desc: "Grounding" },
+              { name: "Yoga - Caterpillar (Seated Forward Fold)", sets: 1, reps: "3 min", desc: "Calming fold" },
+              { name: "Yoga - Reclined Bound Angle", sets: 1, reps: "3 min", desc: "Heart opening" },
+              { name: "Yoga - Banana Pose (Side Bend)", sets: 2, reps: "2 min/side", desc: "Side body stretch" },
+              { name: "Yoga - Supine Twist", sets: 2, reps: "2 min/side", desc: "Release tension" },
+              { name: "Yoga - Legs Up the Wall", sets: 1, reps: "3 min", desc: "Calming inversion" },
+              { name: "Corpse Pose", sets: 1, reps: "5 min", desc: "Nervous system rest" }
             ]
           },
           {
@@ -456,12 +456,12 @@ const WORKOUT_LIBRARY_EXTENDED = {
             difficulty: "Beginner",
             equipment: ["Mat", "Optional: Strap"],
             exercises: [
-              { name: "Yoga - Caterpillar (Seated Forward Fold)", sets: 1, reps: "7 min", desc: "Hamstrings" },
-              { name: "Yoga - Half Butterfly", sets: 2, reps: "5 min/side", desc: "Single leg hamstring" },
-              { name: "Yoga - Sleeping Swan", sets: 2, reps: "5 min/side", desc: "Glutes and low back" },
-              { name: "Yoga - Banana Pose", sets: 2, reps: "5 min/side", desc: "Side body and QL" },
-              { name: "Yoga - Supine Twist", sets: 2, reps: "4 min/side", desc: "Spinal release" },
-              { name: "Corpse Pose", sets: 1, reps: "8 min", desc: "Back relaxation" }
+              { name: "Yoga - Caterpillar (Seated Forward Fold)", sets: 1, reps: "3 min", desc: "Hamstrings" },
+              { name: "Yoga - Half Butterfly", sets: 2, reps: "2 min/side", desc: "Single leg hamstring" },
+              { name: "Yoga - Sleeping Swan", sets: 2, reps: "3 min/side", desc: "Glutes and low back" },
+              { name: "Yoga - Banana Pose", sets: 2, reps: "2 min/side", desc: "Side body and QL" },
+              { name: "Yoga - Supine Twist", sets: 2, reps: "2 min/side", desc: "Spinal release" },
+              { name: "Corpse Pose", sets: 1, reps: "5 min", desc: "Back relaxation" }
             ]
           },
           {
@@ -471,13 +471,13 @@ const WORKOUT_LIBRARY_EXTENDED = {
             difficulty: "Beginner",
             equipment: ["Mat", "Optional: Bolster, Blanket"],
             exercises: [
-              { name: "Child's Pose", sets: 1, reps: "5 min", desc: "Settle in" },
-              { name: "Yoga - Dragon Pose", sets: 2, reps: "6 min/side", desc: "Release day's tension" },
-              { name: "Yoga - Sleeping Swan", sets: 2, reps: "6 min/side", desc: "Hip opening" },
-              { name: "Yoga - Caterpillar", sets: 1, reps: "6 min", desc: "Forward fold" },
-              { name: "Yoga - Reclined Bound Angle", sets: 1, reps: "6 min", desc: "Heart opening" },
-              { name: "Yoga - Legs Up the Wall", sets: 1, reps: "8 min", desc: "Prepare for sleep" },
-              { name: "Corpse Pose", sets: 1, reps: "10 min", desc: "Complete relaxation" }
+              { name: "Child's Pose", sets: 1, reps: "3 min", desc: "Settle in" },
+              { name: "Yoga - Dragon Pose", sets: 2, reps: "3 min/side", desc: "Release day's tension" },
+              { name: "Yoga - Sleeping Swan", sets: 2, reps: "3 min/side", desc: "Hip opening" },
+              { name: "Yoga - Caterpillar", sets: 1, reps: "3 min", desc: "Forward fold" },
+              { name: "Yoga - Reclined Bound Angle", sets: 1, reps: "3 min", desc: "Heart opening" },
+              { name: "Yoga - Legs Up the Wall", sets: 1, reps: "3 min", desc: "Prepare for sleep" },
+              { name: "Corpse Pose", sets: 1, reps: "5 min", desc: "Complete relaxation" }
             ]
           },
           {
@@ -487,13 +487,13 @@ const WORKOUT_LIBRARY_EXTENDED = {
             difficulty: "Beginner",
             equipment: ["Mat"],
             exercises: [
-              { name: "Yoga - Butterfly Pose", sets: 1, reps: "5 min", desc: "Kidney meridian" },
-              { name: "Yoga - Saddle Pose", sets: 1, reps: "5 min", desc: "Stomach and spleen meridians" },
-              { name: "Yoga - Dragon Pose", sets: 2, reps: "5 min/side", desc: "Liver and gallbladder" },
-              { name: "Yoga - Sleeping Swan", sets: 2, reps: "5 min/side", desc: "Kidney and bladder" },
-              { name: "Yoga - Sphinx Pose", sets: 1, reps: "5 min", desc: "Urinary bladder meridian" },
-              { name: "Yoga - Supine Twist", sets: 2, reps: "4 min/side", desc: "Digestive organs" },
-              { name: "Corpse Pose", sets: 1, reps: "8 min", desc: "Energy integration" }
+              { name: "Yoga - Butterfly Pose", sets: 1, reps: "3 min", desc: "Kidney meridian" },
+              { name: "Yoga - Saddle Pose", sets: 1, reps: "3 min", desc: "Stomach and spleen meridians" },
+              { name: "Yoga - Dragon Pose", sets: 2, reps: "3 min/side", desc: "Liver and gallbladder" },
+              { name: "Yoga - Sleeping Swan", sets: 2, reps: "3 min/side", desc: "Kidney and bladder" },
+              { name: "Yoga - Sphinx Pose", sets: 1, reps: "3 min", desc: "Urinary bladder meridian" },
+              { name: "Yoga - Supine Twist", sets: 2, reps: "2 min/side", desc: "Digestive organs" },
+              { name: "Corpse Pose", sets: 1, reps: "5 min", desc: "Energy integration" }
             ]
           }
         ]
