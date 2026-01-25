@@ -28,7 +28,7 @@ export default async function (request: Request, context: Context) {
     }
 
     // Prepare the Gemini API request
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
     // Build the system prompt - use simple concatenation to avoid template literal issues
     const responseFormat = 'RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:\n' +
