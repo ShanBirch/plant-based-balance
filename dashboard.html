@@ -11731,7 +11731,7 @@ function switchView(id) {
 
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
-const totalWizardSteps = 7;
+const totalWizardSteps = 11;
 let selectedGender = localStorage.getItem('userGender') || null; // Track gender selection
 
 async function checkAndTriggerOnboarding() {
@@ -11886,7 +11886,7 @@ function updateWizardUI() {
     });
 
     // 3. Update final slide with hormone profile goal
-    if(currentWizardStep === 7) {
+    if(currentWizardStep === 11) {
         const hormoneProfile = sessionStorage.getItem('userResult') || 'CORTISOL';
         const goalDiv = document.getElementById('wizard-hormone-goal');
         if(goalDiv) {
@@ -16770,7 +16770,7 @@ function openAsClient() {
         <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative; flex-shrink: 0;">
             <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
             <div class="wizard-progress" style="display:flex; justify-content:center; gap:8px; margin-bottom:15px;">
-                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
             <h2 id="wizard-title" style="margin:0; color:var(--primary);">Let's Align Your Body</h2>
         </div>
@@ -16956,28 +16956,141 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 5: ACCOUNTABILITY -->
+            <!-- SLIDE 5: YOUR DASHBOARD -->
             <div class="wizard-slide" id="slide-5" style="display:none;">
-                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🤝</div>
-                <h3 style="text-align:center; margin-bottom:15px;">You Are Supported</h3>
-                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:15px;">
+                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🏠</div>
+                <h3 style="text-align:center; margin-bottom:15px;">Your Dashboard</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Your home base for daily wellness.</p>
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
                     <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">📸</span> 
-                        <div><strong>Track Meals</strong><br><span style="font-size:0.85rem; color:#666;">Snap photos for accountability.</span></div>
+                        <span style="font-size:1.5rem;">📊</span>
+                        <div><strong>Daily Progress</strong><br><span style="font-size:0.85rem; color:#666;">Track your 28-day journey at a glance.</span></div>
                     </li>
                     <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">💬</span> 
-                        <div><strong>Coach Chat</strong><br><span style="font-size:0.85rem; color:#666;">Ask specific questions anytime.</span></div>
+                        <span style="font-size:1.5rem;">🔥</span>
+                        <div><strong>Points & Streaks</strong><br><span style="font-size:0.85rem; color:#666;">Earn points for workouts, meals & check-ins.</span></div>
                     </li>
                     <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">👥</span> 
-                        <div><strong>Group</strong><br><span style="font-size:0.85rem; color:#666;">Share wins with your squad.</span></div>
+                        <span style="font-size:1.5rem;">💡</span>
+                        <div><strong>Daily Tips</strong><br><span style="font-size:0.85rem; color:#666;">Science-backed coaching tips every day.</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">📖</span>
+                        <div><strong>Stories</strong><br><span style="font-size:0.85rem; color:#666;">See what your friends are sharing.</span></div>
                     </li>
                 </ul>
             </div>
-            
-            <!-- SLIDE 6: PROFILE EVOLUTION -->
+
+            <!-- SLIDE 6: FRIENDS & COMMUNITY -->
             <div class="wizard-slide" id="slide-6" style="display:none;">
+                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">👯</div>
+                <h3 style="text-align:center; margin-bottom:15px;">Friends & Community</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">You're not alone on this journey!</p>
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">➕</span>
+                        <div><strong>Add Friends</strong><br><span style="font-size:0.85rem; color:#666;">Connect with others on the same journey.</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">👀</span>
+                        <div><strong>See Activity</strong><br><span style="font-size:0.85rem; color:#666;">Check if friends did their workout today.</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">💬</span>
+                        <div><strong>Send Messages</strong><br><span style="font-size:0.85rem; color:#666;">DM friends or chat with Coach Shannon.</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">📸</span>
+                        <div><strong>Share Stories</strong><br><span style="font-size:0.85rem; color:#666;">Post updates for your friends to see.</span></div>
+                    </li>
+                </ul>
+                <div style="display:flex; justify-content:center; margin-top:15px;">
+                    <span style="background:#f0fdf4; border:1px solid #bbf7d0; padding:8px 16px; border-radius:20px; font-size:0.85rem; color:#166534;">Tap the <strong>Friends</strong> tab to get started!</span>
+                </div>
+            </div>
+
+            <!-- SLIDE 7: CHALLENGES -->
+            <div class="wizard-slide" id="slide-7" style="display:none;">
+                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🏆</div>
+                <h3 style="text-align:center; margin-bottom:15px;">Challenge Your Friends</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">A little competition makes it fun!</p>
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">🎯</span>
+                        <div><strong>Create Challenges</strong><br><span style="font-size:0.85rem; color:#666;">Set up a points competition with friends.</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">📈</span>
+                        <div><strong>Leaderboards</strong><br><span style="font-size:0.85rem; color:#666;">See who's winning in real-time.</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">💪</span>
+                        <div><strong>Stay Accountable</strong><br><span style="font-size:0.85rem; color:#666;">Friendly pressure to show up daily.</span></div>
+                    </li>
+                </ul>
+                <div style="background:#fef3c7; border:1px solid #fcd34d; padding:12px; border-radius:12px; margin-top:15px;">
+                    <p style="margin:0; font-size:0.85rem; color:#92400e; text-align:center;">
+                        <strong>Earn Points:</strong> Workouts, meals logged, check-ins & more!
+                    </p>
+                </div>
+            </div>
+
+            <!-- SLIDE 8: EARN FREE WEEKS -->
+            <div class="wizard-slide" id="slide-8" style="display:none;">
+                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🎁</div>
+                <h3 style="text-align:center; margin-bottom:15px;">Earn Free Weeks</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Two ways to get free access!</p>
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:15px;">
+                    <li style="display:flex; align-items:flex-start; gap:15px; background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:15px; border:1px solid #bbf7d0; border-radius:12px;">
+                        <span style="font-size:2rem;">🤝</span>
+                        <div>
+                            <strong style="color:#166534;">Refer Friends</strong><br>
+                            <span style="font-size:0.85rem; color:#166534;">When a friend joins, you BOTH get <strong>2 weeks free!</strong></span>
+                        </div>
+                    </li>
+                    <li style="display:flex; align-items:flex-start; gap:15px; background:linear-gradient(135deg, #fef3c7, #fde68a); padding:15px; border:1px solid #fcd34d; border-radius:12px;">
+                        <span style="font-size:2rem;">⭐</span>
+                        <div>
+                            <strong style="color:#92400e;">Earn Points</strong><br>
+                            <span style="font-size:0.85rem; color:#92400e;">Collect <strong>200 points</strong> = 1 free week. Keep showing up!</span>
+                        </div>
+                    </li>
+                </ul>
+                <div style="display:flex; justify-content:center; margin-top:15px;">
+                    <span style="background:#f1f5f9; padding:8px 16px; border-radius:20px; font-size:0.85rem; color:#64748b;">Find referrals in <strong>Friends > Invite</strong></span>
+                </div>
+            </div>
+
+            <!-- SLIDE 9: TRACK YOUR PROGRESS -->
+            <div class="wizard-slide" id="slide-9" style="display:none;">
+                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">📈</div>
+                <h3 style="text-align:center; margin-bottom:15px;">Track Your Progress</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Watch yourself transform over 28 days.</p>
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">🏋️</span>
+                        <div><strong>Workout History</strong><br><span style="font-size:0.85rem; color:#666;">Every workout logged and tracked.</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">🏅</span>
+                        <div><strong>Achievements</strong><br><span style="font-size:0.85rem; color:#666;">Unlock badges as you hit milestones.</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">📊</span>
+                        <div><strong>Visual Charts</strong><br><span style="font-size:0.85rem; color:#666;">See your progress over time.</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.5rem;">🔥</span>
+                        <div><strong>Streak Tracking</strong><br><span style="font-size:0.85rem; color:#666;">Build momentum with daily streaks.</span></div>
+                    </li>
+                </ul>
+                <div style="display:flex; justify-content:center; margin-top:15px;">
+                    <span style="background:#f1f5f9; padding:8px 16px; border-radius:20px; font-size:0.85rem; color:#64748b;">Tap <strong>Progress</strong> to see your stats!</span>
+                </div>
+            </div>
+            
+            <!-- SLIDE 10: PROFILE EVOLUTION -->
+            <div class="wizard-slide" id="slide-10" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">⚙️</div>
                 <h3 style="text-align:center; margin-bottom:15px;">Protocol Evolves</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">
@@ -16990,8 +17103,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 7: READY -->
-            <div class="wizard-slide" id="slide-7" style="display:none; text-align:center;">
+            <!-- SLIDE 11: READY -->
+            <div class="wizard-slide" id="slide-11" style="display:none; text-align:center;">
                  <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
                 <h3 style="margin-bottom:10px;">You're All Set!</h3>
                 <p style="color:#64748b; margin-bottom:25px;">Your custom 28-day plan is ready.</p>
