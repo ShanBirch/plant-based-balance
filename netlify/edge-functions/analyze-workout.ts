@@ -75,21 +75,33 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
 Your task is to verify this is a REAL workout photo taken by the user, not a stock photo, screenshot, or fake.
 
+IMPORTANT - VALID WORKOUT TYPES INCLUDE:
+- Traditional gym workouts (weights, machines, cardio equipment)
+- Home workouts (bodyweight exercises, resistance bands, dumbbells)
+- Yoga and somatic yoga (mat, yoga poses, meditation poses, stretching)
+- Pilates and stretching routines
+- Outdoor exercise (running, hiking, cycling, sports)
+- Meditation and breathwork (if showing yoga mat, meditation cushion, or relaxed poses)
+- Dance fitness and movement practices
+- Recovery activities (foam rolling, stretching, mobility work)
+
+A person on a yoga mat in a calm pose IS a valid workout. Meditation and breathwork count as wellness activities.
+
 INSTRUCTIONS:
-1. Determine if the image shows workout-related content (gym, exercise, fitness activity, home workout, outdoor exercise)
+1. Determine if the image shows workout-related content (gym, exercise, fitness activity, home workout, outdoor exercise, yoga, meditation, stretching)
 2. Check for signs this is a real photo taken by the user:
    - Natural lighting/environment
    - Personal items visible
-   - Realistic setting
+   - Realistic setting (including living rooms, bedrooms used for home yoga/workouts)
 3. Look for workout indicators:
-   - Exercise equipment (weights, machines, mats, bands)
-   - Workout clothing
-   - Exercise poses or movements
-   - Gym or fitness environment
-   - Sweat or exertion signs
+   - Exercise equipment (weights, machines, mats, bands, yoga blocks, meditation cushions)
+   - Workout clothing or comfortable clothing suitable for yoga/meditation
+   - Exercise poses, yoga poses, meditation poses, or stretching positions
+   - Gym, fitness studio, or home fitness environment
+   - Sweat or signs of physical activity (not required for yoga/meditation)
 4. Check for suspicious indicators:
    - Stock photo watermarks
-   - Professional studio lighting
+   - Professional studio lighting (normal room lighting is fine)
    - Screenshot artifacts
    - Text overlays
    - AI generation artifacts
@@ -98,20 +110,20 @@ RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
 {
   "isWorkoutPhoto": true/false,
   "confidence": "high/medium/low",
-  "workoutType": "gym/home/outdoor/yoga/cardio/strength/sports/unknown",
+  "workoutType": "gym/home/outdoor/yoga/meditation/cardio/strength/stretching/sports/unknown",
   "detectedElements": ["list", "of", "detected", "workout", "elements"],
   "suspiciousIndicators": ["list", "of", "any", "suspicious", "elements"],
   "notes": "Brief explanation of your assessment"
 }
 
 CONFIDENCE LEVELS:
-- "high": Clearly a real workout photo with obvious exercise/fitness elements
+- "high": Clearly a real workout/yoga/meditation photo with obvious fitness/wellness elements
 - "medium": Appears to be workout-related but some elements unclear
 - "low": Cannot verify as workout photo, or suspicious indicators present
 
 ${workoutType ? `\nUSER INDICATED WORKOUT TYPE: ${workoutType}` : ''}
 
-Be fair but vigilant - real workout selfies should pass, but reject obvious fakes.`;
+Be fair and inclusive - yoga selfies, meditation sessions, and stretching routines should pass. Reject obvious fakes.`;
 
     const payload = {
       contents: [{
