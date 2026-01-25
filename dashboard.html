@@ -23986,10 +23986,11 @@ async function handleWorkoutPhotoSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    capturedWorkoutFile = file;
+    // Compress image first to avoid 502 errors on large photos
+    capturedWorkoutFile = await compressMealImage(file);
 
-    // Convert to base64 for preview and analysis
-    workoutPhotoBase64 = await fileToBase64(file);
+    // Convert compressed image to base64 for preview and analysis
+    workoutPhotoBase64 = await fileToBase64(capturedWorkoutFile);
 
     // Show preview modal
     const previewModal = document.getElementById('workout-preview-modal');
@@ -24400,8 +24401,11 @@ async function useMealPhoto() {
     // Show loading state
     showMealAnalysisLoading();
 
-    // Convert to base64 once
-    const base64 = await fileToBase64(fileToAnalyze);
+    // Compress image first to avoid 502 errors on large photos
+    const compressedFile = await compressMealImage(fileToAnalyze);
+
+    // Convert compressed image to base64
+    const base64 = await fileToBase64(compressedFile);
     const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
 
     // Retry logic - try up to 5 times
@@ -24527,8 +24531,11 @@ async function handleMealPhotoSelect(event) {
     // Show loading state
     showMealAnalysisLoading();
 
-    // Convert to base64 once
-    const base64 = await fileToBase64(file);
+    // Compress image first to avoid 502 errors on large photos
+    const compressedFile = await compressMealImage(file);
+
+    // Convert compressed image to base64
+    const base64 = await fileToBase64(compressedFile);
     const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
 
     // Retry logic - try up to 5 times
@@ -24657,6 +24664,74 @@ function fileToBase64(file) {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// Compress image for meal analysis (reduces large phone photos to reasonable size)
+// Max 1280px dimension, 70% JPEG quality - plenty for food recognition
+async function compressMealImage(file) {
+    return new Promise((resolve) => {
+        // Skip if already small (< 1MB)
+        const fileSizeMB = file.size / (1024 * 1024);
+        if (fileSizeMB < 1) {
+            console.log(`Meal image already small (${fileSizeMB.toFixed(1)}MB), skipping compression`);
+            resolve(file);
+            return;
+        }
+
+        console.log(`Compressing meal image: ${fileSizeMB.toFixed(1)}MB`);
+
+        const img = new Image();
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        img.onload = () => {
+            // Calculate new dimensions (max 1280px on longest side)
+            const maxDim = 1280;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxDim || height > maxDim) {
+                if (width > height) {
+                    height = Math.round((height * maxDim) / width);
+                    width = maxDim;
+                } else {
+                    width = Math.round((width * maxDim) / height);
+                    height = maxDim;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Convert to blob with reduced quality
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const newSizeMB = blob.size / (1024 * 1024);
+                    console.log(`Meal image compressed: ${fileSizeMB.toFixed(1)}MB → ${newSizeMB.toFixed(1)}MB`);
+                    const compressedFile = new File([blob], file.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    resolve(compressedFile);
+                } else {
+                    console.warn('Meal image compression failed, using original');
+                    resolve(file);
+                }
+            }, 'image/jpeg', 0.7);
+        };
+
+        img.onerror = () => {
+            console.warn('Failed to load image for compression, using original');
+            resolve(file);
+        };
+
+        // Load the image
+        const reader = new FileReader();
+        reader.onload = (e) => { img.src = e.target.result; };
+        reader.onerror = () => resolve(file);
         reader.readAsDataURL(file);
     });
 }

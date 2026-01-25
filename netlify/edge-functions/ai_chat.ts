@@ -1,5 +1,5 @@
 
-import { Context } from "@netlify/edge-functions";
+import type { Context } from "https://edge.netlify.com";
 
 export default async function (request: Request, context: Context) {
   // Only accept POST
@@ -489,7 +489,7 @@ export default async function (request: Request, context: Context) {
         });
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
     
     const payload = { contents };
 
