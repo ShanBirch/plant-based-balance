@@ -61,13 +61,9 @@
 <script src="lib/migrate-localstorage.js"></script>
 <script src="lib/stories.js"></script>
 <script src="lib/nutrition-calculator.js"></script>
-<script src="lib/avatar.js"></script>
-<link rel="stylesheet" href="lib/avatar.css">
-
-<!-- Three.js for 3D Avatar -->
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="lib/avatar3d.js"></script>
+<!-- Avatar system disabled for now -->
+<!-- <script src="lib/avatar.js"></script> -->
+<!-- <link rel="stylesheet" href="lib/avatar.css"> -->
 
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script>
@@ -2602,19 +2598,7 @@ async function applyAppTheme(themeKey) {
             </div>
         </div>
 
-        <!-- Avatar Companion Widget -->
-        <div class="avatar-widget" id="avatar-widget">
-            <div class="avatar-widget-header">
-                <span class="avatar-widget-title">Your Fitness Buddy</span>
-                <button class="avatar-customize-btn" onclick="openAvatarCustomizer()">Customize</button>
-            </div>
-            <div class="avatar-widget-content">
-                <div id="dashboard-avatar"></div>
-            </div>
-            <div class="avatar-message" id="avatar-message">
-                Keep training to help your buddy get stronger!
-            </div>
-        </div>
+        <!-- Avatar Companion Widget - Disabled for now -->
 
         <h3 style="margin-bottom: 15px; margin-top: 30px;">Today's Priority</h3>
         
@@ -3079,8 +3063,8 @@ async function applyAppTheme(themeKey) {
                 applyAppTheme(savedTheme);
             }
 
-            // Initialize avatar companion
-            await initializeAvatar();
+            // Avatar companion disabled for now
+            // await initializeAvatar();
 
             // Check if essential quiz data is missing and trigger onboarding wizard
             await checkAndTriggerOnboarding();
@@ -12231,9 +12215,11 @@ function getTodaysWorkout() {
 }
 
 // ============================================================
-// AVATAR COMPANION SYSTEM (3D Version)
+// AVATAR COMPANION SYSTEM - DISABLED FOR NOW
 // ============================================================
+// To re-enable: uncomment the code below and the script tags at the top
 
+/*
 // Global avatar instance
 window.dashboardAvatar = null;
 
@@ -12323,41 +12309,12 @@ function openAvatarCustomizer() {
         }
     });
 }
+*/
 
-// Update the avatar message based on current state
-function updateAvatarMessage() {
-    const messageEl = document.getElementById('avatar-message');
-    if (!messageEl || !window.dashboardAvatar) return;
-
-    const state = window.dashboardAvatar.state;
-    let message = '';
-
-    // Generate message based on mood and activity
-    if (state.mood === 'champion') {
-        message = "Your buddy is feeling AMAZING! Keep up the incredible work!";
-    } else if (state.mood === 'energetic') {
-        message = "Looking strong! Your buddy is ready for anything!";
-    } else if (state.mood === 'happy') {
-        message = "Your buddy is happy and healthy. Nice consistency!";
-    } else if (state.mood === 'neutral') {
-        if (state.daysSinceWorkout > 2) {
-            message = "Your buddy misses training with you. Time for a workout?";
-        } else {
-            message = "Your buddy is doing well. Keep the momentum going!";
-        }
-    } else if (state.mood === 'tired') {
-        message = "Your buddy is getting tired. A workout would help boost their energy!";
-    } else if (state.mood === 'sad') {
-        message = "Your buddy really misses you! Let's get moving together!";
-    }
-
-    // Add workout count context
-    if (state.weeklyWorkoutCount > 0) {
-        message += ` (${state.weeklyWorkoutCount} workouts this week)`;
-    }
-
-    messageEl.textContent = message;
-}
+// Stub functions to prevent errors
+function initializeAvatar() { return Promise.resolve(); }
+function openAvatarCustomizer() { console.log('Avatar system disabled'); }
+function updateAvatarMessage() { }
 
 // Update Dashboard workout card
 function updateDashboardWorkoutCard() {
