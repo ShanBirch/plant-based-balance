@@ -61,6 +61,8 @@
 <script src="lib/migrate-localstorage.js"></script>
 <script src="lib/stories.js"></script>
 <script src="lib/nutrition-calculator.js"></script>
+<script src="lib/avatar.js"></script>
+<link rel="stylesheet" href="lib/avatar.css">
 
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script>
@@ -2595,6 +2597,20 @@ async function applyAppTheme(themeKey) {
             </div>
         </div>
 
+        <!-- Avatar Companion Widget -->
+        <div class="avatar-widget" id="avatar-widget">
+            <div class="avatar-widget-header">
+                <span class="avatar-widget-title">Your Fitness Buddy</span>
+                <button class="avatar-customize-btn" onclick="openAvatarCustomizer()">Customize</button>
+            </div>
+            <div class="avatar-widget-content">
+                <div id="dashboard-avatar"></div>
+            </div>
+            <div class="avatar-message" id="avatar-message">
+                Keep training to help your buddy get stronger!
+            </div>
+        </div>
+
         <h3 style="margin-bottom: 15px; margin-top: 30px;">Today's Priority</h3>
         
         <!-- Cycle Sync Injection Container -->
@@ -3057,6 +3073,9 @@ async function applyAppTheme(themeKey) {
             if (typeof applyAppTheme === 'function') {
                 applyAppTheme(savedTheme);
             }
+
+            // Initialize avatar companion
+            await initializeAvatar();
 
             // Check if essential quiz data is missing and trigger onboarding wizard
             await checkAndTriggerOnboarding();
@@ -12206,6 +12225,121 @@ function getTodaysWorkout() {
     };
 }
 
+// ============================================================
+// AVATAR COMPANION SYSTEM
+// ============================================================
+
+// Global avatar instance
+window.dashboardAvatar = null;
+
+// Initialize the avatar on dashboard load
+async function initializeAvatar() {
+    try {
+        const user = window.currentUser;
+        if (!user) return;
+
+        // Check if Avatar class is available
+        if (typeof Avatar === 'undefined') {
+            console.log('Avatar system not loaded yet');
+            return;
+        }
+
+        // Create avatar instance
+        window.dashboardAvatar = new Avatar('dashboard-avatar', {
+            width: 180,
+            height: 240,
+            showRoom: true,
+            interactive: true
+        });
+
+        // Load avatar data from database
+        await window.dashboardAvatar.load(user.id);
+
+        // Render the avatar
+        window.dashboardAvatar.render();
+
+        // Update message based on avatar state
+        updateAvatarMessage();
+
+        // If avatar hasn't been customized, show a prompt
+        if (!window.dashboardAvatar.state.isCustomized) {
+            const widget = document.getElementById('avatar-widget');
+            if (widget) {
+                widget.classList.add('avatar-needs-setup');
+            }
+        }
+
+        console.log('Avatar initialized successfully');
+    } catch (err) {
+        console.error('Error initializing avatar:', err);
+    }
+}
+
+// Open the avatar customization modal
+function openAvatarCustomizer() {
+    const user = window.currentUser;
+    if (!user) {
+        alert('Please log in to customize your avatar');
+        return;
+    }
+
+    if (!window.dashboardAvatar) {
+        // Create avatar if it doesn't exist yet
+        window.dashboardAvatar = new Avatar('dashboard-avatar', {
+            width: 180,
+            height: 240,
+            showRoom: true
+        });
+    }
+
+    createAvatarCustomizer(window.dashboardAvatar, user.id, (newState) => {
+        // After saving, re-render the dashboard avatar
+        window.dashboardAvatar.render();
+        updateAvatarMessage();
+
+        // Remove setup prompt if it exists
+        const widget = document.getElementById('avatar-widget');
+        if (widget) {
+            widget.classList.remove('avatar-needs-setup');
+        }
+    });
+}
+
+// Update the avatar message based on current state
+function updateAvatarMessage() {
+    const messageEl = document.getElementById('avatar-message');
+    if (!messageEl || !window.dashboardAvatar) return;
+
+    const state = window.dashboardAvatar.state;
+    let message = '';
+
+    // Generate message based on mood and activity
+    if (state.mood === 'champion') {
+        message = "Your buddy is feeling AMAZING! Keep up the incredible work!";
+    } else if (state.mood === 'energetic') {
+        message = "Looking strong! Your buddy is ready for anything!";
+    } else if (state.mood === 'happy') {
+        message = "Your buddy is happy and healthy. Nice consistency!";
+    } else if (state.mood === 'neutral') {
+        if (state.daysSinceWorkout > 2) {
+            message = "Your buddy misses training with you. Time for a workout?";
+        } else {
+            message = "Your buddy is doing well. Keep the momentum going!";
+        }
+    } else if (state.mood === 'tired') {
+        message = "Your buddy is getting tired. A workout would help boost their energy!";
+    } else if (state.mood === 'sad') {
+        message = "Your buddy really misses you! Let's get moving together!";
+    }
+
+    // Add workout count context
+    if (state.weeklyWorkoutCount > 0) {
+        message += ` (${state.weeklyWorkoutCount} workouts this week)`;
+    }
+
+    messageEl.textContent = message;
+}
+
 // Update Dashboard workout card
 function updateDashboardWorkoutCard() {
     const workout = getTodaysWorkout();
@@ -15606,6 +15740,16 @@ async function finishWorkout() {
                      await awardPointsForWorkout(workoutRefId);
                  } catch(pointsError) {
                      console.error("Error awarding points (workout still saved):", pointsError);
+                 }
+
+                 // Update avatar fitness state after workout
+                 try {
+                     if (window.dashboardAvatar) {
+                         await window.dashboardAvatar.updateFitness(user.id, true);
+                         console.log("Avatar fitness updated after workout");
+                     }
+                 } catch(avatarError) {
+                     console.error("Error updating avatar (workout still saved):", avatarError);
                  }
 
                  // Display success screen with progress data
