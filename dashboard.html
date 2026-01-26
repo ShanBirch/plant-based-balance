@@ -2691,6 +2691,17 @@ async function applyAppTheme(themeKey) {
         <!-- Calorie Tracker View -->
         <div class="view-section" id="calorie-tracker">
             <div style="padding: 25px;">
+                <!-- Camera Button - At Top for Easy Access -->
+                <div style="text-align: center; margin: 0 0 25px 0;">
+                    <button class="camera-btn-large" onclick="openMealCamera('tracker')">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                        <span>Log a Meal</span>
+                    </button>
+                </div>
+
                 <!-- Daily Summary Card -->
                 <div class="calorie-tracker-summary">
                     <h2 style="margin: 0 0 20px 0; font-size: 1.5rem; color: var(--text-main);">Daily Nutrition Tracker</h2>
@@ -2787,17 +2798,6 @@ async function applyAppTheme(themeKey) {
                             <p style="text-align: center; color: var(--text-muted); padding: 20px 0;">Loading weekly data...</p>
                         </div>
                     </div>
-                </div>
-
-                <!-- Camera Button -->
-                <div style="text-align: center; margin: 30px 0;">
-                    <button class="camera-btn-large" onclick="openMealCamera('tracker')">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                            <circle cx="12" cy="13" r="4"></circle>
-                        </svg>
-                        <span>Log a Meal</span>
-                    </button>
                 </div>
 
                 <!-- Today's Meals List -->
