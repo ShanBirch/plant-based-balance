@@ -64,6 +64,11 @@
 <script src="lib/avatar.js"></script>
 <link rel="stylesheet" href="lib/avatar.css">
 
+<!-- Three.js for 3D Avatar -->
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="lib/avatar3d.js"></script>
+
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script>
 // Stub for userCycleData - will be overwritten with real data later
@@ -12226,11 +12231,14 @@ function getTodaysWorkout() {
 }
 
 // ============================================================
-// AVATAR COMPANION SYSTEM
+// AVATAR COMPANION SYSTEM (3D Version)
 // ============================================================
 
 // Global avatar instance
 window.dashboardAvatar = null;
+
+// Use 3D avatar by default (set to false to use 2D SVG version)
+window.use3DAvatar = true;
 
 // Initialize the avatar on dashboard load
 async function initializeAvatar() {
@@ -12238,14 +12246,17 @@ async function initializeAvatar() {
         const user = window.currentUser;
         if (!user) return;
 
+        // Determine which avatar system to use
+        const AvatarClass = window.use3DAvatar && typeof Avatar3D !== 'undefined' ? Avatar3D : Avatar;
+
         // Check if Avatar class is available
-        if (typeof Avatar === 'undefined') {
+        if (typeof AvatarClass === 'undefined') {
             console.log('Avatar system not loaded yet');
             return;
         }
 
-        // Create avatar instance
-        window.dashboardAvatar = new Avatar('dashboard-avatar', {
+        // Create avatar instance (3D or 2D)
+        window.dashboardAvatar = new AvatarClass('dashboard-avatar', {
             width: 180,
             height: 240,
             showRoom: true,
@@ -12255,8 +12266,10 @@ async function initializeAvatar() {
         // Load avatar data from database
         await window.dashboardAvatar.load(user.id);
 
-        // Render the avatar
-        window.dashboardAvatar.render();
+        // Render the avatar (for 2D version, 3D auto-renders)
+        if (window.dashboardAvatar.render) {
+            window.dashboardAvatar.render();
+        }
 
         // Update message based on avatar state
         updateAvatarMessage();
@@ -12269,7 +12282,7 @@ async function initializeAvatar() {
             }
         }
 
-        console.log('Avatar initialized successfully');
+        console.log(`Avatar initialized successfully (${window.use3DAvatar ? '3D' : '2D'} mode)`);
     } catch (err) {
         console.error('Error initializing avatar:', err);
     }
@@ -12283,18 +12296,24 @@ function openAvatarCustomizer() {
         return;
     }
 
+    // Determine which avatar system to use
+    const AvatarClass = window.use3DAvatar && typeof Avatar3D !== 'undefined' ? Avatar3D : Avatar;
+
     if (!window.dashboardAvatar) {
         // Create avatar if it doesn't exist yet
-        window.dashboardAvatar = new Avatar('dashboard-avatar', {
+        window.dashboardAvatar = new AvatarClass('dashboard-avatar', {
             width: 180,
             height: 240,
             showRoom: true
         });
     }
 
+    // Create customizer (works with both 2D and 3D avatars - same state API)
     createAvatarCustomizer(window.dashboardAvatar, user.id, (newState) => {
-        // After saving, re-render the dashboard avatar
-        window.dashboardAvatar.render();
+        // After saving, re-render/update the dashboard avatar
+        if (window.dashboardAvatar.render) {
+            window.dashboardAvatar.render();
+        }
         updateAvatarMessage();
 
         // Remove setup prompt if it exists
