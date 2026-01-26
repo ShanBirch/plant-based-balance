@@ -24,8 +24,13 @@
 }
 
 /* ============================================================
-   CHARACTER ANIMATIONS
+   CHARACTER ANIMATIONS - Stylized Cartoon Character
    ============================================================ */
+
+/* Base avatar SVG styling */
+.avatar-svg {
+  filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15));
+}
 
 /* Slow animation for low energy */
 .avatar-anim-slow {
@@ -44,91 +49,218 @@
 
 @keyframes avatar-breathe {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+  50% { transform: translateY(-4px); }
 }
 
 /* Bouncy animation for happy mood */
 .avatar-anim-bouncy {
-  animation: avatar-bounce 1.5s ease-in-out infinite;
+  animation: avatar-bounce 1.2s ease-in-out infinite;
 }
 
 @keyframes avatar-bounce {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  50% { transform: translateY(-8px); }
 }
 
-/* Energetic animation */
+/* Energetic animation - more dynamic */
 .avatar-anim-energetic {
-  animation: avatar-energetic 1s ease-in-out infinite;
+  animation: avatar-energetic 0.8s ease-in-out infinite;
 }
 
 @keyframes avatar-energetic {
   0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-5px) rotate(-2deg); }
-  75% { transform: translateY(-5px) rotate(2deg); }
+  25% { transform: translateY(-6px) rotate(-3deg); }
+  50% { transform: translateY(-10px) rotate(0deg); }
+  75% { transform: translateY(-6px) rotate(3deg); }
 }
 
-/* Power animation for champion mood */
+/* Power animation for champion mood - triumphant */
 .avatar-anim-power {
-  animation: avatar-power 0.8s ease-in-out infinite;
+  animation: avatar-power 0.6s ease-in-out infinite;
 }
 
 @keyframes avatar-power {
   0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-8px) scale(1.02); }
+  50% { transform: translateY(-12px) scale(1.03); }
 }
 
-/* Walking leg animations */
+/* ===== LEG ANIMATIONS ===== */
 .avatar-svg .leg-left,
 .avatar-svg .leg-right {
+  transform-origin: 38px 98px; /* Hip joint */
+}
+
+.avatar-svg .shoe-left,
+.avatar-svg .shoe-right {
   transform-origin: center top;
 }
 
+/* Walking animation for legs */
 .avatar-anim-normal .leg-left,
-.avatar-anim-bouncy .leg-left,
-.avatar-anim-energetic .leg-left,
-.avatar-anim-power .leg-left {
-  animation: walk-left 0.5s ease-in-out infinite;
+.avatar-anim-bouncy .leg-left {
+  animation: walk-left 0.6s ease-in-out infinite;
 }
 
 .avatar-anim-normal .leg-right,
-.avatar-anim-bouncy .leg-right,
+.avatar-anim-bouncy .leg-right {
+  animation: walk-right 0.6s ease-in-out infinite;
+}
+
+.avatar-anim-energetic .leg-left,
+.avatar-anim-power .leg-left {
+  animation: run-left 0.3s ease-in-out infinite;
+}
+
 .avatar-anim-energetic .leg-right,
 .avatar-anim-power .leg-right {
-  animation: walk-right 0.5s ease-in-out infinite;
+  animation: run-right 0.3s ease-in-out infinite;
 }
 
 @keyframes walk-left {
   0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(10deg); }
+  50% { transform: rotate(8deg); }
 }
 
 @keyframes walk-right {
   0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(-10deg); }
+  50% { transform: rotate(-8deg); }
 }
 
-/* Arm swing */
-.avatar-anim-energetic .arm-left,
-.avatar-anim-power .arm-left {
-  animation: swing-left 0.6s ease-in-out infinite;
-  transform-origin: center top;
+@keyframes run-left {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(15deg); }
 }
 
-.avatar-anim-energetic .arm-right,
-.avatar-anim-power .arm-right {
-  animation: swing-right 0.6s ease-in-out infinite;
-  transform-origin: center top;
-}
-
-@keyframes swing-left {
+@keyframes run-right {
   0%, 100% { transform: rotate(0deg); }
   50% { transform: rotate(-15deg); }
 }
 
-@keyframes swing-right {
+/* ===== ARM ANIMATIONS ===== */
+.avatar-svg .arm-left,
+.avatar-svg .arm-right {
+  transform-origin: center 58px; /* Shoulder joint */
+}
+
+/* Normal arm sway */
+.avatar-anim-normal .arm-left,
+.avatar-anim-bouncy .arm-left {
+  animation: arm-sway-left 0.8s ease-in-out infinite;
+}
+
+.avatar-anim-normal .arm-right,
+.avatar-anim-bouncy .arm-right {
+  animation: arm-sway-right 0.8s ease-in-out infinite;
+}
+
+/* Energetic arm pumping */
+.avatar-anim-energetic .arm-left,
+.avatar-anim-power .arm-left {
+  animation: arm-pump-left 0.4s ease-in-out infinite;
+}
+
+.avatar-anim-energetic .arm-right,
+.avatar-anim-power .arm-right {
+  animation: arm-pump-right 0.4s ease-in-out infinite;
+}
+
+@keyframes arm-sway-left {
   0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(15deg); }
+  50% { transform: rotate(5deg); }
+}
+
+@keyframes arm-sway-right {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-5deg); }
+}
+
+@keyframes arm-pump-left {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-20deg); }
+}
+
+@keyframes arm-pump-right {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(20deg); }
+}
+
+/* ===== HEAD ANIMATIONS ===== */
+.avatar-svg .head {
+  transform-origin: center 45px; /* Neck base */
+}
+
+.avatar-anim-energetic .head,
+.avatar-anim-power .head {
+  animation: head-bob 0.4s ease-in-out infinite;
+}
+
+@keyframes head-bob {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-2deg); }
+  75% { transform: rotate(2deg); }
+}
+
+/* ===== CHAMPION STAR EYES ANIMATION ===== */
+.champion-eyes polygon {
+  animation: star-sparkle 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes star-sparkle {
+  0% { fill: #FFD700; }
+  100% { fill: #FFF8DC; }
+}
+
+/* ===== FITNESS GLOW ANIMATION ===== */
+.fitness-glow {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.4; }
+}
+
+/* ===== HAIR ANIMATIONS ===== */
+.avatar-anim-energetic .hair-long path:nth-child(2),
+.avatar-anim-energetic .hair-long path:nth-child(3),
+.avatar-anim-power .hair-long path:nth-child(2),
+.avatar-anim-power .hair-long path:nth-child(3) {
+  animation: hair-flow 0.5s ease-in-out infinite alternate;
+}
+
+.avatar-anim-energetic .hair-ponytail path:last-child,
+.avatar-anim-power .hair-ponytail path:last-child {
+  animation: ponytail-swing 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes hair-flow {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(2px); }
+}
+
+@keyframes ponytail-swing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(5deg); }
+}
+
+/* ===== ROOM PROP ANIMATIONS ===== */
+@keyframes flutter {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(3px, -5px) rotate(5deg); }
+  50% { transform: translate(6px, 0) rotate(0deg); }
+  75% { transform: translate(3px, 5px) rotate(-5deg); }
+}
+
+@keyframes wave {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+
+@keyframes soar {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-15px, -5px); }
+  50% { transform: translate(-30px, 0); }
+  75% { transform: translate(-15px, 5px); }
 }
 
 /* ============================================================
