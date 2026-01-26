@@ -2600,21 +2600,24 @@ async function applyAppTheme(themeKey) {
 
         <!-- Avatar Companion Widget - Disabled for now -->
 
-        <h3 style="margin-bottom: 15px; margin-top: 30px;">Today's Priority</h3>
-        
-        <!-- Cycle Sync Injection Container -->
-        <div id="today-meals-container"></div>
-        <!-- Quick Action Card -->
-         <div class="card" onclick="switchAppTab('meals', this);" style="cursor: pointer;">
-            <div class="card-body" style="max-height: none; padding: 25px; opacity: 1; display: flex; align-items: center; gap: 20px;">
-                <div style="background: var(--accent-green); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🌿</div>
-                <div>
-                    <h4 style="margin: 0 0 5px 0; border: none; padding: 0;">Current Phase</h4>
-                    <p style="margin: 0; font-weight: 500; color: var(--primary);">Week 1: The Flush</p>
-                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">View today's menu &rarr;</p>
+        <!-- Today's Priority Section - Only shown when user has meal plan -->
+        <div id="todays-priority-section">
+            <h3 style="margin-bottom: 15px; margin-top: 30px;">Today's Priority</h3>
+
+            <!-- Cycle Sync Injection Container -->
+            <div id="today-meals-container"></div>
+            <!-- Quick Action Card -->
+             <div class="card" onclick="switchAppTab('meals', this);" style="cursor: pointer;">
+                <div class="card-body" style="max-height: none; padding: 25px; opacity: 1; display: flex; align-items: center; gap: 20px;">
+                    <div style="background: var(--accent-green); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🌿</div>
+                    <div>
+                        <h4 style="margin: 0 0 5px 0; border: none; padding: 0;">Current Phase</h4>
+                        <p style="margin: 0; font-weight: 500; color: var(--primary);">Week 1: The Flush</p>
+                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">View today's menu &rarr;</p>
+                    </div>
                 </div>
-            </div>
-         </div>
+             </div>
+        </div>
 
          <!-- Your Workout Actions -->
          <h3 style="margin: 30px 0 15px 0;">Your Workout</h3>
@@ -12516,7 +12519,15 @@ function initializeMealPlanView() {
     const storeSection = document.getElementById('meal-plan-store');
     const todaySection = document.getElementById('today');
 
+    // Get Today's Priority section on dashboard (only shown with meal plan)
+    const todaysPrioritySection = document.getElementById('todays-priority-section');
+
     if (!access.hasAccess) {
+        // User needs to buy a plan - hide Today's Priority section on dashboard
+        if (todaysPrioritySection) {
+            todaysPrioritySection.style.display = 'none';
+        }
+
         // User needs to buy a plan - show only Calorie Tracker and Browse Plans
         if (navPills) {
             const allPills = navPills.querySelectorAll('.pill-btn');
@@ -12587,6 +12598,11 @@ function initializeMealPlanView() {
         // Ensure today section can be shown
         if (todaySection) {
             todaySection.style.display = '';
+        }
+
+        // Show Today's Priority section on dashboard
+        if (todaysPrioritySection) {
+            todaysPrioritySection.style.display = '';
         }
     }
 }
