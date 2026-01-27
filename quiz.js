@@ -36,13 +36,14 @@ const coreQuestions = [
         ]
     },
     {
-        id: "cycle_sync_preference",
-        text: "Do you want your workouts synced to your cycle?",
-        subtext: "You can always change this later in your settings.",
+        id: "cycle_yoga_suggestion",
+        text: "Would you like us to suggest yoga on low-energy cycle days?",
+        subtext: "We'll gently recommend recovery workouts when your body might need it most.",
         type: "choice",
+        showIf: { questionId: "cycle_body_response", value: "tired" },
         options: [
-            { text: "Yes, sync my workouts", value: "yes" },
-            { text: "No, I prefer standard recommendations", value: "no" }
+            { text: "Yes, suggest yoga when I might need it", value: "yes" },
+            { text: "No, I'll decide myself", value: "no" }
         ]
     },
     {
@@ -185,6 +186,88 @@ const coreQuestions = [
             { text: "High / Ready to push", value: "high" }
         ]
     },
+    // ========== WORKOUT CALENDAR QUESTIONS ==========
+    {
+        id: "training_frequency",
+        text: "How many days per week do you want to train?",
+        subtext: "Pick what works for your schedule - you can always adjust later.",
+        type: "number_select",
+        options: [
+            { text: "2", value: "2", tip: "Perfect for beginners or busy schedules" },
+            { text: "3", value: "3", tip: "Great balance of training and recovery" },
+            { text: "4", value: "4", tip: "Ideal for building strength with good recovery" },
+            { text: "5", value: "5", tip: "Dedicated training with rest built in" },
+            { text: "6", value: "6", tip: "Serious training - we'll ensure proper recovery" },
+            { text: "7", value: "7", tip: "Every day! We'll include active recovery days" }
+        ]
+    },
+    {
+        id: "split_preference",
+        text: "What training split do you prefer?",
+        subtext: "This determines how we organize your workouts across the week.",
+        type: "split_choice",
+        showIf: { questionId: "equipment_access", value: "gym" },
+        options: [
+            { text: "Full Body", value: "full_body", desc: "Train all muscle groups each session", best: "2-3 days/week" },
+            { text: "Push / Pull / Legs", value: "ppl", desc: "Split by movement patterns", best: "3-6 days/week" },
+            { text: "Upper / Lower", value: "upper_lower", desc: "Alternate upper and lower body", best: "4 days/week" },
+            { text: "Bro Split", value: "bro_split", desc: "One muscle group per day", best: "5-6 days/week" }
+        ]
+    },
+    {
+        id: "recovery_preference",
+        text: "Do you want recovery days built into your week?",
+        subtext: "Yoga and mobility work helps prevent injury and improves results.",
+        type: "choice",
+        options: [
+            { text: "Yes, add yoga & recovery on rest days", value: "yes" },
+            { text: "No, just complete rest days", value: "no" }
+        ]
+    },
+    {
+        id: "training_days",
+        text: "Which days do you want to train?",
+        subtext: "Select the days that work best for your schedule.",
+        type: "day_selector"
+    },
+    {
+        id: "calendar_build_choice",
+        text: "Let's build your workout week!",
+        subtext: "",
+        type: "calendar_choice",
+        options: [
+            {
+                text: "Tailor My Calendar",
+                value: "tailor",
+                icon: "✨",
+                desc: "We'll create the optimal schedule based on your preferences and recovery science. You can adjust it after."
+            },
+            {
+                text: "Design My Own",
+                value: "design",
+                icon: "🛠️",
+                desc: "Assign specific workouts to each day. Full control over your training week."
+            }
+        ],
+        infoBox: {
+            title: "About your 48-week program",
+            text: "Each workout slot cycles through 15 unique variations over 48 weeks. You'll never do the same workout twice in a row - we handle the variety, you just show up!"
+        }
+    },
+    {
+        id: "calendar_builder",
+        text: "Design Your Week",
+        subtext: "Tap a day to assign a workout",
+        type: "calendar_builder",
+        showIf: { questionId: "calendar_build_choice", value: "design" }
+    },
+    {
+        id: "calendar_preview",
+        text: "Here's your personalized week",
+        subtext: "",
+        type: "calendar_preview"
+    },
+    // ========== END WORKOUT CALENDAR QUESTIONS ==========
     {
         id: "age",
         text: "How old are you?",
@@ -984,15 +1067,23 @@ let quizFlow = [
     currentBodyTypeSlide, 
     coreQuestions[3], // Target Body Type (body_current is now at 3)
     profileBuildingSlide,
-    coreQuestions[19], // Symptoms Multi (now at 19)
+    coreQuestions[29], // Symptoms Multi
     loadingSlide1, // First Analysis Pause
     ...coreQuestions.slice(5, 8), // Sleep & Energy Basics (5-7)
     dietFailSlide,
     coreQuestions[9], // Diets tried (now at 9)
     // Removed redundant cycle change and hangry questions
-    coreQuestions[12], // Diet Type (now at 12)
-    coreQuestions[13], // Equipment (now at 13)
-    coreQuestions[14], // Energy Status (now at 14)
+    coreQuestions[14], // Diet Type
+    coreQuestions[15], // Equipment
+    coreQuestions[16], // Energy Status
+    // WORKOUT CALENDAR ONBOARDING
+    coreQuestions[17], // Training Frequency (how many days)
+    coreQuestions[18], // Split Preference (gym only - has showIf)
+    coreQuestions[19], // Recovery Preference (yoga on rest days)
+    coreQuestions[20], // Training Days (which days)
+    coreQuestions[21], // Calendar Build Choice (tailor vs design)
+    coreQuestions[22], // Calendar Builder (design only - has showIf)
+    coreQuestions[23], // Calendar Preview
 
     // PHASE 2: STRESS TEST (Games)
     diagnosticIntroSlide, // Moved here as Main Intro
@@ -1022,11 +1113,11 @@ let quizFlow = [
 
     // PHASE 4: CALIBRATION (Demographics)
     finalCalculationSlide, // "We need 4 final questions..."
-    coreQuestions[15], // Age
-    coreQuestions[16], // Height
-    coreQuestions[17], // Weight
-    coreQuestions[18], // Goal Weight
-    coreQuestions[11], // Meal Priority (Moved here)
+    coreQuestions[24], // Age
+    coreQuestions[26], // Height
+    coreQuestions[27], // Weight
+    coreQuestions[28], // Goal Weight
+    coreQuestions[13], // Meal Priority
     graphSlide,
     bmiSlide,
     improvementSlide,
@@ -3140,12 +3231,786 @@ function renderQuestion(q, container) {
             selectOption(q.id, Array.from(selectedValues).join(', '));
         };
         optionsDiv.appendChild(nextBtn);
+    } else if (q.type === 'number_select') {
+        // Training frequency selector (2-7 days)
+        const numberGrid = document.createElement('div');
+        numberGrid.style.display = 'flex';
+        numberGrid.style.justifyContent = 'center';
+        numberGrid.style.gap = '10px';
+        numberGrid.style.flexWrap = 'wrap';
+        numberGrid.style.marginBottom = '20px';
+
+        const tipText = document.createElement('p');
+        tipText.id = 'frequency-tip';
+        tipText.style.textAlign = 'center';
+        tipText.style.color = '#48864B';
+        tipText.style.fontSize = '14px';
+        tipText.style.minHeight = '40px';
+        tipText.style.marginTop = '15px';
+        tipText.style.padding = '10px';
+        tipText.style.background = 'rgba(72, 134, 75, 0.1)';
+        tipText.style.borderRadius = '10px';
+        tipText.innerText = 'Select how many days you want to train';
+
+        let selectedValue = null;
+
+        q.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'number-select-btn';
+            btn.textContent = opt.text;
+            btn.style.width = '50px';
+            btn.style.height = '50px';
+            btn.style.borderRadius = '50%';
+            btn.style.border = '2px solid #48864B';
+            btn.style.background = '#fff';
+            btn.style.color = '#1a4d2e';
+            btn.style.fontSize = '20px';
+            btn.style.fontWeight = '700';
+            btn.style.cursor = 'pointer';
+            btn.style.transition = 'all 0.2s ease';
+
+            btn.onclick = () => {
+                // Reset all buttons
+                numberGrid.querySelectorAll('.number-select-btn').forEach(b => {
+                    b.style.background = '#fff';
+                    b.style.color = '#1a4d2e';
+                    b.style.transform = 'scale(1)';
+                });
+                // Highlight selected
+                btn.style.background = '#48864B';
+                btn.style.color = '#fff';
+                btn.style.transform = 'scale(1.1)';
+                selectedValue = opt.value;
+                tipText.innerText = opt.tip;
+            };
+            numberGrid.appendChild(btn);
+        });
+
+        const continueBtn = document.createElement('button');
+        continueBtn.className = 'option-btn';
+        continueBtn.style.marginTop = '20px';
+        continueBtn.style.width = '100%';
+        continueBtn.innerText = 'CONTINUE';
+        continueBtn.onclick = () => {
+            if (!selectedValue) {
+                alert('Please select how many days you want to train.');
+                return;
+            }
+            selectOption(q.id, selectedValue);
+        };
+
+        optionsDiv.appendChild(numberGrid);
+        optionsDiv.appendChild(tipText);
+        optionsDiv.appendChild(continueBtn);
+    } else if (q.type === 'split_choice') {
+        // Split preference selector with descriptions
+        q.options.forEach(opt => {
+            const card = document.createElement('div');
+            card.style.background = '#fff';
+            card.style.border = '2px solid #e0e0e0';
+            card.style.borderRadius = '12px';
+            card.style.padding = '15px';
+            card.style.marginBottom = '10px';
+            card.style.cursor = 'pointer';
+            card.style.transition = 'all 0.2s ease';
+
+            const title = document.createElement('div');
+            title.style.fontWeight = '700';
+            title.style.fontSize = '16px';
+            title.style.color = '#1a4d2e';
+            title.textContent = opt.text;
+
+            const desc = document.createElement('div');
+            desc.style.fontSize = '13px';
+            desc.style.color = '#666';
+            desc.style.marginTop = '4px';
+            desc.textContent = opt.desc;
+
+            const best = document.createElement('div');
+            best.style.fontSize = '12px';
+            best.style.color = '#48864B';
+            best.style.marginTop = '4px';
+            best.style.fontWeight = '600';
+            best.textContent = `Best for: ${opt.best}`;
+
+            card.appendChild(title);
+            card.appendChild(desc);
+            card.appendChild(best);
+
+            card.onmouseenter = () => {
+                if (card.dataset.selected !== 'true') {
+                    card.style.borderColor = '#48864B';
+                }
+            };
+            card.onmouseleave = () => {
+                if (card.dataset.selected !== 'true') {
+                    card.style.borderColor = '#e0e0e0';
+                }
+            };
+
+            card.onclick = () => {
+                // Check if this is a mismatch with frequency
+                const freq = parseInt(answers.training_frequency);
+                let warning = null;
+
+                if (opt.value === 'bro_split' && freq < 5) {
+                    warning = `Bro Split works best with 5-6 days. You selected ${freq} days. Want to continue anyway?`;
+                } else if (opt.value === 'full_body' && freq > 4) {
+                    warning = `Full Body is typically done 2-3 days/week for recovery. You selected ${freq} days. Want to continue anyway?`;
+                }
+
+                if (warning && !confirm(warning)) {
+                    return;
+                }
+
+                selectOption(q.id, opt.value);
+            };
+
+            optionsDiv.appendChild(card);
+        });
+    } else if (q.type === 'day_selector') {
+        // Day selector for choosing training days
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const fullDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const selectedDays = new Set();
+        const requiredDays = parseInt(answers.training_frequency) || 4;
+
+        const counterText = document.createElement('p');
+        counterText.style.textAlign = 'center';
+        counterText.style.marginBottom = '15px';
+        counterText.style.fontWeight = '600';
+        counterText.style.color = '#1a4d2e';
+        counterText.innerText = `Select ${requiredDays} days`;
+
+        const dayGrid = document.createElement('div');
+        dayGrid.style.display = 'flex';
+        dayGrid.style.justifyContent = 'center';
+        dayGrid.style.gap = '8px';
+        dayGrid.style.flexWrap = 'wrap';
+        dayGrid.style.marginBottom = '20px';
+
+        days.forEach((day, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'day-select-btn';
+            btn.textContent = day;
+            btn.dataset.day = fullDays[idx];
+            btn.style.width = '45px';
+            btn.style.height = '45px';
+            btn.style.borderRadius = '10px';
+            btn.style.border = '2px solid #48864B';
+            btn.style.background = '#fff';
+            btn.style.color = '#1a4d2e';
+            btn.style.fontSize = '12px';
+            btn.style.fontWeight = '700';
+            btn.style.cursor = 'pointer';
+            btn.style.transition = 'all 0.2s ease';
+
+            btn.onclick = () => {
+                if (selectedDays.has(fullDays[idx])) {
+                    selectedDays.delete(fullDays[idx]);
+                    btn.style.background = '#fff';
+                    btn.style.color = '#1a4d2e';
+                } else {
+                    if (selectedDays.size >= requiredDays) {
+                        alert(`You can only select ${requiredDays} days. Deselect one first.`);
+                        return;
+                    }
+                    selectedDays.add(fullDays[idx]);
+                    btn.style.background = '#48864B';
+                    btn.style.color = '#fff';
+                }
+                counterText.innerText = `${selectedDays.size} of ${requiredDays} days selected`;
+            };
+
+            dayGrid.appendChild(btn);
+        });
+
+        const feedbackText = document.createElement('p');
+        feedbackText.id = 'day-feedback';
+        feedbackText.style.textAlign = 'center';
+        feedbackText.style.color = '#48864B';
+        feedbackText.style.fontSize = '13px';
+        feedbackText.style.minHeight = '20px';
+        feedbackText.style.marginBottom = '15px';
+
+        const continueBtn = document.createElement('button');
+        continueBtn.className = 'option-btn';
+        continueBtn.style.width = '100%';
+        continueBtn.innerText = 'CONTINUE';
+        continueBtn.onclick = () => {
+            if (selectedDays.size !== requiredDays) {
+                alert(`Please select exactly ${requiredDays} days.`);
+                return;
+            }
+            // Store as comma-separated string
+            selectOption(q.id, Array.from(selectedDays).join(','));
+        };
+
+        optionsDiv.appendChild(counterText);
+        optionsDiv.appendChild(dayGrid);
+        optionsDiv.appendChild(feedbackText);
+        optionsDiv.appendChild(continueBtn);
+    } else if (q.type === 'calendar_choice') {
+        // Tailor vs Design choice screen
+        q.options.forEach(opt => {
+            const card = document.createElement('div');
+            card.style.background = '#fff';
+            card.style.border = '2px solid #e0e0e0';
+            card.style.borderRadius = '16px';
+            card.style.padding = '20px';
+            card.style.marginBottom = '15px';
+            card.style.cursor = 'pointer';
+            card.style.transition = 'all 0.2s ease';
+            card.style.textAlign = 'center';
+
+            const icon = document.createElement('div');
+            icon.style.fontSize = '32px';
+            icon.style.marginBottom = '10px';
+            icon.textContent = opt.icon;
+
+            const title = document.createElement('div');
+            title.style.fontWeight = '700';
+            title.style.fontSize = '18px';
+            title.style.color = '#1a4d2e';
+            title.style.marginBottom = '8px';
+            title.textContent = opt.text;
+
+            const desc = document.createElement('div');
+            desc.style.fontSize = '13px';
+            desc.style.color = '#666';
+            desc.style.lineHeight = '1.4';
+            desc.textContent = opt.desc;
+
+            card.appendChild(icon);
+            card.appendChild(title);
+            card.appendChild(desc);
+
+            card.onmouseenter = () => card.style.borderColor = '#48864B';
+            card.onmouseleave = () => card.style.borderColor = '#e0e0e0';
+
+            card.onclick = () => {
+                if (opt.value === 'tailor') {
+                    // Generate the tailored calendar
+                    generateTailoredCalendar();
+                }
+                selectOption(q.id, opt.value);
+            };
+
+            optionsDiv.appendChild(card);
+        });
+
+        // Info box about 48-week program
+        if (q.infoBox) {
+            const infoBox = document.createElement('div');
+            infoBox.style.background = 'rgba(72, 134, 75, 0.1)';
+            infoBox.style.border = '1px solid rgba(72, 134, 75, 0.3)';
+            infoBox.style.borderRadius = '12px';
+            infoBox.style.padding = '15px';
+            infoBox.style.marginTop = '10px';
+
+            const infoTitle = document.createElement('div');
+            infoTitle.style.fontWeight = '700';
+            infoTitle.style.fontSize = '14px';
+            infoTitle.style.color = '#1a4d2e';
+            infoTitle.style.marginBottom = '6px';
+            infoTitle.textContent = '📈 ' + q.infoBox.title;
+
+            const infoText = document.createElement('div');
+            infoText.style.fontSize = '13px';
+            infoText.style.color = '#666';
+            infoText.style.lineHeight = '1.4';
+            infoText.textContent = q.infoBox.text;
+
+            infoBox.appendChild(infoTitle);
+            infoBox.appendChild(infoText);
+            optionsDiv.appendChild(infoBox);
+        }
+    } else if (q.type === 'calendar_builder') {
+        // Calendar builder for Design My Own
+        renderCalendarBuilder(container, optionsDiv, q);
+        return; // Early return as this has custom rendering
+    } else if (q.type === 'calendar_preview') {
+        // Calendar preview/confirmation screen
+        renderCalendarPreview(container, optionsDiv, q);
+        return; // Early return as this has custom rendering
     }
 
     container.appendChild(optionsDiv);
 
     // Back Button logic could be updated here if needed, but simple nextStep usage relies on linear flow
 }
+
+// ========== WORKOUT CALENDAR HELPER FUNCTIONS ==========
+
+// Stores the generated workout calendar
+let workoutCalendar = {};
+
+// Available workout options based on equipment
+function getWorkoutOptions() {
+    const equipment = answers.equipment_access || 'none';
+    const options = [];
+
+    // Base options available to everyone
+    options.push({ category: 'YOGA', items: [
+        { id: 'power_yoga', name: 'Power Yoga', icon: '🧘' },
+        { id: 'yin_yoga', name: 'Yin Yoga', icon: '🧘' },
+        { id: 'restorative', name: 'Restorative Yoga', icon: '🧘' }
+    ]});
+
+    options.push({ category: 'RECOVERY', items: [
+        { id: 'active_recovery', name: 'Active Recovery', icon: '🔄' }
+    ]});
+
+    options.push({ category: 'REST', items: [
+        { id: 'rest', name: 'Rest Day', icon: '⏸️' }
+    ]});
+
+    // Equipment-specific options
+    if (equipment === 'gym') {
+        options.unshift({ category: 'GYM', items: [
+            { id: 'push', name: 'Push (Chest, Shoulders, Triceps)', icon: '🏋️' },
+            { id: 'pull', name: 'Pull (Back, Biceps)', icon: '🏋️' },
+            { id: 'legs', name: 'Legs', icon: '🏋️' },
+            { id: 'chest', name: 'Chest', icon: '🏋️' },
+            { id: 'back', name: 'Back', icon: '🏋️' },
+            { id: 'shoulders', name: 'Shoulders', icon: '🏋️' },
+            { id: 'arms_core', name: 'Arms & Core', icon: '🏋️' },
+            { id: 'upper_body', name: 'Upper Body', icon: '🏋️' },
+            { id: 'lower_body', name: 'Lower Body', icon: '🏋️' },
+            { id: 'total_body', name: 'Total Body', icon: '🏋️' }
+        ]});
+    } else if (equipment === 'dumbbells') {
+        options.unshift({ category: 'HOME WEIGHTS', items: [
+            { id: 'hw_push', name: 'Push', icon: '🏠' },
+            { id: 'hw_pull', name: 'Pull', icon: '🏠' },
+            { id: 'hw_lower', name: 'Lower Body', icon: '🏠' },
+            { id: 'hw_upper', name: 'Upper Body', icon: '🏠' },
+            { id: 'hw_total', name: 'Total Body', icon: '🏠' },
+            { id: 'hw_arms_core', name: 'Arms & Core', icon: '🏠' }
+        ]});
+    } else if (equipment === 'bands') {
+        options.unshift({ category: 'BANDS', items: [
+            { id: 'bands_upper', name: 'Upper Body', icon: '🔗' },
+            { id: 'bands_lower', name: 'Lower Body', icon: '🔗' },
+            { id: 'bands_total', name: 'Total Body', icon: '🔗' }
+        ]});
+    } else if (equipment === 'none') {
+        options.unshift({ category: 'BODYWEIGHT', items: [
+            { id: 'bw_upper', name: 'Upper Body', icon: '🤸' },
+            { id: 'bw_lower', name: 'Lower Body', icon: '🤸' },
+            { id: 'bw_core', name: 'Core', icon: '🤸' },
+            { id: 'bw_total', name: 'Total Body', icon: '🤸' }
+        ]});
+    }
+
+    return options;
+}
+
+// Generate a tailored calendar based on user preferences
+function generateTailoredCalendar() {
+    const trainingDays = (answers.training_days || '').split(',').filter(d => d);
+    const equipment = answers.equipment_access || 'none';
+    const split = answers.split_preference || 'full_body';
+    const recoveryOnRestDays = answers.recovery_preference === 'yes';
+    const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    // Reset calendar
+    workoutCalendar = {};
+
+    // Determine workout sequence based on split and equipment
+    let workoutSequence = [];
+
+    if (equipment === 'gym') {
+        if (split === 'ppl') {
+            workoutSequence = ['push', 'pull', 'legs'];
+        } else if (split === 'upper_lower') {
+            workoutSequence = ['upper_body', 'lower_body'];
+        } else if (split === 'bro_split') {
+            workoutSequence = ['chest', 'back', 'shoulders', 'legs', 'arms_core'];
+        } else {
+            // full_body
+            workoutSequence = ['total_body'];
+        }
+    } else if (equipment === 'dumbbells') {
+        workoutSequence = ['hw_push', 'hw_pull', 'hw_lower', 'hw_upper'];
+    } else if (equipment === 'bands') {
+        workoutSequence = ['bands_upper', 'bands_lower', 'bands_total'];
+    } else if (equipment === 'none') {
+        workoutSequence = ['bw_upper', 'bw_lower', 'bw_core', 'bw_total'];
+    } else if (equipment === 'yoga_only') {
+        workoutSequence = ['power_yoga', 'yin_yoga', 'restorative'];
+    }
+
+    // Assign workouts to training days
+    let workoutIndex = 0;
+    allDays.forEach(day => {
+        if (trainingDays.includes(day)) {
+            workoutCalendar[day] = workoutSequence[workoutIndex % workoutSequence.length];
+            workoutIndex++;
+        } else {
+            // Rest day - add yoga if they want recovery
+            workoutCalendar[day] = recoveryOnRestDays ? 'yin_yoga' : 'rest';
+        }
+    });
+
+    // Store in answers
+    answers.workout_calendar = JSON.stringify(workoutCalendar);
+}
+
+// Render the calendar builder for "Design My Own"
+function renderCalendarBuilder(container, optionsDiv, q) {
+    const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const trainingDays = (answers.training_days || '').split(',').filter(d => d);
+    const workoutOptions = getWorkoutOptions();
+
+    // Initialize calendar if empty
+    if (Object.keys(workoutCalendar).length === 0) {
+        allDays.forEach(day => {
+            workoutCalendar[day] = trainingDays.includes(day) ? '' : 'rest';
+        });
+    }
+
+    // Title
+    const h2 = document.createElement('h2');
+    h2.className = 'question-text';
+    h2.textContent = q.text;
+    container.appendChild(h2);
+
+    const subtext = document.createElement('p');
+    subtext.className = 'question-subtext';
+    subtext.textContent = q.subtext;
+    container.appendChild(subtext);
+
+    // Calendar grid
+    const calendarGrid = document.createElement('div');
+    calendarGrid.style.width = '100%';
+    calendarGrid.style.maxWidth = '400px';
+    calendarGrid.style.margin = '0 auto';
+
+    allDays.forEach((day, idx) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.justifyContent = 'space-between';
+        row.style.padding = '10px';
+        row.style.borderBottom = '1px solid #e0e0e0';
+        row.style.background = trainingDays.includes(day) ? '#fff' : '#f9f9f9';
+
+        const dayLabel = document.createElement('div');
+        dayLabel.style.fontWeight = '600';
+        dayLabel.style.fontSize = '14px';
+        dayLabel.style.color = '#1a4d2e';
+        dayLabel.style.width = '90px';
+        dayLabel.textContent = dayLabels[idx];
+
+        const selectWrapper = document.createElement('div');
+        selectWrapper.style.flex = '1';
+        selectWrapper.style.marginLeft = '10px';
+
+        const select = document.createElement('select');
+        select.style.width = '100%';
+        select.style.padding = '10px';
+        select.style.borderRadius = '8px';
+        select.style.border = '1px solid #ccc';
+        select.style.fontSize = '13px';
+        select.style.background = '#fff';
+        select.dataset.day = day;
+
+        // Add placeholder
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = trainingDays.includes(day) ? 'Select workout...' : 'Rest Day';
+        select.appendChild(placeholder);
+
+        // Add workout options
+        workoutOptions.forEach(category => {
+            const optGroup = document.createElement('optgroup');
+            optGroup.label = category.category;
+            category.items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = `${item.icon} ${item.name}`;
+                if (workoutCalendar[day] === item.id) {
+                    option.selected = true;
+                }
+                optGroup.appendChild(option);
+            });
+            select.appendChild(optGroup);
+        });
+
+        select.onchange = (e) => {
+            workoutCalendar[day] = e.target.value || 'rest';
+            updateWarnings();
+        };
+
+        selectWrapper.appendChild(select);
+        row.appendChild(dayLabel);
+        row.appendChild(selectWrapper);
+        calendarGrid.appendChild(row);
+    });
+
+    // Warning area
+    const warningArea = document.createElement('div');
+    warningArea.id = 'calendar-warnings';
+    warningArea.style.marginTop = '15px';
+    warningArea.style.minHeight = '40px';
+
+    function updateWarnings() {
+        warningArea.innerHTML = '';
+        const warnings = [];
+
+        // Check for muscle overlap
+        const calendarValues = Object.entries(workoutCalendar);
+        for (let i = 0; i < calendarValues.length - 1; i++) {
+            const [day1, workout1] = calendarValues[i];
+            const [day2, workout2] = calendarValues[i + 1];
+
+            if (workout1 === workout2 && workout1 !== 'rest' && workout1 !== '' &&
+                !['yin_yoga', 'restorative', 'power_yoga'].includes(workout1)) {
+                warnings.push(`${day1.charAt(0).toUpperCase() + day1.slice(1)} and ${day2.charAt(0).toUpperCase() + day2.slice(1)} have the same workout - consider varying for recovery.`);
+            }
+
+            // Check chest/push overlap
+            if ((workout1 === 'push' && workout2 === 'chest') ||
+                (workout1 === 'chest' && workout2 === 'push')) {
+                warnings.push(`Push and Chest workouts are back-to-back - both target chest muscles.`);
+            }
+        }
+
+        // Check for no rest days
+        const restDays = Object.values(workoutCalendar).filter(w =>
+            w === 'rest' || w === 'yin_yoga' || w === 'restorative'
+        ).length;
+        if (restDays === 0) {
+            warnings.push(`No recovery days scheduled - consider adding yoga or rest to prevent burnout.`);
+        }
+
+        warnings.forEach(w => {
+            const warn = document.createElement('p');
+            warn.style.color = '#f59e0b';
+            warn.style.fontSize = '12px';
+            warn.style.margin = '5px 0';
+            warn.textContent = '⚠️ ' + w;
+            warningArea.appendChild(warn);
+        });
+    }
+
+    // Continue button
+    const continueBtn = document.createElement('button');
+    continueBtn.className = 'option-btn';
+    continueBtn.style.marginTop = '20px';
+    continueBtn.style.width = '100%';
+    continueBtn.innerText = 'SAVE MY CALENDAR';
+    continueBtn.onclick = () => {
+        // Validate that training days have workouts assigned
+        const unassigned = trainingDays.filter(day => !workoutCalendar[day] || workoutCalendar[day] === '');
+        if (unassigned.length > 0) {
+            alert(`Please assign workouts to: ${unassigned.join(', ')}`);
+            return;
+        }
+
+        // Fill in rest days properly
+        allDays.forEach(day => {
+            if (!workoutCalendar[day]) {
+                workoutCalendar[day] = 'rest';
+            }
+        });
+
+        answers.workout_calendar = JSON.stringify(workoutCalendar);
+        selectOption(q.id, 'custom');
+    };
+
+    optionsDiv.appendChild(calendarGrid);
+    optionsDiv.appendChild(warningArea);
+    optionsDiv.appendChild(continueBtn);
+    container.appendChild(optionsDiv);
+}
+
+// Render the calendar preview/confirmation screen
+function renderCalendarPreview(container, optionsDiv, q) {
+    const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const shortDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    // Make sure calendar is generated
+    if (Object.keys(workoutCalendar).length === 0) {
+        // Try to load from answers
+        if (answers.workout_calendar) {
+            workoutCalendar = JSON.parse(answers.workout_calendar);
+        } else {
+            generateTailoredCalendar();
+        }
+    }
+
+    // Get workout display info
+    const workoutInfo = {
+        'push': { icon: '🏋️', name: 'Push', desc: 'Chest, Shoulders, Triceps' },
+        'pull': { icon: '🏋️', name: 'Pull', desc: 'Back, Biceps' },
+        'legs': { icon: '🏋️', name: 'Legs', desc: 'Quads, Hamstrings, Glutes' },
+        'chest': { icon: '🏋️', name: 'Chest', desc: '' },
+        'back': { icon: '🏋️', name: 'Back', desc: '' },
+        'shoulders': { icon: '🏋️', name: 'Shoulders', desc: '' },
+        'arms_core': { icon: '🏋️', name: 'Arms & Core', desc: '' },
+        'upper_body': { icon: '🏋️', name: 'Upper Body', desc: '' },
+        'lower_body': { icon: '🏋️', name: 'Lower Body', desc: '' },
+        'total_body': { icon: '🏋️', name: 'Total Body', desc: '' },
+        'hw_push': { icon: '🏠', name: 'Push', desc: '' },
+        'hw_pull': { icon: '🏠', name: 'Pull', desc: '' },
+        'hw_lower': { icon: '🏠', name: 'Lower Body', desc: '' },
+        'hw_upper': { icon: '🏠', name: 'Upper Body', desc: '' },
+        'hw_total': { icon: '🏠', name: 'Total Body', desc: '' },
+        'hw_arms_core': { icon: '🏠', name: 'Arms & Core', desc: '' },
+        'bands_upper': { icon: '🔗', name: 'Upper Body', desc: '' },
+        'bands_lower': { icon: '🔗', name: 'Lower Body', desc: '' },
+        'bands_total': { icon: '🔗', name: 'Total Body', desc: '' },
+        'bw_upper': { icon: '🤸', name: 'Upper Body', desc: '' },
+        'bw_lower': { icon: '🤸', name: 'Lower Body', desc: '' },
+        'bw_core': { icon: '🤸', name: 'Core', desc: '' },
+        'bw_total': { icon: '🤸', name: 'Total Body', desc: '' },
+        'power_yoga': { icon: '🧘', name: 'Power Yoga', desc: 'Active Recovery' },
+        'yin_yoga': { icon: '🧘', name: 'Yin Yoga', desc: 'Recovery & Mobility' },
+        'restorative': { icon: '🧘', name: 'Restorative Yoga', desc: '' },
+        'active_recovery': { icon: '🔄', name: 'Active Recovery', desc: '' },
+        'rest': { icon: '⏸️', name: 'Rest Day', desc: '' }
+    };
+
+    // Title
+    const h2 = document.createElement('h2');
+    h2.className = 'question-text';
+    h2.textContent = q.text;
+    container.appendChild(h2);
+
+    // Calendar preview
+    const previewBox = document.createElement('div');
+    previewBox.style.background = '#fff';
+    previewBox.style.borderRadius = '16px';
+    previewBox.style.padding = '20px';
+    previewBox.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+    previewBox.style.marginBottom = '20px';
+
+    allDays.forEach((day, idx) => {
+        const workout = workoutCalendar[day] || 'rest';
+        const info = workoutInfo[workout] || { icon: '❓', name: 'Unknown', desc: '' };
+
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.padding = '12px 0';
+        row.style.borderBottom = idx < 6 ? '1px solid #f0f0f0' : 'none';
+
+        const dayCol = document.createElement('div');
+        dayCol.style.width = '100px';
+        dayCol.style.fontWeight = '600';
+        dayCol.style.color = '#1a4d2e';
+        dayCol.textContent = dayLabels[idx];
+
+        const workoutCol = document.createElement('div');
+        workoutCol.style.flex = '1';
+        workoutCol.style.display = 'flex';
+        workoutCol.style.alignItems = 'center';
+        workoutCol.style.gap = '10px';
+
+        const icon = document.createElement('span');
+        icon.style.fontSize = '20px';
+        icon.textContent = info.icon;
+
+        const workoutText = document.createElement('div');
+        const workoutName = document.createElement('div');
+        workoutName.style.fontWeight = '500';
+        workoutName.style.color = '#333';
+        workoutName.textContent = info.name;
+
+        workoutText.appendChild(workoutName);
+
+        if (info.desc) {
+            const workoutDesc = document.createElement('div');
+            workoutDesc.style.fontSize = '12px';
+            workoutDesc.style.color = '#888';
+            workoutDesc.textContent = info.desc;
+            workoutText.appendChild(workoutDesc);
+        }
+
+        workoutCol.appendChild(icon);
+        workoutCol.appendChild(workoutText);
+
+        row.appendChild(dayCol);
+        row.appendChild(workoutCol);
+        previewBox.appendChild(row);
+    });
+
+    // Summary stats
+    const trainingCount = Object.values(workoutCalendar).filter(w =>
+        w && !['rest', 'yin_yoga', 'restorative', 'active_recovery'].includes(w)
+    ).length;
+    const yogaCount = Object.values(workoutCalendar).filter(w =>
+        ['yin_yoga', 'restorative', 'power_yoga'].includes(w)
+    ).length;
+    const restCount = 7 - trainingCount - yogaCount;
+
+    const summary = document.createElement('div');
+    summary.style.textAlign = 'center';
+    summary.style.marginTop = '15px';
+    summary.style.padding = '10px';
+    summary.style.background = 'rgba(72, 134, 75, 0.1)';
+    summary.style.borderRadius = '10px';
+    summary.style.fontSize = '14px';
+    summary.style.color = '#1a4d2e';
+    summary.innerHTML = `<strong>${trainingCount} training</strong> · <strong>${yogaCount} yoga</strong> · <strong>${restCount} rest</strong>`;
+
+    previewBox.appendChild(summary);
+
+    // Info about 48-week program
+    const infoBox = document.createElement('div');
+    infoBox.style.textAlign = 'center';
+    infoBox.style.marginBottom = '15px';
+    infoBox.style.fontSize = '13px';
+    infoBox.style.color = '#666';
+    infoBox.innerHTML = '📈 Each workout evolves over 48 weeks.<br>Just show up and we\'ll handle the rest.';
+
+    // Buttons
+    const btnContainer = document.createElement('div');
+    btnContainer.style.display = 'flex';
+    btnContainer.style.gap = '10px';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'option-btn';
+    editBtn.style.flex = '1';
+    editBtn.style.background = '#fff';
+    editBtn.style.color = '#48864B';
+    editBtn.style.border = '2px solid #48864B';
+    editBtn.innerText = 'Let Me Adjust';
+    editBtn.onclick = () => {
+        // Go back to builder
+        answers.calendar_build_choice = 'design';
+        // Find the calendar_builder step and go there
+        const builderIndex = quizFlow.findIndex(s => s.id === 'calendar_builder');
+        if (builderIndex >= 0) {
+            currentStep = builderIndex - 1; // -1 because nextStep will increment
+            nextStep();
+        }
+    };
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'option-btn';
+    confirmBtn.style.flex = '1';
+    confirmBtn.innerText = 'Looks Good!';
+    confirmBtn.onclick = () => {
+        // Save final calendar
+        answers.workout_calendar = JSON.stringify(workoutCalendar);
+        selectOption(q.id, 'confirmed');
+    };
+
+    btnContainer.appendChild(editBtn);
+    btnContainer.appendChild(confirmBtn);
+
+    optionsDiv.appendChild(previewBox);
+    optionsDiv.appendChild(infoBox);
+    optionsDiv.appendChild(btnContainer);
+    container.appendChild(optionsDiv);
+}
+
+// ========== END WORKOUT CALENDAR HELPER FUNCTIONS ==========
 
 function selectOption(id, value, saveAsKey) {
     answers[id] = value;
@@ -3194,14 +4059,27 @@ function nextStep() {
 
     if (currentStep < quizFlow.length - 1) {
         currentStep++;
-        
+
+        // CONDITIONAL SKIP LOGIC: Check if current step has showIf condition
+        let step = quizFlow[currentStep];
+        while (step && step.showIf && currentStep < quizFlow.length - 1) {
+            const { questionId, value } = step.showIf;
+            const shouldShow = answers[questionId] === value;
+            if (!shouldShow) {
+                currentStep++;
+                step = quizFlow[currentStep];
+            } else {
+                break;
+            }
+        }
+
         // --- FB PIXEL FUNNEL TRACKING ---
         if (typeof fbq === 'function') {
-            const step = quizFlow[currentStep];
+            const trackStep = quizFlow[currentStep];
             fbq('trackCustom', 'QuizStep', {
                 step_number: currentStep,
-                step_type: step.type,
-                question_id: step.id || 'interstitial'
+                step_type: trackStep.type,
+                question_id: trackStep.id || 'interstitial'
             });
         }
 
