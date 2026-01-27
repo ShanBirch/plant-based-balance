@@ -27132,16 +27132,14 @@ async function submitSimpleMealText() {
 
         const nutritionData = result.data;
 
-        // Save meal log to database
-        const savedMeal = await saveMealLogWithType({
+        // Save meal log to database (using same function as camera)
+        const savedMeal = await saveMealLog({
+            photoUrl: null,
             foodItems: nutritionData.foodItems,
             totals: nutritionData.totals,
             micronutrients: nutritionData.micronutrients,
             confidence: nutritionData.confidence,
-            notes: nutritionData.notes,
-            mealType: selectedMealType,
-            inputMethod: 'text',
-            mealDescription: description
+            notes: nutritionData.notes || description
         });
 
         // Award points
@@ -28892,6 +28890,12 @@ function showMealAnalysisLoading(message = 'Analyzing meal...') {
     if (typeof showToast === 'function') {
         showToast(message, 'info');
     }
+}
+
+// Hide loading state (toast auto-hides, but this allows explicit dismissal)
+function hideMealAnalysisLoading() {
+    // Toast notifications auto-hide, so this is a no-op
+    // Kept for compatibility with code that calls it
 }
 
 // Show success message
