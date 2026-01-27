@@ -27133,8 +27133,9 @@ async function submitSimpleMealText() {
         const nutritionData = result.data;
 
         // Save meal log to database (using same function as camera)
+        // Use 'text-input' as placeholder for photo_url since database has NOT NULL constraint
         const savedMeal = await saveMealLog({
-            photoUrl: null,
+            photoUrl: 'text-input',
             foodItems: nutritionData.foodItems,
             totals: nutritionData.totals,
             micronutrients: nutritionData.micronutrients,
