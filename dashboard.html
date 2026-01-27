@@ -11506,10 +11506,66 @@ function renderWeeklyCalendar() {
 
     // Helper to get workout from WORKOUT_DB or WORKOUT_LIBRARY (for gym split rotation)
     function getWorkoutForDay(dayIdx, checkDateStr) {
+        const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const dayName = dayNames[dayIdx];
+
         // Check if there's equipment selection for this specific day
         let dayEquipment = null;
         if (checkDateStr && userCycleData.logs && userCycleData.logs[checkDateStr] && userCycleData.logs[checkDateStr].equipment) {
             dayEquipment = userCycleData.logs[checkDateStr].equipment;
+        }
+
+        // NEW: Check for user's saved workout calendar from onboarding
+        const userCalendar = getUserWorkoutCalendar();
+        if (userCalendar && userCalendar[dayName] && !dayEquipment) {
+            const userWorkoutId = userCalendar[dayName];
+
+            // Handle rest days
+            if (userWorkoutId === 'rest') {
+                return {
+                    title: 'Rest Day',
+                    programName: 'Recovery',
+                    programId: 'rest',
+                    isRestDay: true,
+                    exercises: []
+                };
+            }
+
+            // Get workout from library using mapping
+            const libraryInfo = getWorkoutLibraryInfo(userWorkoutId);
+            if (libraryInfo && typeof WORKOUT_LIBRARY !== 'undefined') {
+                const category = WORKOUT_LIBRARY[libraryInfo.category];
+                if (category && category.subcategories && category.subcategories[libraryInfo.subcategory]) {
+                    const workouts = category.subcategories[libraryInfo.subcategory].workouts;
+                    if (workouts && workouts.length > 0) {
+                        // Get workout index based on current week in 48-week cycle
+                        const workoutIndex = getWorkoutIndexForWeek(workouts.length);
+                        const workout = workouts[workoutIndex];
+
+                        if (workout) {
+                            // Calculate program info for display
+                            let programName = category.name;
+                            if (workouts.length >= 10) {
+                                const programNumber = Math.floor((currentWeek - 1) / 4) + 1;
+                                const weekInProgram = ((currentWeek - 1) % 4) + 1;
+                                programName = `${category.name} - Program ${programNumber}, Week ${weekInProgram}`;
+                            }
+
+                            return {
+                                title: workout.name,
+                                programName: programName,
+                                programId: libraryInfo.category + '_library',
+                                libraryWorkout: {
+                                    category: libraryInfo.category,
+                                    subcategory: libraryInfo.subcategory,
+                                    workoutId: workout.id
+                                },
+                                exercises: workout.exercises
+                            };
+                        }
+                    }
+                }
+            }
         }
 
         let scheduleItem = WEEKLY_SCHEDULE[dayIdx];
@@ -11986,6 +12042,90 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
     }
 };
 
+// --- WORKOUT ID TO LIBRARY MAPPING ---
+// Maps simple workout IDs from calendar selections to WORKOUT_LIBRARY paths
+function getWorkoutLibraryInfo(workoutId) {
+    if (!workoutId || workoutId === 'rest') return null;
+
+    // Mapping: workoutId -> { category, subcategory, workoutIdPrefix }
+    const mappings = {
+        // GYM workouts
+        'gym-push': { category: 'gym', subcategory: 'push' },
+        'gym-pull': { category: 'gym', subcategory: 'pull' },
+        'gym-legs': { category: 'gym', subcategory: 'legs' },
+        'gym-chest': { category: 'gym', subcategory: 'chest' },
+        'gym-back': { category: 'gym', subcategory: 'back' },
+        'gym-shoulders': { category: 'gym', subcategory: 'shoulders' },
+        'gym-arms': { category: 'gym', subcategory: 'arms' },
+        'gym-core': { category: 'gym', subcategory: 'core' },
+        'gym-upper': { category: 'gym', subcategory: 'upper' },
+        'gym-lower': { category: 'gym', subcategory: 'lower' },
+        'gym-fullbody': { category: 'gym', subcategory: 'fullbody' },
+        // HOME WEIGHTS workouts
+        'home-upper': { category: 'home', subcategory: 'upper' },
+        'home-lower': { category: 'home', subcategory: 'lower' },
+        'home-fullbody': { category: 'home', subcategory: 'fullbody' },
+        'home-arms': { category: 'home', subcategory: 'arms' },
+        'home-shoulders': { category: 'home', subcategory: 'shoulders' },
+        // BANDS workouts
+        'bands-upper': { category: 'bands', subcategory: 'upper' },
+        'bands-lower': { category: 'bands', subcategory: 'lower' },
+        'bands-fullbody': { category: 'bands', subcategory: 'fullbody' },
+        // BODYWEIGHT workouts
+        'bw-upper': { category: 'bodyweight', subcategory: 'upper' },
+        'bw-lower': { category: 'bodyweight', subcategory: 'lower' },
+        'bw-core': { category: 'bodyweight', subcategory: 'core' },
+        'bw-fullbody': { category: 'bodyweight', subcategory: 'fullbody' },
+        // YOGA workouts
+        'yoga-flow': { category: 'yoga', subcategory: 'flow' },
+        'yoga-restorative': { category: 'yoga', subcategory: 'restorative' },
+        'yoga-mobility': { category: 'yoga', subcategory: 'mobility' },
+        // RECOVERY workouts
+        'recovery-stretch': { category: 'recovery', subcategory: 'stretch' },
+        'recovery-foam': { category: 'recovery', subcategory: 'foam_rolling' }
+    };
+
+    return mappings[workoutId] || null;
+}
+
+// Get specific workout from library based on ID and week rotation
+function getWorkoutFromLibrary(workoutId, weekNumber = 1) {
+    const info = getWorkoutLibraryInfo(workoutId);
+    if (!info || typeof WORKOUT_LIBRARY === 'undefined') return null;
+
+    const category = WORKOUT_LIBRARY[info.category];
+    if (!category || !category.subcategories || !category.subcategories[info.subcategory]) return null;
+
+    const workouts = category.subcategories[info.subcategory].workouts;
+    if (!workouts || workouts.length === 0) return null;
+
+    // Calculate workout index based on 4-week program rotation
+    const programNumber = Math.floor((weekNumber - 1) / 4);
+    const workoutIndex = programNumber % workouts.length;
+
+    return {
+        ...workouts[workoutIndex],
+        libraryInfo: {
+            category: info.category,
+            subcategory: info.subcategory,
+            workoutId: workouts[workoutIndex].id
+        }
+    };
+}
+
+// Load user's saved workout calendar from onboarding
+function getUserWorkoutCalendar() {
+    try {
+        const saved = localStorage.getItem('workoutCalendar');
+        if (saved) {
+            return JSON.parse(saved);
+        }
+    } catch (e) {
+        console.warn('Could not load saved workout calendar:', e);
+    }
+    return null;
+}
+
 // --- SHARED WORKOUT LOGIC ---
 // Returns today's recommended workout based on Calendar logic (same as renderWeeklyCalendar)
 function getTodaysWorkout() {
@@ -12176,6 +12316,75 @@ function getTodaysWorkout() {
     const dayOfWeek = today.getDay(); // 0 is Sun, 6 is Sat
     // Convert to Mon=0 index
     const dayIndex = (dayOfWeek + 6) % 7;
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayNamesLower = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const todayDayName = dayNamesLower[dayIndex];
+
+    // NEW: Check for user's saved workout calendar from onboarding
+    const userCalendar = getUserWorkoutCalendar();
+    if (userCalendar && userCalendar[todayDayName]) {
+        const userWorkoutId = userCalendar[todayDayName];
+
+        // Handle rest days
+        if (userWorkoutId === 'rest') {
+            return {
+                name: 'Rest Day',
+                icon: '⏸️',
+                program: 'rest',
+                dayIndex: dayIndex,
+                dayName: dayNames[today.getDay()],
+                isRestDay: true
+            };
+        }
+
+        // Get workout from library using mapping
+        const libraryInfo = getWorkoutLibraryInfo(userWorkoutId);
+        if (libraryInfo && typeof WORKOUT_LIBRARY !== 'undefined') {
+            const category = WORKOUT_LIBRARY[libraryInfo.category];
+            if (category && category.subcategories && category.subcategories[libraryInfo.subcategory]) {
+                // Calculate which week in 48-week cycle
+                let startDate = localStorage.getItem('program_start_date');
+                if (!startDate) {
+                    const distToMon = (dayOfWeek + 6) % 7;
+                    const monday = new Date(today);
+                    monday.setDate(today.getDate() - distToMon);
+                    monday.setHours(0, 0, 0, 0);
+                    startDate = monday.toISOString().split('T')[0];
+                }
+                const start = new Date(startDate);
+                const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+                const weeksElapsed = Math.floor((today - start) / msPerWeek);
+                const currentWeek = (weeksElapsed % 48) + 1;
+
+                const workouts = category.subcategories[libraryInfo.subcategory].workouts;
+                const programNumber = Math.floor((currentWeek - 1) / 4);
+                const workoutIndex = programNumber % workouts.length;
+                const workout = workouts[workoutIndex];
+
+                if (workout) {
+                    // Determine icon based on category
+                    const iconMap = {
+                        'gym': '🏋️', 'home': '🏠', 'bands': '🔗', 'bodyweight': '🤸',
+                        'yoga': '🧘', 'recovery': '🔄'
+                    };
+
+                    return {
+                        name: workout.name,
+                        icon: iconMap[libraryInfo.category] || '💪',
+                        program: libraryInfo.category + '_library',
+                        dayIndex: dayIndex,
+                        dayName: dayNames[today.getDay()],
+                        libraryWorkout: {
+                            category: libraryInfo.category,
+                            subcategory: libraryInfo.subcategory,
+                            workoutId: workout.id
+                        }
+                    };
+                }
+            }
+        }
+    }
+
     const scheduleItem = WEEKLY_SCHEDULE[dayIndex];
 
     let workoutName, workoutIcon;
@@ -15635,9 +15844,38 @@ async function renderMovementView() {
         ];
     }
 
-    const scheduleItem = WEEKLY_SCHEDULE[calDayIndex];
+    let scheduleItem = WEEKLY_SCHEDULE[calDayIndex];
     let suggestedProgram = scheduleItem.program;
     let workoutDayIndex = scheduleItem.dayIndex;
+
+    // NEW: Check for user's saved workout calendar from onboarding
+    const dayNamesLower = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const todayDayName = dayNamesLower[calDayIndex];
+    const userCalendar = getUserWorkoutCalendar();
+
+    if (userCalendar && userCalendar[todayDayName]) {
+        const userWorkoutId = userCalendar[todayDayName];
+        const libraryInfo = getWorkoutLibraryInfo(userWorkoutId);
+
+        if (userWorkoutId === 'rest') {
+            // Rest day - show yoga as fallback
+            suggestedProgram = 'yoga';
+            workoutDayIndex = 6; // Yin yoga
+            scheduleItem = { ...scheduleItem, program: 'yoga', dayIndex: 6, subcategory: 'yin', isRestDay: true };
+        } else if (libraryInfo) {
+            // Update scheduleItem to use user's calendar selection
+            suggestedProgram = libraryInfo.category;
+            workoutDayIndex = calDayIndex;
+            scheduleItem = {
+                ...scheduleItem,
+                program: libraryInfo.category,
+                subcategory: libraryInfo.subcategory,
+                dayIndex: calDayIndex,
+                userCalendarWorkout: userWorkoutId // Mark as user calendar workout
+            };
+            console.log('📅 Using user calendar workout:', userWorkoutId, '→', libraryInfo);
+        }
+    }
     let personalizationReason = '';
     let hasWorkoutOverride = false;
     let overrideSubcategory = null; // Used to override scheduleItem.subcategory for energy-based upgrades
@@ -15916,7 +16154,8 @@ async function renderMovementView() {
         'home': { img: '/assets/dumbbell_strength_hero.png', sub: 'Dumbbells', color: '#8b5cf6' },
         'gym': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' },
         'gym_split': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' },
-        'female_gym_split': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' }
+        'female_gym_split': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' },
+        'recovery': { img: '/assets/somatic_yoga_hero.png', sub: 'Recovery & Mobility', color: '#06b6d4' }
     };
 
     // Render Hero
