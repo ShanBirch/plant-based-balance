@@ -13056,7 +13056,13 @@ function switchView(id) {
 
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
-const totalWizardSteps = 11;
+const totalWizardSteps = 14;
+
+// Workout Calendar State
+let wizardTrainingFrequency = 0;
+let wizardSelectedDays = new Set();
+let wizardSplitPreference = '';
+let wizardWorkoutCalendar = {};
 let selectedGender = localStorage.getItem('userGender') || null; // Track gender selection
 
 async function checkAndTriggerOnboarding() {
@@ -13211,7 +13217,7 @@ function updateWizardUI() {
     });
 
     // 3. Update final slide with hormone profile goal
-    if(currentWizardStep === 11) {
+    if(currentWizardStep === 14) {
         const hormoneProfile = sessionStorage.getItem('userResult') || 'CORTISOL';
         const goalDiv = document.getElementById('wizard-hormone-goal');
         if(goalDiv) {
@@ -13819,23 +13825,334 @@ async function wizardNext() {
         console.log("Step 3 data collected, hormone profile:", existingData.profile, "cycle sync:", existingData.cycle_sync_preference, "period energy:", existingData.period_energy_response);
     }
 
+    // Validation for Step 4: Training Frequency & Days
+    if(currentWizardStep === 4) {
+        if (!wizardTrainingFrequency || wizardTrainingFrequency < 2) {
+            alert("Please select how many days you want to train.");
+            return;
+        }
+        if (wizardSelectedDays.size !== wizardTrainingFrequency) {
+            alert(`Please select exactly ${wizardTrainingFrequency} training days.`);
+            return;
+        }
+
+        // Save to sessionStorage
+        const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        existingData.training_frequency = wizardTrainingFrequency;
+        existingData.training_days = Array.from(wizardSelectedDays).join(',');
+        existingData.recovery_on_rest_days = document.getElementById('wizard-recovery-days')?.checked;
+        sessionStorage.setItem('userProfile', JSON.stringify(existingData));
+
+        // Check if user has gym equipment - if not, skip split preference (step 5)
+        const equipment = existingData.equipment_access;
+        if (equipment !== 'gym') {
+            // Generate calendar and skip to preview (step 6)
+            generateWizardCalendar();
+            currentWizardStep = 6;
+            updateWizardUI();
+            return;
+        }
+    }
+
+    // Validation for Step 5: Split Preference
+    if(currentWizardStep === 5) {
+        if (!wizardSplitPreference) {
+            alert("Please select your training split preference.");
+            return;
+        }
+
+        // Save to sessionStorage
+        const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        existingData.split_preference = wizardSplitPreference;
+        sessionStorage.setItem('userProfile', JSON.stringify(existingData));
+
+        // Generate the calendar preview
+        generateWizardCalendar();
+    }
+
+    // Step 6: Calendar Preview - render the preview
+    if(currentWizardStep === 6) {
+        // Save workout calendar to sessionStorage
+        const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        existingData.workout_calendar = JSON.stringify(wizardWorkoutCalendar);
+        sessionStorage.setItem('userProfile', JSON.stringify(existingData));
+        localStorage.setItem('workoutCalendar', JSON.stringify(wizardWorkoutCalendar));
+    }
+
     if(currentWizardStep < totalWizardSteps) {
         currentWizardStep++;
         updateWizardUI();
+
+        // Render calendar preview when entering step 6
+        if(currentWizardStep === 6) {
+            renderWizardCalendarPreview();
+        }
     }
 }
 
 function wizardPrev() {
     if(currentWizardStep > 1) {
-        // If male and going back from step 4, skip step 3 (cycle tracking)
+        // Handle skip logic for backward navigation
         if (selectedGender === 'male' && currentWizardStep === 4) {
+            // Males skip cycle tracking (step 3)
             currentWizardStep = 2;
+        } else if (currentWizardStep === 6) {
+            // Check if we should skip split preference (non-gym users)
+            const userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            if (userData.equipment_access !== 'gym') {
+                currentWizardStep = 4; // Skip back to frequency/days
+            } else {
+                currentWizardStep--;
+            }
         } else {
             currentWizardStep--;
         }
         updateWizardUI();
     }
 }
+
+// ========== WORKOUT CALENDAR FUNCTIONS ==========
+
+function selectTrainingFrequency(num) {
+    wizardTrainingFrequency = num;
+    document.getElementById('wizard-training-frequency').value = num;
+
+    // Update button styles
+    document.querySelectorAll('.freq-btn').forEach(btn => {
+        if (parseInt(btn.dataset.freq) === num) {
+            btn.style.background = '#48864B';
+            btn.style.color = '#fff';
+            btn.style.transform = 'scale(1.1)';
+        } else {
+            btn.style.background = '#fff';
+            btn.style.color = '#1a4d2e';
+            btn.style.transform = 'scale(1)';
+        }
+    });
+
+    // Update tip text
+    const tips = {
+        2: 'Perfect for beginners or busy schedules',
+        3: 'Great balance of training and recovery',
+        4: 'Ideal for building strength with good recovery',
+        5: 'Dedicated training with rest built in',
+        6: 'Serious training - we\'ll ensure proper recovery',
+        7: 'Every day! We\'ll include active recovery days'
+    };
+    document.getElementById('freq-tip').textContent = tips[num] || '';
+
+    // Reset day selection if frequency changed
+    if (wizardSelectedDays.size > num) {
+        wizardSelectedDays.clear();
+        document.querySelectorAll('.day-btn').forEach(btn => {
+            btn.style.background = '#fff';
+            btn.style.color = '#1a4d2e';
+        });
+    }
+    updateDaysCounter();
+}
+
+function toggleTrainingDay(day) {
+    if (!wizardTrainingFrequency) {
+        alert('Please select how many days you want to train first.');
+        return;
+    }
+
+    const btn = document.querySelector(`.day-btn[data-day="${day}"]`);
+
+    if (wizardSelectedDays.has(day)) {
+        wizardSelectedDays.delete(day);
+        btn.style.background = '#fff';
+        btn.style.color = '#1a4d2e';
+    } else {
+        if (wizardSelectedDays.size >= wizardTrainingFrequency) {
+            alert(`You can only select ${wizardTrainingFrequency} days. Deselect one first.`);
+            return;
+        }
+        wizardSelectedDays.add(day);
+        btn.style.background = '#48864B';
+        btn.style.color = '#fff';
+    }
+
+    document.getElementById('wizard-training-days').value = Array.from(wizardSelectedDays).join(',');
+    updateDaysCounter();
+}
+
+function updateDaysCounter() {
+    const counter = document.getElementById('days-counter');
+    if (counter) {
+        if (wizardTrainingFrequency) {
+            counter.textContent = `${wizardSelectedDays.size} of ${wizardTrainingFrequency} days selected`;
+        } else {
+            counter.textContent = 'Select your training days';
+        }
+    }
+}
+
+function selectSplitPreference(split) {
+    wizardSplitPreference = split;
+    document.getElementById('wizard-split-preference').value = split;
+
+    // Check for mismatch warnings
+    const freq = wizardTrainingFrequency;
+    let warning = null;
+
+    if (split === 'bro_split' && freq < 5) {
+        warning = `Bro Split works best with 5-6 days. You selected ${freq} days. Continue anyway?`;
+    } else if (split === 'full_body' && freq > 4) {
+        warning = `Full Body is typically done 2-3 days/week for recovery. You selected ${freq} days. Continue anyway?`;
+    }
+
+    if (warning && !confirm(warning)) {
+        return;
+    }
+
+    // Update button styles
+    document.querySelectorAll('.split-btn').forEach(btn => {
+        if (btn.dataset.split === split) {
+            btn.style.borderColor = '#48864B';
+            btn.style.background = 'rgba(72, 134, 75, 0.05)';
+        } else {
+            btn.style.borderColor = '#e2e8f0';
+            btn.style.background = '#fff';
+        }
+    });
+
+    // Auto-advance after selection
+    setTimeout(() => {
+        generateWizardCalendar();
+        currentWizardStep++;
+        updateWizardUI();
+        renderWizardCalendarPreview();
+    }, 300);
+}
+
+function generateWizardCalendar() {
+    const userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+    const trainingDays = Array.from(wizardSelectedDays);
+    const equipment = userData.equipment_access || 'none';
+    const split = wizardSplitPreference || 'full_body';
+    const recoveryOnRestDays = document.getElementById('wizard-recovery-days')?.checked;
+    const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    // Reset calendar
+    wizardWorkoutCalendar = {};
+
+    // Determine workout sequence based on split and equipment
+    let workoutSequence = [];
+
+    if (equipment === 'gym') {
+        if (split === 'ppl') {
+            workoutSequence = ['push', 'pull', 'legs'];
+        } else if (split === 'upper_lower') {
+            workoutSequence = ['upper_body', 'lower_body'];
+        } else if (split === 'bro_split') {
+            workoutSequence = ['chest', 'back', 'shoulders', 'legs', 'arms_core'];
+        } else {
+            workoutSequence = ['total_body'];
+        }
+    } else if (equipment === 'dumbbells') {
+        workoutSequence = ['hw_push', 'hw_pull', 'hw_lower', 'hw_upper'];
+    } else if (equipment === 'bands') {
+        workoutSequence = ['bands_upper', 'bands_lower', 'bands_total'];
+    } else if (equipment === 'none' || equipment === 'bodyweight') {
+        workoutSequence = ['bw_upper', 'bw_lower', 'bw_core', 'bw_total'];
+    } else if (equipment === 'yoga_only') {
+        workoutSequence = ['power_yoga', 'yin_yoga', 'restorative'];
+    }
+
+    // Assign workouts to training days
+    let workoutIndex = 0;
+    allDays.forEach(day => {
+        if (trainingDays.includes(day)) {
+            wizardWorkoutCalendar[day] = workoutSequence[workoutIndex % workoutSequence.length];
+            workoutIndex++;
+        } else {
+            wizardWorkoutCalendar[day] = recoveryOnRestDays ? 'yin_yoga' : 'rest';
+        }
+    });
+}
+
+function renderWizardCalendarPreview() {
+    const container = document.getElementById('wizard-calendar-preview');
+    if (!container) return;
+
+    const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    const workoutInfo = {
+        'push': { icon: '🏋️', name: 'Push', desc: 'Chest, Shoulders, Triceps' },
+        'pull': { icon: '🏋️', name: 'Pull', desc: 'Back, Biceps' },
+        'legs': { icon: '🏋️', name: 'Legs', desc: 'Quads, Hamstrings, Glutes' },
+        'chest': { icon: '🏋️', name: 'Chest', desc: '' },
+        'back': { icon: '🏋️', name: 'Back', desc: '' },
+        'shoulders': { icon: '🏋️', name: 'Shoulders', desc: '' },
+        'arms_core': { icon: '🏋️', name: 'Arms & Core', desc: '' },
+        'upper_body': { icon: '🏋️', name: 'Upper Body', desc: '' },
+        'lower_body': { icon: '🏋️', name: 'Lower Body', desc: '' },
+        'total_body': { icon: '🏋️', name: 'Total Body', desc: '' },
+        'hw_push': { icon: '🏠', name: 'Push', desc: '' },
+        'hw_pull': { icon: '🏠', name: 'Pull', desc: '' },
+        'hw_lower': { icon: '🏠', name: 'Lower Body', desc: '' },
+        'hw_upper': { icon: '🏠', name: 'Upper Body', desc: '' },
+        'hw_total': { icon: '🏠', name: 'Total Body', desc: '' },
+        'bands_upper': { icon: '🔗', name: 'Upper Body', desc: '' },
+        'bands_lower': { icon: '🔗', name: 'Lower Body', desc: '' },
+        'bands_total': { icon: '🔗', name: 'Total Body', desc: '' },
+        'bw_upper': { icon: '🤸', name: 'Upper Body', desc: '' },
+        'bw_lower': { icon: '🤸', name: 'Lower Body', desc: '' },
+        'bw_core': { icon: '🤸', name: 'Core', desc: '' },
+        'bw_total': { icon: '🤸', name: 'Total Body', desc: '' },
+        'power_yoga': { icon: '🧘', name: 'Power Yoga', desc: 'Active Recovery' },
+        'yin_yoga': { icon: '🧘', name: 'Yin Yoga', desc: 'Recovery' },
+        'restorative': { icon: '🧘', name: 'Restorative', desc: '' },
+        'rest': { icon: '⏸️', name: 'Rest Day', desc: '' }
+    };
+
+    let html = '';
+    allDays.forEach((day, idx) => {
+        const workout = wizardWorkoutCalendar[day] || 'rest';
+        const info = workoutInfo[workout] || { icon: '❓', name: 'Unknown', desc: '' };
+
+        html += `
+            <div style="display:flex; align-items:center; padding:10px 0; border-bottom:${idx < 6 ? '1px solid #f0f0f0' : 'none'};">
+                <div style="width:80px; font-weight:600; color:#1a4d2e; font-size:13px;">${dayLabels[idx]}</div>
+                <div style="flex:1; display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">${info.icon}</span>
+                    <div>
+                        <div style="font-weight:500; color:#333; font-size:13px;">${info.name}</div>
+                        ${info.desc ? `<div style="font-size:11px; color:#888;">${info.desc}</div>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    // Add summary
+    const trainingCount = Object.values(wizardWorkoutCalendar).filter(w =>
+        w && !['rest', 'yin_yoga', 'restorative', 'active_recovery'].includes(w)
+    ).length;
+    const yogaCount = Object.values(wizardWorkoutCalendar).filter(w =>
+        ['yin_yoga', 'restorative', 'power_yoga'].includes(w)
+    ).length;
+    const restCount = 7 - trainingCount - yogaCount;
+
+    html += `
+        <div style="text-align:center; margin-top:12px; padding:10px; background:rgba(72,134,75,0.1); border-radius:8px; font-size:13px; color:#1a4d2e;">
+            <strong>${trainingCount} training</strong> · <strong>${yogaCount} yoga</strong> · <strong>${restCount} rest</strong>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+function openCalendarEditor() {
+    // For now, just go back to step 4 to re-select days
+    currentWizardStep = 4;
+    updateWizardUI();
+}
+
+// ========== END WORKOUT CALENDAR FUNCTIONS ==========
 
 async function finishOnboarding() {
     localStorage.setItem('onboardingComplete', 'true');
@@ -18109,8 +18426,8 @@ function openAsClient() {
         <!-- HEADER -->
         <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative; flex-shrink: 0;">
             <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
-            <div class="wizard-progress" style="display:flex; justify-content:center; gap:8px; margin-bottom:15px;">
-                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            <div class="wizard-progress" style="display:flex; justify-content:center; gap:6px; margin-bottom:15px;">
+                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
             <h2 id="wizard-title" style="margin:0; color:var(--primary);">Let's Align Your Body</h2>
         </div>
@@ -18281,8 +18598,103 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 4: NUTRITION LOGIC -->
+            <!-- SLIDE 4: WORKOUT FREQUENCY & DAYS -->
             <div class="wizard-slide" id="slide-4" style="display:none;">
+                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🏋️</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Design Your Training Week</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">How many days per week do you want to train?</p>
+
+                <!-- Frequency Selector -->
+                <div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
+                    <button type="button" onclick="selectTrainingFrequency(2)" class="freq-btn" data-freq="2" style="width:45px; height:45px; border-radius:50%; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:18px; font-weight:700; cursor:pointer;">2</button>
+                    <button type="button" onclick="selectTrainingFrequency(3)" class="freq-btn" data-freq="3" style="width:45px; height:45px; border-radius:50%; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:18px; font-weight:700; cursor:pointer;">3</button>
+                    <button type="button" onclick="selectTrainingFrequency(4)" class="freq-btn" data-freq="4" style="width:45px; height:45px; border-radius:50%; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:18px; font-weight:700; cursor:pointer;">4</button>
+                    <button type="button" onclick="selectTrainingFrequency(5)" class="freq-btn" data-freq="5" style="width:45px; height:45px; border-radius:50%; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:18px; font-weight:700; cursor:pointer;">5</button>
+                    <button type="button" onclick="selectTrainingFrequency(6)" class="freq-btn" data-freq="6" style="width:45px; height:45px; border-radius:50%; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:18px; font-weight:700; cursor:pointer;">6</button>
+                    <button type="button" onclick="selectTrainingFrequency(7)" class="freq-btn" data-freq="7" style="width:45px; height:45px; border-radius:50%; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:18px; font-weight:700; cursor:pointer;">7</button>
+                </div>
+                <p id="freq-tip" style="text-align:center; color:#48864B; font-size:13px; min-height:35px; padding:8px; background:rgba(72,134,75,0.1); border-radius:8px; margin-bottom:20px;">Select how many days you want to train</p>
+
+                <!-- Day Selector -->
+                <p style="text-align:center; color:#666; margin-bottom:10px; font-weight:600;">Which days work for you?</p>
+                <div style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-bottom:15px;">
+                    <button type="button" onclick="toggleTrainingDay('monday')" class="day-btn" data-day="monday" style="width:42px; height:42px; border-radius:8px; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:11px; font-weight:700; cursor:pointer;">Mon</button>
+                    <button type="button" onclick="toggleTrainingDay('tuesday')" class="day-btn" data-day="tuesday" style="width:42px; height:42px; border-radius:8px; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:11px; font-weight:700; cursor:pointer;">Tue</button>
+                    <button type="button" onclick="toggleTrainingDay('wednesday')" class="day-btn" data-day="wednesday" style="width:42px; height:42px; border-radius:8px; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:11px; font-weight:700; cursor:pointer;">Wed</button>
+                    <button type="button" onclick="toggleTrainingDay('thursday')" class="day-btn" data-day="thursday" style="width:42px; height:42px; border-radius:8px; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:11px; font-weight:700; cursor:pointer;">Thu</button>
+                    <button type="button" onclick="toggleTrainingDay('friday')" class="day-btn" data-day="friday" style="width:42px; height:42px; border-radius:8px; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:11px; font-weight:700; cursor:pointer;">Fri</button>
+                    <button type="button" onclick="toggleTrainingDay('saturday')" class="day-btn" data-day="saturday" style="width:42px; height:42px; border-radius:8px; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:11px; font-weight:700; cursor:pointer;">Sat</button>
+                    <button type="button" onclick="toggleTrainingDay('sunday')" class="day-btn" data-day="sunday" style="width:42px; height:42px; border-radius:8px; border:2px solid #48864B; background:#fff; color:#1a4d2e; font-size:11px; font-weight:700; cursor:pointer;">Sun</button>
+                </div>
+                <p id="days-counter" style="text-align:center; color:#64748b; font-size:12px;">Select your training days</p>
+
+                <!-- Recovery Toggle -->
+                <div style="margin-top:20px; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                        <input type="checkbox" id="wizard-recovery-days" checked style="width:18px; height:18px;">
+                        <span style="font-size:0.9rem;">Add yoga & recovery on rest days</span>
+                    </label>
+                </div>
+
+                <input type="hidden" id="wizard-training-frequency" value="">
+                <input type="hidden" id="wizard-training-days" value="">
+            </div>
+
+            <!-- SLIDE 5: SPLIT PREFERENCE (gym users only) -->
+            <div class="wizard-slide" id="slide-5" style="display:none;">
+                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">💪</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Choose Your Training Split</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">How do you want to structure your workouts?</p>
+
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <button type="button" onclick="selectSplitPreference('full_body')" class="split-btn" data-split="full_body" style="text-align:left; padding:15px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; cursor:pointer;">
+                        <div style="font-weight:700; color:#1a4d2e;">Full Body</div>
+                        <div style="font-size:12px; color:#666;">Train all muscle groups each session</div>
+                        <div style="font-size:11px; color:#48864B; margin-top:4px;">Best for: 2-3 days/week</div>
+                    </button>
+                    <button type="button" onclick="selectSplitPreference('ppl')" class="split-btn" data-split="ppl" style="text-align:left; padding:15px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; cursor:pointer;">
+                        <div style="font-weight:700; color:#1a4d2e;">Push / Pull / Legs</div>
+                        <div style="font-size:12px; color:#666;">Split by movement patterns</div>
+                        <div style="font-size:11px; color:#48864B; margin-top:4px;">Best for: 3-6 days/week</div>
+                    </button>
+                    <button type="button" onclick="selectSplitPreference('upper_lower')" class="split-btn" data-split="upper_lower" style="text-align:left; padding:15px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; cursor:pointer;">
+                        <div style="font-weight:700; color:#1a4d2e;">Upper / Lower</div>
+                        <div style="font-size:12px; color:#666;">Alternate upper and lower body</div>
+                        <div style="font-size:11px; color:#48864B; margin-top:4px;">Best for: 4 days/week</div>
+                    </button>
+                    <button type="button" onclick="selectSplitPreference('bro_split')" class="split-btn" data-split="bro_split" style="text-align:left; padding:15px; border-radius:12px; border:2px solid #e2e8f0; background:#fff; cursor:pointer;">
+                        <div style="font-weight:700; color:#1a4d2e;">Bro Split</div>
+                        <div style="font-size:12px; color:#666;">One muscle group per day</div>
+                        <div style="font-size:11px; color:#48864B; margin-top:4px;">Best for: 5-6 days/week</div>
+                    </button>
+                </div>
+
+                <input type="hidden" id="wizard-split-preference" value="">
+            </div>
+
+            <!-- SLIDE 6: CALENDAR PREVIEW -->
+            <div class="wizard-slide" id="slide-6" style="display:none;">
+                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">📅</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Your Workout Week</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Here's your personalized schedule</p>
+
+                <div id="wizard-calendar-preview" style="background:#fff; border-radius:12px; padding:15px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+                    <!-- Dynamically populated -->
+                </div>
+
+                <div style="background:rgba(72,134,75,0.1); border-radius:10px; padding:12px; margin-top:15px; text-align:center;">
+                    <p style="margin:0; font-size:13px; color:#1a4d2e;">
+                        <strong>📈 48-Week Program:</strong> Each workout evolves over time - you'll never do the same workout twice in a row!
+                    </p>
+                </div>
+
+                <button type="button" onclick="openCalendarEditor()" style="width:100%; margin-top:15px; padding:12px; background:#fff; color:#48864B; border:2px solid #48864B; border-radius:8px; font-weight:600; cursor:pointer;">
+                    ✏️ Let Me Adjust
+                </button>
+            </div>
+
+            <!-- SLIDE 7: NUTRITION LOGIC (was slide 4) -->
+            <div class="wizard-slide" id="slide-7" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🥑</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Food as Medicine</h3>
                 <p style="color:#475569; line-height:1.6; text-align:center;">
@@ -18296,8 +18708,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 5: YOUR DASHBOARD -->
-            <div class="wizard-slide" id="slide-5" style="display:none;">
+            <!-- SLIDE 8: YOUR DASHBOARD (was slide 5) -->
+            <div class="wizard-slide" id="slide-8" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🏠</div>
                 <h3 style="text-align:center; margin-bottom:15px;">Your Dashboard</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">Your home base for daily wellness.</p>
@@ -18321,8 +18733,8 @@ function openAsClient() {
                 </ul>
             </div>
 
-            <!-- SLIDE 6: FRIENDS & COMMUNITY -->
-            <div class="wizard-slide" id="slide-6" style="display:none;">
+            <!-- SLIDE 9: FRIENDS & COMMUNITY (was slide 6) -->
+            <div class="wizard-slide" id="slide-9" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">👯</div>
                 <h3 style="text-align:center; margin-bottom:15px;">Friends & Community</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">You're not alone on this journey!</p>
@@ -18349,8 +18761,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 7: CHALLENGES -->
-            <div class="wizard-slide" id="slide-7" style="display:none;">
+            <!-- SLIDE 10: CHALLENGES (was slide 7) -->
+            <div class="wizard-slide" id="slide-10" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🏆</div>
                 <h3 style="text-align:center; margin-bottom:15px;">Challenge Your Friends</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">A little competition makes it fun!</p>
@@ -18375,8 +18787,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 8: EARN FREE WEEKS -->
-            <div class="wizard-slide" id="slide-8" style="display:none;">
+            <!-- SLIDE 11: EARN FREE WEEKS (was slide 8) -->
+            <div class="wizard-slide" id="slide-11" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🎁</div>
                 <h3 style="text-align:center; margin-bottom:15px;">Earn Free Weeks</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">Two ways to get free access!</p>
@@ -18401,8 +18813,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 9: TRACK YOUR PROGRESS -->
-            <div class="wizard-slide" id="slide-9" style="display:none;">
+            <!-- SLIDE 12: TRACK YOUR PROGRESS (was slide 9) -->
+            <div class="wizard-slide" id="slide-12" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">📈</div>
                 <h3 style="text-align:center; margin-bottom:15px;">Track Your Progress</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">Watch yourself transform over 28 days.</p>
@@ -18429,8 +18841,8 @@ function openAsClient() {
                 </div>
             </div>
             
-            <!-- SLIDE 10: PROFILE EVOLUTION -->
-            <div class="wizard-slide" id="slide-10" style="display:none;">
+            <!-- SLIDE 13: PROFILE EVOLUTION (was slide 10) -->
+            <div class="wizard-slide" id="slide-13" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">⚙️</div>
                 <h3 style="text-align:center; margin-bottom:15px;">Protocol Evolves</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">
@@ -18443,8 +18855,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 11: READY -->
-            <div class="wizard-slide" id="slide-11" style="display:none; text-align:center;">
+            <!-- SLIDE 14: READY (was slide 11) -->
+            <div class="wizard-slide" id="slide-14" style="display:none; text-align:center;">
                  <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
                 <h3 style="margin-bottom:10px;">You're All Set!</h3>
                 <p style="color:#64748b; margin-bottom:25px;">Your custom 28-day plan is ready.</p>
