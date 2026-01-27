@@ -8849,6 +8849,15 @@ function startCustomBuilderWorkout() {
             <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 5px;">Workout verified successfully</div>
         </div>
 
+        <!-- Share to Friends Feed Section -->
+        <div id="share-to-feed-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin-bottom: 30px; backdrop-filter: blur(10px);">
+            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;">Share with Friends!</div>
+            <p style="font-size: 0.9rem; opacity: 0.85; margin-bottom: 15px;">Let your friends know about your achievement</p>
+            <button onclick="shareCompletedWorkoutToFeed()" style="background: linear-gradient(135deg, #f59e0b, #eab308); color: white; padding: 12px 30px; border-radius: 25px; font-weight: 600; cursor: pointer; transition: transform 0.2s; border: none; display: inline-flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">🎉</span> Share to Wins Feed
+            </button>
+        </div>
+
         <button onclick="closeSuccessScreen()" style="background: white; color: var(--primary); border: none; padding: 15px 50px; border-radius: 50px; font-size: 1.1rem; font-weight: 600; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.2); margin-bottom: 40px;">
             DONE
         </button>
@@ -9173,6 +9182,27 @@ function startCustomBuilderWorkout() {
             </div>
         </div>
 
+        <!-- Group Chat / Wins Feed Section -->
+        <div style="padding: 0 15px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">Wins Feed</h3>
+                <button onclick="openShareWinModal()" style="background: linear-gradient(135deg, var(--secondary) 0%, #f59e0b 100%); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);">
+                    <span style="font-size: 1rem;">+</span> Share a Win
+                </button>
+            </div>
+            <div id="wins-feed-container" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Wins will be loaded here -->
+                <div id="wins-feed-empty" style="text-align: center; padding: 30px 20px; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🎉</div>
+                    <div style="font-size: 0.95rem; color: var(--text-main); font-weight: 600; margin-bottom: 5px;">No wins shared yet</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Share your workout achievements with friends!</div>
+                    <button onclick="openShareWinModal()" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+                        Share Your First Win
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Activity Feed Section -->
         <div style="padding: 0 15px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -9398,6 +9428,78 @@ function startCustomBuilderWorkout() {
             <button onclick="leaveCurrentChallenge()" style="background: none; border: none; color: #ef4444; font-size: 0.9rem; cursor: pointer; text-decoration: underline;">
                 Leave Challenge
             </button>
+        </div>
+    </div>
+
+    <!-- Share Win Modal -->
+    <div id="share-win-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10010; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 85vh; overflow: hidden; animation: fadeInScale 0.3s ease-out;">
+            <!-- Header -->
+            <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, var(--primary) 0%, #10b981 100%);">
+                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: white; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.3rem;">🎉</span> Share a Win
+                </h3>
+                <button onclick="closeShareWinModal()" style="background: rgba(255,255,255,0.2); border: none; font-size: 1.2rem; color: white; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">&times;</button>
+            </div>
+            <!-- Content -->
+            <div style="padding: 20px; overflow-y: auto; max-height: calc(85vh - 140px);">
+                <!-- Quick Share Options -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">Quick Share</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button onclick="selectWinType('workout_complete')" id="win-type-workout" class="win-type-btn" style="padding: 16px; background: #f1f5f9; border: 2px solid transparent; border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.2s;">
+                            <div style="font-size: 1.8rem; margin-bottom: 6px;">💪</div>
+                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Workout Done</div>
+                        </button>
+                        <button onclick="selectWinType('personal_best')" id="win-type-pb" class="win-type-btn" style="padding: 16px; background: #f1f5f9; border: 2px solid transparent; border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.2s;">
+                            <div style="font-size: 1.8rem; margin-bottom: 6px;">🏆</div>
+                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Personal Best</div>
+                        </button>
+                        <button onclick="selectWinType('milestone')" id="win-type-milestone" class="win-type-btn" style="padding: 16px; background: #f1f5f9; border: 2px solid transparent; border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.2s;">
+                            <div style="font-size: 1.8rem; margin-bottom: 6px;">🌟</div>
+                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Milestone</div>
+                        </button>
+                        <button onclick="selectWinType('custom')" id="win-type-custom" class="win-type-btn" style="padding: 16px; background: #f1f5f9; border: 2px solid transparent; border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.2s;">
+                            <div style="font-size: 1.8rem; margin-bottom: 6px;">✨</div>
+                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Custom Win</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Workout Details (shown for workout_complete and personal_best) -->
+                <div id="win-workout-details" style="display: none; margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Workout Details</label>
+                    <input type="text" id="win-workout-name" placeholder="e.g., Upper Body Strength" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box; margin-bottom: 10px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <input type="text" id="win-exercise-name" placeholder="Exercise (optional)" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box;">
+                        <input type="text" id="win-improvement" placeholder="e.g., +5kg" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <!-- Message -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Your Message</label>
+                    <textarea id="win-message-input" placeholder="Tell your friends about your win!" rows="3" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box; resize: none; font-family: inherit;"></textarea>
+                </div>
+
+                <!-- Suggested Messages -->
+                <div id="win-suggestions" style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">Quick messages:</label>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <button onclick="setWinMessage('Just crushed my workout! 💪')" style="padding: 8px 12px; background: #f1f5f9; border: none; border-radius: 20px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer;">Just crushed my workout! 💪</button>
+                        <button onclick="setWinMessage('New personal best today! 🏆')" style="padding: 8px 12px; background: #f1f5f9; border: none; border-radius: 20px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer;">New personal best! 🏆</button>
+                        <button onclick="setWinMessage('Feeling stronger every day! 🌟')" style="padding: 8px 12px; background: #f1f5f9; border: none; border-radius: 20px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer;">Feeling stronger! 🌟</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div style="padding: 15px 20px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
+                <button onclick="closeShareWinModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: var(--text-muted); cursor: pointer;">Cancel</button>
+                <button onclick="submitWinPost()" id="submit-win-btn" style="flex: 1; padding: 12px; background: linear-gradient(135deg, var(--primary), #10b981); border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <span>Share Win</span>
+                    <span style="font-size: 1.1rem;">🎉</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -16563,8 +16665,19 @@ async function finishWorkout() {
     }
 }
 
+// Store completed workout data for sharing
+let completedWorkoutDataForShare = null;
+
 async function showWorkoutSuccessScreen(duration, improvements, milestones, workoutData) {
     hideAllAppViews();
+
+    // Store workout data for potential sharing
+    completedWorkoutDataForShare = {
+        duration: duration,
+        improvements: improvements,
+        milestones: milestones,
+        workoutName: window.currentWorkoutName || 'Workout'
+    };
 
     // Update duration
     document.getElementById('success-duration').innerText = duration;
@@ -16647,6 +16760,53 @@ function closeSuccessScreen() {
     document.getElementById('movement-tab').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'flex';
     renderMovementView();
+    // Clear the stored workout data
+    completedWorkoutDataForShare = null;
+}
+
+// Share completed workout to friends feed
+function shareCompletedWorkoutToFeed() {
+    if (!completedWorkoutDataForShare) {
+        showToast('No workout data to share', 'error');
+        return;
+    }
+
+    const { duration, improvements, milestones, workoutName } = completedWorkoutDataForShare;
+
+    let message = `Just finished ${workoutName}! 💪`;
+    let postType = 'workout_complete';
+    let exerciseName = '';
+    let improvementText = '';
+
+    // Check for improvements (personal bests)
+    if (improvements && improvements.length > 0) {
+        const imp = improvements[0];
+        if (imp.weightIncrease > 0 || imp.repsIncrease > 0) {
+            const parts = [];
+            if (imp.weightIncrease > 0) parts.push(`+${imp.weightIncrease}kg`);
+            if (imp.repsIncrease > 0) parts.push(`+${imp.repsIncrease} reps`);
+            improvementText = parts.join(' and ');
+            exerciseName = imp.exercise || '';
+            message = `Hit a PR on ${imp.exercise}! ${improvementText} 🏆`;
+            postType = 'personal_best';
+        }
+    }
+
+    // Check for milestones
+    if (milestones && milestones.length > 0) {
+        const m = milestones[0];
+        message = `${m.message} 🌟`;
+        postType = 'milestone';
+    }
+
+    // Open the share modal with pre-filled data
+    openShareWinModal({
+        type: postType,
+        workoutName: workoutName,
+        message: message,
+        exerciseName: exerciseName,
+        improvement: improvementText
+    });
 }
 
 // ===========================
@@ -22359,6 +22519,7 @@ async function initFriendsView() {
     }
     await loadFriendsCards();
     await loadChallenges();
+    await loadWinsFeed();
     await loadActivityFeed();
 }
 
@@ -22542,6 +22703,338 @@ async function loadActivityFeed(filter = 'all') {
 // Filter activity feed
 function filterActivityFeed(filter) {
     loadActivityFeed(filter);
+}
+
+// ============================================================
+// GROUP CHAT / WINS FEED FUNCTIONS
+// ============================================================
+
+let selectedWinType = 'workout_complete';
+
+// Load the wins feed
+async function loadWinsFeed() {
+    const container = document.getElementById('wins-feed-container');
+    const emptyState = document.getElementById('wins-feed-empty');
+
+    if (!container || !window.currentUser) return;
+
+    // Show loading
+    container.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <div class="loading-spinner" style="width: 30px; height: 30px; border: 3px solid #f1f5f9; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            <div style="margin-top: 10px; color: var(--text-muted); font-size: 0.85rem;">Loading wins...</div>
+        </div>
+    `;
+
+    try {
+        const { data: posts, error } = await window.supabaseClient
+            .rpc('get_group_chat_feed', { user_uuid: window.currentUser.id, posts_limit: 50 });
+
+        if (error) throw error;
+
+        if (!posts || posts.length === 0) {
+            container.innerHTML = `
+                <div id="wins-feed-empty" style="text-align: center; padding: 30px 20px; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🎉</div>
+                    <div style="font-size: 0.95rem; color: var(--text-main); font-weight: 600; margin-bottom: 5px;">No wins shared yet</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Share your workout achievements with friends!</div>
+                    <button onclick="openShareWinModal()" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+                        Share Your First Win
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = posts.map(post => {
+            const initials = (post.poster_name || '?').charAt(0).toUpperCase();
+            const timeAgo = getTimeAgo(new Date(post.created_at));
+            const isOwnPost = post.poster_id === window.currentUser.id;
+
+            // Icons based on post type
+            const typeConfig = {
+                'workout_complete': { icon: '💪', bg: '#dcfce7', label: 'completed a workout' },
+                'personal_best': { icon: '🏆', bg: '#fef3c7', label: 'hit a personal best' },
+                'milestone': { icon: '🌟', bg: '#e0e7ff', label: 'reached a milestone' },
+                'custom': { icon: '✨', bg: '#fdf4ff', label: 'shared a win' }
+            };
+            const config = typeConfig[post.post_type] || typeConfig.custom;
+
+            return `
+                <div style="background: white; border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">
+                    <!-- Header -->
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; font-size: 1.1rem;">
+                            ${post.poster_photo ? `<img src="${post.poster_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600; color: var(--text-main);">${post.poster_name}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">${config.label} &bull; ${timeAgo}</div>
+                        </div>
+                        <div style="font-size: 1.5rem;">${config.icon}</div>
+                    </div>
+
+                    <!-- Message -->
+                    <div style="font-size: 0.95rem; color: var(--text-main); line-height: 1.5; margin-bottom: 12px;">
+                        ${escapeHtml(post.message)}
+                    </div>
+
+                    ${post.workout_name || post.exercise_name || post.improvement_text ? `
+                    <!-- Workout Details Card -->
+                    <div style="background: ${config.bg}; padding: 12px 16px; border-radius: 12px; margin-bottom: 12px;">
+                        ${post.workout_name ? `<div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px;">${escapeHtml(post.workout_name)}</div>` : ''}
+                        ${post.exercise_name ? `<div style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(post.exercise_name)}</div>` : ''}
+                        ${post.improvement_text ? `<div style="font-size: 0.9rem; font-weight: 600; color: #16a34a; margin-top: 4px;">${escapeHtml(post.improvement_text)}</div>` : ''}
+                    </div>
+                    ` : ''}
+
+                    <!-- Actions -->
+                    <div style="display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9;">
+                        <button onclick="toggleWinReaction('${post.post_id}')" id="reaction-btn-${post.post_id}" style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: ${post.user_has_reacted ? 'var(--primary)' : '#f1f5f9'}; border: none; border-radius: 20px; cursor: pointer; font-size: 0.85rem; color: ${post.user_has_reacted ? 'white' : 'var(--text-muted)'}; transition: all 0.2s;">
+                            <span>🎉</span>
+                            <span id="reaction-count-${post.post_id}">${post.reaction_count > 0 ? post.reaction_count : ''}</span>
+                            <span>${post.user_has_reacted ? 'Cheered!' : 'Cheer'}</span>
+                        </button>
+                        ${!isOwnPost ? `
+                        <button onclick="openDirectMessage('${post.poster_id}', '${escapeHtml(post.poster_name)}', '${post.poster_photo || ''}')" style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #f1f5f9; border: none; border-radius: 20px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted);">
+                            💬 Message
+                        </button>
+                        ` : `
+                        <button onclick="deleteWinPost('${post.post_id}')" style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #f1f5f9; border: none; border-radius: 20px; cursor: pointer; font-size: 0.85rem; color: #ef4444;">
+                            🗑️ Delete
+                        </button>
+                        `}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading wins feed:', error);
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: #ef4444;">
+                <div style="font-size: 0.95rem;">Failed to load wins feed</div>
+                <button onclick="loadWinsFeed()" style="margin-top: 10px; padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// Helper to escape HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Open share win modal
+function openShareWinModal(prefillData = null) {
+    const modal = document.getElementById('share-win-modal');
+    modal.style.display = 'flex';
+
+    // Reset form
+    selectedWinType = 'workout_complete';
+    document.getElementById('win-message-input').value = '';
+    document.getElementById('win-workout-name').value = '';
+    document.getElementById('win-exercise-name').value = '';
+    document.getElementById('win-improvement').value = '';
+
+    // Reset type buttons
+    document.querySelectorAll('.win-type-btn').forEach(btn => {
+        btn.style.border = '2px solid transparent';
+        btn.style.background = '#f1f5f9';
+    });
+    document.getElementById('win-type-workout').style.border = '2px solid var(--primary)';
+    document.getElementById('win-type-workout').style.background = '#dcfce7';
+
+    // Show workout details by default
+    document.getElementById('win-workout-details').style.display = 'block';
+
+    // Prefill data if provided (from workout completion screen)
+    if (prefillData) {
+        selectedWinType = prefillData.type || 'workout_complete';
+        selectWinType(selectedWinType);
+
+        if (prefillData.workoutName) {
+            document.getElementById('win-workout-name').value = prefillData.workoutName;
+        }
+        if (prefillData.message) {
+            document.getElementById('win-message-input').value = prefillData.message;
+        }
+        if (prefillData.exerciseName) {
+            document.getElementById('win-exercise-name').value = prefillData.exerciseName;
+        }
+        if (prefillData.improvement) {
+            document.getElementById('win-improvement').value = prefillData.improvement;
+        }
+    }
+}
+
+// Close share win modal
+function closeShareWinModal() {
+    document.getElementById('share-win-modal').style.display = 'none';
+}
+
+// Select win type
+function selectWinType(type) {
+    selectedWinType = type;
+
+    // Update button styles
+    document.querySelectorAll('.win-type-btn').forEach(btn => {
+        btn.style.border = '2px solid transparent';
+        btn.style.background = '#f1f5f9';
+    });
+
+    const buttonMap = {
+        'workout_complete': 'win-type-workout',
+        'personal_best': 'win-type-pb',
+        'milestone': 'win-type-milestone',
+        'custom': 'win-type-custom'
+    };
+
+    const selectedBtn = document.getElementById(buttonMap[type]);
+    if (selectedBtn) {
+        selectedBtn.style.border = '2px solid var(--primary)';
+        selectedBtn.style.background = '#dcfce7';
+    }
+
+    // Show/hide workout details
+    const workoutDetails = document.getElementById('win-workout-details');
+    if (type === 'workout_complete' || type === 'personal_best') {
+        workoutDetails.style.display = 'block';
+    } else {
+        workoutDetails.style.display = 'none';
+    }
+}
+
+// Set quick message
+function setWinMessage(message) {
+    document.getElementById('win-message-input').value = message;
+}
+
+// Submit win post
+async function submitWinPost() {
+    const message = document.getElementById('win-message-input').value.trim();
+
+    if (!message) {
+        showToast('Please enter a message', 'error');
+        return;
+    }
+
+    const submitBtn = document.getElementById('submit-win-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="loading-spinner" style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></span>';
+
+    try {
+        const postData = {
+            user_id: window.currentUser.id,
+            post_type: selectedWinType,
+            message: message,
+            workout_name: document.getElementById('win-workout-name').value.trim() || null,
+            exercise_name: document.getElementById('win-exercise-name').value.trim() || null,
+            improvement_text: document.getElementById('win-improvement').value.trim() || null
+        };
+
+        const { error } = await window.supabaseClient
+            .from('group_chat_posts')
+            .insert(postData);
+
+        if (error) throw error;
+
+        showToast('Win shared with your friends! 🎉', 'success');
+        closeShareWinModal();
+        loadWinsFeed();
+
+    } catch (error) {
+        console.error('Error posting win:', error);
+        showToast('Failed to share win. Please try again.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Share Win</span><span style="font-size: 1.1rem;">🎉</span>';
+    }
+}
+
+// Toggle reaction on a win post
+async function toggleWinReaction(postId) {
+    try {
+        const { data: added, error } = await window.supabaseClient
+            .rpc('toggle_group_chat_reaction', {
+                user_uuid: window.currentUser.id,
+                target_post_id: postId
+            });
+
+        if (error) throw error;
+
+        // Update UI immediately
+        const btn = document.getElementById(`reaction-btn-${postId}`);
+        const countSpan = document.getElementById(`reaction-count-${postId}`);
+
+        if (btn) {
+            if (added) {
+                btn.style.background = 'var(--primary)';
+                btn.style.color = 'white';
+                btn.innerHTML = `<span>🎉</span><span id="reaction-count-${postId}">${parseInt(countSpan?.textContent || '0') + 1}</span><span>Cheered!</span>`;
+            } else {
+                btn.style.background = '#f1f5f9';
+                btn.style.color = 'var(--text-muted)';
+                const newCount = Math.max(0, parseInt(countSpan?.textContent || '1') - 1);
+                btn.innerHTML = `<span>🎉</span><span id="reaction-count-${postId}">${newCount > 0 ? newCount : ''}</span><span>Cheer</span>`;
+            }
+        }
+
+    } catch (error) {
+        console.error('Error toggling reaction:', error);
+        showToast('Failed to react. Please try again.', 'error');
+    }
+}
+
+// Delete a win post
+async function deleteWinPost(postId) {
+    if (!confirm('Delete this win? This cannot be undone.')) return;
+
+    try {
+        const { error } = await window.supabaseClient
+            .from('group_chat_posts')
+            .delete()
+            .eq('id', postId)
+            .eq('user_id', window.currentUser.id);
+
+        if (error) throw error;
+
+        showToast('Win deleted', 'success');
+        loadWinsFeed();
+
+    } catch (error) {
+        console.error('Error deleting post:', error);
+        showToast('Failed to delete. Please try again.', 'error');
+    }
+}
+
+// Share workout completion to wins feed
+function shareWorkoutToFeed(workoutData) {
+    const improvements = workoutData.improvements || [];
+    let message = 'Just finished my workout! 💪';
+    let improvementText = '';
+
+    if (improvements.length > 0) {
+        const imp = improvements[0];
+        if (imp.weightIncrease > 0 || imp.repsIncrease > 0) {
+            const parts = [];
+            if (imp.weightIncrease > 0) parts.push(`+${imp.weightIncrease}kg`);
+            if (imp.repsIncrease > 0) parts.push(`+${imp.repsIncrease} reps`);
+            improvementText = parts.join(' and ');
+            message = `Just hit a PR on ${imp.exercise}! ${improvementText} 🏆`;
+        }
+    }
+
+    openShareWinModal({
+        type: improvements.length > 0 && improvementText ? 'personal_best' : 'workout_complete',
+        workoutName: workoutData.workoutName || 'Workout',
+        message: message,
+        exerciseName: improvements[0]?.exercise || '',
+        improvement: improvementText
+    });
 }
 
 // ============================================================
@@ -25893,18 +26386,35 @@ function renderWorkoutHistory(workoutHistory) {
         const workouts = grouped[date];
         const exercises = [...new Set(workouts.map(w => w.exercise_name))];
         const formattedDate = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const exerciseList = exercises.slice(0, 3).join(', ');
 
         return `
-            <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9;">
-                <div style="font-weight: 600; color: var(--primary); margin-bottom: 5px;">${formattedDate}</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">
-                    ${exercises.slice(0, 3).join(', ')}${exercises.length > 3 ? ` +${exercises.length - 3} more` : ''}
+            <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: var(--primary); margin-bottom: 5px;">${formattedDate}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                        ${exerciseList}${exercises.length > 3 ? ` +${exercises.length - 3} more` : ''}
+                    </div>
                 </div>
+                <button onclick="shareWorkoutHistoryToFeed('${formattedDate}', '${exerciseList.replace(/'/g, "\\'")}')" style="background: linear-gradient(135deg, #f59e0b, #eab308); color: white; border: none; padding: 6px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                    <span>🎉</span> Share
+                </button>
             </div>
         `;
     }).join('');
 
     container.innerHTML = html || '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No recent workouts</div>';
+}
+
+// Share past workout to wins feed
+function shareWorkoutHistoryToFeed(date, exercises) {
+    openShareWinModal({
+        type: 'workout_complete',
+        message: `Throwback to my ${date} workout! 💪`,
+        workoutName: exercises || 'Workout',
+        exerciseName: '',
+        improvement: ''
+    });
 }
 
 function renderMilestones(milestones) {
@@ -25953,11 +26463,25 @@ function renderMilestones(milestones) {
                     <div style="font-weight: 700; color: var(--primary); font-size: 1rem; margin-bottom: 3px;">${message}</div>
                     <div style="font-size: 0.75rem; color: var(--text-muted);">${date}</div>
                 </div>
+                <button onclick="shareMilestoneToFeed('${message}', '${emoji}')" style="background: linear-gradient(135deg, #f59e0b, #eab308); color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <span>🎉</span> Share
+                </button>
             </div>
         `;
     }).join('');
 
     container.innerHTML = html;
+}
+
+// Share milestone to wins feed
+function shareMilestoneToFeed(message, emoji) {
+    openShareWinModal({
+        type: 'milestone',
+        message: `${message} ${emoji}`,
+        workoutName: '',
+        exerciseName: '',
+        improvement: ''
+    });
 }
 
 function renderCheckins(checkins) {
