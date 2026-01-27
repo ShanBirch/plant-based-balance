@@ -2322,6 +2322,35 @@ async function applyAppTheme(themeKey) {
         font-style: italic;
     }
 
+    .voice-transcript-wrapper {
+        position: relative;
+        margin-top: 15px;
+    }
+
+    .voice-transcript-wrapper .voice-transcript {
+        margin-top: 0;
+    }
+
+    .voice-transcript-delete {
+        display: block;
+        margin: 12px auto 0;
+        padding: 8px 20px;
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .voice-transcript-delete:hover {
+        background: #fee2e2;
+        border-color: #fca5a5;
+        color: #dc2626;
+    }
+
     /* Submit Button */
     .meal-submit-section {
         padding: 20px 24px 24px;
@@ -24718,8 +24747,13 @@ window.submitDailyCycleSync = submitDailyCycleSync;
             <button class="voice-record-btn" id="voice-record-btn" onclick="toggleVoiceRecording()">
                 🎤
             </button>
-            <div class="voice-transcript empty" id="voice-transcript">
-                Your spoken words will appear here...
+            <div class="voice-transcript-wrapper">
+                <div class="voice-transcript empty" id="voice-transcript">
+                    Your spoken words will appear here...
+                </div>
+                <button class="voice-transcript-delete" id="voice-transcript-delete" onclick="clearVoiceTranscript()" style="display: none;">
+                    Delete
+                </button>
             </div>
         </div>
 
@@ -26898,8 +26932,13 @@ function openMealInputModal(source) {
     const voiceTranscript = document.getElementById('voice-transcript');
     if (voiceTranscript) {
         voiceTranscript.textContent = 'Your spoken words will appear here...';
+        voiceTranscript.dataset.final = '';
         voiceTranscript.classList.add('empty');
     }
+
+    // Hide delete button
+    const deleteBtn = document.getElementById('voice-transcript-delete');
+    if (deleteBtn) deleteBtn.style.display = 'none';
 
     // Update meal type selection UI
     document.querySelectorAll('.meal-type-btn').forEach(btn => {
@@ -27046,6 +27085,13 @@ function startVoiceRecording() {
             const currentFinal = transcript.dataset.final || '';
             transcript.dataset.final = currentFinal + finalTranscript;
             transcript.textContent = transcript.dataset.final + interimTranscript;
+
+            // Show delete button and remove empty state when there's content
+            if (transcript.textContent.trim().length > 0) {
+                transcript.classList.remove('empty');
+                const deleteBtn = document.getElementById('voice-transcript-delete');
+                if (deleteBtn) deleteBtn.style.display = 'block';
+            }
         }
 
         updateSubmitButtonState();
@@ -27098,6 +27144,29 @@ function stopVoiceRecording() {
     if (transcript && (!transcript.textContent || transcript.textContent.trim().length === 0)) {
         transcript.textContent = 'Your spoken words will appear here...';
         transcript.classList.add('empty');
+    }
+
+    updateSubmitButtonState();
+}
+
+// Clear voice transcript
+function clearVoiceTranscript() {
+    const transcript = document.getElementById('voice-transcript');
+    const deleteBtn = document.getElementById('voice-transcript-delete');
+    const statusText = document.getElementById('voice-status');
+
+    if (transcript) {
+        transcript.textContent = 'Your spoken words will appear here...';
+        transcript.dataset.final = '';
+        transcript.classList.add('empty');
+    }
+
+    if (deleteBtn) {
+        deleteBtn.style.display = 'none';
+    }
+
+    if (statusText) {
+        statusText.textContent = 'Tap the microphone and describe your meal';
     }
 
     updateSubmitButtonState();
