@@ -9516,7 +9516,7 @@ function startCustomBuilderWorkout() {
 
         <!-- Cycle Wheel / Hero Card -->
         <div style="padding: 25px;">
-            <div class="card" style="background: linear-gradient(135deg, var(--bg) 0%, var(--accent-green) 100%); border: 1px solid var(--secondary); box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1); overflow: visible;">
+            <div id="cycle-hero-card" class="card" style="background: linear-gradient(135deg, var(--bg) 0%, var(--accent-green) 100%); border: 1px solid var(--secondary); box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1); overflow: visible;">
                 <div class="card-body active" style="opacity:1; max-height:none; padding: 30px 25px; text-align: center;">
 
                     <!-- Phase Indicator Ring (CSS Only) -->
@@ -9528,7 +9528,7 @@ function startCustomBuilderWorkout() {
 
                     <h2 id="cycle-phase-name" style="color: var(--primary); margin: 0 0 10px 0; font-family: 'Playfair Display'; font-size: 1.8rem;">Loading...</h2>
                     <p id="cycle-phase-desc" style="color: var(--text-main); font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">Tracking your cycle helps predict your energy.</p>
-                    
+
                     <!-- Phase Tags -->
                     <div id="cycle-phase-tags" style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
                         <!-- Injected via JS -->
@@ -13430,6 +13430,9 @@ function applyGenderSpecificUI() {
     const femaleOnlyElements = [
         'check-in-period-section',     // Period flow check-in
         'check-in-cervical-section',   // Cervical fluid check-in
+        'cycle-hero-card',             // Performance Mode hero card (hidden for males)
+        'check-in-prompt-card',        // Daily Check-in prompt card (hidden for males)
+        'check-in-completed-card',     // Check-in completed card (hidden for males)
     ];
 
     // Elements to show only for males (by ID)
