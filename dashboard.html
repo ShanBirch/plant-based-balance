@@ -14043,22 +14043,22 @@ function generateWizardCalendar() {
 
     if (equipment === 'gym') {
         if (split === 'ppl') {
-            workoutSequence = ['push', 'pull', 'legs'];
+            workoutSequence = ['gym-push', 'gym-pull', 'gym-legs'];
         } else if (split === 'upper_lower') {
-            workoutSequence = ['upper_body', 'lower_body'];
+            workoutSequence = ['gym-upper', 'gym-lower'];
         } else if (split === 'bro_split') {
-            workoutSequence = ['chest', 'back', 'shoulders', 'legs', 'arms_core'];
+            workoutSequence = ['gym-chest', 'gym-back', 'gym-shoulders', 'gym-legs', 'gym-arms'];
         } else {
-            workoutSequence = ['total_body'];
+            workoutSequence = ['gym-fullbody'];
         }
     } else if (equipment === 'dumbbells') {
-        workoutSequence = ['hw_push', 'hw_pull', 'hw_lower', 'hw_upper'];
+        workoutSequence = ['home-upper', 'home-lower', 'home-fullbody'];
     } else if (equipment === 'bands') {
-        workoutSequence = ['bands_upper', 'bands_lower', 'bands_total'];
+        workoutSequence = ['bands-upper', 'bands-lower', 'bands-fullbody'];
     } else if (equipment === 'none' || equipment === 'bodyweight') {
-        workoutSequence = ['bw_upper', 'bw_lower', 'bw_core', 'bw_total'];
+        workoutSequence = ['bw-upper', 'bw-lower', 'bw-core', 'bw-fullbody'];
     } else if (equipment === 'yoga_only') {
-        workoutSequence = ['power_yoga', 'yin_yoga', 'restorative'];
+        workoutSequence = ['yoga-flow', 'yoga-restorative', 'yoga-mobility'];
     }
 
     // Assign workouts to training days
@@ -14068,7 +14068,7 @@ function generateWizardCalendar() {
             wizardWorkoutCalendar[day] = workoutSequence[workoutIndex % workoutSequence.length];
             workoutIndex++;
         } else {
-            wizardWorkoutCalendar[day] = recoveryOnRestDays ? 'yin_yoga' : 'rest';
+            wizardWorkoutCalendar[day] = recoveryOnRestDays ? 'yoga-restorative' : 'rest';
         }
     });
 }
@@ -14080,32 +14080,39 @@ function renderWizardCalendarPreview() {
     const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
     const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+    // IDs match workout_library.js
     const workoutInfo = {
-        'push': { icon: '🏋️', name: 'Push', desc: 'Chest, Shoulders, Triceps' },
-        'pull': { icon: '🏋️', name: 'Pull', desc: 'Back, Biceps' },
-        'legs': { icon: '🏋️', name: 'Legs', desc: 'Quads, Hamstrings, Glutes' },
-        'chest': { icon: '🏋️', name: 'Chest', desc: '' },
-        'back': { icon: '🏋️', name: 'Back', desc: '' },
-        'shoulders': { icon: '🏋️', name: 'Shoulders', desc: '' },
-        'arms_core': { icon: '🏋️', name: 'Arms & Core', desc: '' },
-        'upper_body': { icon: '🏋️', name: 'Upper Body', desc: '' },
-        'lower_body': { icon: '🏋️', name: 'Lower Body', desc: '' },
-        'total_body': { icon: '🏋️', name: 'Total Body', desc: '' },
-        'hw_push': { icon: '🏠', name: 'Push', desc: '' },
-        'hw_pull': { icon: '🏠', name: 'Pull', desc: '' },
-        'hw_lower': { icon: '🏠', name: 'Lower Body', desc: '' },
-        'hw_upper': { icon: '🏠', name: 'Upper Body', desc: '' },
-        'hw_total': { icon: '🏠', name: 'Total Body', desc: '' },
-        'bands_upper': { icon: '🔗', name: 'Upper Body', desc: '' },
-        'bands_lower': { icon: '🔗', name: 'Lower Body', desc: '' },
-        'bands_total': { icon: '🔗', name: 'Total Body', desc: '' },
-        'bw_upper': { icon: '🤸', name: 'Upper Body', desc: '' },
-        'bw_lower': { icon: '🤸', name: 'Lower Body', desc: '' },
-        'bw_core': { icon: '🤸', name: 'Core', desc: '' },
-        'bw_total': { icon: '🤸', name: 'Total Body', desc: '' },
-        'power_yoga': { icon: '🧘', name: 'Power Yoga', desc: 'Active Recovery' },
-        'yin_yoga': { icon: '🧘', name: 'Yin Yoga', desc: 'Recovery' },
-        'restorative': { icon: '🧘', name: 'Restorative', desc: '' },
+        // GYM workouts
+        'gym-push': { icon: '🏋️', name: 'Push', desc: 'Chest, Shoulders, Triceps' },
+        'gym-pull': { icon: '🏋️', name: 'Pull', desc: 'Back, Biceps' },
+        'gym-legs': { icon: '🏋️', name: 'Legs', desc: 'Quads, Hamstrings, Glutes' },
+        'gym-chest': { icon: '🏋️', name: 'Chest', desc: '' },
+        'gym-back': { icon: '🏋️', name: 'Back', desc: '' },
+        'gym-shoulders': { icon: '🏋️', name: 'Shoulders', desc: '' },
+        'gym-arms': { icon: '🏋️', name: 'Arms', desc: '' },
+        'gym-core': { icon: '🏋️', name: 'Core', desc: '' },
+        'gym-upper': { icon: '🏋️', name: 'Upper Body', desc: '' },
+        'gym-lower': { icon: '🏋️', name: 'Lower Body', desc: '' },
+        'gym-fullbody': { icon: '🏋️', name: 'Full Body', desc: '' },
+        // HOME WEIGHTS workouts
+        'home-upper': { icon: '🏠', name: 'Upper Body', desc: '' },
+        'home-lower': { icon: '🏠', name: 'Lower Body', desc: '' },
+        'home-fullbody': { icon: '🏠', name: 'Full Body', desc: '' },
+        'home-arms': { icon: '🏠', name: 'Arms', desc: '' },
+        'home-shoulders': { icon: '🏠', name: 'Shoulders', desc: '' },
+        // BANDS workouts
+        'bands-upper': { icon: '🔗', name: 'Upper Body', desc: '' },
+        'bands-lower': { icon: '🔗', name: 'Lower Body', desc: '' },
+        'bands-fullbody': { icon: '🔗', name: 'Full Body', desc: '' },
+        // BODYWEIGHT workouts
+        'bw-upper': { icon: '🤸', name: 'Upper Body', desc: '' },
+        'bw-lower': { icon: '🤸', name: 'Lower Body', desc: '' },
+        'bw-core': { icon: '🤸', name: 'Core', desc: '' },
+        'bw-fullbody': { icon: '🤸', name: 'Full Body', desc: '' },
+        // YOGA workouts
+        'yoga-flow': { icon: '🧘', name: 'Power Yoga', desc: 'Active Recovery' },
+        'yoga-restorative': { icon: '🧘', name: 'Restorative Yoga', desc: 'Recovery' },
+        'yoga-mobility': { icon: '🧘', name: 'Mobility Yoga', desc: '' },
         'rest': { icon: '⏸️', name: 'Rest Day', desc: '' }
     };
 
@@ -14130,10 +14137,10 @@ function renderWizardCalendarPreview() {
 
     // Add summary
     const trainingCount = Object.values(wizardWorkoutCalendar).filter(w =>
-        w && !['rest', 'yin_yoga', 'restorative', 'active_recovery'].includes(w)
+        w && !['rest', 'yoga-restorative', 'yoga-flow', 'yoga-mobility'].includes(w)
     ).length;
     const yogaCount = Object.values(wizardWorkoutCalendar).filter(w =>
-        ['yin_yoga', 'restorative', 'power_yoga'].includes(w)
+        ['yoga-restorative', 'yoga-flow', 'yoga-mobility'].includes(w)
     ).length;
     const restCount = 7 - trainingCount - yogaCount;
 
