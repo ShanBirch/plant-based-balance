@@ -12234,15 +12234,10 @@ function renderMonthlyCalendar() {
         </div>
     `;
 
-    // Add legend
-    html += `
-        <div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-            ${isMale ? `
-                <div style="display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #64748b;">
-                    <span style="width: 12px; height: 4px; background: ${PHASE_INFO.performance.color}; border-radius: 2px;"></span>
-                    Performance Mode
-                </div>
-            ` : `
+    // Add legend (only for females with cycle tracking)
+    if (!isMale) {
+        html += `
+            <div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
                 <div style="display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #64748b;">
                     <span style="width: 12px; height: 4px; background: ${PHASE_INFO.menstrual.color}; border-radius: 2px;"></span>
                     Menstrual
@@ -12259,9 +12254,9 @@ function renderMonthlyCalendar() {
                     <span style="width: 12px; height: 4px; background: ${PHASE_INFO.luteal.color}; border-radius: 2px;"></span>
                     Luteal
                 </div>
-            `}
-        </div>
-    `;
+            </div>
+        `;
+    }
 
     container.innerHTML = html;
 }
@@ -12273,21 +12268,20 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
     const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0
 
     let phaseColor = '#e2e8f0'; // Default gray
-    let phaseKey = 'wellness';
+    let showPhaseIndicator = !isMale; // Don't show phase indicator for males
 
-    if (isMale) {
-        phaseColor = PHASE_INFO.performance.color;
-        phaseKey = 'performance';
-    } else if (!isBaseline && cycleStart) {
-        const daysSinceStart = Math.floor((date - cycleStart) / msPerDay);
-        let mod = daysSinceStart % cycleLen;
-        if (mod < 0) mod += cycleLen;
-        const currentDayLoop = mod + 1;
+    if (!isMale) {
+        if (!isBaseline && cycleStart) {
+            const daysSinceStart = Math.floor((date - cycleStart) / msPerDay);
+            let mod = daysSinceStart % cycleLen;
+            if (mod < 0) mod += cycleLen;
+            const currentDayLoop = mod + 1;
 
-        phaseKey = getCyclePhase(currentDayLoop, cycleLen);
-        phaseColor = PHASE_INFO[phaseKey]?.color || '#e2e8f0';
-    } else if (userCycleData.noPeriodMode) {
-        phaseColor = PHASE_INFO.wellness.color;
+            const phaseKey = getCyclePhase(currentDayLoop, cycleLen);
+            phaseColor = PHASE_INFO[phaseKey]?.color || '#e2e8f0';
+        } else if (userCycleData.noPeriodMode) {
+            phaseColor = PHASE_INFO.wellness.color;
+        }
     }
 
     // Get workout for this day (simplified - just show workout type based on day of week)
@@ -12296,12 +12290,17 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
 
     const dateStr = date.toISOString().split('T')[0];
 
+    // Phase indicator HTML - only for females
+    const phaseIndicatorHtml = showPhaseIndicator
+        ? `<div class="monthly-phase-indicator" style="background: ${isOtherMonth ? '#e2e8f0' : phaseColor}"></div>`
+        : '';
+
     return `
         <div class="monthly-day-cell ${isOtherMonth ? 'other-month' : ''} ${isToday ? 'is-today' : ''}"
              onclick="openMonthlyDayDetail('${dateStr}')">
             <div class="monthly-day-num">${dayNum}</div>
             <div class="monthly-day-workout">${workoutLabel}</div>
-            <div class="monthly-phase-indicator" style="background: ${isOtherMonth ? '#e2e8f0' : phaseColor}"></div>
+            ${phaseIndicatorHtml}
         </div>
     `;
 }
