@@ -10877,6 +10877,13 @@ function _switchAppTabReal(tabName, btn) {
     // 3. Show Target View
     if (tabName === 'dashboard') {
         document.getElementById('view-dashboard').style.display = 'block';
+
+        // Hide Today's Priority section if user doesn't have meal plan access
+        const todaysPrioritySection = document.getElementById('todays-priority-section');
+        if (todaysPrioritySection) {
+            const access = typeof checkMealPlanAccess === 'function' ? checkMealPlanAccess() : { hasAccess: true };
+            todaysPrioritySection.style.display = access.hasAccess ? '' : 'none';
+        }
     } else if (tabName === 'meals') {
         document.getElementById('view-meals').style.display = 'block';
 
