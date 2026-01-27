@@ -2691,12 +2691,22 @@ async function applyAppTheme(themeKey) {
         <div class="calorie-widget-card">
             <div class="calorie-widget-header">
                 <h3 style="margin: 0; font-size: 1.1rem;">Today's Nutrition</h3>
-                <button class="camera-btn-widget" onclick="openMealCamera('widget')" title="Log a meal">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                        <circle cx="12" cy="13" r="4"></circle>
-                    </svg>
-                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="camera-btn-widget" onclick="openMealCameraDirect('widget')" title="Take a photo">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                    </button>
+                    <button class="camera-btn-widget" onclick="openMealTextInput('widget')" title="Type your meal">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                            <path d="M2 2l7.586 7.586"></path>
+                            <circle cx="11" cy="11" r="2"></circle>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div id="calorie-widget-content">
