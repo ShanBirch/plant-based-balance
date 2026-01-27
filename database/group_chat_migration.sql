@@ -78,16 +78,33 @@ CREATE INDEX IF NOT EXISTS idx_group_chat_messages_user ON public.group_chat_mes
 ALTER TABLE public.group_chat_messages ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
+-- HELPER FUNCTION FOR RLS POLICIES
+-- ============================================================
+
+-- This function checks if a user is a member of a group chat
+-- SECURITY DEFINER makes it run with the privileges of the function owner,
+-- bypassing RLS policies and preventing infinite recursion when used in
+-- RLS policies on the group_chat_members table itself
+CREATE OR REPLACE FUNCTION is_group_chat_member(chat_id UUID, check_user_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.group_chat_members
+    WHERE group_chat_id = chat_id AND user_id = check_user_id
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION is_group_chat_member IS 'Checks if a user is a member of a group chat (bypasses RLS to prevent recursion)';
+
+-- ============================================================
 -- ROW LEVEL SECURITY POLICIES
 -- ============================================================
 
 -- Group chats: users can see chats they're a member of
 CREATE POLICY "Users can view their group chats" ON public.group_chats
   FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.group_chat_members
-      WHERE group_chat_id = id AND user_id = auth.uid()
-    )
+    is_group_chat_member(id, auth.uid())
   );
 
 -- Group chats: users can create chats
@@ -99,12 +116,10 @@ CREATE POLICY "Creator can delete group chat" ON public.group_chats
   FOR DELETE USING (auth.uid() = created_by);
 
 -- Members: users can view members of chats they're in
+-- Uses the helper function to prevent infinite recursion
 CREATE POLICY "Users can view members of their chats" ON public.group_chat_members
   FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.group_chat_members gcm
-      WHERE gcm.group_chat_id = group_chat_id AND gcm.user_id = auth.uid()
-    )
+    is_group_chat_member(group_chat_id, auth.uid())
   );
 
 -- Members: chat creator can add members
@@ -124,20 +139,14 @@ CREATE POLICY "Users can leave chats" ON public.group_chat_members
 -- Messages: users can view messages in chats they're a member of
 CREATE POLICY "Users can view messages in their chats" ON public.group_chat_messages
   FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.group_chat_members
-      WHERE group_chat_id = group_chat_messages.group_chat_id AND user_id = auth.uid()
-    )
+    is_group_chat_member(group_chat_id, auth.uid())
   );
 
 -- Messages: users can send messages to chats they're in
 CREATE POLICY "Users can send messages to their chats" ON public.group_chat_messages
   FOR INSERT WITH CHECK (
     auth.uid() = user_id
-    AND EXISTS (
-      SELECT 1 FROM public.group_chat_members
-      WHERE group_chat_id = group_chat_messages.group_chat_id AND user_id = auth.uid()
-    )
+    AND is_group_chat_member(group_chat_id, auth.uid())
   );
 
 -- Messages: users can delete their own messages
