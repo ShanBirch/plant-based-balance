@@ -204,7 +204,7 @@ BEGIN
     WHERE group_chat_id = gc.id AND user_id = user_uuid
   )
   ORDER BY COALESCE(
-    (SELECT MAX(created_at) FROM public.group_chat_messages WHERE group_chat_id = gc.id),
+    (SELECT MAX(msg.created_at) FROM public.group_chat_messages msg WHERE msg.group_chat_id = gc.id),
     gc.created_at
   ) DESC;
 END;
