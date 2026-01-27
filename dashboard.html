@@ -27158,7 +27158,7 @@ async function submitSimpleMealText() {
         hideMealAnalysisLoading();
 
         // Show success feedback
-        showMealLoggedSuccess(nutritionData.totals.calories, selectedMealType);
+        showMealAnalysisSuccess(nutritionData);
 
     } catch (error) {
         console.error('Error analyzing meal:', error);
