@@ -8322,6 +8322,26 @@ async function applyAppTheme(themeKey) {
             <div id="saved-workouts-list" style="display:flex; gap:15px; overflow-x:auto; padding-bottom:10px; scrollbar-width: none;"></div>
         </div>
 
+        <!-- Cardio Quick Log Section -->
+        <div id="cardio-section" style="margin-bottom:30px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0;">Cardio</h3>
+                <button onclick="openCardioHistory()" style="background:none; border:none; color:var(--primary); font-weight:600; cursor:pointer; font-size:0.9rem;">View History</button>
+            </div>
+            <div onclick="openCardioLogger()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius:16px; padding:20px; cursor:pointer; color:white; display:flex; align-items:center; gap:15px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
+                <div style="background:rgba(255,255,255,0.2); width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">
+                    <span id="cardio-quick-icon">🏃</span>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-weight:700; font-size:1.1rem; margin-bottom:3px;">Log Cardio Session</div>
+                    <div style="font-size:0.85rem; opacity:0.9;" id="cardio-recent-summary">Running, swimming, boxing & more</div>
+                </div>
+                <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:white; opacity:0.8;">
+                    <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                </svg>
+            </div>
+        </div>
+
         <div style="margin-bottom: 20px;">
             <h3 style="margin:0;">Browse Programs</h3>
         </div>
@@ -16461,7 +16481,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-cardio-history'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
@@ -31264,6 +31284,581 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
         closePrefWizard();
     }
 });
+</script>
+
+<!-- Cardio Logger Modal -->
+<div id="cardio-logger-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10050; overflow-y:auto;">
+    <div style="background:var(--bg-main); min-height:100%; max-width:600px; margin:0 auto;">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding:25px 20px; color:white;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <button onclick="closeCardioLogger()" style="background:rgba(255,255,255,0.2); border:none; color:white; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:1.2rem;">
+                    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+                <h2 style="margin:0; font-size:1.3rem;">Log Cardio</h2>
+                <div style="width:36px;"></div>
+            </div>
+        </div>
+
+        <div style="padding:20px;">
+            <!-- Activity Selection -->
+            <div style="margin-bottom:25px;">
+                <label style="font-weight:600; color:var(--text-main); display:block; margin-bottom:12px;">Activity Type</label>
+                <div id="cardio-activity-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
+                    <!-- Activities populated by JS -->
+                </div>
+            </div>
+
+            <!-- Duration -->
+            <div style="margin-bottom:25px;">
+                <label style="font-weight:600; color:var(--text-main); display:block; margin-bottom:12px;">Duration</label>
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <input type="number" id="cardio-duration" value="30" min="1" max="480"
+                           style="flex:1; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:1.2rem; text-align:center; font-weight:600;">
+                    <span style="color:var(--text-muted); font-weight:500;">minutes</span>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button onclick="setCardioDuration(15)" class="duration-preset" style="flex:1; padding:10px; border:2px solid #e2e8f0; border-radius:8px; background:white; cursor:pointer; font-weight:500;">15m</button>
+                    <button onclick="setCardioDuration(30)" class="duration-preset" style="flex:1; padding:10px; border:2px solid #e2e8f0; border-radius:8px; background:white; cursor:pointer; font-weight:500;">30m</button>
+                    <button onclick="setCardioDuration(45)" class="duration-preset" style="flex:1; padding:10px; border:2px solid #e2e8f0; border-radius:8px; background:white; cursor:pointer; font-weight:500;">45m</button>
+                    <button onclick="setCardioDuration(60)" class="duration-preset" style="flex:1; padding:10px; border:2px solid #e2e8f0; border-radius:8px; background:white; cursor:pointer; font-weight:500;">60m</button>
+                </div>
+            </div>
+
+            <!-- Distance (conditional) -->
+            <div id="cardio-distance-section" style="margin-bottom:25px; display:none;">
+                <label style="font-weight:600; color:var(--text-main); display:block; margin-bottom:12px;">Distance</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="number" id="cardio-distance" step="0.1" min="0" placeholder="0.0"
+                           style="flex:1; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:1.2rem; text-align:center; font-weight:600;">
+                    <select id="cardio-distance-unit" style="padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:1rem; background:white;">
+                        <option value="km">km</option>
+                        <option value="miles">miles</option>
+                        <option value="m">meters</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Intensity -->
+            <div style="margin-bottom:25px;">
+                <label style="font-weight:600; color:var(--text-main); display:block; margin-bottom:12px;">Intensity</label>
+                <div id="cardio-intensity-options" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
+                    <button onclick="setCardioIntensity('low')" class="intensity-btn" data-intensity="low" style="padding:12px 8px; border:2px solid #4CAF50; border-radius:12px; background:white; cursor:pointer; text-align:center;">
+                        <div style="font-size:1.2rem; margin-bottom:4px;">😊</div>
+                        <div style="font-size:0.75rem; font-weight:600; color:#4CAF50;">Low</div>
+                    </button>
+                    <button onclick="setCardioIntensity('moderate')" class="intensity-btn active" data-intensity="moderate" style="padding:12px 8px; border:2px solid #FFC107; border-radius:12px; background:#FFF8E1; cursor:pointer; text-align:center;">
+                        <div style="font-size:1.2rem; margin-bottom:4px;">💪</div>
+                        <div style="font-size:0.75rem; font-weight:600; color:#FFC107;">Moderate</div>
+                    </button>
+                    <button onclick="setCardioIntensity('high')" class="intensity-btn" data-intensity="high" style="padding:12px 8px; border:2px solid #FF9800; border-radius:12px; background:white; cursor:pointer; text-align:center;">
+                        <div style="font-size:1.2rem; margin-bottom:4px;">🔥</div>
+                        <div style="font-size:0.75rem; font-weight:600; color:#FF9800;">High</div>
+                    </button>
+                    <button onclick="setCardioIntensity('very_high')" class="intensity-btn" data-intensity="very_high" style="padding:12px 8px; border:2px solid #F44336; border-radius:12px; background:white; cursor:pointer; text-align:center;">
+                        <div style="font-size:1.2rem; margin-bottom:4px;">🚀</div>
+                        <div style="font-size:0.75rem; font-weight:600; color:#F44336;">Max</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Calories (optional) -->
+            <div style="margin-bottom:25px;">
+                <label style="font-weight:600; color:var(--text-main); display:block; margin-bottom:12px;">
+                    Calories Burned <span style="font-weight:400; color:var(--text-muted);">(optional)</span>
+                </label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="number" id="cardio-calories" min="0" placeholder="Auto-estimate"
+                           style="flex:1; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:1rem;">
+                    <span style="color:var(--text-muted);">kcal</span>
+                </div>
+                <div id="cardio-calories-estimate" style="font-size:0.85rem; color:var(--text-muted); margin-top:8px;"></div>
+            </div>
+
+            <!-- Notes (optional) -->
+            <div style="margin-bottom:25px;">
+                <label style="font-weight:600; color:var(--text-main); display:block; margin-bottom:12px;">
+                    Notes <span style="font-weight:400; color:var(--text-muted);">(optional)</span>
+                </label>
+                <textarea id="cardio-notes" rows="2" placeholder="How did it feel? Any PRs?"
+                          style="width:100%; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:1rem; resize:none; box-sizing:border-box;"></textarea>
+            </div>
+
+            <!-- Save Button -->
+            <button onclick="saveCardioSession()" style="width:100%; padding:18px; background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color:white; border:none; border-radius:16px; font-size:1.1rem; font-weight:700; cursor:pointer; box-shadow:0 4px 15px rgba(239, 68, 68, 0.3);">
+                Log Cardio Session
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Cardio History View -->
+<div id="view-cardio-history" class="app-view" style="display:none;">
+    <div class="app-header">
+        <div onclick="closeCardioHistory()" style="cursor:pointer; width:40px; display:flex; align-items:center;">
+            <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:var(--text-main);">
+                <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
+            </svg>
+        </div>
+        <div class="app-logo">Cardio History</div>
+        <div style="width:40px;"></div>
+    </div>
+
+    <div style="padding:20px;">
+        <!-- Stats Summary -->
+        <div id="cardio-stats-summary" style="background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius:16px; padding:20px; color:white; margin-bottom:25px;">
+            <div style="font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; opacity:0.9; margin-bottom:10px;">This Week</div>
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:15px; text-align:center;">
+                <div>
+                    <div id="cardio-stat-sessions" style="font-size:1.8rem; font-weight:700;">0</div>
+                    <div style="font-size:0.75rem; opacity:0.8;">Sessions</div>
+                </div>
+                <div>
+                    <div id="cardio-stat-duration" style="font-size:1.8rem; font-weight:700;">0</div>
+                    <div style="font-size:0.75rem; opacity:0.8;">Minutes</div>
+                </div>
+                <div>
+                    <div id="cardio-stat-calories" style="font-size:1.8rem; font-weight:700;">0</div>
+                    <div style="font-size:0.75rem; opacity:0.8;">Calories</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div style="display:flex; gap:10px; overflow-x:auto; margin-bottom:20px; padding-bottom:5px;">
+            <button onclick="filterCardioHistory('all')" class="cardio-filter-btn active" data-filter="all" style="padding:10px 20px; border:2px solid var(--primary); border-radius:20px; background:var(--primary); color:white; cursor:pointer; font-weight:600; white-space:nowrap;">All</button>
+            <button onclick="filterCardioHistory('running')" class="cardio-filter-btn" data-filter="running" style="padding:10px 20px; border:2px solid #e2e8f0; border-radius:20px; background:white; color:var(--text-main); cursor:pointer; font-weight:500; white-space:nowrap;">🏃 Running</button>
+            <button onclick="filterCardioHistory('cycling')" class="cardio-filter-btn" data-filter="cycling" style="padding:10px 20px; border:2px solid #e2e8f0; border-radius:20px; background:white; color:var(--text-main); cursor:pointer; font-weight:500; white-space:nowrap;">🚴 Cycling</button>
+            <button onclick="filterCardioHistory('swimming')" class="cardio-filter-btn" data-filter="swimming" style="padding:10px 20px; border:2px solid #e2e8f0; border-radius:20px; background:white; color:var(--text-main); cursor:pointer; font-weight:500; white-space:nowrap;">🏊 Swimming</button>
+        </div>
+
+        <!-- History List -->
+        <div id="cardio-history-list" style="display:flex; flex-direction:column; gap:15px;">
+            <!-- Sessions populated by JS -->
+        </div>
+
+        <div id="cardio-history-empty" style="display:none; text-align:center; padding:40px 20px; color:var(--text-muted);">
+            <div style="font-size:3rem; margin-bottom:15px;">🏃</div>
+            <div style="font-size:1.1rem; font-weight:600; margin-bottom:8px;">No cardio sessions yet</div>
+            <div>Start logging your runs, swims, and workouts!</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================
+// CARDIO SESSION TRACKING
+// ============================================
+
+// Current cardio form state
+let cardioFormState = {
+    activityType: 'running',
+    duration: 30,
+    distance: null,
+    distanceUnit: 'km',
+    intensity: 'moderate',
+    calories: null,
+    notes: ''
+};
+
+// Cardio activities data (simplified from library)
+const CARDIO_QUICK_ACTIVITIES = [
+    { id: 'running', name: 'Running', icon: '🏃', hasDistance: true },
+    { id: 'walking', name: 'Walking', icon: '🚶', hasDistance: true },
+    { id: 'cycling', name: 'Cycling', icon: '🚴', hasDistance: true },
+    { id: 'swimming', name: 'Swimming', icon: '🏊', hasDistance: true },
+    { id: 'boxing', name: 'Boxing', icon: '🥊', hasDistance: false },
+    { id: 'hiit', name: 'HIIT', icon: '⚡', hasDistance: false },
+    { id: 'rowing', name: 'Rowing', icon: '🚣', hasDistance: true },
+    { id: 'jump_rope', name: 'Jump Rope', icon: '🪢', hasDistance: false },
+    { id: 'elliptical', name: 'Elliptical', icon: '⭕', hasDistance: true },
+    { id: 'stair_climbing', name: 'Stairs', icon: '🪜', hasDistance: false },
+    { id: 'kickboxing', name: 'Kickboxing', icon: '🦵', hasDistance: false },
+    { id: 'dancing', name: 'Dancing', icon: '💃', hasDistance: false },
+    { id: 'hiking', name: 'Hiking', icon: '🥾', hasDistance: true },
+    { id: 'tennis', name: 'Tennis', icon: '🎾', hasDistance: false },
+    { id: 'basketball', name: 'Basketball', icon: '🏀', hasDistance: false },
+    { id: 'soccer', name: 'Soccer', icon: '⚽', hasDistance: true }
+];
+
+// Calories per minute by intensity (rough estimates)
+const CARDIO_CALORIES_PER_MIN = {
+    running: { low: 8, moderate: 11, high: 14, very_high: 17 },
+    walking: { low: 3, moderate: 5, high: 7, very_high: 9 },
+    cycling: { low: 5, moderate: 8, high: 11, very_high: 14 },
+    swimming: { low: 6, moderate: 9, high: 12, very_high: 14 },
+    boxing: { low: 6, moderate: 10, high: 13, very_high: 16 },
+    hiit: { low: 8, moderate: 12, high: 15, very_high: 18 },
+    rowing: { low: 6, moderate: 9, high: 12, very_high: 15 },
+    jump_rope: { low: 8, moderate: 12, high: 15, very_high: 18 },
+    elliptical: { low: 5, moderate: 8, high: 11, very_high: 13 },
+    stair_climbing: { low: 6, moderate: 9, high: 12, very_high: 15 },
+    kickboxing: { low: 7, moderate: 10, high: 13, very_high: 15 },
+    dancing: { low: 5, moderate: 8, high: 11, very_high: 13 },
+    hiking: { low: 5, moderate: 8, high: 10, very_high: 13 },
+    tennis: { low: 5, moderate: 7, high: 10, very_high: 12 },
+    basketball: { low: 5, moderate: 8, high: 11, very_high: 13 },
+    soccer: { low: 5, moderate: 8, high: 11, very_high: 14 }
+};
+
+function openCardioLogger() {
+    // Reset form state
+    cardioFormState = {
+        activityType: 'running',
+        duration: 30,
+        distance: null,
+        distanceUnit: 'km',
+        intensity: 'moderate',
+        calories: null,
+        notes: ''
+    };
+
+    // Render activity grid
+    renderCardioActivityGrid();
+
+    // Reset form inputs
+    document.getElementById('cardio-duration').value = 30;
+    document.getElementById('cardio-distance').value = '';
+    document.getElementById('cardio-calories').value = '';
+    document.getElementById('cardio-notes').value = '';
+
+    // Set default selections
+    selectCardioActivity('running');
+    setCardioIntensity('moderate');
+
+    // Show modal
+    document.getElementById('cardio-logger-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCardioLogger() {
+    document.getElementById('cardio-logger-modal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+function renderCardioActivityGrid() {
+    const grid = document.getElementById('cardio-activity-grid');
+    grid.innerHTML = CARDIO_QUICK_ACTIVITIES.map(activity => `
+        <button onclick="selectCardioActivity('${activity.id}')"
+                class="cardio-activity-btn"
+                data-activity="${activity.id}"
+                style="padding:12px 8px; border:2px solid #e2e8f0; border-radius:12px; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
+            <div style="font-size:1.5rem; margin-bottom:4px;">${activity.icon}</div>
+            <div style="font-size:0.7rem; font-weight:600; color:var(--text-muted); line-height:1.2;">${activity.name}</div>
+        </button>
+    `).join('');
+}
+
+function selectCardioActivity(activityId) {
+    cardioFormState.activityType = activityId;
+
+    // Update button states
+    document.querySelectorAll('.cardio-activity-btn').forEach(btn => {
+        const isSelected = btn.dataset.activity === activityId;
+        btn.style.borderColor = isSelected ? '#ef4444' : '#e2e8f0';
+        btn.style.background = isSelected ? '#fef2f2' : 'white';
+    });
+
+    // Show/hide distance field based on activity
+    const activity = CARDIO_QUICK_ACTIVITIES.find(a => a.id === activityId);
+    const distanceSection = document.getElementById('cardio-distance-section');
+    if (activity && activity.hasDistance) {
+        distanceSection.style.display = 'block';
+    } else {
+        distanceSection.style.display = 'none';
+        cardioFormState.distance = null;
+    }
+
+    // Update calories estimate
+    updateCaloriesEstimate();
+}
+
+function setCardioDuration(minutes) {
+    document.getElementById('cardio-duration').value = minutes;
+    cardioFormState.duration = minutes;
+    updateCaloriesEstimate();
+}
+
+function setCardioIntensity(intensity) {
+    cardioFormState.intensity = intensity;
+
+    // Update button states
+    const colors = { low: '#4CAF50', moderate: '#FFC107', high: '#FF9800', very_high: '#F44336' };
+    const bgColors = { low: '#E8F5E9', moderate: '#FFF8E1', high: '#FFF3E0', very_high: '#FFEBEE' };
+
+    document.querySelectorAll('.intensity-btn').forEach(btn => {
+        const isSelected = btn.dataset.intensity === intensity;
+        const btnIntensity = btn.dataset.intensity;
+        btn.style.borderColor = colors[btnIntensity];
+        btn.style.background = isSelected ? bgColors[btnIntensity] : 'white';
+    });
+
+    updateCaloriesEstimate();
+}
+
+function updateCaloriesEstimate() {
+    const duration = parseInt(document.getElementById('cardio-duration').value) || 30;
+    cardioFormState.duration = duration;
+
+    const activityCalories = CARDIO_CALORIES_PER_MIN[cardioFormState.activityType] || CARDIO_CALORIES_PER_MIN.running;
+    const caloriesPerMin = activityCalories[cardioFormState.intensity] || activityCalories.moderate;
+    const estimatedCalories = Math.round(duration * caloriesPerMin);
+
+    document.getElementById('cardio-calories-estimate').textContent = `Estimated: ~${estimatedCalories} kcal`;
+    cardioFormState.calories = estimatedCalories;
+}
+
+async function saveCardioSession() {
+    const user = window.currentUser;
+    if (!user) {
+        alert('Please log in to save your cardio session');
+        return;
+    }
+
+    // Get form values
+    const duration = parseInt(document.getElementById('cardio-duration').value) || 30;
+    const distance = parseFloat(document.getElementById('cardio-distance').value) || null;
+    const distanceUnit = document.getElementById('cardio-distance-unit').value;
+    const calories = parseInt(document.getElementById('cardio-calories').value) || cardioFormState.calories;
+    const notes = document.getElementById('cardio-notes').value.trim();
+
+    // Convert distance to km if needed for storage
+    let distanceKm = distance;
+    if (distance && distanceUnit === 'miles') {
+        distanceKm = distance * 1.60934;
+    } else if (distance && distanceUnit === 'm') {
+        distanceKm = distance / 1000;
+    }
+
+    try {
+        // Save to database
+        const session = await db.cardioSessions.create(user.id, {
+            activityType: cardioFormState.activityType,
+            duration: duration,
+            distance: distanceKm,
+            distanceUnit: distanceUnit,
+            intensity: cardioFormState.intensity,
+            calories: calories,
+            notes: notes
+        });
+
+        // Close modal
+        closeCardioLogger();
+
+        // Show success message
+        showCardioSuccessToast();
+
+        // Update UI
+        updateCardioSummary();
+
+    } catch (error) {
+        console.error('Error saving cardio session:', error);
+        alert('Failed to save cardio session. Please try again.');
+    }
+}
+
+function showCardioSuccessToast() {
+    const activity = CARDIO_QUICK_ACTIVITIES.find(a => a.id === cardioFormState.activityType);
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 12px;
+        font-weight: 600;
+        z-index: 10100;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    `;
+    toast.innerHTML = `
+        <span style="font-size:1.3rem;">${activity ? activity.icon : '🏃'}</span>
+        <span>Cardio session logged!</span>
+    `;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s, transform 0.3s';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 2500);
+}
+
+async function openCardioHistory() {
+    hideAllAppViews();
+    document.getElementById('view-cardio-history').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
+
+    await loadCardioHistory();
+}
+
+function closeCardioHistory() {
+    document.getElementById('view-cardio-history').style.display = 'none';
+    document.querySelector('.bottom-nav').style.display = 'flex';
+    switchAppTab('movement-tab');
+}
+
+let allCardioSessions = [];
+
+async function loadCardioHistory() {
+    const user = window.currentUser;
+    if (!user) return;
+
+    try {
+        // Load all sessions
+        allCardioSessions = await db.cardioSessions.getAll(user.id, 100);
+
+        // Load weekly summary
+        const summary = await db.cardioSessions.getRecentSummary(user.id, 7);
+
+        // Update stats
+        document.getElementById('cardio-stat-sessions').textContent = summary.totalSessions;
+        document.getElementById('cardio-stat-duration').textContent = summary.totalDuration;
+        document.getElementById('cardio-stat-calories').textContent = summary.totalCalories;
+
+        // Render history list
+        renderCardioHistoryList(allCardioSessions);
+
+    } catch (error) {
+        console.error('Error loading cardio history:', error);
+    }
+}
+
+function filterCardioHistory(filter) {
+    // Update filter buttons
+    document.querySelectorAll('.cardio-filter-btn').forEach(btn => {
+        const isActive = btn.dataset.filter === filter;
+        btn.style.background = isActive ? 'var(--primary)' : 'white';
+        btn.style.color = isActive ? 'white' : 'var(--text-main)';
+        btn.style.borderColor = isActive ? 'var(--primary)' : '#e2e8f0';
+        btn.classList.toggle('active', isActive);
+    });
+
+    // Filter sessions
+    let filtered = allCardioSessions;
+    if (filter !== 'all') {
+        filtered = allCardioSessions.filter(s => s.activity_type === filter);
+    }
+
+    renderCardioHistoryList(filtered);
+}
+
+function renderCardioHistoryList(sessions) {
+    const list = document.getElementById('cardio-history-list');
+    const empty = document.getElementById('cardio-history-empty');
+
+    if (!sessions || sessions.length === 0) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+    }
+
+    empty.style.display = 'none';
+
+    // Group sessions by date
+    const grouped = {};
+    sessions.forEach(session => {
+        const date = session.session_date;
+        if (!grouped[date]) grouped[date] = [];
+        grouped[date].push(session);
+    });
+
+    list.innerHTML = Object.entries(grouped).map(([date, daySessions]) => {
+        const dateObj = new Date(date + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        let dateLabel;
+        if (dateObj.getTime() === today.getTime()) {
+            dateLabel = 'Today';
+        } else if (dateObj.getTime() === yesterday.getTime()) {
+            dateLabel = 'Yesterday';
+        } else {
+            dateLabel = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+
+        return `
+            <div style="margin-bottom:10px;">
+                <div style="font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:10px;">${dateLabel}</div>
+                ${daySessions.map(session => renderCardioSessionCard(session)).join('')}
+            </div>
+        `;
+    }).join('');
+}
+
+function renderCardioSessionCard(session) {
+    const activity = CARDIO_QUICK_ACTIVITIES.find(a => a.id === session.activity_type) || { icon: '🏃', name: session.activity_type };
+    const intensityColors = { low: '#4CAF50', moderate: '#FFC107', high: '#FF9800', very_high: '#F44336' };
+    const intensityColor = intensityColors[session.intensity_level] || '#FFC107';
+
+    let distanceText = '';
+    if (session.distance_km) {
+        const dist = parseFloat(session.distance_km);
+        distanceText = dist >= 1 ? `${dist.toFixed(1)} km` : `${Math.round(dist * 1000)} m`;
+    }
+
+    return `
+        <div style="background:white; border-radius:12px; padding:15px; margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05); display:flex; align-items:center; gap:15px;">
+            <div style="background:#fef2f2; width:50px; height:50px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">
+                ${activity.icon}
+            </div>
+            <div style="flex:1;">
+                <div style="font-weight:600; color:var(--text-main); margin-bottom:4px;">${activity.name}</div>
+                <div style="display:flex; gap:15px; font-size:0.85rem; color:var(--text-muted);">
+                    <span>⏱️ ${session.duration_minutes} min</span>
+                    ${distanceText ? `<span>📏 ${distanceText}</span>` : ''}
+                    ${session.calories_burned ? `<span>🔥 ${session.calories_burned} kcal</span>` : ''}
+                </div>
+            </div>
+            <div style="width:8px; height:40px; background:${intensityColor}; border-radius:4px; opacity:0.8;"></div>
+        </div>
+    `;
+}
+
+async function updateCardioSummary() {
+    const user = window.currentUser;
+    if (!user) return;
+
+    try {
+        const summary = await db.cardioSessions.getRecentSummary(user.id, 7);
+        const summaryEl = document.getElementById('cardio-recent-summary');
+
+        if (summary.totalSessions > 0) {
+            const activities = Object.keys(summary.byActivity).slice(0, 3);
+            const activityIcons = activities.map(a => {
+                const act = CARDIO_QUICK_ACTIVITIES.find(x => x.id === a);
+                return act ? act.icon : '🏃';
+            }).join(' ');
+            summaryEl.textContent = `${summary.totalSessions} sessions this week ${activityIcons}`;
+        } else {
+            summaryEl.textContent = 'Running, swimming, boxing & more';
+        }
+    } catch (error) {
+        console.error('Error updating cardio summary:', error);
+    }
+}
+
+// Update cardio summary on movement tab load
+const originalRenderMovementView = typeof renderMovementView === 'function' ? renderMovementView : null;
+if (originalRenderMovementView) {
+    window._origRenderMovementView = originalRenderMovementView;
+}
+
+// Hook into movement view to update cardio summary
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(updateCardioSummary, 1000);
+});
+
+// Listen for duration input changes
+document.getElementById('cardio-duration')?.addEventListener('input', updateCaloriesEstimate);
 </script>
 
 </body>

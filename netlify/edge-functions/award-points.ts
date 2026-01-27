@@ -11,6 +11,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 const POINTS_CONFIG = {
   POINTS_PER_MEAL: 1,
   POINTS_PER_WORKOUT: 1,
+  POINTS_PER_CARDIO: 1,
   MAX_PHOTO_AGE_MINUTES: 5,
   STREAK_BONUSES: [
     { days: 7, points: 5, label: '7-day streak!' },
@@ -32,12 +33,19 @@ const POINTS_CONFIG = {
     { count: 100, type: '100_workouts_points', points: 50, label: '100 Workouts!' },
     { count: 365, type: '365_workouts_points', points: 100, label: '365 Workouts - One Year!' },
   ],
+  CARDIO_MILESTONES: [
+    { count: 1, type: 'first_cardio', points: 5, label: 'First Cardio Session!' },
+    { count: 10, type: '10_cardio', points: 10, label: '10 Cardio Sessions!' },
+    { count: 50, type: '50_cardio', points: 25, label: '50 Cardio Sessions!' },
+    { count: 100, type: '100_cardio', points: 50, label: '100 Cardio - Centurion!' },
+    { count: 365, type: '365_cardio', points: 100, label: '365 Cardio - One Year!' },
+  ],
   POINTS_FOR_FREE_WEEK: 200,
 };
 
 interface AwardPointsRequest {
   userId: string;
-  type: 'meal' | 'workout';
+  type: 'meal' | 'workout' | 'cardio';
   referenceId: string;
   photoTimestamp?: string;  // ISO timestamp from EXIF or file
   aiConfidence?: string;    // 'high', 'medium', 'low'
@@ -93,10 +101,10 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
-    if (type !== 'meal' && type !== 'workout') {
+    if (type !== 'meal' && type !== 'workout' && type !== 'cardio') {
       return new Response(JSON.stringify({
         error: 'Invalid type',
-        message: 'Type must be "meal" or "workout"'
+        message: 'Type must be "meal", "workout", or "cardio"'
       }), {
         status: 400,
         headers
@@ -197,7 +205,9 @@ export default async (request: Request, context: Context): Promise<Response> => 
     // === AWARD POINTS ===
     const pointsToAward = type === 'meal'
       ? POINTS_CONFIG.POINTS_PER_MEAL
-      : POINTS_CONFIG.POINTS_PER_WORKOUT;
+      : type === 'cardio'
+        ? POINTS_CONFIG.POINTS_PER_CARDIO
+        : POINTS_CONFIG.POINTS_PER_WORKOUT;
 
     // Get current points record
     const { data: userPoints, error: fetchError } = await supabase
@@ -268,6 +278,21 @@ export default async (request: Request, context: Context): Promise<Response> => 
         userPoints?.longest_meal_streak || 0,
         updateData.meal_streak as number
       );
+    } else if (type === 'cardio') {
+      const newCardioCount = (userPoints?.total_cardio_logged || 0) + 1;
+      updateData.total_cardio_logged = newCardioCount;
+      updateData.last_cardio_date = today;
+
+      // Update cardio streak
+      if (userPoints?.last_cardio_date === yesterday) {
+        updateData.cardio_streak = (userPoints?.cardio_streak || 0) + 1;
+      } else if (userPoints?.last_cardio_date !== today) {
+        updateData.cardio_streak = 1;
+      }
+      updateData.longest_cardio_streak = Math.max(
+        userPoints?.longest_cardio_streak || 0,
+        updateData.cardio_streak as number
+      );
     } else {
       const newWorkoutCount = (userPoints?.total_workouts_logged || 0) + 1;
       updateData.total_workouts_logged = newWorkoutCount;
@@ -301,13 +326,15 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
 
     // Log main transaction
+    const transactionType = type === 'meal' ? 'earn_meal' : type === 'cardio' ? 'earn_cardio' : 'earn_workout';
+    const referenceType = type === 'meal' ? 'meal_log' : type === 'cardio' ? 'cardio_session' : 'workout';
     await supabase.from('point_transactions').insert({
       user_id: userId,
-      transaction_type: type === 'meal' ? 'earn_meal' : 'earn_workout',
+      transaction_type: transactionType,
       points_amount: pointsToAward,
       reference_id: referenceId,
-      reference_type: type === 'meal' ? 'meal_log' : 'workout',
-      photo_verified: true,
+      reference_type: referenceType,
+      photo_verified: type !== 'cardio', // Cardio doesn't require photo verification
       photo_timestamp: photoTimestamp || null,
       verification_method: photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none'),
       ai_confidence: aiConfidence || null,
@@ -329,11 +356,15 @@ export default async (request: Request, context: Context): Promise<Response> => 
     const milestones: Array<{ type: string; label: string; points: number }> = [];
     const totalCount = type === 'meal'
       ? updateData.total_meals_logged as number
-      : updateData.total_workouts_logged as number;
+      : type === 'cardio'
+        ? updateData.total_cardio_logged as number
+        : updateData.total_workouts_logged as number;
 
     const milestonesToCheck = type === 'meal'
       ? POINTS_CONFIG.MEAL_MILESTONES
-      : POINTS_CONFIG.WORKOUT_MILESTONES;
+      : type === 'cardio'
+        ? POINTS_CONFIG.CARDIO_MILESTONES
+        : POINTS_CONFIG.WORKOUT_MILESTONES;
 
     for (const milestone of milestonesToCheck) {
       if (totalCount === milestone.count) {
