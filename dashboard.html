@@ -8322,6 +8322,11 @@ async function applyAppTheme(themeKey) {
             <div id="saved-workouts-list" style="display:flex; gap:15px; overflow-x:auto; padding-bottom:10px; scrollbar-width: none;"></div>
         </div>
 
+        <div id="recent-workouts-container" style="display:none; margin-bottom:30px;">
+            <h3 style="margin-bottom:15px;">Recent Workouts</h3>
+            <div id="recent-workouts-list" style="display:flex; gap:15px; overflow-x:auto; padding-bottom:10px; scrollbar-width: none;"></div>
+        </div>
+
         <div style="margin-bottom: 20px;">
             <h3 style="margin:0;">Browse Programs</h3>
         </div>
@@ -16334,14 +16339,43 @@ async function renderMovementView() {
                     <div style="font-weight:700; color:var(--text-main); font-size:0.9rem; margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div>
                     <div style="font-size:0.75rem; color:var(--text-muted);">${exercises.length} exercises</div>
                 </div>
-            `}).join('') + `
-                <div onclick="openWorkoutBuilder()" style="min-width: 60px; display:flex; align-items:center; justify-content:center; background:#f8fafc; border-radius:16px; border:2px dashed #cbd5e1; cursor:pointer; color:#cbd5e1; font-weight:bold; font-size:1.5rem;">+</div>
-            `;
+            `}).join('');
         } else {
              savedContainer.style.display = 'none';
         }
     } catch(err) {
         console.error('Failed to load saved workouts:', err);
+    }
+
+    // Render Recent Workouts (workout history grouped by date)
+    const recentContainer = document.getElementById('recent-workouts-container');
+    const recentList = document.getElementById('recent-workouts-list');
+
+    try {
+        const recentWorkouts = await dbHelpers.workouts.getRecentWorkoutsByDate(user.id, 10);
+
+        if (recentWorkouts.length > 0) {
+            recentContainer.style.display = 'block';
+            recentList.innerHTML = recentWorkouts.map(w => {
+                const dateObj = new Date(w.date + 'T00:00:00');
+                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                const monthDay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const exerciseCount = w.exercises.length;
+                const totalSets = w.exercises.reduce((sum, e) => sum + e.sets, 0);
+                return `
+                <div onclick="showWorkoutHistoryDetail('${w.date}')" style="min-width: 140px; background:white; border-radius:16px; padding:15px; border:1px solid #f1f5f9; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+                    <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px;">${dayName}</div>
+                    <div style="font-weight:700; color:var(--text-main); font-size:0.95rem; margin-bottom:8px;">${monthDay}</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">${exerciseCount} exercises</div>
+                    <div style="font-size:0.7rem; color:var(--text-muted);">${totalSets} sets total</div>
+                </div>
+            `}).join('');
+        } else {
+            recentContainer.style.display = 'none';
+        }
+    } catch(err) {
+        console.error('Failed to load recent workouts:', err);
+        recentContainer.style.display = 'none';
     }
 
     const gridContainer = document.getElementById('movement-grid-container');
@@ -26079,6 +26113,90 @@ updateCoachUI();
         hideAllAppViews();
         document.getElementById('view-active-workout').style.display = 'block';
         window.activeWorkoutSessions = customWorkout;
+    }
+
+    async function showWorkoutHistoryDetail(dateStr) {
+        // Fetch workout history for this specific date
+        const user = window.currentUser;
+        if (!user) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('workouts')
+                .select('exercise_name, set_number, reps, weight_kg, time_duration')
+                .eq('user_id', user.id)
+                .eq('workout_type', 'history')
+                .eq('workout_date', dateStr)
+                .order('exercise_name')
+                .order('set_number');
+
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                alert('No workout data found for this date.');
+                return;
+            }
+
+            // Group by exercise
+            const exercises = {};
+            data.forEach(row => {
+                if (!exercises[row.exercise_name]) {
+                    exercises[row.exercise_name] = [];
+                }
+                exercises[row.exercise_name].push(row);
+            });
+
+            // Format date for display
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+            // Build modal content
+            let content = `
+            <div style="position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px;" onclick="if(event.target === this) this.remove();">
+                <div style="background:white; border-radius:24px; max-width:400px; width:100%; max-height:80vh; overflow-y:auto; box-shadow:0 25px 50px rgba(0,0,0,0.25);">
+                    <div style="padding:25px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h2 style="margin:0 0 5px 0; font-size:1.3rem; color:var(--text-main);">Workout Summary</h2>
+                            <div style="font-size:0.85rem; color:var(--text-muted);">${formattedDate}</div>
+                        </div>
+                        <button onclick="this.closest('[style*=\"position:fixed\"]').remove()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+                    </div>
+                    <div style="padding:20px;">
+            `;
+
+            Object.entries(exercises).forEach(([name, sets]) => {
+                content += `
+                    <div style="margin-bottom:20px;">
+                        <h4 style="margin:0 0 10px 0; font-size:0.95rem; color:var(--primary);">${name}</h4>
+                        <div style="background:#f8fafc; border-radius:12px; padding:10px;">
+                `;
+                sets.forEach(set => {
+                    const weightDisplay = set.weight_kg ? `${set.weight_kg} kg` : '-';
+                    const repsDisplay = set.reps || '-';
+                    const timeDisplay = set.time_duration || '';
+                    content += `
+                        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #e2e8f0; font-size:0.85rem;">
+                            <span style="color:var(--text-muted);">Set ${set.set_number}</span>
+                            <span style="color:var(--text-main);">${weightDisplay} × ${repsDisplay} reps${timeDisplay ? ' • ' + timeDisplay : ''}</span>
+                        </div>
+                    `;
+                });
+                content += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            content += `
+                    </div>
+                </div>
+            </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', content);
+        } catch (err) {
+            console.error('Failed to load workout history detail:', err);
+            alert('Failed to load workout details.');
+        }
     }
 </script>
 
