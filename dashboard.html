@@ -14125,50 +14125,341 @@ function renderWizardCalendarPreview() {
         'yoga-flow': { icon: '🧘', name: 'Power Yoga', desc: 'Active Recovery' },
         'yoga-restorative': { icon: '🧘', name: 'Restorative Yoga', desc: 'Recovery' },
         'yoga-mobility': { icon: '🧘', name: 'Mobility Yoga', desc: '' },
+        // RECOVERY workouts
+        'recovery-stretch': { icon: '🔄', name: 'Stretching', desc: '' },
+        'recovery-foam': { icon: '🔄', name: 'Foam Rolling', desc: '' },
         'rest': { icon: '⏸️', name: 'Rest Day', desc: '' }
     };
 
-    let html = '';
+    // Clear container
+    container.innerHTML = '';
+
+    // Add instruction text
+    const instruction = document.createElement('p');
+    instruction.style.textAlign = 'center';
+    instruction.style.fontSize = '13px';
+    instruction.style.color = '#666';
+    instruction.style.marginBottom = '12px';
+    instruction.textContent = 'Tap any day to change the workout';
+    container.appendChild(instruction);
+
+    // Create day rows
     allDays.forEach((day, idx) => {
         const workout = wizardWorkoutCalendar[day] || 'rest';
         const info = workoutInfo[workout] || { icon: '❓', name: 'Unknown', desc: '' };
 
-        html += `
-            <div style="display:flex; align-items:center; padding:10px 0; border-bottom:${idx < 6 ? '1px solid #f0f0f0' : 'none'};">
-                <div style="width:80px; font-weight:600; color:#1a4d2e; font-size:13px;">${dayLabels[idx]}</div>
-                <div style="flex:1; display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:18px;">${info.icon}</span>
-                    <div>
-                        <div style="font-weight:500; color:#333; font-size:13px;">${info.name}</div>
-                        ${info.desc ? `<div style="font-size:11px; color:#888;">${info.desc}</div>` : ''}
-                    </div>
-                </div>
-            </div>
-        `;
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.padding = '12px 0';
+        row.style.borderBottom = idx < 6 ? '1px solid #f0f0f0' : 'none';
+        row.style.cursor = 'pointer';
+        row.style.transition = 'background 0.2s';
+
+        // Hover effect
+        row.onmouseenter = () => { row.style.background = 'rgba(72, 134, 75, 0.05)'; };
+        row.onmouseleave = () => { row.style.background = 'transparent'; };
+
+        // Day label
+        const dayCol = document.createElement('div');
+        dayCol.style.width = '90px';
+        dayCol.style.fontWeight = '600';
+        dayCol.style.color = '#1a4d2e';
+        dayCol.style.fontSize = '13px';
+        dayCol.textContent = dayLabels[idx];
+
+        // Workout info
+        const workoutCol = document.createElement('div');
+        workoutCol.style.flex = '1';
+        workoutCol.style.display = 'flex';
+        workoutCol.style.alignItems = 'center';
+        workoutCol.style.gap = '10px';
+
+        const icon = document.createElement('span');
+        icon.style.fontSize = '18px';
+        icon.textContent = info.icon;
+
+        const workoutText = document.createElement('div');
+        const workoutName = document.createElement('div');
+        workoutName.style.fontWeight = '500';
+        workoutName.style.color = '#333';
+        workoutName.style.fontSize = '13px';
+        workoutName.textContent = info.name;
+        workoutText.appendChild(workoutName);
+
+        if (info.desc) {
+            const workoutDesc = document.createElement('div');
+            workoutDesc.style.fontSize = '11px';
+            workoutDesc.style.color = '#888';
+            workoutDesc.textContent = info.desc;
+            workoutText.appendChild(workoutDesc);
+        }
+
+        // Edit indicator (down arrow)
+        const editIcon = document.createElement('span');
+        editIcon.style.marginLeft = 'auto';
+        editIcon.style.color = '#48864B';
+        editIcon.style.fontSize = '14px';
+        editIcon.innerHTML = '&#9662;';
+
+        workoutCol.appendChild(icon);
+        workoutCol.appendChild(workoutText);
+        workoutCol.appendChild(editIcon);
+
+        row.appendChild(dayCol);
+        row.appendChild(workoutCol);
+
+        // Click handler to show dropdown
+        row.onclick = () => {
+            showWizardWorkoutDropdown(day, dayLabels[idx], renderWizardCalendarPreview);
+        };
+
+        container.appendChild(row);
     });
 
     // Add summary
     const trainingCount = Object.values(wizardWorkoutCalendar).filter(w =>
-        w && !['rest', 'yoga-restorative', 'yoga-flow', 'yoga-mobility'].includes(w)
+        w && !['rest', 'yoga-restorative', 'yoga-flow', 'yoga-mobility', 'recovery-stretch', 'recovery-foam'].includes(w)
     ).length;
     const yogaCount = Object.values(wizardWorkoutCalendar).filter(w =>
         ['yoga-restorative', 'yoga-flow', 'yoga-mobility'].includes(w)
     ).length;
-    const restCount = 7 - trainingCount - yogaCount;
+    const restCount = Object.values(wizardWorkoutCalendar).filter(w =>
+        w === 'rest' || ['recovery-stretch', 'recovery-foam'].includes(w)
+    ).length;
 
-    html += `
-        <div style="text-align:center; margin-top:12px; padding:10px; background:rgba(72,134,75,0.1); border-radius:8px; font-size:13px; color:#1a4d2e;">
-            <strong>${trainingCount} training</strong> · <strong>${yogaCount} yoga</strong> · <strong>${restCount} rest</strong>
-        </div>
-    `;
-
-    container.innerHTML = html;
+    const summary = document.createElement('div');
+    summary.style.textAlign = 'center';
+    summary.style.marginTop = '12px';
+    summary.style.padding = '10px';
+    summary.style.background = 'rgba(72,134,75,0.1)';
+    summary.style.borderRadius = '8px';
+    summary.style.fontSize = '13px';
+    summary.style.color = '#1a4d2e';
+    summary.innerHTML = `<strong>${trainingCount} training</strong> · <strong>${yogaCount} yoga</strong> · <strong>${restCount} rest</strong>`;
+    container.appendChild(summary);
 }
 
 function openCalendarEditor() {
     // For now, just go back to step 4 to re-select days
     currentWizardStep = 4;
     updateWizardUI();
+}
+
+// Get workout options based on wizard equipment selection
+function getWizardWorkoutOptions() {
+    const equipment = document.getElementById('wizard-equipment')?.value || 'none';
+    const options = [];
+
+    // Base options available to everyone
+    options.push({ category: 'YOGA', items: [
+        { id: 'yoga-flow', name: 'Power Yoga', icon: '🧘' },
+        { id: 'yoga-restorative', name: 'Restorative Yoga', icon: '🧘' },
+        { id: 'yoga-mobility', name: 'Mobility Yoga', icon: '🧘' }
+    ]});
+
+    options.push({ category: 'RECOVERY', items: [
+        { id: 'recovery-stretch', name: 'Stretching', icon: '🔄' },
+        { id: 'recovery-foam', name: 'Foam Rolling', icon: '🔄' }
+    ]});
+
+    options.push({ category: 'REST', items: [
+        { id: 'rest', name: 'Rest Day', icon: '⏸️' }
+    ]});
+
+    // Equipment-specific options
+    if (equipment === 'gym') {
+        options.unshift({ category: 'GYM', items: [
+            { id: 'gym-push', name: 'Push (Chest, Shoulders, Triceps)', icon: '🏋️' },
+            { id: 'gym-pull', name: 'Pull (Back, Biceps)', icon: '🏋️' },
+            { id: 'gym-legs', name: 'Legs', icon: '🏋️' },
+            { id: 'gym-chest', name: 'Chest', icon: '🏋️' },
+            { id: 'gym-back', name: 'Back', icon: '🏋️' },
+            { id: 'gym-shoulders', name: 'Shoulders', icon: '🏋️' },
+            { id: 'gym-arms', name: 'Arms', icon: '🏋️' },
+            { id: 'gym-core', name: 'Core', icon: '🏋️' },
+            { id: 'gym-upper', name: 'Upper Body', icon: '🏋️' },
+            { id: 'gym-lower', name: 'Lower Body', icon: '🏋️' },
+            { id: 'gym-fullbody', name: 'Full Body', icon: '🏋️' }
+        ]});
+    } else if (equipment === 'dumbbells') {
+        options.unshift({ category: 'HOME WEIGHTS', items: [
+            { id: 'home-upper', name: 'Upper Body', icon: '🏠' },
+            { id: 'home-lower', name: 'Lower Body', icon: '🏠' },
+            { id: 'home-fullbody', name: 'Full Body', icon: '🏠' },
+            { id: 'home-arms', name: 'Arms', icon: '🏠' },
+            { id: 'home-shoulders', name: 'Shoulders', icon: '🏠' }
+        ]});
+    } else if (equipment === 'bands') {
+        options.unshift({ category: 'BANDS', items: [
+            { id: 'bands-upper', name: 'Upper Body', icon: '🔗' },
+            { id: 'bands-lower', name: 'Lower Body', icon: '🔗' },
+            { id: 'bands-fullbody', name: 'Full Body', icon: '🔗' }
+        ]});
+    } else if (equipment === 'none' || equipment === 'bodyweight') {
+        options.unshift({ category: 'BODYWEIGHT', items: [
+            { id: 'bw-upper', name: 'Upper Body', icon: '🤸' },
+            { id: 'bw-lower', name: 'Lower Body', icon: '🤸' },
+            { id: 'bw-core', name: 'Core', icon: '🤸' },
+            { id: 'bw-fullbody', name: 'Full Body', icon: '🤸' }
+        ]});
+    }
+
+    return options;
+}
+
+// Show workout dropdown for selecting a workout for a specific day
+function showWizardWorkoutDropdown(day, dayLabel, updateCallback) {
+    // Remove any existing dropdown
+    const existingDropdown = document.getElementById('wizard-workout-dropdown-overlay');
+    if (existingDropdown) existingDropdown.remove();
+
+    const workoutOptions = getWizardWorkoutOptions();
+
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'wizard-workout-dropdown-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.right = '0';
+    overlay.style.bottom = '0';
+    overlay.style.background = 'rgba(0,0,0,0.3)';
+    overlay.style.zIndex = '13000';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+
+    // Create dropdown container
+    const dropdown = document.createElement('div');
+    dropdown.style.background = '#fff';
+    dropdown.style.borderRadius = '16px';
+    dropdown.style.padding = '20px';
+    dropdown.style.width = '90%';
+    dropdown.style.maxWidth = '350px';
+    dropdown.style.maxHeight = '70vh';
+    dropdown.style.overflowY = 'auto';
+    dropdown.style.boxShadow = '0 10px 40px rgba(0,0,0,0.2)';
+
+    // Header
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.marginBottom = '15px';
+    header.style.paddingBottom = '10px';
+    header.style.borderBottom = '1px solid #eee';
+
+    const headerTitle = document.createElement('h3');
+    headerTitle.style.margin = '0';
+    headerTitle.style.color = '#1a4d2e';
+    headerTitle.style.fontSize = '18px';
+    headerTitle.textContent = dayLabel;
+
+    const closeBtn = document.createElement('span');
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.fontSize = '24px';
+    closeBtn.style.color = '#999';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.onclick = () => overlay.remove();
+
+    header.appendChild(headerTitle);
+    header.appendChild(closeBtn);
+    dropdown.appendChild(header);
+
+    // Workout options grouped by category
+    workoutOptions.forEach(category => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.style.marginBottom = '15px';
+
+        const categoryLabel = document.createElement('div');
+        categoryLabel.style.fontSize = '11px';
+        categoryLabel.style.fontWeight = '600';
+        categoryLabel.style.color = '#999';
+        categoryLabel.style.textTransform = 'uppercase';
+        categoryLabel.style.marginBottom = '8px';
+        categoryLabel.style.letterSpacing = '0.5px';
+        categoryLabel.textContent = category.category;
+        categoryDiv.appendChild(categoryLabel);
+
+        category.items.forEach(item => {
+            const option = document.createElement('div');
+            option.style.display = 'flex';
+            option.style.alignItems = 'center';
+            option.style.padding = '10px 12px';
+            option.style.marginBottom = '4px';
+            option.style.borderRadius = '8px';
+            option.style.cursor = 'pointer';
+            option.style.transition = 'background 0.2s';
+
+            // Highlight current selection
+            if (wizardWorkoutCalendar[day] === item.id) {
+                option.style.background = 'rgba(72, 134, 75, 0.15)';
+                option.style.border = '2px solid #48864B';
+            } else {
+                option.style.background = '#f8f8f8';
+                option.style.border = '2px solid transparent';
+            }
+
+            option.onmouseenter = () => {
+                if (wizardWorkoutCalendar[day] !== item.id) {
+                    option.style.background = 'rgba(72, 134, 75, 0.1)';
+                }
+            };
+            option.onmouseleave = () => {
+                if (wizardWorkoutCalendar[day] !== item.id) {
+                    option.style.background = '#f8f8f8';
+                }
+            };
+
+            const optIcon = document.createElement('span');
+            optIcon.style.fontSize = '18px';
+            optIcon.style.marginRight = '10px';
+            optIcon.textContent = item.icon;
+
+            const optName = document.createElement('span');
+            optName.style.fontWeight = '500';
+            optName.style.color = '#333';
+            optName.textContent = item.name;
+
+            option.appendChild(optIcon);
+            option.appendChild(optName);
+
+            // Checkmark for selected
+            if (wizardWorkoutCalendar[day] === item.id) {
+                const checkmark = document.createElement('span');
+                checkmark.style.marginLeft = 'auto';
+                checkmark.style.color = '#48864B';
+                checkmark.style.fontWeight = 'bold';
+                checkmark.innerHTML = '&#10003;';
+                option.appendChild(checkmark);
+            }
+
+            option.onclick = () => {
+                // Update calendar
+                wizardWorkoutCalendar[day] = item.id;
+
+                // Re-render the calendar preview
+                if (updateCallback) updateCallback();
+
+                // Close dropdown
+                overlay.remove();
+            };
+
+            categoryDiv.appendChild(option);
+        });
+
+        dropdown.appendChild(categoryDiv);
+    });
+
+    overlay.appendChild(dropdown);
+
+    // Close on overlay click
+    overlay.onclick = (e) => {
+        if (e.target === overlay) overlay.remove();
+    };
+
+    document.body.appendChild(overlay);
 }
 
 // ========== END WORKOUT CALENDAR FUNCTIONS ==========
@@ -18706,10 +18997,6 @@ function openAsClient() {
                         <strong>📈 48-Week Program:</strong> Each workout evolves over time - you'll never do the same workout twice in a row!
                     </p>
                 </div>
-
-                <button type="button" onclick="openCalendarEditor()" style="width:100%; margin-top:15px; padding:12px; background:#fff; color:#48864B; border:2px solid #48864B; border-radius:8px; font-weight:600; cursor:pointer;">
-                    ✏️ Let Me Adjust
-                </button>
             </div>
 
             <!-- SLIDE 7: NUTRITION LOGIC (was slide 4) -->
