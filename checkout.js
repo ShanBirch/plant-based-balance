@@ -35,9 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. One-Click Payment Logic (Apple Pay / Google Pay)
     // Flat Pricing - no discount complexity
     const PLAN_DETAILS = {
-        '1-month': { amount: 3000, label: '28-Day Switch (1 Month)' },      // $30 AUD
-        '3-month': { amount: 7500, label: '28-Day Switch (3 Months)' },     // $75 AUD ($25/mo)
-        '6-month': { amount: 12000, label: '28-Day Switch (6 Months)' }     // $120 AUD ($20/mo)
+        '1-month': { amount: 3000, label: 'Balance Membership (1 Month)' },      // $30 AUD
+        '3-month': { amount: 7500, label: 'Balance Membership (3 Months)' },     // $75 AUD ($25/mo)
+        '6-month': { amount: 12000, label: 'Balance Membership (6 Months)' }     // $120 AUD ($20/mo)
     };
 
     const paymentRequest = stripe.paymentRequest({
