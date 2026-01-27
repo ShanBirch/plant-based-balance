@@ -27064,6 +27064,7 @@ function startVoiceRecording() {
         if (statusText) statusText.textContent = 'Listening... Tap to stop';
         if (transcript) {
             transcript.textContent = '';
+            transcript.dataset.final = '';
             transcript.classList.remove('empty');
         }
     };
