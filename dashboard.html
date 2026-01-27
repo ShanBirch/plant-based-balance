@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>28-Day Plant Based Switch</title>
+<title>Balance 28-Day Switch</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
@@ -17696,14 +17696,14 @@ function buildWinShareMessage() {
 
     // Add branding for external shares
     if (shareData.type === 'specific_lift') {
-        return `${shareData.message} Training with Plant Based Balance 🌱`;
+        return `${shareData.message} Training with Balance 🌱`;
     } else if (shareData.type === 'personal_best') {
-        return `🏆 ${shareData.message} Training with Plant Based Balance 🌱`;
+        return `🏆 ${shareData.message} Training with Balance 🌱`;
     } else if (shareData.type === 'milestone') {
-        return `🌟 ${shareData.message} Training with Plant Based Balance 🌱`;
+        return `🌟 ${shareData.message} Training with Balance 🌱`;
     }
 
-    return `${shareData.message} Training with Plant Based Balance 🌱`;
+    return `${shareData.message} Training with Balance 🌱`;
 }
 
 // Share win to Facebook Messenger
@@ -23111,7 +23111,7 @@ function copyReferralCode() {
 function shareViaWhatsApp() {
     const code = currentReferralCode;
     const link = `${window.location.origin}/login.html?ref=${code}`;
-    const message = `Hey! I've been loving Plant Based Balance for hormone health. Join me and we BOTH get 2 weeks free! Use my code ${code} or click here: ${link}`;
+    const message = `Hey! I've been loving Balance for hormone health. Join me and we BOTH get 2 weeks free! Use my code ${code} or click here: ${link}`;
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -23121,7 +23121,7 @@ function shareViaWhatsApp() {
 function shareViaFacebook() {
     const code = currentReferralCode;
     const link = `${window.location.origin}/login.html?ref=${code}`;
-    const message = `Hey! I've been loving Plant Based Balance for hormone health. Join me and we BOTH get 2 weeks free! Use my code ${code} or click: ${link}`;
+    const message = `Hey! I've been loving Balance for hormone health. Join me and we BOTH get 2 weeks free! Use my code ${code} or click: ${link}`;
 
     // Try to open Facebook Messenger app
     const messengerUrl = `fb-messenger://share?link=${encodeURIComponent(link)}&app_id=`;
@@ -23135,7 +23135,7 @@ function shareViaFacebook() {
 function shareViaSMS() {
     const code = currentReferralCode;
     const link = `${window.location.origin}/login.html?ref=${code}`;
-    const message = `Hey! Join me on Plant Based Balance. We BOTH get 2 weeks free! Use code ${code} or click: ${link}`;
+    const message = `Hey! Join me on Balance. We BOTH get 2 weeks free! Use code ${code} or click: ${link}`;
 
     const smsUrl = `sms:?&body=${encodeURIComponent(message)}`;
     window.location.href = smsUrl;
@@ -23812,7 +23812,7 @@ async function loadGroupChatMessages(chatId) {
                             
                             <!-- Internal logo for share capture -->
                             <div class="share-only" style="display: none; margin-top: 15px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 10px; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">
-                                PLANT BASED BALANCE
+                                BALANCE
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
@@ -24178,7 +24178,7 @@ async function shareWinExternally() {
                     </div>
                     <div>
                         <div style="font-size: 0.8rem; font-weight: 700; color: #1a202c;">${window.currentUser?.user_metadata?.name || 'Power User'}</div>
-                        <div style="font-size: 0.65rem; color: #a0aec0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">PLANT BASED BALANCE</div>
+                        <div style="font-size: 0.65rem; color: #a0aec0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">BALANCE</div>
                     </div>
                 </div>
             </div>
@@ -24203,7 +24203,7 @@ async function shareWinExternally() {
         if (navigator.share) {
             await navigator.share({
                 files: [file],
-                title: 'My Win on Plant Based Balance!',
+                title: 'My Win on Balance!',
                 text: 'Check out my progress! 💪'
             });
         } else {
