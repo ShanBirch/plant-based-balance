@@ -2054,6 +2054,125 @@ async function applyAppTheme(themeKey) {
         transform: translateY(0);
     }
 
+    .meal-icon-btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(123, 168, 131, 0.3);
+    }
+
+    .meal-icon-btn:hover {
+        background: var(--primary-light);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(123, 168, 131, 0.4);
+    }
+
+    .meal-icon-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Simple Text Input Modal */
+    .meal-text-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        z-index: 10011;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+    }
+
+    .meal-text-modal.visible {
+        display: flex;
+    }
+
+    .meal-text-modal-container {
+        background: white;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 400px;
+        padding: 24px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    .meal-text-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .meal-text-modal-header h3 {
+        margin: 0;
+        color: var(--primary);
+        font-size: 1.3rem;
+    }
+
+    .meal-text-modal-close {
+        background: none;
+        border: none;
+        font-size: 1.8rem;
+        color: #999;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .meal-text-modal-close:hover {
+        color: #666;
+    }
+
+    .simple-meal-textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-family: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease;
+    }
+
+    .simple-meal-textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+
+    .simple-meal-submit {
+        width: 100%;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 16px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 16px;
+        transition: all 0.2s ease;
+    }
+
+    .simple-meal-submit:hover:not(:disabled) {
+        background: var(--primary-light);
+    }
+
+    .simple-meal-submit:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+
     /* Meal Input Modal Styles */
     .meal-input-modal {
         position: fixed;
@@ -2723,14 +2842,21 @@ async function applyAppTheme(themeKey) {
         <!-- Calorie Tracker View -->
         <div class="view-section" id="calorie-tracker">
             <div style="padding: 25px;">
-                <!-- Camera Button - At Top for Easy Access -->
-                <div style="text-align: center; margin: 0 0 25px 0;">
-                    <button class="camera-btn-large" onclick="openMealCamera('tracker')">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <!-- Log Meal Buttons - Camera and Text -->
+                <div style="text-align: center; margin: 0 0 25px 0; display: flex; justify-content: center; gap: 16px;">
+                    <button class="meal-icon-btn" onclick="openMealCameraDirect('tracker')" title="Take a photo">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                             <circle cx="12" cy="13" r="4"></circle>
                         </svg>
-                        <span>Log a Meal</span>
+                    </button>
+                    <button class="meal-icon-btn" onclick="openMealTextInput('tracker')" title="Type your meal">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                            <path d="M2 2l7.586 7.586"></path>
+                            <circle cx="11" cy="11" r="2"></circle>
+                        </svg>
                     </button>
                 </div>
 
@@ -24766,6 +24892,24 @@ window.submitDailyCycleSync = submitDailyCycleSync;
     </div>
 </div>
 
+<!-- Simple Text Input Modal -->
+<div id="meal-text-modal" class="meal-text-modal">
+    <div class="meal-text-modal-container">
+        <div class="meal-text-modal-header">
+            <h3>What did you eat?</h3>
+            <button class="meal-text-modal-close" onclick="closeMealTextModal()">&times;</button>
+        </div>
+        <textarea
+            id="simple-meal-input"
+            class="simple-meal-textarea"
+            placeholder="e.g., 2 eggs, toast with butter, orange juice..."
+        ></textarea>
+        <button class="simple-meal-submit" id="simple-meal-submit" onclick="submitSimpleMealText()" disabled>
+            Analyze My Meal
+        </button>
+    </div>
+</div>
+
 <!-- Workout Photo Preview Modal -->
 <div id="workout-preview-modal" style="display:none; position:fixed; inset:0; background:black; z-index:10012; flex-direction:column; align-items:center; justify-content:center;">
     <!-- Photo Preview -->
@@ -26904,6 +27048,114 @@ function autoDetectMealType() {
     if (hour < 15) return 'lunch';
     if (hour < 21) return 'dinner';
     return 'snack';
+}
+
+// Simple text input modal functions
+let simpleMealInputInitialized = false;
+
+function openMealTextInput(source) {
+    mealCameraSource = source || 'widget';
+    selectedMealType = autoDetectMealType();
+
+    const modal = document.getElementById('meal-text-modal');
+    const textarea = document.getElementById('simple-meal-input');
+    const submitBtn = document.getElementById('simple-meal-submit');
+
+    // Only add event listener once
+    if (!simpleMealInputInitialized && textarea) {
+        textarea.addEventListener('input', function() {
+            const btn = document.getElementById('simple-meal-submit');
+            if (btn) btn.disabled = this.value.trim().length === 0;
+        });
+        simpleMealInputInitialized = true;
+    }
+
+    if (textarea) textarea.value = '';
+    if (submitBtn) submitBtn.disabled = true;
+    if (modal) modal.classList.add('visible');
+
+    // Focus textarea after modal opens
+    setTimeout(() => {
+        if (textarea) textarea.focus();
+    }, 100);
+}
+
+function closeMealTextModal() {
+    const modal = document.getElementById('meal-text-modal');
+    if (modal) modal.classList.remove('visible');
+}
+
+async function submitSimpleMealText() {
+    const textarea = document.getElementById('simple-meal-input');
+    const submitBtn = document.getElementById('simple-meal-submit');
+    const description = textarea ? textarea.value.trim() : '';
+
+    if (description.length < 3) {
+        alert('Please describe what you ate.');
+        return;
+    }
+
+    // Close modal and show loading
+    closeMealTextModal();
+    showMealAnalysisLoading('Analyzing your meal description...');
+
+    try {
+        const response = await fetch('/.netlify/functions/analyze-meal-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                description: description,
+                mealType: selectedMealType
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(errorData.error || 'Failed to analyze meal');
+        }
+
+        const result = await response.json();
+
+        if (!result.success || !result.data) {
+            throw new Error('Invalid response from analysis');
+        }
+
+        const nutritionData = result.data;
+
+        // Save meal log to database
+        const savedMeal = await saveMealLogWithType({
+            foodItems: nutritionData.foodItems,
+            totals: nutritionData.totals,
+            micronutrients: nutritionData.micronutrients,
+            confidence: nutritionData.confidence,
+            notes: nutritionData.notes,
+            mealType: selectedMealType,
+            inputMethod: 'text',
+            mealDescription: description
+        });
+
+        // Award points
+        if (savedMeal && savedMeal[0]?.id) {
+            try {
+                await awardPointsForMeal(savedMeal[0].id, new Date().toISOString(), nutritionData.confidence, null);
+            } catch (pointsError) {
+                console.error('Error awarding points:', pointsError);
+            }
+        }
+
+        // Refresh display
+        await recalculateDailyNutrition();
+        await loadTodayNutrition();
+        hideMealAnalysisLoading();
+
+        // Show success feedback
+        showMealLoggedSuccess(nutritionData.totals.calories, selectedMealType);
+
+    } catch (error) {
+        console.error('Error analyzing meal:', error);
+        hideMealAnalysisLoading();
+        alert('Failed to analyze meal: ' + error.message);
+    }
 }
 
 // Open the meal input modal (primary entry point)
