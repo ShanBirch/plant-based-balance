@@ -9802,15 +9802,25 @@ function startCustomBuilderWorkout() {
 
         </div>
 
-        <!-- Weekly Calendar -->
+        <!-- Weekly/Monthly Calendar -->
         <div style="padding: 0 25px 25px 25px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h3 style="color: var(--primary); margin: 0; font-size: 1.1rem;">Your Predictions</h3>
-                <span onclick="switchAppTab('profile')" style="font-size: 0.8rem; color: var(--secondary); cursor: pointer; font-weight: 600;">Edit Dates</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="calendar-view-toggle" id="calendar-view-toggle">
+                        <button class="toggle-btn active" data-view="weekly" onclick="switchCalendarView('weekly')">Week</button>
+                        <button class="toggle-btn" data-view="monthly" onclick="switchCalendarView('monthly')">Month</button>
+                    </div>
+                    <span onclick="switchAppTab('profile')" style="font-size: 0.8rem; color: var(--secondary); cursor: pointer; font-weight: 600;">Edit Dates</span>
+                </div>
             </div>
 
             <div id="weekly-calendar" style="display: flex; flex-direction: column; gap: 10px;">
                 <!-- Calendar rows inserted via JS -->
+            </div>
+
+            <div id="monthly-calendar" style="display: none;">
+                <!-- Monthly calendar grid inserted via JS -->
             </div>
         </div>
     </div>
@@ -9885,6 +9895,140 @@ function startCustomBuilderWorkout() {
             padding: 10px;
             border-radius: 8px;
             margin-top: 5px;
+        }
+
+        /* Calendar View Toggle */
+        .calendar-view-toggle {
+            display: flex;
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 3px;
+        }
+        .calendar-view-toggle .toggle-btn {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .calendar-view-toggle .toggle-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Monthly Calendar Grid */
+        .monthly-calendar-container {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #eee;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .monthly-calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8fafc;
+            border-bottom: 1px solid #eee;
+        }
+        .monthly-calendar-header .month-nav-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px 10px;
+            color: var(--primary);
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .monthly-calendar-header .month-nav-btn:hover {
+            background: #eee;
+        }
+        .monthly-calendar-header .month-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--primary);
+        }
+        .monthly-calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: #fafafa;
+            border-bottom: 1px solid #eee;
+        }
+        .monthly-calendar-weekdays span {
+            padding: 10px 5px;
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+        .monthly-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #f1f5f9;
+        }
+        .monthly-day-cell {
+            background: white;
+            min-height: 65px;
+            padding: 6px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .monthly-day-cell:hover {
+            background: #fefce8;
+        }
+        .monthly-day-cell.other-month {
+            background: #fafafa;
+            color: #cbd5e1;
+        }
+        .monthly-day-cell.other-month:hover {
+            background: #f5f5f5;
+        }
+        .monthly-day-cell.is-today {
+            background: #fffbeb;
+            border: 2px solid var(--secondary);
+        }
+        .monthly-day-num {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+        .monthly-day-cell.other-month .monthly-day-num {
+            color: #cbd5e1;
+        }
+        .monthly-phase-indicator {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            right: 4px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        .monthly-workout-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: inline-block;
+            margin-top: 2px;
+        }
+        .monthly-day-workout {
+            font-size: 0.6rem;
+            color: #64748b;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-top: 2px;
         }
     </style>
 
@@ -11330,6 +11474,12 @@ async function initCalendarView() {
 
     renderCycleStatus();
     renderWeeklyCalendar();
+
+    // Restore saved calendar view preference (weekly/monthly)
+    const savedViewPref = localStorage.getItem('calendarViewPreference');
+    if (savedViewPref === 'monthly') {
+        switchCalendarView('monthly');
+    }
 }
 
 async function updateCycleData() {
@@ -11376,6 +11526,12 @@ async function updateCycleData() {
 
     renderCycleStatus();
     renderWeeklyCalendar();
+
+    // Also update monthly calendar if visible
+    const monthlyCalendar = document.getElementById('monthly-calendar');
+    if (monthlyCalendar && monthlyCalendar.style.display !== 'none') {
+        renderMonthlyCalendar();
+    }
 }
 
 function getCyclePhase(dayOfCycle, cycleLen) {
@@ -11970,6 +12126,221 @@ function renderWeeklyCalendar() {
         grid.appendChild(row);
     }
 }
+
+// --- MONTHLY CALENDAR VIEW ---
+
+// Track current displayed month for monthly calendar
+let monthlyCalendarDate = new Date();
+
+// Switch between weekly and monthly calendar views
+window.switchCalendarView = function(view) {
+    const weeklyCalendar = document.getElementById('weekly-calendar');
+    const monthlyCalendar = document.getElementById('monthly-calendar');
+    const toggleBtns = document.querySelectorAll('#calendar-view-toggle .toggle-btn');
+
+    if (!weeklyCalendar || !monthlyCalendar) return;
+
+    toggleBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === view);
+    });
+
+    if (view === 'weekly') {
+        weeklyCalendar.style.display = 'flex';
+        monthlyCalendar.style.display = 'none';
+    } else {
+        weeklyCalendar.style.display = 'none';
+        monthlyCalendar.style.display = 'block';
+        monthlyCalendarDate = new Date(); // Reset to current month when switching
+        renderMonthlyCalendar();
+    }
+
+    // Save preference
+    localStorage.setItem('calendarViewPreference', view);
+};
+
+// Navigate months in monthly calendar
+window.navigateMonth = function(direction) {
+    monthlyCalendarDate.setMonth(monthlyCalendarDate.getMonth() + direction);
+    renderMonthlyCalendar();
+};
+
+function renderMonthlyCalendar() {
+    const container = document.getElementById('monthly-calendar');
+    if (!container) return;
+
+    const today = new Date();
+    const year = monthlyCalendarDate.getFullYear();
+    const month = monthlyCalendarDate.getMonth();
+
+    // First day of the month
+    const firstDay = new Date(year, month, 1);
+    // Last day of the month
+    const lastDay = new Date(year, month + 1, 0);
+
+    // Get day of week for first day (0 = Sunday, adjust for Monday start)
+    let startDay = firstDay.getDay();
+    startDay = startDay === 0 ? 6 : startDay - 1; // Convert to Monday = 0
+
+    // Month name
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+
+    // Start date for cycle calc
+    const start = userCycleData.lastPeriod ? new Date(userCycleData.lastPeriod) : null;
+    const cycleLen = userCycleData.cycleLength || 28;
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const isBaseline = !userCycleData.lastPeriod;
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+
+    // Build HTML
+    let html = `
+        <div class="monthly-calendar-container">
+            <div class="monthly-calendar-header">
+                <button class="month-nav-btn" onclick="navigateMonth(-1)">‹</button>
+                <span class="month-title">${monthNames[month]} ${year}</span>
+                <button class="month-nav-btn" onclick="navigateMonth(1)">›</button>
+            </div>
+            <div class="monthly-calendar-weekdays">
+                <span>Mon</span>
+                <span>Tue</span>
+                <span>Wed</span>
+                <span>Thu</span>
+                <span>Fri</span>
+                <span>Sat</span>
+                <span>Sun</span>
+            </div>
+            <div class="monthly-calendar-grid">
+    `;
+
+    // Days from previous month
+    const prevMonth = new Date(year, month, 0);
+    for (let i = startDay - 1; i >= 0; i--) {
+        const dayNum = prevMonth.getDate() - i;
+        const date = new Date(year, month - 1, dayNum);
+        html += renderMonthlyDayCell(date, today, start, cycleLen, msPerDay, isBaseline, isMale, true);
+    }
+
+    // Days of current month
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+        const date = new Date(year, month, d);
+        html += renderMonthlyDayCell(date, today, start, cycleLen, msPerDay, isBaseline, isMale, false);
+    }
+
+    // Days from next month to fill the grid (6 rows = 42 cells)
+    const totalCells = startDay + lastDay.getDate();
+    const remainingCells = totalCells <= 35 ? 35 - totalCells : 42 - totalCells;
+    for (let d = 1; d <= remainingCells; d++) {
+        const date = new Date(year, month + 1, d);
+        html += renderMonthlyDayCell(date, today, start, cycleLen, msPerDay, isBaseline, isMale, true);
+    }
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    // Add legend
+    html += `
+        <div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+            ${isMale ? `
+                <div style="display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #64748b;">
+                    <span style="width: 12px; height: 4px; background: ${PHASE_INFO.performance.color}; border-radius: 2px;"></span>
+                    Performance Mode
+                </div>
+            ` : `
+                <div style="display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #64748b;">
+                    <span style="width: 12px; height: 4px; background: ${PHASE_INFO.menstrual.color}; border-radius: 2px;"></span>
+                    Menstrual
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #64748b;">
+                    <span style="width: 12px; height: 4px; background: ${PHASE_INFO.follicular.color}; border-radius: 2px;"></span>
+                    Follicular
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #64748b;">
+                    <span style="width: 12px; height: 4px; background: ${PHASE_INFO.ovulation.color}; border-radius: 2px;"></span>
+                    Ovulation
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #64748b;">
+                    <span style="width: 12px; height: 4px; background: ${PHASE_INFO.luteal.color}; border-radius: 2px;"></span>
+                    Luteal
+                </div>
+            `}
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBaseline, isMale, isOtherMonth) {
+    const isToday = date.toDateString() === today.toDateString();
+    const dayNum = date.getDate();
+    const dayOfWeek = date.getDay();
+    const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0
+
+    let phaseColor = '#e2e8f0'; // Default gray
+    let phaseKey = 'wellness';
+
+    if (isMale) {
+        phaseColor = PHASE_INFO.performance.color;
+        phaseKey = 'performance';
+    } else if (!isBaseline && cycleStart) {
+        const daysSinceStart = Math.floor((date - cycleStart) / msPerDay);
+        let mod = daysSinceStart % cycleLen;
+        if (mod < 0) mod += cycleLen;
+        const currentDayLoop = mod + 1;
+
+        phaseKey = getCyclePhase(currentDayLoop, cycleLen);
+        phaseColor = PHASE_INFO[phaseKey]?.color || '#e2e8f0';
+    } else if (userCycleData.noPeriodMode) {
+        phaseColor = PHASE_INFO.wellness.color;
+    }
+
+    // Get workout for this day (simplified - just show workout type based on day of week)
+    const workoutLabels = ['Strength', 'Strength', 'Yoga', 'Strength', 'Strength', 'Yoga', 'Rest'];
+    const workoutLabel = workoutLabels[dayIndex];
+
+    const dateStr = date.toISOString().split('T')[0];
+
+    return `
+        <div class="monthly-day-cell ${isOtherMonth ? 'other-month' : ''} ${isToday ? 'is-today' : ''}"
+             onclick="openMonthlyDayDetail('${dateStr}')">
+            <div class="monthly-day-num">${dayNum}</div>
+            <div class="monthly-day-workout">${workoutLabel}</div>
+            <div class="monthly-phase-indicator" style="background: ${isOtherMonth ? '#e2e8f0' : phaseColor}"></div>
+        </div>
+    `;
+}
+
+// Open detail for a specific day from monthly calendar
+window.openMonthlyDayDetail = function(dateStr) {
+    const date = new Date(dateStr);
+    const today = new Date();
+
+    // Calculate day index from Monday of that week
+    const dayOfWeek = date.getDay();
+    const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0
+
+    // For now, if it's the current week, use the existing openCalendarWorkout
+    const todayDayOfWeek = today.getDay();
+    const distToMon = (todayDayOfWeek + 6) % 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - distToMon);
+    monday.setHours(0, 0, 0, 0);
+
+    const targetMonday = new Date(date);
+    targetMonday.setDate(date.getDate() - dayIndex);
+    targetMonday.setHours(0, 0, 0, 0);
+
+    if (monday.getTime() === targetMonday.getTime()) {
+        // Same week - use existing function
+        openCalendarWorkout(dayIndex);
+    } else {
+        // Different week - show info toast
+        const options = { weekday: 'long', month: 'long', day: 'numeric' };
+        const dateDisplay = date.toLocaleDateString('en-US', options);
+        showToast(`${dateDisplay} - Tap days in current week to see workout details`);
+    }
+};
 
 window.openCalendarWorkout = async function(dayIndexFromMonday) {
     // 1. Check if user qualifies for Gym Split (Male or Female)
