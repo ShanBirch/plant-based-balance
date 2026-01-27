@@ -8881,11 +8881,19 @@ function startCustomBuilderWorkout() {
         </div>
 
         <!-- Win Preview -->
-        <div id="quick-share-preview" style="padding: 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+        <div id="quick-share-preview" style="padding: 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
             <div style="background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
                 <div id="quick-share-badge" style="font-size: 2rem; margin-bottom: 10px;">🏆</div>
                 <div id="quick-share-message" style="font-size: 1rem; font-weight: 600; color: var(--text-main);"></div>
                 <div id="quick-share-detail" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;"></div>
+            </div>
+        </div>
+
+        <!-- Lift Selection -->
+        <div id="lift-selection-section" style="display: none; padding: 15px; border-bottom: 1px solid #e2e8f0; max-height: 200px; overflow-y: auto;">
+            <div style="font-weight: 600; color: var(--text-main); margin-bottom: 10px; font-size: 0.95rem;">Select a lift to share:</div>
+            <div id="lift-selection-list" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Lifts will be populated here -->
             </div>
         </div>
 
@@ -16799,17 +16807,20 @@ async function finishWorkout() {
 
 // Store completed workout data for sharing
 let completedWorkoutDataForShare = null;
+let selectedLiftToShare = null; // Store the selected lift
 
 async function showWorkoutSuccessScreen(duration, improvements, milestones, workoutData) {
     hideAllAppViews();
 
-    // Store workout data for potential sharing
+    // Store workout data for potential sharing (including all sets)
     completedWorkoutDataForShare = {
         duration: duration,
         improvements: improvements,
         milestones: milestones,
-        workoutName: window.currentWorkoutName || 'Workout'
+        workoutName: window.currentWorkoutName || 'Workout',
+        sets: workoutData || [] // Store all the sets from the workout
     };
+    selectedLiftToShare = null; // Reset selected lift
 
     // Update duration
     document.getElementById('success-duration').innerText = duration;
@@ -16970,43 +16981,78 @@ async function openQuickShareModal() {
     const modal = document.getElementById('quick-share-modal');
     const chatsList = document.getElementById('quick-share-chats-list');
     const noChats = document.getElementById('quick-share-no-chats');
+    const liftSection = document.getElementById('lift-selection-section');
+    const liftList = document.getElementById('lift-selection-list');
 
-    // Populate the win preview
-    const badge = document.getElementById('quick-share-badge');
-    const message = document.getElementById('quick-share-message');
-    const detail = document.getElementById('quick-share-detail');
+    // Reset selected lift
+    selectedLiftToShare = null;
 
-    if (completedWorkoutDataForShare) {
-        const { improvements, milestones, workoutName } = completedWorkoutDataForShare;
+    // Populate the win preview with default (best achievement or workout complete)
+    updateSharePreview();
 
-        if (improvements && improvements.length > 0) {
-            const imp = improvements[0];
-            let improvementText = '';
-            if (imp.weightIncrease > 0 && imp.repsIncrease > 0) {
-                improvementText = `+${imp.weightIncrease}kg and +${imp.repsIncrease} reps`;
-            } else if (imp.weightIncrease > 0) {
-                improvementText = `+${imp.weightIncrease}kg`;
-            } else if (imp.repsIncrease > 0) {
-                improvementText = `+${imp.repsIncrease} reps`;
+    // Populate lift selection if we have sets data
+    if (completedWorkoutDataForShare && completedWorkoutDataForShare.sets && completedWorkoutDataForShare.sets.length > 0) {
+        liftSection.style.display = 'block';
+
+        // Group sets by exercise and get best set for each
+        const exerciseSets = {};
+        completedWorkoutDataForShare.sets.forEach(set => {
+            const name = set.exercise_name || set.exerciseName || 'Exercise';
+            if (!exerciseSets[name]) {
+                exerciseSets[name] = [];
             }
-            badge.innerText = '🏆';
-            message.innerText = `Hit a PR on ${imp.exercise}!`;
-            detail.innerText = `${improvementText} (${imp.previousWeight || 0}kg x ${imp.previousReps || 0} → ${imp.currentWeight || 0}kg x ${imp.currentReps || 0})`;
-        } else if (milestones && milestones.length > 0) {
-            const m = milestones[0];
-            const emoji = m.milestone_value === 1 ? '🎉' : m.milestone_value >= 100 ? '👑' : m.milestone_value >= 50 ? '🏆' : m.milestone_value >= 25 ? '🌟' : m.milestone_value >= 10 ? '🔥' : '💪';
-            badge.innerText = emoji;
-            message.innerText = m.message;
-            detail.innerText = '';
-        } else {
-            badge.innerText = '💪';
-            message.innerText = `Just finished ${workoutName}!`;
-            detail.innerText = 'Workout completed';
+            exerciseSets[name].push(set);
+        });
+
+        // Build lift selection HTML
+        let liftHtml = '';
+
+        // Add "Best Achievement" option if there are improvements
+        if (completedWorkoutDataForShare.improvements && completedWorkoutDataForShare.improvements.length > 0) {
+            liftHtml += `
+                <div onclick="selectLiftToShare(null)" id="lift-option-best" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.2rem;">🏆</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600;">Best Achievement (PR)</div>
+                    </div>
+                    <span>✓</span>
+                </div>
+            `;
         }
+
+        // Add each exercise's best set
+        Object.entries(exerciseSets).forEach(([exerciseName, sets]) => {
+            // Find the best set (highest weight or most reps)
+            const bestSet = sets.reduce((best, current) => {
+                const currentWeight = current.weight || current.weight_kg || 0;
+                const bestWeight = best.weight || best.weight_kg || 0;
+                if (currentWeight > bestWeight) return current;
+                if (currentWeight === bestWeight) {
+                    const currentReps = current.reps || 0;
+                    const bestReps = best.reps || 0;
+                    return currentReps > bestReps ? current : best;
+                }
+                return best;
+            }, sets[0]);
+
+            const weight = bestSet.weight || bestSet.weight_kg || 0;
+            const reps = bestSet.reps || 0;
+            const setIndex = completedWorkoutDataForShare.sets.indexOf(bestSet);
+
+            liftHtml += `
+                <div onclick="selectLiftToShare(${setIndex})" id="lift-option-${setIndex}" style="background: #f1f5f9; padding: 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="if(!this.classList.contains('selected')) this.style.background='#f1f5f9'">
+                    <span style="font-size: 1.2rem;">💪</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--text-main);">${escapeHtml(exerciseName)}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">${weight}kg × ${reps} reps</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        liftList.innerHTML = liftHtml;
     } else {
-        badge.innerText = '💪';
-        message.innerText = 'Workout completed!';
-        detail.innerText = '';
+        liftSection.style.display = 'none';
     }
 
     // Show modal
@@ -17049,21 +17095,38 @@ async function openQuickShareModal() {
 
 function closeQuickShareModal() {
     document.getElementById('quick-share-modal').style.display = 'none';
+    selectedLiftToShare = null;
 }
 
-async function quickShareToChat(chatId, chatName) {
+// Update the share preview based on selected lift
+function updateSharePreview() {
+    const badge = document.getElementById('quick-share-badge');
+    const message = document.getElementById('quick-share-message');
+    const detail = document.getElementById('quick-share-detail');
+
     if (!completedWorkoutDataForShare) {
-        showToast('No workout data to share', 'error');
+        badge.innerText = '💪';
+        message.innerText = 'Workout completed!';
+        detail.innerText = '';
         return;
     }
 
-    const { improvements, milestones, workoutName, duration } = completedWorkoutDataForShare;
+    const { improvements, milestones, workoutName, sets } = completedWorkoutDataForShare;
 
-    // Build the share message
-    let shareMessage = `Just finished ${workoutName}! 💪`;
-    let winType = 'workout_complete';
-    let winDetails = { workoutName, duration };
+    // If a specific lift is selected, show that
+    if (selectedLiftToShare !== null && sets && sets[selectedLiftToShare]) {
+        const set = sets[selectedLiftToShare];
+        const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
+        const weight = set.weight || set.weight_kg || 0;
+        const reps = set.reps || 0;
 
+        badge.innerText = '💪';
+        message.innerText = `${exerciseName}`;
+        detail.innerText = `${weight}kg × ${reps} reps`;
+        return;
+    }
+
+    // Default: show best achievement or workout complete
     if (improvements && improvements.length > 0) {
         const imp = improvements[0];
         let improvementText = '';
@@ -17074,23 +17137,121 @@ async function quickShareToChat(chatId, chatName) {
         } else if (imp.repsIncrease > 0) {
             improvementText = `+${imp.repsIncrease} reps`;
         }
-        shareMessage = `Hit a PR on ${imp.exercise}! ${improvementText} 🏆`;
-        winType = 'personal_best';
-        winDetails = {
-            workoutName,
-            exercise: imp.exercise,
-            improvement: improvementText,
-            previousWeight: imp.previousWeight,
-            previousReps: imp.previousReps,
-            currentWeight: imp.currentWeight,
-            currentReps: imp.currentReps
-        };
+        badge.innerText = '🏆';
+        message.innerText = `Hit a PR on ${imp.exercise}!`;
+        detail.innerText = `${improvementText} (${imp.previousWeight || 0}kg x ${imp.previousReps || 0} → ${imp.currentWeight || 0}kg x ${imp.currentReps || 0})`;
     } else if (milestones && milestones.length > 0) {
         const m = milestones[0];
-        shareMessage = `${m.message} 🌟`;
-        winType = 'milestone';
-        winDetails = { workoutName, milestone: m.message, value: m.milestone_value };
+        const emoji = m.milestone_value === 1 ? '🎉' : m.milestone_value >= 100 ? '👑' : m.milestone_value >= 50 ? '🏆' : m.milestone_value >= 25 ? '🌟' : m.milestone_value >= 10 ? '🔥' : '💪';
+        badge.innerText = emoji;
+        message.innerText = m.message;
+        detail.innerText = '';
+    } else {
+        badge.innerText = '💪';
+        message.innerText = `Just finished ${workoutName}!`;
+        detail.innerText = 'Workout completed';
     }
+}
+
+// Select a specific lift to share
+function selectLiftToShare(setIndex) {
+    selectedLiftToShare = setIndex;
+    updateSharePreview();
+
+    // Update visual selection
+    const liftList = document.getElementById('lift-selection-list');
+    const options = liftList.querySelectorAll('div[id^="lift-option"]');
+    options.forEach(opt => {
+        if ((setIndex === null && opt.id === 'lift-option-best') ||
+            (setIndex !== null && opt.id === `lift-option-${setIndex}`)) {
+            opt.style.background = 'var(--primary)';
+            opt.style.color = 'white';
+            opt.classList.add('selected');
+        } else {
+            opt.style.background = '#f1f5f9';
+            opt.style.color = '';
+            opt.classList.remove('selected');
+        }
+    });
+}
+
+// Get the current share data based on selection
+function getShareData() {
+    if (!completedWorkoutDataForShare) {
+        return { message: 'Just crushed a workout! 💪', type: 'workout_complete', details: {} };
+    }
+
+    const { improvements, milestones, workoutName, sets, duration } = completedWorkoutDataForShare;
+
+    // If a specific lift is selected
+    if (selectedLiftToShare !== null && sets && sets[selectedLiftToShare]) {
+        const set = sets[selectedLiftToShare];
+        const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
+        const weight = set.weight || set.weight_kg || 0;
+        const reps = set.reps || 0;
+
+        return {
+            message: `Crushed ${exerciseName}: ${weight}kg × ${reps} reps! 💪`,
+            type: 'specific_lift',
+            details: {
+                workoutName,
+                exercise: exerciseName,
+                weight,
+                reps
+            }
+        };
+    }
+
+    // Default: best achievement
+    if (improvements && improvements.length > 0) {
+        const imp = improvements[0];
+        let improvementText = '';
+        if (imp.weightIncrease > 0 && imp.repsIncrease > 0) {
+            improvementText = `+${imp.weightIncrease}kg and +${imp.repsIncrease} reps`;
+        } else if (imp.weightIncrease > 0) {
+            improvementText = `+${imp.weightIncrease}kg`;
+        } else if (imp.repsIncrease > 0) {
+            improvementText = `+${imp.repsIncrease} reps`;
+        }
+        return {
+            message: `Hit a PR on ${imp.exercise}! ${improvementText} 🏆`,
+            type: 'personal_best',
+            details: {
+                workoutName,
+                exercise: imp.exercise,
+                improvement: improvementText,
+                previousWeight: imp.previousWeight,
+                previousReps: imp.previousReps,
+                currentWeight: imp.currentWeight,
+                currentReps: imp.currentReps
+            }
+        };
+    }
+
+    if (milestones && milestones.length > 0) {
+        const m = milestones[0];
+        return {
+            message: `${m.message} 🌟`,
+            type: 'milestone',
+            details: { workoutName, milestone: m.message, value: m.milestone_value }
+        };
+    }
+
+    return {
+        message: `Just finished ${workoutName}! 💪`,
+        type: 'workout_complete',
+        details: { workoutName, duration }
+    };
+}
+
+async function quickShareToChat(chatId, chatName) {
+    if (!completedWorkoutDataForShare) {
+        showToast('No workout data to share', 'error');
+        return;
+    }
+
+    // Get share data based on current selection
+    const shareData = getShareData();
 
     try {
         const { error } = await supabase
@@ -17098,10 +17259,10 @@ async function quickShareToChat(chatId, chatName) {
             .insert({
                 group_chat_id: chatId,
                 user_id: window.currentUser.id,
-                message: shareMessage,
+                message: shareData.message,
                 is_win_share: true,
-                win_type: winType,
-                win_details: winDetails
+                win_type: shareData.type,
+                win_details: shareData.details
             });
 
         if (error) throw error;
@@ -17122,32 +17283,20 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Build share message for external sharing
+// Build share message for external sharing (uses selected lift if any)
 function buildWinShareMessage() {
-    if (!completedWorkoutDataForShare) {
-        return 'Just crushed a workout on Plant Based Balance! 💪';
+    const shareData = getShareData();
+
+    // Add branding for external shares
+    if (shareData.type === 'specific_lift') {
+        return `${shareData.message} Training with Plant Based Balance 🌱`;
+    } else if (shareData.type === 'personal_best') {
+        return `🏆 ${shareData.message} Training with Plant Based Balance 🌱`;
+    } else if (shareData.type === 'milestone') {
+        return `🌟 ${shareData.message} Training with Plant Based Balance 🌱`;
     }
 
-    const { improvements, milestones, workoutName } = completedWorkoutDataForShare;
-
-    if (improvements && improvements.length > 0) {
-        const imp = improvements[0];
-        let improvementText = '';
-        if (imp.weightIncrease > 0 && imp.repsIncrease > 0) {
-            improvementText = `+${imp.weightIncrease}kg and +${imp.repsIncrease} reps`;
-        } else if (imp.weightIncrease > 0) {
-            improvementText = `+${imp.weightIncrease}kg`;
-        } else if (imp.repsIncrease > 0) {
-            improvementText = `+${imp.repsIncrease} reps`;
-        }
-        return `🏆 New PR! Hit ${improvementText} on ${imp.exercise}! Training with Plant Based Balance 💪`;
-    }
-
-    if (milestones && milestones.length > 0) {
-        return `🌟 ${milestones[0].message} Training with Plant Based Balance! 💪`;
-    }
-
-    return `Just finished ${workoutName} on Plant Based Balance! 💪`;
+    return `${shareData.message} Training with Plant Based Balance 🌱`;
 }
 
 // Share win to Facebook Messenger
