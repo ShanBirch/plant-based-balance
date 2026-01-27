@@ -161,6 +161,7 @@ RETURNS TABLE(
   last_message_at TIMESTAMPTZ,
   last_message_by TEXT
 ) AS $$
+#variable_conflict use_column
 BEGIN
   RETURN QUERY
   SELECT
@@ -223,6 +224,7 @@ RETURNS TABLE(
   win_details JSONB,
   created_at TIMESTAMPTZ
 ) AS $$
+#variable_conflict use_column
 BEGIN
   RETURN QUERY
   SELECT
