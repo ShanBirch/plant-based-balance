@@ -3552,13 +3552,14 @@ function getWorkoutOptions() {
 
     // Base options available to everyone
     options.push({ category: 'YOGA', items: [
-        { id: 'power_yoga', name: 'Power Yoga', icon: '🧘' },
-        { id: 'yin_yoga', name: 'Yin Yoga', icon: '🧘' },
-        { id: 'restorative', name: 'Restorative Yoga', icon: '🧘' }
+        { id: 'yoga-flow', name: 'Power Yoga', icon: '🧘' },
+        { id: 'yoga-restorative', name: 'Restorative Yoga', icon: '🧘' },
+        { id: 'yoga-mobility', name: 'Mobility Yoga', icon: '🧘' }
     ]});
 
     options.push({ category: 'RECOVERY', items: [
-        { id: 'active_recovery', name: 'Active Recovery', icon: '🔄' }
+        { id: 'recovery-stretch', name: 'Stretching', icon: '🔄' },
+        { id: 'recovery-foam', name: 'Foam Rolling', icon: '🔄' }
     ]});
 
     options.push({ category: 'REST', items: [
@@ -3568,38 +3569,38 @@ function getWorkoutOptions() {
     // Equipment-specific options
     if (equipment === 'gym') {
         options.unshift({ category: 'GYM', items: [
-            { id: 'push', name: 'Push (Chest, Shoulders, Triceps)', icon: '🏋️' },
-            { id: 'pull', name: 'Pull (Back, Biceps)', icon: '🏋️' },
-            { id: 'legs', name: 'Legs', icon: '🏋️' },
-            { id: 'chest', name: 'Chest', icon: '🏋️' },
-            { id: 'back', name: 'Back', icon: '🏋️' },
-            { id: 'shoulders', name: 'Shoulders', icon: '🏋️' },
-            { id: 'arms_core', name: 'Arms & Core', icon: '🏋️' },
-            { id: 'upper_body', name: 'Upper Body', icon: '🏋️' },
-            { id: 'lower_body', name: 'Lower Body', icon: '🏋️' },
-            { id: 'total_body', name: 'Total Body', icon: '🏋️' }
+            { id: 'gym-push', name: 'Push (Chest, Shoulders, Triceps)', icon: '🏋️' },
+            { id: 'gym-pull', name: 'Pull (Back, Biceps)', icon: '🏋️' },
+            { id: 'gym-legs', name: 'Legs', icon: '🏋️' },
+            { id: 'gym-chest', name: 'Chest', icon: '🏋️' },
+            { id: 'gym-back', name: 'Back', icon: '🏋️' },
+            { id: 'gym-shoulders', name: 'Shoulders', icon: '🏋️' },
+            { id: 'gym-arms', name: 'Arms', icon: '🏋️' },
+            { id: 'gym-core', name: 'Core', icon: '🏋️' },
+            { id: 'gym-upper', name: 'Upper Body', icon: '🏋️' },
+            { id: 'gym-lower', name: 'Lower Body', icon: '🏋️' },
+            { id: 'gym-fullbody', name: 'Full Body', icon: '🏋️' }
         ]});
     } else if (equipment === 'dumbbells') {
         options.unshift({ category: 'HOME WEIGHTS', items: [
-            { id: 'hw_push', name: 'Push', icon: '🏠' },
-            { id: 'hw_pull', name: 'Pull', icon: '🏠' },
-            { id: 'hw_lower', name: 'Lower Body', icon: '🏠' },
-            { id: 'hw_upper', name: 'Upper Body', icon: '🏠' },
-            { id: 'hw_total', name: 'Total Body', icon: '🏠' },
-            { id: 'hw_arms_core', name: 'Arms & Core', icon: '🏠' }
+            { id: 'home-upper', name: 'Upper Body', icon: '🏠' },
+            { id: 'home-lower', name: 'Lower Body', icon: '🏠' },
+            { id: 'home-fullbody', name: 'Full Body', icon: '🏠' },
+            { id: 'home-arms', name: 'Arms', icon: '🏠' },
+            { id: 'home-shoulders', name: 'Shoulders', icon: '🏠' }
         ]});
     } else if (equipment === 'bands') {
         options.unshift({ category: 'BANDS', items: [
-            { id: 'bands_upper', name: 'Upper Body', icon: '🔗' },
-            { id: 'bands_lower', name: 'Lower Body', icon: '🔗' },
-            { id: 'bands_total', name: 'Total Body', icon: '🔗' }
+            { id: 'bands-upper', name: 'Upper Body', icon: '🔗' },
+            { id: 'bands-lower', name: 'Lower Body', icon: '🔗' },
+            { id: 'bands-fullbody', name: 'Full Body', icon: '🔗' }
         ]});
     } else if (equipment === 'none') {
         options.unshift({ category: 'BODYWEIGHT', items: [
-            { id: 'bw_upper', name: 'Upper Body', icon: '🤸' },
-            { id: 'bw_lower', name: 'Lower Body', icon: '🤸' },
-            { id: 'bw_core', name: 'Core', icon: '🤸' },
-            { id: 'bw_total', name: 'Total Body', icon: '🤸' }
+            { id: 'bw-upper', name: 'Upper Body', icon: '🤸' },
+            { id: 'bw-lower', name: 'Lower Body', icon: '🤸' },
+            { id: 'bw-core', name: 'Core', icon: '🤸' },
+            { id: 'bw-fullbody', name: 'Full Body', icon: '🤸' }
         ]});
     }
 
@@ -3622,23 +3623,23 @@ function generateTailoredCalendar() {
 
     if (equipment === 'gym') {
         if (split === 'ppl') {
-            workoutSequence = ['push', 'pull', 'legs'];
+            workoutSequence = ['gym-push', 'gym-pull', 'gym-legs'];
         } else if (split === 'upper_lower') {
-            workoutSequence = ['upper_body', 'lower_body'];
+            workoutSequence = ['gym-upper', 'gym-lower'];
         } else if (split === 'bro_split') {
-            workoutSequence = ['chest', 'back', 'shoulders', 'legs', 'arms_core'];
+            workoutSequence = ['gym-chest', 'gym-back', 'gym-shoulders', 'gym-legs', 'gym-arms'];
         } else {
             // full_body
-            workoutSequence = ['total_body'];
+            workoutSequence = ['gym-fullbody'];
         }
     } else if (equipment === 'dumbbells') {
-        workoutSequence = ['hw_push', 'hw_pull', 'hw_lower', 'hw_upper'];
+        workoutSequence = ['home-upper', 'home-lower', 'home-fullbody'];
     } else if (equipment === 'bands') {
-        workoutSequence = ['bands_upper', 'bands_lower', 'bands_total'];
+        workoutSequence = ['bands-upper', 'bands-lower', 'bands-fullbody'];
     } else if (equipment === 'none') {
-        workoutSequence = ['bw_upper', 'bw_lower', 'bw_core', 'bw_total'];
+        workoutSequence = ['bw-upper', 'bw-lower', 'bw-core', 'bw-fullbody'];
     } else if (equipment === 'yoga_only') {
-        workoutSequence = ['power_yoga', 'yin_yoga', 'restorative'];
+        workoutSequence = ['yoga-flow', 'yoga-restorative', 'yoga-mobility'];
     }
 
     // Assign workouts to training days
@@ -3649,7 +3650,7 @@ function generateTailoredCalendar() {
             workoutIndex++;
         } else {
             // Rest day - add yoga if they want recovery
-            workoutCalendar[day] = recoveryOnRestDays ? 'yin_yoga' : 'rest';
+            workoutCalendar[day] = recoveryOnRestDays ? 'yoga-restorative' : 'rest';
         }
     });
 
@@ -3767,20 +3768,20 @@ function renderCalendarBuilder(container, optionsDiv, q) {
             const [day2, workout2] = calendarValues[i + 1];
 
             if (workout1 === workout2 && workout1 !== 'rest' && workout1 !== '' &&
-                !['yin_yoga', 'restorative', 'power_yoga'].includes(workout1)) {
+                !['yoga-restorative', 'yoga-flow', 'yoga-mobility'].includes(workout1)) {
                 warnings.push(`${day1.charAt(0).toUpperCase() + day1.slice(1)} and ${day2.charAt(0).toUpperCase() + day2.slice(1)} have the same workout - consider varying for recovery.`);
             }
 
             // Check chest/push overlap
-            if ((workout1 === 'push' && workout2 === 'chest') ||
-                (workout1 === 'chest' && workout2 === 'push')) {
+            if ((workout1 === 'gym-push' && workout2 === 'gym-chest') ||
+                (workout1 === 'gym-chest' && workout2 === 'gym-push')) {
                 warnings.push(`Push and Chest workouts are back-to-back - both target chest muscles.`);
             }
         }
 
         // Check for no rest days
         const restDays = Object.values(workoutCalendar).filter(w =>
-            w === 'rest' || w === 'yin_yoga' || w === 'restorative'
+            w === 'rest' || w === 'yoga-restorative' || w === 'yoga-flow' || w === 'yoga-mobility'
         ).length;
         if (restDays === 0) {
             warnings.push(`No recovery days scheduled - consider adding yoga or rest to prevent burnout.`);
@@ -3843,35 +3844,42 @@ function renderCalendarPreview(container, optionsDiv, q) {
         }
     }
 
-    // Get workout display info
+    // Get workout display info - IDs match workout_library.js
     const workoutInfo = {
-        'push': { icon: '🏋️', name: 'Push', desc: 'Chest, Shoulders, Triceps' },
-        'pull': { icon: '🏋️', name: 'Pull', desc: 'Back, Biceps' },
-        'legs': { icon: '🏋️', name: 'Legs', desc: 'Quads, Hamstrings, Glutes' },
-        'chest': { icon: '🏋️', name: 'Chest', desc: '' },
-        'back': { icon: '🏋️', name: 'Back', desc: '' },
-        'shoulders': { icon: '🏋️', name: 'Shoulders', desc: '' },
-        'arms_core': { icon: '🏋️', name: 'Arms & Core', desc: '' },
-        'upper_body': { icon: '🏋️', name: 'Upper Body', desc: '' },
-        'lower_body': { icon: '🏋️', name: 'Lower Body', desc: '' },
-        'total_body': { icon: '🏋️', name: 'Total Body', desc: '' },
-        'hw_push': { icon: '🏠', name: 'Push', desc: '' },
-        'hw_pull': { icon: '🏠', name: 'Pull', desc: '' },
-        'hw_lower': { icon: '🏠', name: 'Lower Body', desc: '' },
-        'hw_upper': { icon: '🏠', name: 'Upper Body', desc: '' },
-        'hw_total': { icon: '🏠', name: 'Total Body', desc: '' },
-        'hw_arms_core': { icon: '🏠', name: 'Arms & Core', desc: '' },
-        'bands_upper': { icon: '🔗', name: 'Upper Body', desc: '' },
-        'bands_lower': { icon: '🔗', name: 'Lower Body', desc: '' },
-        'bands_total': { icon: '🔗', name: 'Total Body', desc: '' },
-        'bw_upper': { icon: '🤸', name: 'Upper Body', desc: '' },
-        'bw_lower': { icon: '🤸', name: 'Lower Body', desc: '' },
-        'bw_core': { icon: '🤸', name: 'Core', desc: '' },
-        'bw_total': { icon: '🤸', name: 'Total Body', desc: '' },
-        'power_yoga': { icon: '🧘', name: 'Power Yoga', desc: 'Active Recovery' },
-        'yin_yoga': { icon: '🧘', name: 'Yin Yoga', desc: 'Recovery & Mobility' },
-        'restorative': { icon: '🧘', name: 'Restorative Yoga', desc: '' },
-        'active_recovery': { icon: '🔄', name: 'Active Recovery', desc: '' },
+        // GYM workouts
+        'gym-push': { icon: '🏋️', name: 'Push', desc: 'Chest, Shoulders, Triceps' },
+        'gym-pull': { icon: '🏋️', name: 'Pull', desc: 'Back, Biceps' },
+        'gym-legs': { icon: '🏋️', name: 'Legs', desc: 'Quads, Hamstrings, Glutes' },
+        'gym-chest': { icon: '🏋️', name: 'Chest', desc: '' },
+        'gym-back': { icon: '🏋️', name: 'Back', desc: '' },
+        'gym-shoulders': { icon: '🏋️', name: 'Shoulders', desc: '' },
+        'gym-arms': { icon: '🏋️', name: 'Arms', desc: '' },
+        'gym-core': { icon: '🏋️', name: 'Core', desc: '' },
+        'gym-upper': { icon: '🏋️', name: 'Upper Body', desc: '' },
+        'gym-lower': { icon: '🏋️', name: 'Lower Body', desc: '' },
+        'gym-fullbody': { icon: '🏋️', name: 'Full Body', desc: '' },
+        // HOME WEIGHTS workouts
+        'home-upper': { icon: '🏠', name: 'Upper Body', desc: '' },
+        'home-lower': { icon: '🏠', name: 'Lower Body', desc: '' },
+        'home-fullbody': { icon: '🏠', name: 'Full Body', desc: '' },
+        'home-arms': { icon: '🏠', name: 'Arms', desc: '' },
+        'home-shoulders': { icon: '🏠', name: 'Shoulders', desc: '' },
+        // BANDS workouts
+        'bands-upper': { icon: '🔗', name: 'Upper Body', desc: '' },
+        'bands-lower': { icon: '🔗', name: 'Lower Body', desc: '' },
+        'bands-fullbody': { icon: '🔗', name: 'Full Body', desc: '' },
+        // BODYWEIGHT workouts
+        'bw-upper': { icon: '🤸', name: 'Upper Body', desc: '' },
+        'bw-lower': { icon: '🤸', name: 'Lower Body', desc: '' },
+        'bw-core': { icon: '🤸', name: 'Core', desc: '' },
+        'bw-fullbody': { icon: '🤸', name: 'Full Body', desc: '' },
+        // YOGA workouts
+        'yoga-flow': { icon: '🧘', name: 'Power Yoga', desc: 'Active Recovery' },
+        'yoga-restorative': { icon: '🧘', name: 'Restorative Yoga', desc: 'Recovery & Mobility' },
+        'yoga-mobility': { icon: '🧘', name: 'Mobility Yoga', desc: '' },
+        // RECOVERY workouts
+        'recovery-stretch': { icon: '🔄', name: 'Stretching', desc: '' },
+        'recovery-foam': { icon: '🔄', name: 'Foam Rolling', desc: '' },
         'rest': { icon: '⏸️', name: 'Rest Day', desc: '' }
     };
 
