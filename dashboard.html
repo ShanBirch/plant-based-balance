@@ -8849,12 +8849,12 @@ function startCustomBuilderWorkout() {
             <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 5px;">Workout verified successfully</div>
         </div>
 
-        <!-- Share to Friends Feed Section -->
+        <!-- Share to Group Chat Section -->
         <div id="share-to-feed-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin-bottom: 30px; backdrop-filter: blur(10px);">
             <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;">Share with Friends!</div>
-            <p style="font-size: 0.9rem; opacity: 0.85; margin-bottom: 15px;">Let your friends know about your achievement</p>
-            <button onclick="shareCompletedWorkoutToFeed()" style="background: linear-gradient(135deg, #f59e0b, #eab308); color: white; padding: 12px 30px; border-radius: 25px; font-weight: 600; cursor: pointer; transition: transform 0.2s; border: none; display: inline-flex; align-items: center; gap: 8px;">
-                <span style="font-size: 1.2rem;">🎉</span> Share to Wins Feed
+            <p style="font-size: 0.9rem; opacity: 0.85; margin-bottom: 15px;">Share your win in a group chat</p>
+            <button onclick="goToGroupChatsToShare()" style="background: linear-gradient(135deg, #f59e0b, #eab308); color: white; padding: 12px 30px; border-radius: 25px; font-weight: 600; cursor: pointer; transition: transform 0.2s; border: none; display: inline-flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">💬</span> Open Group Chats
             </button>
         </div>
 
@@ -9182,22 +9182,22 @@ function startCustomBuilderWorkout() {
             </div>
         </div>
 
-        <!-- Group Chat / Wins Feed Section -->
+        <!-- Group Chats Section -->
         <div style="padding: 0 15px; margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">Wins Feed</h3>
-                <button onclick="openShareWinModal()" style="background: linear-gradient(135deg, var(--secondary) 0%, #f59e0b 100%); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);">
-                    <span style="font-size: 1rem;">+</span> Share a Win
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">Group Chats</h3>
+                <button onclick="openCreateGroupChatModal()" style="background: linear-gradient(135deg, var(--primary) 0%, #10b981 100%); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <span style="font-size: 1rem;">+</span> New Chat
                 </button>
             </div>
-            <div id="wins-feed-container" style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- Wins will be loaded here -->
-                <div id="wins-feed-empty" style="text-align: center; padding: 30px 20px; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
-                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🎉</div>
-                    <div style="font-size: 0.95rem; color: var(--text-main); font-weight: 600; margin-bottom: 5px;">No wins shared yet</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Share your workout achievements with friends!</div>
-                    <button onclick="openShareWinModal()" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
-                        Share Your First Win
+            <div id="group-chats-container" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Group chats will be loaded here -->
+                <div id="group-chats-empty" style="text-align: center; padding: 30px 20px; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">💬</div>
+                    <div style="font-size: 0.95rem; color: var(--text-main); font-weight: 600; margin-bottom: 5px;">No group chats yet</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Start a group chat to share wins with friends!</div>
+                    <button onclick="openCreateGroupChatModal()" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+                        Create Your First Group
                     </button>
                 </div>
             </div>
@@ -9431,11 +9431,79 @@ function startCustomBuilderWorkout() {
         </div>
     </div>
 
-    <!-- Share Win Modal -->
-    <div id="share-win-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10010; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+    <!-- Group Chat Modal -->
+    <div id="group-chat-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10010; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 85vh; overflow: hidden; animation: fadeInScale 0.3s ease-out; display: flex; flex-direction: column;">
+            <!-- Header -->
+            <div style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px;">
+                <div id="gc-chat-icon" style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">💬</div>
+                <div style="flex: 1;">
+                    <div id="gc-chat-name" style="font-weight: 700; color: var(--text-main);"></div>
+                    <div id="gc-chat-members" style="font-size: 0.8rem; color: var(--text-muted);"></div>
+                </div>
+                <button onclick="closeGroupChatModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">×</button>
+            </div>
+            <!-- Messages -->
+            <div id="gc-messages-container" style="flex: 1; overflow-y: auto; padding: 15px; background: #f8fafc; min-height: 300px; max-height: 400px;">
+                <!-- Messages will be loaded here -->
+            </div>
+            <!-- Share Win Button -->
+            <div style="padding: 10px 15px; background: #f1f5f9; border-top: 1px solid #e2e8f0;">
+                <button onclick="openShareWinInChat()" style="width: 100%; padding: 10px; background: linear-gradient(135deg, #f59e0b, #eab308); color: white; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span style="font-size: 1.1rem;">🎉</span> Share a Win
+                </button>
+            </div>
+            <!-- Input -->
+            <div style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
+                <input type="text" id="gc-message-input" placeholder="Type a message..." style="flex: 1; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; outline: none;" onkeypress="if(event.key==='Enter') sendGroupChatMessage()">
+                <button onclick="sendGroupChatMessage()" style="width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Group Chat Modal -->
+    <div id="create-group-chat-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10011; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
         <div style="background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 85vh; overflow: hidden; animation: fadeInScale 0.3s ease-out;">
             <!-- Header -->
-            <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, var(--primary) 0%, #10b981 100%);">
+            <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-main);">New Group Chat</h3>
+                <button onclick="closeCreateGroupChatModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</button>
+            </div>
+            <!-- Content -->
+            <div style="padding: 20px; overflow-y: auto; max-height: calc(85vh - 140px);">
+                <!-- Group Name -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Group Name</label>
+                    <input type="text" id="new-group-name" placeholder="e.g., Workout Squad" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box;">
+                </div>
+
+                <!-- Select Friends -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Add Friends</label>
+                    <div id="group-friends-list" style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px;">
+                        <!-- Friends will be loaded here -->
+                        <div style="padding: 20px; text-align: center; color: var(--text-muted);">Loading friends...</div>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
+                        <span id="group-selected-count">0</span> friend(s) selected
+                    </div>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div style="padding: 15px 20px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
+                <button onclick="closeCreateGroupChatModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: var(--text-muted); cursor: pointer;">Cancel</button>
+                <button onclick="createGroupChat()" id="create-group-btn" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: white; cursor: pointer;">Create Group</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Win in Chat Modal -->
+    <div id="share-win-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10012; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 85vh; overflow: hidden; animation: fadeInScale 0.3s ease-out;">
+            <!-- Header -->
+            <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%);">
                 <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: white; display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 1.3rem;">🎉</span> Share a Win
                 </h3>
@@ -9443,11 +9511,11 @@ function startCustomBuilderWorkout() {
             </div>
             <!-- Content -->
             <div style="padding: 20px; overflow-y: auto; max-height: calc(85vh - 140px);">
-                <!-- Quick Share Options -->
+                <!-- Win Type Selection -->
                 <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">Quick Share</label>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">What type of win?</label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <button onclick="selectWinType('workout_complete')" id="win-type-workout" class="win-type-btn" style="padding: 16px; background: #f1f5f9; border: 2px solid transparent; border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.2s;">
+                        <button onclick="selectWinType('workout_complete')" id="win-type-workout" class="win-type-btn" style="padding: 16px; background: #dcfce7; border: 2px solid var(--primary); border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.2s;">
                             <div style="font-size: 1.8rem; margin-bottom: 6px;">💪</div>
                             <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Workout Done</div>
                         </button>
@@ -9461,41 +9529,35 @@ function startCustomBuilderWorkout() {
                         </button>
                         <button onclick="selectWinType('custom')" id="win-type-custom" class="win-type-btn" style="padding: 16px; background: #f1f5f9; border: 2px solid transparent; border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.2s;">
                             <div style="font-size: 1.8rem; margin-bottom: 6px;">✨</div>
-                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Custom Win</div>
+                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Other Win</div>
                         </button>
                     </div>
                 </div>
 
                 <!-- Workout Details (shown for workout_complete and personal_best) -->
-                <div id="win-workout-details" style="display: none; margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Workout Details</label>
+                <div id="win-workout-details" style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Details (optional)</label>
                     <input type="text" id="win-workout-name" placeholder="e.g., Upper Body Strength" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box; margin-bottom: 10px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <input type="text" id="win-exercise-name" placeholder="Exercise (optional)" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box;">
-                        <input type="text" id="win-improvement" placeholder="e.g., +5kg" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box;">
-                    </div>
+                    <input type="text" id="win-improvement" placeholder="e.g., +5kg on bench press" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box;">
                 </div>
 
                 <!-- Message -->
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Your Message</label>
-                    <textarea id="win-message-input" placeholder="Tell your friends about your win!" rows="3" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box; resize: none; font-family: inherit;"></textarea>
+                    <textarea id="win-message-input" placeholder="Tell the group about your win!" rows="3" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box; resize: none; font-family: inherit;"></textarea>
                 </div>
 
-                <!-- Suggested Messages -->
-                <div id="win-suggestions" style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">Quick messages:</label>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        <button onclick="setWinMessage('Just crushed my workout! 💪')" style="padding: 8px 12px; background: #f1f5f9; border: none; border-radius: 20px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer;">Just crushed my workout! 💪</button>
-                        <button onclick="setWinMessage('New personal best today! 🏆')" style="padding: 8px 12px; background: #f1f5f9; border: none; border-radius: 20px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer;">New personal best! 🏆</button>
-                        <button onclick="setWinMessage('Feeling stronger every day! 🌟')" style="padding: 8px 12px; background: #f1f5f9; border: none; border-radius: 20px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer;">Feeling stronger! 🌟</button>
-                    </div>
+                <!-- Quick Messages -->
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <button onclick="setWinMessage('Just crushed my workout! 💪')" style="padding: 8px 12px; background: #f1f5f9; border: none; border-radius: 20px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer;">Just crushed it! 💪</button>
+                    <button onclick="setWinMessage('New personal best! 🏆')" style="padding: 8px 12px; background: #f1f5f9; border: none; border-radius: 20px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer;">New PB! 🏆</button>
+                    <button onclick="setWinMessage('Feeling stronger! 🌟')" style="padding: 8px 12px; background: #f1f5f9; border: none; border-radius: 20px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer;">Feeling strong! 🌟</button>
                 </div>
             </div>
             <!-- Footer -->
             <div style="padding: 15px 20px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
                 <button onclick="closeShareWinModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: var(--text-muted); cursor: pointer;">Cancel</button>
-                <button onclick="submitWinPost()" id="submit-win-btn" style="flex: 1; padding: 12px; background: linear-gradient(135deg, var(--primary), #10b981); border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <button onclick="sendWinToChat()" id="submit-win-btn" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #f59e0b, #eab308); border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                     <span>Share Win</span>
                     <span style="font-size: 1.1rem;">🎉</span>
                 </button>
@@ -16764,49 +16826,40 @@ function closeSuccessScreen() {
     completedWorkoutDataForShare = null;
 }
 
-// Share completed workout to friends feed
-function shareCompletedWorkoutToFeed() {
-    if (!completedWorkoutDataForShare) {
-        showToast('No workout data to share', 'error');
-        return;
-    }
+// Go to group chats to share workout
+function goToGroupChatsToShare() {
+    closeSuccessScreen();
+    switchAppTab('friends');
+    // Store data for when user opens a chat
+    if (completedWorkoutDataForShare) {
+        const { improvements, milestones, workoutName } = completedWorkoutDataForShare;
+        let message = `Just finished ${workoutName}! 💪`;
+        let improvementText = '';
 
-    const { duration, improvements, milestones, workoutName } = completedWorkoutDataForShare;
-
-    let message = `Just finished ${workoutName}! 💪`;
-    let postType = 'workout_complete';
-    let exerciseName = '';
-    let improvementText = '';
-
-    // Check for improvements (personal bests)
-    if (improvements && improvements.length > 0) {
-        const imp = improvements[0];
-        if (imp.weightIncrease > 0 || imp.repsIncrease > 0) {
-            const parts = [];
-            if (imp.weightIncrease > 0) parts.push(`+${imp.weightIncrease}kg`);
-            if (imp.repsIncrease > 0) parts.push(`+${imp.repsIncrease} reps`);
-            improvementText = parts.join(' and ');
-            exerciseName = imp.exercise || '';
-            message = `Hit a PR on ${imp.exercise}! ${improvementText} 🏆`;
-            postType = 'personal_best';
+        if (improvements && improvements.length > 0) {
+            const imp = improvements[0];
+            if (imp.weightIncrease > 0 || imp.repsIncrease > 0) {
+                const parts = [];
+                if (imp.weightIncrease > 0) parts.push(`+${imp.weightIncrease}kg`);
+                if (imp.repsIncrease > 0) parts.push(`+${imp.repsIncrease} reps`);
+                improvementText = parts.join(' and ');
+                message = `Hit a PR on ${imp.exercise}! ${improvementText} 🏆`;
+            }
         }
-    }
 
-    // Check for milestones
-    if (milestones && milestones.length > 0) {
-        const m = milestones[0];
-        message = `${m.message} 🌟`;
-        postType = 'milestone';
-    }
+        if (milestones && milestones.length > 0) {
+            message = `${milestones[0].message} 🌟`;
+        }
 
-    // Open the share modal with pre-filled data
-    openShareWinModal({
-        type: postType,
-        workoutName: workoutName,
-        message: message,
-        exerciseName: exerciseName,
-        improvement: improvementText
-    });
+        // Store prefill data for when user opens share win modal
+        window.pendingWinShare = {
+            type: improvements?.length > 0 ? 'personal_best' : milestones?.length > 0 ? 'milestone' : 'workout_complete',
+            workoutName: workoutName,
+            message: message,
+            improvement: improvementText
+        };
+    }
+    showToast('Open a group chat to share your win! 💬', 'success');
 }
 
 // ===========================
@@ -22519,7 +22572,7 @@ async function initFriendsView() {
     }
     await loadFriendsCards();
     await loadChallenges();
-    await loadWinsFeed();
+    await loadGroupChats();
     await loadActivityFeed();
 }
 
@@ -22706,119 +22759,12 @@ function filterActivityFeed(filter) {
 }
 
 // ============================================================
-// GROUP CHAT / WINS FEED FUNCTIONS
+// GROUP CHAT FUNCTIONS
 // ============================================================
 
+let currentGroupChatId = null;
 let selectedWinType = 'workout_complete';
-
-// Load the wins feed
-async function loadWinsFeed() {
-    const container = document.getElementById('wins-feed-container');
-    const emptyState = document.getElementById('wins-feed-empty');
-
-    if (!container || !window.currentUser) return;
-
-    // Show loading
-    container.innerHTML = `
-        <div style="text-align: center; padding: 40px;">
-            <div class="loading-spinner" style="width: 30px; height: 30px; border: 3px solid #f1f5f9; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
-            <div style="margin-top: 10px; color: var(--text-muted); font-size: 0.85rem;">Loading wins...</div>
-        </div>
-    `;
-
-    try {
-        const { data: posts, error } = await window.supabaseClient
-            .rpc('get_group_chat_feed', { user_uuid: window.currentUser.id, posts_limit: 50 });
-
-        if (error) throw error;
-
-        if (!posts || posts.length === 0) {
-            container.innerHTML = `
-                <div id="wins-feed-empty" style="text-align: center; padding: 30px 20px; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
-                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🎉</div>
-                    <div style="font-size: 0.95rem; color: var(--text-main); font-weight: 600; margin-bottom: 5px;">No wins shared yet</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Share your workout achievements with friends!</div>
-                    <button onclick="openShareWinModal()" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
-                        Share Your First Win
-                    </button>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = posts.map(post => {
-            const initials = (post.poster_name || '?').charAt(0).toUpperCase();
-            const timeAgo = getTimeAgo(new Date(post.created_at));
-            const isOwnPost = post.poster_id === window.currentUser.id;
-
-            // Icons based on post type
-            const typeConfig = {
-                'workout_complete': { icon: '💪', bg: '#dcfce7', label: 'completed a workout' },
-                'personal_best': { icon: '🏆', bg: '#fef3c7', label: 'hit a personal best' },
-                'milestone': { icon: '🌟', bg: '#e0e7ff', label: 'reached a milestone' },
-                'custom': { icon: '✨', bg: '#fdf4ff', label: 'shared a win' }
-            };
-            const config = typeConfig[post.post_type] || typeConfig.custom;
-
-            return `
-                <div style="background: white; border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">
-                    <!-- Header -->
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; font-size: 1.1rem;">
-                            ${post.poster_photo ? `<img src="${post.poster_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
-                        </div>
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="font-weight: 600; color: var(--text-main);">${post.poster_name}</div>
-                            <div style="font-size: 0.8rem; color: var(--text-muted);">${config.label} &bull; ${timeAgo}</div>
-                        </div>
-                        <div style="font-size: 1.5rem;">${config.icon}</div>
-                    </div>
-
-                    <!-- Message -->
-                    <div style="font-size: 0.95rem; color: var(--text-main); line-height: 1.5; margin-bottom: 12px;">
-                        ${escapeHtml(post.message)}
-                    </div>
-
-                    ${post.workout_name || post.exercise_name || post.improvement_text ? `
-                    <!-- Workout Details Card -->
-                    <div style="background: ${config.bg}; padding: 12px 16px; border-radius: 12px; margin-bottom: 12px;">
-                        ${post.workout_name ? `<div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px;">${escapeHtml(post.workout_name)}</div>` : ''}
-                        ${post.exercise_name ? `<div style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(post.exercise_name)}</div>` : ''}
-                        ${post.improvement_text ? `<div style="font-size: 0.9rem; font-weight: 600; color: #16a34a; margin-top: 4px;">${escapeHtml(post.improvement_text)}</div>` : ''}
-                    </div>
-                    ` : ''}
-
-                    <!-- Actions -->
-                    <div style="display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9;">
-                        <button onclick="toggleWinReaction('${post.post_id}')" id="reaction-btn-${post.post_id}" style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: ${post.user_has_reacted ? 'var(--primary)' : '#f1f5f9'}; border: none; border-radius: 20px; cursor: pointer; font-size: 0.85rem; color: ${post.user_has_reacted ? 'white' : 'var(--text-muted)'}; transition: all 0.2s;">
-                            <span>🎉</span>
-                            <span id="reaction-count-${post.post_id}">${post.reaction_count > 0 ? post.reaction_count : ''}</span>
-                            <span>${post.user_has_reacted ? 'Cheered!' : 'Cheer'}</span>
-                        </button>
-                        ${!isOwnPost ? `
-                        <button onclick="openDirectMessage('${post.poster_id}', '${escapeHtml(post.poster_name)}', '${post.poster_photo || ''}')" style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #f1f5f9; border: none; border-radius: 20px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted);">
-                            💬 Message
-                        </button>
-                        ` : `
-                        <button onclick="deleteWinPost('${post.post_id}')" style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #f1f5f9; border: none; border-radius: 20px; cursor: pointer; font-size: 0.85rem; color: #ef4444;">
-                            🗑️ Delete
-                        </button>
-                        `}
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-    } catch (error) {
-        console.error('Error loading wins feed:', error);
-        container.innerHTML = `
-            <div style="text-align: center; padding: 40px 20px; color: #ef4444;">
-                <div style="font-size: 0.95rem;">Failed to load wins feed</div>
-                <button onclick="loadWinsFeed()" style="margin-top: 10px; padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">Retry</button>
-            </div>
-        `;
-    }
-}
+let selectedGroupMembers = [];
 
 // Helper to escape HTML
 function escapeHtml(text) {
@@ -22828,16 +22774,347 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Load group chats list
+async function loadGroupChats() {
+    const container = document.getElementById('group-chats-container');
+
+    if (!container || !window.currentUser) return;
+
+    // Show loading
+    container.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <div class="loading-spinner" style="width: 30px; height: 30px; border: 3px solid #f1f5f9; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            <div style="margin-top: 10px; color: var(--text-muted); font-size: 0.85rem;">Loading chats...</div>
+        </div>
+    `;
+
+    try {
+        const { data: chats, error } = await window.supabaseClient
+            .rpc('get_user_group_chats', { user_uuid: window.currentUser.id });
+
+        if (error) throw error;
+
+        if (!chats || chats.length === 0) {
+            container.innerHTML = `
+                <div id="group-chats-empty" style="text-align: center; padding: 30px 20px; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">💬</div>
+                    <div style="font-size: 0.95rem; color: var(--text-main); font-weight: 600; margin-bottom: 5px;">No group chats yet</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Start a group chat to share wins with friends!</div>
+                    <button onclick="openCreateGroupChatModal()" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+                        Create Your First Group
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = chats.map(chat => {
+            const timeAgo = chat.last_message_at ? getTimeAgo(new Date(chat.last_message_at)) : '';
+            const preview = chat.last_message ? (chat.last_message.length > 40 ? chat.last_message.substring(0, 40) + '...' : chat.last_message) : 'No messages yet';
+
+            return `
+                <div onclick="openGroupChat('${chat.chat_id}', '${escapeHtml(chat.chat_name)}', '${escapeHtml(chat.member_names || '')}')" style="background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.3rem; flex-shrink: 0;">
+                            💬
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <div style="font-weight: 600; color: var(--text-main);">${escapeHtml(chat.chat_name)}</div>
+                                ${timeAgo ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${timeAgo}</div>` : ''}
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${chat.last_message_by ? `<span style="font-weight: 500;">${escapeHtml(chat.last_message_by)}:</span> ` : ''}${escapeHtml(preview)}
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                                ${chat.member_count} member${chat.member_count > 1 ? 's' : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading group chats:', error);
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: #ef4444;">
+                <div style="font-size: 0.95rem;">Failed to load group chats</div>
+                <button onclick="loadGroupChats()" style="margin-top: 10px; padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// Open group chat modal
+async function openGroupChat(chatId, chatName, memberNames) {
+    currentGroupChatId = chatId;
+    document.getElementById('gc-chat-name').textContent = chatName;
+    document.getElementById('gc-chat-members').textContent = memberNames || 'Loading...';
+    document.getElementById('group-chat-modal').style.display = 'flex';
+    document.getElementById('gc-message-input').value = '';
+
+    await loadGroupChatMessages(chatId);
+}
+
+// Close group chat modal
+function closeGroupChatModal() {
+    document.getElementById('group-chat-modal').style.display = 'none';
+    currentGroupChatId = null;
+}
+
+// Load messages for a group chat
+async function loadGroupChatMessages(chatId) {
+    const container = document.getElementById('gc-messages-container');
+    container.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <div class="loading-spinner" style="width: 24px; height: 24px; border: 2px solid #f1f5f9; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+        </div>
+    `;
+
+    try {
+        const { data: messages, error } = await window.supabaseClient
+            .rpc('get_group_chat_messages', { chat_uuid: chatId, messages_limit: 100 });
+
+        if (error) throw error;
+
+        if (!messages || messages.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">💬</div>
+                    <div style="font-size: 0.9rem;">No messages yet. Start the conversation!</div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = messages.map(msg => {
+            const isOwn = msg.sender_id === window.currentUser.id;
+            const initials = (msg.sender_name || '?').charAt(0).toUpperCase();
+            const time = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+            // Win share message
+            if (msg.is_win_share) {
+                const winDetails = msg.win_details || {};
+                const typeConfig = {
+                    'workout_complete': { icon: '💪', bg: '#dcfce7' },
+                    'personal_best': { icon: '🏆', bg: '#fef3c7' },
+                    'milestone': { icon: '🌟', bg: '#e0e7ff' },
+                    'custom': { icon: '✨', bg: '#fdf4ff' }
+                };
+                const config = typeConfig[msg.win_type] || typeConfig.custom;
+
+                return `
+                    <div style="display: flex; flex-direction: column; align-items: ${isOwn ? 'flex-end' : 'flex-start'}; margin-bottom: 15px;">
+                        ${!isOwn ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; margin-left: 4px;">${escapeHtml(msg.sender_name)}</div>` : ''}
+                        <div style="max-width: 85%; background: ${config.bg}; padding: 12px 16px; border-radius: ${isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; border: 2px solid ${isOwn ? 'var(--primary)' : '#e2e8f0'};">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span style="font-size: 1.5rem;">${config.icon}</span>
+                                <span style="font-weight: 600; color: var(--text-main);">Shared a win!</span>
+                            </div>
+                            <div style="font-size: 0.95rem; color: var(--text-main); line-height: 1.4;">${escapeHtml(msg.message)}</div>
+                            ${winDetails.workoutName ? `<div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">${escapeHtml(winDetails.workoutName)}</div>` : ''}
+                            ${winDetails.improvement ? `<div style="font-size: 0.9rem; font-weight: 600; color: #16a34a; margin-top: 4px;">${escapeHtml(winDetails.improvement)}</div>` : ''}
+                        </div>
+                        <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">${time}</div>
+                    </div>
+                `;
+            }
+
+            // Regular message
+            return `
+                <div style="display: flex; flex-direction: column; align-items: ${isOwn ? 'flex-end' : 'flex-start'}; margin-bottom: 15px;">
+                    ${!isOwn ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; margin-left: 4px;">${escapeHtml(msg.sender_name)}</div>` : ''}
+                    <div style="max-width: 85%; background: ${isOwn ? 'var(--primary)' : 'white'}; padding: 12px 16px; border-radius: ${isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; ${isOwn ? '' : 'border: 1px solid #e2e8f0;'} color: ${isOwn ? 'white' : 'var(--text-main)'};">
+                        ${escapeHtml(msg.message)}
+                    </div>
+                    <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">${time}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Scroll to bottom
+        container.scrollTop = container.scrollHeight;
+
+    } catch (error) {
+        console.error('Error loading messages:', error);
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #ef4444;">
+                <div style="font-size: 0.9rem;">Failed to load messages</div>
+            </div>
+        `;
+    }
+}
+
+// Send message to group chat
+async function sendGroupChatMessage() {
+    const input = document.getElementById('gc-message-input');
+    const message = input.value.trim();
+
+    if (!message || !currentGroupChatId) return;
+
+    input.value = '';
+
+    try {
+        const { error } = await window.supabaseClient
+            .from('group_chat_messages')
+            .insert({
+                group_chat_id: currentGroupChatId,
+                user_id: window.currentUser.id,
+                message: message
+            });
+
+        if (error) throw error;
+
+        await loadGroupChatMessages(currentGroupChatId);
+
+    } catch (error) {
+        console.error('Error sending message:', error);
+        showToast('Failed to send message', 'error');
+        input.value = message;
+    }
+}
+
+// Open create group chat modal
+async function openCreateGroupChatModal() {
+    document.getElementById('create-group-chat-modal').style.display = 'flex';
+    document.getElementById('new-group-name').value = '';
+    selectedGroupMembers = [];
+    document.getElementById('group-selected-count').textContent = '0';
+
+    // Load friends list
+    const container = document.getElementById('group-friends-list');
+    container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">Loading friends...</div>`;
+
+    try {
+        const { data: friends, error } = await window.supabaseClient
+            .rpc('get_friends_with_status', { user_uuid: window.currentUser.id });
+
+        if (error) throw error;
+
+        if (!friends || friends.length === 0) {
+            container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">No friends yet. Add friends first!</div>`;
+            return;
+        }
+
+        container.innerHTML = friends.map(friend => {
+            const initials = (friend.name || '?').charAt(0).toUpperCase();
+            return `
+                <div onclick="toggleGroupMember('${friend.friend_id}', this)" style="display: flex; align-items: center; gap: 12px; padding: 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" data-friend-id="${friend.friend_id}">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; overflow: hidden; flex-shrink: 0;">
+                        ${friend.photo ? `<img src="${friend.photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--text-main);">${escapeHtml(friend.name)}</div>
+                    </div>
+                    <div class="friend-check" style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center;">
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading friends:', error);
+        container.innerHTML = `<div style="padding: 20px; text-align: center; color: #ef4444;">Failed to load friends</div>`;
+    }
+}
+
+// Close create group chat modal
+function closeCreateGroupChatModal() {
+    document.getElementById('create-group-chat-modal').style.display = 'none';
+}
+
+// Toggle member selection
+function toggleGroupMember(friendId, element) {
+    const checkDiv = element.querySelector('.friend-check');
+    const index = selectedGroupMembers.indexOf(friendId);
+
+    if (index > -1) {
+        selectedGroupMembers.splice(index, 1);
+        element.style.background = 'white';
+        checkDiv.innerHTML = '';
+        checkDiv.style.border = '2px solid #e2e8f0';
+    } else {
+        selectedGroupMembers.push(friendId);
+        element.style.background = '#dcfce7';
+        checkDiv.innerHTML = '✓';
+        checkDiv.style.border = '2px solid var(--primary)';
+        checkDiv.style.color = 'var(--primary)';
+        checkDiv.style.fontWeight = '700';
+    }
+
+    document.getElementById('group-selected-count').textContent = selectedGroupMembers.length;
+}
+
+// Create group chat
+async function createGroupChat() {
+    const name = document.getElementById('new-group-name').value.trim();
+
+    if (!name) {
+        showToast('Please enter a group name', 'error');
+        return;
+    }
+
+    if (selectedGroupMembers.length === 0) {
+        showToast('Please select at least one friend', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('create-group-btn');
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+
+    try {
+        const { data: chatId, error } = await window.supabaseClient
+            .rpc('create_group_chat', {
+                creator_uuid: window.currentUser.id,
+                chat_name: name,
+                member_ids: selectedGroupMembers
+            });
+
+        if (error) throw error;
+
+        showToast('Group chat created! 🎉', 'success');
+        closeCreateGroupChatModal();
+        await loadGroupChats();
+
+        // Open the new chat
+        if (chatId) {
+            openGroupChat(chatId, name, '');
+        }
+
+    } catch (error) {
+        console.error('Error creating group chat:', error);
+        showToast('Failed to create group chat', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Group';
+    }
+}
+
+// Open share win modal (from within group chat)
+function openShareWinInChat() {
+    if (!currentGroupChatId) {
+        showToast('Please open a group chat first', 'error');
+        return;
+    }
+    // Check for pending win share data from workout completion
+    if (window.pendingWinShare) {
+        openShareWinModal(window.pendingWinShare);
+        window.pendingWinShare = null;
+    } else {
+        openShareWinModal();
+    }
+}
+
 // Open share win modal
 function openShareWinModal(prefillData = null) {
-    const modal = document.getElementById('share-win-modal');
-    modal.style.display = 'flex';
+    document.getElementById('share-win-modal').style.display = 'flex';
 
     // Reset form
     selectedWinType = 'workout_complete';
     document.getElementById('win-message-input').value = '';
     document.getElementById('win-workout-name').value = '';
-    document.getElementById('win-exercise-name').value = '';
     document.getElementById('win-improvement').value = '';
 
     // Reset type buttons
@@ -22848,10 +23125,7 @@ function openShareWinModal(prefillData = null) {
     document.getElementById('win-type-workout').style.border = '2px solid var(--primary)';
     document.getElementById('win-type-workout').style.background = '#dcfce7';
 
-    // Show workout details by default
-    document.getElementById('win-workout-details').style.display = 'block';
-
-    // Prefill data if provided (from workout completion screen)
+    // Prefill data if provided
     if (prefillData) {
         selectedWinType = prefillData.type || 'workout_complete';
         selectWinType(selectedWinType);
@@ -22861,9 +23135,6 @@ function openShareWinModal(prefillData = null) {
         }
         if (prefillData.message) {
             document.getElementById('win-message-input').value = prefillData.message;
-        }
-        if (prefillData.exerciseName) {
-            document.getElementById('win-exercise-name').value = prefillData.exerciseName;
         }
         if (prefillData.improvement) {
             document.getElementById('win-improvement').value = prefillData.improvement;
@@ -22880,7 +23151,6 @@ function closeShareWinModal() {
 function selectWinType(type) {
     selectedWinType = type;
 
-    // Update button styles
     document.querySelectorAll('.win-type-btn').forEach(btn => {
         btn.style.border = '2px solid transparent';
         btn.style.background = '#f1f5f9';
@@ -22898,14 +23168,6 @@ function selectWinType(type) {
         selectedBtn.style.border = '2px solid var(--primary)';
         selectedBtn.style.background = '#dcfce7';
     }
-
-    // Show/hide workout details
-    const workoutDetails = document.getElementById('win-workout-details');
-    if (type === 'workout_complete' || type === 'personal_best') {
-        workoutDetails.style.display = 'block';
-    } else {
-        workoutDetails.style.display = 'none';
-    }
 }
 
 // Set quick message
@@ -22913,12 +23175,18 @@ function setWinMessage(message) {
     document.getElementById('win-message-input').value = message;
 }
 
-// Submit win post
-async function submitWinPost() {
+// Send win to chat
+async function sendWinToChat() {
     const message = document.getElementById('win-message-input').value.trim();
 
     if (!message) {
         showToast('Please enter a message', 'error');
+        return;
+    }
+
+    if (!currentGroupChatId) {
+        showToast('Please open a group chat first', 'error');
+        closeShareWinModal();
         return;
     }
 
@@ -22927,114 +23195,35 @@ async function submitWinPost() {
     submitBtn.innerHTML = '<span class="loading-spinner" style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></span>';
 
     try {
-        const postData = {
-            user_id: window.currentUser.id,
-            post_type: selectedWinType,
-            message: message,
-            workout_name: document.getElementById('win-workout-name').value.trim() || null,
-            exercise_name: document.getElementById('win-exercise-name').value.trim() || null,
-            improvement_text: document.getElementById('win-improvement').value.trim() || null
+        const winDetails = {
+            workoutName: document.getElementById('win-workout-name').value.trim() || null,
+            improvement: document.getElementById('win-improvement').value.trim() || null
         };
 
         const { error } = await window.supabaseClient
-            .from('group_chat_posts')
-            .insert(postData);
-
-        if (error) throw error;
-
-        showToast('Win shared with your friends! 🎉', 'success');
-        closeShareWinModal();
-        loadWinsFeed();
-
-    } catch (error) {
-        console.error('Error posting win:', error);
-        showToast('Failed to share win. Please try again.', 'error');
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span>Share Win</span><span style="font-size: 1.1rem;">🎉</span>';
-    }
-}
-
-// Toggle reaction on a win post
-async function toggleWinReaction(postId) {
-    try {
-        const { data: added, error } = await window.supabaseClient
-            .rpc('toggle_group_chat_reaction', {
-                user_uuid: window.currentUser.id,
-                target_post_id: postId
+            .from('group_chat_messages')
+            .insert({
+                group_chat_id: currentGroupChatId,
+                user_id: window.currentUser.id,
+                message: message,
+                is_win_share: true,
+                win_type: selectedWinType,
+                win_details: winDetails
             });
 
         if (error) throw error;
 
-        // Update UI immediately
-        const btn = document.getElementById(`reaction-btn-${postId}`);
-        const countSpan = document.getElementById(`reaction-count-${postId}`);
-
-        if (btn) {
-            if (added) {
-                btn.style.background = 'var(--primary)';
-                btn.style.color = 'white';
-                btn.innerHTML = `<span>🎉</span><span id="reaction-count-${postId}">${parseInt(countSpan?.textContent || '0') + 1}</span><span>Cheered!</span>`;
-            } else {
-                btn.style.background = '#f1f5f9';
-                btn.style.color = 'var(--text-muted)';
-                const newCount = Math.max(0, parseInt(countSpan?.textContent || '1') - 1);
-                btn.innerHTML = `<span>🎉</span><span id="reaction-count-${postId}">${newCount > 0 ? newCount : ''}</span><span>Cheer</span>`;
-            }
-        }
+        showToast('Win shared! 🎉', 'success');
+        closeShareWinModal();
+        await loadGroupChatMessages(currentGroupChatId);
 
     } catch (error) {
-        console.error('Error toggling reaction:', error);
-        showToast('Failed to react. Please try again.', 'error');
+        console.error('Error sharing win:', error);
+        showToast('Failed to share win', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Share Win</span><span style="font-size: 1.1rem;">🎉</span>';
     }
-}
-
-// Delete a win post
-async function deleteWinPost(postId) {
-    if (!confirm('Delete this win? This cannot be undone.')) return;
-
-    try {
-        const { error } = await window.supabaseClient
-            .from('group_chat_posts')
-            .delete()
-            .eq('id', postId)
-            .eq('user_id', window.currentUser.id);
-
-        if (error) throw error;
-
-        showToast('Win deleted', 'success');
-        loadWinsFeed();
-
-    } catch (error) {
-        console.error('Error deleting post:', error);
-        showToast('Failed to delete. Please try again.', 'error');
-    }
-}
-
-// Share workout completion to wins feed
-function shareWorkoutToFeed(workoutData) {
-    const improvements = workoutData.improvements || [];
-    let message = 'Just finished my workout! 💪';
-    let improvementText = '';
-
-    if (improvements.length > 0) {
-        const imp = improvements[0];
-        if (imp.weightIncrease > 0 || imp.repsIncrease > 0) {
-            const parts = [];
-            if (imp.weightIncrease > 0) parts.push(`+${imp.weightIncrease}kg`);
-            if (imp.repsIncrease > 0) parts.push(`+${imp.repsIncrease} reps`);
-            improvementText = parts.join(' and ');
-            message = `Just hit a PR on ${imp.exercise}! ${improvementText} 🏆`;
-        }
-    }
-
-    openShareWinModal({
-        type: improvements.length > 0 && improvementText ? 'personal_best' : 'workout_complete',
-        workoutName: workoutData.workoutName || 'Workout',
-        message: message,
-        exerciseName: improvements[0]?.exercise || '',
-        improvement: improvementText
-    });
 }
 
 // ============================================================
@@ -26406,15 +26595,16 @@ function renderWorkoutHistory(workoutHistory) {
     container.innerHTML = html || '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No recent workouts</div>';
 }
 
-// Share past workout to wins feed
+// Share past workout - go to group chats
 function shareWorkoutHistoryToFeed(date, exercises) {
-    openShareWinModal({
+    window.pendingWinShare = {
         type: 'workout_complete',
         message: `Throwback to my ${date} workout! 💪`,
         workoutName: exercises || 'Workout',
-        exerciseName: '',
         improvement: ''
-    });
+    };
+    switchAppTab('friends');
+    showToast('Open a group chat to share your win! 💬', 'success');
 }
 
 function renderMilestones(milestones) {
@@ -26473,15 +26663,16 @@ function renderMilestones(milestones) {
     container.innerHTML = html;
 }
 
-// Share milestone to wins feed
+// Share milestone - go to group chats
 function shareMilestoneToFeed(message, emoji) {
-    openShareWinModal({
+    window.pendingWinShare = {
         type: 'milestone',
         message: `${message} ${emoji}`,
         workoutName: '',
-        exerciseName: '',
         improvement: ''
-    });
+    };
+    switchAppTab('friends');
+    showToast('Open a group chat to share your win! 💬', 'success');
 }
 
 function renderCheckins(checkins) {

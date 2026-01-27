@@ -1,204 +1,301 @@
 -- ============================================================
--- GROUP CHAT (WINS FEED) SYSTEM MIGRATION
--- Share workout wins and achievements with friends
+-- GROUP CHAT SYSTEM MIGRATION
+-- Create group chats with friends and share messages/wins
 -- ============================================================
 
 -- ============================================================
--- GROUP CHAT POSTS TABLE
+-- GROUP CHATS TABLE (the chat rooms)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.group_chat_posts (
+CREATE TABLE IF NOT EXISTS public.group_chats (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
-  -- Who posted
-  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-
-  -- Post type: 'workout_complete', 'personal_best', 'milestone', 'custom'
-  post_type TEXT NOT NULL DEFAULT 'custom',
-
-  -- Post content
-  message TEXT NOT NULL,
-
-  -- Optional workout details (for workout shares)
-  workout_name TEXT,
-  workout_duration TEXT,
-  exercise_name TEXT,
-  weight_kg NUMERIC(6,2),
-  reps INT,
-  improvement_text TEXT,
+  -- Chat metadata
+  name TEXT NOT NULL,
+  created_by UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
 
   -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW(),
-
-  -- Validate post type
-  CHECK (post_type IN ('workout_complete', 'personal_best', 'milestone', 'custom'))
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Indexes for fast queries
-CREATE INDEX IF NOT EXISTS idx_group_chat_posts_user ON public.group_chat_posts(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_group_chat_posts_created ON public.group_chat_posts(created_at DESC);
+-- Index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_group_chats_created_by ON public.group_chats(created_by);
 
 -- Enable RLS
-ALTER TABLE public.group_chat_posts ENABLE ROW LEVEL SECURITY;
-
--- Users can view posts from their friends (or their own posts)
-CREATE POLICY "Users can view friends posts" ON public.group_chat_posts
-  FOR SELECT USING (
-    auth.uid() = user_id
-    OR EXISTS (
-      SELECT 1 FROM public.friendships
-      WHERE status = 'accepted'
-      AND (
-        (user_id = auth.uid() AND friend_id = group_chat_posts.user_id)
-        OR (friend_id = auth.uid() AND user_id = group_chat_posts.user_id)
-      )
-    )
-  );
-
--- Users can create their own posts
-CREATE POLICY "Users can create posts" ON public.group_chat_posts
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- Users can delete their own posts
-CREATE POLICY "Users can delete own posts" ON public.group_chat_posts
-  FOR DELETE USING (auth.uid() = user_id);
+ALTER TABLE public.group_chats ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
--- GROUP CHAT REACTIONS TABLE (Cheers/Likes)
+-- GROUP CHAT MEMBERS TABLE
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.group_chat_reactions (
+CREATE TABLE IF NOT EXISTS public.group_chat_members (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
-  -- The post being reacted to
-  post_id UUID NOT NULL REFERENCES public.group_chat_posts(id) ON DELETE CASCADE,
-
-  -- Who reacted
+  -- Which chat and which user
+  group_chat_id UUID NOT NULL REFERENCES public.group_chats(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
 
-  -- Reaction type (for future expansion)
-  reaction_type TEXT NOT NULL DEFAULT 'cheer',
+  -- When they joined
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
 
-  -- Timestamps
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-
-  -- Each user can only react once per post
-  UNIQUE(post_id, user_id)
+  -- Each user can only be in a chat once
+  UNIQUE(group_chat_id, user_id)
 );
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_group_chat_reactions_post ON public.group_chat_reactions(post_id);
-CREATE INDEX IF NOT EXISTS idx_group_chat_reactions_user ON public.group_chat_reactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_group_chat_members_chat ON public.group_chat_members(group_chat_id);
+CREATE INDEX IF NOT EXISTS idx_group_chat_members_user ON public.group_chat_members(user_id);
 
 -- Enable RLS
-ALTER TABLE public.group_chat_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.group_chat_members ENABLE ROW LEVEL SECURITY;
 
--- Users can view reactions on posts they can see
-CREATE POLICY "Users can view reactions" ON public.group_chat_reactions
+-- ============================================================
+-- GROUP CHAT MESSAGES TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.group_chat_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+  -- Which chat and who sent it
+  group_chat_id UUID NOT NULL REFERENCES public.group_chats(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+
+  -- Message content
+  message TEXT NOT NULL,
+
+  -- Optional: if this is a win share
+  is_win_share BOOLEAN DEFAULT FALSE,
+  win_type TEXT, -- 'workout_complete', 'personal_best', 'milestone'
+  win_details JSONB, -- {workoutName, exerciseName, improvement, duration, etc.}
+
+  -- Timestamps
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_group_chat_messages_chat ON public.group_chat_messages(group_chat_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_group_chat_messages_user ON public.group_chat_messages(user_id);
+
+-- Enable RLS
+ALTER TABLE public.group_chat_messages ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- ROW LEVEL SECURITY POLICIES
+-- ============================================================
+
+-- Group chats: users can see chats they're a member of
+CREATE POLICY "Users can view their group chats" ON public.group_chats
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM public.group_chat_posts gcp
-      WHERE gcp.id = post_id
-      AND (
-        gcp.user_id = auth.uid()
-        OR EXISTS (
-          SELECT 1 FROM public.friendships
-          WHERE status = 'accepted'
-          AND (
-            (user_id = auth.uid() AND friend_id = gcp.user_id)
-            OR (friend_id = auth.uid() AND user_id = gcp.user_id)
-          )
-        )
-      )
+      SELECT 1 FROM public.group_chat_members
+      WHERE group_chat_id = id AND user_id = auth.uid()
     )
   );
 
--- Users can add reactions
-CREATE POLICY "Users can add reactions" ON public.group_chat_reactions
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Group chats: users can create chats
+CREATE POLICY "Users can create group chats" ON public.group_chats
+  FOR INSERT WITH CHECK (auth.uid() = created_by);
 
--- Users can remove their own reactions
-CREATE POLICY "Users can remove own reactions" ON public.group_chat_reactions
+-- Group chats: only creator can delete
+CREATE POLICY "Creator can delete group chat" ON public.group_chats
+  FOR DELETE USING (auth.uid() = created_by);
+
+-- Members: users can view members of chats they're in
+CREATE POLICY "Users can view members of their chats" ON public.group_chat_members
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.group_chat_members gcm
+      WHERE gcm.group_chat_id = group_chat_id AND gcm.user_id = auth.uid()
+    )
+  );
+
+-- Members: chat creator can add members
+CREATE POLICY "Creator can add members" ON public.group_chat_members
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.group_chats
+      WHERE id = group_chat_id AND created_by = auth.uid()
+    )
+    OR user_id = auth.uid() -- User can add themselves if invited
+  );
+
+-- Members: users can leave (delete their own membership)
+CREATE POLICY "Users can leave chats" ON public.group_chat_members
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Messages: users can view messages in chats they're a member of
+CREATE POLICY "Users can view messages in their chats" ON public.group_chat_messages
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.group_chat_members
+      WHERE group_chat_id = group_chat_messages.group_chat_id AND user_id = auth.uid()
+    )
+  );
+
+-- Messages: users can send messages to chats they're in
+CREATE POLICY "Users can send messages to their chats" ON public.group_chat_messages
+  FOR INSERT WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM public.group_chat_members
+      WHERE group_chat_id = group_chat_messages.group_chat_id AND user_id = auth.uid()
+    )
+  );
+
+-- Messages: users can delete their own messages
+CREATE POLICY "Users can delete own messages" ON public.group_chat_messages
   FOR DELETE USING (auth.uid() = user_id);
 
 -- ============================================================
 -- HELPER FUNCTIONS
 -- ============================================================
 
--- Get group chat feed (posts from friends)
-CREATE OR REPLACE FUNCTION get_group_chat_feed(user_uuid UUID, posts_limit INT DEFAULT 50)
+-- Get all group chats for a user with latest message preview
+CREATE OR REPLACE FUNCTION get_user_group_chats(user_uuid UUID)
 RETURNS TABLE(
-  post_id UUID,
-  poster_id UUID,
-  poster_name TEXT,
-  poster_photo TEXT,
-  post_type TEXT,
-  message TEXT,
-  workout_name TEXT,
-  workout_duration TEXT,
-  exercise_name TEXT,
-  weight_kg NUMERIC,
-  reps INT,
-  improvement_text TEXT,
+  chat_id UUID,
+  chat_name TEXT,
+  created_by UUID,
   created_at TIMESTAMPTZ,
-  reaction_count BIGINT,
-  user_has_reacted BOOLEAN
+  member_count BIGINT,
+  member_names TEXT,
+  last_message TEXT,
+  last_message_at TIMESTAMPTZ,
+  last_message_by TEXT
 ) AS $$
 BEGIN
   RETURN QUERY
   SELECT
-    gcp.id as post_id,
-    gcp.user_id as poster_id,
-    u.name as poster_name,
-    u.profile_photo as poster_photo,
-    gcp.post_type,
-    gcp.message,
-    gcp.workout_name,
-    gcp.workout_duration,
-    gcp.exercise_name,
-    gcp.weight_kg,
-    gcp.reps,
-    gcp.improvement_text,
-    gcp.created_at,
-    COALESCE((SELECT COUNT(*) FROM public.group_chat_reactions gcr WHERE gcr.post_id = gcp.id), 0) as reaction_count,
-    EXISTS(SELECT 1 FROM public.group_chat_reactions gcr WHERE gcr.post_id = gcp.id AND gcr.user_id = user_uuid) as user_has_reacted
-  FROM public.group_chat_posts gcp
-  JOIN public.users u ON u.id = gcp.user_id
-  WHERE gcp.user_id = user_uuid
-    OR EXISTS (
-      SELECT 1 FROM public.friendships f
-      WHERE f.status = 'accepted'
-      AND (
-        (f.user_id = user_uuid AND f.friend_id = gcp.user_id)
-        OR (f.friend_id = user_uuid AND f.user_id = gcp.user_id)
-      )
-    )
-  ORDER BY gcp.created_at DESC
-  LIMIT posts_limit;
+    gc.id as chat_id,
+    gc.name as chat_name,
+    gc.created_by,
+    gc.created_at,
+    (SELECT COUNT(*) FROM public.group_chat_members WHERE group_chat_id = gc.id) as member_count,
+    (
+      SELECT string_agg(u.name, ', ')
+      FROM public.group_chat_members gcm
+      JOIN public.users u ON u.id = gcm.user_id
+      WHERE gcm.group_chat_id = gc.id AND gcm.user_id != user_uuid
+      LIMIT 3
+    ) as member_names,
+    (
+      SELECT gcm.message
+      FROM public.group_chat_messages gcm
+      WHERE gcm.group_chat_id = gc.id
+      ORDER BY gcm.created_at DESC
+      LIMIT 1
+    ) as last_message,
+    (
+      SELECT gcm.created_at
+      FROM public.group_chat_messages gcm
+      WHERE gcm.group_chat_id = gc.id
+      ORDER BY gcm.created_at DESC
+      LIMIT 1
+    ) as last_message_at,
+    (
+      SELECT u.name
+      FROM public.group_chat_messages gcm
+      JOIN public.users u ON u.id = gcm.user_id
+      WHERE gcm.group_chat_id = gc.id
+      ORDER BY gcm.created_at DESC
+      LIMIT 1
+    ) as last_message_by
+  FROM public.group_chats gc
+  WHERE EXISTS (
+    SELECT 1 FROM public.group_chat_members
+    WHERE group_chat_id = gc.id AND user_id = user_uuid
+  )
+  ORDER BY COALESCE(
+    (SELECT MAX(created_at) FROM public.group_chat_messages WHERE group_chat_id = gc.id),
+    gc.created_at
+  ) DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Toggle reaction on a post (add if not exists, remove if exists)
-CREATE OR REPLACE FUNCTION toggle_group_chat_reaction(user_uuid UUID, target_post_id UUID)
-RETURNS BOOLEAN AS $$
-DECLARE
-  reaction_exists BOOLEAN;
+-- Get messages for a group chat
+CREATE OR REPLACE FUNCTION get_group_chat_messages(chat_uuid UUID, messages_limit INT DEFAULT 100)
+RETURNS TABLE(
+  message_id UUID,
+  sender_id UUID,
+  sender_name TEXT,
+  sender_photo TEXT,
+  message TEXT,
+  is_win_share BOOLEAN,
+  win_type TEXT,
+  win_details JSONB,
+  created_at TIMESTAMPTZ
+) AS $$
 BEGIN
-  -- Check if reaction exists
-  SELECT EXISTS(
-    SELECT 1 FROM public.group_chat_reactions
-    WHERE post_id = target_post_id AND user_id = user_uuid
-  ) INTO reaction_exists;
+  RETURN QUERY
+  SELECT
+    gcm.id as message_id,
+    gcm.user_id as sender_id,
+    u.name as sender_name,
+    u.profile_photo as sender_photo,
+    gcm.message,
+    gcm.is_win_share,
+    gcm.win_type,
+    gcm.win_details,
+    gcm.created_at
+  FROM public.group_chat_messages gcm
+  JOIN public.users u ON u.id = gcm.user_id
+  WHERE gcm.group_chat_id = chat_uuid
+  ORDER BY gcm.created_at ASC
+  LIMIT messages_limit;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-  IF reaction_exists THEN
-    -- Remove reaction
-    DELETE FROM public.group_chat_reactions
-    WHERE post_id = target_post_id AND user_id = user_uuid;
-    RETURN FALSE; -- Reaction removed
-  ELSE
-    -- Add reaction
-    INSERT INTO public.group_chat_reactions (post_id, user_id, reaction_type)
-    VALUES (target_post_id, user_uuid, 'cheer');
-    RETURN TRUE; -- Reaction added
-  END IF;
+-- Get members of a group chat
+CREATE OR REPLACE FUNCTION get_group_chat_members(chat_uuid UUID)
+RETURNS TABLE(
+  member_id UUID,
+  member_name TEXT,
+  member_photo TEXT,
+  joined_at TIMESTAMPTZ
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    gcm.user_id as member_id,
+    u.name as member_name,
+    u.profile_photo as member_photo,
+    gcm.joined_at
+  FROM public.group_chat_members gcm
+  JOIN public.users u ON u.id = gcm.user_id
+  WHERE gcm.group_chat_id = chat_uuid
+  ORDER BY gcm.joined_at ASC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create a group chat with members
+CREATE OR REPLACE FUNCTION create_group_chat(
+  creator_uuid UUID,
+  chat_name TEXT,
+  member_ids UUID[]
+)
+RETURNS UUID AS $$
+DECLARE
+  new_chat_id UUID;
+  member_id UUID;
+BEGIN
+  -- Create the chat
+  INSERT INTO public.group_chats (name, created_by)
+  VALUES (chat_name, creator_uuid)
+  RETURNING id INTO new_chat_id;
+
+  -- Add the creator as a member
+  INSERT INTO public.group_chat_members (group_chat_id, user_id)
+  VALUES (new_chat_id, creator_uuid);
+
+  -- Add all other members
+  FOREACH member_id IN ARRAY member_ids
+  LOOP
+    IF member_id != creator_uuid THEN
+      INSERT INTO public.group_chat_members (group_chat_id, user_id)
+      VALUES (new_chat_id, member_id)
+      ON CONFLICT DO NOTHING;
+    END IF;
+  END LOOP;
+
+  RETURN new_chat_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -206,12 +303,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- COMMENTS
 -- ============================================================
 
-COMMENT ON TABLE public.group_chat_posts IS 'Posts in the friends group chat/wins feed';
-COMMENT ON COLUMN public.group_chat_posts.post_type IS 'Type: workout_complete, personal_best, milestone, or custom';
-COMMENT ON COLUMN public.group_chat_posts.message IS 'The main message/content of the post';
-COMMENT ON COLUMN public.group_chat_posts.workout_name IS 'Name of workout if sharing workout completion';
-COMMENT ON COLUMN public.group_chat_posts.improvement_text IS 'Text describing improvement (e.g., "+5kg")';
-
-COMMENT ON TABLE public.group_chat_reactions IS 'Reactions (cheers) on group chat posts';
-COMMENT ON FUNCTION get_group_chat_feed IS 'Get paginated feed of posts from user and friends';
-COMMENT ON FUNCTION toggle_group_chat_reaction IS 'Toggle reaction on a post, returns true if added, false if removed';
+COMMENT ON TABLE public.group_chats IS 'Group chat rooms';
+COMMENT ON TABLE public.group_chat_members IS 'Members of each group chat';
+COMMENT ON TABLE public.group_chat_messages IS 'Messages in group chats';
+COMMENT ON COLUMN public.group_chat_messages.is_win_share IS 'True if this message is sharing a workout win';
+COMMENT ON COLUMN public.group_chat_messages.win_details IS 'JSON with workout details if this is a win share';
