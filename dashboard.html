@@ -12488,10 +12488,9 @@ function checkMealPlanAccess() {
     // Check for purchased meal plans (would be set after Stripe purchase)
     const purchasedPlans = JSON.parse(localStorage.getItem('purchased_meal_plans') || '[]');
 
-    // Quiz onboarders get hormone plan
+    // Quiz onboarders get hormone reset plan
     if (hormoneProfile && programStartDate) {
-        const planSlug = hormoneProfile === 'ESTROGEN' ? 'hormone-estrogen' : 'hormone-cortisol';
-        return { hasAccess: true, source: 'quiz', planSlug: planSlug };
+        return { hasAccess: true, source: 'quiz', planSlug: 'hormone-reset' };
     }
 
     // Subscribers get all plans

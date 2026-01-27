@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.meal_plans (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
   -- Plan identification
-  slug TEXT UNIQUE NOT NULL,           -- "summer-shred", "clean-bulk", "hormone-cortisol"
+  slug TEXT UNIQUE NOT NULL,           -- "summer-shred", "clean-bulk", "hormone-reset"
   name TEXT NOT NULL,                   -- "Summer Shred 28-Day Plan"
   short_name TEXT,                      -- "Summer Shred" (for UI)
   description TEXT,
@@ -583,18 +583,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- SEED DATA: Initial Meal Plan Catalog (empty plans to be filled)
 -- ============================================================
 
--- Hormone Reset Plans (for quiz onboarders)
+-- Hormone Reset Plan (for quiz onboarders)
 INSERT INTO public.meal_plans (slug, name, short_name, description, tagline, plan_type, goal_tags, target_sex, icon, sort_order, is_included_in_subscription)
 VALUES
-  ('hormone-cortisol', 'Cortisol Reset Protocol', 'Cortisol Reset',
-   'A 4-week meal plan designed to reduce cortisol levels through anti-inflammatory foods, blood sugar balancing, and adrenal support.',
-   'Reset your stress hormones with calming, nourishing meals',
-   'hormone', ARRAY['hormone-balance', 'stress-reduction', 'energy'], 'female', '🌿', 1, true),
-
-  ('hormone-estrogen', 'Estrogen Balance Protocol', 'Estrogen Balance',
-   'A 4-week meal plan focused on estrogen metabolism support through liver-friendly foods, fiber-rich meals, and phytoestrogen balance.',
-   'Support healthy estrogen levels through targeted nutrition',
-   'hormone', ARRAY['hormone-balance', 'menopause-support', 'energy'], 'female', '🌸', 2, true)
+  ('hormone-reset', 'Hormone Reset Protocol', 'Hormone Reset',
+   'A comprehensive 4-week meal plan designed to balance hormones through anti-inflammatory foods, liver support, blood sugar balancing, and adrenal nourishment.',
+   'Balance your hormones with nourishing, healing meals',
+   'hormone', ARRAY['hormone-balance', 'stress-reduction', 'energy', 'liver-health'], 'female', '🌿', 1, true)
 ON CONFLICT (slug) DO NOTHING;
 
 -- Goal-Based Plans (for purchase)

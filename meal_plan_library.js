@@ -25,66 +25,36 @@ const PLAN_TYPES = {
 // ============================================================
 const MEAL_PLAN_CATALOG = {
   // ------------------------------------------------------------
-  // HORMONE RESET PLANS (for quiz onboarders)
+  // HORMONE RESET PLAN (for quiz onboarders)
   // ------------------------------------------------------------
-  'hormone-cortisol': {
-    slug: 'hormone-cortisol',
-    name: 'Cortisol Reset Protocol',
-    shortName: 'Cortisol Reset',
+  'hormone-reset': {
+    slug: 'hormone-reset',
+    name: 'Hormone Reset Protocol',
+    shortName: 'Hormone Reset',
     icon: '🌿',
     planType: PLAN_TYPES.HORMONE,
-    description: 'A 4-week meal plan designed to reduce cortisol levels through anti-inflammatory foods, blood sugar balancing, and adrenal support.',
-    tagline: 'Reset your stress hormones with calming, nourishing meals',
+    description: 'A comprehensive 4-week meal plan designed to balance hormones through anti-inflammatory foods, liver support, blood sugar balancing, and adrenal nourishment.',
+    tagline: 'Balance your hormones with nourishing, healing meals',
     durationWeeks: 4,
     targetSex: 'female',
-    goalTags: ['hormone-balance', 'stress-reduction', 'energy', 'sleep-support'],
+    goalTags: ['hormone-balance', 'stress-reduction', 'energy', 'sleep-support', 'liver-health'],
     priceCents: 0, // Included with quiz
     isIncludedInSubscription: true,
     isFree: false,
     featured: false,
-    thumbnail: '/assets/hormone_cortisol_plan.png',
+    thumbnail: '/assets/hormone_reset_plan.png',
     weekThemes: {
       1: { name: 'Reset & Debloat', description: 'Mineral-rich hydration to lower cortisol and flush water retention' },
-      2: { name: 'Nourish & Stabilize', description: 'Blood sugar balancing with protein-rich meals' },
+      2: { name: 'Liver Support', description: 'Cruciferous vegetables and detox-supporting nutrients' },
       3: { name: 'Rebuild & Strengthen', description: 'Adrenal-supporting nutrients and adaptogens' },
-      4: { name: 'Sustain & Thrive', description: 'Cementing habits with satisfying, stress-reducing meals' }
+      4: { name: 'Sustain & Thrive', description: 'Cementing habits with satisfying, hormone-balancing meals' }
     },
     keyPrinciples: [
       { title: 'Carbs at Night', description: 'Save starchy carbs for dinner to blunt evening cortisol spike and boost serotonin for sleep.' },
       { title: 'No Fasting', description: 'Eat within 30 minutes of waking. Fasting spikes cortisol and keeps your body in emergency mode.' },
+      { title: 'Cruciferous Daily', description: 'Eat broccoli, kale, or brussels sprouts daily. They contain DIM that activates liver detox pathways.' },
       { title: 'Magnesium Rich', description: 'Prioritize magnesium-rich foods (spinach, pumpkin seeds, dark chocolate) to relax the nervous system.' },
       { title: '4-Hour Rhythm', description: 'Never go more than 4 hours without food. Frequent protein feedings signal safety to your brain.' }
-    ],
-    variants: ['vegan', 'vegetarian']
-  },
-
-  'hormone-estrogen': {
-    slug: 'hormone-estrogen',
-    name: 'Estrogen Balance Protocol',
-    shortName: 'Estrogen Balance',
-    icon: '🌸',
-    planType: PLAN_TYPES.HORMONE,
-    description: 'A 4-week meal plan focused on estrogen metabolism support through liver-friendly foods, fiber-rich meals, and phytoestrogen balance.',
-    tagline: 'Support healthy estrogen levels through targeted nutrition',
-    durationWeeks: 4,
-    targetSex: 'female',
-    goalTags: ['hormone-balance', 'menopause-support', 'liver-health', 'energy'],
-    priceCents: 0,
-    isIncludedInSubscription: true,
-    isFree: false,
-    featured: false,
-    thumbnail: '/assets/hormone_estrogen_plan.png',
-    weekThemes: {
-      1: { name: 'Fiber Flush', description: 'High-fiber meals to bind and eliminate excess estrogen' },
-      2: { name: 'Liver Support', description: 'Cruciferous vegetables and detox-supporting nutrients' },
-      3: { name: 'Phytoestrogen Balance', description: 'Plant-based estrogen modulators for hormone harmony' },
-      4: { name: 'Metabolic Reset', description: 'Optimized nutrition for long-term hormone balance' }
-    },
-    keyPrinciples: [
-      { title: 'Cruciferous Daily', description: 'Eat broccoli, kale, or brussels sprouts daily. They contain DIM that activates liver detox pathways.' },
-      { title: 'Raw Carrot Salad', description: 'Eat raw carrot salad every day. Its unique fiber acts like a sponge for endotoxins and excess estrogen.' },
-      { title: 'Hydration', description: 'Drink 3 liters of water. Your kidneys are a major detox organ; keep them flushed to reduce bloating.' },
-      { title: 'Zero Alcohol', description: 'Strict no alcohol. Ethanol pauses fat burning and liver detox for up to 48 hours.' }
     ],
     variants: ['vegan', 'vegetarian']
   },
@@ -211,12 +181,11 @@ const MEAL_PLAN_CATALOG = {
 };
 
 // ============================================================
-// EXISTING HORMONE CORTISOL MEALS (extracted from dashboard.html)
-// This is the vegan variant - Week 1 as example structure
+// HORMONE RESET MEALS (vegan variant - Week 1)
 // ============================================================
-const HORMONE_CORTISOL_MEALS = {
+const HORMONE_RESET_MEALS = {
   variant: 'vegan',
-  planSlug: 'hormone-cortisol',
+  planSlug: 'hormone-reset',
   weeks: {
     1: {
       theme: 'Reset & Debloat',
@@ -482,8 +451,8 @@ function hasVariant(planSlug, dietType) {
  */
 function getDayMeals(planSlug, variant, weekNum, dayOfWeek) {
   // TODO: Implement once all meal data is migrated
-  if (planSlug === 'hormone-cortisol' && variant === 'vegan') {
-    return HORMONE_CORTISOL_MEALS.weeks[weekNum]?.days[dayOfWeek] || null;
+  if (planSlug === 'hormone-reset' && variant === 'vegan') {
+    return HORMONE_RESET_MEALS.weeks[weekNum]?.days[dayOfWeek] || null;
   }
   return null;
 }
@@ -520,7 +489,7 @@ if (typeof module !== 'undefined' && module.exports) {
     MEAL_SLOTS,
     DIET_TYPES,
     PLAN_TYPES,
-    HORMONE_CORTISOL_MEALS,
+    HORMONE_RESET_MEALS,
     getMealPlan,
     getPurchasableMealPlans,
     getFeaturedMealPlans,
