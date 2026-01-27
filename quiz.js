@@ -3844,6 +3844,9 @@ function renderCalendarPreview(container, optionsDiv, q) {
         }
     }
 
+    // Get workout options from the existing function
+    const workoutOptions = getWorkoutOptions();
+
     // Get workout display info - IDs match workout_library.js
     const workoutInfo = {
         // GYM workouts
@@ -3889,6 +3892,15 @@ function renderCalendarPreview(container, optionsDiv, q) {
     h2.textContent = q.text;
     container.appendChild(h2);
 
+    // Subtext instruction
+    const subtext = document.createElement('p');
+    subtext.style.textAlign = 'center';
+    subtext.style.fontSize = '14px';
+    subtext.style.color = '#666';
+    subtext.style.marginBottom = '15px';
+    subtext.textContent = 'Tap any day to change the workout';
+    container.appendChild(subtext);
+
     // Calendar preview
     const previewBox = document.createElement('div');
     previewBox.style.background = '#fff';
@@ -3897,7 +3909,32 @@ function renderCalendarPreview(container, optionsDiv, q) {
     previewBox.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
     previewBox.style.marginBottom = '20px';
 
-    allDays.forEach((day, idx) => {
+    // Summary element (create early so we can update it)
+    const summary = document.createElement('div');
+    summary.style.textAlign = 'center';
+    summary.style.marginTop = '15px';
+    summary.style.padding = '10px';
+    summary.style.background = 'rgba(72, 134, 75, 0.1)';
+    summary.style.borderRadius = '10px';
+    summary.style.fontSize = '14px';
+    summary.style.color = '#1a4d2e';
+
+    // Function to update summary stats
+    function updateSummary() {
+        const trainingCount = Object.values(workoutCalendar).filter(w =>
+            w && !['rest', 'yoga-flow', 'yoga-restorative', 'yoga-mobility', 'recovery-stretch', 'recovery-foam'].includes(w)
+        ).length;
+        const yogaCount = Object.values(workoutCalendar).filter(w =>
+            ['yoga-flow', 'yoga-restorative', 'yoga-mobility'].includes(w)
+        ).length;
+        const restCount = Object.values(workoutCalendar).filter(w =>
+            w === 'rest' || ['recovery-stretch', 'recovery-foam'].includes(w)
+        ).length;
+        summary.innerHTML = `<strong>${trainingCount} training</strong> · <strong>${yogaCount} yoga</strong> · <strong>${restCount} rest</strong>`;
+    }
+
+    // Function to render a day row (reusable for updates)
+    function renderDayRow(day, idx, parentElement, existingRow = null) {
         const workout = workoutCalendar[day] || 'rest';
         const info = workoutInfo[workout] || { icon: '❓', name: 'Unknown', desc: '' };
 
@@ -3906,6 +3943,14 @@ function renderCalendarPreview(container, optionsDiv, q) {
         row.style.alignItems = 'center';
         row.style.padding = '12px 0';
         row.style.borderBottom = idx < 6 ? '1px solid #f0f0f0' : 'none';
+        row.style.cursor = 'pointer';
+        row.style.transition = 'background 0.2s';
+        row.dataset.day = day;
+        row.dataset.idx = idx;
+
+        // Hover effect
+        row.onmouseenter = () => { row.style.background = 'rgba(72, 134, 75, 0.05)'; };
+        row.onmouseleave = () => { row.style.background = 'transparent'; };
 
         const dayCol = document.createElement('div');
         dayCol.style.width = '100px';
@@ -3939,33 +3984,201 @@ function renderCalendarPreview(container, optionsDiv, q) {
             workoutText.appendChild(workoutDesc);
         }
 
+        // Edit indicator
+        const editIcon = document.createElement('span');
+        editIcon.style.marginLeft = 'auto';
+        editIcon.style.color = '#48864B';
+        editIcon.style.fontSize = '14px';
+        editIcon.innerHTML = '&#9662;'; // Down arrow
+
         workoutCol.appendChild(icon);
         workoutCol.appendChild(workoutText);
+        workoutCol.appendChild(editIcon);
 
         row.appendChild(dayCol);
         row.appendChild(workoutCol);
-        previewBox.appendChild(row);
+
+        // Click handler to show dropdown
+        row.onclick = (e) => {
+            e.stopPropagation();
+            showWorkoutDropdown(day, idx, row);
+        };
+
+        if (existingRow) {
+            parentElement.replaceChild(row, existingRow);
+        } else {
+            parentElement.appendChild(row);
+        }
+
+        return row;
+    }
+
+    // Function to show workout dropdown
+    function showWorkoutDropdown(day, idx, row) {
+        // Remove any existing dropdown
+        const existingDropdown = document.getElementById('workout-dropdown-overlay');
+        if (existingDropdown) existingDropdown.remove();
+
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'workout-dropdown-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.right = '0';
+        overlay.style.bottom = '0';
+        overlay.style.background = 'rgba(0,0,0,0.3)';
+        overlay.style.zIndex = '13000';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+
+        // Create dropdown container
+        const dropdown = document.createElement('div');
+        dropdown.style.background = '#fff';
+        dropdown.style.borderRadius = '16px';
+        dropdown.style.padding = '20px';
+        dropdown.style.width = '90%';
+        dropdown.style.maxWidth = '350px';
+        dropdown.style.maxHeight = '70vh';
+        dropdown.style.overflowY = 'auto';
+        dropdown.style.boxShadow = '0 10px 40px rgba(0,0,0,0.2)';
+
+        // Header
+        const header = document.createElement('div');
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between';
+        header.style.alignItems = 'center';
+        header.style.marginBottom = '15px';
+        header.style.paddingBottom = '10px';
+        header.style.borderBottom = '1px solid #eee';
+
+        const headerTitle = document.createElement('h3');
+        headerTitle.style.margin = '0';
+        headerTitle.style.color = '#1a4d2e';
+        headerTitle.style.fontSize = '18px';
+        headerTitle.textContent = dayLabels[idx];
+
+        const closeBtn = document.createElement('span');
+        closeBtn.style.cursor = 'pointer';
+        closeBtn.style.fontSize = '24px';
+        closeBtn.style.color = '#999';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.onclick = () => overlay.remove();
+
+        header.appendChild(headerTitle);
+        header.appendChild(closeBtn);
+        dropdown.appendChild(header);
+
+        // Workout options grouped by category
+        workoutOptions.forEach(category => {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.style.marginBottom = '15px';
+
+            const categoryLabel = document.createElement('div');
+            categoryLabel.style.fontSize = '11px';
+            categoryLabel.style.fontWeight = '600';
+            categoryLabel.style.color = '#999';
+            categoryLabel.style.textTransform = 'uppercase';
+            categoryLabel.style.marginBottom = '8px';
+            categoryLabel.style.letterSpacing = '0.5px';
+            categoryLabel.textContent = category.category;
+            categoryDiv.appendChild(categoryLabel);
+
+            category.items.forEach(item => {
+                const option = document.createElement('div');
+                option.style.display = 'flex';
+                option.style.alignItems = 'center';
+                option.style.padding = '10px 12px';
+                option.style.marginBottom = '4px';
+                option.style.borderRadius = '8px';
+                option.style.cursor = 'pointer';
+                option.style.transition = 'background 0.2s';
+
+                // Highlight current selection
+                if (workoutCalendar[day] === item.id) {
+                    option.style.background = 'rgba(72, 134, 75, 0.15)';
+                    option.style.border = '2px solid #48864B';
+                } else {
+                    option.style.background = '#f8f8f8';
+                    option.style.border = '2px solid transparent';
+                }
+
+                option.onmouseenter = () => {
+                    if (workoutCalendar[day] !== item.id) {
+                        option.style.background = 'rgba(72, 134, 75, 0.1)';
+                    }
+                };
+                option.onmouseleave = () => {
+                    if (workoutCalendar[day] !== item.id) {
+                        option.style.background = '#f8f8f8';
+                    }
+                };
+
+                const optIcon = document.createElement('span');
+                optIcon.style.fontSize = '18px';
+                optIcon.style.marginRight = '10px';
+                optIcon.textContent = item.icon;
+
+                const optName = document.createElement('span');
+                optName.style.fontWeight = '500';
+                optName.style.color = '#333';
+                optName.textContent = item.name;
+
+                // Checkmark for selected
+                if (workoutCalendar[day] === item.id) {
+                    const checkmark = document.createElement('span');
+                    checkmark.style.marginLeft = 'auto';
+                    checkmark.style.color = '#48864B';
+                    checkmark.style.fontWeight = 'bold';
+                    checkmark.innerHTML = '&#10003;';
+                    option.appendChild(optIcon);
+                    option.appendChild(optName);
+                    option.appendChild(checkmark);
+                } else {
+                    option.appendChild(optIcon);
+                    option.appendChild(optName);
+                }
+
+                option.onclick = () => {
+                    // Update calendar
+                    workoutCalendar[day] = item.id;
+                    answers.workout_calendar = JSON.stringify(workoutCalendar);
+
+                    // Update the row display
+                    const existingRow = previewBox.querySelector(`[data-day="${day}"]`);
+                    renderDayRow(day, idx, previewBox, existingRow);
+
+                    // Update summary
+                    updateSummary();
+
+                    // Close dropdown
+                    overlay.remove();
+                };
+
+                categoryDiv.appendChild(option);
+            });
+
+            dropdown.appendChild(categoryDiv);
+        });
+
+        overlay.appendChild(dropdown);
+
+        // Close on overlay click
+        overlay.onclick = (e) => {
+            if (e.target === overlay) overlay.remove();
+        };
+
+        document.body.appendChild(overlay);
+    }
+
+    // Render all day rows
+    allDays.forEach((day, idx) => {
+        renderDayRow(day, idx, previewBox);
     });
 
-    // Summary stats
-    const trainingCount = Object.values(workoutCalendar).filter(w =>
-        w && !['rest', 'yin_yoga', 'restorative', 'active_recovery'].includes(w)
-    ).length;
-    const yogaCount = Object.values(workoutCalendar).filter(w =>
-        ['yin_yoga', 'restorative', 'power_yoga'].includes(w)
-    ).length;
-    const restCount = 7 - trainingCount - yogaCount;
-
-    const summary = document.createElement('div');
-    summary.style.textAlign = 'center';
-    summary.style.marginTop = '15px';
-    summary.style.padding = '10px';
-    summary.style.background = 'rgba(72, 134, 75, 0.1)';
-    summary.style.borderRadius = '10px';
-    summary.style.fontSize = '14px';
-    summary.style.color = '#1a4d2e';
-    summary.innerHTML = `<strong>${trainingCount} training</strong> · <strong>${yogaCount} yoga</strong> · <strong>${restCount} rest</strong>`;
-
+    // Initial summary update
+    updateSummary();
     previewBox.appendChild(summary);
 
     // Info about 48-week program
@@ -3976,28 +4189,10 @@ function renderCalendarPreview(container, optionsDiv, q) {
     infoBox.style.color = '#666';
     infoBox.innerHTML = '📈 Each workout evolves over 48 weeks.<br>Just show up and we\'ll handle the rest.';
 
-    // Buttons
+    // Single confirm button (removed "Let Me Adjust" since editing is now inline)
     const btnContainer = document.createElement('div');
     btnContainer.style.display = 'flex';
     btnContainer.style.gap = '10px';
-
-    const editBtn = document.createElement('button');
-    editBtn.className = 'option-btn';
-    editBtn.style.flex = '1';
-    editBtn.style.background = '#fff';
-    editBtn.style.color = '#48864B';
-    editBtn.style.border = '2px solid #48864B';
-    editBtn.innerText = 'Let Me Adjust';
-    editBtn.onclick = () => {
-        // Go back to builder
-        answers.calendar_build_choice = 'design';
-        // Find the calendar_builder step and go there
-        const builderIndex = quizFlow.findIndex(s => s.id === 'calendar_builder');
-        if (builderIndex >= 0) {
-            currentStep = builderIndex - 1; // -1 because nextStep will increment
-            nextStep();
-        }
-    };
 
     const confirmBtn = document.createElement('button');
     confirmBtn.className = 'option-btn';
@@ -4009,7 +4204,6 @@ function renderCalendarPreview(container, optionsDiv, q) {
         selectOption(q.id, 'confirmed');
     };
 
-    btnContainer.appendChild(editBtn);
     btnContainer.appendChild(confirmBtn);
 
     optionsDiv.appendChild(previewBox);
