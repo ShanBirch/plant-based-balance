@@ -12348,11 +12348,32 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
         }
     }
 
-    // Get workout for this day (simplified - just show workout type based on day of week)
-    const workoutLabels = ['Strength', 'Strength', 'Yoga', 'Strength', 'Strength', 'Yoga', 'Rest'];
-    const workoutLabel = workoutLabels[dayIndex];
-
     const dateStr = date.toISOString().split('T')[0];
+
+    // Get workout for this day using actual workout data
+    const workout = getWorkoutForDay(dayIndex, dateStr);
+    let workoutLabel = 'Rest';
+
+    if (workout && workout.title) {
+        const title = workout.title;
+        const programId = workout.programId || '';
+
+        // Create short label that fits in cell
+        if (programId.includes('yoga') || title.toLowerCase().includes('yoga') || title.toLowerCase().includes('somatic') || title.toLowerCase().includes('yin') || title.toLowerCase().includes('flow')) {
+            workoutLabel = 'Yoga';
+        } else if (title.includes('Day')) {
+            // "Chest Day" → "Chest", "Leg Day" → "Legs", etc.
+            workoutLabel = title.replace(' Day', '').replace('Leg', 'Legs');
+        } else if (title.includes('Upper') || title.includes('Lower') || title.includes('Push') || title.includes('Pull') || title.includes('Core') || title.includes('Arms')) {
+            // Extract main muscle focus
+            workoutLabel = title.split(' ')[0];
+            if (workoutLabel === 'Lower') workoutLabel = 'Legs';
+            if (workoutLabel === 'Upper') workoutLabel = 'Upper';
+        } else {
+            // Use first word or truncate if too long
+            workoutLabel = title.length > 10 ? title.substring(0, 9) + '…' : title;
+        }
+    }
 
     // Phase indicator HTML - only for females
     const phaseIndicatorHtml = showPhaseIndicator
