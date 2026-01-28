@@ -17437,25 +17437,29 @@ async function openQuickShareModal() {
             exerciseSets[name].push(set);
         });
 
-        // Build lift selection HTML
+        // Build lift selection HTML with expandable dropdowns
         let liftHtml = '';
 
         // Add "Best Achievement" option if there are improvements
         if (completedWorkoutDataForShare.improvements && completedWorkoutDataForShare.improvements.length > 0) {
             liftHtml += `
-                <div onclick="selectLiftToShare(null)" id="lift-option-best" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                <div onclick="selectLiftToShare(null)" id="lift-option-best" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px;" class="lift-option">
                     <span style="font-size: 1.2rem;">🏆</span>
                     <div style="flex: 1;">
                         <div style="font-weight: 600;">Best Achievement (PR)</div>
                     </div>
-                    <span>✓</span>
+                    <span class="select-chip" style="font-size: 0.75rem;">✓</span>
                 </div>
             `;
         }
 
-        // Add each exercise's best set
+        // Add each exercise as expandable dropdown with all sets
+        let exerciseIndex = 0;
         Object.entries(exerciseSets).forEach(([exerciseName, sets]) => {
-            // Find the best set (highest weight or most reps)
+            const exerciseId = `exercise-dropdown-${exerciseIndex}`;
+            const setCount = sets.length;
+
+            // Find best set for summary display
             const bestSet = sets.reduce((best, current) => {
                 const currentWeight = current.weight || current.weight_kg || 0;
                 const bestWeight = best.weight || best.weight_kg || 0;
@@ -17467,21 +17471,47 @@ async function openQuickShareModal() {
                 }
                 return best;
             }, sets[0]);
+            const bestWeight = bestSet.weight || bestSet.weight_kg || 0;
+            const bestReps = bestSet.reps || 0;
 
-            const weight = bestSet.weight || bestSet.weight_kg || 0;
-            const reps = bestSet.reps || 0;
-            const setIndex = completedWorkoutDataForShare.sets.indexOf(bestSet);
+            // Exercise header (clickable to expand)
+            liftHtml += `
+                <div style="border: 1px solid #edf2f7; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                    <div onclick="toggleExerciseDropdown('${exerciseId}')" style="background: white; padding: 15px; cursor: pointer; display: flex; align-items: center; gap: 15px; transition: all 0.2s;" class="exercise-header">
+                        <div style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">💪</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">${escapeHtml(exerciseName)}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">${setCount} set${setCount > 1 ? 's' : ''} • Best: ${bestWeight}kg × ${bestReps} reps</div>
+                        </div>
+                        <div id="${exerciseId}-arrow" style="color: var(--text-muted); transition: transform 0.2s; font-size: 1.2rem;">▼</div>
+                    </div>
+                    <div id="${exerciseId}" style="display: none; background: #f8fafc; border-top: 1px solid #edf2f7;">
+            `;
+
+            // Individual sets
+            sets.forEach((set, idx) => {
+                const setIndex = completedWorkoutDataForShare.sets.indexOf(set);
+                const weight = set.weight || set.weight_kg || 0;
+                const reps = set.reps || 0;
+                const setNumber = set.set || (idx + 1);
+
+                liftHtml += `
+                        <div onclick="event.stopPropagation(); selectLiftToShare(${setIndex})" id="lift-option-${setIndex}" style="background: white; margin: 8px; padding: 12px 15px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s; border: 1px solid #edf2f7;" class="lift-option">
+                            <div style="width: 32px; height: 32px; background: #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; color: var(--text-muted);" class="lift-icon">${setNumber}</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-main); font-size: 0.95rem;">Set ${setNumber}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">${weight}kg × ${reps} reps</div>
+                            </div>
+                            <div class="select-chip" style="font-size: 0.7rem; font-weight: 700; color: var(--primary); border: 1.5px solid var(--primary); padding: 3px 8px; border-radius: 15px;">SELECT</div>
+                        </div>
+                `;
+            });
 
             liftHtml += `
-                <div onclick="selectLiftToShare(${setIndex})" id="lift-option-${setIndex}" style="background: white; padding: 15px; border-radius: 16px; cursor: pointer; display: flex; align-items: center; gap: 15px; transition: all 0.2s; border: 1px solid #edf2f7; box-shadow: 0 2px 5px rgba(0,0,0,0.02);" class="lift-option">
-                    <div style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;" class="lift-icon">💪</div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">${escapeHtml(exerciseName)}</div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Best: ${weight}kg × ${reps} reps</div>
                     </div>
-                    <div class="select-chip" style="font-size: 0.75rem; font-weight: 700; color: var(--primary); border: 1.5px solid var(--primary); padding: 4px 10px; border-radius: 20px;">SELECT</div>
                 </div>
             `;
+            exerciseIndex++;
         });
 
         liftList.innerHTML = liftHtml;
@@ -17530,6 +17560,24 @@ async function openQuickShareModal() {
 function closeQuickShareModal() {
     document.getElementById('quick-share-modal').style.display = 'none';
     selectedLiftToShare = null;
+}
+
+// Toggle exercise dropdown to show/hide individual sets
+function toggleExerciseDropdown(exerciseId) {
+    const dropdown = document.getElementById(exerciseId);
+    const arrow = document.getElementById(exerciseId + '-arrow');
+
+    if (!dropdown) return;
+
+    const isExpanded = dropdown.style.display !== 'none';
+
+    if (isExpanded) {
+        dropdown.style.display = 'none';
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+    } else {
+        dropdown.style.display = 'block';
+        if (arrow) arrow.style.transform = 'rotate(180deg)';
+    }
 }
 
 // Update the share preview based on selected lift
@@ -17598,7 +17646,8 @@ function selectLiftToShare(setIndex) {
     options.forEach(opt => {
         const isSelected = (setIndex === null && opt.id === 'lift-option-best') ||
                            (setIndex !== null && opt.id === `lift-option-${setIndex}`);
-        
+        const isBestOption = opt.id === 'lift-option-best';
+
         if (isSelected) {
             opt.style.background = 'var(--primary)';
             opt.style.borderColor = 'var(--primary)';
@@ -17610,29 +17659,37 @@ function selectLiftToShare(setIndex) {
             if (chip) {
                 chip.style.color = 'white';
                 chip.style.borderColor = 'white';
-                chip.innerText = 'SELECTED ✓';
+                chip.innerText = isBestOption ? '✓' : 'SELECTED ✓';
             }
-            const name = opt.querySelector('div[style*="font-weight: 700"]');
-            if (name) name.style.color = 'white';
-            const meta = opt.querySelector('div[style*="font-size: 0.85rem"]');
-            if (meta) meta.style.color = 'rgba(255,255,255,0.8)';
+            // Update text colors for all text elements
+            opt.querySelectorAll('div').forEach(div => {
+                if (div.style.fontWeight === '700' || div.style.fontWeight === '600') {
+                    div.style.color = 'white';
+                } else if (div.style.fontSize && (div.style.fontSize.includes('0.8') || div.style.fontSize.includes('0.85'))) {
+                    div.style.color = 'rgba(255,255,255,0.8)';
+                }
+            });
         } else {
-            opt.style.background = 'white';
+            opt.style.background = isBestOption ? 'white' : 'white';
             opt.style.borderColor = '#edf2f7';
             opt.style.color = '';
             opt.classList.remove('selected');
             const icon = opt.querySelector('.lift-icon');
-            if (icon) icon.style.background = '#f1f5f9';
+            if (icon) icon.style.background = isBestOption ? '#f1f5f9' : '#e2e8f0';
             const chip = opt.querySelector('.select-chip');
             if (chip) {
-                chip.style.color = 'var(--primary)';
+                chip.style.color = isBestOption ? '' : 'var(--primary)';
                 chip.style.borderColor = 'var(--primary)';
-                chip.innerText = 'SELECT';
+                chip.innerText = isBestOption ? '✓' : 'SELECT';
             }
-            const name = opt.querySelector('div[style*="font-weight: 700"]');
-            if (name) name.style.color = 'var(--text-main)';
-            const meta = opt.querySelector('div[style*="font-size: 0.85rem"]');
-            if (meta) meta.style.color = 'var(--text-muted)';
+            // Reset text colors
+            opt.querySelectorAll('div').forEach(div => {
+                if (div.style.fontWeight === '700' || div.style.fontWeight === '600') {
+                    div.style.color = 'var(--text-main)';
+                } else if (div.style.fontSize && (div.style.fontSize.includes('0.8') || div.style.fontSize.includes('0.85'))) {
+                    div.style.color = 'var(--text-muted)';
+                }
+            });
         }
     });
 }
