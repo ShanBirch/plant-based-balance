@@ -8831,7 +8831,10 @@ function startCustomBuilderWorkout() {
         <!-- Modal Header -->
         <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
             <div onclick="closeBulkEntryModal()" style="font-weight: 600; cursor: pointer; color: var(--text-muted); padding: 10px;">Cancel</div>
-            <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Quick Entry</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Quick Entry</span>
+                <div onclick="showQuickEntryTutorial()" style="width: 22px; height: 22px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">?</div>
+            </div>
             <div onclick="processBulkEntry()" style="font-weight: 600; cursor: pointer; color: var(--primary); padding: 10px;">Add</div>
         </div>
 
@@ -8849,17 +8852,41 @@ function startCustomBuilderWorkout() {
                 <div style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; margin-bottom: 12px;">Preview:</div>
                 <div id="bulk-entry-preview-content" style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;"></div>
             </div>
+        </div>
+    </div>
+</div>
 
-            <!-- Help Section -->
-            <div style="margin-top: 20px; background: #f0fdf4; border-radius: 12px; padding: 15px; border: 1px solid #bbf7d0;">
-                <div style="font-weight: 700; color: var(--text-main); font-size: 0.85rem; margin-bottom: 10px;">Examples:</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.8;">
-                    <div><code style="background: white; padding: 2px 6px; border-radius: 4px;">bench press 30 40 60</code> → 3 sets at 30, 40, 60 kg</div>
-                    <div><code style="background: white; padding: 2px 6px; border-radius: 4px;">squat 80kg 8 reps x3</code> → 3 sets of 8 reps at 80kg</div>
-                    <div><code style="background: white; padding: 2px 6px; border-radius: 4px;">deadlift 100 5 100 5 100 5</code> → 3 sets of 5 reps at 100kg</div>
-                    <div><code style="background: white; padding: 2px 6px; border-radius: 4px;">row 60x10 70x8 80x6</code> → weight x reps format</div>
+<!-- QUICK ENTRY TUTORIAL MODAL -->
+<div id="quick-entry-tutorial-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 700; display: none; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+    <div style="background: white; border-radius: 24px; max-width: 400px; width: 100%; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.3);">
+        <div style="background: linear-gradient(135deg, var(--primary), #4ade80); padding: 25px; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">✍️</div>
+            <h2 style="color: white; margin: 0; font-family: 'Playfair Display', serif; font-size: 1.5rem;">Quick Entry</h2>
+            <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 0.95rem;">Log your sets in seconds</p>
+        </div>
+        <div style="padding: 25px;">
+            <p style="color: var(--text-main); font-size: 0.95rem; margin: 0 0 20px 0; line-height: 1.5;">
+                Just type the exercise name followed by your weights. We'll create all the sets for you!
+            </p>
+            <div style="background: #f8fafc; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+                <div style="font-weight: 700; color: var(--text-main); font-size: 0.8rem; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Try typing:</div>
+                <div style="font-family: monospace; background: white; padding: 12px; border-radius: 8px; color: var(--text-main); font-size: 0.95rem; border: 1px solid #e2e8f0;">
+                    bench press 30 40 60
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px; text-align: center;">
+                    Creates 3 sets at 30kg, 40kg, 60kg
                 </div>
             </div>
+            <div style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;">
+                <strong>Other formats:</strong><br>
+                <span style="font-family: monospace;">squat 80x8 x3</span> — same weight, 3 sets<br>
+                <span style="font-family: monospace;">row 60x10 70x8 80x6</span> — weight x reps
+            </div>
+        </div>
+        <div style="padding: 0 25px 25px 25px;">
+            <button onclick="closeQuickEntryTutorial()" style="width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;">
+                Got it!
+            </button>
         </div>
     </div>
 </div>
@@ -18902,11 +18929,30 @@ function openBulkEntryModal() {
     document.getElementById('bulk-entry-modal').style.display = 'block';
     document.getElementById('bulk-entry-input').value = '';
     document.getElementById('bulk-entry-preview').style.display = 'none';
-    document.getElementById('bulk-entry-input').focus();
+
+    // Check if this is first time using Quick Entry
+    const hasSeenTutorial = localStorage.getItem('quickEntryTutorialSeen');
+    if (!hasSeenTutorial) {
+        showQuickEntryTutorial();
+    } else {
+        document.getElementById('bulk-entry-input').focus();
+    }
 }
 
 function closeBulkEntryModal() {
     document.getElementById('bulk-entry-modal').style.display = 'none';
+}
+
+function showQuickEntryTutorial() {
+    const modal = document.getElementById('quick-entry-tutorial-modal');
+    modal.style.display = 'flex';
+}
+
+function closeQuickEntryTutorial() {
+    const modal = document.getElementById('quick-entry-tutorial-modal');
+    modal.style.display = 'none';
+    localStorage.setItem('quickEntryTutorialSeen', 'true');
+    document.getElementById('bulk-entry-input').focus();
 }
 
 // Parse bulk entry text into structured workout data
