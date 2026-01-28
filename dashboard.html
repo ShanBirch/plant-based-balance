@@ -8830,19 +8830,42 @@ async function startCustomBuilderWorkout() {
     </div>
 
     <div style="padding: 20px;">
+        <!-- My Programs Section -->
+        <div id="your-programs-section" style="margin-bottom: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.2rem;">📅</span> My Programs
+                </h3>
+                <button onclick="closeYourWorkouts(); openProgramBuilder();" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 50px; font-weight: 600; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
+                    <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    Build Program
+                </button>
+            </div>
+            <div id="your-programs-list" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Saved programs will be rendered here -->
+            </div>
+            <div id="your-programs-empty" style="display: none; text-align: center; padding: 25px 20px; color: var(--text-muted); background: white; border-radius: 16px; border: 2px dashed #e2e8f0;">
+                <p style="margin: 0 0 12px 0; font-size: 0.9rem;">Create your own workout program</p>
+                <p style="margin: 0 0 15px 0; font-size: 0.8rem; color: #94a3b8;">Choose workouts for each day, set your duration (4, 6, or 8 weeks), and follow your personalized plan!</p>
+            </div>
+        </div>
+
         <!-- Custom Workouts Section -->
         <div id="your-workouts-custom-section" style="margin-bottom: 25px;">
-            <h3 style="margin: 0 0 15px 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 1.2rem;">🛠️</span> Your Custom Workouts
-            </h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.2rem;">🛠️</span> Custom Workouts
+                </h3>
+                <button onclick="closeYourWorkouts(); openWorkoutBuilder();" style="background: #f1f5f9; color: var(--text-main); border: none; padding: 8px 16px; border-radius: 50px; font-weight: 600; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
+                    <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--text-main);"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    New
+                </button>
+            </div>
             <div id="your-workouts-list" style="display: flex; flex-direction: column; gap: 12px;">
                 <!-- Saved workouts will be rendered here -->
             </div>
-            <div id="your-workouts-empty" style="display: none; text-align: center; padding: 30px 20px; color: var(--text-muted); background: white; border-radius: 16px; border: 2px dashed #e2e8f0;">
-                <p style="margin: 0 0 15px 0; font-size: 0.9rem;">No custom workouts yet</p>
-                <button onclick="closeYourWorkouts(); openWorkoutBuilder();" style="background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 50px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">
-                    Build a Workout
-                </button>
+            <div id="your-workouts-empty" style="display: none; text-align: center; padding: 25px 20px; color: var(--text-muted); background: white; border-radius: 16px; border: 2px dashed #e2e8f0;">
+                <p style="margin: 0; font-size: 0.85rem;">Build single workouts from 1800+ exercises</p>
             </div>
         </div>
 
@@ -8884,9 +8907,25 @@ function openYourWorkouts() {
             el.classList.remove('active');
         });
 
-        // Load custom workouts
+        // Render library immediately (doesn't need database)
+        const libraryContainer = document.getElementById('your-workouts-library-list');
+        if (libraryContainer) {
+            try {
+                renderYourWorkoutsLibrary(libraryContainer);
+                console.log('openYourWorkouts: Library rendered');
+            } catch(libErr) {
+                console.error('openYourWorkouts: Failed to render library', libErr);
+                libraryContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Could not load workout library</div>';
+            }
+        }
+
+        // Then load async data (custom workouts and programs)
         renderYourWorkoutsList().catch(err => {
             console.error('openYourWorkouts: Failed to render workouts list', err);
+        });
+
+        renderYourProgramsList().catch(err => {
+            console.error('openYourWorkouts: Failed to render programs list', err);
         });
 
         // Push navigation state
@@ -8975,6 +9014,196 @@ async function renderYourWorkoutsList() {
         if (listContainer) listContainer.style.display = 'none';
         if (emptyState) emptyState.style.display = 'block';
     }
+}
+
+async function renderYourProgramsList() {
+    console.log('renderYourProgramsList: Starting...');
+    const listContainer = document.getElementById('your-programs-list');
+    const emptyState = document.getElementById('your-programs-empty');
+
+    if (!listContainer) {
+        console.error('renderYourProgramsList: listContainer not found');
+        return;
+    }
+
+    try {
+        const user = window.currentUser;
+        if (!user) {
+            console.log('renderYourProgramsList: No user logged in');
+            if (listContainer) listContainer.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'block';
+            return;
+        }
+
+        // Fetch programs from database
+        let programs = [];
+        if (typeof dbHelpers !== 'undefined' && dbHelpers.customPrograms) {
+            console.log('renderYourProgramsList: Fetching from database...');
+            programs = await dbHelpers.customPrograms.getAll(user.id);
+            window.savedProgramsCache = programs;
+        }
+
+        console.log('renderYourProgramsList: Found', programs?.length || 0, 'programs');
+
+        if (!programs || programs.length === 0) {
+            if (listContainer) listContainer.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'block';
+        } else {
+            if (listContainer) listContainer.style.display = 'flex';
+            if (emptyState) emptyState.style.display = 'none';
+
+            listContainer.innerHTML = programs.map(p => {
+                const name = p.program_name || 'Untitled Program';
+                const duration = p.duration_weeks || 4;
+                const isActive = p.is_active;
+                const schedule = p.weekly_schedule || [];
+                const workoutDays = schedule.filter(s => s.workout && s.workout.type !== 'rest').length;
+
+                // Calculate progress if active
+                let progressHtml = '';
+                if (isActive && p.start_date) {
+                    const startDate = new Date(p.start_date);
+                    const today = new Date();
+                    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+                    const weeksElapsed = Math.floor((today - startDate) / msPerWeek) + 1;
+                    const progress = Math.min(100, Math.round((weeksElapsed / duration) * 100));
+                    progressHtml = `
+                        <div style="margin-top: 8px; background: #e2e8f0; border-radius: 4px; height: 4px; overflow: hidden;">
+                            <div style="background: var(--primary); height: 100%; width: ${progress}%;"></div>
+                        </div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Week ${Math.min(weeksElapsed, duration)} of ${duration}</div>
+                    `;
+                }
+
+                return `
+                <div onclick="viewProgramDetails('${p.id}')" style="background: white; border-radius: 16px; padding: 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: ${isActive ? '2px solid var(--primary)' : '1px solid #f1f5f9'}; ${isActive ? 'border-left: 4px solid var(--primary);' : ''}">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 48px; height: 48px; background: ${isActive ? 'linear-gradient(135deg, var(--primary), #22c55e)' : 'linear-gradient(135deg, #64748b, #94a3b8)'}; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1rem; flex-shrink: 0;">
+                            ${duration}w
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+                                ${isActive ? '<span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: 700;">ACTIVE</span>' : ''}
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">${workoutDays} workout days • ${duration} weeks</div>
+                            ${progressHtml}
+                        </div>
+                        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #94a3b8; flex-shrink: 0;"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            console.log('renderYourProgramsList: Rendered', programs.length, 'program cards');
+        }
+
+    } catch(err) {
+        console.error('renderYourProgramsList: Error loading programs:', err);
+        if (listContainer) listContainer.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'block';
+    }
+}
+
+async function viewProgramDetails(programId) {
+    // Show program details with options to activate, edit, or delete
+    try {
+        const user = window.currentUser;
+        if (!user) return;
+
+        const programs = window.savedProgramsCache || await dbHelpers.customPrograms.getAll(user.id);
+        const program = programs.find(p => p.id === programId);
+        if (!program) return;
+
+        const schedule = program.weekly_schedule || [];
+        const scheduleText = schedule.map(s => {
+            if (!s.workout) return `${s.day}: Not set`;
+            if (s.workout.type === 'rest') return `${s.day}: Rest Day`;
+            return `${s.day}: ${s.workout.name}`;
+        }).join('\n');
+
+        const action = prompt(
+            `${program.program_name}\n` +
+            `Duration: ${program.duration_weeks} weeks\n` +
+            `Status: ${program.is_active ? 'Active' : 'Inactive'}\n\n` +
+            `Weekly Schedule:\n${scheduleText}\n\n` +
+            `Options:\n` +
+            `1 = ${program.is_active ? 'Deactivate' : 'Activate'}\n` +
+            `2 = Delete\n` +
+            `Cancel = Close`,
+            ''
+        );
+
+        if (action === '1') {
+            if (program.is_active) {
+                await dbHelpers.customPrograms.deactivate(programId);
+                alert('Program deactivated. Your calendar will use the default schedule.');
+            } else {
+                await dbHelpers.customPrograms.activate(user.id, programId);
+                alert(`Program "${program.program_name}" activated! Your ${program.duration_weeks}-week program starts today.`);
+            }
+            renderYourProgramsList();
+            if (typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
+            if (typeof renderMovementView === 'function') renderMovementView();
+        } else if (action === '2') {
+            if (confirm(`Are you sure you want to delete "${program.program_name}"? This cannot be undone.`)) {
+                await dbHelpers.customPrograms.delete(programId);
+                alert('Program deleted.');
+                renderYourProgramsList();
+                if (typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
+                if (typeof renderMovementView === 'function') renderMovementView();
+            }
+        }
+    } catch (err) {
+        console.error('viewProgramDetails: Error', err);
+        alert('An error occurred. Please try again.');
+    }
+}
+
+function renderYourWorkoutsLibrary(container) {
+    console.log('renderYourWorkoutsLibrary: Starting...');
+    if (typeof WORKOUT_LIBRARY === 'undefined') {
+        console.warn('renderYourWorkoutsLibrary: WORKOUT_LIBRARY is undefined');
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Workout library not available</div>';
+        return;
+    }
+
+    const categories = Object.keys(WORKOUT_LIBRARY);
+    const categoryIcons = {
+        'gym': '🏋️',
+        'yoga': '🧘',
+        'bodyweight': '💪',
+        'home': '🏠',
+        'cardio': '🏃',
+        'hiit': '⚡'
+    };
+
+    container.innerHTML = categories.map(categoryKey => {
+        const category = WORKOUT_LIBRARY[categoryKey];
+        const icon = categoryIcons[categoryKey] || category.icon || '💪';
+        const name = category.name || categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1);
+
+        // Count total workouts in category
+        let totalWorkouts = 0;
+        if (category.subcategories) {
+            Object.values(category.subcategories).forEach(sub => {
+                if (sub.workouts) totalWorkouts += sub.workouts.length;
+            });
+        }
+
+        return `
+        <div onclick="openLibraryCategory('${categoryKey}')" style="background: white; border-radius: 16px; padding: 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b, #ef4444); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                ${icon}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 2px;">${name}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">${totalWorkouts} workouts available</div>
+            </div>
+            <div style="color: #f59e0b; font-weight: 600; font-size: 0.8rem;">Browse →</div>
+        </div>
+        `;
+    }).join('');
+    console.log('renderYourWorkoutsLibrary: Rendered', categories.length, 'categories');
 }
 
 function viewWorkoutHistoryDetail(date) {
@@ -12210,8 +12439,46 @@ function renderWeeklyCalendar() {
     // Weekly Schedule Template - maps to WORKOUT_DB programs
     // Each day references a program and the day index within that program's schedule
     let WEEKLY_SCHEDULE;
+    let usingCustomProgram = false;
+    let customProgramInfo = null;
 
-    if (useMaleGymSplit) {
+    // Check for active custom program first
+    const activeCustomProgram = window.activeCustomProgramCache;
+    if (activeCustomProgram && activeCustomProgram.is_active && activeCustomProgram.start_date) {
+        // Check if program is still within its duration
+        const startDate = new Date(activeCustomProgram.start_date);
+        const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+        const weeksElapsed = Math.floor((today - startDate) / msPerWeek);
+        const currentWeek = weeksElapsed + 1;
+
+        if (currentWeek <= activeCustomProgram.duration_weeks) {
+            // Use custom program schedule
+            const schedule = activeCustomProgram.weekly_schedule || [];
+            WEEKLY_SCHEDULE = schedule.map((item, idx) => {
+                if (!item.workout || item.workout.type === 'rest') {
+                    return { day: item.day, program: 'rest', dayIndex: idx, isRest: true };
+                }
+                return {
+                    day: item.day,
+                    program: item.workout.category || 'custom',
+                    dayIndex: idx,
+                    subcategory: item.workout.subcategory || '',
+                    muscleGroup: item.workout.subcategory || '',
+                    customWorkout: item.workout
+                };
+            });
+            usingCustomProgram = true;
+            customProgramInfo = {
+                name: activeCustomProgram.program_name,
+                currentWeek: currentWeek,
+                totalWeeks: activeCustomProgram.duration_weeks
+            };
+            console.log('📅 Calendar using custom program:', activeCustomProgram.program_name, `Week ${currentWeek}/${activeCustomProgram.duration_weeks}`);
+        }
+    }
+
+    // Fall back to equipment-based schedule if no custom program
+    if (!usingCustomProgram && useMaleGymSplit) {
         // Male Gym Split: Chest, Legs, Back, Shoulders, Arms+Core, Deep Fascia Release (Sat/Sun)
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'gym_split', dayIndex: 0, muscleGroup: 'chest' }, // Chest
@@ -12222,7 +12489,7 @@ function renderWeeklyCalendar() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'yin' }, // Deep Fascia Release
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }  // Deep Fascia Release
         ];
-    } else if (useFemaleGymSplit) {
+    } else if (!usingCustomProgram && useFemaleGymSplit) {
         // Female Gym Split: Legs, Push, Arms+Core, Legs, Pull, Active Recovery (Yoga), Rest (Yoga)
         // Same as males: yoga on weekends for active recovery
         WEEKLY_SCHEDULE = [
@@ -12234,7 +12501,7 @@ function renderWeeklyCalendar() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' }, // Active Recovery
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }  // Rest
         ];
-    } else if (useYogaOnly) {
+    } else if (!usingCustomProgram && useYogaOnly) {
         // Yoga Only - direct check like gym split
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power' },
@@ -12245,7 +12512,7 @@ function renderWeeklyCalendar() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
         ];
-    } else if (useHome) {
+    } else if (!usingCustomProgram && useHome) {
         // Home/Dumbbell Split - direct check like gym split
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'home', dayIndex: 0, subcategory: 'lowerbody' },
@@ -12256,7 +12523,7 @@ function renderWeeklyCalendar() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
         ];
-    } else if (useBands) {
+    } else if (!usingCustomProgram && useBands) {
         // Resistance Bands Split - direct check like gym split
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'bands', dayIndex: 0 },
@@ -12267,7 +12534,7 @@ function renderWeeklyCalendar() {
             { day: 'Sat', program: 'bands', dayIndex: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
         ];
-    } else {
+    } else if (!usingCustomProgram) {
         // Bodyweight Split (fallback - no equipment)
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'bodyweight', dayIndex: 0, subcategory: 'lowerbody' },
@@ -16436,6 +16703,20 @@ async function renderMovementView() {
     const user = window.currentUser;
     if (!user) return;
 
+    // Load active custom program (for calendar and movement integration)
+    try {
+        if (typeof dbHelpers !== 'undefined' && dbHelpers.customPrograms) {
+            const activeProgram = await dbHelpers.customPrograms.getActive(user.id);
+            window.activeCustomProgramCache = activeProgram;
+            if (activeProgram) {
+                console.log('🏋️ Active custom program loaded:', activeProgram.program_name);
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load active custom program:', err);
+        window.activeCustomProgramCache = null;
+    }
+
     // 1. Get Date Index & Profile
     const dbProfile = await window.getUserProfile();
     const startDate = dbProfile?.program_start_date;
@@ -16601,8 +16882,49 @@ async function renderMovementView() {
     // Uses equipment settings from onboarding to set appropriate workouts
     // IMPORTANT: For hero personalization, subcategories are used to pull from WORKOUT_LIBRARY
     let WEEKLY_SCHEDULE;
+    let usingCustomProgram = false;
+    let customProgramInfo = null;
 
-    if (useMaleGymSplit) {
+    // Check for active custom program first
+    const activeCustomProgram = window.activeCustomProgramCache;
+    if (activeCustomProgram && activeCustomProgram.is_active && activeCustomProgram.start_date) {
+        // Check if program is still within its duration
+        const today = new Date();
+        const startDate = new Date(activeCustomProgram.start_date);
+        const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+        const weeksElapsed = Math.floor((today - startDate) / msPerWeek);
+        const currentWeek = weeksElapsed + 1;
+
+        if (currentWeek <= activeCustomProgram.duration_weeks) {
+            // Use custom program schedule
+            const schedule = activeCustomProgram.weekly_schedule || [];
+            WEEKLY_SCHEDULE = schedule.map((item, idx) => {
+                if (!item.workout || item.workout.type === 'rest') {
+                    return { day: item.day, program: 'rest', dayIndex: idx, isRest: true, fallback: 'yoga', fallbackIdx: idx };
+                }
+                return {
+                    day: item.day,
+                    program: item.workout.category || 'custom',
+                    dayIndex: idx,
+                    subcategory: item.workout.subcategory || '',
+                    muscleGroup: item.workout.subcategory || '',
+                    customWorkout: item.workout,
+                    fallback: 'yoga',
+                    fallbackIdx: idx
+                };
+            });
+            usingCustomProgram = true;
+            customProgramInfo = {
+                name: activeCustomProgram.program_name,
+                currentWeek: currentWeek,
+                totalWeeks: activeCustomProgram.duration_weeks
+            };
+            console.log('🏋️ Movement using custom program:', activeCustomProgram.program_name, `Week ${currentWeek}/${activeCustomProgram.duration_weeks}`);
+        }
+    }
+
+    // Fall back to equipment-based schedule if no custom program
+    if (!usingCustomProgram && useMaleGymSplit) {
         // Male Gym Split: Same as calendar - Chest, Back, Legs, Shoulders, Arms+Core, Active Recovery, Rest
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'gym_split', dayIndex: 0, muscleGroup: 'chest', fallback: 'yoga', fallbackIdx: 4 },
@@ -16613,7 +16935,7 @@ async function renderMovementView() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
-    } else if (useFemaleGymSplit) {
+    } else if (!usingCustomProgram && useFemaleGymSplit) {
         // Female Gym Split: Same as calendar - Legs, Push, Arms+Core, Legs, Pull, Active Recovery, Rest
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'female_gym_split', dayIndex: 0, muscleGroup: 'legs', fallback: 'yoga', fallbackIdx: 4 },
@@ -16624,7 +16946,7 @@ async function renderMovementView() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
-    } else if (useYogaOnly) {
+    } else if (!usingCustomProgram && useYogaOnly) {
         // Yoga Only - direct check like gym
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'yoga', dayIndex: 0, subcategory: 'power', fallback: 'yoga', fallbackIdx: 0 },
@@ -16635,7 +16957,7 @@ async function renderMovementView() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
-    } else if (useHome) {
+    } else if (!usingCustomProgram && useHome) {
         // Home/Dumbbell Split - direct check like gym
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'home', dayIndex: 0, subcategory: 'lowerbody', fallback: 'yoga', fallbackIdx: 4 },
@@ -16646,7 +16968,7 @@ async function renderMovementView() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
-    } else if (useBands) {
+    } else if (!usingCustomProgram && useBands) {
         // Resistance Bands Split - direct check like gym
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'bands', dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 },
@@ -16657,7 +16979,7 @@ async function renderMovementView() {
             { day: 'Sat', program: 'bands', dayIndex: 5, fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
-    } else {
+    } else if (!usingCustomProgram) {
         // Bodyweight Split (fallback - no equipment)
         WEEKLY_SCHEDULE = [
             { day: 'Mon', program: 'bodyweight', dayIndex: 0, subcategory: 'lowerbody', fallback: 'yoga', fallbackIdx: 4 },
@@ -17227,7 +17549,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
@@ -33131,6 +33453,455 @@ async function initiateMealPlanCheckout(planSlug, preferences) {
 document.getElementById('pref-wizard-overlay')?.addEventListener('click', function(e) {
     if (e.target === this) {
         closePrefWizard();
+    }
+});
+</script>
+
+<!-- PROGRAM BUILDER VIEW - Build Your Own Multi-Week Workout Program -->
+<div id="view-program-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#f8fafc; z-index:100001; overflow-y:auto; padding-bottom: 120px;">
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+        <button onclick="closeProgramBuilder()" style="width: 40px; height: 40px; border: none; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-main);"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+        <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Build Your Program</div>
+        <div style="width: 40px;"></div>
+    </div>
+
+    <div style="padding: 20px;">
+        <!-- Program Name -->
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: 700; color: var(--text-main); margin-bottom: 8px; font-size: 0.9rem;">Program Name</label>
+            <input type="text" id="program-name-input" placeholder="e.g., My 6-Week Challenge"
+                   style="width: 100%; padding: 15px; border-radius: 16px; border: 1px solid #e2e8f0; font-size: 1rem; background: white;">
+        </div>
+
+        <!-- Duration Selection -->
+        <div style="margin-bottom: 25px;">
+            <label style="display: block; font-weight: 700; color: var(--text-main); margin-bottom: 12px; font-size: 0.9rem;">Program Duration</label>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="selectProgramDuration(4)" class="duration-btn" data-weeks="4" style="flex: 1; padding: 18px 12px; border-radius: 16px; border: 2px solid #e2e8f0; background: white; cursor: pointer; transition: all 0.2s;">
+                    <div style="font-weight: 800; font-size: 1.4rem; color: var(--primary);">4</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">weeks</div>
+                </button>
+                <button onclick="selectProgramDuration(6)" class="duration-btn" data-weeks="6" style="flex: 1; padding: 18px 12px; border-radius: 16px; border: 2px solid #e2e8f0; background: white; cursor: pointer; transition: all 0.2s;">
+                    <div style="font-weight: 800; font-size: 1.4rem; color: var(--primary);">6</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">weeks</div>
+                </button>
+                <button onclick="selectProgramDuration(8)" class="duration-btn" data-weeks="8" style="flex: 1; padding: 18px 12px; border-radius: 16px; border: 2px solid #e2e8f0; background: white; cursor: pointer; transition: all 0.2s;">
+                    <div style="font-weight: 800; font-size: 1.4rem; color: var(--primary);">8</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">weeks</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Weekly Schedule -->
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: 700; color: var(--text-main); margin-bottom: 12px; font-size: 0.9rem;">Weekly Schedule</label>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0 0 15px 0;">Tap each day to assign a workout. This schedule repeats each week.</p>
+
+            <div id="program-weekly-schedule" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Days will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div style="position: fixed; bottom: 0; left: 0; right: 0; padding: 20px; background: white; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 100;">
+        <button onclick="saveProgramBuilder()" id="save-program-btn" style="width: 100%; background: var(--primary); color: white; padding: 18px; border-radius: 50px; font-weight: 800; border: none; font-size: 1.1rem; cursor: pointer; opacity: 0.5;" disabled>
+            Save Program
+        </button>
+    </div>
+</div>
+
+<!-- Workout Picker Modal for Program Builder -->
+<div id="workout-picker-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100002; justify-content: center; align-items: flex-end;">
+    <div style="background: white; border-radius: 24px 24px 0 0; width: 100%; max-height: 80vh; overflow-y: auto; padding: 20px; padding-bottom: 40px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="font-weight: 700; font-size: 1.1rem;">Select Workout for <span id="picker-day-name">Monday</span></div>
+            <button onclick="closeWorkoutPicker()" style="width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #64748b;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+
+        <!-- Rest Day Option -->
+        <div onclick="selectWorkoutForDay('rest', 'Rest Day', null)" style="background: #f1f5f9; border-radius: 16px; padding: 16px; margin-bottom: 15px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 48px; height: 48px; background: #e2e8f0; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                😴
+            </div>
+            <div>
+                <div style="font-weight: 700; color: var(--text-main);">Rest Day</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Recovery and regeneration</div>
+            </div>
+        </div>
+
+        <!-- Workout Library Categories -->
+        <div id="workout-picker-categories" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Categories will be rendered here -->
+        </div>
+    </div>
+</div>
+
+<!-- Workout Subcategory Picker -->
+<div id="workout-subcategory-picker" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100003; justify-content: center; align-items: flex-end;">
+    <div style="background: white; border-radius: 24px 24px 0 0; width: 100%; max-height: 80vh; overflow-y: auto; padding: 20px; padding-bottom: 40px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <button onclick="backToWorkoutPicker()" style="width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #64748b;"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </button>
+            <div style="font-weight: 700; font-size: 1.1rem;" id="subcategory-picker-title">Select Workout</div>
+            <button onclick="closeSubcategoryPicker()" style="width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #64748b;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+        <div id="workout-subcategory-list" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Subcategories will be rendered here -->
+        </div>
+    </div>
+</div>
+
+<script>
+// Program Builder State
+let programBuilderState = {
+    name: '',
+    durationWeeks: 4,
+    weeklySchedule: [
+        { day: 'Mon', workout: null },
+        { day: 'Tue', workout: null },
+        { day: 'Wed', workout: null },
+        { day: 'Thu', workout: null },
+        { day: 'Fri', workout: null },
+        { day: 'Sat', workout: null },
+        { day: 'Sun', workout: null }
+    ],
+    currentPickerDayIndex: null
+};
+
+// Day names for display
+const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+function openProgramBuilder() {
+    // Reset state
+    programBuilderState = {
+        name: '',
+        durationWeeks: 4,
+        weeklySchedule: [
+            { day: 'Mon', workout: null },
+            { day: 'Tue', workout: null },
+            { day: 'Wed', workout: null },
+            { day: 'Thu', workout: null },
+            { day: 'Fri', workout: null },
+            { day: 'Sat', workout: null },
+            { day: 'Sun', workout: null }
+        ],
+        currentPickerDayIndex: null
+    };
+
+    // Reset UI
+    document.getElementById('program-name-input').value = '';
+    selectProgramDuration(4);
+    renderWeeklyScheduleBuilder();
+    updateSaveButtonState();
+
+    // Show view
+    hideAllAppViews();
+    document.getElementById('view-program-builder').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
+
+    if (typeof pushNavigationState === 'function') {
+        pushNavigationState('view-program-builder', () => closeProgramBuilder());
+    }
+}
+
+function closeProgramBuilder() {
+    document.getElementById('view-program-builder').style.display = 'none';
+    closeWorkoutPicker();
+    closeSubcategoryPicker();
+    switchAppTab('movement-tab');
+}
+
+function selectProgramDuration(weeks) {
+    programBuilderState.durationWeeks = weeks;
+
+    // Update UI
+    document.querySelectorAll('.duration-btn').forEach(btn => {
+        const btnWeeks = parseInt(btn.dataset.weeks);
+        if (btnWeeks === weeks) {
+            btn.style.borderColor = 'var(--primary)';
+            btn.style.background = 'rgba(4, 106, 56, 0.05)';
+        } else {
+            btn.style.borderColor = '#e2e8f0';
+            btn.style.background = 'white';
+        }
+    });
+}
+
+function renderWeeklyScheduleBuilder() {
+    const container = document.getElementById('program-weekly-schedule');
+    if (!container) return;
+
+    container.innerHTML = programBuilderState.weeklySchedule.map((scheduleItem, index) => {
+        const workout = scheduleItem.workout;
+        const isRest = workout && workout.type === 'rest';
+        const hasWorkout = workout && workout.type !== 'rest';
+
+        let workoutDisplay = '';
+        if (isRest) {
+            workoutDisplay = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.2rem;">😴</span>
+                    <span style="font-weight: 600; color: var(--text-muted);">Rest Day</span>
+                </div>`;
+        } else if (hasWorkout) {
+            workoutDisplay = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.2rem;">${workout.icon || '💪'}</span>
+                    <div>
+                        <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">${workout.name}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${workout.category || ''}</div>
+                    </div>
+                </div>`;
+        } else {
+            workoutDisplay = `
+                <div style="color: var(--text-muted); font-size: 0.9rem;">Tap to assign workout</div>`;
+        }
+
+        return `
+            <div onclick="openWorkoutPickerForDay(${index})" style="background: white; border-radius: 16px; padding: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid ${hasWorkout || isRest ? 'var(--primary)' : '#e2e8f0'}; ${hasWorkout || isRest ? 'border-left: 4px solid var(--primary);' : ''}">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 50px; font-weight: 800; color: var(--primary); font-size: 0.95rem;">${scheduleItem.day}</div>
+                    ${workoutDisplay}
+                </div>
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #94a3b8; flex-shrink: 0;"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+            </div>
+        `;
+    }).join('');
+}
+
+function openWorkoutPickerForDay(dayIndex) {
+    programBuilderState.currentPickerDayIndex = dayIndex;
+    document.getElementById('picker-day-name').textContent = dayNames[dayIndex];
+
+    // Render workout categories
+    renderWorkoutPickerCategories();
+
+    // Show modal
+    const modal = document.getElementById('workout-picker-modal');
+    modal.style.display = 'flex';
+}
+
+function closeWorkoutPicker() {
+    document.getElementById('workout-picker-modal').style.display = 'none';
+    programBuilderState.currentPickerDayIndex = null;
+}
+
+function renderWorkoutPickerCategories() {
+    const container = document.getElementById('workout-picker-categories');
+    if (!container || typeof WORKOUT_LIBRARY === 'undefined') {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Workout library not available</div>';
+        return;
+    }
+
+    const categoryIcons = {
+        'gym': '🏋️',
+        'yoga': '🧘',
+        'bodyweight': '💪',
+        'home': '🏠',
+        'cardio': '🏃',
+        'hiit': '⚡',
+        'bands': '🎯'
+    };
+
+    const categoryNames = {
+        'gym': 'Gym Workouts',
+        'yoga': 'Yoga & Recovery',
+        'bodyweight': 'Bodyweight',
+        'home': 'Home (Dumbbells)',
+        'cardio': 'Cardio',
+        'hiit': 'HIIT',
+        'bands': 'Resistance Bands'
+    };
+
+    const categories = Object.keys(WORKOUT_LIBRARY);
+
+    container.innerHTML = categories.map(categoryKey => {
+        const category = WORKOUT_LIBRARY[categoryKey];
+        const subcategoryCount = Object.keys(category.subcategories || {}).length;
+
+        return `
+            <div onclick="openSubcategoryPicker('${categoryKey}')" style="background: white; border-radius: 16px; padding: 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9;">
+                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, var(--primary), #22c55e); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                    ${categoryIcons[categoryKey] || '💪'}
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 700; color: var(--text-main);">${categoryNames[categoryKey] || category.name || categoryKey}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">${subcategoryCount} workout types</div>
+                </div>
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #94a3b8;"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+            </div>
+        `;
+    }).join('');
+}
+
+function openSubcategoryPicker(categoryKey) {
+    const category = WORKOUT_LIBRARY[categoryKey];
+    if (!category || !category.subcategories) return;
+
+    document.getElementById('subcategory-picker-title').textContent = category.name || categoryKey;
+
+    const container = document.getElementById('workout-subcategory-list');
+    const subcategories = category.subcategories;
+
+    const subcategoryIcons = {
+        'back': '🔙', 'chest': '💪', 'legs': '🦵', 'shoulders': '🏋️', 'arms': '💪', 'core': '🎯',
+        'push': '👐', 'pull': '🤲', 'lowerbody': '🦵', 'upperbody': '💪',
+        'power': '⚡', 'yin': '🧘', 'restorative': '😌', 'flow': '🌊',
+        'fullbody': '🏃', 'tabata': '🔥', 'armscore': '💪'
+    };
+
+    container.innerHTML = Object.keys(subcategories).map(subKey => {
+        const sub = subcategories[subKey];
+        const workoutCount = sub.workouts?.length || 0;
+
+        return `
+            <div onclick="selectWorkoutForDay('library', '${sub.name || subKey}', { category: '${categoryKey}', subcategory: '${subKey}', icon: '${subcategoryIcons[subKey] || '💪'}' })"
+                 style="background: white; border-radius: 16px; padding: 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9;">
+                <div style="width: 44px; height: 44px; background: #f1f5f9; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                    ${subcategoryIcons[subKey] || '💪'}
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: var(--text-main);">${sub.name || subKey}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">${workoutCount} variations</div>
+                </div>
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--primary);"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            </div>
+        `;
+    }).join('');
+
+    // Show subcategory picker
+    document.getElementById('workout-subcategory-picker').style.display = 'flex';
+}
+
+function closeSubcategoryPicker() {
+    document.getElementById('workout-subcategory-picker').style.display = 'none';
+}
+
+function backToWorkoutPicker() {
+    closeSubcategoryPicker();
+}
+
+function selectWorkoutForDay(type, name, data) {
+    const dayIndex = programBuilderState.currentPickerDayIndex;
+    if (dayIndex === null) return;
+
+    if (type === 'rest') {
+        programBuilderState.weeklySchedule[dayIndex].workout = {
+            type: 'rest',
+            name: 'Rest Day'
+        };
+    } else {
+        programBuilderState.weeklySchedule[dayIndex].workout = {
+            type: type,
+            name: name,
+            category: data?.category || '',
+            subcategory: data?.subcategory || '',
+            icon: data?.icon || '💪'
+        };
+    }
+
+    // Update UI
+    renderWeeklyScheduleBuilder();
+    updateSaveButtonState();
+
+    // Close pickers
+    closeSubcategoryPicker();
+    closeWorkoutPicker();
+}
+
+function updateSaveButtonState() {
+    const nameInput = document.getElementById('program-name-input');
+    const saveBtn = document.getElementById('save-program-btn');
+
+    const hasName = nameInput.value.trim().length > 0;
+    const hasAtLeastOneWorkout = programBuilderState.weeklySchedule.some(s => s.workout !== null);
+
+    if (hasName && hasAtLeastOneWorkout) {
+        saveBtn.disabled = false;
+        saveBtn.style.opacity = '1';
+    } else {
+        saveBtn.disabled = true;
+        saveBtn.style.opacity = '0.5';
+    }
+}
+
+// Listen for name input changes
+document.getElementById('program-name-input')?.addEventListener('input', function() {
+    programBuilderState.name = this.value.trim();
+    updateSaveButtonState();
+});
+
+async function saveProgramBuilder() {
+    const nameInput = document.getElementById('program-name-input');
+    const programName = nameInput.value.trim();
+
+    if (!programName) {
+        alert('Please enter a program name');
+        return;
+    }
+
+    const hasWorkouts = programBuilderState.weeklySchedule.some(s => s.workout !== null);
+    if (!hasWorkouts) {
+        alert('Please assign at least one workout to your program');
+        return;
+    }
+
+    try {
+        const user = window.currentUser;
+        if (!user) {
+            alert('Please log in to save your program');
+            return;
+        }
+
+        // Save to database
+        const programData = {
+            name: programName,
+            durationWeeks: programBuilderState.durationWeeks,
+            weeklySchedule: programBuilderState.weeklySchedule
+        };
+
+        const savedProgram = await dbHelpers.customPrograms.create(user.id, programData);
+
+        // Ask if user wants to activate the program
+        const startNow = confirm(`Program "${programName}" saved!\n\nWould you like to start this program now? It will replace your current workout schedule.`);
+
+        if (startNow) {
+            await dbHelpers.customPrograms.activate(user.id, savedProgram.id);
+            alert(`Program activated! Your ${programBuilderState.durationWeeks}-week program starts today.`);
+        }
+
+        // Close and refresh
+        closeProgramBuilder();
+
+        if (typeof renderMovementView === 'function') {
+            renderMovementView();
+        }
+        if (typeof renderWeeklyCalendar === 'function') {
+            renderWeeklyCalendar();
+        }
+
+    } catch (error) {
+        console.error('Failed to save program:', error);
+        alert('Failed to save program. Please try again.');
+    }
+}
+
+// Initialize name input listener on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('program-name-input');
+    if (nameInput) {
+        nameInput.addEventListener('input', function() {
+            programBuilderState.name = this.value.trim();
+            updateSaveButtonState();
+        });
     }
 });
 </script>

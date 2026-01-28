@@ -195,6 +195,33 @@ CREATE TABLE IF NOT EXISTS public.workout_customizations (
 );
 
 -- ============================================================
+-- CUSTOM WORKOUT PROGRAMS TABLE (user-created multi-week programs)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.custom_workout_programs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+
+  -- Program details
+  program_name TEXT NOT NULL,
+  duration_weeks INTEGER NOT NULL DEFAULT 4, -- 4, 6, or 8 weeks
+
+  -- Weekly schedule (JSONB array of 7 days, each with workout assignment)
+  -- Format: [{ day: "Mon", workout: { source: "library"|"custom", id: "...", name: "..." } }, ...]
+  weekly_schedule JSONB NOT NULL DEFAULT '[]',
+
+  -- Program status
+  is_active BOOLEAN DEFAULT FALSE, -- Only one program can be active at a time
+  start_date DATE, -- When the program starts/started
+
+  -- Timestamps
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  INDEX idx_custom_programs_user (user_id),
+  INDEX idx_custom_programs_active (user_id, is_active)
+);
+
+-- ============================================================
 -- DAILY CHECK-INS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.daily_checkins (
@@ -339,6 +366,9 @@ CREATE TRIGGER update_user_facts_updated_at BEFORE UPDATE ON public.user_facts
 CREATE TRIGGER update_workouts_updated_at BEFORE UPDATE ON public.workouts
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_custom_programs_updated_at BEFORE UPDATE ON public.custom_workout_programs
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_daily_checkins_updated_at BEFORE UPDATE ON public.daily_checkins
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -352,6 +382,7 @@ ALTER TABLE public.user_facts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quiz_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workouts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.custom_workout_programs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.daily_checkins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reflections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.uploads ENABLE ROW LEVEL SECURITY;
@@ -385,6 +416,9 @@ CREATE POLICY "Users can delete own conversations" ON public.conversations
   FOR DELETE USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can view own workouts" ON public.workouts
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own custom programs" ON public.custom_workout_programs
   FOR ALL USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can view own checkins" ON public.daily_checkins
