@@ -507,194 +507,136 @@ async function applyAppTheme(themeKey) {
     .stat-val { font-size: 1.5rem; font-weight: 700; display: block; }
     .stat-label { font-size: 0.75rem; opacity: 0.9; }
 
-    /* Compact Points & Streak in Greeting */
-    .points-streak-row {
+    /* Hero Level Display */
+    .level-hero-container {
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 10px;
+        gap: 16px;
+        margin-top: 8px;
+        padding-bottom: 8px;
     }
 
-    .points-compact {
-        display: flex;
-        align-items: baseline;
-        gap: 4px;
-    }
-
-    .points-number-compact {
-        font-size: 1.5rem;
-        font-weight: 800;
-        line-height: 1;
-    }
-
-    .points-label-compact {
-        font-size: 0.8rem;
-        opacity: 0.85;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .streak-badge-compact {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 20px;
-        padding: 6px 12px;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        backdrop-filter: blur(10px);
-    }
-
-    .streak-fire-compact {
-        font-size: 1rem;
-    }
-
-    .streak-number-compact {
-        font-size: 1rem;
-        font-weight: 700;
-    }
-
-    .streak-text-compact {
-        font-size: 0.7rem;
-        opacity: 0.85;
-    }
-
-    /* Level Badge Styles */
-    .level-badge-compact {
+    .level-hero-badge {
         position: relative;
-        width: 44px;
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        width: 72px;
+        height: 72px;
+        flex-shrink: 0;
     }
 
-    .level-ring {
+    .level-ring-svg {
         position: absolute;
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        background: conic-gradient(
-            var(--secondary) calc(var(--level-progress, 0) * 1%),
-            rgba(255, 255, 255, 0.2) calc(var(--level-progress, 0) * 1%)
-        );
+        width: 100%;
+        height: 100%;
         transform: rotate(-90deg);
     }
 
-    .level-ring-inner {
+    .level-ring-bg {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.2);
+        stroke-width: 6;
+    }
+
+    .level-ring-progress {
+        fill: none;
+        stroke: #FFD700;
+        stroke-width: 6;
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.6s ease-out;
+    }
+
+    .level-hero-inner {
         position: absolute;
-        width: 36px;
-        height: 36px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 56px;
+        height: 56px;
         border-radius: 50%;
-        background: rgba(0, 0, 0, 0.3);
+        background: rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(10px);
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+
+    .level-hero-number {
+        font-size: 1.75rem;
+        font-weight: 900;
+        color: #FFD700;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .level-hero-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .level-hero-title {
+        display: block;
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+        color: #FFD700;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .level-hero-progress {
+        display: flex;
         flex-direction: column;
-        backdrop-filter: blur(10px);
+        gap: 4px;
     }
 
-    .level-number {
-        font-size: 1rem;
-        font-weight: 800;
-        line-height: 1;
-    }
-
-    .level-label {
-        font-size: 0.4rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        opacity: 0.85;
-    }
-
-    .level-title-badge {
-        font-size: 0.65rem;
-        opacity: 0.75;
-        margin-left: auto;
-        padding: 2px 8px;
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 10px;
-    }
-
-    /* Level Progress Row (below points progress) */
-    .level-progress-compact {
-        margin-top: 8px;
-    }
-
-    .level-progress-bar-compact {
+    .level-hero-progress-bar {
         background: rgba(255, 255, 255, 0.2);
-        border-radius: 6px;
-        height: 4px;
+        border-radius: 8px;
+        height: 8px;
         overflow: hidden;
-        margin-bottom: 4px;
     }
 
-    .level-progress-fill-compact {
+    .level-hero-progress-fill {
         background: linear-gradient(90deg, var(--secondary) 0%, #FFD700 100%);
         height: 100%;
-        border-radius: 6px;
+        border-radius: 8px;
         transition: width 0.5s ease-out;
     }
 
-    .level-progress-label-compact {
-        font-size: 0.7rem;
-        opacity: 0.8;
+    .level-hero-progress-text {
+        font-size: 0.75rem;
+        opacity: 0.85;
+    }
+
+    .streak-hero-badge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        padding: 10px 14px;
+        backdrop-filter: blur(10px);
+        min-width: 52px;
+    }
+
+    .streak-hero-fire {
+        font-size: 1.25rem;
+        line-height: 1;
+    }
+
+    .streak-hero-number {
+        font-size: 1.1rem;
+        font-weight: 800;
+        margin-top: 2px;
     }
 
     /* Level up animation */
     @keyframes levelUpPulse {
         0% { transform: scale(1); }
-        50% { transform: scale(1.2); }
+        50% { transform: scale(1.15); }
         100% { transform: scale(1); }
     }
 
     .level-up-animation {
         animation: levelUpPulse 0.6s ease-out;
-    }
-
-    .points-progress-compact {
-        margin-top: 5px;
-    }
-
-    .points-progress-bar-compact {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 6px;
-        height: 6px;
-        overflow: hidden;
-        margin-bottom: 6px;
-    }
-
-    .points-progress-fill-compact {
-        background: linear-gradient(90deg, rgba(255,255,255,0.9) 0%, var(--secondary) 100%);
-        height: 100%;
-        border-radius: 6px;
-        transition: width 0.5s ease;
-    }
-
-    .points-progress-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .points-progress-label-compact {
-        font-size: 0.75rem;
-        opacity: 0.85;
-    }
-
-    .redeem-link {
-        background: none;
-        border: none;
-        color: white;
-        font-size: 0.75rem;
-        font-weight: 600;
-        cursor: pointer;
-        text-decoration: underline;
-        padding: 0;
-        opacity: 0.9;
-    }
-
-    .redeem-link:hover {
-        opacity: 1;
     }
 
     h1, h2, h3, h4 { 
@@ -2807,46 +2749,30 @@ async function applyAppTheme(themeKey) {
         </div>
         <h1 class="user-name">Hello, Shannon</h1>
 
-        <!-- Compact Points, Level & Streak Row -->
-        <div class="points-streak-row">
-            <!-- Level Badge with Progress Ring -->
-            <div class="level-badge-compact" id="level-badge">
-                <div class="level-ring" id="level-ring" style="--level-progress: 0;"></div>
-                <div class="level-ring-inner">
-                    <span class="level-number" id="level-current">1</span>
-                    <span class="level-label">LVL</span>
+        <!-- Hero Level Display -->
+        <div class="level-hero-container">
+            <div class="level-hero-badge" id="level-badge">
+                <svg class="level-ring-svg" viewBox="0 0 100 100">
+                    <circle class="level-ring-bg" cx="50" cy="50" r="45" />
+                    <circle class="level-ring-progress" id="level-ring-svg" cx="50" cy="50" r="45"
+                        stroke-dasharray="283" stroke-dashoffset="283" />
+                </svg>
+                <div class="level-hero-inner">
+                    <span class="level-hero-number" id="level-current">1</span>
                 </div>
             </div>
-            <div class="points-compact">
-                <span class="points-number-compact" id="points-current">0</span>
-                <span class="points-label-compact">pts</span>
+            <div class="level-hero-info">
+                <span class="level-hero-title" id="level-title">Newcomer</span>
+                <div class="level-hero-progress">
+                    <div class="level-hero-progress-bar">
+                        <div class="level-hero-progress-fill" id="level-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <span class="level-hero-progress-text" id="level-progress-label">0 XP to Level 2</span>
+                </div>
             </div>
-            <div class="streak-badge-compact" id="streak-badge">
-                <span class="streak-fire-compact">&#x1F525;</span>
-                <span class="streak-number-compact" id="streak-current">0</span>
-                <span class="streak-text-compact">day streak</span>
-            </div>
-            <span class="level-title-badge" id="level-title">Newcomer</span>
-        </div>
-
-        <!-- Level Progress -->
-        <div class="level-progress-compact">
-            <div class="level-progress-bar-compact">
-                <div class="level-progress-fill-compact" id="level-progress-fill" style="width: 0%"></div>
-            </div>
-            <span class="level-progress-label-compact" id="level-progress-label">0 XP to Level 2</span>
-        </div>
-
-        <!-- Progress to Free Week -->
-        <div class="points-progress-compact">
-            <div class="points-progress-bar-compact">
-                <div class="points-progress-fill-compact" id="points-progress-fill" style="width: 0%"></div>
-            </div>
-            <div class="points-progress-row">
-                <span class="points-progress-label-compact" id="points-progress-label">0/200 to free week</span>
-                <button class="redeem-link" id="redeem-btn" onclick="redeemPointsForFreeWeek()" style="display: none;">
-                    Redeem free week
-                </button>
+            <div class="streak-hero-badge" id="streak-badge">
+                <span class="streak-hero-fire">&#x1F525;</span>
+                <span class="streak-hero-number" id="streak-current">0</span>
             </div>
         </div>
     </div>
@@ -10831,6 +10757,44 @@ function viewWorkoutHistoryDetail(date) {
             <div style="background: white; padding: 15px; border-radius: 12px; border: 1px solid #f1f5f9; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
                 <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Goal</div>
                 <div id="profile-goal-display" style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Fat Loss</div>
+            </div>
+        </div>
+
+        <!-- Rewards & Points Section -->
+        <div class="settings-card" style="margin: 0 25px 25px 25px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); color: white;">
+            <div style="padding: 20px;">
+                <h3 style="margin: 0 0 15px 0; font-size: 1rem; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">
+                    <span>&#x2B50;</span> Rewards & Points
+                </h3>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                    <div>
+                        <div style="font-size: 2.5rem; font-weight: 800; line-height: 1;" id="profile-points-current">0</div>
+                        <div style="font-size: 0.8rem; opacity: 0.9;">Available Points</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.5rem; font-weight: 700;" id="profile-lifetime-points">0</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8;">Lifetime Earned</div>
+                    </div>
+                </div>
+
+                <!-- Progress to Free Week -->
+                <div style="margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;">
+                        <span>Progress to Free Week</span>
+                        <span id="profile-points-progress-text">0/200</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.2); border-radius: 8px; height: 10px; overflow: hidden;">
+                        <div id="profile-points-progress-fill" style="background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%); height: 100%; border-radius: 8px; transition: width 0.3s ease; width: 0%;"></div>
+                    </div>
+                </div>
+
+                <button id="profile-redeem-btn" onclick="redeemPointsForFreeWeek()" style="width: 100%; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); color: white; padding: 12px 20px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: none; transition: all 0.2s ease;">
+                    &#x1F381; Redeem Free Week (200 pts)
+                </button>
+                <div id="profile-redeem-info" style="text-align: center; font-size: 0.85rem; opacity: 0.9;">
+                    Earn 200 points to unlock a free week!
+                </div>
             </div>
         </div>
 
@@ -30769,10 +30733,12 @@ function updatePointsDisplay(pointsData) {
         levelEl.textContent = levelData.level;
     }
 
-    // Update level ring progress
-    const levelRing = document.getElementById('level-ring');
-    if (levelRing) {
-        levelRing.style.setProperty('--level-progress', levelData.progress);
+    // Update SVG level ring progress (circumference = 2 * PI * 45 ≈ 283)
+    const levelRingSvg = document.getElementById('level-ring-svg');
+    if (levelRingSvg) {
+        const circumference = 283;
+        const offset = circumference - (levelData.progress / 100) * circumference;
+        levelRingSvg.style.strokeDashoffset = offset;
     }
 
     // Update level title
@@ -30828,15 +30794,40 @@ function updatePointsDisplay(pointsData) {
         }
     }
 
-    // Update redeem button (show/hide for compact design)
-    const redeemBtn = document.getElementById('redeem-btn');
-    if (redeemBtn) {
+    // ========================================
+    // Update Profile page points section
+    // ========================================
+    const profilePointsCurrent = document.getElementById('profile-points-current');
+    if (profilePointsCurrent) {
+        profilePointsCurrent.textContent = currentPoints.toLocaleString();
+    }
+
+    const profileLifetimePoints = document.getElementById('profile-lifetime-points');
+    if (profileLifetimePoints) {
+        profileLifetimePoints.textContent = lifetimePoints.toLocaleString();
+    }
+
+    const profileProgressText = document.getElementById('profile-points-progress-text');
+    if (profileProgressText) {
+        profileProgressText.textContent = `${currentPoints}/${POINTS_FOR_FREE_WEEK}`;
+    }
+
+    const profileProgressFill = document.getElementById('profile-points-progress-fill');
+    if (profileProgressFill) {
+        const progressPercent = Math.min(100, (currentPoints / POINTS_FOR_FREE_WEEK) * 100);
+        profileProgressFill.style.width = `${progressPercent}%`;
+    }
+
+    const profileRedeemBtn = document.getElementById('profile-redeem-btn');
+    const profileRedeemInfo = document.getElementById('profile-redeem-info');
+    if (profileRedeemBtn && profileRedeemInfo) {
         if (currentPoints >= POINTS_FOR_FREE_WEEK) {
-            redeemBtn.style.display = 'inline';
-            redeemBtn.disabled = false;
+            profileRedeemBtn.style.display = 'block';
+            profileRedeemInfo.style.display = 'none';
         } else {
-            redeemBtn.style.display = 'none';
-            redeemBtn.disabled = true;
+            profileRedeemBtn.style.display = 'none';
+            profileRedeemInfo.style.display = 'block';
+            profileRedeemInfo.textContent = `${POINTS_FOR_FREE_WEEK - currentPoints} more points to unlock a free week!`;
         }
     }
 }
