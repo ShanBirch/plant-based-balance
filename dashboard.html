@@ -8671,19 +8671,22 @@ function startCustomBuilderWorkout() {
                 </div>
             </div>` : ''}
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(70px, auto); gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div>
             </div>
 
             <div class="sets-list-container">
-                ${Array.from({length: ex.sets}, (_, setIdx) => `
-                    <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
+                ${Array.from({length: ex.sets}, (_, setIdx) => {
+                    const prevStats = getPreviousStats(ex.name, setIdx + 1) || '-';
+                    return `
+                    <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(70px, auto); gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
                         <div style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
                         <input type="text" class="input-time" placeholder="-" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                         <input type="text" class="input-reps" placeholder="Reps" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                         <input type="text" class="input-kg" placeholder="Kg" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                        <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prevStats}</div>
                     </div>
-                `).join('')}
+                `}).join('')}
             </div>
 
             <div style="padding:15px; border-top:1px solid #f8fafc;">
@@ -17007,8 +17010,8 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
                 </div>
             </div>` : ''}
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr; gap:8px; padding:0 15px 10px 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(70px, auto); gap:8px; padding:0 15px 10px 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div>
             </div>
 
             <div class="sets-list-container">
@@ -17070,7 +17073,7 @@ function findPreviousSetData(name) {
 function getSetRowHtml(exName, setNum, isTimeBased) {
     const prev = getPreviousStats(exName, setNum) || '-';
     return `
-        <div class="workout-set-row" style="display:grid; grid-template-columns:40px 1fr 1fr 1fr; gap:8px; align-items:center; padding:10px 15px; border-top:1px solid #f8fafc;">
+        <div class="workout-set-row" style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(70px, auto); gap:8px; align-items:center; padding:10px 15px; border-top:1px solid #f8fafc;">
             <div style="font-weight:800; color:#94a3b8; font-size:0.85rem; text-align:center;">${setNum}</div>
             <div style="position:relative;">
                 <input type="text" class="input-time" placeholder="-" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
@@ -17078,6 +17081,7 @@ function getSetRowHtml(exName, setNum, isTimeBased) {
             </div>
             <input type="text" class="input-reps" placeholder="Reps" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
             <input type="text" class="input-kg" placeholder="Kg" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
+            <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prev}</div>
         </div>
     `;
 }
@@ -18679,19 +18683,22 @@ function renderWorkoutExercises(exercises) {
                     </div>
                 </div>` : ''}
 
-                <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                    <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div>
+                <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(70px, auto); gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                    <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div>
                 </div>
 
                 <div class="sets-list-container">
-                    ${Array.from({length: ex.sets || 3}, (_, setIdx) => `
-                        <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
+                    ${Array.from({length: ex.sets || 3}, (_, setIdx) => {
+                        const prevStats = getPreviousStats(ex.name, setIdx + 1) || '-';
+                        return `
+                        <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(70px, auto); gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
                             <div style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
                             <input type="text" class="input-time" placeholder="-" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                             <input type="text" class="input-reps" placeholder="Reps" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                             <input type="text" class="input-kg" placeholder="Kg" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                            <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prevStats}</div>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                 </div>
 
                 <div style="padding:15px; border-top:1px solid #f8fafc;">
@@ -19014,19 +19021,22 @@ function addExerciseToUI(exercise) {
                 </div>
             </div>` : ''}
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(70px, auto); gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div>
             </div>
 
             <div class="sets-list-container">
-                ${Array.from({length: exercise.sets || 3}, (_, setIdx) => `
-                    <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
+                ${Array.from({length: exercise.sets || 3}, (_, setIdx) => {
+                    const prevStats = getPreviousStats(exercise.name, setIdx + 1) || '-';
+                    return `
+                    <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(70px, auto); gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
                         <div style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
                         <input type="text" class="input-time" placeholder="-" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                         <input type="text" class="input-reps" placeholder="Reps" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                         <input type="text" class="input-kg" placeholder="Kg" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                        <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prevStats}</div>
                     </div>
-                `).join('')}
+                `}).join('')}
             </div>
 
             <div style="padding:15px; border-top:1px solid #f8fafc;">
@@ -26739,11 +26749,8 @@ updateCoachUI();
 
             <!-- Sets Container -->
             <div style="background:#f8fafc; padding:0 20px 20px 20px;" id="sets-container-${idx}">
-                <div style="display:flex; padding:10px 0; font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid #e2e8f0; margin-bottom:10px;">
-                    <div style="width:40px; text-align:center;">Set</div>
-                    <div style="flex:1; text-align:center;">kg</div>
-                    <div style="flex:1; text-align:center;">Reps</div>
-                    <div style="width:40px;"></div>
+                <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(70px, auto); gap:8px; padding:10px 0; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center; border-bottom:1px solid #e2e8f0; margin-bottom:10px;">
+                    <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div>
                 </div>
                 ${ [1,2,3].map(s => getSetRowHtml(ex.name, s, false)).join('') }
 
