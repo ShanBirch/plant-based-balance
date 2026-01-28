@@ -8820,7 +8820,7 @@ async function startCustomBuilderWorkout() {
 </script>
 
 <!-- YOUR WORKOUTS VIEW -->
-<div id="view-your-workouts" class="app-view" style="display:none; height: 100vh; background: #f8fafc; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
+<div id="view-your-workouts" class="app-view" style="display:none; height: 100vh; background: #f8fafc; z-index: 9000; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
         <button onclick="closeYourWorkouts()" style="width: 40px; height: 40px; border: none; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
             <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-main);"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -8860,19 +8860,62 @@ async function startCustomBuilderWorkout() {
 
 <script>
 function openYourWorkouts() {
-    hideAllAppViews();
-    document.getElementById('view-your-workouts').style.display = 'block';
-    document.querySelector('.bottom-nav').style.display = 'none';
+    console.log('openYourWorkouts: Starting...');
 
-    // Render library immediately (doesn't need database)
-    const libraryContainer = document.getElementById('your-workouts-library-list');
-    if (libraryContainer) {
-        renderYourWorkoutsLibrary(libraryContainer);
+    try {
+        // First, hide all other views
+        hideAllAppViews();
+
+        // Get the view element
+        const viewEl = document.getElementById('view-your-workouts');
+        if (!viewEl) {
+            console.error('openYourWorkouts: view-your-workouts element not found!');
+            return;
+        }
+
+        // Show the view with explicit styles to ensure visibility
+        viewEl.style.display = 'block';
+        viewEl.style.visibility = 'visible';
+        viewEl.style.opacity = '1';
+        console.log('openYourWorkouts: View displayed');
+
+        // Hide bottom nav safely
+        const bottomNav = document.querySelector('.bottom-nav');
+        if (bottomNav) {
+            bottomNav.style.display = 'none';
+        }
+
+        // Render library immediately (doesn't need database)
+        const libraryContainer = document.getElementById('your-workouts-library-list');
+        if (libraryContainer) {
+            try {
+                renderYourWorkoutsLibrary(libraryContainer);
+                console.log('openYourWorkouts: Library rendered');
+            } catch(libErr) {
+                console.error('openYourWorkouts: Failed to render library', libErr);
+                libraryContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Could not load workout library</div>';
+            }
+        }
+
+        // Then load async data (custom workouts)
+        renderYourWorkoutsList().catch(err => {
+            console.error('openYourWorkouts: Failed to render workouts list', err);
+        });
+
+        // Push navigation state
+        if (typeof pushNavigationState === 'function') {
+            pushNavigationState('view-your-workouts', () => closeYourWorkouts());
+        }
+
+        console.log('openYourWorkouts: Complete');
+    } catch(err) {
+        console.error('openYourWorkouts: Error occurred', err);
+        // Even if there's an error, try to show the view
+        const viewEl = document.getElementById('view-your-workouts');
+        if (viewEl) {
+            viewEl.style.display = 'block';
+        }
     }
-
-    // Then load async data (custom workouts)
-    renderYourWorkoutsList();
-    pushNavigationState('view-your-workouts', () => closeYourWorkouts());
 }
 
 function closeYourWorkouts() {
@@ -8881,21 +8924,35 @@ function closeYourWorkouts() {
 }
 
 async function renderYourWorkoutsList() {
+    console.log('renderYourWorkoutsList: Starting...');
     const listContainer = document.getElementById('your-workouts-list');
     const emptyState = document.getElementById('your-workouts-empty');
+
+    if (!listContainer) {
+        console.error('renderYourWorkoutsList: listContainer not found');
+        return;
+    }
 
     try {
         const user = window.currentUser;
         if (!user) {
+            console.log('renderYourWorkoutsList: No user logged in');
             // Show empty state when not logged in
             if (listContainer) listContainer.style.display = 'none';
             if (emptyState) emptyState.style.display = 'block';
             return;
         }
 
-        // Fetch custom workouts
-        const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
-        window.savedWorkoutsCache = savedWorkouts;
+        // Try to use cached workouts first, then fetch if needed
+        let savedWorkouts = window.savedWorkoutsCache;
+
+        if (!savedWorkouts && typeof dbHelpers !== 'undefined' && dbHelpers.workouts) {
+            console.log('renderYourWorkoutsList: Fetching from database...');
+            savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
+            window.savedWorkoutsCache = savedWorkouts;
+        }
+
+        console.log('renderYourWorkoutsList: Found', savedWorkouts?.length || 0, 'workouts');
 
         // Render Custom Workouts
         if (!savedWorkouts || savedWorkouts.length === 0) {
@@ -8923,17 +8980,20 @@ async function renderYourWorkoutsList() {
                 </div>
                 `;
             }).join('');
+            console.log('renderYourWorkoutsList: Rendered', savedWorkouts.length, 'workout cards');
         }
 
     } catch(err) {
-        console.error('Failed to load your workouts:', err);
+        console.error('renderYourWorkoutsList: Error loading workouts:', err);
         if (listContainer) listContainer.style.display = 'none';
         if (emptyState) emptyState.style.display = 'block';
     }
 }
 
 function renderYourWorkoutsLibrary(container) {
+    console.log('renderYourWorkoutsLibrary: Starting...');
     if (typeof WORKOUT_LIBRARY === 'undefined') {
+        console.warn('renderYourWorkoutsLibrary: WORKOUT_LIBRARY is undefined');
         container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Workout library not available</div>';
         return;
     }
@@ -8974,6 +9034,7 @@ function renderYourWorkoutsLibrary(container) {
         </div>
         `;
     }).join('');
+    console.log('renderYourWorkoutsLibrary: Rendered', categories.length, 'categories');
 }
 
 function viewWorkoutHistoryDetail(date) {
