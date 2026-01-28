@@ -222,6 +222,35 @@ CREATE TABLE IF NOT EXISTS public.custom_workout_programs (
 );
 
 -- ============================================================
+-- WORKOUT REPLACEMENTS TABLE (temporary workout swaps on calendar)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.workout_replacements (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+
+  -- Which day of the week (0 = Monday, 6 = Sunday)
+  day_of_week INTEGER NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
+
+  -- Replacement workout details
+  -- Format: { type: 'library'|'custom'|'rest', name: string, category: string, subcategory: string, customWorkoutId: string }
+  replacement_workout JSONB NOT NULL,
+
+  -- Duration of replacement
+  duration_weeks INTEGER NOT NULL DEFAULT 1 CHECK (duration_weeks >= 1 AND duration_weeks <= 12),
+
+  -- When the replacement starts and ends
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+
+  -- Timestamps
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  INDEX idx_workout_replacements_user (user_id),
+  INDEX idx_workout_replacements_active (user_id, start_date, end_date)
+);
+
+-- ============================================================
 -- DAILY CHECK-INS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.daily_checkins (
