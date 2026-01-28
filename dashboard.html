@@ -9704,6 +9704,27 @@ function startCustomBuilderWorkout() {
                     </div>
                 </div>
 
+                <!-- Personal Bests Section -->
+                <div style="padding: 20px 20px 10px 20px;">
+                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">
+                        <span style="color: #f59e0b;">🏆</span> Personal Bests
+                    </h3>
+                    <div id="personal-bests-container">
+                        <!-- Recent PBs will appear here -->
+                        <div id="recent-pbs-list" style="display: none; margin-bottom: 15px;">
+                            <!-- Populated by JS - shows recent PB achievements -->
+                        </div>
+                        <!-- All-time PBs grid -->
+                        <div id="personal-bests-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                            <!-- Populated by JS -->
+                            <div style="grid-column: span 2; text-align: center; padding: 30px 20px; color: var(--text-muted);">
+                                <div style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;">🏋️</div>
+                                <div style="font-size: 0.9rem;">Complete workouts with weights to track your personal bests!</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Workout Analytics Section -->
                 <div style="padding: 20px 20px 10px 20px;">
                     <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">Workout History</h3>
@@ -17174,12 +17195,18 @@ async function finishWorkout() {
                  window.workoutHistoryCache.push(...setsToSave);
              }
 
-             // Check for improvements and milestones
+             // Check for improvements, milestones, and personal bests
              try {
-                 const [improvements, milestones] = await Promise.all([
+                 const [improvements, milestones, newPBs] = await Promise.all([
                      dbHelpers.workouts.getWorkoutImprovements(user.id, setsToSave),
-                     dbHelpers.milestones.checkAndRecordMilestones(user.id)
+                     dbHelpers.milestones.checkAndRecordMilestones(user.id),
+                     dbHelpers.personalBests.checkAndUpdatePBs(user.id, setsToSave)
                  ]);
+
+                 // Log any new personal bests
+                 if (newPBs && newPBs.length > 0) {
+                     console.log("🏆 New Personal Bests:", newPBs);
+                 }
 
                  // Award points for completing workout
                  try {
@@ -17200,8 +17227,8 @@ async function finishWorkout() {
                      console.error("Error updating avatar (workout still saved):", avatarError);
                  }
 
-                 // Display success screen with progress data
-                 await showWorkoutSuccessScreen(duration, improvements, milestones, setsToSave);
+                 // Display success screen with progress data (include newPBs)
+                 await showWorkoutSuccessScreen(duration, improvements, milestones, setsToSave, newPBs);
              } catch(progressError) {
                  console.error("Error calculating progress:", progressError);
                  // Still show success screen, just without progress data
@@ -17224,7 +17251,7 @@ async function finishWorkout() {
 let completedWorkoutDataForShare = null;
 let selectedLiftToShare = null; // Store the selected lift
 
-async function showWorkoutSuccessScreen(duration, improvements, milestones, workoutData) {
+async function showWorkoutSuccessScreen(duration, improvements, milestones, workoutData, newPBs = []) {
     hideAllAppViews();
 
     // Store workout data for potential sharing (including all sets)
@@ -17232,6 +17259,7 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
         duration: duration,
         improvements: improvements,
         milestones: milestones,
+        newPBs: newPBs,
         workoutName: window.currentWorkoutName || 'Workout',
         sets: workoutData || [] // Store all the sets from the workout
     };
@@ -17255,9 +17283,37 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
         milestonesContainer.style.display = 'none';
     }
 
-    // Show improvements if any
+    // Show Personal Bests if any (this is separate from improvements - these are ALL-TIME bests)
     const improvementsContainer = document.getElementById('success-improvements');
-    if (improvements && improvements.length > 0) {
+    if (newPBs && newPBs.length > 0) {
+        improvementsContainer.style.display = 'block';
+        improvementsContainer.innerHTML = `
+            <div style="font-size: 1.2rem; font-weight: 700; margin-bottom: 15px; color: #fbbf24;">
+                <span style="font-size: 1.4rem;">🏆</span> NEW PERSONAL BEST${newPBs.length > 1 ? 'S' : ''}!
+            </div>
+            ${newPBs.map(pb => {
+                let pbText = '';
+                if (pb.type === 'weight') {
+                    pbText = `${pb.value}kg x ${pb.reps} reps`;
+                    if (pb.improvement) {
+                        pbText += ` <span style="color: #4ade80; font-weight: 700;">(+${pb.improvement}kg)</span>`;
+                    }
+                } else {
+                    pbText = `${pb.value} reps at ${pb.weight}kg`;
+                    if (pb.improvement) {
+                        pbText += ` <span style="color: #4ade80; font-weight: 700;">(+${pb.improvement} reps)</span>`;
+                    }
+                }
+                return `
+                    <div style="background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.1)); padding: 15px; border-radius: 12px; margin-bottom: 10px; text-align: left; border: 1px solid rgba(251,191,36,0.3);">
+                        <div style="font-weight: 700; font-size: 1rem; color: #fbbf24;">${pb.exercise}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.95; margin-top: 5px;">${pbText}</div>
+                    </div>
+                `;
+            }).join('')}
+        `;
+    } else if (improvements && improvements.length > 0) {
+        // Fallback to showing regular improvements if no PBs but there are improvements
         improvementsContainer.style.display = 'block';
         improvementsContainer.innerHTML = `
             <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 15px; opacity: 0.95;">💪 Your Progress</div>
@@ -27682,6 +27738,20 @@ async function initProgressView() {
             console.warn('Failed to load recent exercises:', e);
         }
 
+        // Load personal bests
+        let personalBests = [];
+        let recentPBs = [];
+        try {
+            [personalBests, recentPBs] = await Promise.all([
+                dbHelpers.personalBests.getAll(user.id, 10),
+                dbHelpers.personalBests.getHistory(user.id, 5)
+            ]);
+            console.log('Personal bests:', personalBests?.length || 0);
+            console.log('Recent PBs:', recentPBs?.length || 0);
+        } catch (e) {
+            console.warn('Failed to load personal bests:', e);
+        }
+
         // Update overview stats
         document.getElementById('total-workouts-stat').innerText = workoutCount || 0;
         document.getElementById('current-streak-stat').innerText = pointsData?.current_streak || 0;
@@ -27689,6 +27759,7 @@ async function initProgressView() {
         document.getElementById('avg-calories-stat').innerText = '-';
 
         // Render sections
+        renderPersonalBests(personalBests, recentPBs);
         renderWorkoutHistory(workoutHistory);
         renderMilestones(milestones);
         renderCheckins(checkins);
@@ -27751,6 +27822,93 @@ function renderWorkoutHistory(workoutHistory) {
     }).join('');
 
     container.innerHTML = html || '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No recent workouts</div>';
+}
+
+// Render Personal Bests section
+function renderPersonalBests(personalBests, recentPBs) {
+    const pbsContainer = document.getElementById('personal-bests-list');
+    const recentPBsContainer = document.getElementById('recent-pbs-list');
+
+    // Render recent PBs (achievements) if any
+    if (recentPBs && recentPBs.length > 0) {
+        recentPBsContainer.style.display = 'block';
+
+        // Filter to show only PBs from the last 7 days
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        const recentPBsFiltered = recentPBs.filter(pb => {
+            const pbDate = new Date(pb.achieved_at);
+            return pbDate >= weekAgo;
+        });
+
+        if (recentPBsFiltered.length > 0) {
+            recentPBsContainer.innerHTML = `
+                <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 16px; border-radius: 16px; border: 1px solid #f59e0b;">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #92400e; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 1.1rem;">🔥</span> Recent Wins
+                    </div>
+                    ${recentPBsFiltered.map(pb => {
+                        const pbDate = new Date(pb.achieved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        const pbValue = pb.pb_type === 'weight'
+                            ? `${pb.new_value}kg x ${pb.new_reps} reps`
+                            : `${pb.new_value} reps at ${pb.new_weight_kg}kg`;
+                        const improvement = pb.improvement
+                            ? `<span style="color: #059669; font-weight: 700;">+${pb.improvement}${pb.pb_type === 'weight' ? 'kg' : ' reps'}</span>`
+                            : '<span style="color: #059669; font-weight: 700;">New!</span>';
+
+                        return `
+                            <div style="background: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <div style="font-weight: 600; color: #1f2937; font-size: 0.9rem;">${pb.exercise_name}</div>
+                                    <div style="font-size: 0.8rem; color: #6b7280;">${pbValue}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div>${improvement}</div>
+                                    <div style="font-size: 0.75rem; color: #9ca3af;">${pbDate}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        } else {
+            recentPBsContainer.style.display = 'none';
+        }
+    } else {
+        recentPBsContainer.style.display = 'none';
+    }
+
+    // Render all-time personal bests
+    if (!personalBests || personalBests.length === 0) {
+        pbsContainer.innerHTML = `
+            <div style="grid-column: span 2; text-align: center; padding: 30px 20px; color: var(--text-muted);">
+                <div style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;">🏋️</div>
+                <div style="font-size: 0.9rem;">Complete workouts with weights to track your personal bests!</div>
+            </div>
+        `;
+        return;
+    }
+
+    const pbsHtml = personalBests.map(pb => {
+        const weight = pb.best_weight_kg ? `${pb.best_weight_kg}kg` : '-';
+        const reps = pb.best_weight_reps || pb.best_reps || '-';
+        const date = pb.best_weight_date
+            ? new Date(pb.best_weight_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : '';
+
+        return `
+            <div style="background: white; padding: 16px; border-radius: 14px; box-shadow: var(--card-shadow); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 8px; right: 8px; font-size: 1.2rem; opacity: 0.15;">🏆</div>
+                <div style="font-weight: 700; color: var(--primary); font-size: 0.85rem; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pb.exercise_name}</div>
+                <div style="font-size: 1.4rem; font-weight: 700; color: #f59e0b; margin-bottom: 4px;">${weight}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">x ${reps} reps</div>
+                ${date ? `<div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; opacity: 0.7;">${date}</div>` : ''}
+            </div>
+        `;
+    }).join('');
+
+    pbsContainer.innerHTML = pbsHtml;
 }
 
 // Share past workout - go to group chats
