@@ -26730,7 +26730,7 @@ updateCoachUI();
         if (!user) return;
 
         try {
-            const { data, error } = await supabase
+            const { data, error } = await window.supabaseClient
                 .from('workouts')
                 .select('exercise_name, set_number, reps, weight_kg, time_duration')
                 .eq('user_id', user.id)
