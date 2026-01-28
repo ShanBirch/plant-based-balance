@@ -743,10 +743,13 @@
                     }
                 }
 
-                showSuccess('Account created successfully! Redirecting to dashboard...');
+                // Store email in sessionStorage for Stripe context
+                sessionStorage.setItem('userEmail', email);
+
+                showSuccess('Account created! Now, let\'s activate your 14-day free trial...');
 
                 setTimeout(() => {
-                    window.location.href = '/dashboard.html';
+                    window.location.href = '/shop.html#pricing';
                 }, 1500);
             } catch (error) {
                 console.error('Signup error:', error);
