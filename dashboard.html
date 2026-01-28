@@ -492,7 +492,7 @@ async function applyAppTheme(themeKey) {
         color: white !important;
     }
     .welcome-text { opacity: 0.9; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: white; }
-    .user-name { font-family: 'Playfair Display'; font-size: 2rem; margin: 5px 0 15px 0; }
+    .user-name { font-family: 'Playfair Display'; font-size: 2rem; margin: 5px 0 10px 0; }
     
     .stats-row { display: flex; gap: 15px; margin-top: 20px; }
     .stat-card {
@@ -506,7 +506,102 @@ async function applyAppTheme(themeKey) {
     .stat-val { font-size: 1.5rem; font-weight: 700; display: block; }
     .stat-label { font-size: 0.75rem; opacity: 0.9; }
 
+    /* Compact Points & Streak in Greeting */
+    .points-streak-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
 
+    .points-compact {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+    }
+
+    .points-number-compact {
+        font-size: 1.5rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .points-label-compact {
+        font-size: 0.8rem;
+        opacity: 0.85;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .streak-badge-compact {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        padding: 6px 12px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        backdrop-filter: blur(10px);
+    }
+
+    .streak-fire-compact {
+        font-size: 1rem;
+    }
+
+    .streak-number-compact {
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .streak-text-compact {
+        font-size: 0.7rem;
+        opacity: 0.85;
+    }
+
+    .points-progress-compact {
+        margin-top: 5px;
+    }
+
+    .points-progress-bar-compact {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        height: 6px;
+        overflow: hidden;
+        margin-bottom: 6px;
+    }
+
+    .points-progress-fill-compact {
+        background: linear-gradient(90deg, rgba(255,255,255,0.9) 0%, var(--secondary) 100%);
+        height: 100%;
+        border-radius: 6px;
+        transition: width 0.5s ease;
+    }
+
+    .points-progress-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .points-progress-label-compact {
+        font-size: 0.75rem;
+        opacity: 0.85;
+    }
+
+    .redeem-link {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: underline;
+        padding: 0;
+        opacity: 0.9;
+    }
+
+    .redeem-link:hover {
+        opacity: 1;
+    }
 
     h1, h2, h3, h4 { 
         font-family: 'Playfair Display', serif; 
@@ -1726,111 +1821,6 @@ async function applyAppTheme(themeKey) {
         background: var(--accent-green);
     }
 
-    /* ==========================================
-       POINTS WIDGET STYLES
-       ========================================== */
-
-    .points-widget {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 20px;
-        color: white;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
-
-    .points-widget-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-
-    .points-balance {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .points-number {
-        font-size: 2.5rem;
-        font-weight: 900;
-        line-height: 1;
-    }
-
-    .points-label {
-        font-size: 0.85rem;
-        opacity: 0.85;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-top: 4px;
-    }
-
-    .streak-badge {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 50px;
-        padding: 10px 18px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        backdrop-filter: blur(10px);
-    }
-
-    .streak-fire {
-        font-size: 1.4rem;
-    }
-
-    .streak-number {
-        font-size: 1.4rem;
-        font-weight: 800;
-    }
-
-    .points-progress {
-        margin-bottom: 15px;
-    }
-
-    .points-progress-bar {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
-        height: 12px;
-        overflow: hidden;
-        margin-bottom: 8px;
-    }
-
-    .points-progress-fill {
-        background: linear-gradient(90deg, rgba(255,255,255,0.9) 0%, var(--secondary) 100%);
-        height: 100%;
-        border-radius: 10px;
-        transition: width 0.5s ease;
-    }
-
-    .points-progress-label {
-        font-size: 0.85rem;
-        opacity: 0.9;
-    }
-
-    .redeem-btn {
-        width: 100%;
-        background: white;
-        color: var(--primary);
-        border: none;
-        padding: 14px;
-        border-radius: 12px;
-        font-weight: 700;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .redeem-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .redeem-btn:not(:disabled):hover {
-        transform: scale(1.02);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    }
-
     /* Milestone Toast */
     .milestone-toast {
         position: fixed;
@@ -2643,10 +2633,31 @@ async function applyAppTheme(themeKey) {
              <div class="profile-icon" style="margin-left: auto;" onclick="switchAppTab('profile', this)">S</div> <!-- Placeholder User Initial -->
         </div>
         <h1 class="user-name">Hello, Shannon</h1>
-        <div style="margin-top: 5px;">
-            <button onclick="openCheckInModal()" style="background:none; border:none; color:white; font-size:0.8rem; cursor:pointer; text-decoration:underline;">
-                Did you check in today?
-            </button>
+
+        <!-- Compact Points & Streak Row -->
+        <div class="points-streak-row">
+            <div class="points-compact">
+                <span class="points-number-compact" id="points-current">0</span>
+                <span class="points-label-compact">pts</span>
+            </div>
+            <div class="streak-badge-compact" id="streak-badge">
+                <span class="streak-fire-compact">&#x1F525;</span>
+                <span class="streak-number-compact" id="streak-current">0</span>
+                <span class="streak-text-compact">day streak</span>
+            </div>
+        </div>
+
+        <!-- Progress to Free Week -->
+        <div class="points-progress-compact">
+            <div class="points-progress-bar-compact">
+                <div class="points-progress-fill-compact" id="points-progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="points-progress-row">
+                <span class="points-progress-label-compact" id="points-progress-label">0/200 to free week</span>
+                <button class="redeem-link" id="redeem-btn" onclick="redeemPointsForFreeWeek()" style="display: none;">
+                    Redeem free week
+                </button>
+            </div>
         </div>
     </div>
 
@@ -2671,30 +2682,6 @@ async function applyAppTheme(themeKey) {
     </div>
 
     <div style="padding: 0 25px;">
-        <!-- Points Rewards Widget -->
-        <div id="points-widget" class="points-widget">
-            <div class="points-widget-header">
-                <div class="points-balance">
-                    <span class="points-number" id="points-current">0</span>
-                    <span class="points-label">points</span>
-                </div>
-                <div class="streak-badge" id="streak-badge">
-                    <span class="streak-fire">&#x1F525;</span>
-                    <span class="streak-number" id="streak-current">0</span>
-                    <span style="font-size: 0.75rem; opacity: 0.8;">day streak</span>
-                </div>
-            </div>
-            <div class="points-progress">
-                <div class="points-progress-bar">
-                    <div class="points-progress-fill" id="points-progress-fill" style="width: 0%"></div>
-                </div>
-                <span class="points-progress-label" id="points-progress-label">0/200 to free week</span>
-            </div>
-            <button class="redeem-btn" id="redeem-btn" onclick="redeemPointsForFreeWeek()" disabled>
-                Redeem Free Week (200 pts)
-            </button>
-        </div>
-
         <!-- Calorie Counter Widget -->
         <div class="calorie-widget-card">
             <div class="calorie-widget-header">
@@ -29162,15 +29149,15 @@ function updatePointsDisplay(pointsData) {
         }
     }
 
-    // Update redeem button
+    // Update redeem button (show/hide for compact design)
     const redeemBtn = document.getElementById('redeem-btn');
     if (redeemBtn) {
         if (currentPoints >= POINTS_FOR_FREE_WEEK) {
+            redeemBtn.style.display = 'inline';
             redeemBtn.disabled = false;
-            redeemBtn.textContent = 'Redeem Free Week!';
         } else {
+            redeemBtn.style.display = 'none';
             redeemBtn.disabled = true;
-            redeemBtn.textContent = `Redeem Free Week (${POINTS_FOR_FREE_WEEK - currentPoints} more pts)`;
         }
     }
 }
