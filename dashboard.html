@@ -17478,7 +17478,7 @@ async function openQuickShareModal() {
     noChats.style.display = 'none';
 
     try {
-        const { data: chats, error } = await supabase.rpc('get_user_group_chats', {
+        const { data: chats, error } = await window.supabaseClient.rpc('get_user_group_chats', {
             user_uuid: window.currentUser.id
         });
 
@@ -17669,7 +17669,7 @@ async function quickShareToChat(chatId, chatName) {
     const shareData = getShareData();
 
     try {
-        const { error } = await supabase
+        const { error } = await window.supabaseClient
             .from('group_chat_messages')
             .insert({
                 group_chat_id: chatId,
