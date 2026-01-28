@@ -12,8 +12,8 @@
     <meta property="og:url" content="https://plantbased-balance.org/login.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://js.stripe.com/v3/"></script>
 
     <style>
         body {
@@ -475,6 +475,9 @@
             window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             const supabase = window.supabaseClient;
 
+            // Initialize Stripe
+            window.stripe = Stripe('pk_live_51GmycUCGCyRUsOfKlOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
+
             // Create authHelpers
             window.authHelpers = {
                 async signUp(email, password, userData = {}) {
@@ -746,11 +749,41 @@
                 // Store email in sessionStorage for Stripe context
                 sessionStorage.setItem('userEmail', email);
 
-                showSuccess('Account created! Now, let\'s activate your 14-day free trial...');
+                showSuccess('Account created! Opening secure checkout...');
 
-                setTimeout(() => {
-                    window.location.href = '/shop.html#pricing';
-                }, 1500);
+                // Trigger Stripe Checkout immediately
+                try {
+                    const response = await fetch('/.netlify/functions/create-checkout-session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            priceId: 'price_1SkDKhCGCyRUsOfKdi44QCWi', // 1-month $30 plan
+                            isTrial: true,
+                            trialDays: 14, 
+                            referralCode: referralCode || null,
+                            email: email,
+                            bump: false // No bump on direct signup to keep it simple
+                        })
+                    });
+                    const sessionData = await response.json();
+                    
+                    if (sessionData.error) {
+                         throw new Error(sessionData.error.message);
+                    }
+
+                    // Direct redirect to Stripe (where Apple/Google Pay will be shown)
+                    const { error: stripeError } = await window.stripe.redirectToCheckout({ 
+                        sessionId: sessionData.sessionId 
+                    });
+
+                    if (stripeError) throw stripeError;
+
+                } catch (stripeErr) {
+                    console.error("Stripe Error:", stripeErr);
+                    showError("Account created, but we couldn't open checkout. Please log in and try again.");
+                    btn.disabled = false;
+                    btn.textContent = 'RETRY CHECKOUT';
+                }
             } catch (error) {
                 console.error('Signup error:', error);
 
