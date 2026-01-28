@@ -16797,21 +16797,6 @@ async function renderMovementView() {
     `;
     gridContainer.appendChild(libraryDiv);
 
-    // Add 'Pre-built Programs' Card as third item
-    const programsDiv = document.createElement('div');
-    programsDiv.onclick = () => openPrebuiltPrograms();
-    programsDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);";
-    programsDiv.innerHTML = `
-        <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.2), transparent);"></div>
-        <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
-            <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Browse All</div>
-            <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">Pre-built Programs</div>
-            <div style="font-size: 0.75rem; opacity: 0.9;">Gym, Home, Yoga & More</div>
-        </div>
-        <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">🏋️</div>
-    `;
-    gridContainer.appendChild(programsDiv);
-
     // Removed other workout cards - users now browse via Workout Library
     // Object.keys(WORKOUT_DB).forEach(key => {
     //     if (key === suggestedProgram) return;
