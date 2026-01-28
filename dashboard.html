@@ -5,6 +5,14 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Balance</title>
+<meta name="description" content="Your personal hormone health dashboard.">
+
+<!-- Open Graph Tags -->
+<meta property="og:title" content="Balance Dashboard">
+<meta property="og:description" content="Access your personalized protocol and track your progress.">
+<meta property="og:image" content="https://plantbased-balance.org/assets/Logo_dots.jpg">
+<meta property="og:type" content="website">
+
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
@@ -17711,16 +17719,22 @@ function shareWinToMessenger() {
     const message = buildWinShareMessage();
     const appLink = window.location.origin;
 
-    // Messenger deep link with text
-    const messengerUrl = `fb-messenger://share?link=${encodeURIComponent(appLink)}&quote=${encodeURIComponent(message)}`;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    // Try to open Messenger app
-    window.location.href = messengerUrl;
+    if (isMobile) {
+        // Messenger deep link with text
+        const messengerUrl = `fb-messenger://share?link=${encodeURIComponent(appLink)}&quote=${encodeURIComponent(message)}`;
+        window.location.href = messengerUrl;
+    } else {
+        // Desktop FB Sharer fallback
+        const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appLink)}&quote=${encodeURIComponent(message)}`;
+        window.open(fbUrl, '_blank', 'width=600,height=400');
+    }
 
     // Close modal after short delay
     setTimeout(() => {
         closeQuickShareModal();
-        showToast('Opening Messenger...', 'success');
+        showToast('Opening Share Dialog...', 'success');
     }, 300);
 }
 
@@ -23117,18 +23131,22 @@ function shareViaWhatsApp() {
     window.open(whatsappUrl, '_blank');
 }
 
-// Share via Facebook Messenger
+// Share via Facebook
 function shareViaFacebook() {
     const code = currentReferralCode;
     const link = `${window.location.origin}/login.html?ref=${code}`;
-    const message = `Hey! I've been loving Balance for hormone health. Join me and we BOTH get 2 weeks free! Use my code ${code} or click: ${link}`;
+    const message = `Hey! I've been loving Balance for hormone health. Join me and we BOTH get 2 weeks free! Use my code ${code}`;
 
-    // Try to open Facebook Messenger app
-    const messengerUrl = `fb-messenger://share?link=${encodeURIComponent(link)}&app_id=`;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    // On mobile, this will open Messenger app
-    // On desktop, fallback to sharing dialog
-    window.location.href = messengerUrl;
+    if (isMobile) {
+        // Try Messenger app on mobile
+        window.location.href = `fb-messenger://share?link=${encodeURIComponent(link)}&app_id=`;
+    } else {
+        // Use standard Facebook Sharer on desktop (allows sharing to Feed, Groups, or Messenger)
+        const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}&quote=${encodeURIComponent(message)}`;
+        window.open(fbUrl, '_blank', 'width=600,height=400');
+    }
 }
 
 // Share via SMS
@@ -23137,8 +23155,17 @@ function shareViaSMS() {
     const link = `${window.location.origin}/login.html?ref=${code}`;
     const message = `Hey! Join me on Balance. We BOTH get 2 weeks free! Use code ${code} or click: ${link}`;
 
-    const smsUrl = `sms:?&body=${encodeURIComponent(message)}`;
-    window.location.href = smsUrl;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    if (isMobile) {
+        const smsUrl = `sms:?&body=${encodeURIComponent(message)}`;
+        window.location.href = smsUrl;
+    } else {
+        // Desktop fallback - copy to clipboard and notify
+        navigator.clipboard.writeText(message).then(() => {
+            showToast('Message copied to clipboard! Paste it into your SMS app.', 'info');
+        });
+    }
 }
 
 // ============================================================

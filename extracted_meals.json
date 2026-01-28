@@ -1,0 +1,747 @@
+[
+  {
+    "title": "Ginger Pear Smoothie",
+    "image": "/assets/ginger_pear_smoothie.png",
+    "ingredients": [
+      "Pear 170g",
+      "Spinach 50g",
+      "Cucumber 80g",
+      "Pea protein powder 30g",
+      "Ground flaxseed 15g",
+      "Aloe vera juice 30ml",
+      "Almond butter 15g",
+      "Water 100ml"
+    ],
+    "prep": "Blend all ingredients until smooth. Almond butter adds healthy fats.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Cranberry Chia Pudding",
+    "image": "/assets/cranberry_chia_pudding.png",
+    "ingredients": [
+      "Chia seeds 15g",
+      "Pea protein 10g",
+      "Almond milk 100ml",
+      "Cranberries 10g",
+      "Berries 50g",
+      "Brazil nuts 5g"
+    ],
+    "prep": "Soak chia. Top with berries/nuts.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Stuffed Sweet Potato",
+    "image": "/assets/stuffed_sweet_potato.jpg",
+    "ingredients": [
+      "Sweet potato 200g",
+      "Quinoa 150g",
+      "Black beans 150g",
+      "Kale 50g",
+      "Tahini 15g",
+      "Lemon juice",
+      "Pumpkin seeds 10g"
+    ],
+    "prep": "1. Roast:Bake sweet potato (whole or cubed) until tender (approx 25-30 mins).2. Stuff/Assemble:Mix cooked quinoa, rinsed black beans, and massaged kale. Stuff into the split potato or arrange in a bowl.3. Serve:Drizzle with a dressing made of tahini and lemon juice. Top with pumpkin seeds.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Fennel Lime Tonic & Nori",
+    "image": "/assets/fennel_lime_tonic_nori.png",
+    "ingredients": [
+      "Fennel bulb 100g",
+      "Lime juice 20ml",
+      "Nori 2g"
+    ],
+    "prep": "Juice fennel. Mix with lime water. Serve with toasted nori.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Miso Glazed Tempeh",
+    "image": "/assets/miso_glazed_tempeh.png",
+    "ingredients": [
+      "Tempeh 200g",
+      "Miso 15g",
+      "Tamari 10ml",
+      "Maple 10ml",
+      "Bok choy 150g",
+      "Cauliflower rice 150g",
+      "Sesame oil",
+      "Tahini 20g"
+    ],
+    "prep": "1. Marinate:Whisk miso, tamari, maple syrup, and sesame oil. Cube tempeh and toss in marinade. Let sit for 15-30 mins.2. Cook Tempeh:Pan-fry tempeh over medium-high heat until golden and caramelized (approx 5-8 mins).3. Sides:Steam bok choy (3-4 mins). Saut cauliflower rice with a splash of water or oil until tender.4. Serve:Assemble in a bowl and drizzle with any remaining fresh tahini.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Chamomile Maca Moon Milk",
+    "image": "/assets/chamomile_maca_moon_milk.png",
+    "ingredients": [
+      "Almond milk 200ml",
+      "Maca 5g",
+      "Cinnamon",
+      "Magnesium",
+      "Chamomile tea"
+    ],
+    "prep": "Steep tea in hot milk. Whisk powders.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Cucumber Mint Green Juice + Tofu Scramble",
+    "image": "/assets/cucumber_mint_juice_tofu_scramble.png",
+    "ingredients": [
+      "Cucumber 200g",
+      "Fresh mint 10g",
+      "Firm tofu 200g",
+      "Asparagus 100g",
+      "Dill 5g",
+      "Olive oil 10ml",
+      "Turmeric 2g",
+      "Black salt 1g"
+    ],
+    "prep": "1. Juice:Juice cucumber and mint (or blend and strain).2. Scramble:Crumble firm tofu. Saut in olive oil with turmeric and black salt for 5 mins.3. Veggies:Steam asparagus until tender-crisp. Chop and mix with tofu and fresh dill.4. Serve:Plate the scramble with the green juice on the side.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Rainbow Collard Wraps",
+    "image": "/assets/rainbow_collard_wraps.png",
+    "ingredients": [
+      "Collard greens 6 leaves",
+      "Carrot 100g",
+      "Red lentils 250g",
+      "Avocado 100g",
+      "Bean sprouts 50g",
+      "Tahini 20g",
+      "Garlic 2g"
+    ],
+    "prep": "1. Prepare Leaves:Blanch collard leaves in boiling water for 30 seconds, then plunge into ice water. Pat dry and trim the thick stem spine carefully.2. Make Paste:Mash red lentils (cooked) with tahini, minced garlic, and a squeeze of lemon until spreadable.3. Assemble:Spread lentil paste on each leaf. Top with shredded carrot, avocado slices, and bean sprouts.4. Roll:Fold sides in and roll tightly like a burrito.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Mineral Broth & Edamame",
+    "image": "/assets/mineral_broth_edamame.png",
+    "ingredients": [
+      "Edamame 150g",
+      "Miso 15g",
+      "Veg broth 250ml",
+      "Wakame 5g",
+      "Scallions"
+    ],
+    "prep": "Heat broth with miso/wakame. Add edamame.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Coconut Curry Red Lentil Soup",
+    "image": "/assets/coconut_curry_red_lentil_soup.png",
+    "ingredients": [
+      "Red lentils 250g",
+      "Light coconut milk 200ml",
+      "Curry paste 20g",
+      "Delicata squash 150g",
+      "Onion/Garlic/Ginger",
+      "Stock 300ml"
+    ],
+    "prep": "1. Roast Squash:Toss delicata squash cubes with oil and roast at 200C for 20-25 mins until tender.2. Base:Saut diced onion, garlic, and ginger until fragrant. Stir in curry paste for 1 minute.3. Simmer:Add red lentils, coconut milk, and stock. Simmer for 15-20 mins until lentils are soft.4. Serve:Ladle soup into bowls and top with roasted squash.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Lemon Balm Tea",
+    "image": "/assets/lemon_balm_tea.png",
+    "ingredients": [
+      "Lemon balm tea",
+      "Ground flax 5g"
+    ],
+    "prep": "Steep tea. Stir in flax.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Glow Bowl",
+    "image": "/assets/glow_bowl.png",
+    "ingredients": [
+      "Baby greens 100g",
+      "Fennel bulb 150g",
+      "White beans 200g",
+      "Artichoke hearts 100g",
+      "Pesto 25g",
+      "Lemon/Oil"
+    ],
+    "prep": "Roast fennel. Arrange greens. Top with beans/artichokes/fennel. Drizzle with pesto.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Zucchini Noodle Pho",
+    "image": "/assets/zucchini_noodle_pho.png",
+    "ingredients": [
+      "Zoodles 250g",
+      "Veg broth 300ml",
+      "Star anise/Cinnamon",
+      "Tofu 200g",
+      "Edamame 50g",
+      "Shiitake 100g",
+      "Mung sprouts",
+      "Basil"
+    ],
+    "prep": "1. Infuse Broth:Simmer vegetable broth with star anise, cinnamon stick, ginger slices, and onion for 15 mins. Strain if desired.2. Add Veggies:Add sliced shiitake mushrooms and simmer for 5 mins.3. Finish:Add tofu cubes and zucchini noodles (zoodles) for just the last 1-2 minutes to warm through without overcooking.4. Serve:Top with fresh basil, sprouts, and lime.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Golden Milk",
+    "image": "/assets/golden_milk.png",
+    "ingredients": [
+      "Almond milk 200ml",
+      "Turmeric",
+      "Ginger",
+      "Coconut oil 3g",
+      "Triphala",
+      "Magnesium"
+    ],
+    "prep": "Whisk all ingredients in hot milk.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Lemony Quinoa & Chickpea Bowl",
+    "image": "/assets/lemony_quinoa_chickpea_bowl.png",
+    "ingredients": [
+      "Chickpeas 100g",
+      "Quinoa 150g",
+      "Pumpkin seeds 20g",
+      "Mint & Parsley 10g",
+      "Lemon juice 15ml",
+      "Plant protein 20g"
+    ],
+    "prep": "Assemble bowl. Whisk lemon juice/oil dressing. Drizzle over.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Warm Apple Pie Oat Bake",
+    "image": "/assets/warm_apple_pie_oat_bake.png",
+    "ingredients": [
+      "Oats 50g",
+      "Apple 120g",
+      "Cardamom",
+      "Hemp yogurt 80g",
+      "Pear 80g"
+    ],
+    "prep": "1. Mix:Combine rolled oats, chopped apple, cardamom, and a splash of almond milk/water in a baking dish.2. Bake:Bake at 180C for 20-25 minutes until oats are set and apples are soft.3. Serve:Top with a dollop of hemp yogurt and fresh pear slices.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Cinnamon Maca Latte",
+    "image": "/assets/cinnamon_maca_latte.png",
+    "ingredients": [
+      "Almond milk 200ml",
+      "Maca",
+      "Cinnamon",
+      "Edamame 50g (side)"
+    ],
+    "prep": "Heat milk/spices. Serve with edamame.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Farro Power Bowl",
+    "image": "/assets/farro_power_bowl.png",
+    "ingredients": [
+      "Farro 80g",
+      "Tempeh 150g",
+      "Brussels sprouts 100g",
+      "Pomegranate",
+      "Tahini"
+    ],
+    "prep": "1. Prep Components:Cook farro according to package instructions. Roast halved Brussels sprouts at 200C for 20 mins.2. Tempeh:Pan-fry tempeh cubes with a splash of tamari until crispy.3. Dressing:Whisk tahini, lemon juice, 1 tbsp water, and a drop of maple syrup until smooth.4. Assemble:Combine farro, sprouts, and tempeh. Top with pomegranate seeds and dressing.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Cacao Chia Protein Pudding",
+    "image": "/assets/cacao_chia_protein_pudding.png",
+    "ingredients": [
+      "Chia 15g",
+      "Cacao",
+      "Protein powder",
+      "Raspberries"
+    ],
+    "prep": "Soak chia/powders. Top with raspberries.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Walnut Crusted Tofu",
+    "image": "/assets/walnut_crusted_tofu.png",
+    "ingredients": [
+      "Tofu 200g",
+      "Walnuts 20g",
+      "Sweet potato 200g",
+      "Green beans"
+    ],
+    "prep": "1. Crust Tofu:Mix crushed walnuts with spices. Dip pressed tofu slabs in almond milk, then press into walnut mix.2. Bake:Place tofu and sweet potato wedges on a baking sheet. Bake at 200C for 25-30 minutes until crispy.3. Veggies:Briefly steam or saut green beans with garlic.4. Serve:Plate tofu with fries and beans.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Reishi Hot Chocolate",
+    "image": "/assets/reishi_hot_chocolate.png",
+    "ingredients": [
+      "Almond milk",
+      "Cacao",
+      "Reishi",
+      "Monk fruit"
+    ],
+    "prep": "Whisk heated ingredients.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Savory Chickpea Scramble",
+    "image": "/assets/savory_chickpea_scramble.png",
+    "ingredients": [
+      "Chickpeas 100g",
+      "Tofu 200g",
+      "Spinach 100g",
+      "Pesto 10g",
+      "Tomatoes"
+    ],
+    "prep": "1. Scramble Base:Roughly mash chickpeas and tofu with a fork.2. Saut:Saut chopped onion and tomatoes in a pan until soft. Add chickpea/tofu mix.3. Season:Add turmeric, black salt (kala namak), and pepper. Cook 5-7 mins.4. Finish:Stir in fresh spinach until wilted. Remove from heat and fold in pesto.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Hearty Tempeh Chili",
+    "image": "/assets/hearty_tempeh_chili.png",
+    "ingredients": [
+      "Tempeh 200g",
+      "Kidney beans 100g",
+      "Cacao",
+      "Tomatoes 200g",
+      "Chili spices"
+    ],
+    "prep": "1. Saut:Cook onions, garlic, and peppers until soft. Add crumbled tempeh and brown lightly.2. Simmer:Add kidney beans, crushed tomatoes, chili powder, cumin, and vegetable broth. Simmer for 20-30 mins to thicken.3. Finish:Stir in raw cacao powder right before serving for depth.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Lime Spiced Pepitas & Tea",
+    "image": "/assets/lime_spiced_pepitas_tea.png",
+    "ingredients": [
+      "Pepitas 40g",
+      "Lime zest/juice",
+      "Chili"
+    ],
+    "prep": "Roast pepitas with spices. Serve with tea.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Sheet Pan Lemon Seitan",
+    "image": "/assets/sheet_pan_lemon_seitan.png",
+    "ingredients": [
+      "Seitan 150g",
+      "Asparagus 150g",
+      "Fennel 100g",
+      "Orange"
+    ],
+    "prep": "1. Toss:Combine seitan chunks, asparagus spears, and fennel wedges on a sheet pan. Toss with olive oil, lemon juice, dried oregano, and garlic powder.2. Bake:Roast at 200C for 20 minutes until golden and veggies are tender.3. Serve:Garnish with fresh orange zest or slices.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Tulsi Tea",
+    "image": "/assets/tulsi_tea.png",
+    "ingredients": [
+      "Tulsi tea",
+      "Lemon"
+    ],
+    "prep": "Steep.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Blue Spirulina Smoothie Bowl",
+    "image": "/assets/blue_spirulina_smoothie_bowl.png",
+    "ingredients": [
+      "Cauli rice 100g",
+      "Blueberries 150g",
+      "Pea protein",
+      "Spirulina",
+      "Tahini 20g"
+    ],
+    "prep": "Blend all. Decoration optional.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Mediterranean Lentil Salad",
+    "image": "/assets/mediterranean_lentil_salad.png",
+    "ingredients": [
+      "Lentils 100g",
+      "Eggplant 200g",
+      "Tahini 15g",
+      "Parsley",
+      "Tomatoes"
+    ],
+    "prep": "1. Roast Eggplant:Cube eggplant, toss with oil and salt. Roast at 200C for 25 mins.2. Salad Base:Combine cooked lentils, roasted eggplant, diced tomatoes, chopped parsley, and cucumber.3. Dressing:Whisk tahini, lemon juice, garlic, and a splash of water.4. Serve:Toss salad with dressing while warm or cold.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Rainbow Sushi Bowl",
+    "image": "/assets/rainbow_sushi_bowl.png",
+    "ingredients": [
+      "Black rice 150g",
+      "Smoked tofu 150g",
+      "Avocado",
+      "Cucumber",
+      "Nori"
+    ],
+    "prep": "1. Rice:Cook black rice according to package. Stir in a little rice vinegar when done.2. Prep:Cube smoked tofu. Slice avocado and cucumber. Cut nori into small strips.3. Assemble:Arrange everything in a bowl.4. Dress:Drizzle with tamari and sesame oil.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Sage & Lavender Tea",
+    "image": "/assets/sage_lavender_tea.png",
+    "ingredients": [
+      "Sage",
+      "Lavender"
+    ],
+    "prep": "Steep.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Overnight Buckwheat Groats",
+    "image": "/assets/overnight_buckwheat_groats.png",
+    "ingredients": [
+      "Buckwheat 60g",
+      "Almond milk 150ml",
+      "Cacao nibs",
+      "Cherries",
+      "Alhond yogurt"
+    ],
+    "prep": "Soak overnight. Top with cherries/yogurt.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Fire Tonic & Lentil Waffles",
+    "image": "/assets/fire_tonic_lentil_waffles.png",
+    "ingredients": [
+      "Tonic: ACV, Ginger, Cayenne",
+      "Lentils 150g",
+      "Chickpea flour 50g",
+      "Kimchi",
+      "Avocado"
+    ],
+    "prep": "1. Tonic:Mix warm water, apple cider vinegar, grated ginger, and a pinch of cayenne.2. Waffles:Blend soaked red lentils (or use flour), chickpea flour, water, baking powder, and salt. Cook in a greased waffle iron until crisp.3. Serve:Drink tonic first. Top waffles with kimchi and sliced avocado.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Grapefruit & Pumpkin Seed Brittle",
+    "image": "/assets/grapefruit_pumpkin_seed_brittle.png",
+    "ingredients": [
+      "Grapefruit",
+      "Pumpkin seeds 20g",
+      "Maple",
+      "Chili"
+    ],
+    "prep": "Bake seeds. Serve with grapefruit.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Thai Basil Zucchini Noodles",
+    "image": "/assets/thai_basil_zucchini_noodles.png",
+    "ingredients": [
+      "Zoodles 300g",
+      "Tofu 200g",
+      "Almond butter",
+      "Coconut milk",
+      "Thai basil"
+    ],
+    "prep": "1. Tofu:Pan-fry tofu cubes with soy sauce until golden.2. Sauce:Whisk almond butter, coconut milk, lime juice, ginger, and garlic until creamy.3. Noodles:Spiralize zucchini. Toss zoodles in the sauce briefly to warm (don't cook too long).4. Serve:Top with tofu and fresh Thai basil leaves.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Rosemary Cacao Truffle",
+    "image": "/assets/rosemary_cacao_truffle.png",
+    "ingredients": [
+      "Cacao",
+      "Protein",
+      "Coconut oil",
+      "Rosemary"
+    ],
+    "prep": "Mix and chill.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Turmeric Cauliflower Steaks",
+    "image": "/assets/turmeric_cauliflower_steaks.png",
+    "ingredients": [
+      "Cauliflower 300g",
+      "Beluga lentils 150g",
+      "Kale",
+      "Tahini"
+    ],
+    "prep": "1. Steaks:Slice cauliflower into thick \"steaks\". Brush with oil, turmeric, cumin, and paprika.2. Roast:Bake at 200C for 25-30 minutes, flipping halfway, until tender and charred.3. Base:Warm the cooked beluga lentils and massage the kale with lemon.4. Serve:Place steaks over lentils/kale and drizzle with tahini.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Dandelion Root Latte",
+    "image": "/assets/dandelion_root_latte.png",
+    "ingredients": [
+      "Dandelion root",
+      "Almond milk"
+    ],
+    "prep": "Heat and whisk.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Carrot Cake Chia Parfait",
+    "image": "/assets/carrot_cake_chia_parfait.png",
+    "ingredients": [
+      "Chia 30g",
+      "Carrot 100g",
+      "Cashew butter",
+      "Coconut cream",
+      "Walnuts"
+    ],
+    "prep": "Layer chia pudding with grated carrot/cream.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Moroccan Chickpea Stew",
+    "image": "/assets/moroccan_chickpea_stew.png",
+    "ingredients": [
+      "Chickpeas 200g",
+      "Millet 150g",
+      "Apricots",
+      "Tomatoes",
+      "Spinach"
+    ],
+    "prep": "1. Base:Saut onion, garlic, and ginger with cumin, cinnamon, and turmeric.2. Simmer:Add chickpeas, chopped tomatoes, dried apricots, and broth. Simmer for 20 mins.3. Greens:Stir in spinach at the end to wilt.4. Serve:Spoon stew over fluffy cooked millet.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Green Apple & Almond Butter",
+    "image": "/assets/green_apple_almond_butter.png",
+    "ingredients": [
+      "Apple",
+      "Almond butter"
+    ],
+    "prep": "Slice and dip.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Grilled Tofu Tikka",
+    "image": "/assets/grilled_tofu_tikka.png",
+    "ingredients": [
+      "Tofu 200g",
+      "Cauli rice 150g",
+      "Cucumber/Mint salad",
+      "Coconut yogurt"
+    ],
+    "prep": "1. Marinate:Coat tofu in coconut yogurt mixed with tikka spices, lime, and ginger. Let sit for 20+ mins.2. Grill/Bake:Grill skewers or bake tofu at 220C until edges are charred (approx 20 mins).3. Sides:Serve with heated cauliflower rice and a cooling cucumber/mint salad.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Holy Basil Tea",
+    "image": "/assets/tulsi_tea.png",
+    "ingredients": [
+      "Fresh basil"
+    ],
+    "prep": "Steep.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Metabolic Mocha Smoothie",
+    "image": "/assets/metabolic_mocha_smoothie.png",
+    "ingredients": [
+      "Cold brew",
+      "Cacao",
+      "Chili",
+      "Pea protein",
+      "Banana"
+    ],
+    "prep": "Blend.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Charred Broccoli & Bean Bowl",
+    "image": "/assets/charred_broccoli_bean_bowl.png",
+    "ingredients": [
+      "Broccoli 200g",
+      "Cannellini beans 150g",
+      "Romesco sauce"
+    ],
+    "prep": "1. Char:Toss broccoli florets with oil and roast at high heat (220C) or pan-sear until charred/browned.2. Combine:Mix warm broccoli with cannellini beans.3. Serve:Toss generously with Romesco sauce (roasted red pepper & almond sauce).",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Fennel Tea",
+    "image": "/assets/fennel_tea.png",
+    "ingredients": [
+      "Fennel seeds"
+    ],
+    "prep": "Steep.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Sweet Potato Nourish Bowl",
+    "image": "/assets/sweet_potato_nourish_bowl.png",
+    "ingredients": [
+      "Sweet potato 200g",
+      "Kale",
+      "Quinoa",
+      "Maple Miso dressing"
+    ],
+    "prep": "1. Roast:Roast sweet potato wedges at 200C until tender.2. Kale:Remove kale stems and massage leaves with a little olive oil and salt to soften.3. Dressing:Whisk maple, miso, and apple cider vinegar.4. Serve:Assemble bowl with quinoa, potato, kale, and drizzle with dressing.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Baked Raspberry Almond Oats",
+    "image": "/assets/baked_raspberry_almond_oats.png",
+    "ingredients": [
+      "Oats 60g",
+      "Almonds",
+      "Raspberries",
+      "Coconut yogurt"
+    ],
+    "prep": "1. Mix:Combine oats, baking powder, cinnamon, and almonds.2. Wet:Mix mashed banana (if using in base) or maple syrup with milk and melted coconut oil. Fold into dry mix.3. Bake:Stir in raspberries. Pour into ramekin. Bake at 180C for 20-25 mins.4. Serve:Drizzle with coconut yogurt.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Spiced Cacao & Pepitas",
+    "image": "/assets/spiced_cacao_pepitas.png",
+    "ingredients": [
+      "Cacao drink",
+      "Pepitas"
+    ],
+    "prep": "Warm drink + seeds.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Creamy White Bean Soup",
+    "image": "/assets/creamy_white_bean_soup.png",
+    "ingredients": [
+      "White beans 200g",
+      "Rosemary",
+      "Sourdough side"
+    ],
+    "prep": "1. Saut:Saut onion, garlic, and celery until soft.2. Simmer:Add white beans (cannellini) and veggie stock. Add a sprig of rosemary. Simmer 15 mins.3. Blend:Remove rosemary. Blend soup until creamy (add almond milk if needed).4. Serve:Serve hot with a slice of sourdough.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Choc Dipped Orange",
+    "image": "/assets/choc_dipped_orange.png",
+    "ingredients": [
+      "Orange",
+      "Dark choc"
+    ],
+    "prep": "Dip slices.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Smoky Tempeh Pot Pie",
+    "image": "/assets/smoky_tempeh_pot_pie.png",
+    "ingredients": [
+      "Tempeh",
+      "Root veg",
+      "Cassava crust"
+    ],
+    "prep": "1. Filling:Saut onion, carrots, celery. Add crumbled tempeh. Stir in flour or starch to coat, then pour in broth to create gravy.2. Crust:Make a simple cassava flour dough (flour, oil, water) or top with mashed potato.3. Bake:Place filling in dish, top with crust. Bake at 200C for 25-30 mins until bubbling and golden.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Tart Cherry Mocktail",
+    "image": "/assets/tart_cherry_mocktail.png",
+    "ingredients": [
+      "Tart cherry",
+      "Magnesium"
+    ],
+    "prep": "Mix.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Banana Buckwheat Muffins",
+    "image": "/assets/banana_buckwheat_muffins.png",
+    "ingredients": [
+      "Buckwheat flour 60g",
+      "Banana",
+      "Walnuts",
+      "Almond milk"
+    ],
+    "prep": "1. Batter:Mash banana. Whisk with almond milk and a tsp of oil. Stir in buckwheat flour, baking powder, and cinnamon.2. Bake:Fold in walnuts. Spoon into muffin tin.3. Cook:Bake at 180C for 20-25 minutes. Let cool slightly.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Cozy Miso Soba Bowl",
+    "image": "/assets/cozy_miso_soba_bowl.png",
+    "ingredients": [
+      "Soba noodles",
+      "Miso",
+      "Shiitake",
+      "Tofu 200g"
+    ],
+    "prep": "1. Broth:Simmer ginger slices, garlic, and shiitake mushrooms in vegetable stock for 10 mins.2. Miso:Whisk miso with a little hot water separately. Turn off heat and stir into broth (don't boil miso).3. Noodles:Cook soba noodles, rinse cold. Place in bowl.4. Serve:Ladle soup over noodles. Top with tofu cubes and scallions.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Carrot Cake Energy Balls",
+    "image": "/assets/carrot_cake_energy_balls.png",
+    "ingredients": [
+      "Dates",
+      "Carrot",
+      "Walnuts",
+      "Coconut flour"
+    ],
+    "prep": "Blend & roll. Serve with tea.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Gnocchi Sage Butter",
+    "image": "/assets/gnocchi_sage_butter.png",
+    "ingredients": [
+      "Gnocchi",
+      "White beans 150g",
+      "Sage",
+      "Walnuts",
+      "Rocket"
+    ],
+    "prep": "1. Cook Gnocchi:Boil gnocchi until they float. Drain.2. Sage Sauce:Heat olive oil or vegan butter in a pan. Fry fresh sage leaves until crisp. Add walnuts.3. Toss:Add gnocchi to the pan and saut for a few minutes to crisp the outside.4. Serve:Pile over a bed of fresh rocket.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Lemon Balm Valerian",
+    "image": "/assets/lemon_balm_valerian.png",
+    "ingredients": [
+      "Tea"
+    ],
+    "prep": "Steep.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Berry Chia Jam Toast",
+    "image": "/assets/berry_chia_jam_toast.png",
+    "ingredients": [
+      "Seeded bread",
+      "Chia jam",
+      "Tofu scramble side"
+    ],
+    "prep": "Toast bread. Top with jam. Serve with tofu.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Lentil Bolognese Squash",
+    "image": "/assets/lentil_bolognese_squash.png",
+    "ingredients": [
+      "Lentils 200g",
+      "Tomato sauce",
+      "Spaghetti squash"
+    ],
+    "prep": "1. Squash:Cut squash in half lengthwise, remove seeds. Roast cut-side down at 200C for 40 mins. Scrape out strands.2. Sauce:Saut onion, carrot, celery. Add lentils, crushed tomatoes, and dried herbs. Simmer 20 mins.3. Serve:Top squash strands with heavy scoop of bolognese.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Creamy Mushroom Stroganoff",
+    "image": "/assets/creamy_mushroom_stroganoff.png",
+    "ingredients": [
+      "Mushrooms",
+      "Smoked tofu 200g",
+      "Rice noodles",
+      "Cashew cream"
+    ],
+    "prep": "1. Saut:Saut sliced mushrooms in olive oil until browned. Add garlic and thyme.2. Sauce:Stir in cashew cream (blended cashews + water), nutritional yeast, and mustard. Simmer to thicken.3. Noodles:Cook rice noodles. Toss immediately with the sauce.4. Serve:Top with parsley.",
+    "source_file": "dashboard.html"
+  },
+  {
+    "title": "Kava Tea",
+    "image": "/assets/kava_tea.png",
+    "ingredients": [
+      "Kava"
+    ],
+    "prep": "Steep.",
+    "source_file": "dashboard.html"
+  }
+]

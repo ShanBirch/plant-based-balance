@@ -27,17 +27,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Define Product Pricing
     // Real Price IDs created on User's Stripe Account
     const PRICES = {
-        '1-month': 'price_1SkDKhCGCyRUsOfKdi44QCWi', 
-        '3-month': 'price_1SkDKiCGCyRUsOfKcb3Wm9O3',
-        '6-month': 'price_1SkDKjCGCyRUsOfKQDGEmmkv' 
+        '1-month': 'price_1SkDKhCGCyRUsOfKdi44QCWi'
     };
 
     // 4. One-Click Payment Logic (Apple Pay / Google Pay)
     // Flat Pricing - no discount complexity
     const PLAN_DETAILS = {
-        '1-month': { amount: 3000, label: 'Balance Membership (1 Month)' },      // $30 AUD
-        '3-month': { amount: 7500, label: 'Balance Membership (3 Months)' },     // $75 AUD ($25/mo)
-        '6-month': { amount: 12000, label: 'Balance Membership (6 Months)' }     // $120 AUD ($20/mo)
+        '1-month': { amount: 3000, label: 'Balance Membership' }      // $30 AUD
     };
 
     const paymentRequest = stripe.paymentRequest({
@@ -101,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    let currentSelectedPlan = '1-month'; // Default
+    let currentSelectedPlan = '1-month';
     let walletAvailable = false;
 
     // Check Availability
@@ -184,19 +180,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         displayLabel += " + Acupressure Series";
                     }
 
-                    // Special Logic for Trial Display in Wallet Sheet
-                    if (plan === '6-month') {
-                        // For Wallet Sheet, showing $0.00 might be confusing if we don't setup "Recurring" display items correctly.
-                        // But we CAN set total to $0 if there is no bump.
-                        // If bump, set total to $9.
-                        // Stripe Payment Request API handles 'recurring' line items if configured, but here we just request the initial charge.
-                        if (!isBumpChecked) {
-                            totalAmount = 0;
-                            displayLabel = "7-Day Free Trial (Then $108)";
-                        } else {
-                            totalAmount = BUMP_AMOUNT;
-                            displayLabel = "Acupressure Series (Trial Starts Now)";
-                        }
+                    // Any new user gets 14-day free trial on the $30 plan
+                    if (!isBumpChecked) {
+                        totalAmount = 0;
+                        displayLabel = "14-Day Free Trial (Then $30/mo)";
+                    } else {
+                        totalAmount = BUMP_AMOUNT;
+                        displayLabel = "Acupressure Series ($30/mo Trial Starts Now)";
                     }
 
                     paymentRequest.update({
@@ -221,39 +211,36 @@ document.addEventListener('DOMContentLoaded', () => {
             const referralCode = urlParams.get('ref') || sessionStorage.getItem('referralCode');
             const hasReferral = !!referralCode;
 
-            // NEW: 6-Month Plan uses Backend Session (for Trial)
-            // OR any plan with referral code gets trial
-            if (plan === '6-month' || hasReferral) {
-                btn.innerText = hasReferral ? "Launching 2 Week Trial..." : "Launching Trial...";
-                try {
-                    const response = await fetch('/.netlify/functions/create-checkout-session', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            priceId: priceId,
-                            isTrial: true,
-                            trialDays: hasReferral ? 14 : 7, // 2 weeks for referrals, 1 week for 6-month
-                            referralCode: referralCode || null,
-                            email: sessionStorage.getItem('userEmail'),
-                            bump: isBumpChecked,
-                            utm_data: utmData,
-                            fbc: getCookie('_fbc'),
-                            fbp: getCookie('_fbp')
-                        })
-                    });
-                    const session = await response.json();
-                    if (session.error) {
-                         alert("Checkout Error: " + session.error.message);
-                         btn.innerText = "Try Again";
-                    } else {
-                         stripe.redirectToCheckout({ sessionId: session.sessionId });
-                    }
-                } catch (err) {
-                    console.error("Backend Checkout Error", err);
-                    alert("System Error. Please try again.");
+            // NEW: All signups get 14-day trial
+            btn.innerText = "Launching 14-Day Trial...";
+            try {
+                const response = await fetch('/.netlify/functions/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        priceId: priceId,
+                        isTrial: true,
+                        trialDays: 14, 
+                        referralCode: referralCode || null,
+                        email: sessionStorage.getItem('userEmail'),
+                        bump: isBumpChecked,
+                        utm_data: utmData,
+                        fbc: getCookie('_fbc'),
+                        fbp: getCookie('_fbp')
+                    })
+                });
+                const session = await response.json();
+                if (session.error) {
+                     alert("Checkout Error: " + session.error.message);
+                     btn.innerText = "Try Again";
+                } else {
+                     stripe.redirectToCheckout({ sessionId: session.sessionId });
                 }
-                return;
+            } catch (err) {
+                console.error("Backend Checkout Error", err);
+                alert("System Error. Please try again.");
             }
+            return;
 
             // EXISTING: 1 & 3 Month Plans use Client-Side Redirect (No Trial)
             const planData = PLAN_DETAILS[plan];

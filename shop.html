@@ -999,44 +999,28 @@
                 <label style="display: flex; align-items: flex-start; justify-content: center; gap: 12px; cursor: pointer; color: #475569; font-size: 0.85rem; line-height: 1.5; text-align: left;">
                     <input type="checkbox" id="terms-checkbox" style="width: 20px; height: 20px; flex-shrink: 0; accent-color: #48864B; cursor: pointer; margin-top: 2px;">
                     <span>
-                        I acknowledge that the 50% discount applies to the first billing period only. I understand that my subscription will automatically renew at the standard full price thereafter. I agree to the <a href="terms.html" target="_blank" style="text-decoration: underline; color: #48864B; font-weight: 700;">Terms & Conditions</a> and <a href="refund-policy.html" target="_blank" style="text-decoration: underline; color: #48864B; font-weight: 700;">Refund Policy</a>.
+                        I agree to the <a href="terms.html" target="_blank" style="text-decoration: underline; color: #48864B; font-weight: 700;">Terms & Conditions</a> and <a href="refund-policy.html" target="_blank" style="text-decoration: underline; color: #48864B; font-weight: 700;">Refund Policy</a>.
                     </span>
                 </label>
             </div>
 
-            <div class="pricing-grid">
-                <!-- 1 Month -->
-                <div class="pricing-card">
-                    <h3>1-Month Plan</h3>
+            <div class="pricing-grid" style="display: flex; justify-content: center; max-width: 500px; margin: 0 auto;">
+                <!-- Single Plan: 1 Month Protocol with 14-Day Free Trial -->
+                <div class="pricing-card popular" style="border: 3px solid #416741; width: 100%;">
+                    <div class="badge-popular" style="background: #ef4444 !important; font-size: 0.9rem;">14-DAY FREE TRIAL AVAILABLE</div>
+                    <h3>MEMBERSHIP PLAN</h3>
                     <div class="price-tag">
-                        <div class="price-new">AUD $30</div>
+                        <div style="font-size: 1rem; color: #666; font-weight: 700;">TRY FREE FOR 2 WEEKS</div>
+                        <div class="price-new">Then AUD $30/mo</div>
                     </div>
-                    <span class="weekly-price">AUD $7.50 per week</span>
-                    <button class="btn btn-outline checkout-btn" data-plan="1-month" style="margin-top: 1.5rem; width: 100%;">Select Plan</button>
-                </div>
-
-                <!-- 6 Month -->
-                <div class="pricing-card popular">
-                    <div class="badge-popular">Best Value</div>
-                    <h3>6-Month Plan</h3>
-                    <div class="price-tag">
-                        <div class="price-new">AUD $120</div>
+                    <span class="weekly-price">AUD $7.50 per week (billed after trial)</span>
+                    <div style="font-size: 0.75rem; color: #15803d; font-weight: 700; margin: 15px 0; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                        <i data-lucide="shield-check" size="14"></i> Cancel any time. No hidden fees.
                     </div>
-                    <span class="weekly-price">AUD $4.60 per week</span>
-                    <div style="font-size: 0.75rem; color: #15803d; font-weight: 700; margin: 10px 0; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                        <i data-lucide="leaf" size="14"></i> 1 Tree Planted With Every 6-Month Plan
+                    <button class="btn btn-primary checkout-btn" data-plan="1-month" style="width: 100%; background: #ef4444; border-color: #ef4444; font-size: 1.2rem; padding: 1.2rem;">START 14-DAY FREE TRIAL</button>
+                    <div style="font-size: 0.75rem; color: #666; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <i data-lucide="lock" size="12"></i> $0.00 Due Today
                     </div>
-                    <button class="btn btn-primary checkout-btn" data-plan="6-month" style="width: 100%;">Select Plan</button>
-                </div>
-
-                <!-- 3 Month -->
-                <div class="pricing-card">
-                    <h3>3-Month Plan</h3>
-                    <div class="price-tag">
-                        <div class="price-new">AUD $75</div>
-                    </div>
-                    <span class="weekly-price">AUD $5.75 per week</span>
-                    <button class="btn btn-outline checkout-btn" data-plan="3-month" style="margin-top: 1.5rem; width: 100%;">Select Plan</button>
                 </div>
             </div>
 

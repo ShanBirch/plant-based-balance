@@ -4525,7 +4525,7 @@ function showFinalLoading() {
         "Securing your Member Account...",
         "Encrypting personalized access...",
         "Reserving your protocol slot...",
-        "Finalizing your 28-Day Reset..."
+        "Finalizing your Balance Reset..."
     ];
     
     let logIdx = 0;
