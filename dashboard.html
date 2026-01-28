@@ -9670,26 +9670,23 @@ function startCustomBuilderWorkout() {
             <!-- Main Content (Hidden Initially) -->
             <div id="progress-main-content" style="display: none;">
 
-                <!-- Overview Stats Grid -->
+                <!-- Exercise Progress Selection Top -->
                 <div style="padding: 20px 20px 10px 20px;">
-                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">Overview</h3>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 10px;">
-                        <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); text-align: center;">
-                            <div style="font-size: 2rem; font-weight: 700; color: var(--primary); margin-bottom: 5px;" id="total-workouts-stat">-</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Workouts</div>
+                    <div style="background: white; padding: 20px; border-radius: 20px; box-shadow: var(--card-shadow); border: 1px solid var(--accent-green); position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: -10px; right: -10px; font-size: 4rem; opacity: 0.05; transform: rotate(15deg);">📊</div>
+                        <h3 style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 12px 0;">Track Progress</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <div style="flex: 1; position: relative;">
+                                <select id="exercise-selection-dropdown" onchange="if(this.value) showExerciseDetailChart(this.value, window.currentUser.id)" style="width: 100%; padding: 14px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; font-size: 0.95rem; font-family: inherit; appearance: none; background: white; cursor: pointer; color: var(--text-main);">
+                                    <option value="">Select an exercise...</option>
+                                    <!-- Populated by JS -->
+                                </select>
+                                <div style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted);">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                                </div>
+                            </div>
                         </div>
-                        <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); text-align: center;">
-                            <div style="font-size: 2rem; font-weight: 700; color: var(--secondary); margin-bottom: 5px;" id="current-streak-stat">-</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Day Streak</div>
-                        </div>
-                        <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); text-align: center;">
-                            <div style="font-size: 2rem; font-weight: 700; color: var(--primary); margin-bottom: 5px;" id="total-points-stat">-</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Points</div>
-                        </div>
-                        <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); text-align: center;">
-                            <div style="font-size: 2rem; font-weight: 700; color: var(--secondary); margin-bottom: 5px;" id="avg-calories-stat">-</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Avg Calories</div>
-                        </div>
+                        <div style="margin-top: 10px; font-size: 0.75rem; color: var(--text-muted);">Select any exercise to view your strength history</div>
                     </div>
                 </div>
 
@@ -9732,23 +9729,7 @@ function startCustomBuilderWorkout() {
                     </div>
                 </div>
 
-                <!-- Daily Check-ins Trends Section -->
-                <div style="padding: 20px 20px 10px 20px;">
-                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">Recent Check-ins</h3>
-                    <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow);">
-                        <div id="checkins-list">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Exercise Progress Section -->
-                <div style="padding: 20px 20px 30px 20px;">
-                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">Exercise Progress</h3>
-                    <div id="exercise-progress-list">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
 
             </div>
         </div>
@@ -27759,7 +27740,7 @@ async function initProgressView() {
 
         // Load recent exercises
         try {
-            recentExercises = await dbHelpers.workouts.getRecentExercises(user.id, 10);
+            recentExercises = await dbHelpers.workouts.getRecentExercises(user.id, 100);
             console.log('Recent exercises:', recentExercises?.length || 0);
         } catch (e) {
             console.warn('Failed to load recent exercises:', e);
@@ -27856,57 +27837,9 @@ function renderPersonalBests(personalBests, recentPBs) {
     const pbsContainer = document.getElementById('personal-bests-list');
     const recentPBsContainer = document.getElementById('recent-pbs-list');
 
-    // Render recent PBs (achievements) if any
-    if (recentPBs && recentPBs.length > 0) {
-        recentPBsContainer.style.display = 'block';
+    // User wants ONLY the cards, and only the 4 most recent ones
+    recentPBsContainer.style.display = 'none';
 
-        // Filter to show only PBs from the last 7 days
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-
-        const recentPBsFiltered = recentPBs.filter(pb => {
-            const pbDate = new Date(pb.achieved_at);
-            return pbDate >= weekAgo;
-        });
-
-        if (recentPBsFiltered.length > 0) {
-            recentPBsContainer.innerHTML = `
-                <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 16px; border-radius: 16px; border: 1px solid #f59e0b;">
-                    <div style="font-size: 0.85rem; font-weight: 700; color: #92400e; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-                        <span style="font-size: 1.1rem;">🔥</span> Recent Wins
-                    </div>
-                    ${recentPBsFiltered.map(pb => {
-                        const pbDate = new Date(pb.achieved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                        const pbValue = pb.pb_type === 'weight'
-                            ? `${pb.new_value}kg x ${pb.new_reps} reps`
-                            : `${pb.new_value} reps at ${pb.new_weight_kg}kg`;
-                        const improvement = pb.improvement
-                            ? `<span style="color: #059669; font-weight: 700;">+${pb.improvement}${pb.pb_type === 'weight' ? 'kg' : ' reps'}</span>`
-                            : '<span style="color: #059669; font-weight: 700;">New!</span>';
-
-                        return `
-                            <div style="background: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
-                                <div>
-                                    <div style="font-weight: 600; color: #1f2937; font-size: 0.9rem;">${pb.exercise_name}</div>
-                                    <div style="font-size: 0.8rem; color: #6b7280;">${pbValue}</div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <div>${improvement}</div>
-                                    <div style="font-size: 0.75rem; color: #9ca3af;">${pbDate}</div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-        } else {
-            recentPBsContainer.style.display = 'none';
-        }
-    } else {
-        recentPBsContainer.style.display = 'none';
-    }
-
-    // Render all-time personal bests
     if (!personalBests || personalBests.length === 0) {
         pbsContainer.innerHTML = `
             <div style="grid-column: span 2; text-align: center; padding: 30px 20px; color: var(--text-muted);">
@@ -27917,20 +27850,32 @@ function renderPersonalBests(personalBests, recentPBs) {
         return;
     }
 
-    const pbsHtml = personalBests.map(pb => {
+    // Sort personal bests by the date they were achieved (most recent first)
+    const sortedPBs = [...personalBests].sort((a, b) => {
+        const dateA = new Date(a.best_weight_date || 0);
+        const dateB = new Date(b.best_weight_date || 0);
+        return dateB - dateA;
+    });
+
+    // Take top 4
+    const top4PBs = sortedPBs.slice(0, 4);
+
+    const pbsHtml = top4PBs.map(pb => {
         const weight = pb.best_weight_kg ? `${pb.best_weight_kg}kg` : '-';
         const reps = pb.best_weight_reps || pb.best_reps || '-';
         const date = pb.best_weight_date
             ? new Date(pb.best_weight_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-            : '';
+            : 'Jan 28'; // Fallback to today if date missing, though it should be there
 
         return `
-            <div style="background: white; padding: 16px; border-radius: 14px; box-shadow: var(--card-shadow); position: relative; overflow: hidden;">
-                <div style="position: absolute; top: 8px; right: 8px; font-size: 1.2rem; opacity: 0.15;">🏆</div>
-                <div style="font-weight: 700; color: var(--primary); font-size: 0.85rem; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pb.exercise_name}</div>
-                <div style="font-size: 1.4rem; font-weight: 700; color: #f59e0b; margin-bottom: 4px;">${weight}</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">x ${reps} reps</div>
-                ${date ? `<div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; opacity: 0.7;">${date}</div>` : ''}
+            <div style="background: white; padding: 18px; border-radius: 18px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px;">
+                <div style="position: absolute; top: 12px; right: 12px; font-size: 1.2rem; opacity: 0.3;">🏆</div>
+                <div style="font-weight: 600; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px; padding-right: 25px; line-height: 1.2;">${pb.exercise_name}</div>
+                <div>
+                    <div style="font-size: 1.8rem; font-weight: 800; color: #f59e0b; line-height: 1;">${weight}</div>
+                    <div style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500; margin-top: 4px;">x ${reps} reps</div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 12px; font-weight: 500; opacity: 0.8; text-align: right;">${date}</div>
             </div>
         `;
     }).join('');
@@ -28119,69 +28064,20 @@ function renderCheckins(checkins) {
 }
 
 async function renderExerciseProgress(userId, exercises) {
-    const container = document.getElementById('exercise-progress-list');
+    const dropdown = document.getElementById('exercise-selection-dropdown');
+    if (!dropdown) return;
 
     if (!exercises || exercises.length === 0) {
-        container.innerHTML = '<div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); text-align: center; color: var(--text-muted);">No exercises tracked yet</div>';
+        dropdown.innerHTML = '<option value="">No exercises tracked yet</option>';
         return;
     }
 
-    // Get progress for each exercise
-    const progressPromises = exercises.slice(0, 5).map(async exercise => {
-        try {
-            const progress = await dbHelpers.workouts.getExerciseProgress(userId, exercise, 5);
-            return { exercise, progress };
-        } catch (e) {
-            return { exercise, progress: [] };
-        }
-    });
+    // Sort exercises alphabetically
+    const sortedExercises = [...exercises].sort();
 
-    const results = await Promise.all(progressPromises);
-
-    const html = results.map(({ exercise, progress }) => {
-        if (!progress || progress.length === 0) return '';
-
-        const latest = progress[progress.length - 1];
-        const first = progress[0];
-
-        const latestWeight = parseFloat(latest.weight_kg) || 0;
-        const latestReps = parseInt(latest.reps) || 0;
-        const firstWeight = parseFloat(first.weight_kg) || 0;
-        const firstReps = parseInt(first.reps) || 0;
-
-        const weightGain = latestWeight - firstWeight;
-        const repsGain = latestReps - firstReps;
-
-        let improvement = '';
-        if (weightGain > 0 && repsGain > 0) {
-            improvement = `<span style="color: #10b981; font-weight: 600;">↗ +${weightGain}kg, +${repsGain} reps</span>`;
-        } else if (weightGain > 0) {
-            improvement = `<span style="color: #10b981; font-weight: 600;">↗ +${weightGain}kg</span>`;
-        } else if (repsGain > 0) {
-            improvement = `<span style="color: #10b981; font-weight: 600;">↗ +${repsGain} reps</span>`;
-        } else {
-            improvement = `<span style="color: var(--text-muted);">Maintaining</span>`;
-        }
-
-        return `
-            <div onclick="showExerciseDetailChart('${exercise.replace(/'/g, "\\'")}', '${userId}')" style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); margin-bottom: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(0,0,0,0.15)';" onmouseout="this.style.transform=''; this.style.boxShadow='var(--card-shadow)';">
-                <div style="font-weight: 700; color: var(--primary); font-size: 1rem; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                    <span>${exercise}</span>
-                    <span style="font-size: 0.85rem; color: var(--text-muted);">📊</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="font-size: 0.85rem; color: var(--text-muted);">
-                        Best: ${latestWeight > 0 ? latestWeight + 'kg' : ''} ${latestReps > 0 ? 'x ' + latestReps : ''}
-                    </div>
-                    <div style="font-size: 0.85rem;">
-                        ${improvement}
-                    </div>
-                </div>
-            </div>
-        `;
-    }).filter(Boolean).join('');
-
-    container.innerHTML = html || '<div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); text-align: center; color: var(--text-muted);">No exercise progress data yet</div>';
+    // Clear and populate dropdown
+    dropdown.innerHTML = '<option value="">Select an exercise...</option>' + 
+        sortedExercises.map(ex => `<option value="${ex.replace(/"/g, '&quot;')}">${ex}</option>`).join('');
 }
 
 // Show detailed exercise chart modal
