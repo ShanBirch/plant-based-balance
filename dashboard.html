@@ -8773,8 +8773,8 @@ async function startCustomBuilderWorkout() {
                 </div>
             </div>` : ''}
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -8782,13 +8782,14 @@ async function startCustomBuilderWorkout() {
                     const prevStats = getPreviousStats(ex.name, setIdx + 1) || '-';
                     return `
                     <div class="set-wrapper">
-                        <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(50px, auto) 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
-                            <div style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
+                        <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
+                            <div class="set-number" style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
                             <input type="text" class="input-time" placeholder="-" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                             <input type="text" class="input-reps" placeholder="Reps" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                             <input type="text" class="input-kg" placeholder="Kg" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                             <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prevStats}</div>
                             <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
+                            <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                         </div>
                         <div class="drop-set-container">
                             <div class="drop-set-inputs">
@@ -17296,8 +17297,8 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
                 </div>
             </div>` : ''}
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(70px, auto); gap:8px; padding:0 15px 10px 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:0 15px 10px 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -17360,8 +17361,8 @@ function getSetRowHtml(exName, setNum, isTimeBased) {
     const prev = getPreviousStats(exName, setNum) || '-';
     return `
         <div class="set-wrapper">
-            <div class="workout-set-row" style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px; gap:8px; align-items:center; padding:10px 15px; border-top:1px solid #f8fafc;">
-                <div style="font-weight:800; color:#94a3b8; font-size:0.85rem; text-align:center;">${setNum}</div>
+            <div class="workout-set-row" style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; align-items:center; padding:10px 15px; border-top:1px solid #f8fafc;">
+                <div class="set-number" style="font-weight:800; color:#94a3b8; font-size:0.85rem; text-align:center;">${setNum}</div>
                 <div style="position:relative;">
                     <input type="text" class="input-time" placeholder="-" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
                     ${isTimeBased ? '<svg viewBox="0 0 24 24" style="position:absolute; left:4px; top:50%; transform:translateY(-50%); width:12px; height:12px; fill:#94a3b8;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>' : ''}
@@ -17370,6 +17371,9 @@ function getSetRowHtml(exName, setNum, isTimeBased) {
                 <input type="text" class="input-kg" placeholder="Kg" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
                 <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prev}</div>
                 <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
+                <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;">
+                    <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                </button>
             </div>
             <div class="drop-set-container">
                 <div class="drop-set-inputs">
@@ -17417,6 +17421,40 @@ function addWorkoutSet(btn, exName, isTimeBased) {
         newRow.style.opacity = '1';
         newRow.style.transform = 'translateY(0)';
     });
+}
+
+function deleteSetRow(btn) {
+    const wrapper = btn.closest('.set-wrapper');
+    const container = wrapper.closest('.sets-list-container');
+
+    if (!container) {
+        console.error("Could not find .sets-list-container");
+        return;
+    }
+
+    // Don't allow deleting if only one set remains
+    const allSets = container.querySelectorAll('.set-wrapper');
+    if (allSets.length <= 1) {
+        return;
+    }
+
+    // Animate out
+    wrapper.style.opacity = '0';
+    wrapper.style.transform = 'translateY(-10px)';
+    wrapper.style.transition = 'all 0.2s ease';
+
+    setTimeout(() => {
+        wrapper.remove();
+
+        // Renumber remaining sets
+        const remainingSets = container.querySelectorAll('.set-wrapper');
+        remainingSets.forEach((setWrapper, idx) => {
+            const setNumEl = setWrapper.querySelector('.set-number');
+            if (setNumEl) {
+                setNumEl.textContent = idx + 1;
+            }
+        });
+    }, 200);
 }
 
 // Drop Set Functions
@@ -19107,8 +19145,8 @@ function renderWorkoutExercises(exercises) {
                     </div>
                 </div>` : ''}
 
-                <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                    <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div>
+                <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                    <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
                 </div>
 
                 <div class="sets-list-container">
@@ -19116,13 +19154,14 @@ function renderWorkoutExercises(exercises) {
                         const prevStats = getPreviousStats(ex.name, setIdx + 1) || '-';
                         return `
                         <div class="set-wrapper">
-                            <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(50px, auto) 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
-                                <div style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
+                            <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
+                                <div class="set-number" style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
                                 <input type="text" class="input-time" placeholder="-" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                                 <input type="text" class="input-reps" placeholder="Reps" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                                 <input type="text" class="input-kg" placeholder="Kg" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                                 <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prevStats}</div>
                                 <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
+                                <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                             </div>
                             <div class="drop-set-container">
                                 <div class="drop-set-inputs">
@@ -19590,8 +19629,8 @@ function addExerciseWithSets(exerciseName, sets) {
                 </div>
             </div>` : ''}
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -19841,8 +19880,8 @@ function addExerciseToUI(exercise) {
                 </div>
             </div>` : ''}
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -19850,13 +19889,14 @@ function addExerciseToUI(exercise) {
                     const prevStats = getPreviousStats(exercise.name, setIdx + 1) || '-';
                     return `
                     <div class="set-wrapper">
-                        <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(50px, auto) 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
-                            <div style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
+                        <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
+                            <div class="set-number" style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
                             <input type="text" class="input-time" placeholder="-" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                             <input type="text" class="input-reps" placeholder="Reps" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                             <input type="text" class="input-kg" placeholder="Kg" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                             <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prevStats}</div>
                             <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
+                            <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                         </div>
                         <div class="drop-set-container">
                             <div class="drop-set-inputs">
@@ -27581,14 +27621,16 @@ updateCoachUI();
             </div>` : ''}
 
             <!-- Sets Container -->
-            <div style="background:#f8fafc; padding:0 20px 20px 20px;" id="sets-container-${idx}">
-                <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(70px, auto); gap:8px; padding:10px 0; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center; border-bottom:1px solid #e2e8f0; margin-bottom:10px;">
-                    <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div>
+            <div style="background:#f8fafc; padding:0 20px 20px 20px;">
+                <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 0; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center; border-bottom:1px solid #e2e8f0; margin-bottom:10px;">
+                    <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
                 </div>
-                ${ [1,2,3].map(s => getSetRowHtml(ex.name, s, false)).join('') }
+                <div class="sets-list-container">
+                    ${ [1,2,3].map(s => getSetRowHtml(ex.name, s, false)).join('') }
+                </div>
 
-                 <button onclick="addSetRow('${ex.name.replace(/'/g, "\\'")}', ${idx})" style="width:100%; padding:12px; background:white; border:2px dashed #e2e8f0; border-radius:12px; color:var(--primary); font-weight:600; font-size:0.85rem; margin-top:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <span>+ Add Set</span>
+                 <button onclick="addWorkoutSet(this, '${ex.name.replace(/'/g, "\\'")}', false)" style="width:100%; padding:12px; background:white; border:2px dashed #e2e8f0; border-radius:12px; color:var(--primary); font-weight:600; font-size:0.85rem; margin-top:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>+ ADD SET</span>
                 </button>
             </div>`;
             list.appendChild(card);
