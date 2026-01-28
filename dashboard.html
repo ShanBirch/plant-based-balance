@@ -17515,12 +17515,17 @@ function getSetRowHtml(exName, setNum, isTimeBased) {
 
 function addWorkoutSet(btn, exName, isTimeBased) {
     // Navigate up to the card container
-    // Structure: Button -> Div -> Div (padding) -> Card
-    const card = btn.closest('.card') || btn.parentElement.parentElement.parentElement;
-    
+    // Structure: Button -> Div (padding wrapper) -> Card
+    const card = btn.closest('.exercise-logger-card');
+
+    if (!card) {
+        console.error("Could not find .exercise-logger-card");
+        return;
+    }
+
     // Find the sets container within this card
     const container = card.querySelector('.sets-list-container');
-    
+
     if (!container) {
         console.error("Could not find .sets-list-container");
         return;
