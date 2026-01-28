@@ -411,14 +411,14 @@
             <a class="forgot-pass" onclick="handleForgotPassword()">Forgot your password?</a>
 
             <div class="signup-prompt">
-                Don't have an account? <a href="index.html" style="color: #48864B; text-decoration: none; font-weight: 700;">Join the Protocol</a>
+                Don't have an account? <span class="toggle-form" onclick="showSignup()" style="color: #48864B; text-decoration: none; font-weight: 700; cursor: pointer;">Join Now</span>
             </div>
         </div>
 
         <!-- Signup Form -->
         <div id="signup-form" class="form-container">
-            <h1>Create Account</h1>
-            <p>Join Balance and start your journey today.</p>
+            <h1>Join the Protocol</h1>
+            <p>Enter your email and create your password to get started.</p>
 
             <form id="signupForm" onsubmit="handleSignup(event)">
                 <div class="form-group">
@@ -453,7 +453,7 @@
 
     <!-- Initialize Supabase inline -->
     <script>
-        // Store referral code if present in URL
+        // Store referral code if present in URL and show signup form
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const ref = urlParams.get('ref');
@@ -461,6 +461,7 @@
                 sessionStorage.setItem('balance_referral_code', ref);
                 const field = document.getElementById('signup-referral');
                 if (field) field.value = ref;
+                showSignup(); // Land on signup form if referred
             }
         });
 
