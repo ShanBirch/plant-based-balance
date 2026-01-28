@@ -30460,12 +30460,90 @@ async function toggleMealReminders(enabled) {
     await saveMealReminderSettings();
 }
 
+// Check if error indicates missing table (table not created yet)
+function isMealReminderTableMissing(error) {
+    if (!error) return false;
+    // PGRST116 = no rows found (not a missing table error)
+    // PGRST205 = relation not found in schema cache (PostgREST error)
+    // 42P01 = relation does not exist (PostgreSQL error)
+    return error.code === 'PGRST205' || error.code === '42P01' ||
+           error.message?.includes('relation') ||
+           error.message?.includes('does not exist') ||
+           error.message?.includes('Could not find the table');
+}
+
+// Apply meal reminder settings to UI
+function applyMealReminderSettingsToUI(data) {
+    const toggle = document.getElementById('meal-reminders-toggle');
+    const timesContainer = document.getElementById('meal-reminder-times');
+
+    if (toggle) toggle.checked = data.reminders_enabled;
+    if (timesContainer) {
+        timesContainer.style.display = data.reminders_enabled ? 'block' : 'none';
+    }
+
+    // Set checkbox states
+    const breakfastCheck = document.getElementById('breakfast-reminder-check');
+    const lunchCheck = document.getElementById('lunch-reminder-check');
+    const dinnerCheck = document.getElementById('dinner-reminder-check');
+
+    if (breakfastCheck) breakfastCheck.checked = data.breakfast_reminder;
+    if (lunchCheck) lunchCheck.checked = data.lunch_reminder;
+    if (dinnerCheck) dinnerCheck.checked = data.dinner_reminder;
+
+    // Set time inputs (convert from time to HH:MM format)
+    const breakfastTime = document.getElementById('breakfast-reminder-time');
+    const lunchTime = document.getElementById('lunch-reminder-time');
+    const dinnerTime = document.getElementById('dinner-reminder-time');
+
+    if (breakfastTime && data.breakfast_time) {
+        breakfastTime.value = data.breakfast_time.substring(0, 5);
+    }
+    if (lunchTime && data.lunch_time) {
+        lunchTime.value = data.lunch_time.substring(0, 5);
+    }
+    if (dinnerTime && data.dinner_time) {
+        dinnerTime.value = data.dinner_time.substring(0, 5);
+    }
+}
+
+// Load meal reminder settings from localStorage (fallback)
+function loadMealReminderSettingsFromLocalStorage() {
+    const saved = localStorage.getItem('meal_reminder_settings');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            applyMealReminderSettingsToUI(data);
+            return true;
+        } catch (e) {
+            console.error('Error parsing localStorage meal reminder settings:', e);
+        }
+    }
+    return false;
+}
+
+// Save meal reminder settings to localStorage (fallback)
+function saveMealReminderSettingsToLocalStorage(settings) {
+    try {
+        localStorage.setItem('meal_reminder_settings', JSON.stringify(settings));
+        console.log('Meal reminder settings saved to localStorage');
+        return true;
+    } catch (e) {
+        console.error('Error saving meal reminder settings to localStorage:', e);
+        return false;
+    }
+}
+
 // Load meal reminder settings from database
 async function loadMealReminderSettings() {
     try {
         const user = await window.supabaseClient?.auth?.getUser();
         const userId = user?.data?.user?.id;
-        if (!userId) return;
+        if (!userId) {
+            // Not logged in, try localStorage
+            loadMealReminderSettingsFromLocalStorage();
+            return;
+        }
 
         const { data, error } = await window.supabaseClient
             .from('meal_reminder_preferences')
@@ -30473,99 +30551,93 @@ async function loadMealReminderSettings() {
             .eq('user_id', userId)
             .single();
 
+        // If table doesn't exist, fall back to localStorage
+        if (isMealReminderTableMissing(error)) {
+            console.log('Meal reminder table not found, using localStorage fallback');
+            loadMealReminderSettingsFromLocalStorage();
+            return;
+        }
+
         // PGRST116 = no rows found (expected for new users)
-        // 42P01 = relation does not exist (table not created yet)
-        if (error && error.code !== 'PGRST116' && error.code !== '42P01' &&
-            !error.message?.includes('relation') && !error.message?.includes('does not exist')) {
+        if (error && error.code !== 'PGRST116') {
             console.error('Error loading meal reminder settings:', error);
+            // Try localStorage as fallback
+            loadMealReminderSettingsFromLocalStorage();
             return;
         }
 
         if (data) {
-            // Update UI with saved settings
-            const toggle = document.getElementById('meal-reminders-toggle');
-            const timesContainer = document.getElementById('meal-reminder-times');
-
-            if (toggle) toggle.checked = data.reminders_enabled;
-            if (timesContainer) {
-                timesContainer.style.display = data.reminders_enabled ? 'block' : 'none';
-            }
-
-            // Set checkbox states
-            const breakfastCheck = document.getElementById('breakfast-reminder-check');
-            const lunchCheck = document.getElementById('lunch-reminder-check');
-            const dinnerCheck = document.getElementById('dinner-reminder-check');
-
-            if (breakfastCheck) breakfastCheck.checked = data.breakfast_reminder;
-            if (lunchCheck) lunchCheck.checked = data.lunch_reminder;
-            if (dinnerCheck) dinnerCheck.checked = data.dinner_reminder;
-
-            // Set time inputs (convert from time to HH:MM format)
-            const breakfastTime = document.getElementById('breakfast-reminder-time');
-            const lunchTime = document.getElementById('lunch-reminder-time');
-            const dinnerTime = document.getElementById('dinner-reminder-time');
-
-            if (breakfastTime && data.breakfast_time) {
-                breakfastTime.value = data.breakfast_time.substring(0, 5);
-            }
-            if (lunchTime && data.lunch_time) {
-                lunchTime.value = data.lunch_time.substring(0, 5);
-            }
-            if (dinnerTime && data.dinner_time) {
-                dinnerTime.value = data.dinner_time.substring(0, 5);
-            }
+            applyMealReminderSettingsToUI(data);
+        } else {
+            // No DB data, try localStorage
+            loadMealReminderSettingsFromLocalStorage();
         }
     } catch (e) {
         console.error('Error loading meal reminder settings:', e);
+        // Try localStorage as fallback
+        loadMealReminderSettingsFromLocalStorage();
     }
 }
 
 // Save meal reminder settings to database
 async function saveMealReminderSettings() {
+    // Get current UI values
+    const remindersEnabled = document.getElementById('meal-reminders-toggle')?.checked || false;
+    const breakfastEnabled = document.getElementById('breakfast-reminder-check')?.checked || false;
+    const lunchEnabled = document.getElementById('lunch-reminder-check')?.checked || false;
+    const dinnerEnabled = document.getElementById('dinner-reminder-check')?.checked || false;
+
+    const breakfastTime = document.getElementById('breakfast-reminder-time')?.value || '08:00';
+    const lunchTime = document.getElementById('lunch-reminder-time')?.value || '12:30';
+    const dinnerTime = document.getElementById('dinner-reminder-time')?.value || '18:30';
+
+    // Get user's timezone
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    const settings = {
+        reminders_enabled: remindersEnabled,
+        breakfast_reminder: breakfastEnabled,
+        lunch_reminder: lunchEnabled,
+        dinner_reminder: dinnerEnabled,
+        breakfast_time: breakfastTime + ':00',
+        lunch_time: lunchTime + ':00',
+        dinner_time: dinnerTime + ':00',
+        timezone: timezone,
+        updated_at: new Date().toISOString()
+    };
+
+    // Always save to localStorage as backup
+    saveMealReminderSettingsToLocalStorage(settings);
+
     try {
         const user = await window.supabaseClient?.auth?.getUser();
         const userId = user?.data?.user?.id;
-        if (!userId) return;
+        if (!userId) {
+            // Not logged in, localStorage save is sufficient
+            return;
+        }
 
-        // Get current UI values
-        const remindersEnabled = document.getElementById('meal-reminders-toggle')?.checked || false;
-        const breakfastEnabled = document.getElementById('breakfast-reminder-check')?.checked || false;
-        const lunchEnabled = document.getElementById('lunch-reminder-check')?.checked || false;
-        const dinnerEnabled = document.getElementById('dinner-reminder-check')?.checked || false;
-
-        const breakfastTime = document.getElementById('breakfast-reminder-time')?.value || '08:00';
-        const lunchTime = document.getElementById('lunch-reminder-time')?.value || '12:30';
-        const dinnerTime = document.getElementById('dinner-reminder-time')?.value || '18:30';
-
-        // Get user's timezone
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-        const settings = {
-            user_id: userId,
-            reminders_enabled: remindersEnabled,
-            breakfast_reminder: breakfastEnabled,
-            lunch_reminder: lunchEnabled,
-            dinner_reminder: dinnerEnabled,
-            breakfast_time: breakfastTime + ':00',
-            lunch_time: lunchTime + ':00',
-            dinner_time: dinnerTime + ':00',
-            timezone: timezone,
-            updated_at: new Date().toISOString()
-        };
+        // Add user_id for database save
+        const dbSettings = { ...settings, user_id: userId };
 
         const { error } = await window.supabaseClient
             .from('meal_reminder_preferences')
-            .upsert(settings, { onConflict: 'user_id' });
+            .upsert(dbSettings, { onConflict: 'user_id' });
 
-        // 42P01 = relation does not exist (table not created yet)
-        if (error && error.code !== '42P01' &&
-            !error.message?.includes('relation') && !error.message?.includes('does not exist')) {
-            console.error('Error saving meal reminder settings:', error);
-        } else if (!error) {
-            console.log('Meal reminder settings saved');
+        // If table doesn't exist, localStorage fallback is already done
+        if (isMealReminderTableMissing(error)) {
+            console.log('Meal reminder table not found, settings saved to localStorage only');
+            return;
+        }
+
+        if (error) {
+            console.error('Error saving meal reminder settings to database:', error);
+        } else {
+            console.log('Meal reminder settings saved to database');
         }
     } catch (e) {
         console.error('Error saving meal reminder settings:', e);
+        // localStorage save already done above
     }
 }
 
