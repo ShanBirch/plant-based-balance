@@ -12277,6 +12277,52 @@ function renderMonthlyCalendar() {
     container.innerHTML = html;
 }
 
+// Helper to get workout label for monthly calendar view
+function getMonthlyWorkoutLabel(dayIndex, isMale) {
+    // Load user profile to determine schedule type
+    let userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    if (!userProfile.equipment_access) {
+        const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        if (sessionProfile.equipment_access) {
+            userProfile.equipment_access = sessionProfile.equipment_access;
+        }
+    }
+
+    const equipment = userProfile.equipment_access || 'none';
+    const hasGymAccess = equipment === 'gym';
+    const goals = (userProfile.fitness_goals || []).map(g => (g || '').toLowerCase());
+    const wantsStrength = goals.includes('build muscle') || goals.includes('increase strength');
+    const useGymSplit = hasGymAccess && wantsStrength;
+    const useYogaOnly = equipment === 'yoga_only';
+    const useHome = equipment === 'dumbbells';
+    const useBands = equipment === 'bands';
+
+    // Define schedule labels based on equipment/goals
+    if (useGymSplit && isMale) {
+        // Male gym split: Chest, Legs, Back, Shoulders, Arms, Yoga, Yoga
+        const labels = ['Chest', 'Legs', 'Back', 'Shoulders', 'Arms', 'Yoga', 'Yoga'];
+        return labels[dayIndex];
+    } else if (useGymSplit && !isMale) {
+        // Female gym split: Legs, Push, Arms, Legs, Pull, Yoga, Yoga
+        const labels = ['Legs', 'Push', 'Arms', 'Legs', 'Pull', 'Yoga', 'Yoga'];
+        return labels[dayIndex];
+    } else if (useYogaOnly) {
+        return 'Yoga';
+    } else if (useHome) {
+        // Home: Lower, Push, Yoga, Pull, Lower, Yoga, Yoga
+        const labels = ['Lower', 'Push', 'Yoga', 'Pull', 'Lower', 'Yoga', 'Yoga'];
+        return labels[dayIndex];
+    } else if (useBands) {
+        // Bands: 5 strength days + 1 yoga + 1 yoga
+        const labels = ['Bands', 'Bands', 'Yoga', 'Bands', 'Bands', 'Bands', 'Yoga'];
+        return labels[dayIndex];
+    } else {
+        // Bodyweight: Lower, Upper, Yoga, Core, Lower, Yoga, Yoga
+        const labels = ['Lower', 'Upper', 'Yoga', 'Core', 'Lower', 'Yoga', 'Yoga'];
+        return labels[dayIndex];
+    }
+}
+
 function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBaseline, isMale, isOtherMonth) {
     const isToday = date.toDateString() === today.toDateString();
     const dayNum = date.getDate();
@@ -12302,30 +12348,8 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
 
     const dateStr = date.toISOString().split('T')[0];
 
-    // Get workout for this day using actual workout data
-    const workout = getWorkoutForDay(dayIndex, dateStr);
-    let workoutLabel = 'Rest';
-
-    if (workout && workout.title) {
-        const title = workout.title;
-        const programId = workout.programId || '';
-
-        // Create short label that fits in cell
-        if (programId.includes('yoga') || title.toLowerCase().includes('yoga') || title.toLowerCase().includes('somatic') || title.toLowerCase().includes('yin') || title.toLowerCase().includes('flow')) {
-            workoutLabel = 'Yoga';
-        } else if (title.includes('Day')) {
-            // "Chest Day" → "Chest", "Leg Day" → "Legs", etc.
-            workoutLabel = title.replace(' Day', '').replace('Leg', 'Legs');
-        } else if (title.includes('Upper') || title.includes('Lower') || title.includes('Push') || title.includes('Pull') || title.includes('Core') || title.includes('Arms')) {
-            // Extract main muscle focus
-            workoutLabel = title.split(' ')[0];
-            if (workoutLabel === 'Lower') workoutLabel = 'Legs';
-            if (workoutLabel === 'Upper') workoutLabel = 'Upper';
-        } else {
-            // Use first word or truncate if too long
-            workoutLabel = title.length > 10 ? title.substring(0, 9) + '…' : title;
-        }
-    }
+    // Get workout label for this day based on user's schedule
+    const workoutLabel = getMonthlyWorkoutLabel(dayIndex, isMale);
 
     // Phase indicator HTML - only for females
     const phaseIndicatorHtml = showPhaseIndicator
