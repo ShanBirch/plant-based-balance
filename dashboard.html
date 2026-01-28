@@ -8829,16 +8829,6 @@ async function startCustomBuilderWorkout() {
     </div>
 
     <div style="padding: 20px;">
-        <!-- Recent Workout History Section -->
-        <div id="your-workouts-history-section" style="margin-bottom: 25px;">
-            <h3 style="margin: 0 0 15px 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 1.2rem;">📅</span> Recent Workouts
-            </h3>
-            <div id="your-workouts-history-list" style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- Recent workout history will be rendered here -->
-            </div>
-        </div>
-
         <!-- Custom Workouts Section -->
         <div id="your-workouts-custom-section" style="margin-bottom: 25px;">
             <h3 style="margin: 0 0 15px 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
@@ -8879,13 +8869,7 @@ function openYourWorkouts() {
         renderYourWorkoutsLibrary(libraryContainer);
     }
 
-    // Show loading states for database-dependent sections
-    const historyContainer = document.getElementById('your-workouts-history-list');
-    if (historyContainer) {
-        historyContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Loading...</div>';
-    }
-
-    // Then load async data
+    // Then load async data (custom workouts)
     renderYourWorkoutsList();
     pushNavigationState('view-your-workouts', () => closeYourWorkouts());
 }
@@ -8898,31 +8882,19 @@ function closeYourWorkouts() {
 async function renderYourWorkoutsList() {
     const listContainer = document.getElementById('your-workouts-list');
     const emptyState = document.getElementById('your-workouts-empty');
-    const historyContainer = document.getElementById('your-workouts-history-list');
-    const historySection = document.getElementById('your-workouts-history-section');
 
     try {
         const user = window.currentUser;
         if (!user) {
-            // Show empty states when not logged in
-            if (historyContainer) {
-                historyContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); background: white; border-radius: 12px; font-size: 0.9rem;">Log in to see your workout history</div>';
-            }
+            // Show empty state when not logged in
             if (listContainer) listContainer.style.display = 'none';
             if (emptyState) emptyState.style.display = 'block';
             return;
         }
 
-        // Fetch workout history and custom workouts in parallel
-        const [workoutHistory, savedWorkouts] = await Promise.all([
-            dbHelpers.workouts.getHistory(user.id, 50),
-            dbHelpers.workouts.getCustomWorkouts(user.id)
-        ]);
-
+        // Fetch custom workouts
+        const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
         window.savedWorkoutsCache = savedWorkouts;
-
-        // Render Recent Workout History
-        renderYourWorkoutsHistory(workoutHistory, historyContainer, historySection);
 
         // Render Custom Workouts
         if (!savedWorkouts || savedWorkouts.length === 0) {
@@ -8954,53 +8926,9 @@ async function renderYourWorkoutsList() {
 
     } catch(err) {
         console.error('Failed to load your workouts:', err);
-        if (historyContainer) {
-            historyContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); background: white; border-radius: 12px; font-size: 0.9rem;">Could not load workout history</div>';
-        }
         if (listContainer) listContainer.style.display = 'none';
         if (emptyState) emptyState.style.display = 'block';
     }
-}
-
-function renderYourWorkoutsHistory(workoutHistory, container, section) {
-    if (!workoutHistory || workoutHistory.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); background: white; border-radius: 12px; font-size: 0.9rem;">No workout history yet. Complete your first workout!</div>';
-        return;
-    }
-
-    // Group by date
-    const grouped = {};
-    workoutHistory.forEach(w => {
-        const date = w.workout_date;
-        if (!grouped[date]) grouped[date] = [];
-        grouped[date].push(w);
-    });
-
-    // Get unique dates and sort descending, show last 5
-    const dates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a)).slice(0, 5);
-
-    container.innerHTML = dates.map(date => {
-        const workouts = grouped[date];
-        const exercises = [...new Set(workouts.map(w => w.exercise_name))];
-        const totalSets = workouts.length;
-        const formattedDate = new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        const exerciseList = exercises.slice(0, 3).join(', ');
-
-        return `
-        <div onclick="viewWorkoutHistoryDetail('${date}')" style="background: white; border-radius: 16px; padding: 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px;">
-            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.3rem; flex-shrink: 0;">
-                📊
-            </div>
-            <div style="flex: 1; min-width: 0;">
-                <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 2px;">${formattedDate}</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    ${exercises.length} exercises • ${totalSets} sets
-                </div>
-            </div>
-            <div style="color: #8b5cf6; font-weight: 600; font-size: 0.8rem;">View →</div>
-        </div>
-        `;
-    }).join('');
 }
 
 function renderYourWorkoutsLibrary(container) {
