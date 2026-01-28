@@ -8869,15 +8869,6 @@ async function startCustomBuilderWorkout() {
             </div>
         </div>
 
-        <!-- Workout Library Section -->
-        <div id="your-workouts-library-section">
-            <h3 style="margin: 0 0 15px 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 1.2rem;">📚</span> Workout Library
-            </h3>
-            <div id="your-workouts-library-list" style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- Library categories will be rendered here -->
-            </div>
-        </div>
     </div>
 </div>
 
@@ -9221,15 +9212,6 @@ function viewWorkoutHistoryDetail(date) {
     switchAppTab('progress-tab');
 }
 
-function openLibraryCategory(categoryKey) {
-    // Use existing workout library navigation
-    closeYourWorkouts();
-    if (typeof openWorkoutSubcategories === 'function') {
-        openWorkoutSubcategories(categoryKey);
-    } else {
-        switchAppTab('movement-tab');
-    }
-}
 </script>
 
 <!-- WORKOUT OVERVIEW VIEW -->
