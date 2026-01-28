@@ -8846,15 +8846,6 @@ async function startCustomBuilderWorkout() {
             </div>
         </div>
 
-        <!-- Workout Library Section -->
-        <div id="your-workouts-library-section">
-            <h3 style="margin: 0 0 15px 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 1.2rem;">📚</span> Workout Library
-            </h3>
-            <div id="your-workouts-library-list" style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- Library categories will be rendered here -->
-            </div>
-        </div>
     </div>
 </div>
 
@@ -8893,19 +8884,7 @@ function openYourWorkouts() {
             el.classList.remove('active');
         });
 
-        // Render library immediately (doesn't need database)
-        const libraryContainer = document.getElementById('your-workouts-library-list');
-        if (libraryContainer) {
-            try {
-                renderYourWorkoutsLibrary(libraryContainer);
-                console.log('openYourWorkouts: Library rendered');
-            } catch(libErr) {
-                console.error('openYourWorkouts: Failed to render library', libErr);
-                libraryContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Could not load workout library</div>';
-            }
-        }
-
-        // Then load async data (custom workouts)
+        // Load custom workouts
         renderYourWorkoutsList().catch(err => {
             console.error('openYourWorkouts: Failed to render workouts list', err);
         });
@@ -8998,68 +8977,12 @@ async function renderYourWorkoutsList() {
     }
 }
 
-function renderYourWorkoutsLibrary(container) {
-    console.log('renderYourWorkoutsLibrary: Starting...');
-    if (typeof WORKOUT_LIBRARY === 'undefined') {
-        console.warn('renderYourWorkoutsLibrary: WORKOUT_LIBRARY is undefined');
-        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Workout library not available</div>';
-        return;
-    }
-
-    const categories = Object.keys(WORKOUT_LIBRARY);
-    const categoryIcons = {
-        'gym': '🏋️',
-        'yoga': '🧘',
-        'bodyweight': '💪',
-        'home': '🏠',
-        'cardio': '🏃',
-        'hiit': '⚡'
-    };
-
-    container.innerHTML = categories.map(categoryKey => {
-        const category = WORKOUT_LIBRARY[categoryKey];
-        const icon = categoryIcons[categoryKey] || category.icon || '💪';
-        const name = category.name || categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1);
-
-        // Count total workouts in category
-        let totalWorkouts = 0;
-        if (category.subcategories) {
-            Object.values(category.subcategories).forEach(sub => {
-                if (sub.workouts) totalWorkouts += sub.workouts.length;
-            });
-        }
-
-        return `
-        <div onclick="openLibraryCategory('${categoryKey}')" style="background: white; border-radius: 16px; padding: 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px;">
-            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b, #ef4444); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
-                ${icon}
-            </div>
-            <div style="flex: 1; min-width: 0;">
-                <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 2px;">${name}</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">${totalWorkouts} workouts available</div>
-            </div>
-            <div style="color: #f59e0b; font-weight: 600; font-size: 0.8rem;">Browse →</div>
-        </div>
-        `;
-    }).join('');
-    console.log('renderYourWorkoutsLibrary: Rendered', categories.length, 'categories');
-}
-
 function viewWorkoutHistoryDetail(date) {
     // Navigate to progress tab where workout history is shown
     closeYourWorkouts();
     switchAppTab('progress-tab');
 }
 
-function openLibraryCategory(categoryKey) {
-    // Use existing workout library navigation
-    closeYourWorkouts();
-    if (typeof openWorkoutSubcategories === 'function') {
-        openWorkoutSubcategories(categoryKey);
-    } else {
-        switchAppTab('movement-tab');
-    }
-}
 </script>
 
 <!-- WORKOUT OVERVIEW VIEW -->
