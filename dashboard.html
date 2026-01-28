@@ -29954,7 +29954,11 @@ async function initCycleView() {
     const completeCard = document.getElementById('check-in-completed-card');
 
     if(promptCard && completeCard) {
-        if(hasLog) {
+        // Hide cycle sync cards for male users
+        if (typeof isMaleUser === 'function' && isMaleUser()) {
+            promptCard.style.display = 'none';
+            completeCard.style.display = 'none';
+        } else if(hasLog) {
             promptCard.style.display = 'none';
             completeCard.style.display = 'block';
         } else {
