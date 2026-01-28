@@ -27760,17 +27760,19 @@ async function initProgressView() {
             console.warn('Failed to load personal bests:', e);
         }
 
-        // Update overview stats
+        // Update overview stats (commented out as UI was removed in redesign)
+        /*
         document.getElementById('total-workouts-stat').innerText = workoutCount || 0;
         document.getElementById('current-streak-stat').innerText = pointsData?.current_streak || 0;
         document.getElementById('total-points-stat').innerText = pointsData?.current_points || 0;
         document.getElementById('avg-calories-stat').innerText = '-';
+        */
 
         // Render sections
         renderPersonalBests(personalBests, recentPBs);
         renderWorkoutHistory(workoutHistory);
         renderMilestones(milestones, workoutCount, pointsData, personalBests);
-        renderCheckins(checkins);
+        // renderCheckins(checkins); // UI removed in redesign
         await renderExerciseProgress(user.id, recentExercises);
 
         // Hide loading, show content
@@ -28021,6 +28023,7 @@ function shareMilestoneToFeed(message, emoji) {
 
 function renderCheckins(checkins) {
     const container = document.getElementById('checkins-list');
+    if (!container) return; // UI element removed in redesign
 
     if (!checkins || checkins.length === 0) {
         container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No check-ins yet</div>';
@@ -28560,8 +28563,8 @@ window._submitDailyCycleSyncImpl = async function() {
         // Calculate current cycle phase
         if (cycleSyncEnabled && periodEnergyLow && userCycleData.lastPeriod && !userCycleData.noPeriodMode) {
             const lastPeriod = new Date(userCycleData.lastPeriod);
-            const today = new Date();
-            const daysSinceStart = Math.floor((today - lastPeriod) / (24 * 60 * 60 * 1000));
+            const todayDate = new Date();
+            const daysSinceStart = Math.floor((todayDate - lastPeriod) / (24 * 60 * 60 * 1000));
             const currentCycleDay = (daysSinceStart % (userCycleData.cycleLength || 28)) + 1;
 
             // If in menstrual phase (days 1-5), AUTOMATICALLY switch to yoga (no popup)
@@ -28603,7 +28606,6 @@ window._submitDailyCycleSyncImpl = async function() {
     localStorage.removeItem('todayWorkoutOverride');
 
     // Also clear the workoutOverride from today's log
-    const today = new Date().toISOString().split('T')[0];
     if (userCycleData.logs && userCycleData.logs[today]) {
         delete userCycleData.logs[today].workoutOverride;
         localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
