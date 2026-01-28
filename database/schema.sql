@@ -149,6 +149,11 @@ CREATE TABLE IF NOT EXISTS public.workouts (
   reps TEXT,
   weight_kg TEXT,
 
+  -- Drop set support
+  is_drop_set BOOLEAN DEFAULT FALSE,
+  drop_set_weights TEXT,  -- Comma-separated weights: "30,20,10"
+  drop_set_reps TEXT,     -- Comma-separated reps: "8,6,8"
+
   -- For custom workout templates
   template_name TEXT,
   template_data JSONB, -- Full workout template structure
