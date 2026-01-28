@@ -8546,7 +8546,16 @@ function filterExerciseLibrary(query) {
         }
     }
 
-    // 2. Render Selection
+    // 2. Sort by relevance score if there's a search query
+    if (terms.length > 0) {
+        matchedKeys.sort((a, b) => {
+            const scoreA = scoreExerciseMatch(a, terms, query);
+            const scoreB = scoreExerciseMatch(b, terms, query);
+            return scoreB - scoreA;
+        });
+    }
+
+    // 3. Render Selection
     const keysToRender = matchedKeys.slice(0, window.builderLimit);
 
     keysToRender.forEach(key => {
@@ -8564,7 +8573,7 @@ function filterExerciseLibrary(query) {
         list.appendChild(div);
     });
 
-    // 3. Load More Button
+    // 4. Load More Button
     if (matchedKeys.length > window.builderLimit) {
         const moreDiv = document.createElement('div');
         moreDiv.innerHTML = `<button onclick="window.builderLimit += 50; filterExerciseLibrary(document.getElementById('builder-search').value)" style="width:100%; padding:15px; border:none; background:#f1f5f9; color:var(--text-muted); font-weight:600; border-radius:12px; cursor:pointer;">Load More (${matchedKeys.length - window.builderLimit} remaining)</button>`;
@@ -18858,6 +18867,69 @@ function closeAddExerciseModal() {
     document.getElementById('add-exercise-modal').style.display = 'none';
 }
 
+// Popular/main exercises that should be prioritized in search results
+const POPULAR_EXERCISES = new Set([
+    // Barbell compound movements
+    'Barbell Bench Press', 'Barbell Squat', 'Barbell Deadlift', 'Barbell Row',
+    'Barbell Overhead Press', 'Barbell Front Squat', 'Barbell Romanian Deadlift',
+    'Barbell Hip Thrust', 'Barbell Curl', 'Barbell Lunge',
+    // Dumbbell essentials
+    'Dumbbell Bench Press', 'Dumbbell Row', 'Dumbbell Curl', 'Dumbbell Shoulder Press',
+    'Dumbbell Lateral Raise', 'Dumbbell Fly', 'Dumbbell Lunge', 'Dumbbell Romanian Deadlift',
+    'Dumbbell Goblet Squat', 'Dumbbell Tricep Extension',
+    // Bodyweight basics
+    'Push Up', 'Pull Up', 'Chin Up', 'Dip', 'Plank', 'Squat', 'Lunge',
+    'Burpee', 'Mountain Climber', 'Crunch', 'Sit Up', 'Leg Raise',
+    // Cable movements
+    'Cable Row', 'Cable Fly', 'Cable Curl', 'Cable Tricep Pushdown', 'Cable Face Pull',
+    'Cable Lateral Raise', 'Cable Crossover',
+    // Machine basics
+    'Leg Press', 'Lat Pulldown', 'Leg Curl', 'Leg Extension', 'Chest Press Machine',
+    'Shoulder Press Machine', 'Cable Row Machine'
+]);
+
+// Score an exercise based on how well it matches the search query
+function scoreExerciseMatch(exerciseName, searchTerms, fullQuery) {
+    const nameLower = exerciseName.toLowerCase();
+    const queryLower = fullQuery.toLowerCase().trim();
+    let score = 0;
+
+    // Exact match gets highest priority (1000 points)
+    if (nameLower === queryLower) {
+        score += 1000;
+    }
+    // Starts with the full query (500 points)
+    else if (nameLower.startsWith(queryLower)) {
+        score += 500;
+    }
+    // Starts with first search term (200 points)
+    else if (searchTerms.length > 0 && nameLower.startsWith(searchTerms[0])) {
+        score += 200;
+    }
+
+    // Popular/main exercise bonus (100 points)
+    if (POPULAR_EXERCISES.has(exerciseName)) {
+        score += 100;
+    }
+
+    // Word boundary matches are better than substring matches
+    // Check if search terms appear as complete words (50 points each)
+    const words = nameLower.split(/\s+/);
+    for (const term of searchTerms) {
+        if (words.some(word => word === term)) {
+            score += 50; // Exact word match
+        } else if (words.some(word => word.startsWith(term))) {
+            score += 25; // Word starts with term
+        }
+    }
+
+    // Shorter names are often more "primary" exercises (slight bonus)
+    // Max 20 points for names under 20 characters
+    score += Math.max(0, 20 - exerciseName.length);
+
+    return score;
+}
+
 // Search exercises for add modal
 function searchExercisesForAdd(query) {
     const resultsContainer = document.getElementById('add-exercise-results');
@@ -18882,7 +18954,7 @@ function searchExercisesForAdd(query) {
     }
 
     const allExercises = Object.keys(EXERCISE_VIDEOS);
-    const terms = query.toLowerCase().split(' ');
+    const terms = query.toLowerCase().split(' ').filter(t => t);
     const filteredExercises = allExercises.filter(name => {
         const nameLower = name.toLowerCase();
         return terms.every(term => nameLower.includes(term));
@@ -18896,6 +18968,13 @@ function searchExercisesForAdd(query) {
         `;
         return;
     }
+
+    // Sort by relevance score (highest first)
+    filteredExercises.sort((a, b) => {
+        const scoreA = scoreExerciseMatch(a, terms, query);
+        const scoreB = scoreExerciseMatch(b, terms, query);
+        return scoreB - scoreA;
+    });
 
     // Limit to first 50 results
     const displayExercises = filteredExercises.slice(0, 50);
