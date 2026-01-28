@@ -8312,11 +8312,6 @@ async function applyAppTheme(themeKey) {
         <!-- Dynamic Hero Container -->
         <div id="movement-hero-container"></div>
 
-        <div id="saved-workouts-container" style="display:none; margin-bottom:30px;">
-            <h3 style="margin-bottom:15px;">Your Saved Workouts</h3>
-            <div id="saved-workouts-list" style="display:flex; gap:15px; overflow-x:auto; padding-bottom:10px; scrollbar-width: none;"></div>
-        </div>
-
         <div id="recent-workouts-container" style="display:none; margin-bottom:30px;">
             <h3 style="margin-bottom:15px;">Recent Workouts</h3>
             <div id="recent-workouts-list" style="display:flex; gap:15px; overflow-x:auto; padding-bottom:10px; scrollbar-width: none;"></div>
@@ -8630,9 +8625,27 @@ function updateBuilderUI() {
     }
 }
 
-function startCustomBuilderWorkout() {
+async function startCustomBuilderWorkout() {
     if (customWorkoutSelection.length === 0) return;
-    
+
+    // Auto-save the workout to database
+    const user = window.currentUser;
+    if (user) {
+        try {
+            const timestamp = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+            const workoutName = `Custom ${timestamp}`;
+            await dbHelpers.workouts.saveCustomWorkout(user.id, workoutName, {
+                exercises: customWorkoutSelection,
+                date: new Date().toISOString()
+            });
+            // Refresh the cache
+            const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
+            window.savedWorkoutsCache = savedWorkouts;
+        } catch(e) {
+            console.error("Failed to auto-save workout:", e);
+        }
+    }
+
     // Construct a dynamic workout object
     const customWorkout = {
         title: 'Custom Session',
@@ -8711,6 +8724,94 @@ function startCustomBuilderWorkout() {
 
     // Push navigation state for Android back button
     pushNavigationState('view-active-workout', () => quitWorkout());
+}
+</script>
+
+<!-- YOUR WORKOUTS VIEW -->
+<div id="view-your-workouts" class="app-view" style="display:none; height: 100vh; background: #f8fafc; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+        <button onclick="closeYourWorkouts()" style="width: 40px; height: 40px; border: none; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-main);"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+        <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Your Workouts</div>
+        <div style="width: 40px;"></div>
+    </div>
+
+    <div style="padding: 20px;">
+        <div id="your-workouts-list" style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- Saved workouts will be rendered here -->
+        </div>
+        <div id="your-workouts-empty" style="display: none; text-align: center; padding: 60px 20px; color: var(--text-muted);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">💪</div>
+            <h3 style="margin: 0 0 10px 0; color: var(--text-main);">No saved workouts yet</h3>
+            <p style="margin: 0 0 20px 0;">Build your own workout and it will be saved here automatically.</p>
+            <button onclick="closeYourWorkouts(); openWorkoutBuilder();" style="background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; cursor: pointer;">
+                Build a Workout
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openYourWorkouts() {
+    hideAllAppViews();
+    document.getElementById('view-your-workouts').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
+    renderYourWorkoutsList();
+    pushNavigationState('view-your-workouts', () => closeYourWorkouts());
+}
+
+function closeYourWorkouts() {
+    document.getElementById('view-your-workouts').style.display = 'none';
+    switchAppTab('movement-tab');
+}
+
+async function renderYourWorkoutsList() {
+    const listContainer = document.getElementById('your-workouts-list');
+    const emptyState = document.getElementById('your-workouts-empty');
+
+    try {
+        const user = window.currentUser;
+        if (!user) return;
+
+        const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
+        window.savedWorkoutsCache = savedWorkouts;
+
+        if (savedWorkouts.length === 0) {
+            listContainer.style.display = 'none';
+            emptyState.style.display = 'block';
+            return;
+        }
+
+        listContainer.style.display = 'flex';
+        emptyState.style.display = 'none';
+
+        listContainer.innerHTML = savedWorkouts.map(w => {
+            const name = w.template_name || 'Untitled Workout';
+            const exercises = w.template_data?.exercises || [];
+            const date = new Date(w.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            return `
+            <div onclick="startSavedWorkout('${w.id}')" style="background: white; border-radius: 20px; padding: 20px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 15px;">
+                <div style="width: 55px; height: 55px; background: linear-gradient(135deg, var(--primary), #22c55e); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1.3rem; flex-shrink: 0;">
+                    ${name.charAt(0).toUpperCase()}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 700; color: var(--text-main); font-size: 1.05rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">${exercises.length} exercises</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Saved ${date}</div>
+                </div>
+                <div style="color: var(--primary); font-weight: 600; font-size: 0.85rem; white-space: nowrap;">
+                    Start →
+                </div>
+            </div>
+            `;
+        }).join('');
+
+    } catch(err) {
+        console.error('Failed to load your workouts:', err);
+        listContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Failed to load workouts</div>';
+    }
 }
 </script>
 
@@ -16821,31 +16922,12 @@ async function renderMovementView() {
         </div>
     </div>`;
     
-    // Render Saved Workouts (DB)
-    const savedContainer = document.getElementById('saved-workouts-container');
-    const savedList = document.getElementById('saved-workouts-list');
-    
+    // Preload saved workouts cache for the Your Workouts view
     try {
         const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
-        window.savedWorkoutsCache = savedWorkouts; // Cache for player
-
-        if (savedWorkouts.length > 0) {
-            savedContainer.style.display = 'block';
-            savedList.innerHTML = savedWorkouts.map(w => {
-                const name = w.template_name || 'Untitled Workout';
-                const exercises = w.template_data?.exercises || [];
-                return `
-                <div onclick="startSavedWorkout('${w.id}')" style="min-width: 160px; background:white; border-radius:16px; padding:15px; border:1px solid #f1f5f9; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
-                    <div style="width:40px; height:40px; background:#f0fdf4; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:10px; color:var(--primary); font-weight:bold;">${name.charAt(0)}</div>
-                    <div style="font-weight:700; color:var(--text-main); font-size:0.9rem; margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div>
-                    <div style="font-size:0.75rem; color:var(--text-muted);">${exercises.length} exercises</div>
-                </div>
-            `}).join('');
-        } else {
-             savedContainer.style.display = 'none';
-        }
+        window.savedWorkoutsCache = savedWorkouts;
     } catch(err) {
-        console.error('Failed to load saved workouts:', err);
+        console.error('Failed to preload saved workouts:', err);
     }
 
     // Render Recent Workouts (workout history grouped by date)
@@ -16909,6 +16991,22 @@ async function renderMovementView() {
         <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">📚</div>
     `;
     gridContainer.appendChild(libraryDiv);
+
+    // Add 'Your Workouts' Card - shows saved custom workouts
+    const yourWorkoutsDiv = document.createElement('div');
+    yourWorkoutsDiv.onclick = () => openYourWorkouts();
+    const savedCount = window.savedWorkoutsCache?.length || 0;
+    yourWorkoutsDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, var(--primary) 0%, #22c55e 100%);";
+    yourWorkoutsDiv.innerHTML = `
+        <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.1), transparent);"></div>
+        <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
+            <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Your Collection</div>
+            <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">Your Workouts</div>
+            <div style="font-size: 0.75rem; opacity: 0.9;">${savedCount} saved workout${savedCount !== 1 ? 's' : ''}</div>
+        </div>
+        <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">💪</div>
+    `;
+    gridContainer.appendChild(yourWorkoutsDiv);
 
     // Removed other workout cards - users now browse via Workout Library
     // Object.keys(WORKOUT_DB).forEach(key => {
