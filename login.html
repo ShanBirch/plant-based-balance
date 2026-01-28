@@ -418,7 +418,17 @@
         <!-- Signup Form -->
         <div id="signup-form" class="form-container">
             <h1>Join Balance</h1>
-            <p>Enter your email and create your password to get started.</p>
+            <p>Ready to start your 14-day free trial?</p>
+
+            <!-- One-Click Payment Section -->
+            <div id="payment-request-container" style="margin-bottom: 2rem; display: none;">
+                <div id="payment-request-button"></div>
+                <div style="margin: 1.5rem 0; display: flex; align-items: center; gap: 10px; color: #94a3b8; font-size: 0.8rem;">
+                    <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                    <span>OR SIGN UP WITH EMAIL</span>
+                    <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                </div>
+            </div>
 
             <form id="signupForm" onsubmit="handleSignup(event)">
                 <div class="form-group">
@@ -477,6 +487,80 @@
 
             // Initialize Stripe
             window.stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
+            
+            // 1. Setup Payment Request (Apple Pay / Google Pay)
+            const paymentRequest = window.stripe.paymentRequest({
+                country: 'AU',
+                currency: 'aud',
+                total: {
+                    label: 'Balance Membership (14-Day Free Trial)',
+                    amount: 0, // $0 today
+                },
+                requestPayerName: true,
+                requestPayerEmail: true,
+            });
+
+            const elements = window.stripe.elements();
+            const prButton = elements.create('paymentRequestButton', {
+                paymentRequest,
+                style: {
+                    paymentRequestButton: {
+                        type: 'default',
+                        theme: 'dark',
+                        height: '54px',
+                    },
+                },
+            });
+
+            // Check if device supports Apple/Google Pay
+            paymentRequest.canMakePayment().then((result) => {
+                if (result) {
+                    document.getElementById('payment-request-container').style.display = 'block';
+                    prButton.mount('#payment-request-button');
+                }
+            });
+
+            // Handle the "One-Click" Payment Event
+            paymentRequest.on('paymentmethod', async (ev) => {
+                try {
+                    // 1. Create Supabase Account with a random password 
+                    // (They can reset it later or use biometric login)
+                    const tempPassword = Math.random().toString(36).slice(-12);
+                    const name = ev.payerName || 'Member';
+                    const email = ev.payerEmail;
+
+                    const signupResult = await authHelpers.signUp(email, tempPassword, { name });
+                    
+                    // 2. Create the Stripe Subscription (14-day trial)
+                    const response = await fetch('/.netlify/functions/create-subscription', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            paymentMethodId: ev.paymentMethod.id,
+                            email: email,
+                            priceId: 'price_1SkDKhCGCyRUsOfKdi44QCWi',
+                            isTrial: true,
+                            trialDays: 14
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (result.error) {
+                        ev.complete('fail');
+                        showError(result.error.message);
+                        return;
+                    }
+
+                    ev.complete('success');
+                    showSuccess('Welcome to Balance! Redirecting to your dashboard...');
+                    setTimeout(() => window.location.href = '/dashboard.html', 1500);
+
+                } catch (err) {
+                    ev.complete('fail');
+                    showError('Quick Checkout failed. Please use the form below.');
+                    console.error(err);
+                }
+            });
 
             // Create authHelpers
             window.authHelpers = {
