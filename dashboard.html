@@ -8819,68 +8819,68 @@ function startCustomBuilderWorkout() {
 
 <!-- WORKOUT SUCCESS VIEW -->
 <div id="view-workout-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: var(--primary); color: white; overflow-y: auto;">
-    <div style="padding: 40px 20px; text-align: center; max-width: 600px; margin: 0 auto;">
+    <div style="padding: 20px; text-align: center; max-width: 500px; margin: 0 auto; display: flex; flex-direction: column;">
 
-        <!-- Capturable area for sharing -->
-        <div id="workout-capture-area" style="background: var(--primary); padding: 40px 20px; border-radius: 20px;">
-            <div style="font-size: 5rem; margin-bottom: 20px;">🙌</div>
+        <!-- Header Section - Compact -->
+        <div id="workout-capture-area" style="background: var(--primary); padding: 20px 15px; border-radius: 16px;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">🙌</div>
+            <h1 style="font-family: 'Playfair Display'; font-size: 2rem; margin: 0; color: white;">High Five!</h1>
+            <p style="font-size: 1rem; opacity: 0.9; margin-top: 5px;">Workout Completed</p>
+        </div>
 
-            <h1 style="font-family: 'Playfair Display'; font-size: 2.5rem; margin: 0; color: white;">High Five!</h1>
-            <p style="font-size: 1.2rem; opacity: 0.9; margin-top: 10px;">Workout Completed</p>
+        <!-- Personal Bests - Right under header -->
+        <div id="success-improvements" style="display: none; margin: 15px 0; background: rgba(255,255,255,0.15); padding: 15px; border-radius: 16px;"></div>
 
-            <!-- Milestones Container -->
-            <div id="success-milestones" style="display: none; margin: 30px 0;"></div>
+        <!-- Milestones Container -->
+        <div id="success-milestones" style="display: none; margin: 10px 0;"></div>
 
-            <!-- Duration -->
-            <div style="margin: 30px 0; background: rgba(255,255,255,0.1); padding: 20px 40px; border-radius: 16px; backdrop-filter: blur(10px);">
-                <div style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">DURATION</div>
-                <div id="success-duration" style="font-size: 3rem; font-weight: 700; font-family: monospace;">00:00</div>
+        <!-- Stats Row - Duration & Workout Count side by side -->
+        <div style="display: flex; gap: 12px; margin: 15px 0;">
+            <div style="flex: 1; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 14px;">
+                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Duration</div>
+                <div id="success-duration" style="font-size: 1.8rem; font-weight: 700; font-family: monospace; margin-top: 5px;">00:00</div>
+            </div>
+            <div id="success-workout-count-container" style="display: none; flex: 1; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 14px;">
+                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Total Workouts</div>
+                <div id="success-workout-count" style="font-size: 1.8rem; font-weight: 700; margin-top: 5px;">0</div>
             </div>
         </div>
 
-        <!-- Workout Count -->
-        <div id="success-workout-count-container" style="display: none; margin: 20px 0; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 16px;">
-            <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Total Workouts</div>
-            <div id="success-workout-count" style="font-size: 2rem; font-weight: 700; margin-top: 5px;">0</div>
-        </div>
+        <!-- Combined Share Section - One Card with Both Options -->
+        <div id="share-section-combined" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin: 10px 0;">
+            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 5px;">Share & Earn Points!</div>
+            <p style="font-size: 0.85rem; opacity: 0.85; margin-bottom: 15px;">Share your win to earn points</p>
 
-        <!-- Improvements Container -->
-        <div id="success-improvements" style="display: none; margin: 30px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px;"></div>
-
-        <!-- Workout Photo Section -->
-        <div id="workout-photo-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin-bottom: 30px; backdrop-filter: blur(10px);">
-            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;">Earn a Point!</div>
-            <p style="font-size: 0.9rem; opacity: 0.85; margin-bottom: 15px;">Share your workout completion to earn your point</p>
-            <button onclick="captureAndShareWorkout()" style="background: white; color: var(--primary); padding: 12px 30px; border-radius: 25px; font-weight: 600; cursor: pointer; transition: transform 0.2s; border: none;">
-                Share Workout
-            </button>
-        </div>
-
-        <!-- Points Awarded Confirmation (shown after photo verified) -->
-        <div id="workout-points-awarded" style="display: none; background: rgba(68, 255, 68, 0.2); padding: 15px 25px; border-radius: 16px; margin-bottom: 30px; border: 2px solid rgba(68, 255, 68, 0.5);">
-            <div style="font-size: 1.3rem; font-weight: 700;">+1 Point Earned!</div>
-            <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 5px;">Workout verified successfully</div>
-        </div>
-
-        <!-- Share Win Section - Shows achievements and quick share -->
-        <div id="share-win-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin-bottom: 30px; backdrop-filter: blur(10px);">
-            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 15px;">Share Your Win!</div>
-
-            <!-- Achievement Summary (populated dynamically) -->
-            <div id="share-achievement-summary" style="display: none; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: left;">
-                <div id="share-achievement-badge" style="font-size: 1.5rem; margin-bottom: 8px;"></div>
-                <div id="share-achievement-text" style="font-size: 0.95rem; font-weight: 600;"></div>
-                <div id="share-achievement-detail" style="font-size: 0.85rem; opacity: 0.9; margin-top: 5px;"></div>
+            <!-- Two share buttons side by side -->
+            <div style="display: flex; gap: 10px;">
+                <button onclick="captureAndShareWorkout()" style="flex: 1; background: white; color: var(--primary); padding: 14px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                    <span style="font-size: 1.3rem;">📸</span>
+                    <span style="font-size: 0.85rem;">Story</span>
+                    <span style="font-size: 0.7rem; opacity: 0.7;">+1 point</span>
+                </button>
+                <button onclick="openQuickShareModal()" style="flex: 1; background: linear-gradient(135deg, #f59e0b, #eab308); color: white; padding: 14px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                    <span style="font-size: 1.3rem;">💬</span>
+                    <span style="font-size: 0.85rem;">Group Chat</span>
+                    <span style="font-size: 0.7rem; opacity: 0.9;">+1 point</span>
+                </button>
             </div>
-
-            <button onclick="openQuickShareModal()" style="background: linear-gradient(135deg, #f59e0b, #eab308); color: white; padding: 14px 30px; border-radius: 25px; font-weight: 600; cursor: pointer; transition: transform 0.2s; border: none; display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
-                <span style="font-size: 1.2rem;">💬</span> Share to Group Chat
-            </button>
         </div>
 
-        <button onclick="closeSuccessScreen()" style="background: white; color: var(--primary); border: none; padding: 15px 50px; border-radius: 50px; font-size: 1.1rem; font-weight: 600; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.2); margin-bottom: 40px;">
-            DONE
-        </button>
+        <!-- Points Awarded Confirmation (shown after sharing) -->
+        <div id="workout-points-awarded" style="display: none; background: rgba(68, 255, 68, 0.2); padding: 12px 20px; border-radius: 14px; margin: 10px 0; border: 2px solid rgba(68, 255, 68, 0.5);">
+            <div style="font-size: 1.1rem; font-weight: 700;">+1 Point Earned!</div>
+            <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 3px;">Workout verified successfully</div>
+        </div>
+
+        <!-- Small spacer before DONE button -->
+        <div style="min-height: 20px;"></div>
+
+        <!-- DONE Button - Always visible at bottom -->
+        <div style="padding: 15px 0 100px 0;">
+            <button onclick="closeSuccessScreen()" style="background: white; color: var(--primary); border: none; padding: 16px 60px; border-radius: 50px; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.2); width: 100%; max-width: 280px;">
+                DONE
+            </button>
+        </div>
     </div>
 </div>
 
@@ -9700,6 +9700,27 @@ function startCustomBuilderWorkout() {
                         <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); text-align: center;">
                             <div style="font-size: 2rem; font-weight: 700; color: var(--secondary); margin-bottom: 5px;" id="avg-calories-stat">-</div>
                             <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Avg Calories</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Bests Section -->
+                <div style="padding: 20px 20px 10px 20px;">
+                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">
+                        <span style="color: #f59e0b;">🏆</span> Personal Bests
+                    </h3>
+                    <div id="personal-bests-container">
+                        <!-- Recent PBs will appear here -->
+                        <div id="recent-pbs-list" style="display: none; margin-bottom: 15px;">
+                            <!-- Populated by JS - shows recent PB achievements -->
+                        </div>
+                        <!-- All-time PBs grid -->
+                        <div id="personal-bests-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                            <!-- Populated by JS -->
+                            <div style="grid-column: span 2; text-align: center; padding: 30px 20px; color: var(--text-muted);">
+                                <div style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;">🏋️</div>
+                                <div style="font-size: 0.9rem;">Complete workouts with weights to track your personal bests!</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -17174,12 +17195,18 @@ async function finishWorkout() {
                  window.workoutHistoryCache.push(...setsToSave);
              }
 
-             // Check for improvements and milestones
+             // Check for improvements, milestones, and personal bests
              try {
-                 const [improvements, milestones] = await Promise.all([
+                 const [improvements, milestones, newPBs] = await Promise.all([
                      dbHelpers.workouts.getWorkoutImprovements(user.id, setsToSave),
-                     dbHelpers.milestones.checkAndRecordMilestones(user.id)
+                     dbHelpers.milestones.checkAndRecordMilestones(user.id),
+                     dbHelpers.personalBests.checkAndUpdatePBs(user.id, setsToSave)
                  ]);
+
+                 // Log any new personal bests
+                 if (newPBs && newPBs.length > 0) {
+                     console.log("🏆 New Personal Bests:", newPBs);
+                 }
 
                  // Award points for completing workout
                  try {
@@ -17200,8 +17227,8 @@ async function finishWorkout() {
                      console.error("Error updating avatar (workout still saved):", avatarError);
                  }
 
-                 // Display success screen with progress data
-                 await showWorkoutSuccessScreen(duration, improvements, milestones, setsToSave);
+                 // Display success screen with progress data (include newPBs)
+                 await showWorkoutSuccessScreen(duration, improvements, milestones, setsToSave, newPBs);
              } catch(progressError) {
                  console.error("Error calculating progress:", progressError);
                  // Still show success screen, just without progress data
@@ -17224,7 +17251,7 @@ async function finishWorkout() {
 let completedWorkoutDataForShare = null;
 let selectedLiftToShare = null; // Store the selected lift
 
-async function showWorkoutSuccessScreen(duration, improvements, milestones, workoutData) {
+async function showWorkoutSuccessScreen(duration, improvements, milestones, workoutData, newPBs = []) {
     hideAllAppViews();
 
     // Store workout data for potential sharing (including all sets)
@@ -17232,6 +17259,7 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
         duration: duration,
         improvements: improvements,
         milestones: milestones,
+        newPBs: newPBs,
         workoutName: window.currentWorkoutName || 'Workout',
         sets: workoutData || [] // Store all the sets from the workout
     };
@@ -17240,46 +17268,70 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
     // Update duration
     document.getElementById('success-duration').innerText = duration;
 
-    // Show milestones if any
+    // Show milestones if any - compact display
     const milestonesContainer = document.getElementById('success-milestones');
     if (milestones && milestones.length > 0) {
         milestonesContainer.style.display = 'block';
         milestonesContainer.innerHTML = milestones.map(m => `
-            <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin-bottom: 15px; animation: slideInUp 0.5s ease;">
-                <div style="font-size: 2.5rem; margin-bottom: 10px;">${m.milestone_value === 1 ? '🎉' : m.milestone_value >= 100 ? '👑' : m.milestone_value >= 50 ? '🏆' : m.milestone_value >= 25 ? '🌟' : m.milestone_value >= 10 ? '🔥' : '💪'}</div>
-                <div style="font-size: 1.3rem; font-weight: 700; margin-bottom: 5px;">Milestone Achieved!</div>
-                <div style="font-size: 1rem; opacity: 0.95;">${m.message}</div>
+            <div style="background: rgba(255,255,255,0.15); padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 2rem;">${m.milestone_value === 1 ? '🎉' : m.milestone_value >= 100 ? '👑' : m.milestone_value >= 50 ? '🏆' : m.milestone_value >= 25 ? '🌟' : m.milestone_value >= 10 ? '🔥' : '💪'}</div>
+                <div style="text-align: left;">
+                    <div style="font-size: 0.95rem; font-weight: 700;">Milestone!</div>
+                    <div style="font-size: 0.85rem; opacity: 0.9;">${m.message}</div>
+                </div>
             </div>
         `).join('');
     } else {
         milestonesContainer.style.display = 'none';
     }
 
-    // Show improvements if any
+    // Show Personal Bests if any - compact display right under header
     const improvementsContainer = document.getElementById('success-improvements');
-    if (improvements && improvements.length > 0) {
+    if (newPBs && newPBs.length > 0) {
         improvementsContainer.style.display = 'block';
         improvementsContainer.innerHTML = `
-            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 15px; opacity: 0.95;">💪 Your Progress</div>
-            ${improvements.map(imp => {
-                let improvementText = '';
-                if (imp.weightIncrease > 0 && imp.repsIncrease > 0) {
-                    improvementText = `+${imp.weightIncrease}kg and +${imp.repsIncrease} reps`;
-                } else if (imp.weightIncrease > 0) {
-                    improvementText = `+${imp.weightIncrease}kg`;
-                } else if (imp.repsIncrease > 0) {
-                    improvementText = `+${imp.repsIncrease} reps`;
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="font-size: 1.5rem;">🏆</span>
+                <span style="font-size: 1rem; font-weight: 700; color: #fbbf24;">NEW PERSONAL BEST${newPBs.length > 1 ? 'S' : ''}!</span>
+            </div>
+            ${newPBs.map(pb => {
+                let pbText = '';
+                let improvement = '';
+                if (pb.type === 'weight') {
+                    pbText = `${pb.value}kg x ${pb.reps}`;
+                    if (pb.improvement) improvement = `+${pb.improvement}kg`;
+                } else {
+                    pbText = `${pb.value} reps @ ${pb.weight}kg`;
+                    if (pb.improvement) improvement = `+${pb.improvement}`;
                 }
+                return `
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(251,191,36,0.15); border-radius: 10px; margin-bottom: 6px; border-left: 3px solid #f59e0b;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color: white;">${pb.exercise}</div>
+                            <div style="font-size: 0.8rem; opacity: 0.9;">${pbText}</div>
+                        </div>
+                        ${improvement ? `<div style="color: #4ade80; font-weight: 700; font-size: 0.9rem;">${improvement}</div>` : ''}
+                    </div>
+                `;
+            }).join('')}
+        `;
+    } else if (improvements && improvements.length > 0) {
+        // Fallback to showing regular improvements
+        improvementsContainer.style.display = 'block';
+        improvementsContainer.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="font-size: 1.3rem;">💪</span>
+                <span style="font-size: 0.95rem; font-weight: 700;">Progress Made!</span>
+            </div>
+            ${improvements.slice(0, 3).map(imp => {
+                let improvementText = '';
+                if (imp.weightIncrease > 0) improvementText = `+${imp.weightIncrease}kg`;
+                else if (imp.repsIncrease > 0) improvementText = `+${imp.repsIncrease} reps`;
 
                 return `
-                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; margin-bottom: 10px; text-align: left;">
-                        <div style="font-weight: 600; font-size: 0.95rem;">${imp.exercise}</div>
-                        <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 5px;">
-                            ${imp.previousWeight > 0 ? `${imp.previousWeight}kg` : ''} ${imp.previousReps > 0 ? `x ${imp.previousReps}` : ''}
-                            →
-                            ${imp.currentWeight > 0 ? `${imp.currentWeight}kg` : ''} ${imp.currentReps > 0 ? `x ${imp.currentReps}` : ''}
-                            <span style="color: #4ade80; font-weight: 700; margin-left: 8px;">${improvementText}</span>
-                        </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 5px;">
+                        <span style="font-size: 0.85rem;">${imp.exercise}</span>
+                        <span style="color: #4ade80; font-weight: 600; font-size: 0.85rem;">${improvementText}</span>
                     </div>
                 `;
             }).join('')}
@@ -17292,42 +17344,9 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
     try {
         const workoutCount = await dbHelpers.workouts.getWorkoutCount(window.currentUser.id);
         document.getElementById('success-workout-count').innerText = workoutCount;
-        document.getElementById('success-workout-count-container').style.display = 'block';
+        document.getElementById('success-workout-count-container').style.display = 'flex';
     } catch(e) {
         document.getElementById('success-workout-count-container').style.display = 'none';
-    }
-
-    // Populate share achievement summary
-    const achievementSummary = document.getElementById('share-achievement-summary');
-    const achievementBadge = document.getElementById('share-achievement-badge');
-    const achievementText = document.getElementById('share-achievement-text');
-    const achievementDetail = document.getElementById('share-achievement-detail');
-
-    if ((improvements && improvements.length > 0) || (milestones && milestones.length > 0)) {
-        achievementSummary.style.display = 'block';
-
-        if (improvements && improvements.length > 0) {
-            const imp = improvements[0];
-            let improvementText = '';
-            if (imp.weightIncrease > 0 && imp.repsIncrease > 0) {
-                improvementText = `+${imp.weightIncrease}kg and +${imp.repsIncrease} reps`;
-            } else if (imp.weightIncrease > 0) {
-                improvementText = `+${imp.weightIncrease}kg`;
-            } else if (imp.repsIncrease > 0) {
-                improvementText = `+${imp.repsIncrease} reps`;
-            }
-            achievementBadge.innerText = '🏆 Personal Best!';
-            achievementText.innerText = `${imp.exercise}: ${improvementText}`;
-            achievementDetail.innerText = `${imp.previousWeight || 0}kg x ${imp.previousReps || 0} → ${imp.currentWeight || 0}kg x ${imp.currentReps || 0}`;
-        } else if (milestones && milestones.length > 0) {
-            const m = milestones[0];
-            const emoji = m.milestone_value === 1 ? '🎉' : m.milestone_value >= 100 ? '👑' : m.milestone_value >= 50 ? '🏆' : m.milestone_value >= 25 ? '🌟' : m.milestone_value >= 10 ? '🔥' : '💪';
-            achievementBadge.innerText = `${emoji} Milestone!`;
-            achievementText.innerText = m.message;
-            achievementDetail.innerText = '';
-        }
-    } else {
-        achievementSummary.style.display = 'none';
     }
 
     document.getElementById('view-workout-success').style.display = 'flex';
@@ -26674,7 +26693,7 @@ updateCoachUI();
         if (!user) return;
 
         try {
-            const { data, error } = await supabase
+            const { data, error } = await window.supabaseClient
                 .from('workouts')
                 .select('exercise_name, set_number, reps, weight_kg, time_duration')
                 .eq('user_id', user.id)
@@ -26704,14 +26723,14 @@ updateCoachUI();
 
             // Build modal content
             let content = `
-            <div style="position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px;" onclick="if(event.target === this) this.remove();">
+            <div class="workout-summary-modal" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px;" onclick="if(event.target === this) this.remove();">
                 <div style="background:white; border-radius:24px; max-width:400px; width:100%; max-height:80vh; overflow-y:auto; box-shadow:0 25px 50px rgba(0,0,0,0.25);">
                     <div style="padding:25px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                         <div>
                             <h2 style="margin:0 0 5px 0; font-size:1.3rem; color:var(--text-main);">Workout Summary</h2>
                             <div style="font-size:0.85rem; color:var(--text-muted);">${formattedDate}</div>
                         </div>
-                        <button onclick="this.closest('[style*=\"position:fixed\"]').remove()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+                        <button onclick="this.closest('.workout-summary-modal').remove()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
                     </div>
                     <div style="padding:20px;">
             `;
@@ -27682,6 +27701,20 @@ async function initProgressView() {
             console.warn('Failed to load recent exercises:', e);
         }
 
+        // Load personal bests
+        let personalBests = [];
+        let recentPBs = [];
+        try {
+            [personalBests, recentPBs] = await Promise.all([
+                dbHelpers.personalBests.getAll(user.id, 10),
+                dbHelpers.personalBests.getHistory(user.id, 5)
+            ]);
+            console.log('Personal bests:', personalBests?.length || 0);
+            console.log('Recent PBs:', recentPBs?.length || 0);
+        } catch (e) {
+            console.warn('Failed to load personal bests:', e);
+        }
+
         // Update overview stats
         document.getElementById('total-workouts-stat').innerText = workoutCount || 0;
         document.getElementById('current-streak-stat').innerText = pointsData?.current_streak || 0;
@@ -27689,6 +27722,7 @@ async function initProgressView() {
         document.getElementById('avg-calories-stat').innerText = '-';
 
         // Render sections
+        renderPersonalBests(personalBests, recentPBs);
         renderWorkoutHistory(workoutHistory);
         renderMilestones(milestones);
         renderCheckins(checkins);
@@ -27751,6 +27785,93 @@ function renderWorkoutHistory(workoutHistory) {
     }).join('');
 
     container.innerHTML = html || '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No recent workouts</div>';
+}
+
+// Render Personal Bests section
+function renderPersonalBests(personalBests, recentPBs) {
+    const pbsContainer = document.getElementById('personal-bests-list');
+    const recentPBsContainer = document.getElementById('recent-pbs-list');
+
+    // Render recent PBs (achievements) if any
+    if (recentPBs && recentPBs.length > 0) {
+        recentPBsContainer.style.display = 'block';
+
+        // Filter to show only PBs from the last 7 days
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        const recentPBsFiltered = recentPBs.filter(pb => {
+            const pbDate = new Date(pb.achieved_at);
+            return pbDate >= weekAgo;
+        });
+
+        if (recentPBsFiltered.length > 0) {
+            recentPBsContainer.innerHTML = `
+                <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 16px; border-radius: 16px; border: 1px solid #f59e0b;">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #92400e; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 1.1rem;">🔥</span> Recent Wins
+                    </div>
+                    ${recentPBsFiltered.map(pb => {
+                        const pbDate = new Date(pb.achieved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        const pbValue = pb.pb_type === 'weight'
+                            ? `${pb.new_value}kg x ${pb.new_reps} reps`
+                            : `${pb.new_value} reps at ${pb.new_weight_kg}kg`;
+                        const improvement = pb.improvement
+                            ? `<span style="color: #059669; font-weight: 700;">+${pb.improvement}${pb.pb_type === 'weight' ? 'kg' : ' reps'}</span>`
+                            : '<span style="color: #059669; font-weight: 700;">New!</span>';
+
+                        return `
+                            <div style="background: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <div style="font-weight: 600; color: #1f2937; font-size: 0.9rem;">${pb.exercise_name}</div>
+                                    <div style="font-size: 0.8rem; color: #6b7280;">${pbValue}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div>${improvement}</div>
+                                    <div style="font-size: 0.75rem; color: #9ca3af;">${pbDate}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        } else {
+            recentPBsContainer.style.display = 'none';
+        }
+    } else {
+        recentPBsContainer.style.display = 'none';
+    }
+
+    // Render all-time personal bests
+    if (!personalBests || personalBests.length === 0) {
+        pbsContainer.innerHTML = `
+            <div style="grid-column: span 2; text-align: center; padding: 30px 20px; color: var(--text-muted);">
+                <div style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;">🏋️</div>
+                <div style="font-size: 0.9rem;">Complete workouts with weights to track your personal bests!</div>
+            </div>
+        `;
+        return;
+    }
+
+    const pbsHtml = personalBests.map(pb => {
+        const weight = pb.best_weight_kg ? `${pb.best_weight_kg}kg` : '-';
+        const reps = pb.best_weight_reps || pb.best_reps || '-';
+        const date = pb.best_weight_date
+            ? new Date(pb.best_weight_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : '';
+
+        return `
+            <div style="background: white; padding: 16px; border-radius: 14px; box-shadow: var(--card-shadow); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 8px; right: 8px; font-size: 1.2rem; opacity: 0.15;">🏆</div>
+                <div style="font-weight: 700; color: var(--primary); font-size: 0.85rem; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pb.exercise_name}</div>
+                <div style="font-size: 1.4rem; font-weight: 700; color: #f59e0b; margin-bottom: 4px;">${weight}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">x ${reps} reps</div>
+                ${date ? `<div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; opacity: 0.7;">${date}</div>` : ''}
+            </div>
+        `;
+    }).join('');
+
+    pbsContainer.innerHTML = pbsHtml;
 }
 
 // Share past workout - go to group chats
