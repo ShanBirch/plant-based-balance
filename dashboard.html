@@ -8392,11 +8392,6 @@ async function applyAppTheme(themeKey) {
         <!-- Dynamic Hero Container -->
         <div id="movement-hero-container"></div>
 
-        <div id="recent-workouts-container" style="display:none; margin-bottom:30px;">
-            <h3 style="margin-bottom:15px;">Recent Workouts</h3>
-            <div id="recent-workouts-list" style="display:flex; gap:15px; overflow-x:auto; padding-bottom:10px; scrollbar-width: none;"></div>
-        </div>
-
         <div style="margin-bottom: 20px;">
             <h3 style="margin:0;">Browse Programs</h3>
         </div>
@@ -8708,12 +8703,14 @@ function updateBuilderUI() {
 async function startCustomBuilderWorkout() {
     if (customWorkoutSelection.length === 0) return;
 
+    // Prompt for workout name
+    const workoutName = prompt("Name your workout:");
+    if (!workoutName) return; // User cancelled
+
     // Auto-save the workout to database
     const user = window.currentUser;
     if (user) {
         try {
-            const timestamp = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-            const workoutName = `Custom ${timestamp}`;
             await dbHelpers.workouts.saveCustomWorkout(user.id, workoutName, {
                 exercises: customWorkoutSelection,
                 date: new Date().toISOString()
@@ -8728,8 +8725,8 @@ async function startCustomBuilderWorkout() {
 
     // Construct a dynamic workout object
     const customWorkout = {
-        title: 'Custom Session',
-        name: 'Custom Builder',
+        title: workoutName,
+        name: workoutName,
         description: 'Your personalized session',
         exercises: customWorkoutSelection.map(key => ({
             name: key,
@@ -17180,37 +17177,6 @@ async function renderMovementView() {
         window.savedWorkoutsCache = savedWorkouts;
     } catch(err) {
         console.error('Failed to preload saved workouts:', err);
-    }
-
-    // Render Recent Workouts (workout history grouped by date)
-    const recentContainer = document.getElementById('recent-workouts-container');
-    const recentList = document.getElementById('recent-workouts-list');
-
-    try {
-        const recentWorkouts = await dbHelpers.workouts.getRecentWorkoutsByDate(user.id, 10);
-
-        if (recentWorkouts.length > 0) {
-            recentContainer.style.display = 'block';
-            recentList.innerHTML = recentWorkouts.map(w => {
-                const dateObj = new Date(w.date + 'T00:00:00');
-                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-                const monthDay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const exerciseCount = w.exercises.length;
-                const totalSets = w.exercises.reduce((sum, e) => sum + e.sets, 0);
-                return `
-                <div onclick="showWorkoutHistoryDetail('${w.date}')" style="min-width: 140px; background:white; border-radius:16px; padding:15px; border:1px solid #f1f5f9; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
-                    <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px;">${dayName}</div>
-                    <div style="font-weight:700; color:var(--text-main); font-size:0.95rem; margin-bottom:8px;">${monthDay}</div>
-                    <div style="font-size:0.75rem; color:var(--text-muted);">${exerciseCount} exercises</div>
-                    <div style="font-size:0.7rem; color:var(--text-muted);">${totalSets} sets total</div>
-                </div>
-            `}).join('');
-        } else {
-            recentContainer.style.display = 'none';
-        }
-    } catch(err) {
-        console.error('Failed to load recent workouts:', err);
-        recentContainer.style.display = 'none';
     }
 
     const gridContainer = document.getElementById('movement-grid-container');
