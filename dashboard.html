@@ -558,6 +558,99 @@ async function applyAppTheme(themeKey) {
         opacity: 0.85;
     }
 
+    /* Level Badge Styles */
+    .level-badge-compact {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .level-ring {
+        position: absolute;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: conic-gradient(
+            var(--secondary) calc(var(--level-progress, 0) * 1%),
+            rgba(255, 255, 255, 0.2) calc(var(--level-progress, 0) * 1%)
+        );
+        transform: rotate(-90deg);
+    }
+
+    .level-ring-inner {
+        position: absolute;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        backdrop-filter: blur(10px);
+    }
+
+    .level-number {
+        font-size: 1rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .level-label {
+        font-size: 0.4rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.85;
+    }
+
+    .level-title-badge {
+        font-size: 0.65rem;
+        opacity: 0.75;
+        margin-left: auto;
+        padding: 2px 8px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+    }
+
+    /* Level Progress Row (below points progress) */
+    .level-progress-compact {
+        margin-top: 8px;
+    }
+
+    .level-progress-bar-compact {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        height: 4px;
+        overflow: hidden;
+        margin-bottom: 4px;
+    }
+
+    .level-progress-fill-compact {
+        background: linear-gradient(90deg, var(--secondary) 0%, #FFD700 100%);
+        height: 100%;
+        border-radius: 6px;
+        transition: width 0.5s ease-out;
+    }
+
+    .level-progress-label-compact {
+        font-size: 0.7rem;
+        opacity: 0.8;
+    }
+
+    /* Level up animation */
+    @keyframes levelUpPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+
+    .level-up-animation {
+        animation: levelUpPulse 0.6s ease-out;
+    }
+
     .points-progress-compact {
         margin-top: 5px;
     }
@@ -1888,6 +1981,85 @@ async function applyAppTheme(themeKey) {
         opacity: 0.9;
     }
 
+    /* Level Up Toast */
+    .level-up-toast {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.5);
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%);
+        border-radius: 20px;
+        padding: 0;
+        box-shadow: 0 0 60px rgba(255, 215, 0, 0.6), 0 20px 60px rgba(0, 0, 0, 0.3);
+        z-index: 10010;
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        overflow: hidden;
+    }
+
+    .level-up-toast.show {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+
+    .level-up-glow {
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+        animation: levelGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes levelGlow {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.2); opacity: 0.8; }
+    }
+
+    .level-up-content {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 24px 32px;
+    }
+
+    .level-up-icon {
+        font-size: 3rem;
+        animation: starPulse 0.8s ease-in-out infinite;
+    }
+
+    @keyframes starPulse {
+        0%, 100% { transform: scale(1) rotate(0deg); }
+        50% { transform: scale(1.2) rotate(15deg); }
+    }
+
+    .level-up-text {
+        text-align: left;
+    }
+
+    .level-up-title {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: rgba(0, 0, 0, 0.6);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+    }
+
+    .level-up-level {
+        font-size: 2rem;
+        font-weight: 900;
+        color: #333;
+        line-height: 1.1;
+    }
+
+    .level-up-rank {
+        font-size: 1rem;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.7);
+    }
+
     /* Calorie Tracker Summary (Full View) */
     .calorie-tracker-summary {
         background: white;
@@ -2635,8 +2807,16 @@ async function applyAppTheme(themeKey) {
         </div>
         <h1 class="user-name">Hello, Shannon</h1>
 
-        <!-- Compact Points & Streak Row -->
+        <!-- Compact Points, Level & Streak Row -->
         <div class="points-streak-row">
+            <!-- Level Badge with Progress Ring -->
+            <div class="level-badge-compact" id="level-badge">
+                <div class="level-ring" id="level-ring" style="--level-progress: 0;"></div>
+                <div class="level-ring-inner">
+                    <span class="level-number" id="level-current">1</span>
+                    <span class="level-label">LVL</span>
+                </div>
+            </div>
             <div class="points-compact">
                 <span class="points-number-compact" id="points-current">0</span>
                 <span class="points-label-compact">pts</span>
@@ -2646,6 +2826,15 @@ async function applyAppTheme(themeKey) {
                 <span class="streak-number-compact" id="streak-current">0</span>
                 <span class="streak-text-compact">day streak</span>
             </div>
+            <span class="level-title-badge" id="level-title">Newcomer</span>
+        </div>
+
+        <!-- Level Progress -->
+        <div class="level-progress-compact">
+            <div class="level-progress-bar-compact">
+                <div class="level-progress-fill-compact" id="level-progress-fill" style="width: 0%"></div>
+            </div>
+            <span class="level-progress-label-compact" id="level-progress-label">0 XP to Level 2</span>
         </div>
 
         <!-- Progress to Free Week -->
@@ -30474,6 +30663,58 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ==========================================
 
 const POINTS_FOR_FREE_WEEK = 200;
+const MAX_LEVEL = 99;
+const LEVEL_CURVE_MULTIPLIER = 1.3;
+const LEVEL_CURVE_EXPONENT = 1.55;
+
+// Calculate points required for a given level
+function getPointsForLevel(level) {
+    if (level <= 1) return 0;
+    return Math.floor(LEVEL_CURVE_MULTIPLIER * Math.pow(level, LEVEL_CURVE_EXPONENT));
+}
+
+// Calculate user's current level from lifetime points
+function calculateLevel(lifetimePoints) {
+    let level = 1;
+
+    while (level < MAX_LEVEL) {
+        const pointsNeeded = getPointsForLevel(level + 1);
+        if (lifetimePoints < pointsNeeded) break;
+        level++;
+    }
+
+    const currentLevelPoints = getPointsForLevel(level);
+    const nextLevelPoints = level < MAX_LEVEL ? getPointsForLevel(level + 1) : currentLevelPoints;
+    const pointsIntoLevel = lifetimePoints - currentLevelPoints;
+    const pointsNeededForNext = nextLevelPoints - currentLevelPoints;
+    const progress = level >= MAX_LEVEL ? 100 : Math.min(100, Math.floor((pointsIntoLevel / pointsNeededForNext) * 100));
+
+    return {
+        level,
+        currentLevelPoints,
+        nextLevelPoints,
+        pointsIntoLevel,
+        pointsNeededForNext,
+        progress,
+        isMaxLevel: level >= MAX_LEVEL
+    };
+}
+
+// Get level title based on level
+function getLevelTitle(level) {
+    if (level >= 99) return 'Legend';
+    if (level >= 90) return 'Master';
+    if (level >= 80) return 'Champion';
+    if (level >= 70) return 'Expert';
+    if (level >= 60) return 'Veteran';
+    if (level >= 50) return 'Dedicated';
+    if (level >= 40) return 'Committed';
+    if (level >= 30) return 'Consistent';
+    if (level >= 20) return 'Growing';
+    if (level >= 10) return 'Rising';
+    if (level >= 5) return 'Beginner';
+    return 'Newcomer';
+}
 
 // Load and display user's points data
 async function loadPointsWidget() {
@@ -30520,7 +30761,46 @@ window.loadUserPoints = loadPointsWidget;
 // Update points display with current data
 function updatePointsDisplay(pointsData) {
     const currentPoints = pointsData.current_points || 0;
+    const lifetimePoints = pointsData.lifetime_points || 0;
     const currentStreak = pointsData.current_streak || 0;
+
+    // Calculate level from lifetime points
+    const levelData = calculateLevel(lifetimePoints);
+
+    // Update level display
+    const levelEl = document.getElementById('level-current');
+    if (levelEl) {
+        levelEl.textContent = levelData.level;
+    }
+
+    // Update level ring progress
+    const levelRing = document.getElementById('level-ring');
+    if (levelRing) {
+        levelRing.style.setProperty('--level-progress', levelData.progress);
+    }
+
+    // Update level title
+    const levelTitleEl = document.getElementById('level-title');
+    if (levelTitleEl) {
+        levelTitleEl.textContent = getLevelTitle(levelData.level);
+    }
+
+    // Update level progress bar
+    const levelProgressFill = document.getElementById('level-progress-fill');
+    if (levelProgressFill) {
+        levelProgressFill.style.width = `${levelData.progress}%`;
+    }
+
+    // Update level progress label
+    const levelProgressLabel = document.getElementById('level-progress-label');
+    if (levelProgressLabel) {
+        if (levelData.isMaxLevel) {
+            levelProgressLabel.textContent = 'MAX LEVEL - Legend!';
+        } else {
+            const xpToNext = levelData.pointsNeededForNext - levelData.pointsIntoLevel;
+            levelProgressLabel.textContent = `${xpToNext} XP to Level ${levelData.level + 1}`;
+        }
+    }
 
     // Update points number
     const pointsEl = document.getElementById('points-current');
@@ -30652,6 +30932,44 @@ function showPointsEarnedToast(points, bonusPoints = 0, streak = 0) {
     }, 3000);
 }
 
+// Show level up toast with celebration
+function showLevelUpToast(newLevel, title) {
+    const toast = document.createElement('div');
+    toast.className = 'level-up-toast';
+    toast.innerHTML = `
+        <div class="level-up-glow"></div>
+        <div class="level-up-content">
+            <div class="level-up-icon">&#x2B50;</div>
+            <div class="level-up-text">
+                <div class="level-up-title">LEVEL UP!</div>
+                <div class="level-up-level">Level ${newLevel}</div>
+                <div class="level-up-rank">${title}</div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Add level-up animation to the badge
+    const levelBadge = document.getElementById('level-badge');
+    if (levelBadge) {
+        levelBadge.classList.add('level-up-animation');
+        setTimeout(() => levelBadge.classList.remove('level-up-animation'), 600);
+    }
+
+    // Animate in
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // Remove after 5 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+// Track previous lifetime points to detect level-ups
+let previousLifetimePoints = 0;
+
 // Award points for a meal (called after successful meal logging)
 async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photoHash) {
     console.log('awardPointsForMeal called with:', { mealLogId, photoTimestamp, aiConfidence, photoHash });
@@ -30661,6 +30979,15 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
             console.log('No user session for points');
             return null;
         }
+
+        // Get current points to track level before awarding
+        let pointsBefore = null;
+        try {
+            pointsBefore = await window.db?.points?.getPoints(session.user.id);
+        } catch (e) {
+            console.log('Could not get previous points');
+        }
+        const previousLevel = pointsBefore ? calculateLevel(pointsBefore.lifetime_points || 0).level : 1;
 
         console.log('Calling window.db.points.awardPoints...');
         const result = await window.db?.points?.awardPoints(
@@ -30686,6 +31013,17 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
                 });
             }
 
+            // Check for level-up
+            const newLifetimePoints = result.newLifetimePoints || (pointsBefore?.lifetime_points || 0) + (result.pointsAwarded || 0) + (result.bonusPoints || 0);
+            const newLevelData = calculateLevel(newLifetimePoints);
+            if (newLevelData.level > previousLevel) {
+                // Delay level-up toast to appear after points toast
+                const delayMs = (result.milestonesUnlocked?.length || 0) * 500 + 1000;
+                setTimeout(() => {
+                    showLevelUpToast(newLevelData.level, getLevelTitle(newLevelData.level));
+                }, delayMs);
+            }
+
             // Refresh points widget
             await loadPointsWidget();
         } else if (result?.error) {
@@ -30705,6 +31043,15 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
     try {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) return null;
+
+        // Get current points to track level before awarding
+        let pointsBefore = null;
+        try {
+            pointsBefore = await window.db?.points?.getPoints(session.user.id);
+        } catch (e) {
+            console.log('Could not get previous points');
+        }
+        const previousLevel = pointsBefore ? calculateLevel(pointsBefore.lifetime_points || 0).level : 1;
 
         const result = await window.db?.points?.awardPoints(
             session.user.id,
@@ -30726,6 +31073,17 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
                 result.milestonesUnlocked.forEach((milestone, index) => {
                     setTimeout(() => showMilestoneToast(milestone), (index + 1) * 500);
                 });
+            }
+
+            // Check for level-up
+            const newLifetimePoints = result.newLifetimePoints || (pointsBefore?.lifetime_points || 0) + (result.pointsAwarded || 0) + (result.bonusPoints || 0);
+            const newLevelData = calculateLevel(newLifetimePoints);
+            if (newLevelData.level > previousLevel) {
+                // Delay level-up toast to appear after points toast
+                const delayMs = (result.milestonesUnlocked?.length || 0) * 500 + 1000;
+                setTimeout(() => {
+                    showLevelUpToast(newLevelData.level, getLevelTitle(newLevelData.level));
+                }, delayMs);
             }
 
             // Refresh points widget
