@@ -17430,7 +17430,7 @@ async function openQuickShareModal() {
         // Group sets by exercise and get best set for each
         const exerciseSets = {};
         completedWorkoutDataForShare.sets.forEach(set => {
-            const name = set.exercise_name || set.exerciseName || 'Exercise';
+            const name = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
             if (!exerciseSets[name]) {
                 exerciseSets[name] = [];
             }
@@ -17461,8 +17461,8 @@ async function openQuickShareModal() {
 
             // Find best set for summary display
             const bestSet = sets.reduce((best, current) => {
-                const currentWeight = current.weight || current.weight_kg || 0;
-                const bestWeight = best.weight || best.weight_kg || 0;
+                const currentWeight = current.kg || current.weight || current.weight_kg || 0;
+                const bestWeight = best.kg || best.weight || best.weight_kg || 0;
                 if (currentWeight > bestWeight) return current;
                 if (currentWeight === bestWeight) {
                     const currentReps = current.reps || 0;
@@ -17471,7 +17471,7 @@ async function openQuickShareModal() {
                 }
                 return best;
             }, sets[0]);
-            const bestWeight = bestSet.weight || bestSet.weight_kg || 0;
+            const bestWeight = bestSet.kg || bestSet.weight || bestSet.weight_kg || 0;
             const bestReps = bestSet.reps || 0;
 
             // Exercise header (clickable to expand)
@@ -17491,7 +17491,7 @@ async function openQuickShareModal() {
             // Individual sets
             sets.forEach((set, idx) => {
                 const setIndex = completedWorkoutDataForShare.sets.indexOf(set);
-                const weight = set.weight || set.weight_kg || 0;
+                const weight = set.kg || set.weight || set.weight_kg || 0;
                 const reps = set.reps || 0;
                 const setNumber = set.set || (idx + 1);
 
@@ -17598,8 +17598,8 @@ function updateSharePreview() {
     // If a specific lift is selected, show that
     if (selectedLiftToShare !== null && sets && sets[selectedLiftToShare]) {
         const set = sets[selectedLiftToShare];
-        const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
-        const weight = set.weight || set.weight_kg || 0;
+        const exerciseName = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
+        const weight = set.kg || set.weight || set.weight_kg || 0;
         const reps = set.reps || 0;
 
         badge.innerText = '💪';
@@ -17705,8 +17705,8 @@ function getShareData() {
     // If a specific lift is selected
     if (selectedLiftToShare !== null && sets && sets[selectedLiftToShare]) {
         const set = sets[selectedLiftToShare];
-        const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
-        const weight = set.weight || set.weight_kg || 0;
+        const exerciseName = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
+        const weight = set.kg || set.weight || set.weight_kg || 0;
         const reps = set.reps || 0;
 
         return {
