@@ -27752,7 +27752,7 @@ async function initProgressView() {
         // Render sections
         renderPersonalBests(personalBests, recentPBs);
         renderWorkoutHistory(workoutHistory);
-        renderMilestones(milestones);
+        renderMilestones(milestones, workoutCount, pointsData, personalBests);
         renderCheckins(checkins);
         await renderExerciseProgress(user.id, recentExercises);
 
@@ -27914,13 +27914,8 @@ function shareWorkoutHistoryToFeed(date, exercises) {
     showToast('Open a group chat to share your win! 💬', 'success');
 }
 
-function renderMilestones(milestones) {
+function renderMilestones(milestones, workoutCount = 0, pointsData = null, personalBests = []) {
     const container = document.getElementById('milestones-list');
-
-    if (!milestones || milestones.length === 0) {
-        container.innerHTML = '<div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); text-align: center; color: var(--text-muted);">Complete your first workout to unlock achievements!</div>';
-        return;
-    }
 
     const getMilestoneEmoji = (type, value) => {
         if (type === 'workout_count') {
@@ -27932,6 +27927,8 @@ function renderMilestones(milestones) {
             return '💪';
         }
         if (type === 'workout_streak') return '⚡';
+        if (type === 'personal_best') return '🏅';
+        if (type === 'points') return '⭐';
         return '🎖️';
     };
 
@@ -27942,13 +27939,72 @@ function renderMilestones(milestones) {
             if (value >= 50) return '50 Workouts - Unstoppable!';
             if (value >= 25) return '25 Workouts - Amazing!';
             if (value >= 10) return '10 Workouts - On Fire!';
+            if (value >= 5) return '5 Workouts - Great Start!';
             return `${value} Workouts Complete`;
         }
         if (type === 'workout_streak') return `${value}-Day Streak!`;
+        if (type === 'personal_best') return `${value} Personal Best${value > 1 ? 's' : ''}!`;
+        if (type === 'points') return `${value} Points Earned!`;
         return 'Achievement Unlocked';
     };
 
-    const html = milestones.slice(0, 6).map(m => {
+    // If no milestones from database, generate achievements from available data
+    let achievementsToShow = milestones || [];
+
+    if (achievementsToShow.length === 0 && (workoutCount > 0 || (personalBests && personalBests.length > 0) || (pointsData && pointsData.current_points > 0))) {
+        const generatedAchievements = [];
+
+        // Generate workout count achievements
+        if (workoutCount >= 1) {
+            const thresholds = [1, 5, 10, 25, 50, 100];
+            for (const threshold of thresholds) {
+                if (workoutCount >= threshold) {
+                    generatedAchievements.push({
+                        milestone_type: 'workout_count',
+                        milestone_value: threshold,
+                        achieved_at: new Date().toISOString()
+                    });
+                }
+            }
+        }
+
+        // Generate streak achievements
+        const streak = pointsData?.current_streak || 0;
+        if (streak >= 7) {
+            generatedAchievements.push({
+                milestone_type: 'workout_streak',
+                milestone_value: streak >= 30 ? 30 : (streak >= 14 ? 14 : 7),
+                achieved_at: new Date().toISOString()
+            });
+        }
+
+        // Generate personal bests achievement
+        if (personalBests && personalBests.length > 0) {
+            generatedAchievements.push({
+                milestone_type: 'personal_best',
+                milestone_value: personalBests.length,
+                achieved_at: new Date().toISOString()
+            });
+        }
+
+        // Generate points achievement
+        if (pointsData && pointsData.lifetime_points >= 10) {
+            generatedAchievements.push({
+                milestone_type: 'points',
+                milestone_value: pointsData.lifetime_points,
+                achieved_at: new Date().toISOString()
+            });
+        }
+
+        achievementsToShow = generatedAchievements;
+    }
+
+    if (achievementsToShow.length === 0) {
+        container.innerHTML = '<div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); text-align: center; color: var(--text-muted);">Complete your first workout to unlock achievements!</div>';
+        return;
+    }
+
+    const html = achievementsToShow.slice(0, 6).map(m => {
         const emoji = getMilestoneEmoji(m.milestone_type, m.milestone_value);
         const message = getMilestoneMessage(m.milestone_type, m.milestone_value);
         const date = new Date(m.achieved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
