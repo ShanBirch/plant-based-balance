@@ -8875,6 +8875,20 @@ function openYourWorkouts() {
     hideAllAppViews();
     document.getElementById('view-your-workouts').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
+
+    // Render library immediately (doesn't need database)
+    const libraryContainer = document.getElementById('your-workouts-library-list');
+    if (libraryContainer) {
+        renderYourWorkoutsLibrary(libraryContainer);
+    }
+
+    // Show loading states for database-dependent sections
+    const historyContainer = document.getElementById('your-workouts-history-list');
+    if (historyContainer) {
+        historyContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Loading...</div>';
+    }
+
+    // Then load async data
     renderYourWorkoutsList();
     pushNavigationState('view-your-workouts', () => closeYourWorkouts());
 }
@@ -8889,11 +8903,18 @@ async function renderYourWorkoutsList() {
     const emptyState = document.getElementById('your-workouts-empty');
     const historyContainer = document.getElementById('your-workouts-history-list');
     const historySection = document.getElementById('your-workouts-history-section');
-    const libraryContainer = document.getElementById('your-workouts-library-list');
 
     try {
         const user = window.currentUser;
-        if (!user) return;
+        if (!user) {
+            // Show empty states when not logged in
+            if (historyContainer) {
+                historyContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); background: white; border-radius: 12px; font-size: 0.9rem;">Log in to see your workout history</div>';
+            }
+            if (listContainer) listContainer.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'block';
+            return;
+        }
 
         // Fetch workout history and custom workouts in parallel
         const [workoutHistory, savedWorkouts] = await Promise.all([
@@ -8907,12 +8928,12 @@ async function renderYourWorkoutsList() {
         renderYourWorkoutsHistory(workoutHistory, historyContainer, historySection);
 
         // Render Custom Workouts
-        if (savedWorkouts.length === 0) {
-            listContainer.style.display = 'none';
-            emptyState.style.display = 'block';
+        if (!savedWorkouts || savedWorkouts.length === 0) {
+            if (listContainer) listContainer.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'block';
         } else {
-            listContainer.style.display = 'flex';
-            emptyState.style.display = 'none';
+            if (listContainer) listContainer.style.display = 'flex';
+            if (emptyState) emptyState.style.display = 'none';
 
             listContainer.innerHTML = savedWorkouts.map(w => {
                 const name = w.template_name || 'Untitled Workout';
@@ -8934,12 +8955,13 @@ async function renderYourWorkoutsList() {
             }).join('');
         }
 
-        // Render Workout Library
-        renderYourWorkoutsLibrary(libraryContainer);
-
     } catch(err) {
         console.error('Failed to load your workouts:', err);
-        listContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Failed to load workouts</div>';
+        if (historyContainer) {
+            historyContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); background: white; border-radius: 12px; font-size: 0.9rem;">Could not load workout history</div>';
+        }
+        if (listContainer) listContainer.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'block';
     }
 }
 
@@ -17309,7 +17331,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
