@@ -8777,8 +8777,18 @@ function startCustomBuilderWorkout() {
             <!-- Dynamic Content Injected Here via JS -->
         </div>
 
+        <!-- Quick Entry Button -->
+        <div style="margin-top: 20px;">
+            <button onclick="openBulkEntryModal()" style="width: 100%; background: var(--primary); border: none; color: white; font-weight: 700; font-size: 0.95rem; padding: 18px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(123, 168, 131, 0.3);">
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+                Quick Entry
+            </button>
+        </div>
+
         <!-- Add Exercise Button -->
-        <div style="margin-top: 20px; padding-bottom: 40px;">
+        <div style="margin-top: 12px; padding-bottom: 40px;">
             <button onclick="openAddExerciseModal()" style="width: 100%; background: transparent; border: 2px dashed var(--primary); color: var(--primary); font-weight: 700; font-size: 0.95rem; padding: 18px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                 <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;">
                     <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -8815,6 +8825,44 @@ function startCustomBuilderWorkout() {
     </div>
 </div>
 
+<!-- BULK ENTRY MODAL -->
+<div id="bulk-entry-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 600; overflow-y: auto;">
+    <div style="background: white; min-height: 100%; max-width: 600px; margin: 0 auto; position: relative;">
+        <!-- Modal Header -->
+        <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <div onclick="closeBulkEntryModal()" style="font-weight: 600; cursor: pointer; color: var(--text-muted); padding: 10px;">Cancel</div>
+            <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Quick Entry</div>
+            <div onclick="processBulkEntry()" style="font-weight: 600; cursor: pointer; color: var(--primary); padding: 10px;">Add</div>
+        </div>
+
+        <!-- Input Section -->
+        <div style="padding: 20px;">
+            <div style="background: #f8fafc; border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+                <label style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; display: block; margin-bottom: 10px;">
+                    Type your sets in one go:
+                </label>
+                <textarea id="bulk-entry-input" placeholder="e.g. bench press 30 40 60&#10;or: 3 sets squat 80kg 8 reps" style="width: 100%; min-height: 120px; padding: 15px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; font-family: inherit; resize: vertical; box-sizing: border-box;" oninput="previewBulkEntry()"></textarea>
+            </div>
+
+            <!-- Preview Section -->
+            <div id="bulk-entry-preview" style="display: none;">
+                <div style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; margin-bottom: 12px;">Preview:</div>
+                <div id="bulk-entry-preview-content" style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;"></div>
+            </div>
+
+            <!-- Help Section -->
+            <div style="margin-top: 20px; background: #f0fdf4; border-radius: 12px; padding: 15px; border: 1px solid #bbf7d0;">
+                <div style="font-weight: 700; color: var(--text-main); font-size: 0.85rem; margin-bottom: 10px;">Examples:</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.8;">
+                    <div><code style="background: white; padding: 2px 6px; border-radius: 4px;">bench press 30 40 60</code> → 3 sets at 30, 40, 60 kg</div>
+                    <div><code style="background: white; padding: 2px 6px; border-radius: 4px;">squat 80kg 8 reps x3</code> → 3 sets of 8 reps at 80kg</div>
+                    <div><code style="background: white; padding: 2px 6px; border-radius: 4px;">deadlift 100 5 100 5 100 5</code> → 3 sets of 5 reps at 100kg</div>
+                    <div><code style="background: white; padding: 2px 6px; border-radius: 4px;">row 60x10 70x8 80x6</code> → weight x reps format</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- WORKOUT SUCCESS VIEW -->
 <div id="view-workout-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: var(--primary); color: white; overflow-y: auto;">
@@ -18847,6 +18895,287 @@ function openAddExerciseModal() {
 function closeAddExerciseModal() {
     document.getElementById('add-exercise-modal').style.display = 'none';
 }
+
+// ========== BULK ENTRY FUNCTIONS ==========
+
+function openBulkEntryModal() {
+    document.getElementById('bulk-entry-modal').style.display = 'block';
+    document.getElementById('bulk-entry-input').value = '';
+    document.getElementById('bulk-entry-preview').style.display = 'none';
+    document.getElementById('bulk-entry-input').focus();
+}
+
+function closeBulkEntryModal() {
+    document.getElementById('bulk-entry-modal').style.display = 'none';
+}
+
+// Parse bulk entry text into structured workout data
+function parseBulkEntry(text) {
+    if (!text || text.trim().length === 0) return null;
+
+    const input = text.trim().toLowerCase();
+
+    // Try to find the exercise name by matching against known exercises
+    const allExercises = typeof EXERCISE_VIDEOS !== 'undefined' ? Object.keys(EXERCISE_VIDEOS) : [];
+    let matchedExercise = null;
+    let remainingText = input;
+
+    // Sort exercises by length (longest first) to match most specific first
+    const sortedExercises = allExercises.sort((a, b) => b.length - a.length);
+
+    for (const exercise of sortedExercises) {
+        const exerciseLower = exercise.toLowerCase();
+        if (input.includes(exerciseLower)) {
+            matchedExercise = exercise;
+            remainingText = input.replace(exerciseLower, '').trim();
+            break;
+        }
+    }
+
+    // If no exact match, try to find by keywords
+    if (!matchedExercise) {
+        // Extract potential exercise name (words that aren't numbers or units)
+        const words = input.split(/\s+/);
+        const exerciseWords = [];
+        const numberPattern = /^\d+(\.\d+)?(kg|lbs?|reps?|sets?|x)?$/i;
+        const multiplierPattern = /^x\d+$/i;
+
+        for (const word of words) {
+            if (!numberPattern.test(word) && !multiplierPattern.test(word) &&
+                !['sets', 'set', 'reps', 'rep', 'kg', 'lbs', 'x'].includes(word)) {
+                exerciseWords.push(word);
+            }
+        }
+
+        if (exerciseWords.length > 0) {
+            const searchTerm = exerciseWords.join(' ');
+            // Find best matching exercise
+            for (const exercise of sortedExercises) {
+                const exerciseLower = exercise.toLowerCase();
+                if (exerciseWords.every(word => exerciseLower.includes(word))) {
+                    matchedExercise = exercise;
+                    break;
+                }
+            }
+            remainingText = input;
+            for (const word of exerciseWords) {
+                remainingText = remainingText.replace(new RegExp('\\b' + word + '\\b', 'gi'), '').trim();
+            }
+        }
+    }
+
+    if (!matchedExercise) {
+        return { error: 'Could not identify exercise. Try including the full exercise name.' };
+    }
+
+    // Parse the numbers and create sets
+    const sets = [];
+
+    // Pattern 1: "60x10 70x8 80x6" format (weight x reps)
+    const weightXRepsPattern = /(\d+(?:\.\d+)?)\s*x\s*(\d+)/gi;
+    let wxrMatches = [...remainingText.matchAll(weightXRepsPattern)];
+
+    if (wxrMatches.length > 0) {
+        for (const match of wxrMatches) {
+            sets.push({ kg: match[1], reps: match[2] });
+        }
+        return { exercise: matchedExercise, sets };
+    }
+
+    // Pattern 2: "80kg 8 reps x3" or "80kg 8reps x3" format (same weight/reps repeated)
+    const repeatPattern = /(\d+(?:\.\d+)?)\s*(?:kg)?\s*(\d+)\s*(?:reps?)?\s*x\s*(\d+)/i;
+    const repeatMatch = remainingText.match(repeatPattern);
+
+    if (repeatMatch) {
+        const kg = repeatMatch[1];
+        const reps = repeatMatch[2];
+        const count = parseInt(repeatMatch[3]);
+        for (let i = 0; i < count; i++) {
+            sets.push({ kg, reps });
+        }
+        return { exercise: matchedExercise, sets };
+    }
+
+    // Pattern 3: Just numbers separated by spaces/commas (weights for each set)
+    // e.g., "30 40 60" or "30, 40, 60" or "30kg 40kg 60kg"
+    const numbersOnly = remainingText.replace(/[,]/g, ' ').replace(/kg|lbs?/gi, '');
+    const numbers = numbersOnly.match(/\d+(?:\.\d+)?/g);
+
+    if (numbers && numbers.length > 0) {
+        // Check if numbers alternate (weight, reps, weight, reps)
+        // If we have pairs and they look like weight/rep pairs
+        if (numbers.length >= 2 && numbers.length % 2 === 0) {
+            const couldBePairs = numbers.every((n, i) => {
+                if (i % 2 === 0) return parseFloat(n) >= 10; // weights typically >= 10
+                return parseFloat(n) <= 30; // reps typically <= 30
+            });
+
+            if (couldBePairs && numbers.length >= 4) {
+                // Treat as weight/rep pairs
+                for (let i = 0; i < numbers.length; i += 2) {
+                    sets.push({ kg: numbers[i], reps: numbers[i + 1] });
+                }
+                return { exercise: matchedExercise, sets };
+            }
+        }
+
+        // Otherwise treat all numbers as weights (default 8-12 reps)
+        for (const num of numbers) {
+            sets.push({ kg: num, reps: '' });
+        }
+        return { exercise: matchedExercise, sets };
+    }
+
+    // Fallback: just create the exercise with 3 empty sets
+    return { exercise: matchedExercise, sets: [{ kg: '', reps: '' }, { kg: '', reps: '' }, { kg: '', reps: '' }] };
+}
+
+// Preview the bulk entry as user types
+function previewBulkEntry() {
+    const input = document.getElementById('bulk-entry-input').value;
+    const previewContainer = document.getElementById('bulk-entry-preview');
+    const previewContent = document.getElementById('bulk-entry-preview-content');
+
+    if (!input || input.trim().length < 3) {
+        previewContainer.style.display = 'none';
+        return;
+    }
+
+    const result = parseBulkEntry(input);
+
+    if (!result || result.error) {
+        previewContainer.style.display = 'block';
+        previewContent.innerHTML = `
+            <div style="padding: 15px; color: #ef4444; text-align: center;">
+                ${result?.error || 'Could not parse input. Try: "bench press 30 40 60"'}
+            </div>
+        `;
+        return;
+    }
+
+    previewContainer.style.display = 'block';
+
+    let setsHtml = result.sets.map((set, idx) => `
+        <div style="display: grid; grid-template-columns: 40px 1fr 1fr; gap: 10px; padding: 10px 15px; border-top: 1px solid #f1f5f9; align-items: center;">
+            <div style="font-weight: 700; color: #94a3b8; text-align: center;">${idx + 1}</div>
+            <div style="text-align: center; font-weight: 600;">${set.kg || '-'} kg</div>
+            <div style="text-align: center; font-weight: 600;">${set.reps || '-'} reps</div>
+        </div>
+    `).join('');
+
+    previewContent.innerHTML = `
+        <div style="padding: 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+            <div style="font-weight: 700; color: var(--text-main);">${result.exercise}</div>
+            <div style="font-size: 0.85rem; color: var(--primary); margin-top: 3px;">${result.sets.length} set${result.sets.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px 1fr 1fr; gap: 10px; padding: 8px 15px; font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;">
+            <div style="text-align: center;">Set</div>
+            <div style="text-align: center;">Weight</div>
+            <div style="text-align: center;">Reps</div>
+        </div>
+        ${setsHtml}
+    `;
+}
+
+// Process bulk entry and add to workout
+function processBulkEntry() {
+    const input = document.getElementById('bulk-entry-input').value;
+    const result = parseBulkEntry(input);
+
+    if (!result || result.error) {
+        alert(result?.error || 'Could not parse input. Please check the format.');
+        return;
+    }
+
+    // Add exercise to workout with pre-filled sets
+    addExerciseWithSets(result.exercise, result.sets);
+    closeBulkEntryModal();
+}
+
+// Add exercise with pre-filled set values
+function addExerciseWithSets(exerciseName, sets) {
+    const container = document.getElementById('workout-exercises-list');
+    const videoUrl = findVideoMatch(exerciseName);
+    const prevData = findPreviousSetData(exerciseName);
+    const escapedName = exerciseName.replace(/'/g, "\\'");
+
+    const setsHtml = sets.map((set, idx) => {
+        const prevStats = getPreviousStats(exerciseName, idx + 1) || '-';
+        return `
+            <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(70px, auto); gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
+                <div style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${idx + 1}</div>
+                <input type="text" class="input-time" placeholder="-" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                <input type="text" class="input-reps" placeholder="Reps" value="${set.reps || ''}" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                <input type="text" class="input-kg" placeholder="Kg" value="${set.kg || ''}" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prevStats}</div>
+            </div>
+        `;
+    }).join('');
+
+    const exerciseHtml = `
+        <div class="exercise-logger-card" data-exercise-name="${exerciseName}" data-is-user-added="true" style="background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9; animation: slideInUp 0.3s ease;">
+            <div style="padding: 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                            <span style="font-weight: 700; font-size: 1.05rem;">${exerciseName}</span>
+                            <span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">QUICK</span>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 0.85rem;">Added via quick entry</div>
+                        ${prevData ? `<div style="color: var(--primary); font-size: 0.75rem; margin-top: 5px;">Last: ${prevData}</div>` : ''}
+                    </div>
+                    <button onclick="deleteExerciseFromWorkout('${escapedName}', true)" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
+                        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            ${videoUrl ? `
+            <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
+                <video style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline>
+                    <source src="${videoUrl}" type="video/mp4">
+                </video>
+                <div class="inline-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    <svg viewBox="0 0 24 24" style="width: 30px; height: 30px; fill: var(--primary); margin-left: 3px;">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+            </div>` : ''}
+
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(70px, auto); gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div>
+            </div>
+
+            <div class="sets-list-container">
+                ${setsHtml}
+            </div>
+
+            <div style="padding:15px; border-top:1px solid #f8fafc;">
+                <button onclick="addWorkoutSet(this, '${escapedName}', false)" style="width:100%; background:transparent; border:2px dashed #e2e8f0; color:#94a3b8; font-weight:700; font-size:0.8rem; padding:12px; border-radius:12px; cursor:pointer;">+ ADD SET</button>
+            </div>
+        </div>
+    `;
+
+    container.insertAdjacentHTML('beforeend', exerciseHtml);
+
+    // Update exercise count in header
+    const exerciseCount = document.querySelectorAll('.exercise-logger-card').length;
+    const goalEl = document.getElementById('workout-player-goal');
+    if (goalEl) {
+        const currentText = goalEl.textContent;
+        goalEl.textContent = currentText.replace(/\d+ Exercise[s]?/, `${exerciseCount} Exercise${exerciseCount !== 1 ? 's' : ''}`);
+    }
+
+    // Scroll to the new exercise
+    const newCard = container.lastElementChild;
+    if (newCard) {
+        newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+// ========== END BULK ENTRY FUNCTIONS ==========
 
 // Popular/main exercises that should be prioritized in search results
 const POPULAR_EXERCISES = new Set([
