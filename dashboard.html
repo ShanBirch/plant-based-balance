@@ -10926,6 +10926,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Move fixed overlay views to body level to avoid z-index stacking context issues
+    const overlayIds = ['view-your-workouts', 'view-workout-library', 'view-workout-subcategories', 'view-workout-list', 'view-workout-overview'];
+    overlayIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            document.body.appendChild(el);
+        }
+    });
+
     // 2. Initialize (Now handled by the consolidated listener above)
     // initProgramDate(); 
     // switchAppTab('dashboard', document.querySelector('.nav-item')); // Default to Home
