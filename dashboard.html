@@ -2786,6 +2786,30 @@ async function applyAppTheme(themeKey) {
             </div>
          </div>
 
+        <!-- Live Challenges Section -->
+        <div style="margin: 30px 0 15px 0; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">Live Challenges</h3>
+            <button onclick="openCreateChallengeModal()" style="background: none; border: none; color: var(--primary); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <span style="font-size: 1.1rem;">+</span> New
+            </button>
+        </div>
+        <div id="home-challenges-container">
+            <!-- Challenges will be loaded here by loadHomeChallenges() -->
+            <div id="home-challenges-empty" class="card" style="border-left: 5px solid #f59e0b;">
+                <div class="card-body" style="max-height: none; padding: 20px; opacity: 1; display: flex; align-items: center; gap: 16px;">
+                    <div style="background: #fef3c7; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🏆</div>
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 4px 0; border: none; padding: 0; font-size: 0.95rem;">No active challenges</h4>
+                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Challenge friends to earn more points!</p>
+                    </div>
+                    <button onclick="openCreateChallengeModal()" style="background: linear-gradient(135deg, #f59e0b, #f97316); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap;">
+                        Start
+                    </button>
+                </div>
+            </div>
+            <div id="home-challenges-list"></div>
+        </div>
+
         <h3 style="margin: 30px 0 15px 0;">Coaching Insight</h3>
          <div class="card">
               <div class="card-body" style="max-height: none; padding: 20px; opacity: 1;">
@@ -9802,50 +9826,6 @@ function viewWorkoutHistoryDetail(date) {
             </div>
         </div>
 
-        <!-- Friends Cards Section (Horizontal Scroll) -->
-        <div style="padding: 0 15px; margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">Your Circle</h3>
-                <span id="friends-count-label" style="font-size: 0.8rem; color: var(--text-muted);">0 friends</span>
-            </div>
-            <div id="friends-cards-container" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;">
-                <!-- Coach Shannon Card (Always First) -->
-                <div onclick="openCoachChatFromFriends()" style="min-width: 140px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); border-radius: 16px; padding: 16px; cursor: pointer; scroll-snap-align: start; box-shadow: 0 4px 12px rgba(123, 168, 131, 0.3);">
-                    <div style="width: 50px; height: 50px; border-radius: 50%; background: white; margin-bottom: 10px; overflow: hidden; border: 2px solid rgba(255,255,255,0.5);">
-                        <img src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='🌱'">
-                    </div>
-                    <div style="font-weight: 700; color: white; font-size: 0.95rem; margin-bottom: 4px;">Coach Shannon</div>
-                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.9);">Your wellness guide</div>
-                    <div style="margin-top: 10px; display: flex; gap: 6px;">
-                        <div style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; color: white;">Chat</div>
-                    </div>
-                </div>
-                <!-- Friend cards will be injected here -->
-                <div id="friends-cards-list"></div>
-            </div>
-        </div>
-
-        <!-- Challenges Section -->
-        <div style="padding: 0 15px; margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">Challenges</h3>
-                <button onclick="openCreateChallengeModal()" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                    <span style="font-size: 1rem;">+</span> New Challenge
-                </button>
-            </div>
-            <div id="challenges-container" style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- Challenges will be loaded here -->
-                <div id="challenges-empty" style="text-align: center; padding: 30px 20px; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
-                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🏆</div>
-                    <div style="font-size: 0.95rem; color: var(--text-main); font-weight: 600; margin-bottom: 5px;">No active challenges</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Challenge your friends to see who can earn the most points!</div>
-                    <button onclick="openCreateChallengeModal()" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
-                        Start a Challenge
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- Group Chats Section -->
         <div style="padding: 0 15px; margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -9867,26 +9847,35 @@ function viewWorkoutHistoryDetail(date) {
             </div>
         </div>
 
-        <!-- Activity Feed Section -->
-        <div style="padding: 0 15px;">
+        <!-- Friends Section (Instagram DM Style) -->
+        <div style="padding: 0 15px; margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">Activity Feed</h3>
-                <select id="feed-filter" onchange="filterActivityFeed(this.value)" style="padding: 6px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; color: var(--text-muted); background: white;">
-                    <option value="all">All Activity</option>
-                    <option value="workouts">Workouts</option>
-                    <option value="meals">Meals</option>
-                    <option value="stories">Stories</option>
-                    <option value="achievements">Achievements</option>
-                    <option value="rewards">Rewards</option>
-                </select>
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">Friends</h3>
+                <span id="friends-count-label" style="font-size: 0.8rem; color: var(--text-muted);">0 friends</span>
             </div>
-            <div id="activity-feed-container" style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- Activity items will be injected here -->
-                <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
-                    <div style="font-size: 3rem; margin-bottom: 10px;">👥</div>
-                    <div style="font-size: 0.95rem; margin-bottom: 5px;">No activity yet</div>
-                    <div style="font-size: 0.8rem;">Add friends to see what they're up to!</div>
+            <div id="friends-cards-container" style="display: flex; flex-direction: column; gap: 2px; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #f1f5f9;">
+                <!-- Coach Shannon Row (Always First) -->
+                <div onclick="openCoachChatFromFriends()" style="display: flex; align-items: center; padding: 12px 16px; cursor: pointer; background: linear-gradient(90deg, rgba(123,168,131,0.08) 0%, transparent 100%); border-bottom: 1px solid #f1f5f9;">
+                    <div style="position: relative; margin-right: 12px;">
+                        <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--primary);">
+                            <img src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\"color: white; font-size: 1.4rem; font-weight: 700;\">S</span>'">
+                        </div>
+                        <div style="position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></div>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; color: var(--text-main); font-size: 0.95rem;">Coach Shannon</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                            <span style="color: var(--primary); font-weight: 500;">Your wellness guide</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 36px; height: 36px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                        </div>
+                    </div>
                 </div>
+                <!-- Friend rows will be injected here -->
+                <div id="friends-cards-list"></div>
             </div>
         </div>
     </div>
@@ -11869,6 +11858,11 @@ function _switchAppTabReal(tabName, btn) {
         if (todaysPrioritySection) {
             const access = typeof checkMealPlanAccess === 'function' ? checkMealPlanAccess() : { hasAccess: true };
             todaysPrioritySection.style.display = access.hasAccess ? '' : 'none';
+        }
+
+        // Load live challenges on home screen
+        if (typeof loadHomeChallenges === 'function') {
+            loadHomeChallenges();
         }
     } else if (tabName === 'meals') {
         document.getElementById('view-meals').style.display = 'block';
@@ -24937,13 +24931,11 @@ async function initFriendsView() {
     if (typeof loadStoriesCarousel === 'function') {
         loadStoriesCarousel();
     }
-    await loadFriendsCards();
-    await loadChallenges();
     await loadGroupChats();
-    await loadActivityFeed();
+    await loadFriendsCards();
 }
 
-// Load friend cards for the horizontal scroll section
+// Load friend cards for the Instagram DM-style list
 async function loadFriendsCards() {
     const container = document.getElementById('friends-cards-list');
     const countLabel = document.getElementById('friends-count-label');
@@ -24966,39 +24958,72 @@ async function loadFriendsCards() {
 
         if (friends.length === 0) {
             container.innerHTML = `
-                <div style="min-width: 140px; background: #f1f5f9; border-radius: 16px; padding: 20px; text-align: center; scroll-snap-align: start;">
+                <div style="padding: 30px 20px; text-align: center; background: #f8fafc;">
                     <div style="font-size: 2rem; margin-bottom: 8px;">👋</div>
                     <div style="font-size: 0.85rem; color: var(--text-muted);">Add friends to see them here!</div>
+                    <button onclick="openAddFriendModal()" style="margin-top: 12px; background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                        Find Friends
+                    </button>
                 </div>
             `;
             return;
         }
 
-        container.innerHTML = friends.map(friend => {
+        container.innerHTML = friends.map((friend, index) => {
             const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
             const hasActivity = friend.has_workout_today || friend.has_meal_today;
             const streakDisplay = friend.current_streak > 0 ? `🔥 ${friend.current_streak}` : '';
+            const isLastItem = index === friends.length - 1;
+
+            // Build status text based on activity
+            let statusText = '';
+            let statusColor = 'var(--text-muted)';
+
+            if (friend.has_personal_best) {
+                statusText = '🏆 New personal best!';
+                statusColor = '#d97706';
+            } else if (hasActivity) {
+                statusText = 'Active today';
+                statusColor = '#22c55e';
+            } else if (friend.days_inactive > 0) {
+                statusText = friend.days_inactive === 1 ? 'Not logged in yesterday' :
+                             friend.days_inactive < 7 ? `Inactive ${friend.days_inactive} days` :
+                             'Inactive 7+ days';
+                statusColor = friend.days_inactive >= 3 ? '#ef4444' : 'var(--text-muted)';
+            } else {
+                statusText = 'No activity yet';
+            }
 
             return `
-                <div style="min-width: 140px; background: white; border-radius: 16px; padding: 16px; scroll-snap-align: start; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f1f5f9;">
-                    <div style="position: relative; margin-bottom: 10px;">
-                        <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem; overflow: hidden;">
+                <div style="display: flex; align-items: center; padding: 12px 16px; cursor: pointer; background: white; ${!isLastItem ? 'border-bottom: 1px solid #f1f5f9;' : ''}" onclick="openDirectMessage('${friend.friend_id}', '${friend.friend_name}', '${friend.friend_photo || ''}')">
+                    <div style="position: relative; margin-right: 12px;">
+                        <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.3rem; overflow: hidden;">
                             ${friend.friend_photo ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
                         </div>
-                        ${hasActivity ? '<div style="position: absolute; bottom: 0; right: 25px; width: 14px; height: 14px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></div>' : ''}
+                        ${hasActivity ? '<div style="position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></div>' : ''}
                     </div>
-                    <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${friend.friend_name || 'Friend'}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px;">
-                        ${streakDisplay || (hasActivity ? 'Active today' : 'Not active yet')}
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                            <span style="font-weight: 600; color: var(--text-main); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${friend.friend_name || 'Friend'}</span>
+                            ${streakDisplay ? `<span style="font-size: 0.75rem; color: #f97316;">${streakDisplay}</span>` : ''}
+                        </div>
+                        <div style="font-size: 0.8rem; color: ${statusColor}; display: flex; align-items: center; gap: 6px;">
+                            ${statusText}
+                        </div>
+                        <div style="display: flex; gap: 6px; margin-top: 4px;">
+                            ${friend.has_workout_today ? '<span style="background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 500;">💪 Workout</span>' : ''}
+                            ${friend.has_meal_today ? '<span style="background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 500;">🥗 Logged</span>' : ''}
+                            ${friend.total_calories_today > 0 ? `<span style="background: #f0fdf4; color: #059669; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 500;">🔥 ${friend.total_calories_today} cal</span>` : ''}
+                        </div>
                     </div>
-                    <div style="display: flex; gap: 4px;">
-                        ${friend.has_workout_today ? '<span style="background: #dcfce7; color: #16a34a; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem;">💪</span>' : ''}
-                        ${friend.has_meal_today ? '<span style="background: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem;">🥗</span>' : ''}
-                        ${!hasActivity && friend.can_nudge ? `<button onclick="sendNudgeToFriend('${friend.friend_id}', '${friend.friend_name}')" style="background: #fef2f2; color: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; border: none; cursor: pointer;">Nudge</button>` : ''}
-                    </div>
-                    <div style="margin-top: 8px; display: flex; gap: 6px;">
-                        <button onclick="openDirectMessage('${friend.friend_id}', '${friend.friend_name}', '${friend.friend_photo || ''}')" style="flex: 1; background: #f1f5f9; border: none; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; color: var(--text-muted);">
-                            💬 Message
+                    <div style="display: flex; align-items: center; gap: 6px;" onclick="event.stopPropagation();">
+                        ${!hasActivity && friend.can_nudge ? `
+                            <button onclick="event.stopPropagation(); sendNudgeToFriend('${friend.friend_id}', '${friend.friend_name}')" style="width: 36px; height: 36px; background: #fef2f2; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Send nudge">
+                                <span style="font-size: 1rem;">👋</span>
+                            </button>
+                        ` : ''}
+                        <button onclick="event.stopPropagation(); openDirectMessage('${friend.friend_id}', '${friend.friend_name}', '${friend.friend_photo || ''}')" style="width: 36px; height: 36px; background: #f1f5f9; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Message">
+                            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
                         </button>
                     </div>
                 </div>
@@ -25008,8 +25033,9 @@ async function loadFriendsCards() {
     } catch (error) {
         console.error('Error loading friend cards:', error);
         container.innerHTML = `
-            <div style="min-width: 200px; background: #fef2f2; border-radius: 16px; padding: 20px; text-align: center;">
+            <div style="padding: 20px; text-align: center; background: #fef2f2;">
                 <div style="color: #ef4444; font-size: 0.85rem;">Failed to load friends</div>
+                <button onclick="loadFriendsCards()" style="margin-top: 10px; padding: 6px 12px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">Retry</button>
             </div>
         `;
     }
@@ -25754,6 +25780,94 @@ let currentChallengeId = null;
 let challengeChart = null;
 
 // Load user's challenges
+// Load challenges for home screen (compact version)
+async function loadHomeChallenges() {
+    const container = document.getElementById('home-challenges-list');
+    const emptyState = document.getElementById('home-challenges-empty');
+
+    if (!container || !window.currentUser) return;
+
+    try {
+        const { data: challenges, error } = await window.supabaseClient
+            .rpc('get_user_challenges', { user_uuid: window.currentUser.id });
+
+        if (error) throw error;
+
+        // Filter active challenges and pending invites
+        const activeChallenges = (challenges || []).filter(c =>
+            c.status === 'active' && c.user_status === 'accepted'
+        );
+        const pendingInvites = (challenges || []).filter(c => c.user_status === 'invited');
+
+        if (activeChallenges.length === 0 && pendingInvites.length === 0) {
+            if (emptyState) emptyState.style.display = 'block';
+            container.innerHTML = '';
+            return;
+        }
+
+        if (emptyState) emptyState.style.display = 'none';
+
+        let html = '';
+
+        // Show pending invites first
+        if (pendingInvites.length > 0) {
+            html += pendingInvites.map(challenge => `
+                <div class="card" style="border-left: 5px solid #f59e0b; margin-bottom: 10px;">
+                    <div class="card-body" style="max-height: none; padding: 16px; opacity: 1;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="background: #fef3c7; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                                🎯
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                    <span style="font-weight: 600; color: var(--text-main); font-size: 0.95rem;">${challenge.challenge_name}</span>
+                                    <span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 600;">INVITE</span>
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                    from ${challenge.creator_name} · 👥 ${challenge.participant_count} joined
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Accept</button>
+                            <button onclick="declineChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: #f1f5f9; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Decline</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Show active challenges
+        html += activeChallenges.slice(0, 3).map(challenge => `
+            <div class="card" onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; border-left: 5px solid ${challenge.user_rank === 1 ? '#f59e0b' : challenge.user_rank <= 3 ? '#10b981' : '#94a3b8'}; margin-bottom: 10px;">
+                <div class="card-body" style="max-height: none; padding: 16px; opacity: 1;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="background: ${challenge.user_rank === 1 ? '#fef3c7' : '#f0fdf4'}; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; color: ${challenge.user_rank === 1 ? '#f59e0b' : '#10b981'};">
+                            #${challenge.user_rank}
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600; color: var(--text-main); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${challenge.challenge_name}</div>
+                            <div style="display: flex; gap: 12px; font-size: 0.8rem; color: var(--text-muted);">
+                                <span>⏱️ ${challenge.days_remaining}d left</span>
+                                <span>👥 ${challenge.participant_count}</span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.1rem; font-weight: 700; color: var(--primary);">${challenge.user_points}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">pts</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading home challenges:', error);
+    }
+}
+
 async function loadChallenges() {
     const container = document.getElementById('challenges-container');
     const emptyState = document.getElementById('challenges-empty');
@@ -25987,7 +26101,8 @@ async function createChallenge() {
         if (inviteError) throw inviteError;
 
         closeCreateChallengeModal();
-        await loadChallenges();
+        // Refresh challenges on home screen
+        if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
         alert('Challenge created! Invitations sent to your friends.');
 
     } catch (error) {
@@ -26012,7 +26127,8 @@ async function acceptChallengeInvite(challengeId) {
 
         if (error) throw error;
 
-        await loadChallenges();
+        // Refresh challenges on home screen
+        if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
         alert('Challenge accepted! Good luck!');
 
     } catch (error) {
@@ -26034,7 +26150,8 @@ async function declineChallengeInvite(challengeId) {
 
         if (error) throw error;
 
-        await loadChallenges();
+        // Refresh challenges on home screen
+        if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
 
     } catch (error) {
         console.error('Error declining challenge:', error);
@@ -26259,7 +26376,8 @@ async function leaveCurrentChallenge() {
         if (error) throw error;
 
         closeChallengeLeaderboard();
-        await loadChallenges();
+        // Refresh challenges on home screen
+        if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
 
         if (data?.cancelled) {
             alert('You were the last participant. The challenge has been cancelled.');
