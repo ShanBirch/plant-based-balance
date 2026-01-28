@@ -372,7 +372,20 @@ DECLARE
   winner_user_id UUID;
   winner_pts INT;
   winner_user_name TEXT;
+  already_rewarded BOOLEAN;
 BEGIN
+  -- Check if winner was already rewarded (prevents race condition/double reward)
+  SELECT winner_rewarded INTO already_rewarded
+  FROM public.challenges
+  WHERE id = challenge_uuid;
+
+  IF already_rewarded = TRUE THEN
+    RETURN jsonb_build_object(
+      'error', 'already_completed',
+      'message', 'Challenge winner was already rewarded'
+    );
+  END IF;
+
   -- Find the winner (highest challenge_points)
   SELECT cp.user_id, cp.challenge_points, u.name
   INTO winner_user_id, winner_pts, winner_user_name

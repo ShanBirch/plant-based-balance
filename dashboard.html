@@ -18479,6 +18479,11 @@ function closeSuccessScreen() {
     renderMovementView();
     // Clear the stored workout data
     completedWorkoutDataForShare = null;
+
+    // Refresh challenges to show any updated points
+    if (typeof loadHomeChallenges === 'function') {
+        loadHomeChallenges();
+    }
 }
 
 // Go to group chats to share workout
@@ -31026,6 +31031,11 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
 
             // Refresh points widget
             await loadPointsWidget();
+
+            // Refresh challenge widgets to show updated points
+            if (typeof loadHomeChallenges === 'function') {
+                loadHomeChallenges();
+            }
         } else if (result?.error) {
             console.log('Points not awarded:', result.reason || result.error);
             // Optionally show a subtle message about why points weren't awarded
@@ -31088,6 +31098,11 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
 
             // Refresh points widget
             await loadPointsWidget();
+
+            // Refresh challenge widgets to show updated points
+            if (typeof loadHomeChallenges === 'function') {
+                loadHomeChallenges();
+            }
         }
 
         return result;
