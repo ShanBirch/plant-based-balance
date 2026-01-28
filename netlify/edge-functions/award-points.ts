@@ -325,6 +325,11 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
+    // Update challenge points for any active challenges
+    await supabase.rpc('update_challenge_participant_points', {
+      user_uuid: userId
+    });
+
     // Check for milestones
     const milestones: Array<{ type: string; label: string; points: number }> = [];
     const totalCount = type === 'meal'
@@ -377,6 +382,13 @@ export default async (request: Request, context: Context): Promise<Response> => 
           });
         }
       }
+    }
+
+    // If any milestones were unlocked, update challenge points again
+    if (milestones.length > 0) {
+      await supabase.rpc('update_challenge_participant_points', {
+        user_uuid: userId
+      });
     }
 
     // Calculate final total (including any milestone bonuses)
