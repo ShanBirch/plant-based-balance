@@ -32520,10 +32520,10 @@ function updateNutritionUI(dailyData, mealsData) {
     updateElement('widget-fat-goal', data.fat_goal_g || 70);
 
     // Update progress bars (widget)
-    updateProgressBar('widget-calories-bar', data.total_calories, data.calorie_goal);
-    updateProgressBar('widget-protein-bar', data.total_protein_g, data.protein_goal_g);
-    updateProgressBar('widget-carbs-bar', data.total_carbs_g, data.carbs_goal_g);
-    updateProgressBar('widget-fat-bar', data.total_fat_g, data.fat_goal_g);
+    updateProgressBar('widget-calories-bar', data.total_calories, data.calorie_goal || 2000);
+    updateProgressBar('widget-protein-bar', data.total_protein_g, data.protein_goal_g || 50);
+    updateProgressBar('widget-carbs-bar', data.total_carbs_g, data.carbs_goal_g || 250);
+    updateProgressBar('widget-fat-bar', data.total_fat_g, data.fat_goal_g || 70);
 
     // Update tracker (full view)
     updateElement('tracker-calories-current', Math.round(data.total_calories || 0));
@@ -32538,13 +32538,13 @@ function updateNutritionUI(dailyData, mealsData) {
     updateElement('tracker-fiber-goal', 25);
 
     // Update progress bars (tracker)
-    updateProgressBar('tracker-protein-bar', data.total_protein_g, data.protein_goal_g);
-    updateProgressBar('tracker-carbs-bar', data.total_carbs_g, data.carbs_goal_g);
-    updateProgressBar('tracker-fat-bar', data.total_fat_g, data.fat_goal_g);
+    updateProgressBar('tracker-protein-bar', data.total_protein_g, data.protein_goal_g || 50);
+    updateProgressBar('tracker-carbs-bar', data.total_carbs_g, data.carbs_goal_g || 250);
+    updateProgressBar('tracker-fat-bar', data.total_fat_g, data.fat_goal_g || 70);
     updateProgressBar('tracker-fiber-bar', data.total_fiber_g, 25);
 
     // Update circular progress
-    updateCircularProgress(data.total_calories, data.calorie_goal);
+    updateCircularProgress(data.total_calories, data.calorie_goal || 2000);
 
     // Update meals list
     if (mealsData && mealsData.length > 0) {
