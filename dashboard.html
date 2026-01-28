@@ -8832,16 +8832,40 @@ async function startCustomBuilderWorkout() {
     </div>
 
     <div style="padding: 20px;">
-        <div id="your-workouts-list" style="display: flex; flex-direction: column; gap: 15px;">
-            <!-- Saved workouts will be rendered here -->
+        <!-- Recent Workout History Section -->
+        <div id="your-workouts-history-section" style="margin-bottom: 25px;">
+            <h3 style="margin: 0 0 15px 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">📅</span> Recent Workouts
+            </h3>
+            <div id="your-workouts-history-list" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Recent workout history will be rendered here -->
+            </div>
         </div>
-        <div id="your-workouts-empty" style="display: none; text-align: center; padding: 60px 20px; color: var(--text-muted);">
-            <div style="font-size: 3rem; margin-bottom: 15px;">💪</div>
-            <h3 style="margin: 0 0 10px 0; color: var(--text-main);">No saved workouts yet</h3>
-            <p style="margin: 0 0 20px 0;">Build your own workout and it will be saved here automatically.</p>
-            <button onclick="closeYourWorkouts(); openWorkoutBuilder();" style="background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; cursor: pointer;">
-                Build a Workout
-            </button>
+
+        <!-- Custom Workouts Section -->
+        <div id="your-workouts-custom-section" style="margin-bottom: 25px;">
+            <h3 style="margin: 0 0 15px 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">🛠️</span> Your Custom Workouts
+            </h3>
+            <div id="your-workouts-list" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Saved workouts will be rendered here -->
+            </div>
+            <div id="your-workouts-empty" style="display: none; text-align: center; padding: 30px 20px; color: var(--text-muted); background: white; border-radius: 16px; border: 2px dashed #e2e8f0;">
+                <p style="margin: 0 0 15px 0; font-size: 0.9rem;">No custom workouts yet</p>
+                <button onclick="closeYourWorkouts(); openWorkoutBuilder();" style="background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 50px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">
+                    Build a Workout
+                </button>
+            </div>
+        </div>
+
+        <!-- Workout Library Section -->
+        <div id="your-workouts-library-section">
+            <h3 style="margin: 0 0 15px 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">📚</span> Workout Library
+            </h3>
+            <div id="your-workouts-library-list" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Library categories will be rendered here -->
+            </div>
         </div>
     </div>
 </div>
@@ -8863,48 +8887,160 @@ function closeYourWorkouts() {
 async function renderYourWorkoutsList() {
     const listContainer = document.getElementById('your-workouts-list');
     const emptyState = document.getElementById('your-workouts-empty');
+    const historyContainer = document.getElementById('your-workouts-history-list');
+    const historySection = document.getElementById('your-workouts-history-section');
+    const libraryContainer = document.getElementById('your-workouts-library-list');
 
     try {
         const user = window.currentUser;
         if (!user) return;
 
-        const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
+        // Fetch workout history and custom workouts in parallel
+        const [workoutHistory, savedWorkouts] = await Promise.all([
+            dbHelpers.workouts.getHistory(user.id, 50),
+            dbHelpers.workouts.getCustomWorkouts(user.id)
+        ]);
+
         window.savedWorkoutsCache = savedWorkouts;
 
+        // Render Recent Workout History
+        renderYourWorkoutsHistory(workoutHistory, historyContainer, historySection);
+
+        // Render Custom Workouts
         if (savedWorkouts.length === 0) {
             listContainer.style.display = 'none';
             emptyState.style.display = 'block';
-            return;
+        } else {
+            listContainer.style.display = 'flex';
+            emptyState.style.display = 'none';
+
+            listContainer.innerHTML = savedWorkouts.map(w => {
+                const name = w.template_name || 'Untitled Workout';
+                const exercises = w.template_data?.exercises || [];
+                const date = new Date(w.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                return `
+                <div onclick="startSavedWorkout('${w.id}')" style="background: white; border-radius: 16px; padding: 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, var(--primary), #22c55e); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1.2rem; flex-shrink: 0;">
+                        ${name.charAt(0).toUpperCase()}
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">${exercises.length} exercises • Saved ${date}</div>
+                    </div>
+                    <div style="color: var(--primary); font-weight: 600; font-size: 0.8rem;">Start →</div>
+                </div>
+                `;
+            }).join('');
         }
 
-        listContainer.style.display = 'flex';
-        emptyState.style.display = 'none';
-
-        listContainer.innerHTML = savedWorkouts.map(w => {
-            const name = w.template_name || 'Untitled Workout';
-            const exercises = w.template_data?.exercises || [];
-            const date = new Date(w.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-            return `
-            <div onclick="startSavedWorkout('${w.id}')" style="background: white; border-radius: 20px; padding: 20px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 15px;">
-                <div style="width: 55px; height: 55px; background: linear-gradient(135deg, var(--primary), #22c55e); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1.3rem; flex-shrink: 0;">
-                    ${name.charAt(0).toUpperCase()}
-                </div>
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 700; color: var(--text-main); font-size: 1.05rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted);">${exercises.length} exercises</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Saved ${date}</div>
-                </div>
-                <div style="color: var(--primary); font-weight: 600; font-size: 0.85rem; white-space: nowrap;">
-                    Start →
-                </div>
-            </div>
-            `;
-        }).join('');
+        // Render Workout Library
+        renderYourWorkoutsLibrary(libraryContainer);
 
     } catch(err) {
         console.error('Failed to load your workouts:', err);
         listContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Failed to load workouts</div>';
+    }
+}
+
+function renderYourWorkoutsHistory(workoutHistory, container, section) {
+    if (!workoutHistory || workoutHistory.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); background: white; border-radius: 12px; font-size: 0.9rem;">No workout history yet. Complete your first workout!</div>';
+        return;
+    }
+
+    // Group by date
+    const grouped = {};
+    workoutHistory.forEach(w => {
+        const date = w.workout_date;
+        if (!grouped[date]) grouped[date] = [];
+        grouped[date].push(w);
+    });
+
+    // Get unique dates and sort descending, show last 5
+    const dates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a)).slice(0, 5);
+
+    container.innerHTML = dates.map(date => {
+        const workouts = grouped[date];
+        const exercises = [...new Set(workouts.map(w => w.exercise_name))];
+        const totalSets = workouts.length;
+        const formattedDate = new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const exerciseList = exercises.slice(0, 3).join(', ');
+
+        return `
+        <div onclick="viewWorkoutHistoryDetail('${date}')" style="background: white; border-radius: 16px; padding: 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.3rem; flex-shrink: 0;">
+                📊
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 2px;">${formattedDate}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${exercises.length} exercises • ${totalSets} sets
+                </div>
+            </div>
+            <div style="color: #8b5cf6; font-weight: 600; font-size: 0.8rem;">View →</div>
+        </div>
+        `;
+    }).join('');
+}
+
+function renderYourWorkoutsLibrary(container) {
+    if (typeof WORKOUT_LIBRARY === 'undefined') {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Workout library not available</div>';
+        return;
+    }
+
+    const categories = Object.keys(WORKOUT_LIBRARY);
+    const categoryIcons = {
+        'gym': '🏋️',
+        'yoga': '🧘',
+        'bodyweight': '💪',
+        'home': '🏠',
+        'cardio': '🏃',
+        'hiit': '⚡'
+    };
+
+    container.innerHTML = categories.map(categoryKey => {
+        const category = WORKOUT_LIBRARY[categoryKey];
+        const icon = categoryIcons[categoryKey] || category.icon || '💪';
+        const name = category.name || categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1);
+
+        // Count total workouts in category
+        let totalWorkouts = 0;
+        if (category.subcategories) {
+            Object.values(category.subcategories).forEach(sub => {
+                if (sub.workouts) totalWorkouts += sub.workouts.length;
+            });
+        }
+
+        return `
+        <div onclick="openLibraryCategory('${categoryKey}')" style="background: white; border-radius: 16px; padding: 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b, #ef4444); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                ${icon}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 2px;">${name}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">${totalWorkouts} workouts available</div>
+            </div>
+            <div style="color: #f59e0b; font-weight: 600; font-size: 0.8rem;">Browse →</div>
+        </div>
+        `;
+    }).join('');
+}
+
+function viewWorkoutHistoryDetail(date) {
+    // Navigate to progress tab where workout history is shown
+    closeYourWorkouts();
+    switchAppTab('progress-tab');
+}
+
+function openLibraryCategory(categoryKey) {
+    // Use existing workout library navigation
+    closeYourWorkouts();
+    if (typeof openWorkoutSubcategories === 'function') {
+        openWorkoutSubcategories(categoryKey);
+    } else {
+        switchAppTab('movement-tab');
     }
 }
 </script>
