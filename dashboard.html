@@ -15103,24 +15103,15 @@ function applyGenderSpecificUI() {
             if (subtitle) subtitle.textContent = 'Optimize your training & recovery';
         }
 
-        // Update "Cycle Sync" text to "Daily Sync"
+        // Hide Daily Sync feature for male users
         const checkInPrompt = document.getElementById('check-in-prompt-card');
         if (checkInPrompt) {
-            const subtitleEl = checkInPrompt.querySelector('div[style*="text-muted"]');
-            if (subtitleEl) subtitleEl.textContent = 'Log energy & recovery';
+            checkInPrompt.style.display = 'none';
         }
 
-        // Update completed state text
         const completedCard = document.getElementById('check-in-completed-card');
         if (completedCard) {
-            const titleEl = completedCard.querySelector('div[style*="font-weight: 700"]');
-            if (titleEl) titleEl.textContent = 'Daily Sync Active!';
-        }
-
-        // Update check-in modal title
-        const checkInModalTitle = document.querySelector('#check-in-modal h2');
-        if (checkInModalTitle && checkInModalTitle.textContent.includes('Cycle')) {
-            checkInModalTitle.textContent = 'Daily Check-in';
+            completedCard.style.display = 'none';
         }
 
         // Update bottom navigation "Cycle" tab to "Calendar"
