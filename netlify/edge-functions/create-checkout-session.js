@@ -17,7 +17,22 @@ export default async (request, context) => {
             apiVersion: "2023-10-16",
         });
 
-        const lineItems = [{ price: priceId, quantity: 1 }];
+        // Use custom price data to control branding and ensure exact $30 price
+        // This avoids "coupon expires" messages and overrides the legacy "28 day" name
+        const lineItems = [{
+            price_data: {
+                currency: 'aud',
+                product_data: {
+                    name: 'Balance Membership',
+                    description: '14-Day Free Trial Included',
+                },
+                unit_amount: 3000, // Exact $30.00 AUD
+                recurring: {
+                    interval: 'month',
+                },
+            },
+            quantity: 1,
+        }];
 
         // Handle Bump (One-Time Payment)
         if (bump) {
@@ -27,20 +42,18 @@ export default async (request, context) => {
 
         const subscriptionData = {};
         if (isTrial) {
-            // Use provided trial days (14 for referrals, 7 for 6-month default)
-            subscriptionData.trial_period_days = trialDays || 7;
+            // Default to 14 days as requested
+            subscriptionData.trial_period_days = trialDays || 14;
         }
 
-        // Apply Discount Coupon (rjrlOEdm)
-        // This ensures that when the trial ends (or immediately for non-trial), the price is 50% off.
-        const discounts = [{ coupon: 'rjrlOEdm' }];
+        // NOTE: Coupon removed. We set unit_amount to 3000 directly 
+        // to avoid "Until coupon expires" messaging in Stripe Checkout.
 
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
             customer_email: email,
             line_items: lineItems,
             subscription_data: subscriptionData,
-            discounts: discounts,
             success_url: request.headers.get("origin") + '/success.html?session_id={CHECKOUT_SESSION_ID}',
             cancel_url: request.headers.get("origin") + '/plantbasedswitch.html',
             metadata: {
