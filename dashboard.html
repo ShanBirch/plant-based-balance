@@ -33534,7 +33534,20 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
             </div>
         </div>
 
-        <!-- Workout Library Categories -->
+        <!-- Your Custom Workouts Section -->
+        <div id="picker-custom-workouts-section" style="margin-bottom: 15px; display: none;">
+            <div style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">🛠️</span> Your Custom Workouts
+            </div>
+            <div id="picker-custom-workouts-list" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Custom workouts will be rendered here -->
+            </div>
+        </div>
+
+        <!-- Workout Library Section -->
+        <div style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.1rem;">📚</span> Workout Library
+        </div>
         <div id="workout-picker-categories" style="display: flex; flex-direction: column; gap: 10px;">
             <!-- Categories will be rendered here -->
         </div>
@@ -33681,12 +33694,62 @@ function openWorkoutPickerForDay(dayIndex) {
     programBuilderState.currentPickerDayIndex = dayIndex;
     document.getElementById('picker-day-name').textContent = dayNames[dayIndex];
 
+    // Render custom workouts (if any)
+    renderPickerCustomWorkouts();
+
     // Render workout categories
     renderWorkoutPickerCategories();
 
     // Show modal
     const modal = document.getElementById('workout-picker-modal');
     modal.style.display = 'flex';
+}
+
+async function renderPickerCustomWorkouts() {
+    const section = document.getElementById('picker-custom-workouts-section');
+    const container = document.getElementById('picker-custom-workouts-list');
+    if (!section || !container) return;
+
+    try {
+        // Use cached workouts if available, otherwise fetch
+        let customWorkouts = window.savedWorkoutsCache;
+
+        if (!customWorkouts) {
+            const user = window.currentUser;
+            if (user && typeof dbHelpers !== 'undefined' && dbHelpers.workouts) {
+                customWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
+                window.savedWorkoutsCache = customWorkouts;
+            }
+        }
+
+        if (!customWorkouts || customWorkouts.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        container.innerHTML = customWorkouts.map(w => {
+            const name = w.template_name || 'Untitled Workout';
+            const exercises = w.template_data?.exercises || [];
+
+            return `
+                <div onclick="selectWorkoutForDay('custom', '${name.replace(/'/g, "\\'")}', { customWorkoutId: '${w.id}', exerciseCount: ${exercises.length} })"
+                     style="background: white; border-radius: 16px; padding: 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9;">
+                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, var(--primary), #22c55e); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1rem;">
+                        ${name.charAt(0).toUpperCase()}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; color: var(--text-main);">${name}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">${exercises.length} exercises</div>
+                    </div>
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--primary);"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error('renderPickerCustomWorkouts: Error', err);
+        section.style.display = 'none';
+    }
 }
 
 function closeWorkoutPicker() {
@@ -33798,7 +33861,17 @@ function selectWorkoutForDay(type, name, data) {
             type: 'rest',
             name: 'Rest Day'
         };
+    } else if (type === 'custom') {
+        // Custom workout from user's saved workouts
+        programBuilderState.weeklySchedule[dayIndex].workout = {
+            type: 'custom',
+            name: name,
+            customWorkoutId: data?.customWorkoutId || '',
+            exerciseCount: data?.exerciseCount || 0,
+            icon: '🛠️'
+        };
     } else {
+        // Library workout
         programBuilderState.weeklySchedule[dayIndex].workout = {
             type: type,
             name: name,
