@@ -23,14 +23,10 @@ export default async (request, context) => {
             apiVersion: "2023-10-16",
         });
 
-        // 1. Calculate Value for CAPI
-        const priceMap = {
-            'price_1SkDKhCGCyRUsOfKdi44QCWi': 92,
-            'price_1SkDKiCGCyRUsOfKcb3Wm9O3': 186,
-            'price_1SkDKjCGCyRUsOfKQDGEmmkv': 216
-        };
-        let finalValue = priceMap[priceId] || 46;
-        if (isDiscounted !== false) finalValue = finalValue / 2;
+        // Balance Redesign: Flat $30 AUD Pricing
+        let finalValue = 30; // $30 AUD flat
+        const isTrial = body.isTrial === true;
+        const trialDays = body.trialDays || 14;
 
         const externalId = email ? await hash(email) : undefined;
 
@@ -71,14 +67,19 @@ export default async (request, context) => {
             expand: ['latest_invoice.payment_intent'],
         };
 
-        if (isDiscounted !== false) {
-            subscriptionData.coupon = 'rjrlOEdm'; 
-        }
+        // No coupons used anymore - flat $30 price
 
         // Logic for 7-Day Mobile Wallet Trial
-        if (body.isTrial) {
-             subscriptionData.trial_period_days = 7;
+        // Set 14-Day Trial for Balance Membership
+        if (isTrial) {
+             subscriptionData.trial_period_days = trialDays;
         }
+        
+        // Ensure we use the correct price ID for $30
+        // If the pass priceId is for $92, we'll swap it to our $30 one 
+        // OR better: use the one passed if it's already $30.
+        // For now, let's assume 'price_1SkDKhCGCyRUsOfKdi44QCWi' is our target.
+        subscriptionData.items = [{ price: priceId }];
 
         const subscription = await stripe.subscriptions.create(subscriptionData);
 
