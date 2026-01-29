@@ -33,6 +33,8 @@ const POINTS_CONFIG = {
     { count: 365, type: '365_workouts_points', points: 100, label: '365 Workouts - One Year!' },
   ],
   POINTS_FOR_FREE_WEEK: 200,
+  // Premium challenge multiplier
+  CHALLENGE_PREMIUM_MULTIPLIER: 2,
 };
 
 interface AwardPointsRequest {
@@ -55,6 +57,10 @@ interface PointsResult {
   canRedeem: boolean;
   error?: string;
   reason?: string;
+  // Premium challenge bonus
+  multiplier?: number;
+  basePoints?: number;
+  isPremiumChallenge?: boolean;
 }
 
 export default async (request: Request, context: Context): Promise<Response> => {
@@ -194,10 +200,27 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
+    // === CHECK PREMIUM CHALLENGE MULTIPLIER ===
+    // Get multiplier from any active premium challenge (default 1x)
+    let multiplier = 1;
+    let isPremiumChallenge = false;
+
+    const { data: multiplierData } = await supabase.rpc('get_user_challenge_multiplier', {
+      p_user_id: userId
+    });
+
+    if (multiplierData && multiplierData > 1) {
+      multiplier = multiplierData;
+      isPremiumChallenge = true;
+    }
+
     // === AWARD POINTS ===
-    const pointsToAward = type === 'meal'
+    const basePoints = type === 'meal'
       ? POINTS_CONFIG.POINTS_PER_MEAL
       : POINTS_CONFIG.POINTS_PER_WORKOUT;
+
+    // Apply premium challenge multiplier (2x for $9.99 premium)
+    const pointsToAward = basePoints * multiplier;
 
     // Get current points record
     const { data: userPoints, error: fetchError } = await supabase
@@ -227,14 +250,15 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
     // Otherwise, streak resets to 1
 
-    // Check for streak bonus
+    // Check for streak bonus (also apply multiplier)
     let bonusPoints = 0;
     let bonusDescription = '';
 
     const streakBonus = POINTS_CONFIG.STREAK_BONUSES.find(b => b.days === newStreak);
     if (streakBonus) {
-      bonusPoints = streakBonus.points;
-      bonusDescription = streakBonus.label;
+      // Apply premium challenge multiplier to streak bonuses too
+      bonusPoints = streakBonus.points * multiplier;
+      bonusDescription = streakBonus.label + (isPremiumChallenge ? ' (2x Premium!)' : '');
     }
 
     // Calculate new totals
@@ -301,6 +325,10 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
 
     // Log main transaction
+    const transactionDescription = isPremiumChallenge
+      ? `Earned ${pointsToAward} points for ${type} (${basePoints} x ${multiplier}x Premium)`
+      : `Earned ${pointsToAward} point for ${type}`;
+
     await supabase.from('point_transactions').insert({
       user_id: userId,
       transaction_type: type === 'meal' ? 'earn_meal' : 'earn_workout',
@@ -311,7 +339,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
       photo_timestamp: photoTimestamp || null,
       verification_method: photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none'),
       ai_confidence: aiConfidence || null,
-      description: `Earned ${pointsToAward} point for ${type}`
+      description: transactionDescription
     });
 
     // Log bonus transaction if applicable
@@ -351,34 +379,41 @@ export default async (request: Request, context: Context): Promise<Response> => 
           .single();
 
         if (!existing) {
+          // Apply premium multiplier to milestone bonus too
+          const milestonePoints = milestone.points * multiplier;
+
           // Record milestone
           await supabase.from('meal_milestones').insert({
             user_id: userId,
             milestone_type: milestone.type,
             milestone_value: milestone.count,
-            points_awarded: milestone.points,
-            achievement_data: { type, count: totalCount }
+            points_awarded: milestonePoints,
+            achievement_data: { type, count: totalCount, multiplier }
           });
 
-          // Award milestone bonus points
+          // Award milestone bonus points (with multiplier)
           await supabase.rpc('increment_user_points', {
             p_user_id: userId,
-            p_amount: milestone.points
+            p_amount: milestonePoints
           });
 
           // Log milestone transaction
+          const milestoneDescription = isPremiumChallenge
+            ? `${milestone.label} (${milestone.points} x ${multiplier}x Premium)`
+            : milestone.label;
+
           await supabase.from('point_transactions').insert({
             user_id: userId,
             transaction_type: 'bonus_milestone',
-            points_amount: milestone.points,
+            points_amount: milestonePoints,
             reference_type: 'milestone',
-            description: milestone.label
+            description: milestoneDescription
           });
 
           milestones.push({
             type: milestone.type,
-            label: milestone.label,
-            points: milestone.points
+            label: milestoneDescription,
+            points: milestonePoints
           });
         }
       }
@@ -403,10 +438,15 @@ export default async (request: Request, context: Context): Promise<Response> => 
       newTotal: finalTotal,
       currentStreak: newStreak,
       milestonesUnlocked: milestones,
-      canRedeem: finalTotal >= POINTS_CONFIG.POINTS_FOR_FREE_WEEK
+      canRedeem: finalTotal >= POINTS_CONFIG.POINTS_FOR_FREE_WEEK,
+      // Premium challenge bonus info
+      multiplier: isPremiumChallenge ? multiplier : undefined,
+      basePoints: isPremiumChallenge ? basePoints : undefined,
+      isPremiumChallenge: isPremiumChallenge || undefined,
     };
 
-    console.log(`Awarded ${totalPointsEarned} points to user ${userId} for ${type}`);
+    const premiumNote = isPremiumChallenge ? ` (${multiplier}x Premium Challenge!)` : '';
+    console.log(`Awarded ${totalPointsEarned} points to user ${userId} for ${type}${premiumNote}`);
 
     return new Response(JSON.stringify(result), {
       status: 200,
