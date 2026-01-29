@@ -18163,10 +18163,37 @@ function startWorkoutTimer() {
     }, 1000);
 }
 
+// Update workout timer when page becomes visible (handles phone unlock/app switch)
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && window.workoutStartTime) {
+        const elapsed = Date.now() - window.workoutStartTime;
+        const mins = Math.floor(elapsed / 60000);
+        const secs = Math.floor((elapsed % 60000) / 1000);
+        const timerEl = document.getElementById('workout-timer');
+        if (timerEl) {
+            timerEl.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        }
+    }
+});
+
 async function finishWorkout() {
     clearInterval(workoutTimerInterval);
+    clearInterval(window.workoutTimer); // Clear library workout timer
     clearAllYogaTimers(); // Clear any running yoga timers
-    const duration = document.getElementById('workout-timer').innerText;
+
+    // Calculate actual elapsed time from start time (handles phone lock/screen off)
+    let duration;
+    if (window.workoutStartTime) {
+        const elapsed = Date.now() - window.workoutStartTime;
+        const mins = Math.floor(elapsed / 60000);
+        const secs = Math.floor((elapsed % 60000) / 1000);
+        duration = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        // Update the timer display with actual time
+        document.getElementById('workout-timer').innerText = duration;
+        window.workoutStartTime = null; // Clear start time
+    } else {
+        duration = document.getElementById('workout-timer').innerText;
+    }
     document.getElementById('success-duration').innerText = duration;
 
     // Save logic
@@ -18432,6 +18459,8 @@ function quitWorkout() {
     if(confirm('Quit workout? Your progress won\'t be saved.')) {
         console.log("Quitting workout...");
         clearInterval(workoutTimerInterval);
+        clearInterval(window.workoutTimer); // Clear library workout timer
+        window.workoutStartTime = null; // Clear start time
         clearAllYogaTimers(); // Clear any running yoga timers
         document.getElementById('view-active-workout').style.display = 'none'; // Force hide
         closeSuccessScreen();
