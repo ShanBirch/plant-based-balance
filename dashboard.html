@@ -9619,10 +9619,13 @@ function viewWorkoutHistoryDetail(date) {
             <!-- Lift Selection -->
             <div id="lift-selection-section" style="display: none; padding: 20px; border-bottom: 1px solid #f1f5f9;">
                 <div style="font-weight: 700; color: var(--text-main); margin-bottom: 15px; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="dumbbell" size="18" style="color: var(--primary);"></i> Select a specific lift:
+                    <i data-lucide="dumbbell" size="18" style="color: var(--primary);"></i> What do you want to share?
                 </div>
                 <div id="lift-selection-list" style="display: grid; grid-template-columns: 1fr; gap: 10px;">
                     <!-- Lifts populated here -->
+                </div>
+                <div id="multi-select-hint" style="display: none; margin-top: 12px; padding: 10px 14px; background: #f0fdf4; border-radius: 10px; font-size: 0.85rem; color: #166534; text-align: center;">
+                    <strong>Tip:</strong> Tap multiple sets to share them together
                 </div>
             </div>
 
@@ -18311,7 +18314,14 @@ async function finishWorkout() {
 
 // Store completed workout data for sharing
 let completedWorkoutDataForShare = null;
-let selectedLiftToShare = null; // Store the selected lift
+let selectedLiftToShare = null; // Store the selected lift (legacy, kept for compatibility)
+
+// New flexible share selection state
+let shareSelection = {
+    mode: 'best', // 'best', 'entire_workout', 'exercise_all', 'multi_select'
+    selectedExercise: null, // For 'exercise_all' mode - which exercise to share all sets
+    selectedSetIndices: [] // For 'multi_select' mode - array of set indices
+};
 
 async function showWorkoutSuccessScreen(duration, improvements, milestones, workoutData, newPBs = []) {
     hideAllAppViews();
@@ -18326,6 +18336,7 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
         sets: workoutData || [] // Store all the sets from the workout
     };
     selectedLiftToShare = null; // Reset selected lift
+    shareSelection = { mode: 'best', selectedExercise: null, selectedSetIndices: [] }; // Reset flexible selection
 
     // Update duration
     document.getElementById('success-duration').innerText = duration;
@@ -18484,9 +18495,11 @@ async function openQuickShareModal() {
     const noChats = document.getElementById('quick-share-no-chats');
     const liftSection = document.getElementById('lift-selection-section');
     const liftList = document.getElementById('lift-selection-list');
+    const multiSelectHint = document.getElementById('multi-select-hint');
 
-    // Reset selected lift
+    // Reset selection state
     selectedLiftToShare = null;
+    shareSelection = { mode: 'best', selectedExercise: null, selectedSetIndices: [] };
 
     // Populate the win preview with default (best achievement or workout complete)
     updateSharePreview();
@@ -18494,6 +18507,7 @@ async function openQuickShareModal() {
     // Populate lift selection if we have sets data
     if (completedWorkoutDataForShare && completedWorkoutDataForShare.sets && completedWorkoutDataForShare.sets.length > 0) {
         liftSection.style.display = 'block';
+        if (multiSelectHint) multiSelectHint.style.display = 'none';
 
         // Group sets by exercise and get best set for each
         const exerciseSets = {};
@@ -18505,18 +18519,49 @@ async function openQuickShareModal() {
             exerciseSets[name].push(set);
         });
 
-        // Build lift selection HTML with expandable dropdowns
+        // Build lift selection HTML with flexible options
         let liftHtml = '';
+        const exerciseNames = Object.keys(exerciseSets);
+        const totalSets = completedWorkoutDataForShare.sets.length;
+        const hasMultipleExercises = exerciseNames.length > 1;
+        const hasMultipleSets = totalSets > 1;
+
+        // Add "Share Entire Workout" option at the top if there are multiple exercises or sets
+        if (hasMultipleSets) {
+            liftHtml += `
+                <div onclick="selectShareMode('entire_workout')" id="share-option-workout" style="background: linear-gradient(135deg, #7ba883, #4ade80); color: white; padding: 14px 16px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(123, 168, 131, 0.3);" class="share-mode-option">
+                    <span style="font-size: 1.4rem;">📋</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; font-size: 1rem;">Share Entire Workout</div>
+                        <div style="font-size: 0.8rem; opacity: 0.9;">${exerciseNames.length} exercise${exerciseNames.length > 1 ? 's' : ''} • ${totalSets} set${totalSets > 1 ? 's' : ''}</div>
+                    </div>
+                    <span class="select-chip" style="font-size: 0.8rem; opacity: 0.9;">SELECT</span>
+                </div>
+            `;
+        }
 
         // Add "Best Achievement" option if there are improvements
         if (completedWorkoutDataForShare.improvements && completedWorkoutDataForShare.improvements.length > 0) {
+            const isDefault = shareSelection.mode === 'best';
             liftHtml += `
-                <div onclick="selectLiftToShare(null)" id="lift-option-best" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px;" class="lift-option">
-                    <span style="font-size: 1.2rem;">🏆</span>
+                <div onclick="selectShareMode('best')" id="share-option-best" style="background: ${isDefault ? 'var(--primary)' : 'white'}; color: ${isDefault ? 'white' : 'var(--text-main)'}; padding: 14px 16px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; gap: 12px; border: 1px solid ${isDefault ? 'var(--primary)' : '#edf2f7'};" class="share-mode-option">
+                    <span style="font-size: 1.4rem;">🏆</span>
                     <div style="flex: 1;">
-                        <div style="font-weight: 600;">Best Achievement (PR)</div>
+                        <div style="font-weight: 700; font-size: 1rem;">Best Achievement (PR)</div>
+                        <div style="font-size: 0.8rem; ${isDefault ? 'opacity: 0.9;' : 'color: var(--text-muted);'}">${completedWorkoutDataForShare.improvements[0].exercise}</div>
                     </div>
-                    <span class="select-chip" style="font-size: 0.75rem;">✓</span>
+                    <span class="select-chip" style="font-size: 0.8rem;">${isDefault ? '✓' : 'SELECT'}</span>
+                </div>
+            `;
+        }
+
+        // Add divider if we have exercises to show
+        if (exerciseNames.length > 0) {
+            liftHtml += `
+                <div style="display: flex; align-items: center; gap: 12px; margin: 16px 0 12px 0;">
+                    <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Or choose specific lifts</span>
+                    <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
                 </div>
             `;
         }
@@ -18544,7 +18589,7 @@ async function openQuickShareModal() {
 
             // Exercise header (clickable to expand)
             liftHtml += `
-                <div style="border: 1px solid #edf2f7; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                <div style="border: 1px solid #edf2f7; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.02);" class="exercise-group" data-exercise="${escapeHtml(exerciseName)}">
                     <div onclick="toggleExerciseDropdown('${exerciseId}')" style="background: white; padding: 15px; cursor: pointer; display: flex; align-items: center; gap: 15px; transition: all 0.2s;" class="exercise-header">
                         <div style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">💪</div>
                         <div style="flex: 1;">
@@ -18556,7 +18601,21 @@ async function openQuickShareModal() {
                     <div id="${exerciseId}" style="display: none; background: #f8fafc; border-top: 1px solid #edf2f7;">
             `;
 
-            // Individual sets
+            // Add "Share All Sets" option for this exercise if multiple sets
+            if (setCount > 1) {
+                liftHtml += `
+                        <div onclick="event.stopPropagation(); selectExerciseAllSets('${escapeHtml(exerciseName)}')" id="share-all-${exerciseIndex}" style="background: #f0fdf4; margin: 8px; padding: 12px 15px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s; border: 1px dashed #86efac;" class="share-all-option">
+                            <div style="width: 32px; height: 32px; background: #dcfce7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">📊</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #166534; font-size: 0.95rem;">Share All ${setCount} Sets</div>
+                                <div style="font-size: 0.8rem; color: #15803d; font-weight: 500;">Include every set from this exercise</div>
+                            </div>
+                            <div class="select-chip" style="font-size: 0.7rem; font-weight: 700; color: #16a34a; border: 1.5px solid #16a34a; padding: 3px 8px; border-radius: 15px;">SELECT</div>
+                        </div>
+                `;
+            }
+
+            // Individual sets (multi-selectable)
             sets.forEach((set, idx) => {
                 const setIndex = completedWorkoutDataForShare.sets.indexOf(set);
                 const weight = set.weight || set.weight_kg || 0;
@@ -18564,7 +18623,7 @@ async function openQuickShareModal() {
                 const setNumber = set.set || (idx + 1);
 
                 liftHtml += `
-                        <div onclick="event.stopPropagation(); selectLiftToShare(${setIndex})" id="lift-option-${setIndex}" style="background: white; margin: 8px; padding: 12px 15px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s; border: 1px solid #edf2f7;" class="lift-option">
+                        <div onclick="event.stopPropagation(); toggleSetSelection(${setIndex})" id="lift-option-${setIndex}" style="background: white; margin: 8px; padding: 12px 15px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s; border: 1px solid #edf2f7;" class="lift-option" data-set-index="${setIndex}">
                             <div style="width: 32px; height: 32px; background: #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; color: var(--text-muted);" class="lift-icon">${setNumber}</div>
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; color: var(--text-main); font-size: 0.95rem;">Set ${setNumber}</div>
@@ -18628,6 +18687,7 @@ async function openQuickShareModal() {
 function closeQuickShareModal() {
     document.getElementById('quick-share-modal').style.display = 'none';
     selectedLiftToShare = null;
+    shareSelection = { mode: 'best', selectedExercise: null, selectedSetIndices: [] };
 }
 
 // Toggle exercise dropdown to show/hide individual sets
@@ -18648,6 +18708,210 @@ function toggleExerciseDropdown(exerciseId) {
     }
 }
 
+// Select share mode (entire_workout, best, etc.)
+function selectShareMode(mode) {
+    shareSelection.mode = mode;
+    shareSelection.selectedExercise = null;
+    shareSelection.selectedSetIndices = [];
+    selectedLiftToShare = null;
+
+    updateShareSelectionUI();
+    updateSharePreview();
+}
+
+// Select all sets from a specific exercise
+function selectExerciseAllSets(exerciseName) {
+    shareSelection.mode = 'exercise_all';
+    shareSelection.selectedExercise = exerciseName;
+    shareSelection.selectedSetIndices = [];
+    selectedLiftToShare = null;
+
+    // Get all set indices for this exercise
+    if (completedWorkoutDataForShare && completedWorkoutDataForShare.sets) {
+        completedWorkoutDataForShare.sets.forEach((set, index) => {
+            const setExercise = set.exercise_name || set.exerciseName || 'Exercise';
+            if (setExercise === exerciseName) {
+                shareSelection.selectedSetIndices.push(index);
+            }
+        });
+    }
+
+    updateShareSelectionUI();
+    updateSharePreview();
+}
+
+// Toggle selection of individual sets (multi-select)
+function toggleSetSelection(setIndex) {
+    const idx = shareSelection.selectedSetIndices.indexOf(setIndex);
+
+    if (idx === -1) {
+        // Add to selection
+        shareSelection.selectedSetIndices.push(setIndex);
+    } else {
+        // Remove from selection
+        shareSelection.selectedSetIndices.splice(idx, 1);
+    }
+
+    // Update mode based on selection
+    if (shareSelection.selectedSetIndices.length === 0) {
+        shareSelection.mode = 'best';
+    } else if (shareSelection.selectedSetIndices.length === 1) {
+        shareSelection.mode = 'multi_select';
+        selectedLiftToShare = shareSelection.selectedSetIndices[0]; // Keep legacy compatibility
+    } else {
+        shareSelection.mode = 'multi_select';
+        selectedLiftToShare = null;
+    }
+
+    shareSelection.selectedExercise = null;
+
+    updateShareSelectionUI();
+    updateSharePreview();
+
+    // Show multi-select hint when user has selected something
+    const hint = document.getElementById('multi-select-hint');
+    if (hint && shareSelection.selectedSetIndices.length > 0 && shareSelection.selectedSetIndices.length < 3) {
+        hint.style.display = 'block';
+    } else if (hint) {
+        hint.style.display = 'none';
+    }
+}
+
+// Update the visual state of all selection options
+function updateShareSelectionUI() {
+    const liftList = document.getElementById('lift-selection-list');
+    if (!liftList) return;
+
+    // Reset all share mode options
+    const modeOptions = liftList.querySelectorAll('.share-mode-option');
+    modeOptions.forEach(opt => {
+        const isSelected = (shareSelection.mode === 'entire_workout' && opt.id === 'share-option-workout') ||
+                          (shareSelection.mode === 'best' && opt.id === 'share-option-best');
+
+        if (opt.id === 'share-option-workout') {
+            // Entire workout option
+            if (isSelected) {
+                opt.style.background = 'linear-gradient(135deg, #166534, #22c55e)';
+                opt.style.boxShadow = '0 4px 12px rgba(22, 101, 52, 0.4)';
+            } else {
+                opt.style.background = 'linear-gradient(135deg, #7ba883, #4ade80)';
+                opt.style.boxShadow = '0 4px 12px rgba(123, 168, 131, 0.3)';
+            }
+            const chip = opt.querySelector('.select-chip');
+            if (chip) chip.innerText = isSelected ? '✓ SELECTED' : 'SELECT';
+        } else if (opt.id === 'share-option-best') {
+            // Best achievement option
+            opt.style.background = isSelected ? 'var(--primary)' : 'white';
+            opt.style.color = isSelected ? 'white' : 'var(--text-main)';
+            opt.style.borderColor = isSelected ? 'var(--primary)' : '#edf2f7';
+            const chip = opt.querySelector('.select-chip');
+            if (chip) chip.innerText = isSelected ? '✓' : 'SELECT';
+            // Update text colors
+            const subtextDiv = opt.querySelector('div > div:last-child');
+            if (subtextDiv) {
+                subtextDiv.style.opacity = isSelected ? '0.9' : '1';
+                subtextDiv.style.color = isSelected ? '' : 'var(--text-muted)';
+            }
+        }
+    });
+
+    // Reset all share-all options for exercises
+    const shareAllOptions = liftList.querySelectorAll('.share-all-option');
+    shareAllOptions.forEach(opt => {
+        const exerciseGroup = opt.closest('.exercise-group');
+        const exerciseName = exerciseGroup ? exerciseGroup.dataset.exercise : null;
+        const isSelected = shareSelection.mode === 'exercise_all' && shareSelection.selectedExercise === exerciseName;
+
+        if (isSelected) {
+            opt.style.background = '#16a34a';
+            opt.style.borderColor = '#16a34a';
+            opt.style.borderStyle = 'solid';
+            opt.querySelectorAll('div').forEach(div => {
+                div.style.color = 'white';
+            });
+            const chip = opt.querySelector('.select-chip');
+            if (chip) {
+                chip.style.color = 'white';
+                chip.style.borderColor = 'white';
+                chip.innerText = '✓ SELECTED';
+            }
+        } else {
+            opt.style.background = '#f0fdf4';
+            opt.style.borderColor = '#86efac';
+            opt.style.borderStyle = 'dashed';
+            const iconDiv = opt.querySelector('div:first-child');
+            if (iconDiv) iconDiv.style.color = '';
+            const textDivs = opt.querySelectorAll('div > div');
+            textDivs.forEach((div, i) => {
+                div.style.color = i === 0 ? '#166534' : '#15803d';
+            });
+            const chip = opt.querySelector('.select-chip');
+            if (chip) {
+                chip.style.color = '#16a34a';
+                chip.style.borderColor = '#16a34a';
+                chip.innerText = 'SELECT';
+            }
+        }
+    });
+
+    // Update individual lift options for multi-select
+    const liftOptions = liftList.querySelectorAll('.lift-option');
+    liftOptions.forEach(opt => {
+        const setIndex = parseInt(opt.dataset.setIndex);
+        if (isNaN(setIndex)) return;
+
+        const isSelected = shareSelection.selectedSetIndices.includes(setIndex);
+
+        if (isSelected) {
+            opt.style.background = 'var(--primary)';
+            opt.style.borderColor = 'var(--primary)';
+            opt.style.color = 'white';
+            const icon = opt.querySelector('.lift-icon');
+            if (icon) {
+                icon.style.background = 'rgba(255,255,255,0.2)';
+                icon.style.color = 'white';
+            }
+            const chip = opt.querySelector('.select-chip');
+            if (chip) {
+                chip.style.color = 'white';
+                chip.style.borderColor = 'white';
+                chip.innerText = '✓';
+            }
+            // Update text colors
+            opt.querySelectorAll('div').forEach(div => {
+                if (div.style.fontWeight === '600' || div.style.fontWeight === '700') {
+                    div.style.color = 'white';
+                } else if (div.style.fontSize && div.style.fontSize.includes('0.8')) {
+                    div.style.color = 'rgba(255,255,255,0.8)';
+                }
+            });
+        } else {
+            opt.style.background = 'white';
+            opt.style.borderColor = '#edf2f7';
+            opt.style.color = '';
+            const icon = opt.querySelector('.lift-icon');
+            if (icon) {
+                icon.style.background = '#e2e8f0';
+                icon.style.color = 'var(--text-muted)';
+            }
+            const chip = opt.querySelector('.select-chip');
+            if (chip) {
+                chip.style.color = 'var(--primary)';
+                chip.style.borderColor = 'var(--primary)';
+                chip.innerText = 'SELECT';
+            }
+            // Reset text colors
+            opt.querySelectorAll('div').forEach(div => {
+                if (div.style.fontWeight === '600' || div.style.fontWeight === '700') {
+                    div.style.color = 'var(--text-main)';
+                } else if (div.style.fontSize && div.style.fontSize.includes('0.8')) {
+                    div.style.color = 'var(--text-muted)';
+                }
+            });
+        }
+    });
+}
+
 // Update the share preview based on selected lift
 function updateSharePreview() {
     const badge = document.getElementById('quick-share-badge');
@@ -18663,103 +18927,154 @@ function updateSharePreview() {
 
     const { improvements, milestones, workoutName, sets } = completedWorkoutDataForShare;
 
-    // If a specific lift is selected, show that
-    if (selectedLiftToShare !== null && sets && sets[selectedLiftToShare]) {
-        const set = sets[selectedLiftToShare];
-        const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
-        const weight = set.weight || set.weight_kg || 0;
-        const reps = set.reps || 0;
+    // Handle different share modes
+    switch (shareSelection.mode) {
+        case 'entire_workout': {
+            // Group sets by exercise for summary
+            const exerciseSets = {};
+            (sets || []).forEach(set => {
+                const name = set.exercise_name || set.exerciseName || 'Exercise';
+                if (!exerciseSets[name]) exerciseSets[name] = [];
+                exerciseSets[name].push(set);
+            });
+            const exerciseCount = Object.keys(exerciseSets).length;
+            const totalSets = (sets || []).length;
 
-        badge.innerText = '💪';
-        message.innerText = `${exerciseName}`;
-        detail.innerText = `${weight}kg × ${reps} reps`;
-        return;
-    }
-
-    // Default: show best achievement or workout complete
-    if (improvements && improvements.length > 0) {
-        const imp = improvements[0];
-        let improvementText = '';
-        if (imp.weightIncrease > 0 && imp.repsIncrease > 0) {
-            improvementText = `+${imp.weightIncrease}kg and +${imp.repsIncrease} reps`;
-        } else if (imp.weightIncrease > 0) {
-            improvementText = `+${imp.weightIncrease}kg`;
-        } else if (imp.repsIncrease > 0) {
-            improvementText = `+${imp.repsIncrease} reps`;
+            badge.innerText = '📋';
+            message.innerText = `Complete ${workoutName} Workout`;
+            detail.innerText = `${exerciseCount} exercise${exerciseCount > 1 ? 's' : ''} • ${totalSets} set${totalSets > 1 ? 's' : ''} total`;
+            return;
         }
-        badge.innerText = '🏆';
-        message.innerText = `Hit a PR on ${imp.exercise}!`;
-        detail.innerText = `${improvementText} (${imp.previousWeight || 0}kg x ${imp.previousReps || 0} → ${imp.currentWeight || 0}kg x ${imp.currentReps || 0})`;
-    } else if (milestones && milestones.length > 0) {
-        const m = milestones[0];
-        const emoji = m.milestone_value === 1 ? '🎉' : m.milestone_value >= 100 ? '👑' : m.milestone_value >= 50 ? '🏆' : m.milestone_value >= 25 ? '🌟' : m.milestone_value >= 10 ? '🔥' : '💪';
-        badge.innerText = emoji;
-        message.innerText = m.message;
-        detail.innerText = '';
-    } else {
-        badge.innerText = '💪';
-        message.innerText = `Just finished ${workoutName}!`;
-        detail.innerText = 'Workout completed';
+
+        case 'exercise_all': {
+            // Sharing all sets of one exercise
+            const exerciseName = shareSelection.selectedExercise;
+            const exerciseSets = (sets || []).filter(s => (s.exercise_name || s.exerciseName) === exerciseName);
+            const setCount = exerciseSets.length;
+
+            // Build summary of sets
+            let setsSummary = exerciseSets.map(s => {
+                const w = s.weight || s.weight_kg || 0;
+                const r = s.reps || 0;
+                return `${w}kg×${r}`;
+            }).join(', ');
+
+            badge.innerText = '📊';
+            message.innerText = `${exerciseName} - All ${setCount} Sets`;
+            detail.innerText = setsSummary;
+            return;
+        }
+
+        case 'multi_select': {
+            // Multiple sets selected
+            const selectedSets = shareSelection.selectedSetIndices.map(i => sets[i]).filter(Boolean);
+            const count = selectedSets.length;
+
+            if (count === 1) {
+                // Single set selected
+                const set = selectedSets[0];
+                const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
+                const weight = set.weight || set.weight_kg || 0;
+                const reps = set.reps || 0;
+
+                badge.innerText = '💪';
+                message.innerText = `${exerciseName}`;
+                detail.innerText = `${weight}kg × ${reps} reps`;
+            } else {
+                // Multiple sets selected - group by exercise
+                const byExercise = {};
+                selectedSets.forEach(set => {
+                    const name = set.exercise_name || set.exerciseName || 'Exercise';
+                    if (!byExercise[name]) byExercise[name] = [];
+                    byExercise[name].push(set);
+                });
+
+                const exerciseNames = Object.keys(byExercise);
+                if (exerciseNames.length === 1) {
+                    // All from same exercise
+                    const name = exerciseNames[0];
+                    const setsSummary = byExercise[name].map(s => {
+                        const w = s.weight || s.weight_kg || 0;
+                        const r = s.reps || 0;
+                        return `${w}kg×${r}`;
+                    }).join(', ');
+
+                    badge.innerText = '💪';
+                    message.innerText = `${name} - ${count} Sets`;
+                    detail.innerText = setsSummary;
+                } else {
+                    // Multiple exercises
+                    const summary = exerciseNames.map(name => {
+                        return `${name} (${byExercise[name].length})`;
+                    }).join(', ');
+
+                    badge.innerText = '🏋️';
+                    message.innerText = `${count} Sets from ${exerciseNames.length} Exercises`;
+                    detail.innerText = summary;
+                }
+            }
+            return;
+        }
+
+        case 'best':
+        default: {
+            // Legacy: single lift selected via old method
+            if (selectedLiftToShare !== null && sets && sets[selectedLiftToShare]) {
+                const set = sets[selectedLiftToShare];
+                const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
+                const weight = set.weight || set.weight_kg || 0;
+                const reps = set.reps || 0;
+
+                badge.innerText = '💪';
+                message.innerText = `${exerciseName}`;
+                detail.innerText = `${weight}kg × ${reps} reps`;
+                return;
+            }
+
+            // Default: show best achievement or workout complete
+            if (improvements && improvements.length > 0) {
+                const imp = improvements[0];
+                let improvementText = '';
+                if (imp.weightIncrease > 0 && imp.repsIncrease > 0) {
+                    improvementText = `+${imp.weightIncrease}kg and +${imp.repsIncrease} reps`;
+                } else if (imp.weightIncrease > 0) {
+                    improvementText = `+${imp.weightIncrease}kg`;
+                } else if (imp.repsIncrease > 0) {
+                    improvementText = `+${imp.repsIncrease} reps`;
+                }
+                badge.innerText = '🏆';
+                message.innerText = `Hit a PR on ${imp.exercise}!`;
+                detail.innerText = `${improvementText} (${imp.previousWeight || 0}kg x ${imp.previousReps || 0} → ${imp.currentWeight || 0}kg x ${imp.currentReps || 0})`;
+            } else if (milestones && milestones.length > 0) {
+                const m = milestones[0];
+                const emoji = m.milestone_value === 1 ? '🎉' : m.milestone_value >= 100 ? '👑' : m.milestone_value >= 50 ? '🏆' : m.milestone_value >= 25 ? '🌟' : m.milestone_value >= 10 ? '🔥' : '💪';
+                badge.innerText = emoji;
+                message.innerText = m.message;
+                detail.innerText = '';
+            } else {
+                badge.innerText = '💪';
+                message.innerText = `Just finished ${workoutName}!`;
+                detail.innerText = 'Workout completed';
+            }
+        }
     }
 }
 
-// Select a specific lift to share
+// Select a specific lift to share (legacy function - now uses the new flexible selection system)
 function selectLiftToShare(setIndex) {
-    selectedLiftToShare = setIndex;
-    updateSharePreview();
-
-    // Update visual selection
-    const liftList = document.getElementById('lift-selection-list');
-    const options = liftList.querySelectorAll('.lift-option');
-    options.forEach(opt => {
-        const isSelected = (setIndex === null && opt.id === 'lift-option-best') ||
-                           (setIndex !== null && opt.id === `lift-option-${setIndex}`);
-        const isBestOption = opt.id === 'lift-option-best';
-
-        if (isSelected) {
-            opt.style.background = 'var(--primary)';
-            opt.style.borderColor = 'var(--primary)';
-            opt.style.color = 'white';
-            opt.classList.add('selected');
-            const icon = opt.querySelector('.lift-icon');
-            if (icon) icon.style.background = 'rgba(255,255,255,0.2)';
-            const chip = opt.querySelector('.select-chip');
-            if (chip) {
-                chip.style.color = 'white';
-                chip.style.borderColor = 'white';
-                chip.innerText = isBestOption ? '✓' : 'SELECTED ✓';
-            }
-            // Update text colors for all text elements
-            opt.querySelectorAll('div').forEach(div => {
-                if (div.style.fontWeight === '700' || div.style.fontWeight === '600') {
-                    div.style.color = 'white';
-                } else if (div.style.fontSize && (div.style.fontSize.includes('0.8') || div.style.fontSize.includes('0.85'))) {
-                    div.style.color = 'rgba(255,255,255,0.8)';
-                }
-            });
-        } else {
-            opt.style.background = isBestOption ? 'white' : 'white';
-            opt.style.borderColor = '#edf2f7';
-            opt.style.color = '';
-            opt.classList.remove('selected');
-            const icon = opt.querySelector('.lift-icon');
-            if (icon) icon.style.background = isBestOption ? '#f1f5f9' : '#e2e8f0';
-            const chip = opt.querySelector('.select-chip');
-            if (chip) {
-                chip.style.color = isBestOption ? '' : 'var(--primary)';
-                chip.style.borderColor = 'var(--primary)';
-                chip.innerText = isBestOption ? '✓' : 'SELECT';
-            }
-            // Reset text colors
-            opt.querySelectorAll('div').forEach(div => {
-                if (div.style.fontWeight === '700' || div.style.fontWeight === '600') {
-                    div.style.color = 'var(--text-main)';
-                } else if (div.style.fontSize && (div.style.fontSize.includes('0.8') || div.style.fontSize.includes('0.85'))) {
-                    div.style.color = 'var(--text-muted)';
-                }
-            });
-        }
-    });
+    if (setIndex === null) {
+        // Select "best achievement" mode
+        selectShareMode('best');
+    } else {
+        // Use toggle to select/deselect specific set
+        // First clear any other selections to behave like the old single-select
+        shareSelection.selectedSetIndices = [setIndex];
+        shareSelection.mode = 'multi_select';
+        shareSelection.selectedExercise = null;
+        selectedLiftToShare = setIndex;
+        updateShareSelectionUI();
+        updateSharePreview();
+    }
 }
 
 // Get the current share data based on selection
@@ -18770,65 +19085,191 @@ function getShareData() {
 
     const { improvements, milestones, workoutName, sets, duration } = completedWorkoutDataForShare;
 
-    // If a specific lift is selected
-    if (selectedLiftToShare !== null && sets && sets[selectedLiftToShare]) {
-        const set = sets[selectedLiftToShare];
-        const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
-        const weight = set.weight || set.weight_kg || 0;
-        const reps = set.reps || 0;
+    // Handle different share modes
+    switch (shareSelection.mode) {
+        case 'entire_workout': {
+            // Share entire workout with all exercises and sets
+            const exerciseSets = {};
+            (sets || []).forEach(set => {
+                const name = set.exercise_name || set.exerciseName || 'Exercise';
+                if (!exerciseSets[name]) exerciseSets[name] = [];
+                exerciseSets[name].push(set);
+            });
 
-        return {
-            message: `Crushed ${exerciseName}: ${weight}kg × ${reps} reps! 💪`,
-            type: 'specific_lift',
-            details: {
-                workoutName,
-                exercise: exerciseName,
-                weight,
-                reps
-            }
-        };
-    }
+            const exerciseCount = Object.keys(exerciseSets).length;
+            const totalSets = (sets || []).length;
 
-    // Default: best achievement
-    if (improvements && improvements.length > 0) {
-        const imp = improvements[0];
-        let improvementText = '';
-        if (imp.weightIncrease > 0 && imp.repsIncrease > 0) {
-            improvementText = `+${imp.weightIncrease}kg and +${imp.repsIncrease} reps`;
-        } else if (imp.weightIncrease > 0) {
-            improvementText = `+${imp.weightIncrease}kg`;
-        } else if (imp.repsIncrease > 0) {
-            improvementText = `+${imp.repsIncrease} reps`;
+            // Build detailed workout summary
+            let workoutSummary = Object.entries(exerciseSets).map(([exercise, exSets]) => {
+                const setsInfo = exSets.map(s => {
+                    const w = s.weight || s.weight_kg || 0;
+                    const r = s.reps || 0;
+                    return `${w}kg×${r}`;
+                }).join(', ');
+                return `${exercise}: ${setsInfo}`;
+            }).join('\n');
+
+            return {
+                message: `Completed ${workoutName}! 📋\n${exerciseCount} exercises, ${totalSets} sets total`,
+                type: 'entire_workout',
+                details: {
+                    workoutName,
+                    duration,
+                    exerciseCount,
+                    totalSets,
+                    exercises: exerciseSets,
+                    summary: workoutSummary
+                }
+            };
         }
-        return {
-            message: `Hit a PR on ${imp.exercise}! ${improvementText} 🏆`,
-            type: 'personal_best',
-            details: {
-                workoutName,
-                exercise: imp.exercise,
-                improvement: improvementText,
-                previousWeight: imp.previousWeight,
-                previousReps: imp.previousReps,
-                currentWeight: imp.currentWeight,
-                currentReps: imp.currentReps
+
+        case 'exercise_all': {
+            // Share all sets from a specific exercise
+            const exerciseName = shareSelection.selectedExercise;
+            const exerciseSets = (sets || []).filter(s => (s.exercise_name || s.exerciseName) === exerciseName);
+            const setCount = exerciseSets.length;
+
+            const setsInfo = exerciseSets.map((s, i) => {
+                const w = s.weight || s.weight_kg || 0;
+                const r = s.reps || 0;
+                return `Set ${i + 1}: ${w}kg × ${r} reps`;
+            }).join(', ');
+
+            return {
+                message: `Crushed ${exerciseName}! 📊\n${setCount} sets: ${setsInfo}`,
+                type: 'exercise_all_sets',
+                details: {
+                    workoutName,
+                    exercise: exerciseName,
+                    setCount,
+                    sets: exerciseSets.map(s => ({
+                        weight: s.weight || s.weight_kg || 0,
+                        reps: s.reps || 0
+                    }))
+                }
+            };
+        }
+
+        case 'multi_select': {
+            // Share multiple selected sets
+            const selectedSets = shareSelection.selectedSetIndices.map(i => sets[i]).filter(Boolean);
+            const count = selectedSets.length;
+
+            if (count === 1) {
+                // Single set
+                const set = selectedSets[0];
+                const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
+                const weight = set.weight || set.weight_kg || 0;
+                const reps = set.reps || 0;
+
+                return {
+                    message: `Crushed ${exerciseName}: ${weight}kg × ${reps} reps! 💪`,
+                    type: 'specific_lift',
+                    details: { workoutName, exercise: exerciseName, weight, reps }
+                };
             }
-        };
-    }
 
-    if (milestones && milestones.length > 0) {
-        const m = milestones[0];
-        return {
-            message: `${m.message} 🌟`,
-            type: 'milestone',
-            details: { workoutName, milestone: m.message, value: m.milestone_value }
-        };
-    }
+            // Multiple sets - group by exercise
+            const byExercise = {};
+            selectedSets.forEach(set => {
+                const name = set.exercise_name || set.exerciseName || 'Exercise';
+                if (!byExercise[name]) byExercise[name] = [];
+                byExercise[name].push(set);
+            });
 
-    return {
-        message: `Just finished ${workoutName}! 💪`,
-        type: 'workout_complete',
-        details: { workoutName, duration }
-    };
+            const exerciseNames = Object.keys(byExercise);
+            let messageText;
+            if (exerciseNames.length === 1) {
+                const name = exerciseNames[0];
+                const setsInfo = byExercise[name].map(s => {
+                    const w = s.weight || s.weight_kg || 0;
+                    const r = s.reps || 0;
+                    return `${w}kg×${r}`;
+                }).join(', ');
+                messageText = `Crushed ${name}! 💪\n${count} sets: ${setsInfo}`;
+            } else {
+                const summaryParts = exerciseNames.map(name => {
+                    const exSets = byExercise[name];
+                    const setsInfo = exSets.map(s => {
+                        const w = s.weight || s.weight_kg || 0;
+                        const r = s.reps || 0;
+                        return `${w}kg×${r}`;
+                    }).join(', ');
+                    return `${name}: ${setsInfo}`;
+                });
+                messageText = `Crushed ${count} sets! 🏋️\n${summaryParts.join('\n')}`;
+            }
+
+            return {
+                message: messageText,
+                type: 'multi_sets',
+                details: {
+                    workoutName,
+                    setCount: count,
+                    exerciseCount: exerciseNames.length,
+                    exercises: byExercise
+                }
+            };
+        }
+
+        case 'best':
+        default: {
+            // Legacy: single lift selected via old method
+            if (selectedLiftToShare !== null && sets && sets[selectedLiftToShare]) {
+                const set = sets[selectedLiftToShare];
+                const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
+                const weight = set.weight || set.weight_kg || 0;
+                const reps = set.reps || 0;
+
+                return {
+                    message: `Crushed ${exerciseName}: ${weight}kg × ${reps} reps! 💪`,
+                    type: 'specific_lift',
+                    details: { workoutName, exercise: exerciseName, weight, reps }
+                };
+            }
+
+            // Default: best achievement
+            if (improvements && improvements.length > 0) {
+                const imp = improvements[0];
+                let improvementText = '';
+                if (imp.weightIncrease > 0 && imp.repsIncrease > 0) {
+                    improvementText = `+${imp.weightIncrease}kg and +${imp.repsIncrease} reps`;
+                } else if (imp.weightIncrease > 0) {
+                    improvementText = `+${imp.weightIncrease}kg`;
+                } else if (imp.repsIncrease > 0) {
+                    improvementText = `+${imp.repsIncrease} reps`;
+                }
+                return {
+                    message: `Hit a PR on ${imp.exercise}! ${improvementText} 🏆`,
+                    type: 'personal_best',
+                    details: {
+                        workoutName,
+                        exercise: imp.exercise,
+                        improvement: improvementText,
+                        previousWeight: imp.previousWeight,
+                        previousReps: imp.previousReps,
+                        currentWeight: imp.currentWeight,
+                        currentReps: imp.currentReps
+                    }
+                };
+            }
+
+            if (milestones && milestones.length > 0) {
+                const m = milestones[0];
+                return {
+                    message: `${m.message} 🌟`,
+                    type: 'milestone',
+                    details: { workoutName, milestone: m.message, value: m.milestone_value }
+                };
+            }
+
+            return {
+                message: `Just finished ${workoutName}! 💪`,
+                type: 'workout_complete',
+                details: { workoutName, duration }
+            };
+        }
+    }
 }
 
 async function quickShareToChat(chatId, chatName) {
@@ -18874,16 +19315,23 @@ function escapeHtml(text) {
 function buildWinShareMessage() {
     const shareData = getShareData();
 
-    // Add branding for external shares
-    if (shareData.type === 'specific_lift') {
-        return `${shareData.message} Training with Balance 🌱`;
-    } else if (shareData.type === 'personal_best') {
-        return `🏆 ${shareData.message} Training with Balance 🌱`;
-    } else if (shareData.type === 'milestone') {
-        return `🌟 ${shareData.message} Training with Balance 🌱`;
+    // Add branding for external shares based on share type
+    switch (shareData.type) {
+        case 'entire_workout':
+            return `📋 ${shareData.message}\n\nTraining with Balance 🌱`;
+        case 'exercise_all_sets':
+            return `📊 ${shareData.message}\n\nTraining with Balance 🌱`;
+        case 'multi_sets':
+            return `🏋️ ${shareData.message}\n\nTraining with Balance 🌱`;
+        case 'specific_lift':
+            return `${shareData.message} Training with Balance 🌱`;
+        case 'personal_best':
+            return `🏆 ${shareData.message} Training with Balance 🌱`;
+        case 'milestone':
+            return `🌟 ${shareData.message} Training with Balance 🌱`;
+        default:
+            return `${shareData.message} Training with Balance 🌱`;
     }
-
-    return `${shareData.message} Training with Balance 🌱`;
 }
 
 // Share win to Facebook Messenger
