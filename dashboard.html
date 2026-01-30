@@ -28799,6 +28799,9 @@ updateCoachUI();
         
         customWorkout.exercises.forEach((ex, idx) => {
             const card = document.createElement('div');
+            card.className = 'exercise-logger-card';
+            card.setAttribute('data-exercise-name', ex.name);
+            card.setAttribute('data-is-user-added', 'false');
             card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
             const videoUrl = typeof getExerciseVideoUrl === 'function' ? getExerciseVideoUrl(ex.name) : '';
             
