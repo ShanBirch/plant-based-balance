@@ -2770,11 +2770,10 @@ async function applyAppTheme(themeKey) {
                 shadow-softness="0.8"
                 exposure="0.9"
                 environment-image="neutral"
-                camera-orbit="0deg 85deg 16m"
-                field-of-view="35deg"
-                style="width: 100%; height: 100%; position: relative; z-index: 3; --poster-color: transparent;"
-                interaction-prompt="none"
-                touch-action="pan-y">
+                camera-orbit="0deg 85deg 22m"
+                field-of-view="30deg"
+                style="width: 100%; height: 100%; position: relative; z-index: 3; --poster-color: transparent; touch-action: none;"
+                interaction-prompt="none">
             </model-viewer>
             
             <!-- Status Overlay -->
@@ -36087,12 +36086,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 }
                 
-                // Camera distance logic based on level
-                let cameraDist = 10.0;
-                if (level >= 99) cameraDist = 3.2;
-                else if (level >= 40) cameraDist = 8.0 - ((level - 40) / 59 * 4.8);
-                else cameraDist = 10.0 - (level / 40 * 2.0);
-                
+                // Camera distance logic based on level (larger values = smaller character in room)
+                let cameraDist = 22.0;
+                if (level >= 99) cameraDist = 12.0;
+                else if (level >= 40) cameraDist = 18.0 - ((level - 40) / 59 * 6.0);
+                else cameraDist = 22.0 - (level / 40 * 4.0);
+
                 modelViewer.setAttribute('camera-orbit', `0deg 85deg ${cameraDist}m`);
             }
         };
