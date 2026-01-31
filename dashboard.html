@@ -69,9 +69,11 @@
 <script src="lib/migrate-localstorage.js"></script>
 <script src="lib/stories.js"></script>
 <script src="lib/nutrition-calculator.js"></script>
-<!-- Avatar system disabled for now -->
+<!-- Suppress Avatar system for now -->
 <!-- <script src="lib/avatar.js"></script> -->
 <!-- <link rel="stylesheet" href="lib/avatar.css"> -->
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
 
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script>
@@ -2794,6 +2796,47 @@ async function applyAppTheme(themeKey) {
             <input type="file" id="story-camera-input" accept="image/*,video/*" capture style="display:none;" onchange="handleStoryFileSelect(event)">
             <input type="file" id="meal-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleMealPhotoSelect(event)">
             <!-- Story rings will be injected here -->
+        </div>
+    </div>
+
+    <!-- Tamagotchi Widget -->
+    <div id="tamagotchi-widget-container" style="background: #000; border-radius: 20px; overflow: hidden; margin: 15px 25px; height: 380px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.4); border: 1px solid #333;">
+        <model-viewer 
+            id="tamagotchi-model"
+            src="assets/shazylvl1.glb"
+            camera-controls
+            disable-zoom
+            disable-pan
+            auto-rotate
+            rotation-intensity="0.5"
+            shadow-intensity="2"
+            exposure="1"
+            environment-image="neutral"
+            camera-orbit="0deg 90deg 10m"
+            style="width: 100%; height: 100%;"
+            interaction-prompt="none"
+            touch-action="pan-y">
+        </model-viewer>
+        
+        <!-- Status Overlay -->
+        <div style="position: absolute; top: 20px; right: 20px; text-align: right; pointer-events: none;">
+            <div id="tamagotchi-rank" style="color: var(--secondary); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">NEWCOMER</div>
+        </div>
+
+        <div style="position: absolute; bottom: 25px; left: 20px; pointer-events: none; width: calc(100% - 40px);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <div style="color: #888; font-size: 0.65rem; font-weight: 800; margin-bottom: 2px;">LEVEL</div>
+                    <div id="tamagotchi-level" style="color: #fff; font-size: 2.5rem; font-weight: 900; line-height: 1; font-family: 'Outfit', sans-serif;">1</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="color: #888; font-size: 0.65rem; font-weight: 800; margin-bottom: 6px;">XP TO NEXT LEVEL</div>
+                    <div style="width: 140px; height: 8px; background: #222; border-radius: 4px; overflow: hidden; border: 1px solid #333;">
+                        <div id="tamagotchi-xp-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--secondary), var(--primary-light)); transition: width 0.5s ease;"></div>
+                    </div>
+                    <div id="tamagotchi-xp-text" style="color: #fff; font-size: 0.7rem; font-weight: 600; margin-top: 5px; opacity: 0.7;">0 / 8 XP</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -35789,6 +35832,103 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 </script>
 
+    <!-- Tamagotchi Initialization Logic -->
+    <script>
+    (function() {
+        const TAMAGOTCHI_EVOLUTIONS = [
+            { level: 1,  xp: 0,    title: "Newcomer",  src: "assets/shazylvl1.glb" },
+            { level: 5,  xp: 8,    title: "Beginner",  src: "assets/shazylvl1.glb" },
+            { level: 10, xp: 46,   title: "Rising",    src: "assets/shazylvl10.glb" },
+            { level: 20, xp: 109,  title: "Growing",   src: "assets/shazylvl20.glb" },
+            { level: 30, xp: 175,  title: "Consistent",src: "assets/shazylvl30.glb" },
+            { level: 40, xp: 247,  title: "Committed", src: "assets/shazylvl40.glb" },
+            { level: 50, xp: 500,  title: "Dedicated", src: "assets/shazylvl50.glb" },
+            { level: 60, xp: 631,  title: "Veteran",   src: "assets/shazylvl60.glb" },
+            { level: 70, xp: 766,  title: "Expert",    src: "assets/shazylvl70.glb" },
+            { level: 80, xp: 906,  title: "Champion",  src: "assets/shazylvl80.glb" },
+            { level: 90, xp: 1184, title: "Master",    src: "assets/shazylvl90.glb" },
+            { level: 99, xp: 1343, title: "Legend",    src: "assets/shazie_legend.glb" }
+        ];
+
+        function updateTamagotchiUI(xp) {
+            // Find current evolution
+            const currentEvolution = [...TAMAGOTCHI_EVOLUTIONS].reverse().find(e => xp >= e.xp) || TAMAGOTCHI_EVOLUTIONS[0];
+            const nextEvolution = TAMAGOTCHI_EVOLUTIONS.find(e => xp < e.xp);
+
+            // Update Text
+            const levelEl = document.getElementById('tamagotchi-level');
+            const rankEl = document.getElementById('tamagotchi-rank');
+            const xpTextEl = document.getElementById('tamagotchi-xp-text');
+            const xpBarEl = document.getElementById('tamagotchi-xp-bar');
+            const modelViewer = document.getElementById('tamagotchi-model');
+
+            if (levelEl) levelEl.textContent = currentEvolution.level;
+            if (rankEl) rankEl.textContent = currentEvolution.title;
+
+            if (nextEvolution) {
+                const range = nextEvolution.xp - currentEvolution.xp;
+                const progress = xp - currentEvolution.xp;
+                const percent = (progress / range) * 100;
+                if (xpBarEl) xpBarEl.style.width = percent + '%';
+                if (xpTextEl) xpTextEl.textContent = `${xp} / ${nextEvolution.xp} XP`;
+            } else {
+                if (xpBarEl) xpBarEl.style.width = '100%';
+                if (xpTextEl) xpTextEl.textContent = `${xp} XP (MAX)`;
+            }
+
+            // Update Model if changed
+            if (modelViewer) {
+                const currentSrc = modelViewer.getAttribute('src');
+                if (currentSrc !== currentEvolution.src) {
+                    modelViewer.setAttribute('src', currentEvolution.src);
+                }
+                
+                // Camera distance logic from script.js
+                const targetLevel = currentEvolution.level;
+                let cameraDist = 10.0;
+                if (targetLevel >= 99) cameraDist = 3.2;
+                else if (targetLevel >= 40) cameraDist = 8.0 - ((targetLevel - 40) / 59 * 4.8);
+                else cameraDist = 10.0 - (targetLevel / 40 * 2.0);
+                
+                modelViewer.setAttribute('camera-orbit', `0deg 90deg ${cameraDist}m`);
+            }
+        }
+
+        // Initialize with default XP for now (or link to global points if desired)
+        document.addEventListener('DOMContentLoaded', () => {
+            const getXP = () => {
+                const el = document.getElementById('points-current');
+                return el ? parseInt(el.textContent.replace(/,/g, '')) : 0;
+            };
+
+            updateTamagotchiUI(getXP());
+            
+            // Listen for point updates
+            const observer = new MutationObserver(() => {
+                updateTamagotchiUI(getXP());
+            });
+            
+            const pointsEl = document.getElementById('points-current');
+            if (pointsEl) {
+                observer.observe(pointsEl, { characterData: true, childList: true, subtree: true });
+            }
+        });
+
+        // Tap reaction
+        document.getElementById('tamagotchi-model')?.addEventListener('click', () => {
+            const mv = document.getElementById('tamagotchi-model');
+            if (!mv || !mv.availableAnimations || !mv.availableAnimations.length) return;
+            
+            const reactAnim = mv.availableAnimations.find(a => a.toLowerCase().includes('victory') || a.toLowerCase().includes('look')) || mv.availableAnimations[0];
+            mv.animationName = reactAnim;
+            
+            setTimeout(() => {
+                const idleAnim = mv.availableAnimations.find(a => a.toLowerCase().includes('idle') || a.toLowerCase().includes('stand')) || mv.availableAnimations[0];
+                mv.animationName = idleAnim;
+            }, 3000);
+        });
+    })();
+    </script>
 </body>
 </html>
 
