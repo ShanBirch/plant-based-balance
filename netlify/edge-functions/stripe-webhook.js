@@ -80,6 +80,44 @@ export default async (request, context) => {
             const session = stripeEvent.data.object;
             const customerId = session.customer;
 
+            // Handle Challenge Pass purchase
+            if (session.metadata?.product_type === 'challenge_pass' && session.metadata?.user_id) {
+                const userId = session.metadata.user_id;
+                const supabaseUrl = Deno.env.get('SUPABASE_URL');
+                const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+                if (supabaseUrl && supabaseServiceKey) {
+                    try {
+                        // Update user to have challenge pass
+                        const updateResponse = await fetch(
+                            `${supabaseUrl}/rest/v1/users?id=eq.${userId}`,
+                            {
+                                method: 'PATCH',
+                                headers: {
+                                    'apikey': supabaseServiceKey,
+                                    'Authorization': `Bearer ${supabaseServiceKey}`,
+                                    'Content-Type': 'application/json',
+                                    'Prefer': 'return=minimal'
+                                },
+                                body: JSON.stringify({
+                                    has_challenge_pass: true,
+                                    challenge_pass_purchased_at: new Date().toISOString()
+                                })
+                            }
+                        );
+
+                        if (updateResponse.ok) {
+                            console.log(`Challenge Pass activated for user ${userId}`);
+                        } else {
+                            console.error(`Failed to activate Challenge Pass: ${await updateResponse.text()}`);
+                        }
+                    } catch (err) {
+                        console.error("Error activating Challenge Pass:", err.message);
+                    }
+                }
+            }
+
+            // Store FB metadata on customer
             if (customerId && session.metadata?.fbc) {
                 await stripe.customers.update(customerId, {
                     metadata: {
