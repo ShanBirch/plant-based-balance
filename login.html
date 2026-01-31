@@ -364,6 +364,63 @@
             border-color: #cbd5e1;
             background: #f8fafc;
         }
+
+        /* Google Sign-In Button */
+        .google-btn {
+            width: 100%;
+            background: white;
+            color: #1f2937;
+            border: 2px solid #e2e8f0;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .google-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .google-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .google-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .oauth-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+
+        .oauth-divider::before,
+        .oauth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .oauth-divider span {
+            padding: 0 15px;
+        }
     </style>
 </head>
 <body>
@@ -395,6 +452,18 @@
                 <div class="biometric-divider"><span>or use password</span></div>
             </div>
 
+            <!-- Google Sign-In -->
+            <button type="button" class="google-btn" id="google-login-btn" onclick="handleGoogleSignIn()">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Continue with Google
+            </button>
+            <div class="oauth-divider"><span>or sign in with email</span></div>
+
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group">
                     <label>Email Address</label>
@@ -418,17 +487,19 @@
         <!-- Signup Form -->
         <div id="signup-form" class="form-container">
             <h1>Join Balance</h1>
-            <p>Ready to start your 14-day free trial?</p>
+            <p>Create your free account to get started.</p>
 
-            <!-- One-Click Payment Section -->
-            <div id="payment-request-container" style="margin-bottom: 2rem; display: none;">
-                <div id="payment-request-button"></div>
-                <div style="margin: 1.5rem 0; display: flex; align-items: center; gap: 10px; color: #94a3b8; font-size: 0.8rem;">
-                    <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
-                    <span>OR SIGN UP WITH EMAIL</span>
-                    <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
-                </div>
-            </div>
+            <!-- Google Sign-Up -->
+            <button type="button" class="google-btn" id="google-signup-btn" onclick="handleGoogleSignIn()">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Continue with Google
+            </button>
+            <div class="oauth-divider"><span>or sign up with email</span></div>
 
             <form id="signupForm" onsubmit="handleSignup(event)">
                 <div class="form-group">
@@ -485,82 +556,8 @@
             window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             const supabase = window.supabaseClient;
 
-            // Initialize Stripe
+            // Initialize Stripe (for in-app purchases)
             window.stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
-            
-            // 1. Setup Payment Request (Apple Pay / Google Pay)
-            const paymentRequest = window.stripe.paymentRequest({
-                country: 'AU',
-                currency: 'aud',
-                total: {
-                    label: 'Balance Membership (14-Day Free Trial)',
-                    amount: 0, // $0 today
-                },
-                requestPayerName: true,
-                requestPayerEmail: true,
-            });
-
-            const elements = window.stripe.elements();
-            const prButton = elements.create('paymentRequestButton', {
-                paymentRequest,
-                style: {
-                    paymentRequestButton: {
-                        type: 'default',
-                        theme: 'dark',
-                        height: '54px',
-                    },
-                },
-            });
-
-            // Check if device supports Apple/Google Pay
-            paymentRequest.canMakePayment().then((result) => {
-                if (result) {
-                    document.getElementById('payment-request-container').style.display = 'block';
-                    prButton.mount('#payment-request-button');
-                }
-            });
-
-            // Handle the "One-Click" Payment Event
-            paymentRequest.on('paymentmethod', async (ev) => {
-                try {
-                    // 1. Create Supabase Account with a random password 
-                    // (They can reset it later or use biometric login)
-                    const tempPassword = Math.random().toString(36).slice(-12);
-                    const name = ev.payerName || 'Member';
-                    const email = ev.payerEmail;
-
-                    const signupResult = await authHelpers.signUp(email, tempPassword, { name });
-                    
-                    // 2. Create the Stripe Subscription (14-day trial)
-                    const response = await fetch('/.netlify/functions/create-subscription', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            paymentMethodId: ev.paymentMethod.id,
-                            email: email,
-                            priceId: 'price_1SkDKhCGCyRUsOfKdi44QCWi',
-                            isTrial: true,
-                            trialDays: 14
-                        })
-                    });
-
-                    const result = await response.json();
-                    if (result.error) {
-                        ev.complete('fail');
-                        showError(result.error.message);
-                        return;
-                    }
-
-                    ev.complete('success');
-                    showSuccess('Welcome to Balance! Redirecting to your dashboard...');
-                    setTimeout(() => window.location.href = '/dashboard.html', 1500);
-
-                } catch (err) {
-                    ev.complete('fail');
-                    showError('Quick Checkout failed. Please use the form below.');
-                    console.error(err);
-                }
-            });
 
             // Create authHelpers
             window.authHelpers = {
@@ -609,6 +606,17 @@
                         redirectTo: `${window.location.origin}/reset-password.html`
                     });
                     if (error) throw error;
+                },
+
+                async signInWithGoogle() {
+                    const { data, error } = await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                            redirectTo: `${window.location.origin}/login.html`
+                        }
+                    });
+                    if (error) throw error;
+                    return data;
                 }
             };
 
@@ -830,44 +838,13 @@
                     }
                 }
 
-                // Store email in sessionStorage for Stripe context
-                sessionStorage.setItem('userEmail', email);
+                showSuccess('Account created! Redirecting to dashboard...');
 
-                showSuccess('Account created! Opening secure checkout...');
+                // Redirect to dashboard after successful signup
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 1500);
 
-                // Trigger Stripe Checkout immediately
-                try {
-                    const response = await fetch('/.netlify/functions/create-checkout-session', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            priceId: 'price_1SkDKhCGCyRUsOfKdi44QCWi', // 1-month $30 plan
-                            isTrial: true,
-                            trialDays: 14, 
-                            referralCode: referralCode || null,
-                            email: email,
-                            bump: false // No bump on direct signup to keep it simple
-                        })
-                    });
-                    const sessionData = await response.json();
-                    
-                    if (sessionData.error) {
-                         throw new Error(sessionData.error.message);
-                    }
-
-                    // Direct redirect to Stripe (where Apple/Google Pay will be shown)
-                    const { error: stripeError } = await window.stripe.redirectToCheckout({ 
-                        sessionId: sessionData.sessionId 
-                    });
-
-                    if (stripeError) throw stripeError;
-
-                } catch (stripeErr) {
-                    console.error("Stripe Error:", stripeErr);
-                    showError("Account created, but we couldn't open checkout. Please log in and try again.");
-                    btn.disabled = false;
-                    btn.textContent = 'RETRY CHECKOUT';
-                }
             } catch (error) {
                 console.error('Signup error:', error);
 
@@ -894,6 +871,58 @@
             } catch (error) {
                 console.error('Reset password error:', error);
                 showError('Failed to send reset email. Please check your email address.');
+            }
+        }
+
+        // Handle Google Sign-In
+        async function handleGoogleSignIn() {
+            clearMessages();
+
+            const loginBtn = document.getElementById('google-login-btn');
+            const signupBtn = document.getElementById('google-signup-btn');
+
+            // Disable both buttons
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<span>Connecting...</span>';
+            }
+            if (signupBtn) {
+                signupBtn.disabled = true;
+                signupBtn.innerHTML = '<span>Connecting...</span>';
+            }
+
+            try {
+                await authHelpers.signInWithGoogle();
+                // OAuth will redirect, so we don't need to do anything here
+            } catch (error) {
+                console.error('Google sign-in error:', error);
+                showError('Google sign-in failed. Please try again.');
+
+                // Re-enable buttons
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = `
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                        Continue with Google
+                    `;
+                }
+                if (signupBtn) {
+                    signupBtn.disabled = false;
+                    signupBtn.innerHTML = `
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                        Continue with Google
+                    `;
+                }
             }
         }
 
