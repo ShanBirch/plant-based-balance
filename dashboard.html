@@ -2292,21 +2292,21 @@ async function applyAppTheme(themeKey) {
     /* Animation button on Tamagotchi widget */
     .animation-trigger-btn {
         position: absolute;
-        bottom: 15px;
-        right: 20px;
-        background: rgba(255, 255, 255, 0.15);
+        bottom: 85px;
+        right: 15px;
+        background: rgba(255, 255, 255, 0.2);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
         border-radius: 50%;
-        width: 44px;
-        height: 44px;
+        width: 40px;
+        height: 40px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         z-index: 10;
         transition: all 0.2s ease;
-        font-size: 1.3rem;
+        font-size: 1.2rem;
     }
 
     .animation-trigger-btn:hover {
@@ -32061,9 +32061,10 @@ function triggerVictoryAnimation() {
         mv.animationName = victoryAnim;
         mv.play();
 
-        // Return to static stance after celebration (pause instead of idle)
+        // Return to static stance after celebration
         setTimeout(() => {
-            mv.pause();
+            mv.animationName = null;
+            mv.removeAttribute('animation-name');
         }, 4000);
     }
 }
@@ -36823,7 +36824,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (returnToStatic) {
                     // Return to static stance after animation
                     setTimeout(() => {
-                        mv.pause();
+                        mv.animationName = null;
+                        mv.removeAttribute('animation-name');
                     }, 3000);
                 }
                 return true;
@@ -36976,7 +36978,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 // Return to static stance after animation plays
                 setTimeout(() => {
-                    mv.pause();
+                    mv.animationName = null;
+                    mv.removeAttribute('animation-name');
                 }, 3000);
             }
         });
