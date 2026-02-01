@@ -477,14 +477,10 @@ async function applyAppTheme(themeKey) {
 
     /* Dashboard Styles */
     .dashboard-welcome {
-        padding: 25px;
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        padding: 0;
+        background: transparent;
         color: white;
-        border-bottom-left-radius: 30px;
-        border-bottom-right-radius: 30px;
-        margin-bottom: 25px;
-        box-shadow: 0 10px 30px -10px rgba(123, 168, 131, 0.4);
-        border-bottom: 5px solid var(--secondary);
+        margin-bottom: 15px;
     }
     .dashboard-welcome h1, 
     .dashboard-welcome .user-name,
@@ -2754,7 +2750,7 @@ async function applyAppTheme(themeKey) {
              <span id="daily-progress-counter" class="welcome-text" style="display: none; color: white; font-weight: 700;">Day 1 of 28</span>
         </div>
         <!-- Tamagotchi Widget (Modern Header View) -->
-        <div id="tamagotchi-widget-container" style="background: linear-gradient(180deg, #1a1a2e 0%, #16213e 40%, #1a1a2e 100%); backdrop-filter: blur(20px); border-radius: 20px; overflow: hidden; margin: 15px 0; height: 420px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);">
+        <div id="tamagotchi-widget-container" style="background: linear-gradient(180deg, #1a1a2e 0%, #16213e 40%, #1a1a2e 100%); backdrop-filter: blur(20px); border-radius: 0; overflow: hidden; margin: 0; height: 420px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
             <!-- Room floor with perspective depth -->
             <div id="tamagotchi-floor" style="position: absolute; bottom: 0; left: 0; right: 0; height: 55%; background: linear-gradient(180deg, transparent 0%, rgba(30,40,60,0.3) 20%, rgba(40,55,80,0.6) 50%, rgba(50,70,100,0.8) 80%, rgba(60,85,120,0.95) 100%); transform: perspective(500px) rotateX(25deg); transform-origin: bottom center; pointer-events: none; z-index: 1;"></div>
             <!-- Floor reflection/shine -->
@@ -2788,15 +2784,16 @@ async function applyAppTheme(themeKey) {
                 <div id="tamagotchi-rank" style="color: var(--secondary); font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">NEWCOMER</div>
             </div>
 
-            <div style="position: absolute; bottom: 20px; left: 20px; pointer-events: none; width: calc(100% - 40px);">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <!-- Level & XP - Top Left -->
+            <div style="position: absolute; top: 15px; left: 20px; pointer-events: none; z-index: 10;">
+                <div style="display: flex; align-items: center; gap: 12px;">
                     <div>
-                        <div style="color: #888; font-size: 0.65rem; font-weight: 800; margin-bottom: 2px; text-transform: uppercase;">Current Level</div>
-                        <div id="tamagotchi-level" style="color: #fff; font-size: 2.2rem; font-weight: 900; line-height: 1; font-family: 'Outfit', sans-serif;">1</div>
+                        <div style="color: #888; font-size: 0.6rem; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Level</div>
+                        <div id="tamagotchi-level" style="color: #fff; font-size: 2rem; font-weight: 900; line-height: 1; font-family: 'Outfit', sans-serif;">1</div>
                     </div>
-                    <div style="text-align: right;">
-                        <div id="tamagotchi-xp-text" style="color: #fff; font-size: 0.75rem; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px;">0 / 8 XP</div>
-                        <div style="width: 160px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+                    <div>
+                        <div id="tamagotchi-xp-text" style="color: #fff; font-size: 0.7rem; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.5px;">0 / 8 XP to Level 2</div>
+                        <div style="width: 140px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
                             <div id="tamagotchi-xp-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--secondary), var(--primary-light)); transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);"></div>
                         </div>
                     </div>
