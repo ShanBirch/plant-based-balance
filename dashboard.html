@@ -2745,10 +2745,13 @@ async function applyAppTheme(themeKey) {
 <div class="container">
 <!-- DASHBOARD VIEW (HOME) -->
 <div id="view-dashboard" class="app-view">
+    <div class="app-header">
+        <div class="app-logo">Home</div>
+        <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
+    </div>
     <div class="dashboard-welcome">
         <div style="display:flex; justify-content:space-between; align-items:center;">
              <span id="daily-progress-counter" class="welcome-text" style="display: none; color: white; font-weight: 700;">Day 1 of 28</span>
-             <div class="profile-icon" style="margin-left: auto;" onclick="switchAppTab('profile', this)">S</div> <!-- Placeholder User Initial -->
         </div>
         <!-- Tamagotchi Widget (Modern Header View) -->
         <div id="tamagotchi-widget-container" style="background: linear-gradient(180deg, #1a1a2e 0%, #16213e 40%, #1a1a2e 100%); backdrop-filter: blur(20px); border-radius: 20px; overflow: hidden; margin: 15px 0; height: 420px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);">
