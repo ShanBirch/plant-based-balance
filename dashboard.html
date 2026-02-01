@@ -12094,6 +12094,11 @@ async function handleSubscriptionAction(action) {
 
 // Real switchAppTab implementation - replaces the early stub
 function _switchAppTabReal(tabName, btn) {
+    // Track current active tab for level-up animation visibility
+    if (typeof currentActiveTab !== 'undefined') {
+        currentActiveTab = tabName;
+    }
+
     // 1. Update Bottom Nav UI
     document.querySelectorAll('.bottom-nav .nav-item').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
@@ -12115,6 +12120,14 @@ function _switchAppTabReal(tabName, btn) {
     // 3. Show Target View
     if (tabName === 'dashboard') {
         document.getElementById('view-dashboard').style.display = 'block';
+
+        // Show pending level-up animation if user leveled up while on another screen
+        if (typeof pendingLevelUp !== 'undefined' && pendingLevelUp) {
+            setTimeout(() => {
+                showLevelUpToast(pendingLevelUp.level, pendingLevelUp.title);
+                pendingLevelUp = null;
+            }, 500);
+        }
 
         // Hide Today's Priority section if user doesn't have meal plan access
         const todaysPrioritySection = document.getElementById('todays-priority-section');
@@ -31631,6 +31644,10 @@ function showLevelUpToast(newLevel, title) {
 // Track previous lifetime points to detect level-ups
 let previousLifetimePoints = 0;
 
+// Track current active tab and pending level-ups (only show level-up on home screen)
+let currentActiveTab = 'dashboard';
+let pendingLevelUp = null; // { level: number, title: string }
+
 // Award points for a meal (called after successful meal logging)
 async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photoHash) {
     console.log('awardPointsForMeal called with:', { mealLogId, photoTimestamp, aiConfidence, photoHash });
@@ -31678,11 +31695,17 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
             const newLifetimePoints = result.newLifetimePoints || (pointsBefore?.lifetime_points || 0) + (result.pointsAwarded || 0) + (result.bonusPoints || 0);
             const newLevelData = calculateLevel(newLifetimePoints);
             if (newLevelData.level > previousLevel) {
-                // Delay level-up toast to appear after points toast
-                const delayMs = (result.milestonesUnlocked?.length || 0) * 500 + 1000;
-                setTimeout(() => {
-                    showLevelUpToast(newLevelData.level, getLevelTitle(newLevelData.level));
-                }, delayMs);
+                // Only show level-up animation if user is on home screen
+                if (currentActiveTab === 'dashboard') {
+                    // Delay level-up toast to appear after points toast
+                    const delayMs = (result.milestonesUnlocked?.length || 0) * 500 + 1000;
+                    setTimeout(() => {
+                        showLevelUpToast(newLevelData.level, getLevelTitle(newLevelData.level));
+                    }, delayMs);
+                } else {
+                    // Store level-up to show when user returns to home screen
+                    pendingLevelUp = { level: newLevelData.level, title: getLevelTitle(newLevelData.level) };
+                }
             }
 
             // Refresh points widget
@@ -31745,11 +31768,17 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
             const newLifetimePoints = result.newLifetimePoints || (pointsBefore?.lifetime_points || 0) + (result.pointsAwarded || 0) + (result.bonusPoints || 0);
             const newLevelData = calculateLevel(newLifetimePoints);
             if (newLevelData.level > previousLevel) {
-                // Delay level-up toast to appear after points toast
-                const delayMs = (result.milestonesUnlocked?.length || 0) * 500 + 1000;
-                setTimeout(() => {
-                    showLevelUpToast(newLevelData.level, getLevelTitle(newLevelData.level));
-                }, delayMs);
+                // Only show level-up animation if user is on home screen
+                if (currentActiveTab === 'dashboard') {
+                    // Delay level-up toast to appear after points toast
+                    const delayMs = (result.milestonesUnlocked?.length || 0) * 500 + 1000;
+                    setTimeout(() => {
+                        showLevelUpToast(newLevelData.level, getLevelTitle(newLevelData.level));
+                    }, delayMs);
+                } else {
+                    // Store level-up to show when user returns to home screen
+                    pendingLevelUp = { level: newLevelData.level, title: getLevelTitle(newLevelData.level) };
+                }
             }
 
             // Refresh points widget
