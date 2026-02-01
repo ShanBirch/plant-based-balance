@@ -2001,6 +2001,164 @@ async function applyAppTheme(themeKey) {
         color: rgba(0, 0, 0, 0.7);
     }
 
+    /* Level Up Enhanced - Glow Ring Pulse */
+    .level-up-rings-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 10005;
+        overflow: hidden;
+    }
+
+    .level-up-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        border: 4px solid rgba(255, 215, 0, 0.8);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 20px rgba(255, 215, 0, 0.3);
+        animation: ringPulse 1.5s ease-out forwards;
+    }
+
+    .level-up-ring:nth-child(1) { animation-delay: 0s; }
+    .level-up-ring:nth-child(2) { animation-delay: 0.2s; }
+    .level-up-ring:nth-child(3) { animation-delay: 0.4s; }
+    .level-up-ring:nth-child(4) { animation-delay: 0.6s; }
+
+    @keyframes ringPulse {
+        0% {
+            width: 50px;
+            height: 50px;
+            opacity: 1;
+            border-width: 4px;
+        }
+        100% {
+            width: 400px;
+            height: 400px;
+            opacity: 0;
+            border-width: 1px;
+        }
+    }
+
+    /* XP Bar Rainbow Flash */
+    @keyframes xpRainbowFlash {
+        0% { background: linear-gradient(90deg, #ff0000, #ff7f00); }
+        14% { background: linear-gradient(90deg, #ff7f00, #ffff00); }
+        28% { background: linear-gradient(90deg, #ffff00, #00ff00); }
+        42% { background: linear-gradient(90deg, #00ff00, #0000ff); }
+        57% { background: linear-gradient(90deg, #0000ff, #4b0082); }
+        71% { background: linear-gradient(90deg, #4b0082, #9400d3); }
+        85% { background: linear-gradient(90deg, #9400d3, #ff0000); }
+        100% { background: linear-gradient(90deg, var(--secondary), var(--primary-light)); }
+    }
+
+    .xp-bar-rainbow {
+        animation: xpRainbowFlash 1.5s ease-out;
+    }
+
+    /* Level Up Title Transition */
+    .level-up-title-transition {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        margin-top: 4px;
+    }
+
+    .level-up-old-title {
+        color: rgba(0, 0, 0, 0.4);
+        text-decoration: line-through;
+    }
+
+    .level-up-arrow {
+        color: rgba(0, 0, 0, 0.6);
+        font-weight: bold;
+    }
+
+    .level-up-new-title {
+        color: rgba(0, 0, 0, 0.8);
+        font-weight: 700;
+        animation: newTitlePop 0.5s ease-out;
+    }
+
+    @keyframes newTitlePop {
+        0% { transform: scale(0.5); opacity: 0; }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Level Up Stats Comparison */
+    .level-up-stats {
+        display: flex;
+        gap: 16px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .level-up-stat {
+        text-align: center;
+        flex: 1;
+    }
+
+    .level-up-stat-value {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #333;
+    }
+
+    .level-up-stat-label {
+        font-size: 0.65rem;
+        color: rgba(0, 0, 0, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Streak Celebration */
+    .level-up-streak-bonus {
+        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        animation: streakBounce 0.6s ease-out;
+    }
+
+    @keyframes streakBounce {
+        0% { transform: scale(0) rotate(-10deg); }
+        50% { transform: scale(1.2) rotate(5deg); }
+        100% { transform: scale(1) rotate(0deg); }
+    }
+
+    /* Enhanced Level Up Toast Layout */
+    .level-up-toast-enhanced {
+        min-width: 280px;
+    }
+
+    .level-up-toast-enhanced .level-up-content {
+        flex-direction: column;
+        text-align: center;
+        padding: 28px 32px;
+    }
+
+    .level-up-toast-enhanced .level-up-icon {
+        font-size: 3.5rem;
+        margin-bottom: 8px;
+    }
+
+    .level-up-toast-enhanced .level-up-text {
+        text-align: center;
+    }
+
     /* Calorie Tracker Summary (Full View) */
     .calorie-tracker-summary {
         background: white;
@@ -31606,23 +31764,173 @@ function showPointsEarnedToast(points, bonusPoints = 0, streak = 0) {
     }, 3000);
 }
 
+// Play level-up sound effect using Web Audio API
+function playLevelUpSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Create a celebratory ascending arpeggio
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        const noteDuration = 0.15;
+
+        notes.forEach((freq, index) => {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime + index * noteDuration);
+
+            // Envelope
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime + index * noteDuration);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + index * noteDuration + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + index * noteDuration + noteDuration);
+
+            oscillator.start(audioCtx.currentTime + index * noteDuration);
+            oscillator.stop(audioCtx.currentTime + index * noteDuration + noteDuration);
+        });
+
+        // Final triumphant chord
+        const chordDelay = notes.length * noteDuration;
+        const chordFreqs = [523.25, 659.25, 783.99]; // C major chord
+        chordFreqs.forEach(freq => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + chordDelay);
+            gain.gain.setValueAtTime(0, audioCtx.currentTime + chordDelay);
+            gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + chordDelay + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + chordDelay + 0.5);
+            osc.start(audioCtx.currentTime + chordDelay);
+            osc.stop(audioCtx.currentTime + chordDelay + 0.5);
+        });
+    } catch (e) {
+        console.log('Could not play level up sound:', e);
+    }
+}
+
+// Create expanding glow rings effect
+function createGlowRings() {
+    const container = document.createElement('div');
+    container.className = 'level-up-rings-container';
+
+    for (let i = 0; i < 4; i++) {
+        const ring = document.createElement('div');
+        ring.className = 'level-up-ring';
+        container.appendChild(ring);
+    }
+
+    document.body.appendChild(container);
+
+    // Remove after animation completes
+    setTimeout(() => container.remove(), 2000);
+}
+
+// Trigger victory animation on Shazie
+function triggerVictoryAnimation() {
+    const mv = document.getElementById('tamagotchi-model');
+    if (!mv || !mv.availableAnimations || !mv.availableAnimations.length) return;
+
+    // Find victory animation
+    const victoryAnim = mv.availableAnimations.find(a =>
+        a.toLowerCase().includes('victory') ||
+        a.toLowerCase().includes('celebrate') ||
+        a.toLowerCase().includes('cheer')
+    ) || mv.availableAnimations.find(a =>
+        a.toLowerCase().includes('jump') ||
+        a.toLowerCase().includes('wave')
+    );
+
+    if (victoryAnim) {
+        mv.animationName = victoryAnim;
+
+        // Return to idle after celebration
+        setTimeout(() => {
+            const idleAnim = mv.availableAnimations.find(a =>
+                a.toLowerCase().includes('idle') ||
+                a.toLowerCase().includes('stand')
+            ) || mv.availableAnimations[0];
+            mv.animationName = idleAnim;
+        }, 4000);
+    }
+}
+
+// Trigger XP bar rainbow flash
+function triggerXPBarRainbow() {
+    const xpBar = document.getElementById('tamagotchi-xp-bar');
+    if (xpBar) {
+        xpBar.classList.add('xp-bar-rainbow');
+        setTimeout(() => xpBar.classList.remove('xp-bar-rainbow'), 1500);
+    }
+}
+
 // Show level up toast with celebration
-function showLevelUpToast(newLevel, title) {
+function showLevelUpToast(newLevel, title, previousLevel = null, lifetimePoints = 0, currentStreak = 0) {
+    // Get the previous title if we have previous level
+    const previousTitle = previousLevel ? getLevelTitle(previousLevel) : null;
+    const showTitleTransition = previousTitle && previousTitle !== title;
+
+    // Build stats HTML
+    const statsHtml = `
+        <div class="level-up-stats">
+            <div class="level-up-stat">
+                <div class="level-up-stat-value">${lifetimePoints}</div>
+                <div class="level-up-stat-label">Total XP</div>
+            </div>
+            <div class="level-up-stat">
+                <div class="level-up-stat-value">${newLevel - (previousLevel || newLevel - 1)}</div>
+                <div class="level-up-stat-label">Levels Gained</div>
+            </div>
+            <div class="level-up-stat">
+                <div class="level-up-stat-value">${99 - newLevel}</div>
+                <div class="level-up-stat-label">To Max</div>
+            </div>
+        </div>
+    `;
+
+    // Build streak bonus HTML if on a streak
+    const streakHtml = currentStreak >= 2 ? `
+        <div class="level-up-streak-bonus">
+            <span>🔥</span> ${currentStreak} Day Streak!
+        </div>
+    ` : '';
+
+    // Build title transition HTML
+    const titleTransitionHtml = showTitleTransition ? `
+        <div class="level-up-title-transition">
+            <span class="level-up-old-title">${previousTitle}</span>
+            <span class="level-up-arrow">→</span>
+            <span class="level-up-new-title">${title}</span>
+        </div>
+    ` : `<div class="level-up-rank">${title}</div>`;
+
     const toast = document.createElement('div');
-    toast.className = 'level-up-toast';
+    toast.className = 'level-up-toast level-up-toast-enhanced';
     toast.innerHTML = `
         <div class="level-up-glow"></div>
         <div class="level-up-content">
-            <div class="level-up-icon">&#x2B50;</div>
+            <div class="level-up-icon">⭐</div>
             <div class="level-up-text">
                 <div class="level-up-title">LEVEL UP!</div>
                 <div class="level-up-level">Level ${newLevel}</div>
-                <div class="level-up-rank">${title}</div>
+                ${titleTransitionHtml}
+                ${streakHtml}
+                ${statsHtml}
             </div>
         </div>
     `;
 
     document.body.appendChild(toast);
+
+    // Trigger all the celebration effects!
+    playLevelUpSound();
+    createGlowRings();
+    triggerVictoryAnimation();
+    triggerXPBarRainbow();
 
     // Add level-up animation to the badge
     const levelBadge = document.getElementById('level-badge');
@@ -31700,11 +32008,23 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
                     // Delay level-up toast to appear after points toast
                     const delayMs = (result.milestonesUnlocked?.length || 0) * 500 + 1000;
                     setTimeout(() => {
-                        showLevelUpToast(newLevelData.level, getLevelTitle(newLevelData.level));
+                        showLevelUpToast(
+                            newLevelData.level,
+                            getLevelTitle(newLevelData.level),
+                            previousLevel,
+                            newLifetimePoints,
+                            result.currentStreak || 0
+                        );
                     }, delayMs);
                 } else {
                     // Store level-up to show when user returns to home screen
-                    pendingLevelUp = { level: newLevelData.level, title: getLevelTitle(newLevelData.level) };
+                    pendingLevelUp = { 
+                        level: newLevelData.level, 
+                        title: getLevelTitle(newLevelData.level),
+                        previousLevel: previousLevel,
+                        lifetimePoints: newLifetimePoints,
+                        currentStreak: result.currentStreak || 0
+                    };
                 }
             }
 
@@ -31773,11 +32093,23 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
                     // Delay level-up toast to appear after points toast
                     const delayMs = (result.milestonesUnlocked?.length || 0) * 500 + 1000;
                     setTimeout(() => {
-                        showLevelUpToast(newLevelData.level, getLevelTitle(newLevelData.level));
+                        showLevelUpToast(
+                            newLevelData.level,
+                            getLevelTitle(newLevelData.level),
+                            previousLevel,
+                            newLifetimePoints,
+                            result.currentStreak || 0
+                        );
                     }, delayMs);
                 } else {
                     // Store level-up to show when user returns to home screen
-                    pendingLevelUp = { level: newLevelData.level, title: getLevelTitle(newLevelData.level) };
+                    pendingLevelUp = { 
+                        level: newLevelData.level, 
+                        title: getLevelTitle(newLevelData.level),
+                        previousLevel: previousLevel,
+                        lifetimePoints: newLifetimePoints,
+                        currentStreak: result.currentStreak || 0
+                    };
                 }
             }
 
