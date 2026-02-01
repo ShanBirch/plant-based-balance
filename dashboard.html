@@ -2001,6 +2001,371 @@ async function applyAppTheme(themeKey) {
         color: rgba(0, 0, 0, 0.7);
     }
 
+    /* Level Up Enhanced - Glow Ring Pulse */
+    .level-up-rings-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 10005;
+        overflow: hidden;
+    }
+
+    .level-up-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        border: 4px solid rgba(255, 215, 0, 0.8);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 20px rgba(255, 215, 0, 0.3);
+        animation: ringPulse 1.5s ease-out forwards;
+    }
+
+    .level-up-ring:nth-child(1) { animation-delay: 0s; }
+    .level-up-ring:nth-child(2) { animation-delay: 0.2s; }
+    .level-up-ring:nth-child(3) { animation-delay: 0.4s; }
+    .level-up-ring:nth-child(4) { animation-delay: 0.6s; }
+
+    @keyframes ringPulse {
+        0% {
+            width: 50px;
+            height: 50px;
+            opacity: 1;
+            border-width: 4px;
+        }
+        100% {
+            width: 400px;
+            height: 400px;
+            opacity: 0;
+            border-width: 1px;
+        }
+    }
+
+    /* XP Bar Rainbow Flash */
+    @keyframes xpRainbowFlash {
+        0% { background: linear-gradient(90deg, #ff0000, #ff7f00); }
+        14% { background: linear-gradient(90deg, #ff7f00, #ffff00); }
+        28% { background: linear-gradient(90deg, #ffff00, #00ff00); }
+        42% { background: linear-gradient(90deg, #00ff00, #0000ff); }
+        57% { background: linear-gradient(90deg, #0000ff, #4b0082); }
+        71% { background: linear-gradient(90deg, #4b0082, #9400d3); }
+        85% { background: linear-gradient(90deg, #9400d3, #ff0000); }
+        100% { background: linear-gradient(90deg, var(--secondary), var(--primary-light)); }
+    }
+
+    .xp-bar-rainbow {
+        animation: xpRainbowFlash 1.5s ease-out;
+    }
+
+    /* Level Up Title Transition */
+    .level-up-title-transition {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        margin-top: 4px;
+    }
+
+    .level-up-old-title {
+        color: rgba(0, 0, 0, 0.4);
+        text-decoration: line-through;
+    }
+
+    .level-up-arrow {
+        color: rgba(0, 0, 0, 0.6);
+        font-weight: bold;
+    }
+
+    .level-up-new-title {
+        color: rgba(0, 0, 0, 0.8);
+        font-weight: 700;
+        animation: newTitlePop 0.5s ease-out;
+    }
+
+    @keyframes newTitlePop {
+        0% { transform: scale(0.5); opacity: 0; }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Level Up Stats Comparison */
+    .level-up-stats {
+        display: flex;
+        gap: 16px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .level-up-stat {
+        text-align: center;
+        flex: 1;
+    }
+
+    .level-up-stat-value {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #333;
+    }
+
+    .level-up-stat-label {
+        font-size: 0.65rem;
+        color: rgba(0, 0, 0, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Streak Celebration */
+    .level-up-streak-bonus {
+        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        animation: streakBounce 0.6s ease-out;
+    }
+
+    @keyframes streakBounce {
+        0% { transform: scale(0) rotate(-10deg); }
+        50% { transform: scale(1.2) rotate(5deg); }
+        100% { transform: scale(1) rotate(0deg); }
+    }
+
+    /* Enhanced Level Up Toast Layout */
+    .level-up-toast-enhanced {
+        min-width: 280px;
+    }
+
+    .level-up-toast-enhanced .level-up-content {
+        flex-direction: column;
+        text-align: center;
+        padding: 28px 32px;
+    }
+
+    .level-up-toast-enhanced .level-up-icon {
+        font-size: 3.5rem;
+        margin-bottom: 8px;
+    }
+
+    .level-up-toast-enhanced .level-up-text {
+        text-align: center;
+    }
+
+    /* Animation Selector Modal */
+    .animation-selector-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 10000;
+    }
+
+    .animation-selector-modal {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-radius: 24px 24px 0 0;
+        max-height: 70vh;
+        z-index: 10001;
+        animation: slideUpModal 0.3s ease-out;
+    }
+
+    @keyframes slideUpModal {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+
+    .animation-selector-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px 12px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .animation-selector-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #333;
+    }
+
+    .animation-selector-close {
+        font-size: 1.8rem;
+        color: #999;
+        cursor: pointer;
+        line-height: 1;
+        padding: 4px;
+    }
+
+    .animation-selector-content {
+        padding: 16px 24px 32px;
+        overflow-y: auto;
+        max-height: calc(70vh - 80px);
+    }
+
+    .animation-category {
+        margin-bottom: 20px;
+    }
+
+    .animation-category-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #666;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .animation-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .animation-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 12px 8px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+
+    .animation-item.unlocked {
+        background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e9 100%);
+        border: 1px solid rgba(76, 175, 80, 0.2);
+    }
+
+    .animation-item.unlocked:hover {
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        transform: scale(1.02);
+    }
+
+    .animation-item.unlocked:active {
+        transform: scale(0.98);
+    }
+
+    .animation-item.locked {
+        background: #f5f5f5;
+        border: 1px solid #e0e0e0;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    .animation-icon {
+        font-size: 1.8rem;
+        margin-bottom: 4px;
+    }
+
+    .animation-name {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #333;
+        line-height: 1.2;
+    }
+
+    .animation-item.locked .animation-name {
+        color: #999;
+    }
+
+    .animation-unlock-level {
+        font-size: 0.6rem;
+        color: #999;
+        margin-top: 2px;
+    }
+
+    /* Animation button on Tamagotchi widget */
+    .animation-trigger-btn {
+        position: absolute;
+        bottom: 15px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.2s ease;
+        font-size: 1.3rem;
+    }
+
+    .animation-trigger-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: scale(1.1);
+    }
+
+    .animation-trigger-btn:active {
+        transform: scale(0.95);
+    }
+
+    /* Animation unlock toast */
+    .animation-unlock-toast {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.8);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 24px 32px;
+        border-radius: 20px;
+        text-align: center;
+        z-index: 10010;
+        opacity: 0;
+        transition: all 0.3s ease;
+        box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
+    }
+
+    .animation-unlock-toast.show {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .animation-unlock-icon {
+        font-size: 3rem;
+        margin-bottom: 8px;
+        animation: unlockBounce 0.6s ease-out;
+    }
+
+    @keyframes unlockBounce {
+        0% { transform: scale(0) rotate(-20deg); }
+        50% { transform: scale(1.3) rotate(10deg); }
+        100% { transform: scale(1) rotate(0deg); }
+    }
+
+    .animation-unlock-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        opacity: 0.9;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .animation-unlock-name {
+        font-size: 1.4rem;
+        font-weight: 800;
+    }
+
     /* Calorie Tracker Summary (Full View) */
     .calorie-tracker-summary {
         background: white;
@@ -2799,6 +3164,11 @@ async function applyAppTheme(themeKey) {
                     <span id="tamagotchi-streak" style="color: #ff6400; font-size: 0.9rem; font-weight: 800; font-family: 'Outfit', sans-serif;">0</span>
                 </div>
                 <div id="tamagotchi-rank" style="color: var(--secondary); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">NEWCOMER</div>
+            </div>
+
+            <!-- Animation Selector Button -->
+            <div class="animation-trigger-btn" onclick="showAnimationSelector()" title="Shazie's Moves">
+                🎬
             </div>
         </div>
     </div>
@@ -31606,23 +31976,221 @@ function showPointsEarnedToast(points, bonusPoints = 0, streak = 0) {
     }, 3000);
 }
 
-// Show level up toast with celebration
-function showLevelUpToast(newLevel, title) {
+// Play level-up sound effect using Web Audio API
+function playLevelUpSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Create a celebratory ascending arpeggio
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        const noteDuration = 0.15;
+
+        notes.forEach((freq, index) => {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime + index * noteDuration);
+
+            // Envelope
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime + index * noteDuration);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + index * noteDuration + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + index * noteDuration + noteDuration);
+
+            oscillator.start(audioCtx.currentTime + index * noteDuration);
+            oscillator.stop(audioCtx.currentTime + index * noteDuration + noteDuration);
+        });
+
+        // Final triumphant chord
+        const chordDelay = notes.length * noteDuration;
+        const chordFreqs = [523.25, 659.25, 783.99]; // C major chord
+        chordFreqs.forEach(freq => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + chordDelay);
+            gain.gain.setValueAtTime(0, audioCtx.currentTime + chordDelay);
+            gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + chordDelay + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + chordDelay + 0.5);
+            osc.start(audioCtx.currentTime + chordDelay);
+            osc.stop(audioCtx.currentTime + chordDelay + 0.5);
+        });
+    } catch (e) {
+        console.log('Could not play level up sound:', e);
+    }
+}
+
+// Create expanding glow rings effect
+function createGlowRings() {
+    const container = document.createElement('div');
+    container.className = 'level-up-rings-container';
+
+    for (let i = 0; i < 4; i++) {
+        const ring = document.createElement('div');
+        ring.className = 'level-up-ring';
+        container.appendChild(ring);
+    }
+
+    document.body.appendChild(container);
+
+    // Remove after animation completes
+    setTimeout(() => container.remove(), 2000);
+}
+
+// Trigger victory animation on Shazie
+function triggerVictoryAnimation() {
+    const mv = document.getElementById('tamagotchi-model');
+    if (!mv || !mv.availableAnimations || !mv.availableAnimations.length) return;
+
+    // Find victory animation (victory is always unlocked for level-up celebrations)
+    const victoryAnim = mv.availableAnimations.find(a =>
+        a.toLowerCase().includes('victory') ||
+        a.toLowerCase().includes('celebrate') ||
+        a.toLowerCase().includes('cheer')
+    ) || mv.availableAnimations.find(a =>
+        a.toLowerCase().includes('jump') ||
+        a.toLowerCase().includes('wave')
+    );
+
+    if (victoryAnim) {
+        mv.animationName = victoryAnim;
+        mv.play();
+
+        // Return to static stance after celebration (pause instead of idle)
+        setTimeout(() => {
+            mv.pause();
+        }, 4000);
+    }
+}
+
+// Show animation unlock notification
+function showAnimationUnlockToast(animInfo) {
     const toast = document.createElement('div');
-    toast.className = 'level-up-toast';
+    toast.className = 'animation-unlock-toast';
+    toast.innerHTML = `
+        <div class="animation-unlock-icon">${animInfo.icon}</div>
+        <div class="animation-unlock-title">New Move Unlocked!</div>
+        <div class="animation-unlock-name">${animInfo.displayName}</div>
+    `;
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Check for newly unlocked animations when leveling up
+function checkNewAnimationUnlocks(previousLevel, newLevel) {
+    const mv = document.getElementById('tamagotchi-model');
+    if (!mv || !mv.availableAnimations) return;
+
+    // Find animations that were just unlocked
+    const newlyUnlocked = ANIMATION_UNLOCKS.filter(unlock => {
+        // Was locked before, unlocked now
+        const wasLocked = previousLevel < unlock.unlockLevel;
+        const isUnlockedNow = newLevel >= unlock.unlockLevel;
+
+        // Check if this animation actually exists in the model
+        const existsInModel = mv.availableAnimations.some(a =>
+            a.toLowerCase().includes(unlock.name.toLowerCase())
+        );
+
+        return wasLocked && isUnlockedNow && existsInModel;
+    });
+
+    // Show unlock toasts with delay between each
+    newlyUnlocked.forEach((unlock, index) => {
+        setTimeout(() => {
+            showAnimationUnlockToast(unlock);
+        }, 2000 + (index * 3500)); // Start after level-up toast, stagger each
+    });
+}
+
+// Trigger XP bar rainbow flash
+function triggerXPBarRainbow() {
+    const xpBar = document.getElementById('tamagotchi-xp-bar');
+    if (xpBar) {
+        xpBar.classList.add('xp-bar-rainbow');
+        setTimeout(() => xpBar.classList.remove('xp-bar-rainbow'), 1500);
+    }
+}
+
+// Show level up toast with celebration
+function showLevelUpToast(newLevel, title, previousLevel = null, lifetimePoints = 0, currentStreak = 0) {
+    // Get the previous title if we have previous level
+    const previousTitle = previousLevel ? getLevelTitle(previousLevel) : null;
+    const showTitleTransition = previousTitle && previousTitle !== title;
+
+    // Build stats HTML
+    const statsHtml = `
+        <div class="level-up-stats">
+            <div class="level-up-stat">
+                <div class="level-up-stat-value">${lifetimePoints}</div>
+                <div class="level-up-stat-label">Total XP</div>
+            </div>
+            <div class="level-up-stat">
+                <div class="level-up-stat-value">${newLevel - (previousLevel || newLevel - 1)}</div>
+                <div class="level-up-stat-label">Levels Gained</div>
+            </div>
+            <div class="level-up-stat">
+                <div class="level-up-stat-value">${99 - newLevel}</div>
+                <div class="level-up-stat-label">To Max</div>
+            </div>
+        </div>
+    `;
+
+    // Build streak bonus HTML if on a streak
+    const streakHtml = currentStreak >= 2 ? `
+        <div class="level-up-streak-bonus">
+            <span>🔥</span> ${currentStreak} Day Streak!
+        </div>
+    ` : '';
+
+    // Build title transition HTML
+    const titleTransitionHtml = showTitleTransition ? `
+        <div class="level-up-title-transition">
+            <span class="level-up-old-title">${previousTitle}</span>
+            <span class="level-up-arrow">→</span>
+            <span class="level-up-new-title">${title}</span>
+        </div>
+    ` : `<div class="level-up-rank">${title}</div>`;
+
+    const toast = document.createElement('div');
+    toast.className = 'level-up-toast level-up-toast-enhanced';
     toast.innerHTML = `
         <div class="level-up-glow"></div>
         <div class="level-up-content">
-            <div class="level-up-icon">&#x2B50;</div>
+            <div class="level-up-icon">⭐</div>
             <div class="level-up-text">
                 <div class="level-up-title">LEVEL UP!</div>
                 <div class="level-up-level">Level ${newLevel}</div>
-                <div class="level-up-rank">${title}</div>
+                ${titleTransitionHtml}
+                ${streakHtml}
+                ${statsHtml}
             </div>
         </div>
     `;
 
     document.body.appendChild(toast);
+
+    // Trigger all the celebration effects!
+    playLevelUpSound();
+    createGlowRings();
+    triggerVictoryAnimation();
+    triggerXPBarRainbow();
+
+    // Check for newly unlocked animations
+    if (previousLevel) {
+        checkNewAnimationUnlocks(previousLevel, newLevel);
+    }
 
     // Add level-up animation to the badge
     const levelBadge = document.getElementById('level-badge');
@@ -31700,11 +32268,23 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
                     // Delay level-up toast to appear after points toast
                     const delayMs = (result.milestonesUnlocked?.length || 0) * 500 + 1000;
                     setTimeout(() => {
-                        showLevelUpToast(newLevelData.level, getLevelTitle(newLevelData.level));
+                        showLevelUpToast(
+                            newLevelData.level,
+                            getLevelTitle(newLevelData.level),
+                            previousLevel,
+                            newLifetimePoints,
+                            result.currentStreak || 0
+                        );
                     }, delayMs);
                 } else {
                     // Store level-up to show when user returns to home screen
-                    pendingLevelUp = { level: newLevelData.level, title: getLevelTitle(newLevelData.level) };
+                    pendingLevelUp = { 
+                        level: newLevelData.level, 
+                        title: getLevelTitle(newLevelData.level),
+                        previousLevel: previousLevel,
+                        lifetimePoints: newLifetimePoints,
+                        currentStreak: result.currentStreak || 0
+                    };
                 }
             }
 
@@ -31773,11 +32353,23 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
                     // Delay level-up toast to appear after points toast
                     const delayMs = (result.milestonesUnlocked?.length || 0) * 500 + 1000;
                     setTimeout(() => {
-                        showLevelUpToast(newLevelData.level, getLevelTitle(newLevelData.level));
+                        showLevelUpToast(
+                            newLevelData.level,
+                            getLevelTitle(newLevelData.level),
+                            previousLevel,
+                            newLifetimePoints,
+                            result.currentStreak || 0
+                        );
                     }, delayMs);
                 } else {
                     // Store level-up to show when user returns to home screen
-                    pendingLevelUp = { level: newLevelData.level, title: getLevelTitle(newLevelData.level) };
+                    pendingLevelUp = { 
+                        level: newLevelData.level, 
+                        title: getLevelTitle(newLevelData.level),
+                        previousLevel: previousLevel,
+                        lifetimePoints: newLifetimePoints,
+                        currentStreak: result.currentStreak || 0
+                    };
                 }
             }
 
@@ -36126,21 +36718,267 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         };
 
-        // Tap reaction
+        // Animation unlock system - animations unlocked at specific levels
+        const ANIMATION_UNLOCKS = [
+            // Basic animations - unlocked early
+            { name: 'wave', displayName: 'Wave', unlockLevel: 1, icon: '👋', category: 'greetings' },
+            { name: 'look', displayName: 'Look Around', unlockLevel: 1, icon: '👀', category: 'reactions' },
+
+            // Celebration animations
+            { name: 'victory', displayName: 'Victory', unlockLevel: 5, icon: '🏆', category: 'celebrations' },
+            { name: 'jump', displayName: 'Jump', unlockLevel: 8, icon: '⬆️', category: 'celebrations' },
+            { name: 'celebrate', displayName: 'Celebrate', unlockLevel: 12, icon: '🎉', category: 'celebrations' },
+            { name: 'cheer', displayName: 'Cheer', unlockLevel: 15, icon: '📣', category: 'celebrations' },
+
+            // Exercise animations
+            { name: 'squat', displayName: 'Squat', unlockLevel: 10, icon: '🏋️', category: 'exercise' },
+            { name: 'pushup', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
+            { name: 'push-up', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
+            { name: 'lunge', displayName: 'Lunge', unlockLevel: 20, icon: '🦵', category: 'exercise' },
+            { name: 'situp', displayName: 'Sit-Up', unlockLevel: 25, icon: '🔄', category: 'exercise' },
+            { name: 'sit-up', displayName: 'Sit-Up', unlockLevel: 25, icon: '🔄', category: 'exercise' },
+            { name: 'crunch', displayName: 'Crunch', unlockLevel: 25, icon: '🔄', category: 'exercise' },
+            { name: 'burpee', displayName: 'Burpee', unlockLevel: 30, icon: '🔥', category: 'exercise' },
+            { name: 'jumping', displayName: 'Jumping Jacks', unlockLevel: 18, icon: '⭐', category: 'exercise' },
+
+            // Pose animations
+            { name: 'flex', displayName: 'Flex', unlockLevel: 20, icon: '💪', category: 'poses' },
+            { name: 'strong', displayName: 'Strong Pose', unlockLevel: 35, icon: '🦾', category: 'poses' },
+            { name: 'pose', displayName: 'Pose', unlockLevel: 25, icon: '📸', category: 'poses' },
+            { name: 'muscle', displayName: 'Muscle Pose', unlockLevel: 40, icon: '💪', category: 'poses' },
+            { name: 'power', displayName: 'Power Pose', unlockLevel: 50, icon: '⚡', category: 'poses' },
+
+            // Dance animations
+            { name: 'dance', displayName: 'Dance', unlockLevel: 30, icon: '💃', category: 'dance' },
+            { name: 'hip', displayName: 'Hip Hop', unlockLevel: 45, icon: '🎵', category: 'dance' },
+            { name: 'groove', displayName: 'Groove', unlockLevel: 55, icon: '🎶', category: 'dance' },
+
+            // Special animations - high level
+            { name: 'backflip', displayName: 'Backflip', unlockLevel: 60, icon: '🤸', category: 'special' },
+            { name: 'flip', displayName: 'Flip', unlockLevel: 60, icon: '🤸', category: 'special' },
+            { name: 'spin', displayName: 'Spin', unlockLevel: 70, icon: '🌀', category: 'special' },
+            { name: 'champion', displayName: 'Champion', unlockLevel: 80, icon: '🏅', category: 'special' },
+            { name: 'legend', displayName: 'Legend Pose', unlockLevel: 99, icon: '👑', category: 'special' },
+        ];
+
+        // Expose ANIMATION_UNLOCKS globally for use by checkNewAnimationUnlocks
+        window.ANIMATION_UNLOCKS = ANIMATION_UNLOCKS;
+
+        // Get user's current level for animation unlocks
+        function getCurrentUserLevel() {
+            const levelEl = document.getElementById('tamagotchi-level');
+            return levelEl ? parseInt(levelEl.textContent) || 1 : 1;
+        }
+
+        // Check if an animation is unlocked for current user
+        function isAnimationUnlocked(animName) {
+            const level = getCurrentUserLevel();
+            const unlock = ANIMATION_UNLOCKS.find(a =>
+                animName.toLowerCase().includes(a.name.toLowerCase())
+            );
+            return unlock ? level >= unlock.unlockLevel : true; // Unknown animations are unlocked
+        }
+
+        // Get unlock info for an animation
+        function getAnimationUnlockInfo(animName) {
+            return ANIMATION_UNLOCKS.find(a =>
+                animName.toLowerCase().includes(a.name.toLowerCase())
+            );
+        }
+
+        // Get all unlocked animations from available animations
+        function getUnlockedAnimations(availableAnimations) {
+            const level = getCurrentUserLevel();
+            return availableAnimations.filter(animName => {
+                const unlock = getAnimationUnlockInfo(animName);
+                return unlock ? level >= unlock.unlockLevel : true;
+            });
+        }
+
+        // Store available animations when model loads
+        let shaziAvailableAnimations = [];
+
+        // Stop any playing animation and return to static stance
+        function stopAnimation() {
+            const mv = document.getElementById('tamagotchi-model');
+            if (mv) {
+                mv.pause();
+                mv.currentTime = 0;
+            }
+        }
+
+        // Play a specific animation
+        function playAnimation(animName, returnToStatic = true) {
+            const mv = document.getElementById('tamagotchi-model');
+            if (!mv || !mv.availableAnimations?.length) return false;
+
+            const anim = mv.availableAnimations.find(a =>
+                a.toLowerCase().includes(animName.toLowerCase())
+            );
+
+            if (anim && isAnimationUnlocked(anim)) {
+                mv.animationName = anim;
+                mv.play();
+
+                if (returnToStatic) {
+                    // Return to static stance after animation
+                    setTimeout(() => {
+                        mv.pause();
+                    }, 3000);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        // Build and show animation selector UI
+        function showAnimationSelector() {
+            const mv = document.getElementById('tamagotchi-model');
+            if (!mv) return;
+
+            // Wait for animations to be available
+            if (!mv.availableAnimations?.length) {
+                showToast('Animations loading...');
+                return;
+            }
+
+            const level = getCurrentUserLevel();
+            const available = mv.availableAnimations;
+
+            // Group animations by category
+            const categories = {};
+            available.forEach(animName => {
+                const unlock = getAnimationUnlockInfo(animName);
+                if (unlock) {
+                    if (!categories[unlock.category]) {
+                        categories[unlock.category] = [];
+                    }
+                    categories[unlock.category].push({
+                        name: animName,
+                        ...unlock,
+                        isUnlocked: level >= unlock.unlockLevel
+                    });
+                }
+            });
+
+            // Also add unknown animations
+            available.forEach(animName => {
+                if (!getAnimationUnlockInfo(animName)) {
+                    if (!categories['other']) categories['other'] = [];
+                    categories['other'].push({
+                        name: animName,
+                        displayName: animName,
+                        unlockLevel: 1,
+                        icon: '🎬',
+                        category: 'other',
+                        isUnlocked: true
+                    });
+                }
+            });
+
+            const categoryNames = {
+                'greetings': '👋 Greetings',
+                'reactions': '👀 Reactions',
+                'celebrations': '🎉 Celebrations',
+                'exercise': '🏋️ Exercise',
+                'poses': '💪 Poses',
+                'dance': '💃 Dance',
+                'special': '⭐ Special',
+                'other': '🎬 Other'
+            };
+
+            let html = `
+                <div class="animation-selector-backdrop" onclick="closeAnimationSelector()"></div>
+                <div class="animation-selector-modal">
+                    <div class="animation-selector-header">
+                        <h3>Shazie's Moves</h3>
+                        <span class="animation-selector-close" onclick="closeAnimationSelector()">&times;</span>
+                    </div>
+                    <div class="animation-selector-content">
+            `;
+
+            const categoryOrder = ['greetings', 'reactions', 'celebrations', 'exercise', 'poses', 'dance', 'special', 'other'];
+
+            categoryOrder.forEach(cat => {
+                if (categories[cat]?.length) {
+                    html += `<div class="animation-category">
+                        <div class="animation-category-title">${categoryNames[cat] || cat}</div>
+                        <div class="animation-grid">`;
+
+                    categories[cat].forEach(anim => {
+                        if (anim.isUnlocked) {
+                            html += `
+                                <div class="animation-item unlocked" onclick="playAnimationFromSelector('${anim.name}')">
+                                    <span class="animation-icon">${anim.icon}</span>
+                                    <span class="animation-name">${anim.displayName}</span>
+                                </div>`;
+                        } else {
+                            html += `
+                                <div class="animation-item locked">
+                                    <span class="animation-icon">🔒</span>
+                                    <span class="animation-name">${anim.displayName}</span>
+                                    <span class="animation-unlock-level">Lvl ${anim.unlockLevel}</span>
+                                </div>`;
+                        }
+                    });
+
+                    html += `</div></div>`;
+                }
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+
+            // Create container
+            let container = document.getElementById('animation-selector-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'animation-selector-container';
+                document.body.appendChild(container);
+            }
+            container.innerHTML = html;
+            container.style.display = 'block';
+
+            // Log available animations for debugging
+            console.log('Available animations:', available);
+        }
+
+        function closeAnimationSelector() {
+            const container = document.getElementById('animation-selector-container');
+            if (container) {
+                container.style.display = 'none';
+            }
+        }
+
+        function playAnimationFromSelector(animName) {
+            playAnimation(animName, true);
+            closeAnimationSelector();
+        }
+
+        // Tap reaction - only play unlocked random animations
         document.getElementById('tamagotchi-model')?.addEventListener('click', () => {
             const mv = document.getElementById('tamagotchi-model');
             if (!mv || !mv.availableAnimations || !mv.availableAnimations.length) return;
-            
-            // Random reaction
-            const reactions = mv.availableAnimations.filter(a => a.toLowerCase().includes('victory') || a.toLowerCase().includes('look') || a.toLowerCase().includes('wave') || a.toLowerCase().includes('jump'));
-            const reactAnim = reactions[Math.floor(Math.random() * reactions.length)] || mv.availableAnimations[0];
-            
-            mv.animationName = reactAnim;
-            
-            setTimeout(() => {
-                const idleAnim = mv.availableAnimations.find(a => a.toLowerCase().includes('idle') || a.toLowerCase().includes('stand')) || mv.availableAnimations[0];
-                mv.animationName = idleAnim;
-            }, 3000);
+
+            // Get unlocked reaction animations
+            const reactionTypes = ['victory', 'look', 'wave', 'jump', 'celebrate', 'cheer'];
+            const unlockedReactions = mv.availableAnimations.filter(a => {
+                const isReaction = reactionTypes.some(r => a.toLowerCase().includes(r));
+                return isReaction && isAnimationUnlocked(a);
+            });
+
+            if (unlockedReactions.length > 0) {
+                const reactAnim = unlockedReactions[Math.floor(Math.random() * unlockedReactions.length)];
+                mv.animationName = reactAnim;
+                mv.play();
+
+                // Return to static stance after animation plays
+                setTimeout(() => {
+                    mv.pause();
+                }, 3000);
+            }
         });
     })();
     </script>
