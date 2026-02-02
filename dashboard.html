@@ -9283,6 +9283,7 @@ async function startCustomBuilderWorkout() {
     
     customWorkout.exercises.forEach((ex, idx) => {
         const card = document.createElement('div');
+        card.className = 'exercise-logger-card'; // Required for addWorkoutSet to find parent
         card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
 
         const videoUrl = findVideoMatch(ex.name);
@@ -9956,19 +9957,19 @@ function viewWorkoutHistoryDetail(date) {
             </div>
         </div>
 
-        <!-- Combined Share Section - One Card with Both Options -->
+        <!-- Earn Points by Sharing Section -->
         <div id="share-section-combined" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin: 10px 0;">
-            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 5px;">Share & Earn Points!</div>
-            <p style="font-size: 0.85rem; opacity: 0.85; margin-bottom: 15px;">Share your win to earn points</p>
+            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 5px;">Earn Points by Sharing</div>
+            <p style="font-size: 0.85rem; opacity: 0.85; margin-bottom: 15px;">Take a photo and share to earn up to 2 points!</p>
 
             <!-- Two share buttons side by side -->
             <div style="display: flex; gap: 10px;">
-                <button onclick="captureAndShareWorkout()" style="flex: 1; background: white; color: var(--primary); padding: 14px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                <button onclick="shareWorkoutToStory()" style="flex: 1; background: white; color: var(--primary); padding: 14px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px;">
                     <span style="font-size: 1.3rem;">📸</span>
-                    <span style="font-size: 0.85rem;">Story</span>
+                    <span style="font-size: 0.85rem;">Post Story</span>
                     <span style="font-size: 0.7rem; opacity: 0.7;">+1 point</span>
                 </button>
-                <button onclick="openQuickShareModal()" style="flex: 1; background: linear-gradient(135deg, #f59e0b, #eab308); color: white; padding: 14px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                <button onclick="shareWorkoutToGroupChat()" style="flex: 1; background: linear-gradient(135deg, #f59e0b, #eab308); color: white; padding: 14px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px;">
                     <span style="font-size: 1.3rem;">💬</span>
                     <span style="font-size: 0.85rem;">Group Chat</span>
                     <span style="font-size: 0.7rem; opacity: 0.9;">+1 point</span>
@@ -9978,8 +9979,8 @@ function viewWorkoutHistoryDetail(date) {
 
         <!-- Points Awarded Confirmation (shown after sharing) -->
         <div id="workout-points-awarded" style="display: none; background: rgba(68, 255, 68, 0.2); padding: 12px 20px; border-radius: 14px; margin: 10px 0; border: 2px solid rgba(68, 255, 68, 0.5);">
-            <div style="font-size: 1.1rem; font-weight: 700;">+1 Point Earned!</div>
-            <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 3px;">Workout verified successfully</div>
+            <div id="workout-points-text" style="font-size: 1.1rem; font-weight: 700;">+1 Point Earned!</div>
+            <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 3px;">Workout shared successfully</div>
         </div>
 
         <!-- Small spacer before DONE button -->
@@ -10506,7 +10507,7 @@ function viewWorkoutHistoryDetail(date) {
                         <span style="font-size: 1.5rem;">🏆</span>
                         <div>
                             <div style="font-weight: 700; color: #92400e; font-size: 0.95rem;">Winner Gets 200 Points!</div>
-                            <div style="font-size: 0.8rem; color: #a16207;">That's a free week of premium access</div>
+                            <div style="font-size: 0.8rem; color: #a16207;">Massive XP boost for leveling up</div>
                         </div>
                     </div>
                 </div>
@@ -11233,22 +11234,15 @@ function viewWorkoutHistoryDetail(date) {
                     </div>
                 </div>
 
-                <!-- Progress to Free Week -->
+                <!-- Level Progress -->
                 <div style="margin-bottom: 15px;">
                     <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;">
-                        <span>Progress to Free Week</span>
-                        <span id="profile-points-progress-text">0/200</span>
+                        <span>Points drive your level</span>
+                        <span id="profile-points-progress-text">Keep earning!</span>
                     </div>
-                    <div style="background: rgba(255,255,255,0.2); border-radius: 8px; height: 10px; overflow: hidden;">
-                        <div id="profile-points-progress-fill" style="background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%); height: 100%; border-radius: 8px; transition: width 0.3s ease; width: 0%;"></div>
+                    <div style="text-align: center; font-size: 0.85rem; opacity: 0.9; margin-top: 8px;">
+                        Earn points by logging photo meals and sharing workouts
                     </div>
-                </div>
-
-                <button id="profile-redeem-btn" onclick="redeemPointsForFreeWeek()" style="width: 100%; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); color: white; padding: 12px 20px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: none; transition: all 0.2s ease;">
-                    &#x1F381; Redeem Free Week (200 pts)
-                </button>
-                <div id="profile-redeem-info" style="text-align: center; font-size: 0.85rem; opacity: 0.9;">
-                    Earn 200 points to unlock a free week!
                 </div>
             </div>
         </div>
@@ -18641,22 +18635,46 @@ function removeDropRow(btn) {
 }
 
 let workoutTimerInterval;
+let workoutStartTime = null; // Store actual start timestamp for accurate timing
+
 function startWorkoutTimer() {
-    let sec = 0;
+    workoutStartTime = Date.now(); // Record when workout actually started
     const display = document.getElementById('workout-timer');
     clearInterval(workoutTimerInterval);
-    workoutTimerInterval = setInterval(() => {
-        sec++;
-        const m = Math.floor(sec / 60).toString().padStart(2, '0');
-        const s = (sec % 60).toString().padStart(2, '0');
+
+    function updateTimer() {
+        if (!workoutStartTime) return;
+        // Calculate actual elapsed time from start timestamp
+        const elapsed = Math.floor((Date.now() - workoutStartTime) / 1000);
+        const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        const s = (elapsed % 60).toString().padStart(2, '0');
         display.innerText = `${m}:${s}`;
-    }, 1000);
+    }
+
+    // Update immediately, then every second
+    updateTimer();
+    workoutTimerInterval = setInterval(updateTimer, 1000);
 }
+
+// Update timer when app becomes visible again (handles background/screen-off throttling)
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && workoutStartTime) {
+        // Force update the timer display when returning from background
+        const display = document.getElementById('workout-timer');
+        if (display) {
+            const elapsed = Math.floor((Date.now() - workoutStartTime) / 1000);
+            const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const s = (elapsed % 60).toString().padStart(2, '0');
+            display.innerText = `${m}:${s}`;
+        }
+    }
+});
 
 async function finishWorkout() {
     clearInterval(workoutTimerInterval);
     clearAllYogaTimers(); // Clear any running yoga timers
     const duration = document.getElementById('workout-timer').innerText;
+    workoutStartTime = null; // Reset start time
     document.getElementById('success-duration').innerText = duration;
 
     // Save logic
@@ -18758,19 +18776,22 @@ async function finishWorkout() {
                      dbHelpers.personalBests.checkAndUpdatePBs(user.id, setsToSave)
                  ]);
 
-                 // Log any new personal bests
+                 // Log any new personal bests and award points
                  if (newPBs && newPBs.length > 0) {
                      console.log("🏆 New Personal Bests:", newPBs);
+
+                     // Award 1 point per personal best
+                     try {
+                         for (const pb of newPBs) {
+                             const pbRefId = `pb_${pb.exercise}_${pb.type}_${Date.now()}`;
+                             await awardPointsForPersonalBest(pbRefId, pb);
+                         }
+                     } catch (pbPointsError) {
+                         console.error("Error awarding PB points:", pbPointsError);
+                     }
                  }
 
-                 // Award points for completing workout
-                 try {
-                     // Use today's date as workout reference ID
-                     const workoutRefId = new Date().toISOString().split('T')[0] + '_' + Date.now();
-                     await awardPointsForWorkout(workoutRefId);
-                 } catch(pointsError) {
-                     console.error("Error awarding points (workout still saved):", pointsError);
-                 }
+                 // Additional points can be earned by sharing workout (story or group chat)
 
                  // Update avatar fitness state after workout
                  try {
@@ -18922,6 +18943,7 @@ function quitWorkout() {
     if(confirm('Quit workout? Your progress won\'t be saved.')) {
         console.log("Quitting workout...");
         clearInterval(workoutTimerInterval);
+        workoutStartTime = null; // Reset start time
         clearAllYogaTimers(); // Clear any running yoga timers
         document.getElementById('view-active-workout').style.display = 'none'; // Force hide
         closeSuccessScreen();
@@ -18935,6 +18957,15 @@ function closeSuccessScreen() {
     renderMovementView();
     // Clear the stored workout data
     completedWorkoutDataForShare = null;
+
+    // Reset workout points tracking for next workout
+    if (typeof workoutPointsEarnedThisSession !== 'undefined') {
+        workoutPointsEarnedThisSession = { story: false, groupchat: false };
+    }
+
+    // Hide the points awarded confirmation
+    const pointsAwarded = document.getElementById('workout-points-awarded');
+    if (pointsAwarded) pointsAwarded.style.display = 'none';
 
     // Refresh challenges to show any updated points
     if (typeof loadHomeChallenges === 'function') {
@@ -22751,26 +22782,33 @@ function openAsClient() {
             <!-- SLIDE 11: EARN FREE WEEKS (was slide 8) -->
             <div class="wizard-slide" id="slide-11" style="display:none;">
                  <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🎁</div>
-                <h3 style="text-align:center; margin-bottom:15px;">Earn Free Weeks</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">Two ways to get free access!</p>
+                <h3 style="text-align:center; margin-bottom:15px;">Earn Points & Level Up</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Earn points to level up and unlock rewards!</p>
                 <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:15px;">
                     <li style="display:flex; align-items:flex-start; gap:15px; background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:15px; border:1px solid #bbf7d0; border-radius:12px;">
-                        <span style="font-size:2rem;">🤝</span>
+                        <span style="font-size:2rem;">📸</span>
                         <div>
-                            <strong style="color:#166534;">Refer Friends</strong><br>
-                            <span style="font-size:0.85rem; color:#166534;">When a friend joins, you BOTH get <strong>2 weeks free!</strong></span>
+                            <strong style="color:#166534;">Log Photo Meals</strong><br>
+                            <span style="font-size:0.85rem; color:#166534;">Take a photo of your meal to earn <strong>1 point</strong></span>
                         </div>
                     </li>
                     <li style="display:flex; align-items:flex-start; gap:15px; background:linear-gradient(135deg, #fef3c7, #fde68a); padding:15px; border:1px solid #fcd34d; border-radius:12px;">
-                        <span style="font-size:2rem;">⭐</span>
+                        <span style="font-size:2rem;">💪</span>
                         <div>
-                            <strong style="color:#92400e;">Earn Points</strong><br>
-                            <span style="font-size:0.85rem; color:#92400e;">Collect <strong>200 points</strong> = 1 free week. Keep showing up!</span>
+                            <strong style="color:#92400e;">Share Workouts</strong><br>
+                            <span style="font-size:0.85rem; color:#92400e;">Post to your story or group chat for <strong>1 point each</strong></span>
+                        </div>
+                    </li>
+                    <li style="display:flex; align-items:flex-start; gap:15px; background:linear-gradient(135deg, #e0e7ff, #c7d2fe); padding:15px; border:1px solid #a5b4fc; border-radius:12px;">
+                        <span style="font-size:2rem;">🤝</span>
+                        <div>
+                            <strong style="color:#4338ca;">Refer Friends</strong><br>
+                            <span style="font-size:0.85rem; color:#4338ca;">When a friend joins, you BOTH get <strong>2 weeks free!</strong></span>
                         </div>
                     </li>
                 </ul>
                 <div style="display:flex; justify-content:center; margin-top:15px;">
-                    <span style="background:#f1f5f9; padding:8px 16px; border-radius:20px; font-size:0.85rem; color:#64748b;">Find referrals in <strong>Friends > Invite</strong></span>
+                    <span style="background:#f1f5f9; padding:8px 16px; border-radius:20px; font-size:0.85rem; color:#64748b;">Points = XP for leveling up!</span>
                 </div>
             </div>
 
@@ -32390,6 +32428,62 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
     }
 }
 
+// Award points for achieving a personal best (1 point per PB)
+async function awardPointsForPersonalBest(pbRefId, pbData) {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return null;
+
+        // Get current points to track level before awarding
+        let pointsBefore = null;
+        try {
+            pointsBefore = await window.db?.points?.getPoints(session.user.id);
+        } catch (e) {
+            console.log('Could not get previous points');
+        }
+        const previousLevel = pointsBefore ? calculateLevel(pointsBefore.lifetime_points || 0).level : 1;
+
+        // Award point for personal best (type: 'personal_best')
+        const result = await window.db?.points?.awardPoints(
+            session.user.id,
+            'personal_best',
+            pbRefId,
+            {
+                exercise: pbData.exercise,
+                pbType: pbData.type, // 'weight' or 'reps'
+                value: pbData.value,
+                improvement: pbData.improvement
+            }
+        );
+
+        if (result?.success) {
+            // Show PB points toast
+            const pbTypeText = pbData.type === 'weight' ? 'weight' : 'reps';
+            showToast(`+1 point for ${pbData.exercise} PB! (${pbTypeText})`, 'success');
+
+            // Check for level-up
+            const newLifetimePoints = result.newLifetimePoints || (pointsBefore?.lifetime_points || 0) + 1;
+            const newLevelData = calculateLevel(newLifetimePoints);
+            if (newLevelData.level > previousLevel) {
+                setTimeout(() => {
+                    showLevelUpToast(
+                        newLevelData.level,
+                        getLevelTitle(newLevelData.level),
+                        previousLevel,
+                        newLifetimePoints,
+                        result.currentStreak || 0
+                    );
+                }, 1500);
+            }
+        }
+
+        return result;
+    } catch (error) {
+        console.error('Error awarding points for personal best:', error);
+        return null;
+    }
+}
+
 // ==========================================
 // WORKOUT PHOTO VERIFICATION FUNCTIONS
 // ==========================================
@@ -32398,12 +32492,15 @@ let capturedWorkoutFile = null;
 let workoutPhotoBase64 = null;
 
 // Capture workout completion screen and share to story
-async function captureAndShareWorkout() {
-    const captureArea = document.getElementById('workout-capture-area');
-    if (!captureArea) {
-        console.error('Capture area not found');
-        // Fall back to just awarding the point
-        awardWorkoutPoint();
+// Track which share type we're doing (story or groupchat)
+let pendingWorkoutShareType = null;
+let workoutPointsEarnedThisSession = { story: false, groupchat: false };
+
+// Share workout to story - requires camera photo
+function shareWorkoutToStory() {
+    // Check if already earned story point this session
+    if (workoutPointsEarnedThisSession.story) {
+        showToast('You already earned the story point for this workout!', 'info');
         return;
     }
 
@@ -32414,31 +32511,181 @@ async function captureAndShareWorkout() {
     const totalMinutes = mins + (secs / 60);
 
     if (totalMinutes < 15) {
-        alert(`Workouts need to be at least 15 minutes to earn points. Your workout was ${mins} minute${mins !== 1 ? 's' : ''} ${secs} second${secs !== 1 ? 's' : ''}. Keep going next time!`);
+        showToast(`Workout must be 15+ minutes for points (yours: ${mins}m ${secs}s)`, 'error');
         return;
     }
 
-    try {
-        // Capture the workout completion area
-        const canvas = await html2canvas(captureArea, {
-            backgroundColor: '#8fbc8f',
-            scale: 2,
-            useCORS: true,
-            logging: false
-        });
+    pendingWorkoutShareType = 'story';
 
-        // Convert canvas to blob
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-        const workoutFile = new File([blob], 'workout-complete.png', { type: 'image/png' });
-
-        // Convert to base64 for preview
-        const base64Data = canvas.toDataURL('image/png');
-
-        // Open story upload modal with the captured image pre-loaded
-        openStoryUploadWithImage(workoutFile, base64Data, 'Workout completed! 💪');
-    } catch (error) {
-        console.error('Error capturing/sharing workout screen:', error);
+    // Create/get hidden camera input and trigger it
+    let cameraInput = document.getElementById('workout-photo-input');
+    if (!cameraInput) {
+        cameraInput = document.createElement('input');
+        cameraInput.type = 'file';
+        cameraInput.id = 'workout-photo-input';
+        cameraInput.accept = 'image/*';
+        cameraInput.capture = 'environment';
+        cameraInput.style.display = 'none';
+        cameraInput.onchange = handleWorkoutPhotoCapture;
+        document.body.appendChild(cameraInput);
     }
+    cameraInput.click();
+}
+
+// Share workout to group chat - requires camera photo
+function shareWorkoutToGroupChat() {
+    // Check if already earned groupchat point this session
+    if (workoutPointsEarnedThisSession.groupchat) {
+        showToast('You already earned the group chat point for this workout!', 'info');
+        return;
+    }
+
+    // Check workout duration first - must be at least 15 minutes for points
+    const successDurationEl = document.getElementById('success-duration');
+    const durationText = successDurationEl ? successDurationEl.textContent : '00:00';
+    const [mins, secs] = durationText.split(':').map(Number);
+    const totalMinutes = mins + (secs / 60);
+
+    if (totalMinutes < 15) {
+        showToast(`Workout must be 15+ minutes for points (yours: ${mins}m ${secs}s)`, 'error');
+        return;
+    }
+
+    pendingWorkoutShareType = 'groupchat';
+
+    // Create/get hidden camera input and trigger it
+    let cameraInput = document.getElementById('workout-photo-input');
+    if (!cameraInput) {
+        cameraInput = document.createElement('input');
+        cameraInput.type = 'file';
+        cameraInput.id = 'workout-photo-input';
+        cameraInput.accept = 'image/*';
+        cameraInput.capture = 'environment';
+        cameraInput.style.display = 'none';
+        cameraInput.onchange = handleWorkoutPhotoCapture;
+        document.body.appendChild(cameraInput);
+    }
+    cameraInput.click();
+}
+
+// Handle the captured workout photo
+async function handleWorkoutPhotoCapture(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Reset input for next use
+    event.target.value = '';
+
+    // Check photo timestamp (must be recent - within last 5 minutes)
+    const photoTimestamp = new Date().toISOString();
+
+    // Convert to base64
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const base64Data = e.target.result;
+        const base64Only = base64Data.split(',')[1];
+
+        try {
+            // Generate photo hash for duplicate detection
+            const photoHash = await window.db?.points?.generatePhotoHash(base64Data);
+
+            if (pendingWorkoutShareType === 'story') {
+                // Store data and open story upload modal
+                window.pendingStoryFile = file;
+                window.pendingStoryBase64 = base64Data;
+                window.pendingStoryType = 'image';
+                window.pendingWorkoutPhotoData = {
+                    timestamp: photoTimestamp,
+                    hash: photoHash,
+                    forPoints: true
+                };
+
+                // Open story modal
+                const modal = document.getElementById('story-upload-modal');
+                if (modal) modal.style.display = 'flex';
+
+                // Set preview
+                const previewImage = document.getElementById('story-preview-image');
+                const previewVideo = document.getElementById('story-preview-video');
+                const placeholder = document.getElementById('story-preview-placeholder');
+
+                if (previewImage) {
+                    previewImage.src = base64Data;
+                    previewImage.style.display = 'block';
+                }
+                if (previewVideo) previewVideo.style.display = 'none';
+                if (placeholder) placeholder.style.display = 'none';
+
+                // Set caption
+                const captionInput = document.getElementById('story-caption-input');
+                if (captionInput) captionInput.value = 'Just finished my workout! 💪';
+
+                // Enable upload button
+                const uploadBtn = document.getElementById('story-upload-button');
+                if (uploadBtn) {
+                    uploadBtn.disabled = false;
+                    uploadBtn.style.opacity = '1';
+                }
+            } else if (pendingWorkoutShareType === 'groupchat') {
+                // Award point first, then go to group chat selection
+                await awardWorkoutSharePoint('groupchat', photoTimestamp, photoHash);
+
+                // Go to quick share modal for group chat selection
+                openQuickShareModal();
+            }
+        } catch (error) {
+            console.error('Error processing workout photo:', error);
+            showToast('Failed to process photo. Please try again.', 'error');
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+// Award point for workout share
+async function awardWorkoutSharePoint(shareType, photoTimestamp, photoHash) {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return null;
+
+        const workoutRefId = `workout_${shareType}_${Date.now()}`;
+        const result = await window.db?.points?.awardPoints(
+            session.user.id,
+            'workout',
+            workoutRefId,
+            { photoTimestamp, aiConfidence: 'high', photoHash }
+        );
+
+        if (result?.success) {
+            // Mark as earned for this session
+            if (shareType === 'story') {
+                workoutPointsEarnedThisSession.story = true;
+            } else {
+                workoutPointsEarnedThisSession.groupchat = true;
+            }
+
+            // Update UI
+            const pointsAwarded = document.getElementById('workout-points-awarded');
+            const pointsText = document.getElementById('workout-points-text');
+            if (pointsAwarded) {
+                pointsAwarded.style.display = 'block';
+                const totalPoints = (workoutPointsEarnedThisSession.story ? 1 : 0) + (workoutPointsEarnedThisSession.groupchat ? 1 : 0);
+                if (pointsText) {
+                    pointsText.textContent = `+${totalPoints} Point${totalPoints > 1 ? 's' : ''} Earned!`;
+                }
+            }
+
+            showToast(`+1 point for ${shareType === 'story' ? 'story' : 'group chat'} share!`, 'success');
+            return result;
+        }
+    } catch (error) {
+        console.error('Error awarding workout share point:', error);
+    }
+    return null;
+}
+
+// Legacy function - kept for backward compatibility but now uses new flow
+async function captureAndShareWorkout() {
+    shareWorkoutToStory();
 }
 
 // Open story upload modal with a pre-loaded image
@@ -32605,14 +32852,19 @@ async function uploadStory() {
 
         if (storyError) throw storyError;
 
-        // Analyze story for workout points (in background)
-        if (window.pendingStoryType === 'image') {
+        // Check if this is a verified workout share (from the workout success screen)
+        if (window.pendingWorkoutPhotoData?.forPoints) {
+            // Award workout point with verified photo data
+            await awardWorkoutSharePoint('story', window.pendingWorkoutPhotoData.timestamp, window.pendingWorkoutPhotoData.hash);
+            window.pendingWorkoutPhotoData = null; // Clear after use
+        } else if (window.pendingStoryType === 'image') {
+            // Regular story - analyze for workout points (in background)
             analyzeStoryForPoints(userId, storyData.id, window.pendingStoryBase64);
         }
 
         // Close modal and show success
         closeStoryUploadModal();
-        alert('Story shared! 🎉');
+        showToast('Story shared! 🎉', 'success');
 
         // Refresh stories if on home tab
         if (typeof loadStories === 'function') {
@@ -33044,14 +33296,8 @@ async function submitSimpleMealText() {
             notes: nutritionData.notes || description
         });
 
-        // Award points
-        if (savedMeal && savedMeal[0]?.id) {
-            try {
-                await awardPointsForMeal(savedMeal[0].id, new Date().toISOString(), nutritionData.confidence, null);
-            } catch (pointsError) {
-                console.error('Error awarding points:', pointsError);
-            }
-        }
+        // Text input meals don't earn points - only photo meals get points
+        // This encourages users to take photos for verified logging
 
         // Refresh display
         await recalculateDailyNutrition();
@@ -33396,19 +33642,8 @@ async function submitMealDescription() {
             mealDescription: description
         });
 
-        // Award points (text/voice input gets slightly fewer points but still counts)
-        if (savedMeal && savedMeal[0]?.id) {
-            try {
-                await awardPointsForMeal(
-                    savedMeal[0].id,
-                    new Date().toISOString(),
-                    nutritionData.confidence,
-                    null // No photo hash for text input
-                );
-            } catch (pointsError) {
-                console.error('Error awarding points:', pointsError);
-            }
-        }
+        // Text/voice input meals don't earn points - only photo meals get points
+        // This encourages users to take photos for verified logging
 
         // Recalculate daily nutrition
         await recalculateDailyNutrition();
