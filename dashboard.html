@@ -3796,6 +3796,11 @@ async function applyAppTheme(themeKey) {
             // Check if essential quiz data is missing and trigger onboarding wizard
             await checkAndTriggerOnboarding();
 
+            // Load character colors from database
+            if (typeof window.loadCharacterColorsFromDb === 'function') {
+                window.loadCharacterColorsFromDb();
+            }
+
             // Update dashboard workout card to show today's recommended workout
             if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
 
@@ -15096,7 +15101,7 @@ function switchView(id) {
 
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
-const totalWizardSteps = 14;
+const totalWizardSteps = 15;
 
 // Workout Calendar State
 let wizardTrainingFrequency = 0;
@@ -15256,8 +15261,13 @@ function updateWizardUI() {
         else d.classList.remove('active');
     });
 
-    // 3. Update final slide with hormone profile goal
+    // 3. Initialize character customization on slide 14
     if(currentWizardStep === 14) {
+        initializeCharacterCustomization();
+    }
+
+    // 4. Update final slide with hormone profile goal
+    if(currentWizardStep === 15) {
         const hormoneProfile = sessionStorage.getItem('userResult') || 'CORTISOL';
         const goalDiv = document.getElementById('wizard-hormone-goal');
         if(goalDiv) {
@@ -15954,6 +15964,168 @@ function wizardPrev() {
     }
 }
 
+// ========== CHARACTER CUSTOMIZATION FUNCTIONS ==========
+
+// Temporary storage for wizard character colors
+let wizardCharacterColors = null;
+let wizardCharacterInitialized = false;
+
+function initializeCharacterCustomization() {
+    // Only initialize once
+    if (wizardCharacterInitialized) {
+        return;
+    }
+
+    // Wait for CHARACTER_COLOR_OPTIONS to be available
+    if (!window.CHARACTER_COLOR_OPTIONS) {
+        console.log('Waiting for CHARACTER_COLOR_OPTIONS to load...');
+        setTimeout(initializeCharacterCustomization, 100);
+        return;
+    }
+
+    wizardCharacterInitialized = true;
+
+    // Get saved colors or defaults
+    wizardCharacterColors = window.getCharacterColors ? window.getCharacterColors() : {
+        hair: '#4a3728',
+        shirt: '#7BA883',
+        shorts: '#2C3E50',
+        shoes: '#1a202c',
+        skin: '#DEB887'
+    };
+
+    const colorOptions = window.CHARACTER_COLOR_OPTIONS;
+
+    // Render color buttons for each category
+    renderColorButtons('hair', colorOptions.hair, 'wizard-hair-colors');
+    renderColorButtons('shirt', colorOptions.shirt, 'wizard-shirt-colors');
+    renderColorButtons('shorts', colorOptions.shorts, 'wizard-shorts-colors');
+    renderColorButtons('shoes', colorOptions.shoes, 'wizard-shoes-colors');
+    renderColorButtons('skin', colorOptions.skin, 'wizard-skin-colors');
+
+    // Initialize the preview model with current colors
+    const previewModel = document.getElementById('wizard-preview-model');
+    if (previewModel) {
+        previewModel.addEventListener('load', function onLoad() {
+            applyWizardCharacterColors();
+            previewModel.removeEventListener('load', onLoad);
+        }, { once: true });
+
+        // If model is already loaded, apply colors immediately
+        if (previewModel.model) {
+            applyWizardCharacterColors();
+        }
+    }
+}
+
+function renderColorButtons(category, colors, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    colors.forEach(color => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'color-btn';
+        btn.dataset.category = category;
+        btn.dataset.color = color.hex;
+        btn.title = color.name;
+        btn.style.cssText = `
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 3px solid ${wizardCharacterColors[category] === color.hex ? 'var(--primary)' : '#e2e8f0'};
+            background: ${color.hex};
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: ${wizardCharacterColors[category] === color.hex ? '0 0 0 2px var(--primary)' : 'none'};
+        `;
+
+        btn.addEventListener('click', () => selectWizardColor(category, color.hex));
+        btn.addEventListener('mouseenter', () => {
+            btn.style.transform = 'scale(1.1)';
+        });
+        btn.addEventListener('mouseleave', () => {
+            btn.style.transform = 'scale(1)';
+        });
+
+        container.appendChild(btn);
+    });
+}
+
+function selectWizardColor(category, hex) {
+    wizardCharacterColors[category] = hex;
+
+    // Update button styles
+    const container = document.getElementById(`wizard-${category}-colors`);
+    if (container) {
+        container.querySelectorAll('.color-btn').forEach(btn => {
+            const isSelected = btn.dataset.color === hex;
+            btn.style.border = `3px solid ${isSelected ? 'var(--primary)' : '#e2e8f0'}`;
+            btn.style.boxShadow = isSelected ? '0 0 0 2px var(--primary)' : 'none';
+        });
+    }
+
+    // Apply colors to preview model
+    applyWizardCharacterColors();
+}
+
+async function applyWizardCharacterColors() {
+    const previewModel = document.getElementById('wizard-preview-model');
+    if (!previewModel || !previewModel.model) return;
+
+    const modelName = 'shazylvl1.glb';
+    const mapping = window.CHARACTER_MATERIAL_MAPPINGS?.[modelName];
+
+    if (!mapping) {
+        console.log('No material mapping found for wizard preview model');
+        return;
+    }
+
+    const model = previewModel.model;
+    if (!model.materials) return;
+
+    // Apply each color to corresponding material
+    for (const [part, config] of Object.entries(mapping)) {
+        const colorKey = part.replace('Secondary', '').replace('Accent', '');
+        const colorHex = wizardCharacterColors[colorKey];
+
+        if (colorHex && model.materials[config.index]) {
+            try {
+                const material = model.materials[config.index];
+                const rgb = hexToRgbWizard(colorHex);
+                if (rgb && material.pbrMetallicRoughness) {
+                    material.pbrMetallicRoughness.setBaseColorFactor([
+                        rgb.r / 255,
+                        rgb.g / 255,
+                        rgb.b / 255,
+                        1
+                    ]);
+                }
+            } catch (e) {
+                console.log('Could not apply wizard color to', part, e);
+            }
+        }
+    }
+}
+
+function hexToRgbWizard(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+function saveWizardCharacterColors() {
+    if (wizardCharacterColors && window.saveCharacterColors) {
+        window.saveCharacterColors(wizardCharacterColors);
+        console.log('Character colors saved from wizard:', wizardCharacterColors);
+    }
+}
+
 // ========== WORKOUT CALENDAR FUNCTIONS ==========
 
 function selectTrainingFrequency(num) {
@@ -16499,6 +16671,19 @@ async function finishOnboarding() {
     localStorage.setItem('onboardingComplete', 'true');
     localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
     document.getElementById('onboarding-wizard').style.display = 'none';
+
+    // Save character customization colors
+    if (typeof saveWizardCharacterColors === 'function') {
+        saveWizardCharacterColors();
+    }
+
+    // Apply character colors to the main dashboard model
+    const mainModel = document.getElementById('tamagotchi-model');
+    if (mainModel && window.applyCharacterColors) {
+        setTimeout(() => {
+            window.applyCharacterColors(mainModel, mainModel.getAttribute('src'));
+        }, 500);
+    }
 
     // Apply gender-specific UI changes NOW that gender is selected
     if (typeof applyGenderSpecificUI === 'function') {
@@ -22501,7 +22686,7 @@ function openAsClient() {
         <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative; flex-shrink: 0;">
             <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
             <div class="wizard-progress" style="display:flex; justify-content:center; gap:6px; margin-bottom:15px;">
-                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
             <h2 id="wizard-title" style="margin:0; color:var(--primary);">Let's Align Your Body</h2>
         </div>
@@ -22932,8 +23117,67 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 14: READY (was slide 11) -->
-            <div class="wizard-slide" id="slide-14" style="display:none; text-align:center;">
+            <!-- SLIDE 14: CHARACTER CUSTOMIZATION -->
+            <div class="wizard-slide" id="slide-14" style="display:none;">
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">✨</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Customize Your Character</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Make Shazie your own! Choose your favorite colors.</p>
+
+                <!-- Character Preview -->
+                <div id="wizard-character-preview" style="width: 100%; height: 180px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 20px; position: relative;">
+                    <model-viewer
+                        id="wizard-preview-model"
+                        src="assets/shazylvl1.glb"
+                        camera-controls
+                        disable-zoom
+                        disable-pan
+                        auto-rotate
+                        rotation-intensity="0.5"
+                        shadow-intensity="1"
+                        exposure="0.9"
+                        camera-orbit="0deg 85deg 20m"
+                        field-of-view="30deg"
+                        style="width: 100%; height: 100%; --poster-color: transparent;"
+                        interaction-prompt="none">
+                    </model-viewer>
+                </div>
+
+                <!-- Color Options -->
+                <div id="wizard-color-options" style="max-height: 250px; overflow-y: auto; padding-right: 5px;">
+                    <!-- Hair Color -->
+                    <div class="color-option-group" style="margin-bottom: 15px;">
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Hair Color</label>
+                        <div id="wizard-hair-colors" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                    </div>
+
+                    <!-- Shirt Color -->
+                    <div class="color-option-group" style="margin-bottom: 15px;">
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Shirt Color</label>
+                        <div id="wizard-shirt-colors" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                    </div>
+
+                    <!-- Shorts Color -->
+                    <div class="color-option-group" style="margin-bottom: 15px;">
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Shorts Color</label>
+                        <div id="wizard-shorts-colors" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                    </div>
+
+                    <!-- Shoes Color -->
+                    <div class="color-option-group" style="margin-bottom: 15px;">
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Shoes Color</label>
+                        <div id="wizard-shoes-colors" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                    </div>
+
+                    <!-- Skin Tone -->
+                    <div class="color-option-group" style="margin-bottom: 10px;">
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Skin Tone</label>
+                        <div id="wizard-skin-colors" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLIDE 15: READY (was slide 14) -->
+            <div class="wizard-slide" id="slide-15" style="display:none; text-align:center;">
                  <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
                 <h3 style="margin-bottom:10px;">You're All Set!</h3>
                 <p style="color:#64748b; margin-bottom:25px;">Your custom plan is ready.</p>
@@ -36936,6 +37180,289 @@ document.addEventListener('DOMContentLoaded', async function() {
             { level: 99, xp: 1605, title: "Legend",    src: "assets/shazie_legend.glb" }
         ];
 
+        // Character material mappings for each level model
+        // Maps body part names to material indices for color customization
+        const CHARACTER_MATERIAL_MAPPINGS = {
+            'shazylvl1.glb': {
+                shirt: { material: 'Material_tripo_part_11', index: 0 },
+                skin: { material: 'Material_tripo_part_12', index: 1 },
+                shoes: { material: 'Material_tripo_part_2', index: 2 },
+                hair: { material: 'Material_tripo_part_5', index: 3 },
+                shorts: { material: 'Material_tripo_part_6', index: 4 }
+            },
+            'shazylvl10.glb': {
+                shirt: { material: 'tripo_part_3', index: 0 },
+                skin: { material: 'tripo_part_5', index: 1 },
+                hair: { material: 'tripo_part_6', index: 2 },
+                shorts: { material: 'tripo_part_8', index: 3 },
+                shoes: { material: 'tripo_part_new_0', index: 4 }
+            },
+            'shazylvl20.glb': {
+                skin: { material: 'tripo_part_8', index: 0 },
+                shoes: { material: 'tripo_part_12', index: 1 },
+                shirt: { material: 'tripo_part_2', index: 2 },
+                hair: { material: 'tripo_part_5', index: 3 },
+                shorts: { material: 'tripo_part_9', index: 5 }
+            },
+            'shazylvl30.glb': {
+                skin: { material: 'tripo_part_13', index: 0 },
+                shoes: { material: 'tripo_part_2.001', index: 1 },
+                hair: { material: 'tripo_part_4', index: 2 },
+                shorts: { material: 'tripo_part_5.001', index: 3 },
+                shirt: { material: 'tripo_part_6.001', index: 4 }
+            },
+            'shazylvl40.glb': {
+                skin: { material: 'tripo_part_10', index: 0 },
+                shoes: { material: 'tripo_part_2.002', index: 1 },
+                shirt: { material: 'tripo_part_3', index: 2 },
+                hair: { material: 'tripo_part_5.002', index: 3 },
+                shorts: { material: 'tripo_part_6.002', index: 4 }
+            },
+            'shazylvl50.glb': {
+                skin: { material: 'tripo_part_11', index: 0 },
+                hair: { material: 'tripo_part_4.001', index: 2 },
+                shirt: { material: 'tripo_part_5.003', index: 3 },
+                shorts: { material: 'tripo_part_new_0_3', index: 5 },
+                shoes: { material: 'tripo_part_new_0_0', index: 4 }
+            },
+            'shazylvl60.glb': {
+                skin: { material: 'tripo_part_18', index: 0 },
+                shoes: { material: 'tripo_part_3.001', index: 1 },
+                shirt: { material: 'tripo_part_7', index: 2 },
+                shorts: { material: 'tripo_part_9.001', index: 3 },
+                hair: { material: 'tripo_part_new_0', index: 4 }
+            },
+            'shazylvl70.glb': {
+                skin: { material: 'tripo_part_0.001', index: 0 },
+                shoes: { material: 'tripo_part_2.003', index: 1 },
+                shorts: { material: 'tripo_part_7.001', index: 2 },
+                hair: { material: 'tripo_part_new_0.001', index: 3 }
+            },
+            'shazylvl80.glb': {
+                skin: { material: 'tripo_part_12.001', index: 0 },
+                shorts: { material: 'tripo_part_15.001', index: 1 },
+                shoes: { material: 'tripo_part_3.002', index: 2 },
+                hair: { material: 'tripo_part_new_0.002', index: 3 }
+            },
+            'shazylvl90.glb': {
+                skin: { material: 'tripo_part_11.001', index: 0 },
+                shoes: { material: 'tripo_part_2.004', index: 1 },
+                shorts: { material: 'tripo_part_7.002', index: 2 },
+                hair: { material: 'tripo_part_new_0.003', index: 3 }
+            },
+            'shazie_legend.glb': {
+                skin: { material: 'tripo_part_13.001', index: 1 },
+                hair: { material: 'tripo_part_17', index: 3 },
+                hairSecondary: { material: 'tripo_part_11.002', index: 0 },
+                shorts: { material: 'tripo_part_15.002', index: 2 },
+                shoes: { material: 'tripo_part_25', index: 5 },
+                shoesAccent: { material: 'tripo_part_2.005', index: 4 }
+            }
+        };
+
+        // Color options for character customization
+        const CHARACTER_COLOR_OPTIONS = {
+            hair: [
+                { name: 'Black', hex: '#1a1a1a' },
+                { name: 'Brown', hex: '#4a3728' },
+                { name: 'Blonde', hex: '#d4a574' },
+                { name: 'Red', hex: '#8b2500' },
+                { name: 'Auburn', hex: '#6b3a2e' },
+                { name: 'Gray', hex: '#808080' },
+                { name: 'Pink', hex: '#ff69b4' },
+                { name: 'Blue', hex: '#4169e1' },
+                { name: 'Purple', hex: '#8b008b' },
+                { name: 'Green', hex: '#228b22' }
+            ],
+            shirt: [
+                { name: 'Green', hex: '#7BA883' },
+                { name: 'Blue', hex: '#4A90D9' },
+                { name: 'Pink', hex: '#D98B9C' },
+                { name: 'Purple', hex: '#9B59B6' },
+                { name: 'Orange', hex: '#E67E22' },
+                { name: 'Red', hex: '#E74C3C' },
+                { name: 'Yellow', hex: '#F1C40F' },
+                { name: 'Black', hex: '#2C3E50' },
+                { name: 'White', hex: '#ECF0F1' },
+                { name: 'Teal', hex: '#16A085' }
+            ],
+            shorts: [
+                { name: 'Black', hex: '#2C3E50' },
+                { name: 'Navy', hex: '#1a365d' },
+                { name: 'Gray', hex: '#718096' },
+                { name: 'Green', hex: '#276749' },
+                { name: 'Blue', hex: '#2b6cb0' },
+                { name: 'Purple', hex: '#6b46c1' },
+                { name: 'Red', hex: '#c53030' },
+                { name: 'Pink', hex: '#d53f8c' }
+            ],
+            shoes: [
+                { name: 'White', hex: '#f7fafc' },
+                { name: 'Black', hex: '#1a202c' },
+                { name: 'Gray', hex: '#718096' },
+                { name: 'Red', hex: '#e53e3e' },
+                { name: 'Blue', hex: '#3182ce' },
+                { name: 'Green', hex: '#38a169' },
+                { name: 'Pink', hex: '#ed64a6' },
+                { name: 'Purple', hex: '#805ad5' }
+            ],
+            skin: [
+                { name: 'Light', hex: '#FFE4C4' },
+                { name: 'Fair', hex: '#FFDAB9' },
+                { name: 'Medium', hex: '#DEB887' },
+                { name: 'Olive', hex: '#C9A86C' },
+                { name: 'Tan', hex: '#CD853F' },
+                { name: 'Brown', hex: '#A0522D' },
+                { name: 'Dark', hex: '#8B4513' },
+                { name: 'Deep', hex: '#654321' }
+            ]
+        };
+
+        // Default character colors
+        const DEFAULT_CHARACTER_COLORS = {
+            hair: '#4a3728',      // Brown
+            shirt: '#7BA883',     // Green
+            shorts: '#2C3E50',    // Black
+            shoes: '#1a202c',     // Black
+            skin: '#DEB887'       // Medium
+        };
+
+        // Get saved character colors or defaults
+        window.getCharacterColors = function() {
+            try {
+                const saved = localStorage.getItem('characterColors');
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+            } catch (e) {
+                console.error('Error loading character colors:', e);
+            }
+            return { ...DEFAULT_CHARACTER_COLORS };
+        };
+
+        // Load character colors from database (call on page load)
+        window.loadCharacterColorsFromDb = async function() {
+            if (!window.currentUser || !window.dbHelpers) return;
+
+            try {
+                const userId = window.currentUser.id || window.currentUser.user_id;
+                const facts = await window.dbHelpers.userFacts.get(userId);
+
+                if (facts?.additional_data?.character_colors) {
+                    const dbColors = facts.additional_data.character_colors;
+                    // Merge with defaults to ensure all keys exist
+                    const mergedColors = { ...DEFAULT_CHARACTER_COLORS, ...dbColors };
+                    localStorage.setItem('characterColors', JSON.stringify(mergedColors));
+                    console.log('Character colors loaded from database:', mergedColors);
+
+                    // Re-apply to model if loaded
+                    const modelViewer = document.getElementById('tamagotchi-model');
+                    if (modelViewer && modelViewer.model) {
+                        window.applyCharacterColors(modelViewer, modelViewer.getAttribute('src'));
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not load character colors from database:', e);
+            }
+        };
+
+        // Save character colors (localStorage and database)
+        window.saveCharacterColors = async function(colors) {
+            try {
+                // Save to localStorage
+                localStorage.setItem('characterColors', JSON.stringify(colors));
+                console.log('Character colors saved to localStorage:', colors);
+
+                // Save to database if user is logged in
+                if (window.currentUser && window.dbHelpers) {
+                    const userId = window.currentUser.id || window.currentUser.user_id;
+                    try {
+                        const existingFacts = await window.dbHelpers.userFacts.get(userId) || {};
+                        const currentAdditional = existingFacts.additional_data || {};
+
+                        await window.dbHelpers.userFacts.upsert(userId, {
+                            additional_data: {
+                                ...currentAdditional,
+                                character_colors: colors
+                            }
+                        });
+                        console.log('Character colors saved to database:', colors);
+                    } catch (dbErr) {
+                        console.warn('Could not save character colors to database:', dbErr);
+                    }
+                }
+            } catch (e) {
+                console.error('Error saving character colors:', e);
+            }
+        };
+
+        // Apply colors to a model-viewer element
+        window.applyCharacterColors = async function(modelViewer, modelSrc) {
+            if (!modelViewer) return;
+
+            const colors = window.getCharacterColors();
+            const modelName = modelSrc ? modelSrc.split('/').pop() : modelViewer.getAttribute('src')?.split('/').pop();
+            const mapping = CHARACTER_MATERIAL_MAPPINGS[modelName];
+
+            if (!mapping) {
+                console.log('No material mapping found for model:', modelName);
+                return;
+            }
+
+            // Wait for model to be loaded
+            if (!modelViewer.model) {
+                await new Promise(resolve => {
+                    modelViewer.addEventListener('load', resolve, { once: true });
+                });
+            }
+
+            const model = modelViewer.model;
+            if (!model || !model.materials) {
+                console.log('Model or materials not available');
+                return;
+            }
+
+            console.log('Applying character colors to', modelName, colors);
+
+            // Apply each color to corresponding material
+            for (const [part, config] of Object.entries(mapping)) {
+                const colorKey = part.replace('Secondary', '').replace('Accent', '');
+                const colorHex = colors[colorKey];
+
+                if (colorHex && model.materials[config.index]) {
+                    try {
+                        const material = model.materials[config.index];
+                        const rgb = hexToRgb(colorHex);
+                        if (rgb && material.pbrMetallicRoughness) {
+                            material.pbrMetallicRoughness.setBaseColorFactor([
+                                rgb.r / 255,
+                                rgb.g / 255,
+                                rgb.b / 255,
+                                1
+                            ]);
+                        }
+                    } catch (e) {
+                        console.log('Could not apply color to', part, e);
+                    }
+                }
+            }
+        };
+
+        // Helper function to convert hex to RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        // Expose material mappings and color options globally
+        window.CHARACTER_MATERIAL_MAPPINGS = CHARACTER_MATERIAL_MAPPINGS;
+        window.CHARACTER_COLOR_OPTIONS = CHARACTER_COLOR_OPTIONS;
+        window.DEFAULT_CHARACTER_COLORS = DEFAULT_CHARACTER_COLORS;
+
         // Function to calculate XP threshold for a specific level based on the app's curve
         // Math.floor(1.3 * Math.pow(level, 1.55))
         function getXPForLevel(lvl) {
@@ -36996,12 +37523,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                         setTimeout(() => modelViewer.style.filter = '', 500);
                     }
 
-                    // Log when new model's animations are loaded
+                    // Log when new model's animations are loaded and apply character colors
                     modelViewer.addEventListener('load', function onModelLoad() {
                         console.log('Model loaded:', currentEvolution.src);
                         console.log('Available animations:', modelViewer.availableAnimations);
+                        // Apply user's custom character colors to the new model
+                        if (window.applyCharacterColors) {
+                            window.applyCharacterColors(modelViewer, currentEvolution.src);
+                        }
                         modelViewer.removeEventListener('load', onModelLoad);
                     }, { once: true });
+                } else {
+                    // Model already loaded, just apply colors if not already done
+                    if (window.applyCharacterColors && modelViewer.model) {
+                        window.applyCharacterColors(modelViewer, currentSrc);
+                    }
                 }
 
                 // Camera distance logic based on level (larger values = smaller character in room)
@@ -37249,7 +37785,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             window.closeAnimationSelector();
         };
 
-        // Listen for initial model load to log available animations
+        // Listen for initial model load to log available animations and apply colors
         const initialModelViewer = document.getElementById('tamagotchi-model');
         if (initialModelViewer) {
             initialModelViewer.addEventListener('load', () => {
@@ -37258,6 +37794,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 // Store animations globally for debugging
                 window.shaziAnimations = initialModelViewer.availableAnimations || [];
+
+                // Apply user's custom character colors to the initial model
+                if (window.applyCharacterColors) {
+                    window.applyCharacterColors(initialModelViewer, initialModelViewer.getAttribute('src'));
+                }
             });
         }
 
