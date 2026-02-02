@@ -36991,14 +36991,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const currentSrc = modelViewer.getAttribute('src');
                 if (currentSrc !== currentEvolution.src) {
                     modelViewer.setAttribute('src', currentEvolution.src);
-                    
+
                     // Trigger "evolution" effect if it actually changed
                     if (currentSrc) {
                         modelViewer.style.filter = 'brightness(3) contrast(1.2)';
                         setTimeout(() => modelViewer.style.filter = '', 500);
                     }
+
+                    // Log when new model's animations are loaded
+                    modelViewer.addEventListener('load', function onModelLoad() {
+                        console.log('Model loaded:', currentEvolution.src);
+                        console.log('Available animations:', modelViewer.availableAnimations);
+                        modelViewer.removeEventListener('load', onModelLoad);
+                    }, { once: true });
                 }
-                
+
                 // Camera distance logic based on level (larger values = smaller character in room)
                 let cameraDist = 22.0;
                 if (level >= 99) cameraDist = 12.0;
@@ -37130,7 +37137,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Wait for animations to be available
             if (!mv.availableAnimations?.length) {
-                showToast('Animations loading...');
+                showToast('Animations loading... Try again in a moment', 'info');
+                // Log debugging info
+                console.log('Model src:', mv.getAttribute('src'));
+                console.log('Model loaded:', mv.loaded);
+                console.log('Available animations:', mv.availableAnimations);
                 return;
             }
 
@@ -37247,6 +37258,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         function playAnimationFromSelector(animName) {
             playAnimation(animName, true);
             closeAnimationSelector();
+        }
+
+        // Listen for initial model load to log available animations
+        const initialModelViewer = document.getElementById('tamagotchi-model');
+        if (initialModelViewer) {
+            initialModelViewer.addEventListener('load', () => {
+                console.log('Initial model loaded:', initialModelViewer.getAttribute('src'));
+                console.log('Available animations:', initialModelViewer.availableAnimations);
+
+                // Store animations globally for debugging
+                window.shaziAnimations = initialModelViewer.availableAnimations || [];
+            });
         }
 
         // Tap reaction - only play unlocked random animations
