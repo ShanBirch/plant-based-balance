@@ -11,6 +11,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 const POINTS_CONFIG = {
   POINTS_PER_MEAL: 1,
   POINTS_PER_WORKOUT: 1,
+  POINTS_PER_PERSONAL_BEST: 1,
   MAX_PHOTO_AGE_MINUTES: 5,
   STREAK_BONUSES: [
     { days: 7, points: 5, label: '7-day streak!' },
@@ -37,11 +38,15 @@ const POINTS_CONFIG = {
 
 interface AwardPointsRequest {
   userId: string;
-  type: 'meal' | 'workout';
+  type: 'meal' | 'workout' | 'personal_best';
   referenceId: string;
   photoTimestamp?: string;  // ISO timestamp from EXIF or file
   aiConfidence?: string;    // 'high', 'medium', 'low'
   photoHash?: string;       // SHA-256 hash for duplicate detection
+  exercise?: string;        // For personal_best: exercise name
+  pbType?: string;          // For personal_best: 'weight' or 'reps'
+  value?: number;           // For personal_best: the new PB value
+  improvement?: number;     // For personal_best: improvement amount
 }
 
 interface PointsResult {
@@ -93,15 +98,18 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
-    if (type !== 'meal' && type !== 'workout') {
+    if (type !== 'meal' && type !== 'workout' && type !== 'personal_best') {
       return new Response(JSON.stringify({
         error: 'Invalid type',
-        message: 'Type must be "meal" or "workout"'
+        message: 'Type must be "meal", "workout", or "personal_best"'
       }), {
         status: 400,
         headers
       });
     }
+
+    // Personal bests don't require photo verification (they're verified by the data itself)
+    const skipPhotoValidation = type === 'personal_best';
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -117,10 +125,10 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // === ANTI-CHEAT CHECKS ===
+    // === ANTI-CHEAT CHECKS (skip for personal_best which is data-verified) ===
 
     // 1. Check AI confidence (reject low confidence)
-    if (aiConfidence === 'low') {
+    if (!skipPhotoValidation && aiConfidence === 'low') {
       return new Response(JSON.stringify({
         success: false,
         error: 'Photo verification failed',
@@ -133,7 +141,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
 
     // 2. Check photo timestamp (must be recent)
-    if (photoTimestamp) {
+    if (!skipPhotoValidation && photoTimestamp) {
       const photoTime = new Date(photoTimestamp).getTime();
       const now = Date.now();
       const ageMinutes = (now - photoTime) / (1000 * 60);
@@ -165,7 +173,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
 
     // 3. Check for duplicate photos
-    if (photoHash) {
+    if (!skipPhotoValidation && photoHash) {
       const { data: existingHash } = await supabase
         .from('photo_hashes')
         .select('id')
@@ -195,9 +203,14 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
 
     // === AWARD POINTS ===
-    const pointsToAward = type === 'meal'
-      ? POINTS_CONFIG.POINTS_PER_MEAL
-      : POINTS_CONFIG.POINTS_PER_WORKOUT;
+    let pointsToAward: number;
+    if (type === 'meal') {
+      pointsToAward = POINTS_CONFIG.POINTS_PER_MEAL;
+    } else if (type === 'workout') {
+      pointsToAward = POINTS_CONFIG.POINTS_PER_WORKOUT;
+    } else {
+      pointsToAward = POINTS_CONFIG.POINTS_PER_PERSONAL_BEST;
+    }
 
     // Get current points record
     const { data: userPoints, error: fetchError } = await supabase
@@ -268,7 +281,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
         userPoints?.longest_meal_streak || 0,
         updateData.meal_streak as number
       );
-    } else {
+    } else if (type === 'workout') {
       const newWorkoutCount = (userPoints?.total_workouts_logged || 0) + 1;
       updateData.total_workouts_logged = newWorkoutCount;
       updateData.last_workout_date = today;
@@ -284,6 +297,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
         updateData.workout_streak as number
       );
     }
+    // personal_best type doesn't update specific counters - just awards points
 
     // Upsert points record
     const { error: updateError } = await supabase
@@ -301,17 +315,23 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
 
     // Log main transaction
+    const transactionType = type === 'meal' ? 'earn_meal' : (type === 'workout' ? 'earn_workout' : 'earn_personal_best');
+    const referenceType = type === 'meal' ? 'meal_log' : (type === 'workout' ? 'workout' : 'personal_best');
+    const description = type === 'personal_best'
+      ? `Earned ${pointsToAward} point for personal best`
+      : `Earned ${pointsToAward} point for ${type}`;
+
     await supabase.from('point_transactions').insert({
       user_id: userId,
-      transaction_type: type === 'meal' ? 'earn_meal' : 'earn_workout',
+      transaction_type: transactionType,
       points_amount: pointsToAward,
       reference_id: referenceId,
-      reference_type: type === 'meal' ? 'meal_log' : 'workout',
-      photo_verified: true,
+      reference_type: referenceType,
+      photo_verified: type !== 'personal_best',
       photo_timestamp: photoTimestamp || null,
-      verification_method: photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none'),
+      verification_method: type === 'personal_best' ? 'data_verified' : (photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none')),
       ai_confidence: aiConfidence || null,
-      description: `Earned ${pointsToAward} point for ${type}`
+      description: description
     });
 
     // Log bonus transaction if applicable
@@ -330,59 +350,63 @@ export default async (request: Request, context: Context): Promise<Response> => 
       user_uuid: userId
     });
 
-    // Check for milestones
+    // Check for milestones (not applicable for personal_best)
     const milestones: Array<{ type: string; label: string; points: number }> = [];
-    const totalCount = type === 'meal'
-      ? updateData.total_meals_logged as number
-      : updateData.total_workouts_logged as number;
 
-    const milestonesToCheck = type === 'meal'
-      ? POINTS_CONFIG.MEAL_MILESTONES
-      : POINTS_CONFIG.WORKOUT_MILESTONES;
+    // Only check meal/workout milestones (personal_best doesn't have count-based milestones)
+    if (type === 'meal' || type === 'workout') {
+      const totalCount = type === 'meal'
+        ? updateData.total_meals_logged as number
+        : updateData.total_workouts_logged as number;
 
-    for (const milestone of milestonesToCheck) {
-      if (totalCount === milestone.count) {
-        // Check if already achieved
-        const { data: existing } = await supabase
-          .from('meal_milestones')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('milestone_type', milestone.type)
-          .single();
+      const milestonesToCheck = type === 'meal'
+        ? POINTS_CONFIG.MEAL_MILESTONES
+        : POINTS_CONFIG.WORKOUT_MILESTONES;
 
-        if (!existing) {
-          // Record milestone
-          await supabase.from('meal_milestones').insert({
-            user_id: userId,
-            milestone_type: milestone.type,
-            milestone_value: milestone.count,
-            points_awarded: milestone.points,
-            achievement_data: { type, count: totalCount }
-          });
+      for (const milestone of milestonesToCheck) {
+        if (totalCount === milestone.count) {
+          // Check if already achieved
+          const { data: existing } = await supabase
+            .from('meal_milestones')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('milestone_type', milestone.type)
+            .single();
 
-          // Award milestone bonus points
-          await supabase.rpc('increment_user_points', {
-            p_user_id: userId,
-            p_amount: milestone.points
-          });
+          if (!existing) {
+            // Record milestone
+            await supabase.from('meal_milestones').insert({
+              user_id: userId,
+              milestone_type: milestone.type,
+              milestone_value: milestone.count,
+              points_awarded: milestone.points,
+              achievement_data: { type, count: totalCount }
+            });
 
-          // Log milestone transaction
-          await supabase.from('point_transactions').insert({
-            user_id: userId,
-            transaction_type: 'bonus_milestone',
-            points_amount: milestone.points,
-            reference_type: 'milestone',
-            description: milestone.label
-          });
+            // Award milestone bonus points
+            await supabase.rpc('increment_user_points', {
+              p_user_id: userId,
+              p_amount: milestone.points
+            });
 
-          milestones.push({
-            type: milestone.type,
-            label: milestone.label,
-            points: milestone.points
-          });
+            // Log milestone transaction
+            await supabase.from('point_transactions').insert({
+              user_id: userId,
+              transaction_type: 'bonus_milestone',
+              points_amount: milestone.points,
+              reference_type: 'milestone',
+              description: milestone.label
+            });
+
+            milestones.push({
+              type: milestone.type,
+              label: milestone.label,
+              points: milestone.points
+            });
+          }
         }
       }
-    }
+    } // End of meal/workout milestone check
 
     // If any milestones were unlocked, update challenge points again
     if (milestones.length > 0) {

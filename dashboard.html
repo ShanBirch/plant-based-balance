@@ -18776,13 +18776,22 @@ async function finishWorkout() {
                      dbHelpers.personalBests.checkAndUpdatePBs(user.id, setsToSave)
                  ]);
 
-                 // Log any new personal bests
+                 // Log any new personal bests and award points
                  if (newPBs && newPBs.length > 0) {
                      console.log("🏆 New Personal Bests:", newPBs);
+
+                     // Award 1 point per personal best
+                     try {
+                         for (const pb of newPBs) {
+                             const pbRefId = `pb_${pb.exercise}_${pb.type}_${Date.now()}`;
+                             await awardPointsForPersonalBest(pbRefId, pb);
+                         }
+                     } catch (pbPointsError) {
+                         console.error("Error awarding PB points:", pbPointsError);
+                     }
                  }
 
-                 // Points are now earned by sharing workout (story or group chat)
-                 // No automatic points for just finishing a workout
+                 // Additional points can be earned by sharing workout (story or group chat)
 
                  // Update avatar fitness state after workout
                  try {
@@ -32415,6 +32424,62 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
         return result;
     } catch (error) {
         console.error('Error awarding points for workout:', error);
+        return null;
+    }
+}
+
+// Award points for achieving a personal best (1 point per PB)
+async function awardPointsForPersonalBest(pbRefId, pbData) {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return null;
+
+        // Get current points to track level before awarding
+        let pointsBefore = null;
+        try {
+            pointsBefore = await window.db?.points?.getPoints(session.user.id);
+        } catch (e) {
+            console.log('Could not get previous points');
+        }
+        const previousLevel = pointsBefore ? calculateLevel(pointsBefore.lifetime_points || 0).level : 1;
+
+        // Award point for personal best (type: 'personal_best')
+        const result = await window.db?.points?.awardPoints(
+            session.user.id,
+            'personal_best',
+            pbRefId,
+            {
+                exercise: pbData.exercise,
+                pbType: pbData.type, // 'weight' or 'reps'
+                value: pbData.value,
+                improvement: pbData.improvement
+            }
+        );
+
+        if (result?.success) {
+            // Show PB points toast
+            const pbTypeText = pbData.type === 'weight' ? 'weight' : 'reps';
+            showToast(`+1 point for ${pbData.exercise} PB! (${pbTypeText})`, 'success');
+
+            // Check for level-up
+            const newLifetimePoints = result.newLifetimePoints || (pointsBefore?.lifetime_points || 0) + 1;
+            const newLevelData = calculateLevel(newLifetimePoints);
+            if (newLevelData.level > previousLevel) {
+                setTimeout(() => {
+                    showLevelUpToast(
+                        newLevelData.level,
+                        getLevelTitle(newLevelData.level),
+                        previousLevel,
+                        newLifetimePoints,
+                        result.currentStreak || 0
+                    );
+                }, 1500);
+            }
+        }
+
+        return result;
+    } catch (error) {
+        console.error('Error awarding points for personal best:', error);
         return null;
     }
 }
