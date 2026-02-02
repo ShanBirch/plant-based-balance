@@ -37108,26 +37108,38 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Play a specific animation
         function playAnimation(animName, returnToStatic = true) {
             const mv = document.getElementById('tamagotchi-model');
-            if (!mv || !mv.availableAnimations?.length) return false;
+            if (!mv) return false;
 
-            const anim = mv.availableAnimations.find(a =>
-                a.toLowerCase().includes(animName.toLowerCase())
-            );
-
-            if (anim && isAnimationUnlocked(anim)) {
-                mv.animationName = anim;
-                mv.play();
-
-                if (returnToStatic) {
-                    // Return to static stance after animation
-                    setTimeout(() => {
-                        mv.animationName = null;
-                        mv.removeAttribute('animation-name');
-                    }, 3000);
+            // Check if unlocked based on level
+            if (!isAnimationUnlocked(animName)) {
+                const unlock = getAnimationUnlockInfo(animName);
+                if (unlock) {
+                    showToast(`Unlock at Level ${unlock.unlockLevel}`, 'info');
                 }
-                return true;
+                return false;
             }
-            return false;
+
+            // Try to find matching animation in availableAnimations if they exist
+            let targetAnim = animName;
+            if (mv.availableAnimations?.length) {
+                const found = mv.availableAnimations.find(a =>
+                    a.toLowerCase().includes(animName.toLowerCase())
+                );
+                if (found) targetAnim = found;
+            }
+
+            // Set and play the animation
+            mv.animationName = targetAnim;
+            mv.play();
+
+            if (returnToStatic) {
+                // Return to static stance after animation
+                setTimeout(() => {
+                    mv.animationName = null;
+                    mv.removeAttribute('animation-name');
+                }, 3500);
+            }
+            return true;
         }
 
         // Build and show animation selector UI
@@ -37135,48 +37147,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             const mv = document.getElementById('tamagotchi-model');
             if (!mv) return;
 
-            // Wait for animations to be available
-            if (!mv.availableAnimations?.length) {
-                showToast('Animations loading... Try again in a moment', 'info');
-                // Log debugging info
-                console.log('Model src:', mv.getAttribute('src'));
-                console.log('Model loaded:', mv.loaded);
-                console.log('Available animations:', mv.availableAnimations);
-                return;
-            }
-
             const level = getCurrentUserLevel();
-            const available = mv.availableAnimations;
 
-            // Group animations by category
+            // Use ANIMATION_UNLOCKS directly - don't rely on availableAnimations detection
+            // The model has animations, we just show what's possible based on level
             const categories = {};
-            available.forEach(animName => {
-                const unlock = getAnimationUnlockInfo(animName);
-                if (unlock) {
-                    if (!categories[unlock.category]) {
-                        categories[unlock.category] = [];
-                    }
-                    categories[unlock.category].push({
-                        name: animName,
-                        ...unlock,
-                        isUnlocked: level >= unlock.unlockLevel
-                    });
+            ANIMATION_UNLOCKS.forEach(unlock => {
+                if (!categories[unlock.category]) {
+                    categories[unlock.category] = [];
                 }
-            });
-
-            // Also add unknown animations
-            available.forEach(animName => {
-                if (!getAnimationUnlockInfo(animName)) {
-                    if (!categories['other']) categories['other'] = [];
-                    categories['other'].push({
-                        name: animName,
-                        displayName: animName,
-                        unlockLevel: 1,
-                        icon: '🎬',
-                        category: 'other',
-                        isUnlocked: true
-                    });
-                }
+                categories[unlock.category].push({
+                    name: unlock.name,
+                    displayName: unlock.displayName,
+                    icon: unlock.icon,
+                    unlockLevel: unlock.unlockLevel,
+                    category: unlock.category,
+                    isUnlocked: level >= unlock.unlockLevel
+                });
             });
 
             const categoryNames = {
@@ -37186,8 +37173,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 'exercise': '🏋️ Exercise',
                 'poses': '💪 Poses',
                 'dance': '💃 Dance',
-                'special': '⭐ Special',
-                'other': '🎬 Other'
+                'special': '⭐ Special'
             };
 
             let html = `
@@ -37200,7 +37186,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <div class="animation-selector-content">
             `;
 
-            const categoryOrder = ['greetings', 'reactions', 'celebrations', 'exercise', 'poses', 'dance', 'special', 'other'];
+            const categoryOrder = ['greetings', 'reactions', 'celebrations', 'exercise', 'poses', 'dance', 'special'];
 
             categoryOrder.forEach(cat => {
                 if (categories[cat]?.length) {
@@ -37243,9 +37229,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             container.innerHTML = html;
             container.style.display = 'block';
-
-            // Log available animations for debugging
-            console.log('Available animations:', available);
         }
 
         function closeAnimationSelector() {
