@@ -8,7 +8,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
 // Points configuration for story posts
 const STORY_POINTS_CONFIG = {
-  POINTS_PER_WORKOUT_STORY: 2, // More points than regular workout log to encourage sharing
+  POINTS_PER_WORKOUT_STORY: 1, // 1 point for sharing workout story
+  MAX_STORY_POINTS_PER_DAY: 1, // Only 1 story point allowed per day
 };
 
 interface AnalyzeStoryRequest {
@@ -110,6 +111,30 @@ export default async (request: Request, context: Context): Promise<Response> => 
       return new Response(JSON.stringify({
         success: false,
         error: 'Points already awarded for this story',
+        pointsAwarded: 0
+      }), {
+        status: 200,
+        headers
+      });
+    }
+
+    // Check daily limit - only 1 story point per day
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayIso = today.toISOString();
+
+    const { count: storyPointsToday } = await supabase
+      .from('point_transactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('transaction_type', 'earn_story')
+      .gte('created_at', todayIso);
+
+    if (storyPointsToday && storyPointsToday >= STORY_POINTS_CONFIG.MAX_STORY_POINTS_PER_DAY) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Daily story points limit reached',
+        message: 'You can only earn 1 point from story posts per day. Keep posting though - your friends love seeing your progress!',
         pointsAwarded: 0
       }), {
         status: 200,
@@ -344,7 +369,7 @@ Be encouraging and inclusive - yoga, meditation, and workout completion screens 
       points_amount: pointsToAward,
       reference_id: storyId,
       reference_type: 'story',
-      description: `Earned ${pointsToAward} points for workout story (${analysisData.workoutType})`,
+      description: `Earned ${pointsToAward} point for workout story (${analysisData.workoutType})`,
       verification_method: 'ai_verified',
       ai_confidence: analysisData.confidence,
     });
@@ -369,7 +394,7 @@ Be encouraging and inclusive - yoga, meditation, and workout completion screens 
       detectedElements: analysisData.detectedElements,
       pointsAwarded: pointsToAward,
       newTotal: newCurrentPoints,
-      message: `Great workout post! You earned ${pointsToAward} points!`
+      message: `Great workout post! You earned ${pointsToAward} point!`
     }), {
       status: 200,
       headers
