@@ -10511,7 +10511,7 @@ function viewWorkoutHistoryDetail(date) {
         </button>
         <button class="nav-item" onclick="switchAppTab('meals', this)">
             <svg viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
-            <span>Meals</span>
+            <span>Nutrition</span>
         </button>
         <button class="nav-item" onclick="switchAppTab('movement-tab', this)">
             <svg viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22 14.86 20.57 16.29 22 18.43 19.86 19.86 21.29 21.29 19.86l-1.43-1.43L21.29 17l-1.43-1.43L18.43 17l-3.57-3.57z"/></svg>
@@ -12739,13 +12739,8 @@ function _switchAppTabReal(tabName, btn) {
         }
 
         if (!document.querySelector('#meals-content-container .view-section.active')) {
-            // For non-quiz users, default to store; for quiz users, default to today
-            const access = typeof checkMealPlanAccess === 'function' ? checkMealPlanAccess() : { hasAccess: true };
-            if (!access.hasAccess) {
-                switchWeek('meal-plan-store');
-            } else {
-                switchWeek('today');
-            }
+            // Default to calorie tracker for all users
+            switchWeek('calorie-tracker');
         } else if (document.getElementById('today').classList.contains('active')) {
             renderTodayMeals(); // Refresh today view if active
         }
@@ -14954,7 +14949,7 @@ function initializeMealPlanView() {
                 // Hide everything except Calorie Tracker
                 if (text.includes('calorie')) {
                     pill.style.display = '';
-                    pill.classList.remove('active');
+                    pill.classList.add('active'); // Make calorie tracker active by default
                 } else if (pill.id !== 'browse-plans-pill') {
                     // Hide Today, Week 1-4, Dining Out, Shopping List
                     pill.style.display = 'none';
@@ -14965,29 +14960,24 @@ function initializeMealPlanView() {
             if (!document.getElementById('browse-plans-pill')) {
                 const browsePill = document.createElement('button');
                 browsePill.id = 'browse-plans-pill';
-                browsePill.className = 'pill-btn active';
+                browsePill.className = 'pill-btn'; // Not active by default
                 browsePill.style.cssText = 'background: var(--secondary); color: white; font-weight: 600;';
                 browsePill.textContent = '🛒 Browse Plans';
                 browsePill.onclick = function() { switchWeek('meal-plan-store', this); };
                 // Insert at the beginning
                 navPills.insertBefore(browsePill, navPills.firstChild);
             } else {
-                // Ensure it's active
-                document.getElementById('browse-plans-pill').classList.add('active');
+                // Don't make it active - calorie tracker is default now
+                document.getElementById('browse-plans-pill').classList.remove('active');
             }
         }
 
-        // Show store section
-        if (storeSection) {
-            // First hide all view sections
-            document.querySelectorAll('#meals-content-container .view-section').forEach(el => {
-                el.classList.remove('active');
-                el.style.display = '';
-            });
-            // Then show the store
-            storeSection.classList.add('active');
-            renderMealPlanStore();
-        }
+        // Default to calorie tracker (not store) for non-meal-plan users
+        // The store is still accessible via Browse Plans pill
+        document.querySelectorAll('#meals-content-container .view-section').forEach(el => {
+            el.classList.remove('active');
+            el.style.display = '';
+        });
     } else {
         // User has meal plan access - show full navigation
         if (navPills) {
