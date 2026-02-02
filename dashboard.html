@@ -2292,21 +2292,22 @@ async function applyAppTheme(themeKey) {
     /* Animation button on Tamagotchi widget */
     .animation-trigger-btn {
         position: absolute;
-        bottom: 85px;
+        bottom: 15px;
         right: 15px;
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.25);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.4);
         border-radius: 50%;
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         z-index: 10;
         transition: all 0.2s ease;
-        font-size: 1.2rem;
+        font-size: 1.3rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     }
 
     .animation-trigger-btn:hover {
@@ -37142,8 +37143,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             return true;
         }
 
-        // Build and show animation selector UI
-        function showAnimationSelector() {
+        // Build and show animation selector UI (exposed to window for onclick)
+        window.showAnimationSelector = function() {
             const mv = document.getElementById('tamagotchi-model');
             if (!mv) return;
 
@@ -37231,17 +37232,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             container.style.display = 'block';
         }
 
-        function closeAnimationSelector() {
+        window.closeAnimationSelector = function() {
             const container = document.getElementById('animation-selector-container');
             if (container) {
                 container.style.display = 'none';
             }
-        }
+        };
 
-        function playAnimationFromSelector(animName) {
+        window.playAnimationFromSelector = function(animName) {
             playAnimation(animName, true);
-            closeAnimationSelector();
-        }
+            window.closeAnimationSelector();
+        };
 
         // Listen for initial model load to log available animations
         const initialModelViewer = document.getElementById('tamagotchi-model');
