@@ -9248,15 +9248,19 @@ async function startCustomBuilderWorkout() {
     const user = window.currentUser;
     if (user) {
         try {
-            await dbHelpers.workouts.saveCustomWorkout(user.id, workoutName, {
+            const savedWorkout = await dbHelpers.workouts.saveCustomWorkout(user.id, workoutName, {
                 exercises: customWorkoutSelection,
                 date: new Date().toISOString()
             });
+            // Track the workout ID so any added exercises get saved back
+            window.currentCustomWorkoutId = savedWorkout?.id || null;
+            window.currentWorkoutName = workoutName;
             // Refresh the cache
             const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
             window.savedWorkoutsCache = savedWorkouts;
         } catch(e) {
             console.error("Failed to auto-save workout:", e);
+            window.currentCustomWorkoutId = null;
         }
     }
 
@@ -18278,6 +18282,9 @@ function hideAllAppViews() {
 async function startActiveWorkout(id, forcedDayIndex = null) {
     const program = WORKOUT_DB[id];
 
+    // Clear custom workout tracking (this is a program workout, not custom)
+    window.currentCustomWorkoutId = null;
+
     // Get correct day schedule & Preload History
     const user = window.currentUser;
     let dayIndex = 0;
@@ -18763,6 +18770,37 @@ async function finishWorkout() {
              await Promise.all(setsToSave.map(s => dbHelpers.workouts.createHistory(user.id, s)));
              console.log("✅ Workout saved to DB");
 
+             // Update custom workout template with any added exercises
+             if (window.currentCustomWorkoutId) {
+                 try {
+                     // Collect all exercise names from the DOM (includes added exercises)
+                     const allExercises = [];
+                     const exerciseCards = document.querySelectorAll('#workout-exercises-list .exercise-logger-card');
+                     exerciseCards.forEach(card => {
+                         const name = card.getAttribute('data-exercise-name');
+                         if (name && !allExercises.includes(name)) {
+                             allExercises.push(name);
+                         }
+                     });
+
+                     // Update the custom workout template with all exercises
+                     if (allExercises.length > 0) {
+                         await dbHelpers.workouts.updateCustomWorkout(window.currentCustomWorkoutId, {
+                             exercises: allExercises,
+                             date: new Date().toISOString(),
+                             lastUsed: new Date().toISOString()
+                         });
+                         console.log("✅ Custom workout template updated with exercises:", allExercises);
+
+                         // Refresh the cache
+                         const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
+                         window.savedWorkoutsCache = savedWorkouts;
+                     }
+                 } catch (updateError) {
+                     console.error("Error updating custom workout template:", updateError);
+                 }
+             }
+
              // Update cache if it exists
              if (window.workoutHistoryCache) {
                  window.workoutHistoryCache.push(...setsToSave);
@@ -18944,6 +18982,7 @@ function quitWorkout() {
         console.log("Quitting workout...");
         clearInterval(workoutTimerInterval);
         workoutStartTime = null; // Reset start time
+        window.currentCustomWorkoutId = null; // Reset custom workout tracking
         clearAllYogaTimers(); // Clear any running yoga timers
         document.getElementById('view-active-workout').style.display = 'none'; // Force hide
         closeSuccessScreen();
@@ -18957,6 +18996,9 @@ function closeSuccessScreen() {
     renderMovementView();
     // Clear the stored workout data
     completedWorkoutDataForShare = null;
+
+    // Reset custom workout tracking for next workout
+    window.currentCustomWorkoutId = null;
 
     // Reset workout points tracking for next workout
     if (typeof workoutPointsEarnedThisSession !== 'undefined') {
@@ -20619,6 +20661,9 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
         console.error('Workout not found:', workoutId);
         return;
     }
+
+    // Clear custom workout tracking (this is a library workout, not custom)
+    window.currentCustomWorkoutId = null;
 
     // Store current workout key for customizations
     window.currentWorkoutKey = `${categoryKey}/${subcategoryKey}/${workoutId}`;
@@ -29407,7 +29452,11 @@ updateCoachUI();
         const saved = window.savedWorkoutsCache || [];
         const workout = saved.find(w => w.id === id);
         if(!workout) return;
-        
+
+        // Track current custom workout ID so we can update it later with added exercises
+        window.currentCustomWorkoutId = id;
+        window.currentWorkoutName = workout.template_name || 'Custom Workout';
+
         // Map DB format to Player format
         // workout.template_data.exercises is array of strings (names)
         const exerciseNames = workout.template_data?.exercises || [];
@@ -29478,6 +29527,12 @@ updateCoachUI();
         hideAllAppViews();
         document.getElementById('view-active-workout').style.display = 'block';
         window.activeWorkoutSessions = customWorkout;
+
+        // Start the workout timer
+        startWorkoutTimer();
+
+        // Push navigation state for Android back button
+        pushNavigationState('view-active-workout', () => quitWorkout());
     }
 
     async function showWorkoutHistoryDetail(dateStr) {
