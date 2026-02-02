@@ -37899,46 +37899,46 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
 
         // Animation unlock system - animations unlocked at specific levels
+        // Names must match (via .includes()) the actual GLB animation names:
+        // Air Squat, Angry, Bicycle Crunch, Boxing, Cartwheel, Defeated, Dismissing Gesture,
+        // Head Gesture, Hip Hop Dancing, Idle, Jumping Jacks, Look Around, Looking Behind,
+        // Looking Down, Mma Kick, Mutant Flexing Muscles, Pistol, Punch Combo, Push Up,
+        // Quick Formal Bow, Situps, Sleeping Idle, Strong Gesture, Victory Idle, Walking
         const ANIMATION_UNLOCKS = [
             // Basic animations - unlocked early
-            { name: 'wave', displayName: 'Wave', unlockLevel: 1, icon: '👋', category: 'greetings' },
-            { name: 'look', displayName: 'Look Around', unlockLevel: 1, icon: '👀', category: 'reactions' },
+            { name: 'Formal Bow', displayName: 'Bow', unlockLevel: 1, icon: '🙇', category: 'greetings' },
+            { name: 'Head Gesture', displayName: 'Wave', unlockLevel: 1, icon: '👋', category: 'greetings' },
+            { name: 'Look Around', displayName: 'Look Around', unlockLevel: 1, icon: '👀', category: 'reactions' },
 
             // Celebration animations
-            { name: 'victory', displayName: 'Victory', unlockLevel: 5, icon: '🏆', category: 'celebrations' },
-            { name: 'jump', displayName: 'Star Jump', unlockLevel: 8, icon: '⬆️', category: 'celebrations' },
-            { name: 'celebrate', displayName: 'Celebrate', unlockLevel: 12, icon: '🎉', category: 'celebrations' },
-            { name: 'cheer', displayName: 'Cheer', unlockLevel: 15, icon: '📣', category: 'celebrations' },
+            { name: 'Victory', displayName: 'Victory', unlockLevel: 5, icon: '🏆', category: 'celebrations' },
+            { name: 'Jumping Jacks', displayName: 'Star Jump', unlockLevel: 8, icon: '⬆️', category: 'celebrations' },
+            { name: 'Cartwheel', displayName: 'Celebrate', unlockLevel: 12, icon: '🎉', category: 'celebrations' },
 
             // Exercise animations
-            { name: 'squat', displayName: 'Squat', unlockLevel: 10, icon: '🏋️', category: 'exercise' },
-            { name: 'pushup', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
-            { name: 'push-up', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
-            { name: 'lunge', displayName: 'Lunge', unlockLevel: 20, icon: '🦵', category: 'exercise' },
-            { name: 'situp', displayName: 'Sit-Up', unlockLevel: 25, icon: '🔄', category: 'exercise' },
-            { name: 'sit-up', displayName: 'Sit-Up', unlockLevel: 25, icon: '🔄', category: 'exercise' },
-            { name: 'crunch', displayName: 'Crunch', unlockLevel: 25, icon: '🔄', category: 'exercise' },
-            { name: 'burpee', displayName: 'Burpee', unlockLevel: 30, icon: '🔥', category: 'exercise' },
-            { name: 'jumping', displayName: 'Jumping Jacks', unlockLevel: 18, icon: '⭐', category: 'exercise' },
+            { name: 'Air Squat', displayName: 'Squat', unlockLevel: 10, icon: '🏋️', category: 'exercise' },
+            { name: 'Push Up', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
+            { name: 'Situps', displayName: 'Sit-Ups', unlockLevel: 20, icon: '🔄', category: 'exercise' },
+            { name: 'Bicycle Crunch', displayName: 'Crunch', unlockLevel: 25, icon: '🔄', category: 'exercise' },
+            { name: 'Boxing', displayName: 'Boxing', unlockLevel: 18, icon: '🥊', category: 'exercise' },
+            { name: 'Mma Kick', displayName: 'Kick', unlockLevel: 22, icon: '🦵', category: 'exercise' },
 
             // Pose animations
-            { name: 'flex', displayName: 'Flex', unlockLevel: 20, icon: '💪', category: 'poses' },
-            { name: 'strong', displayName: 'Strong Pose', unlockLevel: 35, icon: '🦾', category: 'poses' },
-            { name: 'pose', displayName: 'Pose', unlockLevel: 25, icon: '📸', category: 'poses' },
-            { name: 'muscle', displayName: 'Muscle Pose', unlockLevel: 40, icon: '💪', category: 'poses' },
-            { name: 'power', displayName: 'Power Pose', unlockLevel: 50, icon: '⚡', category: 'poses' },
+            { name: 'Flexing Muscles', displayName: 'Flex', unlockLevel: 20, icon: '💪', category: 'poses' },
+            { name: 'Strong Gesture', displayName: 'Strong Pose', unlockLevel: 35, icon: '🦾', category: 'poses' },
 
             // Dance animations
-            { name: 'dance', displayName: 'Dance', unlockLevel: 30, icon: '💃', category: 'dance' },
-            { name: 'hip', displayName: 'Hip Hop', unlockLevel: 45, icon: '🎵', category: 'dance' },
-            { name: 'groove', displayName: 'Groove', unlockLevel: 55, icon: '🎶', category: 'dance' },
+            { name: 'Hip Hop', displayName: 'Hip Hop', unlockLevel: 30, icon: '🎵', category: 'dance' },
 
-            // Special animations - high level
-            { name: 'backflip', displayName: 'Backflip', unlockLevel: 60, icon: '🤸', category: 'special' },
-            { name: 'flip', displayName: 'Flip', unlockLevel: 60, icon: '🤸', category: 'special' },
-            { name: 'spin', displayName: 'Spin', unlockLevel: 70, icon: '🌀', category: 'special' },
-            { name: 'champion', displayName: 'Champion', unlockLevel: 80, icon: '🏅', category: 'special' },
-            { name: 'legend', displayName: 'Legend Pose', unlockLevel: 99, icon: '👑', category: 'special' },
+            // Combat animations
+            { name: 'Punch Combo', displayName: 'Punch Combo', unlockLevel: 25, icon: '👊', category: 'combat' },
+            { name: 'Punch To Elbow', displayName: 'Elbow Strike', unlockLevel: 35, icon: '💥', category: 'combat' },
+            { name: 'Pistol', displayName: 'Pistol', unlockLevel: 40, icon: '🔫', category: 'combat' },
+
+            // Reactions
+            { name: 'Angry', displayName: 'Angry', unlockLevel: 15, icon: '😠', category: 'reactions' },
+            { name: 'Dismissing', displayName: 'Dismiss', unlockLevel: 20, icon: '🙄', category: 'reactions' },
+            { name: 'Defeated', displayName: 'Defeated', unlockLevel: 30, icon: '😔', category: 'reactions' },
         ];
 
         // Expose ANIMATION_UNLOCKS globally for use by checkNewAnimationUnlocks
