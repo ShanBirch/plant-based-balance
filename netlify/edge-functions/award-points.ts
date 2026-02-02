@@ -12,6 +12,8 @@ const POINTS_CONFIG = {
   POINTS_PER_MEAL: 1,
   POINTS_PER_WORKOUT: 1,
   POINTS_PER_PERSONAL_BEST: 1,
+  CALORIE_GOAL_BONUS: 1,        // 1 bonus point for hitting daily calorie goal
+  CALORIE_GOAL_TOLERANCE: 0.10, // 10% tolerance
   MAX_PHOTO_AGE_MINUTES: 5,
   STREAK_BONUSES: [
     { days: 7, points: 5, label: '7-day streak!' },
@@ -38,7 +40,7 @@ const POINTS_CONFIG = {
 
 interface AwardPointsRequest {
   userId: string;
-  type: 'meal' | 'workout' | 'personal_best';
+  type: 'meal' | 'workout' | 'personal_best' | 'calorie_goal_bonus';
   referenceId: string;
   photoTimestamp?: string;  // ISO timestamp from EXIF or file
   aiConfidence?: string;    // 'high', 'medium', 'low'
@@ -47,6 +49,9 @@ interface AwardPointsRequest {
   pbType?: string;          // For personal_best: 'weight' or 'reps'
   value?: number;           // For personal_best: the new PB value
   improvement?: number;     // For personal_best: improvement amount
+  bonusDate?: string;       // For calorie_goal_bonus: the date being awarded (YYYY-MM-DD)
+  totalCalories?: number;   // For calorie_goal_bonus: total calories for the day
+  calorieGoal?: number;     // For calorie_goal_bonus: the calorie goal for the day
 }
 
 interface PointsResult {
@@ -101,18 +106,18 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
-    if (type !== 'meal' && type !== 'workout' && type !== 'personal_best') {
+    if (type !== 'meal' && type !== 'workout' && type !== 'personal_best' && type !== 'calorie_goal_bonus') {
       return new Response(JSON.stringify({
         error: 'Invalid type',
-        message: 'Type must be "meal", "workout", or "personal_best"'
+        message: 'Type must be "meal", "workout", "personal_best", or "calorie_goal_bonus"'
       }), {
         status: 400,
         headers
       });
     }
 
-    // Personal bests don't require photo verification (they're verified by the data itself)
-    const skipPhotoValidation = type === 'personal_best';
+    // Personal bests and calorie goal bonuses don't require photo verification
+    const skipPhotoValidation = type === 'personal_best' || type === 'calorie_goal_bonus';
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -205,6 +210,62 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
+    // === CALORIE GOAL BONUS VALIDATION ===
+    if (type === 'calorie_goal_bonus') {
+      const { bonusDate, totalCalories, calorieGoal } = body;
+
+      // Validate required fields
+      if (!bonusDate || totalCalories === undefined || calorieGoal === undefined) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Missing required fields for calorie goal bonus',
+          required: ['bonusDate', 'totalCalories', 'calorieGoal'],
+          pointsAwarded: 0
+        }), {
+          status: 200,
+          headers
+        });
+      }
+
+      // Verify calories are within 10% tolerance
+      const tolerance = POINTS_CONFIG.CALORIE_GOAL_TOLERANCE;
+      const lowerBound = calorieGoal * (1 - tolerance);
+      const upperBound = calorieGoal * (1 + tolerance);
+
+      if (totalCalories < lowerBound || totalCalories > upperBound) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Calories not within goal range',
+          reason: `Calories (${Math.round(totalCalories)}) must be within 10% of goal (${Math.round(calorieGoal)}). Range: ${Math.round(lowerBound)}-${Math.round(upperBound)}`,
+          pointsAwarded: 0
+        }), {
+          status: 200,
+          headers
+        });
+      }
+
+      // Check if bonus already awarded for this date
+      const { data: existingBonus } = await supabase
+        .from('point_transactions')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('transaction_type', 'calorie_goal_bonus')
+        .eq('reference_id', bonusDate)
+        .single();
+
+      if (existingBonus) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Bonus already awarded',
+          reason: `Calorie goal bonus already awarded for ${bonusDate}`,
+          pointsAwarded: 0
+        }), {
+          status: 200,
+          headers
+        });
+      }
+    }
+
     // === CHECK FOR DOUBLE XP ===
     // Fetch user's double XP status
     const { data: userData } = await supabase
@@ -223,6 +284,8 @@ export default async (request: Request, context: Context): Promise<Response> => 
       basePoints = POINTS_CONFIG.POINTS_PER_MEAL;
     } else if (type === 'workout') {
       basePoints = POINTS_CONFIG.POINTS_PER_WORKOUT;
+    } else if (type === 'calorie_goal_bonus') {
+      basePoints = POINTS_CONFIG.CALORIE_GOAL_BONUS;
     } else {
       basePoints = POINTS_CONFIG.POINTS_PER_PERSONAL_BEST;
     }
@@ -333,11 +396,27 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
 
     // Log main transaction
-    const transactionType = type === 'meal' ? 'earn_meal' : (type === 'workout' ? 'earn_workout' : 'earn_personal_best');
-    const referenceType = type === 'meal' ? 'meal_log' : (type === 'workout' ? 'workout' : 'personal_best');
-    const description = type === 'personal_best'
-      ? `Earned ${pointsToAward} point for personal best`
-      : `Earned ${pointsToAward} point for ${type}`;
+    let transactionType: string;
+    let referenceType: string;
+    let description: string;
+
+    if (type === 'meal') {
+      transactionType = 'earn_meal';
+      referenceType = 'meal_log';
+      description = `Earned ${pointsToAward} point for ${type}`;
+    } else if (type === 'workout') {
+      transactionType = 'earn_workout';
+      referenceType = 'workout';
+      description = `Earned ${pointsToAward} point for ${type}`;
+    } else if (type === 'calorie_goal_bonus') {
+      transactionType = 'calorie_goal_bonus';
+      referenceType = 'daily_nutrition';
+      description = `Earned ${pointsToAward} point for hitting daily calorie goal`;
+    } else {
+      transactionType = 'earn_personal_best';
+      referenceType = 'personal_best';
+      description = `Earned ${pointsToAward} point for personal best`;
+    }
 
     await supabase.from('point_transactions').insert({
       user_id: userId,
@@ -345,9 +424,9 @@ export default async (request: Request, context: Context): Promise<Response> => 
       points_amount: pointsToAward,
       reference_id: referenceId,
       reference_type: referenceType,
-      photo_verified: type !== 'personal_best',
+      photo_verified: type !== 'personal_best' && type !== 'calorie_goal_bonus',
       photo_timestamp: photoTimestamp || null,
-      verification_method: type === 'personal_best' ? 'data_verified' : (photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none')),
+      verification_method: (type === 'personal_best' || type === 'calorie_goal_bonus') ? 'data_verified' : (photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none')),
       ai_confidence: aiConfidence || null,
       description: description
     });
