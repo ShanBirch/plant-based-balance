@@ -32155,8 +32155,10 @@ function triggerVictoryAnimation() {
         mv.animationName = victoryAnim;
         mv.play();
 
-        // Return to static stance after celebration
+        // Return to static stance after celebration - pause to prevent default loop
         setTimeout(() => {
+            mv.pause();
+            mv.currentTime = 0;
             mv.animationName = null;
             mv.removeAttribute('animation-name');
         }, 4000);
@@ -37134,8 +37136,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             mv.play();
 
             if (returnToStatic) {
-                // Return to static stance after animation
+                // Return to static stance after animation - pause to prevent default loop
                 setTimeout(() => {
+                    mv.pause();
+                    mv.currentTime = 0;
                     mv.animationName = null;
                     mv.removeAttribute('animation-name');
                 }, 3500);
@@ -37273,8 +37277,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 mv.animationName = reactAnim;
                 mv.play();
 
-                // Return to static stance after animation plays
+                // Return to static stance after animation plays - pause to prevent default loop
                 setTimeout(() => {
+                    mv.pause();
+                    mv.currentTime = 0;
                     mv.animationName = null;
                     mv.removeAttribute('animation-name');
                 }, 3000);
