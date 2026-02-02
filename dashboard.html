@@ -9166,13 +9166,6 @@ async function applyAppTheme(themeKey) {
             <!-- Button Removed -->
         </div>
 
-        <!-- Dynamic Hero Container -->
-        <div id="movement-hero-container"></div>
-
-        <div style="margin-bottom: 20px;">
-            <h3 style="margin:0;">Browse Programs</h3>
-        </div>
-
         <!-- Dynamic Grid Container -->
         <div id="movement-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
     </div>
@@ -18412,9 +18405,6 @@ async function renderMovementView() {
         'female_gym_split': { img: '/assets/full_gym_hero.png', sub: 'Gym Access', color: '#10b981' }
     };
 
-    // Render Hero
-    const heroContainer = document.getElementById('movement-hero-container');
-
     // Handle gym_split programs - pull from WORKOUT_LIBRARY with 48-week rotation (same as calendar)
     let heroProg, heroMeta, heroSched;
     let heroLibraryInfo = null; // Track library workout info for onclick handler
@@ -18535,29 +18525,7 @@ async function renderMovementView() {
         ? `startLibraryWorkout('${heroLibraryInfo.category}', '${heroLibraryInfo.subcategory}', '${heroLibraryInfo.workoutId}')`
         : `startActiveWorkout('${suggestedProgram}', ${workoutDayIndex})`;
 
-    heroContainer.innerHTML = `
-    <div class="card" onclick="${heroOnclick}" style="cursor: pointer; overflow:hidden; border-radius:32px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); border:none; position: relative; margin-bottom: 30px;">
-        <div style="position: relative; height: 380px;">
-             <img src="${heroMeta.img}" style="width:100%; height:100%; object-fit: cover;" onerror="this.src='https://placehold.co/600x800/png?text=${suggestedProgram}';">
-             <div style="position: absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
-
-             <div style="position: absolute; top: 25px; left: 25px;">
-                <span style="background: ${heroMeta.color}; color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">${badgeText}</span>
-             </div>
-
-             <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 30px;">
-                 <div style="color: ${heroMeta.color}; font-weight: 800; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 5px;">${heroProg.name}</div>
-                 <h2 style="color: white; margin: 0 0 15px 0; font-size: 2.2rem; line-height: 1.1; font-family:'Playfair Display';">${heroSched.title}</h2>
-                 <div style="display:flex; gap:15px; color:rgba(255,255,255,0.7); font-size:0.9rem; margin-bottom:20px;">
-                    <span style="display:flex; align-items:center; gap:5px;"><svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>${heroProg.estimatedTime} mins</span>
-                    <span style="display:flex; align-items:center; gap:5px;"><svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>${heroSched.exercises.length} exercises</span>
-                 </div>
-                 <button onclick="event.stopPropagation(); ${heroOnclick}" style="width: 100%; background: #FFC107; color: black; border: none; padding: 18px; border-radius: 50px; font-weight: 900; font-size: 1.1rem; box-shadow: 0 10px 20px rgba(255,193,7,0.3);">
-                    START SESSION
-                 </button>
-             </div>
-        </div>
-    </div>`;
+    // Hero card removed - Today's Workout will be added to the grid instead
     
     // Preload saved workouts cache for the Your Workouts view
     try {
@@ -18568,9 +18536,24 @@ async function renderMovementView() {
     }
 
     const gridContainer = document.getElementById('movement-grid-container');
-    gridContainer.innerHTML = ''; 
+    gridContainer.innerHTML = '';
 
-    // Add 'Build Custom' Card as first item
+    // Add 'Today's Workout' Card as first item (red background)
+    const todayDiv = document.createElement('div');
+    todayDiv.onclick = () => { eval(heroOnclick); };
+    todayDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);";
+    todayDiv.innerHTML = `
+        <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.1), transparent);"></div>
+        <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
+            <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Today's Workout</div>
+            <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">${heroSched.title}</div>
+            <div style="font-size: 0.75rem; opacity: 0.9;">${heroProg.estimatedTime} mins · ${heroSched.exercises.length} exercises</div>
+        </div>
+        <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">🏋️</div>
+    `;
+    gridContainer.appendChild(todayDiv);
+
+    // Add 'Build Custom' Card
     const buildDiv = document.createElement('div');
     buildDiv.onclick = () => openWorkoutBuilder();
     buildDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: #f1f5f9; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; border: 2px dashed #cbd5e1;";
