@@ -37292,24 +37292,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        // Tap reaction - only play unlocked random animations
+        // Tap reaction - wave back
         document.getElementById('tamagotchi-model')?.addEventListener('click', () => {
             const mv = document.getElementById('tamagotchi-model');
             if (!mv || !mv.availableAnimations || !mv.availableAnimations.length) return;
 
-            // Get unlocked reaction animations
-            const reactionTypes = ['victory', 'look', 'wave', 'jump', 'celebrate', 'cheer'];
-            const unlockedReactions = mv.availableAnimations.filter(a => {
-                const isReaction = reactionTypes.some(r => a.toLowerCase().includes(r));
-                return isReaction && isAnimationUnlocked(a);
-            });
-
-            if (unlockedReactions.length > 0) {
-                const reactAnim = unlockedReactions[Math.floor(Math.random() * unlockedReactions.length)];
-                mv.animationName = reactAnim;
+            // Find the wave animation
+            const waveAnim = mv.availableAnimations.find(a => a.toLowerCase().includes('wave'));
+            if (waveAnim) {
+                mv.animationName = waveAnim;
                 mv.play();
 
-                // Return to static stance after animation plays - pause to prevent default loop
+                // Return to static stance after animation plays
                 setTimeout(() => {
                     mv.pause();
                     mv.currentTime = 0;
