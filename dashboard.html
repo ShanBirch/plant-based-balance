@@ -3139,6 +3139,11 @@ async function applyAppTheme(themeKey) {
                 style="width: 100%; height: 100%; position: relative; z-index: 3; --poster-color: transparent; touch-action: none;"
                 interaction-prompt="none">
             </model-viewer>
+
+            <!-- Animation Selector Button (inside character container for proper positioning) -->
+            <div class="animation-trigger-btn" onclick="showAnimationSelector()" title="Shazie's Moves">
+                🎬
+            </div>
         </div>
 
         <!-- Tamagotchi Stats Bar (Below Character) -->
@@ -3164,11 +3169,6 @@ async function applyAppTheme(themeKey) {
                     <span id="tamagotchi-streak" style="color: #ff6400; font-size: 0.9rem; font-weight: 800; font-family: 'Outfit', sans-serif;">0</span>
                 </div>
                 <div id="tamagotchi-rank" style="color: var(--secondary); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">NEWCOMER</div>
-            </div>
-
-            <!-- Animation Selector Button -->
-            <div class="animation-trigger-btn" onclick="showAnimationSelector()" title="Shazie's Moves">
-                🎬
             </div>
         </div>
     </div>
