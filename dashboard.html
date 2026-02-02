@@ -3091,6 +3091,214 @@ async function applyAppTheme(themeKey) {
         background: #fee2e2;
     }
 
+    /* Make meal card clickable area */
+    .meal-log-card {
+        cursor: pointer;
+    }
+
+    .meal-log-card .meal-log-clickable {
+        display: flex;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+        align-items: center;
+    }
+
+    /* Meal Detail Popup Styles */
+    .meal-detail-popup {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        z-index: 10012;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+    }
+
+    .meal-detail-popup.visible {
+        display: flex;
+    }
+
+    .meal-detail-container {
+        width: 92%;
+        max-width: 400px;
+        background: white;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .meal-detail-photo {
+        width: 100%;
+        aspect-ratio: 4/3;
+        background-size: cover;
+        background-position: center;
+        background-color: #f0f0f0;
+        position: relative;
+    }
+
+    .meal-detail-photo-placeholder {
+        width: 100%;
+        aspect-ratio: 4/3;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        position: relative;
+    }
+
+    .meal-detail-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 36px;
+        height: 36px;
+        background: rgba(255,255,255,0.9);
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        transition: all 0.2s ease;
+    }
+
+    .meal-detail-close:hover {
+        background: white;
+        transform: scale(1.1);
+    }
+
+    .meal-detail-content {
+        padding: 20px 24px 24px;
+    }
+
+    .meal-detail-header {
+        margin-bottom: 16px;
+    }
+
+    .meal-detail-time {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+    .meal-detail-foods {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-main);
+        line-height: 1.4;
+    }
+
+    .meal-detail-calories {
+        text-align: center;
+        padding: 20px;
+        background: linear-gradient(135deg, rgba(123, 168, 131, 0.1) 0%, rgba(123, 168, 131, 0.05) 100%);
+        border-radius: 16px;
+        margin-bottom: 16px;
+    }
+
+    .meal-detail-calories-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        line-height: 1;
+    }
+
+    .meal-detail-calories-label {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+
+    .meal-detail-macros {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .meal-detail-macro {
+        text-align: center;
+        padding: 16px 12px;
+        background: #f8f9fa;
+        border-radius: 12px;
+    }
+
+    .meal-detail-macro-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-main);
+        line-height: 1;
+    }
+
+    .meal-detail-macro-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+        font-weight: 500;
+    }
+
+    .meal-detail-macro.protein .meal-detail-macro-value {
+        color: #ef4444;
+    }
+
+    .meal-detail-macro.carbs .meal-detail-macro-value {
+        color: #f59e0b;
+    }
+
+    .meal-detail-macro.fat .meal-detail-macro-value {
+        color: #3b82f6;
+    }
+
+    .meal-detail-items {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .meal-detail-items-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .meal-detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f5f5f5;
+    }
+
+    .meal-detail-item:last-child {
+        border-bottom: none;
+    }
+
+    .meal-detail-item-name {
+        font-size: 0.95rem;
+        color: var(--text-main);
+        flex: 1;
+    }
+
+    .meal-detail-item-cals {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
     .empty-state {
         text-align: center;
         padding: 40px 20px;
@@ -21616,6 +21824,39 @@ hideAllAppViews = function() {
 <div class="close-modal-btn"></div>
 <img alt="Full size meal" class="image-modal-content" id="modalImage" onclick="event.stopPropagation()" src=""/>
 </div>
+
+<!-- Meal Detail Popup -->
+<div class="meal-detail-popup" id="mealDetailPopup" onclick="closeMealDetailPopup()">
+    <div class="meal-detail-container" onclick="event.stopPropagation()">
+        <div id="mealDetailPhotoSection"></div>
+        <div class="meal-detail-content">
+            <div class="meal-detail-header">
+                <div class="meal-detail-time" id="mealDetailTime"></div>
+                <div class="meal-detail-foods" id="mealDetailFoods"></div>
+            </div>
+            <div class="meal-detail-calories">
+                <div class="meal-detail-calories-value" id="mealDetailCalories"></div>
+                <div class="meal-detail-calories-label">calories</div>
+            </div>
+            <div class="meal-detail-macros">
+                <div class="meal-detail-macro protein">
+                    <div class="meal-detail-macro-value" id="mealDetailProtein"></div>
+                    <div class="meal-detail-macro-label">Protein</div>
+                </div>
+                <div class="meal-detail-macro carbs">
+                    <div class="meal-detail-macro-value" id="mealDetailCarbs"></div>
+                    <div class="meal-detail-macro-label">Carbs</div>
+                </div>
+                <div class="meal-detail-macro fat">
+                    <div class="meal-detail-macro-value" id="mealDetailFat"></div>
+                    <div class="meal-detail-macro-label">Fat</div>
+                </div>
+            </div>
+            <div class="meal-detail-items" id="mealDetailItems"></div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Image Modal Logic
 document.addEventListener('DOMContentLoaded', function() {
@@ -35066,10 +35307,16 @@ function updateCircularProgress(current, goal) {
     }
 }
 
+// Store meals data for popup access
+let currentMealsList = [];
+
 // Render meals list
 function renderMealsList(meals) {
     const container = document.getElementById('meals-log-list');
     if (!container) return;
+
+    // Store meals for popup access
+    currentMealsList = meals || [];
 
     if (!meals || meals.length === 0) {
         container.innerHTML = `
@@ -35084,7 +35331,7 @@ function renderMealsList(meals) {
     }
 
     let html = '';
-    meals.forEach(meal => {
+    meals.forEach((meal, index) => {
         const time = new Date(`2000-01-01T${meal.meal_time}`).toLocaleTimeString('en-US', {
             hour: 'numeric',
             minute: '2-digit',
@@ -35095,9 +35342,15 @@ function renderMealsList(meals) {
             ? meal.food_items.map(item => item.name).join(', ')
             : 'Food';
 
+        // Handle photo display - show placeholder if no photo
+        const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '';
+        const imageHtml = hasPhoto
+            ? `<div class="meal-log-image" style="background-image: url('${meal.photo_url}')"></div>`
+            : `<div class="meal-log-image" style="display: flex; align-items: center; justify-content: center; font-size: 2rem;">🍽️</div>`;
+
         html += `
-            <div class="meal-log-card">
-                <div class="meal-log-image" style="background-image: url('${meal.photo_url}')"></div>
+            <div class="meal-log-card" onclick="openMealDetailPopup(${index})">
+                ${imageHtml}
                 <div class="meal-log-content">
                     <div class="meal-log-time">${time}</div>
                     <div class="meal-log-foods">${foodItemsText}</div>
@@ -35108,7 +35361,7 @@ function renderMealsList(meals) {
                         <span>F: ${Math.round(meal.fat_g)}g</span>
                     </div>
                 </div>
-                <button class="meal-log-delete" onclick="deleteMealLog('${meal.id}')" title="Delete meal">
+                <button class="meal-log-delete" onclick="event.stopPropagation(); deleteMealLog('${meal.id}')" title="Delete meal">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -35120,6 +35373,98 @@ function renderMealsList(meals) {
 
     container.innerHTML = html;
 }
+
+// Open meal detail popup
+function openMealDetailPopup(index) {
+    const meal = currentMealsList[index];
+    if (!meal) return;
+
+    const popup = document.getElementById('mealDetailPopup');
+    const photoSection = document.getElementById('mealDetailPhotoSection');
+    const timeEl = document.getElementById('mealDetailTime');
+    const foodsEl = document.getElementById('mealDetailFoods');
+    const caloriesEl = document.getElementById('mealDetailCalories');
+    const proteinEl = document.getElementById('mealDetailProtein');
+    const carbsEl = document.getElementById('mealDetailCarbs');
+    const fatEl = document.getElementById('mealDetailFat');
+    const itemsEl = document.getElementById('mealDetailItems');
+
+    // Format time
+    const time = new Date(`2000-01-01T${meal.meal_time}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    // Get food items text
+    const foodItemsText = Array.isArray(meal.food_items)
+        ? meal.food_items.map(item => item.name).join(', ')
+        : 'Food';
+
+    // Handle photo display
+    const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '';
+    if (hasPhoto) {
+        photoSection.innerHTML = `
+            <div class="meal-detail-photo" style="background-image: url('${meal.photo_url}')">
+                <button class="meal-detail-close" onclick="closeMealDetailPopup()">&times;</button>
+            </div>
+        `;
+    } else {
+        photoSection.innerHTML = `
+            <div class="meal-detail-photo-placeholder">
+                <button class="meal-detail-close" onclick="closeMealDetailPopup()" style="position: absolute; top: 12px; right: 12px;">&times;</button>
+                🍽️
+            </div>
+        `;
+    }
+
+    // Populate data
+    timeEl.textContent = time;
+    foodsEl.textContent = foodItemsText;
+    caloriesEl.textContent = Math.round(meal.calories || 0);
+    proteinEl.textContent = `${Math.round(meal.protein_g || 0)}g`;
+    carbsEl.textContent = `${Math.round(meal.carbs_g || 0)}g`;
+    fatEl.textContent = `${Math.round(meal.fat_g || 0)}g`;
+
+    // Populate food items breakdown
+    if (Array.isArray(meal.food_items) && meal.food_items.length > 0) {
+        let itemsHtml = '<div class="meal-detail-items-title">Food Items</div>';
+        meal.food_items.forEach(item => {
+            const itemCals = item.calories ? Math.round(item.calories) : 0;
+            itemsHtml += `
+                <div class="meal-detail-item">
+                    <span class="meal-detail-item-name">${item.name}</span>
+                    <span class="meal-detail-item-cals">${itemCals} cal</span>
+                </div>
+            `;
+        });
+        itemsEl.innerHTML = itemsHtml;
+        itemsEl.style.display = 'block';
+    } else {
+        itemsEl.style.display = 'none';
+    }
+
+    // Show popup
+    popup.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+}
+
+// Close meal detail popup
+function closeMealDetailPopup() {
+    const popup = document.getElementById('mealDetailPopup');
+    popup.classList.remove('visible');
+    document.body.style.overflow = '';
+}
+
+// Close popup on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const popup = document.getElementById('mealDetailPopup');
+        if (popup && popup.classList.contains('visible')) {
+            closeMealDetailPopup();
+        }
+    }
+});
 
 // Delete meal log
 async function deleteMealLog(mealId) {
