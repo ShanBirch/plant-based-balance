@@ -3350,13 +3350,7 @@ async function applyAppTheme(themeKey) {
              <span id="daily-progress-counter" class="welcome-text" style="display: none; color: white; font-weight: 700;">Day 1 of 28</span>
         </div>
         <!-- Tamagotchi Widget (Modern Header View) -->
-        <div id="tamagotchi-widget-container" style="background: linear-gradient(180deg, #1a1a2e 0%, #16213e 40%, #1a1a2e 100%); backdrop-filter: blur(20px); border-radius: 0; overflow: hidden; margin: 0; height: 420px; position: relative;">
-            <!-- Room floor with perspective depth -->
-            <div id="tamagotchi-floor" style="position: absolute; bottom: 0; left: 0; right: 0; height: 55%; background: linear-gradient(180deg, transparent 0%, rgba(30,40,60,0.3) 20%, rgba(40,55,80,0.6) 50%, rgba(50,70,100,0.8) 80%, rgba(60,85,120,0.95) 100%); transform: perspective(500px) rotateX(25deg); transform-origin: bottom center; pointer-events: none; z-index: 1;"></div>
-            <!-- Floor reflection/shine -->
-            <div style="position: absolute; bottom: 0; left: 10%; right: 10%; height: 30%; background: radial-gradient(ellipse 80% 40% at 50% 100%, rgba(100,140,200,0.15) 0%, transparent 70%); pointer-events: none; z-index: 2;"></div>
-            <!-- Ambient room lighting glow -->
-            <div style="position: absolute; top: 0; left: 0; right: 0; height: 50%; background: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(80,100,140,0.2) 0%, transparent 70%); pointer-events: none; z-index: 1;"></div>
+        <div id="tamagotchi-widget-container" style="background: #0a1628; backdrop-filter: blur(20px); border-radius: 0; overflow: hidden; margin: 0; height: 420px; position: relative;">
             <model-viewer
                 id="tamagotchi-model"
                 src="assets/shazylvl1.glb"
