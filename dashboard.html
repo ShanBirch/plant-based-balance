@@ -35342,8 +35342,8 @@ function renderMealsList(meals) {
             ? meal.food_items.map(item => item.name).join(', ')
             : 'Food';
 
-        // Handle photo display - show placeholder if no photo
-        const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '';
+        // Handle photo display - show placeholder if no photo or text-input placeholder
+        const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '' && meal.photo_url !== 'text-input';
         const imageHtml = hasPhoto
             ? `<div class="meal-log-image" style="background-image: url('${meal.photo_url}')"></div>`
             : `<div class="meal-log-image" style="display: flex; align-items: center; justify-content: center; font-size: 2rem;">🍽️</div>`;
@@ -35401,8 +35401,8 @@ function openMealDetailPopup(index) {
         ? meal.food_items.map(item => item.name).join(', ')
         : 'Food';
 
-    // Handle photo display
-    const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '';
+    // Handle photo display - exclude 'text-input' placeholder
+    const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '' && meal.photo_url !== 'text-input';
     if (hasPhoto) {
         photoSection.innerHTML = `
             <div class="meal-detail-photo" style="background-image: url('${meal.photo_url}')">
