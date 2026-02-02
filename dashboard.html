@@ -18634,22 +18634,46 @@ function removeDropRow(btn) {
 }
 
 let workoutTimerInterval;
+let workoutStartTime = null; // Store actual start timestamp for accurate timing
+
 function startWorkoutTimer() {
-    let sec = 0;
+    workoutStartTime = Date.now(); // Record when workout actually started
     const display = document.getElementById('workout-timer');
     clearInterval(workoutTimerInterval);
-    workoutTimerInterval = setInterval(() => {
-        sec++;
-        const m = Math.floor(sec / 60).toString().padStart(2, '0');
-        const s = (sec % 60).toString().padStart(2, '0');
+
+    function updateTimer() {
+        if (!workoutStartTime) return;
+        // Calculate actual elapsed time from start timestamp
+        const elapsed = Math.floor((Date.now() - workoutStartTime) / 1000);
+        const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        const s = (elapsed % 60).toString().padStart(2, '0');
         display.innerText = `${m}:${s}`;
-    }, 1000);
+    }
+
+    // Update immediately, then every second
+    updateTimer();
+    workoutTimerInterval = setInterval(updateTimer, 1000);
 }
+
+// Update timer when app becomes visible again (handles background/screen-off throttling)
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && workoutStartTime) {
+        // Force update the timer display when returning from background
+        const display = document.getElementById('workout-timer');
+        if (display) {
+            const elapsed = Math.floor((Date.now() - workoutStartTime) / 1000);
+            const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const s = (elapsed % 60).toString().padStart(2, '0');
+            display.innerText = `${m}:${s}`;
+        }
+    }
+});
 
 async function finishWorkout() {
     clearInterval(workoutTimerInterval);
     clearAllYogaTimers(); // Clear any running yoga timers
     const duration = document.getElementById('workout-timer').innerText;
+    workoutStartTime = null; // Reset start time
     document.getElementById('success-duration').innerText = duration;
 
     // Save logic
@@ -18909,6 +18933,7 @@ function quitWorkout() {
     if(confirm('Quit workout? Your progress won\'t be saved.')) {
         console.log("Quitting workout...");
         clearInterval(workoutTimerInterval);
+        workoutStartTime = null; // Reset start time
         clearAllYogaTimers(); // Clear any running yoga timers
         document.getElementById('view-active-workout').style.display = 'none'; // Force hide
         closeSuccessScreen();
