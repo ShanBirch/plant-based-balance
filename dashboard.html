@@ -12116,21 +12116,34 @@ async function _loadProfileDataRealImpl() {
     if (quizResult) {
         profile = { ...profile, ...quizResult };
 
-        // NEW: Sync cycle sync preferences from database to localStorage
-        if (quizResult.cycle_sync_preference || quizResult.period_energy_response) {
-            try {
-                const localProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-                if (quizResult.cycle_sync_preference) {
-                    localProfile.cycle_sync_preference = quizResult.cycle_sync_preference;
-                }
-                if (quizResult.period_energy_response) {
-                    localProfile.period_energy_response = quizResult.period_energy_response;
-                }
-                localStorage.setItem('userProfile', JSON.stringify(localProfile));
-                console.log('✅ Cycle sync preferences loaded from database');
-            } catch (e) {
-                console.warn('Error syncing cycle preferences to localStorage:', e);
+        // Sync important quiz fields from database to localStorage
+        try {
+            const localProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            let needsSave = false;
+
+            // CRITICAL FIX: Sync equipment_access to localStorage so calendar/movement views have correct data
+            if (quizResult.equipment_access && localProfile.equipment_access !== quizResult.equipment_access) {
+                localProfile.equipment_access = quizResult.equipment_access;
+                needsSave = true;
+                console.log('✅ Equipment access synced from DB to localStorage:', quizResult.equipment_access);
             }
+
+            // Sync cycle sync preferences
+            if (quizResult.cycle_sync_preference && localProfile.cycle_sync_preference !== quizResult.cycle_sync_preference) {
+                localProfile.cycle_sync_preference = quizResult.cycle_sync_preference;
+                needsSave = true;
+            }
+            if (quizResult.period_energy_response && localProfile.period_energy_response !== quizResult.period_energy_response) {
+                localProfile.period_energy_response = quizResult.period_energy_response;
+                needsSave = true;
+            }
+
+            if (needsSave) {
+                localStorage.setItem('userProfile', JSON.stringify(localProfile));
+                console.log('✅ Profile preferences synced from database');
+            }
+        } catch (e) {
+            console.warn('Error syncing profile to localStorage:', e);
         }
     }
 
@@ -17465,7 +17478,31 @@ async function renderMovementView() {
     }
 
     // 1. Get Date Index & Profile
-    const dbProfile = await window.getUserProfile();
+    let dbProfile = await window.getUserProfile();
+
+    // CRITICAL FIX: Also fetch quiz results for equipment_access (stored in quiz_results table, not users)
+    // This mirrors the logic in renderDashboard() which correctly loads equipment_access
+    try {
+        if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
+            const quizResult = await dbHelpers.quizResults.getLatest(window.currentUser.id);
+            if (quizResult) {
+                dbProfile = { ...dbProfile, ...quizResult };
+
+                // Sync equipment_access to localStorage so it persists across page loads
+                if (quizResult.equipment_access) {
+                    const localProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                    if (!localProfile.equipment_access || localProfile.equipment_access !== quizResult.equipment_access) {
+                        localProfile.equipment_access = quizResult.equipment_access;
+                        localStorage.setItem('userProfile', JSON.stringify(localProfile));
+                        console.log('✅ Equipment access synced from DB to localStorage:', quizResult.equipment_access);
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("Quiz results fetching error in loadMovementView:", e);
+    }
+
     const startDate = dbProfile?.program_start_date;
 
     let dayIndex = 0;
