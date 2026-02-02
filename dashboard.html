@@ -35318,6 +35318,13 @@ function renderMealsList(meals) {
     // Store meals for popup access
     currentMealsList = meals || [];
 
+    // Debug: Log meal photo URLs to help diagnose issues
+    console.log('Meals data received:', meals?.map(m => ({
+        time: m.meal_time,
+        photo_url: m.photo_url,
+        hasValidPhoto: m.photo_url && m.photo_url.trim() !== '' && m.photo_url !== 'text-input'
+    })));
+
     if (!meals || meals.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
