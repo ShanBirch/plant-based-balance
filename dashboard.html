@@ -37899,46 +37899,57 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
 
         // Animation unlock system - animations unlocked at specific levels
+        // Maps to actual available model animations:
+        // Air Squat, Angry, Bicycle Crunch, Boxing, Boxing (1), Cartwheel, Defeated,
+        // Dismissing Gesture, Dying Backwards, Head Gesture, Hip Hop Dancing, Idle,
+        // Jumping Jacks, Look Around, Looking Behind, Looking Down, Mma Kick,
+        // Mutant Flexing Muscles, Pistol, Punch Combo, Punch To Elbow Combo, Push Up,
+        // Quick Formal Bow, Situps, Sleeping Idle, Strong Gesture, Victory Idle, Walking
         const ANIMATION_UNLOCKS = [
-            // Basic animations - unlocked early
-            { name: 'wave', displayName: 'Wave', unlockLevel: 1, icon: '👋', category: 'greetings' },
-            { name: 'look', displayName: 'Look Around', unlockLevel: 1, icon: '👀', category: 'reactions' },
+            // Basic animations - unlocked early (Greetings)
+            { name: 'Quick Formal Bow', displayName: 'Wave', unlockLevel: 1, icon: '👋', category: 'greetings' },
+
+            // Reactions - early unlocks
+            { name: 'Look Around', displayName: 'Look Around', unlockLevel: 1, icon: '👀', category: 'reactions' },
+            { name: 'Head Gesture', displayName: 'Head Gesture', unlockLevel: 3, icon: '🤔', category: 'reactions' },
+            { name: 'Looking Behind', displayName: 'Looking Behind', unlockLevel: 5, icon: '👀', category: 'reactions' },
+            { name: 'Looking Down', displayName: 'Looking Down', unlockLevel: 7, icon: '😔', category: 'reactions' },
+            { name: 'Angry', displayName: 'Angry', unlockLevel: 10, icon: '😠', category: 'reactions' },
+            { name: 'Dismissing Gesture', displayName: 'Dismissing', unlockLevel: 15, icon: '🙅', category: 'reactions' },
 
             // Celebration animations
-            { name: 'victory', displayName: 'Victory', unlockLevel: 5, icon: '🏆', category: 'celebrations' },
-            { name: 'jump', displayName: 'Star Jump', unlockLevel: 8, icon: '⬆️', category: 'celebrations' },
-            { name: 'celebrate', displayName: 'Celebrate', unlockLevel: 12, icon: '🎉', category: 'celebrations' },
-            { name: 'cheer', displayName: 'Cheer', unlockLevel: 15, icon: '📣', category: 'celebrations' },
+            { name: 'Victory Idle', displayName: 'Victory', unlockLevel: 5, icon: '🏆', category: 'celebrations' },
+            { name: 'Jumping Jacks', displayName: 'Star Jump', unlockLevel: 8, icon: '⬆️', category: 'celebrations' },
+            { name: 'Strong Gesture', displayName: 'Celebrate', unlockLevel: 12, icon: '🎉', category: 'celebrations' },
+            { name: 'Mutant Flexing Muscles', displayName: 'Cheer', unlockLevel: 15, icon: '📣', category: 'celebrations' },
 
             // Exercise animations
-            { name: 'squat', displayName: 'Squat', unlockLevel: 10, icon: '🏋️', category: 'exercise' },
-            { name: 'pushup', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
-            { name: 'push-up', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
-            { name: 'lunge', displayName: 'Lunge', unlockLevel: 20, icon: '🦵', category: 'exercise' },
-            { name: 'situp', displayName: 'Sit-Up', unlockLevel: 25, icon: '🔄', category: 'exercise' },
-            { name: 'sit-up', displayName: 'Sit-Up', unlockLevel: 25, icon: '🔄', category: 'exercise' },
-            { name: 'crunch', displayName: 'Crunch', unlockLevel: 25, icon: '🔄', category: 'exercise' },
-            { name: 'burpee', displayName: 'Burpee', unlockLevel: 30, icon: '🔥', category: 'exercise' },
-            { name: 'jumping', displayName: 'Jumping Jacks', unlockLevel: 18, icon: '⭐', category: 'exercise' },
+            { name: 'Air Squat', displayName: 'Squat', unlockLevel: 10, icon: '🏋️', category: 'exercise' },
+            { name: 'Push Up', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
+            { name: 'Situps', displayName: 'Sit-Ups', unlockLevel: 20, icon: '🔄', category: 'exercise' },
+            { name: 'Bicycle Crunch', displayName: 'Bicycle Crunch', unlockLevel: 25, icon: '🚴', category: 'exercise' },
+
+            // Combat/Fighting animations
+            { name: 'Boxing', displayName: 'Boxing', unlockLevel: 18, icon: '🥊', category: 'combat' },
+            { name: 'Boxing (1)', displayName: 'Boxing Combo', unlockLevel: 22, icon: '🥊', category: 'combat' },
+            { name: 'Punch Combo', displayName: 'Punch Combo', unlockLevel: 28, icon: '👊', category: 'combat' },
+            { name: 'Punch To Elbow Combo', displayName: 'Elbow Combo', unlockLevel: 35, icon: '💥', category: 'combat' },
+            { name: 'Mma Kick', displayName: 'MMA Kick', unlockLevel: 40, icon: '🦵', category: 'combat' },
+            { name: 'Pistol', displayName: 'Pistol Squat', unlockLevel: 50, icon: '🎯', category: 'combat' },
 
             // Pose animations
-            { name: 'flex', displayName: 'Flex', unlockLevel: 20, icon: '💪', category: 'poses' },
-            { name: 'strong', displayName: 'Strong Pose', unlockLevel: 35, icon: '🦾', category: 'poses' },
-            { name: 'pose', displayName: 'Pose', unlockLevel: 25, icon: '📸', category: 'poses' },
-            { name: 'muscle', displayName: 'Muscle Pose', unlockLevel: 40, icon: '💪', category: 'poses' },
-            { name: 'power', displayName: 'Power Pose', unlockLevel: 50, icon: '⚡', category: 'poses' },
+            { name: 'Mutant Flexing Muscles', displayName: 'Flex', unlockLevel: 20, icon: '💪', category: 'poses' },
+            { name: 'Strong Gesture', displayName: 'Strong Pose', unlockLevel: 30, icon: '🦾', category: 'poses' },
 
             // Dance animations
-            { name: 'dance', displayName: 'Dance', unlockLevel: 30, icon: '💃', category: 'dance' },
-            { name: 'hip', displayName: 'Hip Hop', unlockLevel: 45, icon: '🎵', category: 'dance' },
-            { name: 'groove', displayName: 'Groove', unlockLevel: 55, icon: '🎶', category: 'dance' },
+            { name: 'Hip Hop Dancing', displayName: 'Hip Hop', unlockLevel: 25, icon: '💃', category: 'dance' },
+            { name: 'Walking', displayName: 'Strut', unlockLevel: 35, icon: '🚶', category: 'dance' },
 
             // Special animations - high level
-            { name: 'backflip', displayName: 'Backflip', unlockLevel: 60, icon: '🤸', category: 'special' },
-            { name: 'flip', displayName: 'Flip', unlockLevel: 60, icon: '🤸', category: 'special' },
-            { name: 'spin', displayName: 'Spin', unlockLevel: 70, icon: '🌀', category: 'special' },
-            { name: 'champion', displayName: 'Champion', unlockLevel: 80, icon: '🏅', category: 'special' },
-            { name: 'legend', displayName: 'Legend Pose', unlockLevel: 99, icon: '👑', category: 'special' },
+            { name: 'Cartwheel', displayName: 'Cartwheel', unlockLevel: 45, icon: '🤸', category: 'special' },
+            { name: 'Defeated', displayName: 'Defeated', unlockLevel: 55, icon: '😵', category: 'special' },
+            { name: 'Dying Backwards', displayName: 'Drama Fall', unlockLevel: 65, icon: '🎭', category: 'special' },
+            { name: 'Sleeping Idle', displayName: 'Sleepy', unlockLevel: 75, icon: '😴', category: 'special' },
         ];
 
         // Expose ANIMATION_UNLOCKS globally for use by checkNewAnimationUnlocks
@@ -37953,17 +37964,32 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Check if an animation is unlocked for current user
         function isAnimationUnlocked(animName) {
             const level = getCurrentUserLevel();
-            const unlock = ANIMATION_UNLOCKS.find(a =>
-                animName.toLowerCase().includes(a.name.toLowerCase())
+            // First try exact match, then includes match
+            let unlock = ANIMATION_UNLOCKS.find(a =>
+                a.name.toLowerCase() === animName.toLowerCase()
             );
+            if (!unlock) {
+                unlock = ANIMATION_UNLOCKS.find(a =>
+                    animName.toLowerCase().includes(a.name.toLowerCase()) ||
+                    a.name.toLowerCase().includes(animName.toLowerCase())
+                );
+            }
             return unlock ? level >= unlock.unlockLevel : true; // Unknown animations are unlocked
         }
 
         // Get unlock info for an animation
         function getAnimationUnlockInfo(animName) {
-            return ANIMATION_UNLOCKS.find(a =>
-                animName.toLowerCase().includes(a.name.toLowerCase())
+            // First try exact match, then includes match
+            let unlock = ANIMATION_UNLOCKS.find(a =>
+                a.name.toLowerCase() === animName.toLowerCase()
             );
+            if (!unlock) {
+                unlock = ANIMATION_UNLOCKS.find(a =>
+                    animName.toLowerCase().includes(a.name.toLowerCase()) ||
+                    a.name.toLowerCase().includes(animName.toLowerCase())
+                );
+            }
+            return unlock;
         }
 
         // Get all unlocked animations from available animations
@@ -38004,9 +38030,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Try to find matching animation in availableAnimations if they exist
             let targetAnim = animName;
             if (mv.availableAnimations?.length) {
-                const found = mv.availableAnimations.find(a =>
-                    a.toLowerCase().includes(animName.toLowerCase())
+                // First try exact match (case insensitive)
+                let found = mv.availableAnimations.find(a =>
+                    a.toLowerCase() === animName.toLowerCase()
                 );
+                // If no exact match, try includes match
+                if (!found) {
+                    found = mv.availableAnimations.find(a =>
+                        a.toLowerCase().includes(animName.toLowerCase())
+                    );
+                }
                 if (found) targetAnim = found;
             }
 
@@ -38055,6 +38088,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 'reactions': '👀 Reactions',
                 'celebrations': '🎉 Celebrations',
                 'exercise': '🏋️ Exercise',
+                'combat': '🥊 Combat',
                 'poses': '💪 Poses',
                 'dance': '💃 Dance',
                 'special': '⭐ Special'
@@ -38070,7 +38104,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <div class="animation-selector-content">
             `;
 
-            const categoryOrder = ['greetings', 'reactions', 'celebrations', 'exercise', 'poses', 'dance', 'special'];
+            const categoryOrder = ['greetings', 'reactions', 'celebrations', 'exercise', 'combat', 'poses', 'dance', 'special'];
 
             categoryOrder.forEach(cat => {
                 if (categories[cat]?.length) {
@@ -38150,15 +38184,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        // Tap reaction - wave back
+        // Tap reaction - greeting animation
         document.getElementById('tamagotchi-model')?.addEventListener('click', () => {
             const mv = document.getElementById('tamagotchi-model');
             if (!mv || !mv.availableAnimations || !mv.availableAnimations.length) return;
 
-            // Find the wave animation
-            const waveAnim = mv.availableAnimations.find(a => a.toLowerCase().includes('wave'));
-            if (waveAnim) {
-                mv.animationName = waveAnim;
+            // Find the greeting animation (Quick Formal Bow or Head Gesture)
+            let greetAnim = mv.availableAnimations.find(a => a.toLowerCase().includes('quick formal bow'));
+            if (!greetAnim) {
+                greetAnim = mv.availableAnimations.find(a => a.toLowerCase().includes('head gesture'));
+            }
+            if (greetAnim) {
+                mv.animationName = greetAnim;
                 mv.play();
 
                 // Return to static stance after animation plays
