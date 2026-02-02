@@ -11247,37 +11247,6 @@ function viewWorkoutHistoryDetail(date) {
             </div>
         </div>
 
-        <!-- Rewards & Points Section -->
-        <div class="settings-card" style="margin: 0 25px 25px 25px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); color: white;">
-            <div style="padding: 20px;">
-                <h3 style="margin: 0 0 15px 0; font-size: 1rem; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px; color: white;">
-                    <span>&#x2B50;</span> Rewards & Points
-                </h3>
-
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-                    <div>
-                        <div style="font-size: 2.5rem; font-weight: 800; line-height: 1;" id="profile-points-current">0</div>
-                        <div style="font-size: 0.8rem; opacity: 0.9;">Available Points</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 1.5rem; font-weight: 700;" id="profile-lifetime-points">0</div>
-                        <div style="font-size: 0.75rem; opacity: 0.8;">Lifetime Earned</div>
-                    </div>
-                </div>
-
-                <!-- Level Progress -->
-                <div style="margin-bottom: 15px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;">
-                        <span>Points drive your level</span>
-                        <span id="profile-points-progress-text">Keep earning!</span>
-                    </div>
-                    <div style="text-align: center; font-size: 0.85rem; opacity: 0.9; margin-top: 8px;">
-                        Earn points by logging photo meals and sharing workouts
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Professional Protocol Settings -->
         <div class="settings-card" style="margin: 0 25px 25px 25px; background: white; border-radius: 16px; border: 1px solid #f1f5f9; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
             <div style="background: #f8fafc; padding: 15px 20px; border-bottom: 1px solid #e2e8f0;">
@@ -32003,46 +31972,9 @@ function updatePointsDisplay(pointsData) {
         }
     }
 
-    // ========================================
-    // Update Profile page points section
-    // ========================================
-    const profilePointsCurrent = document.getElementById('profile-points-current');
-    if (profilePointsCurrent) {
-        profilePointsCurrent.textContent = currentPoints.toLocaleString();
-    }
-
-    const profileLifetimePoints = document.getElementById('profile-lifetime-points');
-    if (profileLifetimePoints) {
-        profileLifetimePoints.textContent = lifetimePoints.toLocaleString();
-    }
-
     // UPDATE FITGOTCHI WIDGET
     if (typeof window.updateFitGotchi === 'function') {
         window.updateFitGotchi(pointsData);
-    }
-
-    const profileProgressText = document.getElementById('profile-points-progress-text');
-    if (profileProgressText) {
-        profileProgressText.textContent = `${currentPoints}/${POINTS_FOR_FREE_WEEK}`;
-    }
-
-    const profileProgressFill = document.getElementById('profile-points-progress-fill');
-    if (profileProgressFill) {
-        const progressPercent = Math.min(100, (currentPoints / POINTS_FOR_FREE_WEEK) * 100);
-        profileProgressFill.style.width = `${progressPercent}%`;
-    }
-
-    const profileRedeemBtn = document.getElementById('profile-redeem-btn');
-    const profileRedeemInfo = document.getElementById('profile-redeem-info');
-    if (profileRedeemBtn && profileRedeemInfo) {
-        if (currentPoints >= POINTS_FOR_FREE_WEEK) {
-            profileRedeemBtn.style.display = 'block';
-            profileRedeemInfo.style.display = 'none';
-        } else {
-            profileRedeemBtn.style.display = 'none';
-            profileRedeemInfo.style.display = 'block';
-            profileRedeemInfo.textContent = `${POINTS_FOR_FREE_WEEK - currentPoints} more points to unlock a free week!`;
-        }
     }
 }
 
