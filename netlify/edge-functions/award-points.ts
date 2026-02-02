@@ -52,6 +52,9 @@ interface AwardPointsRequest {
 interface PointsResult {
   success: boolean;
   pointsAwarded: number;
+  basePoints: number;
+  xpMultiplier: number;
+  doubleXpActive: boolean;
   bonusPoints: number;
   bonusDescription: string | null;
   newTotal: number;
@@ -202,15 +205,30 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
+    // === CHECK FOR DOUBLE XP ===
+    // Fetch user's double XP status
+    const { data: userData } = await supabase
+      .from('users')
+      .select('double_xp_until')
+      .eq('id', userId)
+      .single();
+
+    const now = new Date();
+    const hasDoubleXp = userData?.double_xp_until && new Date(userData.double_xp_until) > now;
+    const xpMultiplier = hasDoubleXp ? 2 : 1;
+
     // === AWARD POINTS ===
-    let pointsToAward: number;
+    let basePoints: number;
     if (type === 'meal') {
-      pointsToAward = POINTS_CONFIG.POINTS_PER_MEAL;
+      basePoints = POINTS_CONFIG.POINTS_PER_MEAL;
     } else if (type === 'workout') {
-      pointsToAward = POINTS_CONFIG.POINTS_PER_WORKOUT;
+      basePoints = POINTS_CONFIG.POINTS_PER_WORKOUT;
     } else {
-      pointsToAward = POINTS_CONFIG.POINTS_PER_PERSONAL_BEST;
+      basePoints = POINTS_CONFIG.POINTS_PER_PERSONAL_BEST;
     }
+
+    // Apply double XP multiplier
+    const pointsToAward = basePoints * xpMultiplier;
 
     // Get current points record
     const { data: userPoints, error: fetchError } = await supabase
@@ -422,6 +440,9 @@ export default async (request: Request, context: Context): Promise<Response> => 
     const result: PointsResult = {
       success: true,
       pointsAwarded: pointsToAward,
+      basePoints: basePoints,
+      xpMultiplier: xpMultiplier,
+      doubleXpActive: hasDoubleXp,
       bonusPoints: bonusPoints + milestoneBonus,
       bonusDescription: bonusDescription || (milestones.length > 0 ? milestones[0].label : null),
       newTotal: finalTotal,
@@ -430,7 +451,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
       canRedeem: finalTotal >= POINTS_CONFIG.POINTS_FOR_FREE_WEEK
     };
 
-    console.log(`Awarded ${totalPointsEarned} points to user ${userId} for ${type}`);
+    console.log(`Awarded ${totalPointsEarned} points to user ${userId} for ${type}${hasDoubleXp ? ' (2x XP active)' : ''}`);
 
     return new Response(JSON.stringify(result), {
       status: 200,
