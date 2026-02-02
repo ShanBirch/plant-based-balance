@@ -35569,7 +35569,7 @@ function renderMealsList(meals) {
         // Handle photo display - show placeholder if no photo or text-input placeholder
         const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '' && meal.photo_url !== 'text-input';
         const imageHtml = hasPhoto
-            ? `<div class="meal-log-image" style="overflow: hidden;"><img src="${meal.photo_url}" alt="Meal" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='🍽️'; this.parentElement.style.display='flex'; this.parentElement.style.alignItems='center'; this.parentElement.style.justifyContent='center'; this.parentElement.style.fontSize='2rem';"></div>`
+            ? `<div class="meal-log-image" style="overflow: hidden;"><img src="${meal.photo_url}" alt="Meal" style="width: 100%; height: 100%; object-fit: cover;" onerror="if(this.parentElement){this.parentElement.innerHTML='🍽️'; this.parentElement.style.display='flex'; this.parentElement.style.alignItems='center'; this.parentElement.style.justifyContent='center'; this.parentElement.style.fontSize='2rem';}"></div>`
             : `<div class="meal-log-image" style="display: flex; align-items: center; justify-content: center; font-size: 2rem;">🍽️</div>`;
 
         html += `
@@ -35633,7 +35633,7 @@ function openMealDetailPopup(index) {
             <div class="meal-detail-photo" style="position: relative; overflow: hidden;">
                 <img src="${meal.photo_url}" alt="Meal photo"
                      style="width: 100%; height: 100%; object-fit: cover;"
-                     onerror="console.error('Failed to load image:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                     onerror="console.error('Failed to load image:', this.src); this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"
                      onload="console.log('Image loaded successfully');">
                 <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center; font-size:1rem; color:#999; position:absolute; top:0; left:0; background:#f5f5f5;">Photo unavailable</div>
                 <button class="meal-detail-close" onclick="closeMealDetailPopup()">&times;</button>
