@@ -8,7 +8,7 @@
    ============================================================ */
 
 .avatar-room {
-  background: linear-gradient(180deg, #87CEEB 0%, #87CEEB 60%, #8B7355 60%);
+  background: #0a1628;
   position: relative;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
