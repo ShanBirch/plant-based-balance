@@ -800,14 +800,23 @@
                                 referralCode
                             );
 
-                            // Call backend to extend referrer's subscription
-                            await fetch('/.netlify/functions/extend-subscription', {
+                            // Grant double XP to BOTH referrer and new user (1 week each, no stacking)
+                            // Grant to referrer
+                            await fetch('/api/grant-referral-reward', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                     userId: referrer.id,
-                                    daysToAdd: 14, // 2 weeks
                                     referralId: referralRecord.id
+                                })
+                            });
+
+                            // Grant to new user
+                            await fetch('/api/grant-referral-reward', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    userId: newUserId
                                 })
                             });
 
