@@ -9520,14 +9520,17 @@ async function startCustomBuilderWorkout() {
     customWorkout.exercises.forEach((ex, idx) => {
         const card = document.createElement('div');
         card.className = 'exercise-logger-card'; // Required for addWorkoutSet to find parent
+        card.setAttribute('data-exercise-name', ex.name);
+        card.setAttribute('data-is-user-added', 'false');
         card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
 
         const videoUrl = findVideoMatch(ex.name);
         const prevData = findPreviousSetData(ex.name);
+        const escapedName = ex.name.replace(/'/g, "\\'");
 
         card.innerHTML = `
             <div style="padding: 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 5px;">${ex.name}</div>
+                <h3 style="margin: 0 0 5px 0; font-size: 1.05rem; font-weight: 700; color: var(--text-main);">${ex.name}</h3>
                 <div style="color: var(--text-muted); font-size: 0.85rem;">Custom Exercise</div>
                 ${prevData ? `<div style="color: var(--primary); font-size: 0.75rem; margin-top: 5px;">Last: ${prevData}</div>` : ''}
             </div>
@@ -19095,9 +19098,14 @@ async function finishWorkout() {
 
     if(activeWorkout) {
         Array.from(activeWorkout.children).forEach(card => {
-            const nameEl = card.querySelector('h3');
-            if(!nameEl) return;
-            const name = nameEl.innerText;
+            // Get exercise name from data attribute first, fallback to h3 or first styled div
+            let name = card.getAttribute('data-exercise-name');
+            if (!name) {
+                const nameEl = card.querySelector('h3') || card.querySelector('div[style*="font-weight: 700"]');
+                if(!nameEl) return;
+                name = nameEl.innerText;
+            }
+            if (!name) return;
 
             const container = card.querySelector('.sets-list-container');
             if(!container) return;
@@ -19253,6 +19261,15 @@ async function finishWorkout() {
                  await showWorkoutSuccessScreen(duration, [], [], setsToSave);
              }
         } else {
+            // Still set workout data for sharing even with no sets
+            completedWorkoutDataForShare = {
+                duration: duration,
+                improvements: [],
+                milestones: [],
+                newPBs: [],
+                workoutName: window.currentWorkoutName || 'Workout',
+                sets: []
+            };
             hideAllAppViews();
             document.getElementById('view-workout-success').style.display = 'flex';
             // Push navigation state for Android back button
