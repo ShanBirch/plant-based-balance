@@ -12218,15 +12218,24 @@ async function _syncQuizDataToDbRealImpl() {
                         await dbHelpers.quizResults.create(user.id, quizResultData);
                         console.log("Quiz results with nutrition goals saved to database");
 
-                        // Update daily_nutrition goals for today
-                        const today = new Date().toISOString().split('T')[0];
-                        await dbHelpers.nutrition.updateGoals(user.id, today, {
+                        // Update daily_nutrition goals for ALL existing entries
+                        // This ensures that when onboarding is redone, all historical entries
+                        // reflect the new calorie/macro goals instead of keeping stale values
+                        const goalsToUpdate = {
                             calorie_goal: nutritionGoals.calorie_goal,
                             protein_goal_g: nutritionGoals.protein_goal_g,
                             carbs_goal_g: nutritionGoals.carbs_goal_g,
                             fat_goal_g: nutritionGoals.fat_goal_g
-                        });
-                        console.log("Daily nutrition goals updated");
+                        };
+
+                        // First update all existing entries
+                        await dbHelpers.nutrition.updateAllGoals(user.id, goalsToUpdate);
+                        console.log("All daily nutrition goals updated");
+
+                        // Also ensure today has an entry (updateAllGoals only updates existing rows)
+                        const today = new Date().toISOString().split('T')[0];
+                        await dbHelpers.nutrition.updateGoals(user.id, today, goalsToUpdate);
+                        console.log("Today's nutrition goals ensured");
 
                         // CRITICAL FIX: Save sex to users table so it persists on page reload
                         // This fixes the bug where gender resets to female on refresh
