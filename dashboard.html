@@ -3437,10 +3437,10 @@ async function applyAppTheme(themeKey) {
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
                 <div>
                     <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; font-weight: 700;">Daily Weigh-In</h3>
-                    <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Track your progress, earn points!</p>
+                    <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Track your progress, earn XP!</p>
                 </div>
                 <div style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
-                    +1 pt
+                    +1 XP
                 </div>
             </div>
 
@@ -3455,8 +3455,8 @@ async function applyAppTheme(themeKey) {
             </div>
 
             <div id="weigh-in-success-section" style="display: none; text-align: center; padding: 10px 0;">
-                <div style="font-size: 2rem; margin-bottom: 8px;">+1</div>
-                <p style="margin: 0; font-weight: 600;">Weigh-in complete! Point earned.</p>
+                <div style="font-size: 2rem; margin-bottom: 8px;">+1 XP</div>
+                <p style="margin: 0; font-weight: 600;">Weigh-in complete!</p>
             </div>
         </div>
     </div>
@@ -3550,13 +3550,31 @@ async function applyAppTheme(themeKey) {
             // Log the weigh-in
             await db.weighIns.log(window.currentUser.id, weightValue);
 
-            // Award points (4 points for daily weigh-in)
+            // Award 1 XP (add to lifetime_points for leveling)
             try {
-                if (typeof db.points?.awardPoints === 'function') {
-                    await db.points.awardPoints(window.currentUser.id, 'weigh_in', null);
+                const { data: currentPoints } = await supabaseClient
+                    .from('user_points')
+                    .select('lifetime_points')
+                    .eq('user_id', window.currentUser.id)
+                    .single();
+
+                if (currentPoints) {
+                    await supabaseClient
+                        .from('user_points')
+                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 1 })
+                        .eq('user_id', window.currentUser.id);
+                } else {
+                    // Create user_points record if doesn't exist
+                    await supabaseClient
+                        .from('user_points')
+                        .insert({ user_id: window.currentUser.id, lifetime_points: 1, current_points: 0 });
                 }
-            } catch (pointsError) {
-                console.log('Points award skipped:', pointsError);
+
+                // Trigger XP bar animation if available
+                if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+            } catch (xpError) {
+                console.log('XP award skipped:', xpError);
             }
 
             // Show success animation
