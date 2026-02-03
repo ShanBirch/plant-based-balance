@@ -1,5 +1,5 @@
 -- Daily Weigh-ins Migration
--- Tracks daily weight check-ins with points reward (4 points, once per day)
+-- Tracks daily weight check-ins (awards 1 XP per day)
 
 -- Create daily_weigh_ins table
 CREATE TABLE IF NOT EXISTS public.daily_weigh_ins (
@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS public.daily_weigh_ins (
   weigh_in_date DATE NOT NULL,
   weight_kg NUMERIC NOT NULL,
   notes TEXT,
-  points_awarded INTEGER DEFAULT 4,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, weigh_in_date)
 );
