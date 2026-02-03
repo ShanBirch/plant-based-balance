@@ -35220,6 +35220,93 @@ function checkAndResetNewDay() {
     return false;
 }
 
+// Check yesterday's calorie goal and award bonus point if within 10%
+// This is called when a new day is detected to award end-of-day bonus
+async function checkYesterdayCalorieGoalBonus() {
+    try {
+        const user = await window.supabaseClient.auth.getUser();
+        const userId = user?.data?.user?.id;
+
+        if (!userId) {
+            console.log('User not authenticated, skipping calorie goal bonus check');
+            return;
+        }
+
+        // Get yesterday's date
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = getLocalDateString(yesterday);
+
+        console.log('Checking calorie goal bonus for:', yesterdayStr);
+
+        // Fetch yesterday's nutrition data
+        const { data: yesterdayData, error: fetchError } = await window.supabaseClient
+            .from('daily_nutrition')
+            .select('total_calories, calorie_goal')
+            .eq('user_id', userId)
+            .eq('nutrition_date', yesterdayStr)
+            .single();
+
+        if (fetchError && fetchError.code !== 'PGRST116') {
+            console.error('Error fetching yesterday nutrition:', fetchError);
+            return;
+        }
+
+        if (!yesterdayData || !yesterdayData.calorie_goal || !yesterdayData.total_calories) {
+            console.log('No nutrition data for yesterday or missing goal/calories');
+            return;
+        }
+
+        const { total_calories, calorie_goal } = yesterdayData;
+
+        // Check if within 10% of goal
+        const tolerance = 0.10;
+        const lowerBound = calorie_goal * (1 - tolerance);
+        const upperBound = calorie_goal * (1 + tolerance);
+        const isWithinGoal = total_calories >= lowerBound && total_calories <= upperBound;
+
+        console.log(`Yesterday's calories: ${Math.round(total_calories)}, goal: ${Math.round(calorie_goal)}, range: ${Math.round(lowerBound)}-${Math.round(upperBound)}, within goal: ${isWithinGoal}`);
+
+        if (!isWithinGoal) {
+            console.log('Calories not within 10% of goal, no bonus awarded');
+            return;
+        }
+
+        // Award the bonus point via API
+        const response = await fetch('/api/award-points', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                userId: userId,
+                type: 'calorie_goal_bonus',
+                referenceId: yesterdayStr,
+                bonusDate: yesterdayStr,
+                totalCalories: total_calories,
+                calorieGoal: calorie_goal
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            console.log(`Calorie goal bonus awarded! +${result.pointsAwarded} point`);
+            // Show a toast notification to the user
+            if (typeof showToast === 'function') {
+                showToast(`Bonus point earned for hitting your calorie goal yesterday!`, 'success');
+            }
+        } else if (result.error === 'Bonus already awarded') {
+            console.log('Calorie goal bonus already awarded for yesterday');
+        } else {
+            console.log('Calorie goal bonus not awarded:', result.reason || result.error);
+        }
+
+    } catch (error) {
+        console.error('Error checking calorie goal bonus:', error);
+    }
+}
+
 // Load weekly metrics (last 7 days)
 async function loadWeeklyMetrics(userId) {
     try {
@@ -35295,8 +35382,12 @@ async function loadWeeklyMetrics(userId) {
 // Load today's nutrition data
 async function loadTodayNutrition() {
     try {
-        // Check if it's a new day
-        checkAndResetNewDay();
+        // Check if it's a new day - if so, check for yesterday's calorie goal bonus
+        const isNewDay = checkAndResetNewDay();
+        if (isNewDay) {
+            // Check and award calorie goal bonus for yesterday (runs in background)
+            checkYesterdayCalorieGoalBonus();
+        }
 
         const user = await window.supabaseClient.auth.getUser();
         const userId = user?.data?.user?.id;
