@@ -3669,6 +3669,181 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
+    <!-- Daily Weigh-In Card (disappears after completion) -->
+    <div id="daily-weigh-in-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+        <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+
+        <div style="position: relative; z-index: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div>
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; font-weight: 700;">Daily Weigh-In</h3>
+                    <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Track your progress, earn points!</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
+                    +4 pts
+                </div>
+            </div>
+
+            <div id="weigh-in-input-section" style="display: flex; gap: 10px; align-items: center;">
+                <div style="flex: 1; position: relative;">
+                    <input type="number" id="weigh-in-weight-input" placeholder="Enter weight" step="0.1" min="20" max="500" style="width: 100%; padding: 12px 50px 12px 15px; border: none; border-radius: 10px; font-size: 1rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
+                    <span id="weigh-in-unit-label" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #666; font-size: 0.9rem; font-weight: 500;">kg</span>
+                </div>
+                <button onclick="submitDailyWeighIn()" style="background: white; color: #667eea; border: none; padding: 12px 20px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; white-space: nowrap; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                    Log It
+                </button>
+            </div>
+
+            <div id="weigh-in-success-section" style="display: none; text-align: center; padding: 10px 0;">
+                <div style="font-size: 2rem; margin-bottom: 8px;">+4</div>
+                <p style="margin: 0; font-weight: 600;">Weigh-in complete! Points earned.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ===== DAILY WEIGH-IN CARD LOGIC =====
+
+    /**
+     * Check if user has weighed in today and show/hide card accordingly
+     */
+    async function checkAndShowWeighInCard() {
+        if (!window.currentUser) return;
+
+        try {
+            const todaysWeighIn = await db.weighIns.getTodaysWeighIn(window.currentUser.id);
+            const card = document.getElementById('daily-weigh-in-card');
+
+            if (card) {
+                if (todaysWeighIn) {
+                    // Already weighed in today - hide the card
+                    card.style.display = 'none';
+                } else {
+                    // Show the card for today's weigh-in
+                    card.style.display = 'block';
+
+                    // Pre-fill with last known weight if available
+                    const latestWeighIn = await db.weighIns.getLatest(window.currentUser.id);
+                    if (latestWeighIn) {
+                        const input = document.getElementById('weigh-in-weight-input');
+                        if (input) input.placeholder = `Last: ${latestWeighIn.weight_kg} kg`;
+                    }
+
+                    // Check user's preferred unit and update label
+                    updateWeighInUnitLabel();
+                }
+            }
+        } catch (error) {
+            console.error('Error checking weigh-in status:', error);
+        }
+    }
+
+    /**
+     * Update the unit label based on user preference
+     */
+    function updateWeighInUnitLabel() {
+        const unitLabel = document.getElementById('weigh-in-unit-label');
+        const input = document.getElementById('weigh-in-weight-input');
+
+        // Check if user prefers lbs (from localStorage or user settings)
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+
+        if (unitLabel && input) {
+            if (preferLbs) {
+                unitLabel.textContent = 'lbs';
+                input.step = '1';
+            } else {
+                unitLabel.textContent = 'kg';
+                input.step = '0.1';
+            }
+        }
+    }
+
+    /**
+     * Submit the daily weigh-in
+     */
+    async function submitDailyWeighIn() {
+        if (!window.currentUser) {
+            alert('Please log in to track your weight.');
+            return;
+        }
+
+        const input = document.getElementById('weigh-in-weight-input');
+        const inputSection = document.getElementById('weigh-in-input-section');
+        const successSection = document.getElementById('weigh-in-success-section');
+        const card = document.getElementById('daily-weigh-in-card');
+
+        let weightValue = parseFloat(input?.value);
+
+        if (!weightValue || weightValue < 20 || weightValue > 500) {
+            alert('Please enter a valid weight.');
+            return;
+        }
+
+        // Convert lbs to kg if needed
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        if (preferLbs) {
+            weightValue = weightValue * 0.453592; // Convert lbs to kg
+        }
+
+        try {
+            // Log the weigh-in
+            await db.weighIns.log(window.currentUser.id, weightValue);
+
+            // Award points (4 points for daily weigh-in)
+            try {
+                if (typeof db.points?.awardPoints === 'function') {
+                    await db.points.awardPoints(window.currentUser.id, 'weigh_in', null);
+                }
+            } catch (pointsError) {
+                console.log('Points award skipped:', pointsError);
+            }
+
+            // Show success animation
+            if (inputSection) inputSection.style.display = 'none';
+            if (successSection) successSection.style.display = 'block';
+
+            // Update user's current weight in profile
+            try {
+                await db.users.update(window.currentUser.id, { weight: weightValue });
+            } catch (updateError) {
+                console.log('Profile weight update skipped:', updateError);
+            }
+
+            // Hide card after 2 seconds with fade out
+            setTimeout(() => {
+                if (card) {
+                    card.style.transition = 'opacity 0.5s, transform 0.5s';
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(-20px)';
+                    setTimeout(() => {
+                        card.style.display = 'none';
+                        // Reset for next day
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                        if (inputSection) inputSection.style.display = 'flex';
+                        if (successSection) successSection.style.display = 'none';
+                        if (input) input.value = '';
+                    }, 500);
+                }
+            }, 2000);
+
+            // Refresh points display if visible
+            if (typeof refreshPointsDisplay === 'function') {
+                refreshPointsDisplay();
+            }
+
+        } catch (error) {
+            console.error('Error logging weigh-in:', error);
+            alert('Failed to log weigh-in. Please try again.');
+        }
+    }
+
+    // Make functions globally available
+    window.submitDailyWeighIn = submitDailyWeighIn;
+    window.checkAndShowWeighInCard = checkAndShowWeighInCard;
+    </script>
 
     <div style="padding: 0 25px;">
         <!-- Calorie Counter Widget -->
@@ -4252,6 +4427,9 @@ async function applyAppTheme(themeKey) {
 
             // Update dashboard workout card to show today's recommended workout
             if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
+
+            // Check and show daily weigh-in card
+            if(typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
 
             // Also refresh community feed if function exists
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
