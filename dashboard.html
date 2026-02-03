@@ -2329,6 +2329,42 @@ async function applyAppTheme(themeKey) {
         color: rgba(0, 0, 0, 0.8);
     }
 
+    /* Unlocked move display in banner */
+    .levelup-unlocked-move {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(0, 0, 0, 0.15);
+        animation: unlockSlideIn 0.5s ease-out 0.8s both;
+    }
+
+    @keyframes unlockSlideIn {
+        0% { opacity: 0; transform: translateY(10px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .levelup-unlocked-label {
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 2px;
+    }
+
+    .levelup-unlocked-name {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .levelup-unlocked-icon {
+        font-size: 1.1rem;
+    }
+
     /* XP Bar Level-Up Animation */
     .xp-bar-levelup-fill {
         animation: xpBarLevelUp 1.5s ease-out forwards;
@@ -3613,6 +3649,14 @@ async function applyAppTheme(themeKey) {
                         <span class="star-icon">⭐</span>
                     </div>
                     <div id="levelup-banner-rank" class="levelup-banner-rank">Newcomer</div>
+                    <!-- Unlocked move display (shown if a move was unlocked) -->
+                    <div id="levelup-unlocked-container" class="levelup-unlocked-move" style="display: none;">
+                        <div class="levelup-unlocked-label">New Move Unlocked!</div>
+                        <div id="levelup-unlocked-name" class="levelup-unlocked-name">
+                            <span id="levelup-unlocked-icon" class="levelup-unlocked-icon">🎬</span>
+                            <span id="levelup-unlocked-text">Victory</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -33233,6 +33277,50 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
             } else {
                 rankContainer.textContent = title;
             }
+
+            // Check for unlocked moves and display in banner
+            const unlockedContainer = document.getElementById('levelup-unlocked-container');
+            const unlockedIcon = document.getElementById('levelup-unlocked-icon');
+            const unlockedText = document.getElementById('levelup-unlocked-text');
+
+            if (unlockedContainer && previousLevel) {
+                // Get newly unlocked animations for this level
+                const mv = document.getElementById('tamagotchi-model');
+                const availableAnims = mv?.availableAnimations || [];
+
+                // Find animations unlocked at exactly this new level
+                const newlyUnlocked = (typeof ANIMATION_UNLOCKS !== 'undefined' ? ANIMATION_UNLOCKS : []).filter(unlock => {
+                    const wasLocked = previousLevel < unlock.unlockLevel;
+                    const isUnlockedNow = newLevel >= unlock.unlockLevel;
+                    const existsInModel = availableAnims.some(a =>
+                        a.toLowerCase().includes(unlock.name.toLowerCase())
+                    );
+                    return wasLocked && isUnlockedNow && existsInModel;
+                });
+
+                if (newlyUnlocked.length > 0) {
+                    // Show the first unlocked move (or combine if multiple)
+                    const firstUnlock = newlyUnlocked[0];
+                    unlockedIcon.textContent = firstUnlock.icon || '🎬';
+
+                    if (newlyUnlocked.length === 1) {
+                        unlockedText.textContent = firstUnlock.displayName;
+                    } else {
+                        // Multiple unlocks - show count
+                        unlockedText.textContent = `${firstUnlock.displayName} +${newlyUnlocked.length - 1} more`;
+                    }
+
+                    unlockedContainer.style.display = 'block';
+                    // Reset animation
+                    unlockedContainer.style.animation = 'none';
+                    unlockedContainer.offsetHeight;
+                    unlockedContainer.style.animation = 'unlockSlideIn 0.5s ease-out 0.8s both';
+                } else {
+                    unlockedContainer.style.display = 'none';
+                }
+            } else if (unlockedContainer) {
+                unlockedContainer.style.display = 'none';
+            }
         }, 300);
 
         // Step 5: Trigger Shazie's celebration dance
@@ -33296,6 +33384,12 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
             banner.style.display = 'none';
             banner.style.animation = '';
             overlay.innerHTML = '';
+            // Reset unlocked move container
+            const unlockedContainer = document.getElementById('levelup-unlocked-container');
+            if (unlockedContainer) {
+                unlockedContainer.style.display = 'none';
+                unlockedContainer.style.animation = '';
+            }
         }, 5000);
     }
 }
