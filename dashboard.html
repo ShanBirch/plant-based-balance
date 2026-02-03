@@ -11514,6 +11514,9 @@ function viewWorkoutHistoryDetail(date) {
                 <button onclick="initOnboardingWizard()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🌸</span> Restart Onboarding Setup
                 </button>
+                <button onclick="recalculateCalories()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>🔄</span> Recalculate My Calories
+                </button>
                 <button onclick="checkDailyWellness(true)" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>☀️</span> Daily Wellness Check-in
                 </button>
@@ -11850,6 +11853,156 @@ function viewWorkoutHistoryDetail(date) {
 
         document.getElementById('btn-save-profile').style.display = 'none';
         document.getElementById('btn-edit-profile').style.display = 'inline-flex';
+    }
+
+    /**
+     * Recalculate calories based on current profile data
+     * Updates calorie and macro goals in database and refreshes UI
+     */
+    async function recalculateCalories() {
+        try {
+            // Show loading state
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span>🔄</span> Calculating...';
+            btn.disabled = true;
+
+            // Get current user's quiz data from database
+            if (!window.currentUser?.id) {
+                alert('Please log in to recalculate your calories.');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            // Fetch current quiz results
+            let quizData = null;
+            if (typeof dbHelpers !== 'undefined') {
+                quizData = await dbHelpers.quizResults.getLatest(window.currentUser.id);
+            }
+
+            // Also check localStorage for backup data
+            const localProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+
+            // Merge data sources (database takes priority)
+            const profileData = { ...localProfile, ...sessionProfile, ...quizData };
+
+            // Validate required fields for calculation
+            const requiredFields = ['age', 'height', 'weight', 'goal_weight', 'sex', 'activity_level', 'goalBodyType'];
+            const missingFields = requiredFields.filter(field => !profileData[field]);
+
+            if (missingFields.length > 0) {
+                alert(`Missing required profile data: ${missingFields.join(', ')}. Please complete your profile setup first.`);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            // Calculate new nutrition goals using the nutrition calculator
+            const nutritionGoals = calculateNutritionGoals({
+                age: parseInt(profileData.age),
+                height: parseFloat(profileData.height),
+                weight: parseFloat(profileData.weight),
+                goal_weight: parseFloat(profileData.goal_weight),
+                sex: profileData.sex,
+                activity_level: profileData.activity_level,
+                goalBodyType: profileData.goalBodyType
+            });
+
+            if (!nutritionGoals) {
+                alert('Failed to calculate nutrition goals. Please check your profile data.');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            console.log('✅ New nutrition goals calculated:', nutritionGoals);
+
+            // Update quiz_results in database
+            if (window.supabaseClient && window.currentUser?.id) {
+                const { error } = await window.supabaseClient.from('quiz_results')
+                    .update({
+                        bmr: nutritionGoals.bmr,
+                        tdee: nutritionGoals.tdee,
+                        calorie_goal: nutritionGoals.calorie_goal,
+                        protein_goal_g: nutritionGoals.protein_goal_g,
+                        carbs_goal_g: nutritionGoals.carbs_goal_g,
+                        fat_goal_g: nutritionGoals.fat_goal_g
+                    })
+                    .eq('user_id', window.currentUser.id);
+
+                if (error) {
+                    console.error('Failed to save new calorie goals:', error);
+                    alert('Failed to save new calorie goals. Please try again.');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+            }
+
+            // Update localStorage and sessionStorage
+            const updatedGoals = {
+                bmr: nutritionGoals.bmr,
+                tdee: nutritionGoals.tdee,
+                calorie_goal: nutritionGoals.calorie_goal,
+                protein_goal_g: nutritionGoals.protein_goal_g,
+                carbs_goal_g: nutritionGoals.carbs_goal_g,
+                fat_goal_g: nutritionGoals.fat_goal_g
+            };
+
+            const storedLocal = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            Object.assign(storedLocal, updatedGoals);
+            localStorage.setItem('userProfile', JSON.stringify(storedLocal));
+
+            const storedSession = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            Object.assign(storedSession, updatedGoals);
+            sessionStorage.setItem('userProfile', JSON.stringify(storedSession));
+
+            // Update window.userProfile cache
+            if (window.userProfile) {
+                Object.assign(window.userProfile, updatedGoals);
+            }
+
+            // Update today's daily_nutrition record with new goals
+            const today = new Date().toISOString().split('T')[0];
+            if (window.supabaseClient && window.currentUser?.id) {
+                await window.supabaseClient.from('daily_nutrition')
+                    .upsert({
+                        user_id: window.currentUser.id,
+                        date: today,
+                        calorie_goal: nutritionGoals.calorie_goal,
+                        protein_goal_g: nutritionGoals.protein_goal_g,
+                        carbs_goal_g: nutritionGoals.carbs_goal_g,
+                        fat_goal_g: nutritionGoals.fat_goal_g
+                    }, { onConflict: 'user_id,date' });
+            }
+
+            // Refresh UI widgets
+            if (typeof refreshNutritionWidgets === 'function') {
+                refreshNutritionWidgets();
+            }
+            if (typeof loadNutritionData === 'function') {
+                loadNutritionData();
+            }
+
+            // Show success message
+            btn.innerHTML = '<span>✅</span> Updated!';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 2000);
+
+            // Show detailed confirmation
+            alert(`Your calories have been recalculated!\n\nNew Daily Goals:\n• Calories: ${nutritionGoals.calorie_goal} kcal\n• Protein: ${nutritionGoals.protein_goal_g}g\n• Carbs: ${nutritionGoals.carbs_goal_g}g\n• Fat: ${nutritionGoals.fat_goal_g}g`);
+
+        } catch (error) {
+            console.error('Error recalculating calories:', error);
+            alert('An error occurred while recalculating calories. Please try again.');
+            const btn = event.target.closest('button');
+            btn.innerHTML = '<span>🔄</span> Recalculate My Calories';
+            btn.disabled = false;
+        }
     }
     </script>
 
