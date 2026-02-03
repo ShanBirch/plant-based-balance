@@ -14952,12 +14952,18 @@ function initializeMealPlanView() {
             if (!document.getElementById('browse-plans-pill')) {
                 const browsePill = document.createElement('button');
                 browsePill.id = 'browse-plans-pill';
-                browsePill.className = 'pill-btn'; // Not active by default
-                browsePill.style.cssText = 'background: var(--secondary); color: white; font-weight: 600;';
+                browsePill.className = 'pill-btn'; // Not active by default - will be styled by CSS
                 browsePill.textContent = '🛒 Browse Plans';
                 browsePill.onclick = function() { switchWeek('meal-plan-store', this); };
-                // Insert at the beginning
-                navPills.insertBefore(browsePill, navPills.firstChild);
+                // Find the Calorie Tracker pill and insert Browse Plans after it
+                const calorieTrackerPill = Array.from(navPills.querySelectorAll('.pill-btn')).find(p => p.textContent.toLowerCase().includes('calorie'));
+                if (calorieTrackerPill && calorieTrackerPill.nextSibling) {
+                    navPills.insertBefore(browsePill, calorieTrackerPill.nextSibling);
+                } else if (calorieTrackerPill) {
+                    navPills.appendChild(browsePill);
+                } else {
+                    navPills.appendChild(browsePill);
+                }
             } else {
                 // Don't make it active - calorie tracker is default now
                 document.getElementById('browse-plans-pill').classList.remove('active');
