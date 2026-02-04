@@ -3916,7 +3916,6 @@ async function applyAppTheme(themeKey) {
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 50%; background: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(80,100,140,0.2) 0%, transparent 70%); pointer-events: none; z-index: 1;"></div>
             <model-viewer
                 id="tamagotchi-model"
-                src="assets/shazylvl1.glb"
                 camera-controls
                 disable-zoom
                 disable-pan
@@ -4774,9 +4773,9 @@ async function applyAppTheme(themeKey) {
             // Check if essential quiz data is missing and trigger onboarding wizard
             await checkAndTriggerOnboarding();
 
-            // Load character colors from database
+            // Load character colors and gender from database (must await to set correct evolution path)
             if (typeof window.loadCharacterColorsFromDb === 'function') {
-                window.loadCharacterColorsFromDb();
+                await window.loadCharacterColorsFromDb();
             }
 
             // Update dashboard workout card to show today's recommended workout
@@ -40294,7 +40293,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return Math.floor(1.3 * Math.pow(lvl, 1.55));
         }
 
-        window.updateFitGotchi = function(pointsData) {
+        window.updateFitGotchi = async function(pointsData) {
             const lifetimePoints = pointsData.lifetime_points || 0;
             const currentStreak = pointsData.current_streak || 0;
             
@@ -40320,9 +40319,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (streakEl) streakEl.textContent = currentStreak;
 
             // Find matching evolution for the model
-            // Ensure gender is loaded
+            // Ensure gender is loaded BEFORE selecting evolution (must await to fix female character bug)
             if (!window.currentUserGender && window.currentUser) {
-                loadCharacterColorsFromDb();
+                await loadCharacterColorsFromDb();
             }
             
             const currentEvolution = [...TAMAGOTCHI_EVOLUTIONS].reverse().find(e => level >= e.level) || TAMAGOTCHI_EVOLUTIONS[0];
