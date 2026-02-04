@@ -801,3 +801,518 @@
   border-radius: 50%;
   animation: particleBurst 0.8s ease-out forwards;
 }
+
+/* =============================================================================
+   INTERACTIVE LESSON INTRO - Reading Modes
+   ============================================================================= */
+
+/* Reading Mode Toggle */
+.reading-mode-toggle {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.reading-mode-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--smooth-easing);
+  background: transparent;
+  color: #64748b;
+}
+
+.reading-mode-btn.active {
+  background: white;
+  color: var(--module-color, #48864B);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.reading-mode-btn:hover:not(.active) {
+  background: rgba(255,255,255,0.5);
+}
+
+/* =============================================================================
+   BIONIC READING MODE
+   ============================================================================= */
+
+.bionic-text .bionic-word {
+  display: inline;
+}
+
+.bionic-text .bionic-bold {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.bionic-text .bionic-light {
+  font-weight: 400;
+  color: #64748b;
+}
+
+/* =============================================================================
+   PROGRESSIVE REVEAL MODE (Focus Mode)
+   ============================================================================= */
+
+@keyframes paragraphReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes wordFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.focus-mode .lesson-paragraph {
+  opacity: 0;
+  animation: paragraphReveal 0.6s var(--spring-easing) forwards;
+}
+
+.focus-mode .lesson-paragraph:nth-child(1) { animation-delay: 0.2s; }
+.focus-mode .lesson-paragraph:nth-child(2) { animation-delay: 0.8s; }
+.focus-mode .lesson-paragraph:nth-child(3) { animation-delay: 1.4s; }
+.focus-mode .lesson-paragraph:nth-child(4) { animation-delay: 2.0s; }
+.focus-mode .lesson-paragraph:nth-child(5) { animation-delay: 2.6s; }
+.focus-mode .lesson-paragraph:nth-child(6) { animation-delay: 3.2s; }
+
+/* Word-by-word reveal within paragraph */
+.reveal-words .reveal-word {
+  display: inline-block;
+  opacity: 0;
+  animation: wordFadeIn 0.3s ease forwards;
+}
+
+/* =============================================================================
+   INTERACTIVE HIGHLIGHTS
+   ============================================================================= */
+
+.interactive-term {
+  position: relative;
+  background: linear-gradient(180deg, transparent 60%, var(--module-color, #48864B)30 100%);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.interactive-term:hover {
+  background: linear-gradient(180deg, transparent 40%, var(--module-color, #48864B)40 100%);
+}
+
+.interactive-term.expanded {
+  background: var(--module-color, #48864B)20;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  border-radius: 6px;
+}
+
+/* Term tooltip/expansion */
+@keyframes tooltipPop {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.term-tooltip {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 8px;
+  background: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  z-index: 100;
+  min-width: 200px;
+  max-width: 280px;
+  animation: tooltipPop 0.2s var(--spring-easing) forwards;
+}
+
+.term-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 20px;
+  width: 12px;
+  height: 12px;
+  background: white;
+  transform: rotate(45deg);
+  box-shadow: -2px -2px 4px rgba(0,0,0,0.05);
+}
+
+/* =============================================================================
+   THINK ABOUT IT PROMPT
+   ============================================================================= */
+
+@keyframes promptSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.think-prompt {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 12px;
+  margin: 20px 0;
+  animation: promptSlideIn 0.4s var(--spring-easing) forwards;
+}
+
+.think-prompt-icon {
+  width: 32px;
+  height: 32px;
+  background: #f59e0b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  animation: thinkPulse 2s ease-in-out infinite;
+}
+
+@keyframes thinkPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.think-prompt-content {
+  flex: 1;
+}
+
+.think-prompt-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.think-prompt-question {
+  font-size: 0.9rem;
+  color: #78350f;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.think-prompt-reveal {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #d97706;
+}
+
+.think-prompt-answer {
+  font-size: 0.85rem;
+  color: #78350f;
+  line-height: 1.5;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.think-prompt-answer.revealed {
+  opacity: 1;
+  max-height: 200px;
+}
+
+.think-reveal-btn {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.think-reveal-btn:hover {
+  background: #d97706;
+  transform: scale(1.02);
+}
+
+/* =============================================================================
+   ANIMATED ILLUSTRATION PLACEHOLDERS
+   ============================================================================= */
+
+@keyframes illustrationPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+}
+
+.lesson-illustration {
+  width: 100%;
+  height: 150px;
+  background: linear-gradient(135deg, var(--module-color, #48864B)10 0%, var(--module-color, #48864B)20 100%);
+  border-radius: 16px;
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.lesson-illustration svg {
+  width: 80%;
+  height: 80%;
+  animation: illustrationPulse 3s ease-in-out infinite;
+}
+
+/* Muscle Pair Animation */
+@keyframes muscleContract {
+  0%, 100% {
+    transform: scaleY(1);
+    fill-opacity: 0.7;
+  }
+  50% {
+    transform: scaleY(0.8);
+    fill-opacity: 1;
+  }
+}
+
+@keyframes muscleRelax {
+  0%, 100% {
+    transform: scaleY(0.8);
+    fill-opacity: 1;
+  }
+  50% {
+    transform: scaleY(1);
+    fill-opacity: 0.7;
+  }
+}
+
+.muscle-contract {
+  animation: muscleContract 2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.muscle-relax {
+  animation: muscleRelax 2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* =============================================================================
+   READING PROGRESS INDICATOR
+   ============================================================================= */
+
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--module-color, #48864B);
+  width: 0%;
+  transition: width 0.1s linear;
+  z-index: 1000;
+}
+
+/* =============================================================================
+   CONTENT SECTION ANIMATIONS
+   ============================================================================= */
+
+@keyframes sectionSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lesson-section {
+  opacity: 0;
+  animation: sectionSlideUp 0.5s var(--spring-easing) forwards;
+}
+
+.lesson-section:nth-child(1) { animation-delay: 0.1s; }
+.lesson-section:nth-child(2) { animation-delay: 0.2s; }
+.lesson-section:nth-child(3) { animation-delay: 0.3s; }
+.lesson-section:nth-child(4) { animation-delay: 0.4s; }
+
+/* =============================================================================
+   SPEED READ / RSVP MODE
+   ============================================================================= */
+
+.rsvp-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 40px 20px;
+}
+
+.rsvp-word {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-main);
+  text-align: center;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rsvp-word .rsvp-focus {
+  color: var(--module-color, #48864B);
+  font-weight: 800;
+}
+
+.rsvp-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.rsvp-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid var(--module-color, #48864B);
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.rsvp-btn:hover {
+  background: var(--module-color, #48864B)10;
+  transform: scale(1.05);
+}
+
+.rsvp-btn.active {
+  background: var(--module-color, #48864B);
+}
+
+.rsvp-btn.active svg {
+  fill: white;
+}
+
+.rsvp-speed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.rsvp-speed input[type="range"] {
+  width: 120px;
+  accent-color: var(--module-color, #48864B);
+}
+
+/* RSVP Progress bar */
+.rsvp-progress {
+  width: 100%;
+  max-width: 300px;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.rsvp-progress-bar {
+  height: 100%;
+  background: var(--module-color, #48864B);
+  transition: width 0.1s linear;
+}
+
+/* =============================================================================
+   TAP TO CONTINUE ANIMATION
+   ============================================================================= */
+
+@keyframes tapPrompt {
+  0%, 100% { opacity: 0.5; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-5px); }
+}
+
+.tap-to-continue {
+  text-align: center;
+  padding: 20px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  animation: tapPrompt 2s ease-in-out infinite;
+}
+
+/* =============================================================================
+   FLOATING ACTION HINTS
+   ============================================================================= */
+
+@keyframes floatHint {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+
+.action-hint {
+  position: absolute;
+  background: var(--module-color, #48864B);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  animation: floatHint 3s ease-in-out infinite;
+  box-shadow: 0 4px 12px var(--module-color, #48864B)40;
+}
+
+.action-hint::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--module-color, #48864B);
+}
