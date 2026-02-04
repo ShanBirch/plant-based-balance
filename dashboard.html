@@ -12996,12 +12996,12 @@ function viewWorkoutHistoryDetail(date) {
                 await window.supabaseClient.from('daily_nutrition')
                     .upsert({
                         user_id: window.currentUser.id,
-                        date: today,
+                        nutrition_date: today,
                         calorie_goal: nutritionGoals.calorie_goal,
                         protein_goal_g: nutritionGoals.protein_goal_g,
                         carbs_goal_g: nutritionGoals.carbs_goal_g,
                         fat_goal_g: nutritionGoals.fat_goal_g
-                    }, { onConflict: 'user_id,date' });
+                    }, { onConflict: 'user_id,nutrition_date' });
             }
 
             // Refresh UI widgets
