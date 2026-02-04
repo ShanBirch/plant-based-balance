@@ -11310,7 +11310,7 @@ function viewWorkoutHistoryDetail(date) {
                 <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Friends</h2>
                 <div id="friends-subtitle" style="font-size: 0.8rem; color: var(--text-muted);">See what everyone's up to</div>
             </div>
-            <div style="display: flex; gap: 12px; align-items: center;">
+            <div style="display: flex; gap: 10px; align-items: center;">
                 <!-- Message Inbox Icon -->
                 <div onclick="openMessageInbox()" style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
@@ -11319,6 +11319,10 @@ function viewWorkoutHistoryDetail(date) {
                 <!-- Add Friend Button -->
                 <div onclick="openAddFriendModal()" style="width: 40px; height: 40px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                </div>
+                <!-- Profile/Settings Button -->
+                <div onclick="switchAppTab('profile')" style="width: 40px; height: 40px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                 </div>
             </div>
         </div>
@@ -11467,6 +11471,21 @@ function viewWorkoutHistoryDetail(date) {
                 <button onclick="submitCoachMessage()" style="width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Selector Modal (Choose who to message) -->
+    <div id="message-selector-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10007; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 80vh; overflow: hidden; animation: fadeInScale 0.3s ease-out;">
+            <!-- Header -->
+            <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-main);">New Message</h3>
+                <button onclick="closeMessageSelectorModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</button>
+            </div>
+            <!-- Friend List -->
+            <div id="message-selector-list" style="max-height: 400px; overflow-y: auto; padding: 10px;">
+                <!-- Friends will be loaded here -->
             </div>
         </div>
     </div>
@@ -29752,11 +29771,83 @@ async function sendDirectMessage() {
     }
 }
 
-// Open message inbox (shows all conversations)
-function openMessageInbox() {
-    // Open coach chat modal
-    openCoachChatModal();
-    showToast('Opening messages...', 'info');
+// Open message inbox (shows friend selector to choose who to message)
+async function openMessageInbox() {
+    const modal = document.getElementById('message-selector-modal');
+    const listContainer = document.getElementById('message-selector-list');
+
+    if (!modal || !listContainer) return;
+
+    // Show modal with loading state
+    modal.style.display = 'flex';
+    listContainer.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">Loading contacts...</div>`;
+
+    try {
+        // Build list with Coach Shannon first, then friends
+        let html = '';
+
+        // Add Coach Shannon as first option
+        html += `
+            <div onclick="closeMessageSelectorModal(); openCoachChatModal();" style="display: flex; align-items: center; gap: 12px; padding: 15px; margin: 5px 0; background: #f8fafc; border-radius: 12px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+                <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.2rem; flex-shrink: 0;">S</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 600; color: var(--text-main);">Coach Shannon</div>
+                    <div style="font-size: 0.85rem; color: var(--primary); font-weight: 500;">Your Coach</div>
+                </div>
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-muted); flex-shrink: 0;"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+            </div>
+        `;
+
+        // Get friends list
+        if (window.currentUser && window.dbHelpers && window.dbHelpers.friends) {
+            const friends = await window.dbHelpers.friends.getFriends(window.currentUser.id);
+
+            if (friends && friends.length > 0) {
+                // Add divider
+                html += `<div style="padding: 10px 15px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Friends</div>`;
+
+                friends.forEach(friend => {
+                    const initials = (friend.name || friend.email || '?').charAt(0).toUpperCase();
+                    const photoHtml = friend.profile_photo
+                        ? `<img src="${friend.profile_photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" onerror="this.parentElement.innerHTML='${initials}'">`
+                        : initials;
+
+                    html += `
+                        <div onclick="closeMessageSelectorModal(); openDirectMessage('${friend.id}', '${(friend.name || friend.email || 'Friend').replace(/'/g, "\\'")}', '${friend.profile_photo || ''}');" style="display: flex; align-items: center; gap: 12px; padding: 15px; margin: 5px 0; background: #f8fafc; border-radius: 12px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+                            <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--secondary); display: flex; align-items: center; justify-content: center; color: var(--text-main); font-weight: 600; font-size: 1.2rem; overflow: hidden; flex-shrink: 0;">${photoHtml}</div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${friend.name || friend.email || 'Friend'}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">Tap to message</div>
+                            </div>
+                            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-muted); flex-shrink: 0;"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // If no friends, show helpful message
+        if (!html.includes('Friends')) {
+            html += `
+                <div style="text-align: center; padding: 20px; color: var(--text-muted);">
+                    <p style="margin: 0 0 10px 0;">Add friends to message them!</p>
+                    <button onclick="closeMessageSelectorModal(); openAddFriendModal();" style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 600; cursor: pointer;">Add Friends</button>
+                </div>
+            `;
+        }
+
+        listContainer.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading contacts:', error);
+        listContainer.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">Failed to load contacts</div>`;
+    }
+}
+
+// Close message selector modal
+function closeMessageSelectorModal() {
+    const modal = document.getElementById('message-selector-modal');
+    if (modal) modal.style.display = 'none';
 }
 
 // Simple toast notification
