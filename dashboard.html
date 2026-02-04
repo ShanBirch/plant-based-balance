@@ -20209,6 +20209,10 @@ function startWorkoutTimer() {
     // Update immediately, then every second
     updateTimer();
     workoutTimerInterval = setInterval(updateTimer, 1000);
+
+    // Start auto-save system to prevent data loss
+    startWorkoutAutoSave();
+    setupWorkoutInputListeners();
 }
 
 // Update timer when app becomes visible again (handles background/screen-off throttling)
@@ -20225,12 +20229,383 @@ document.addEventListener('visibilitychange', function() {
     }
 });
 
+// ===========================================
+// WORKOUT BACKUP & RECOVERY SYSTEM
+// Prevents data loss when save fails
+// ===========================================
+
+const WORKOUT_BACKUP_KEY = 'pbb_workout_backup';
+let workoutAutoSaveInterval = null;
+
+// Collect all workout data from the DOM
+function collectWorkoutData() {
+    const activeWorkout = document.getElementById('workout-exercises-list');
+    if (!activeWorkout) return null;
+
+    const date = new Date().toISOString().split('T')[0];
+    const setsData = [];
+
+    Array.from(activeWorkout.children).forEach(card => {
+        let name = card.getAttribute('data-exercise-name');
+        if (!name) {
+            const nameEl = card.querySelector('h3') || card.querySelector('div[style*="font-weight: 700"]');
+            if (!nameEl) return;
+            name = nameEl.innerText;
+        }
+        if (!name) return;
+
+        const container = card.querySelector('.sets-list-container');
+        if (!container) return;
+
+        const setWrappers = container.querySelectorAll('.set-wrapper');
+        const setElements = setWrappers.length > 0
+            ? Array.from(setWrappers)
+            : Array.from(container.querySelectorAll('.workout-set-row'));
+
+        setElements.forEach((element, rIdx) => {
+            const isWrapper = element.classList.contains('set-wrapper');
+            const row = isWrapper ? element.querySelector('.workout-set-row') : element;
+            if (!row) return;
+
+            const time = row.querySelector('.input-time')?.value || '';
+            const reps = row.querySelector('.input-reps')?.value || '';
+            const kg = row.querySelector('.input-kg')?.value || '';
+
+            const dropSetToggle = row.querySelector('.drop-set-toggle');
+            const isDropSet = dropSetToggle && dropSetToggle.classList.contains('active');
+
+            let dropSetWeights = '';
+            let dropSetReps = '';
+
+            if (isDropSet && isWrapper) {
+                const dropContainer = element.querySelector('.drop-set-container');
+                if (dropContainer) {
+                    const dropRows = dropContainer.querySelectorAll('.drop-set-row');
+                    const weights = [];
+                    const repsArr = [];
+
+                    dropRows.forEach(dropRow => {
+                        const dropKg = dropRow.querySelector('.drop-kg')?.value || '';
+                        const dropRep = dropRow.querySelector('.drop-reps')?.value || '';
+                        if (dropKg || dropRep) {
+                            weights.push(dropKg);
+                            repsArr.push(dropRep);
+                        }
+                    });
+
+                    if (weights.length > 0) {
+                        dropSetWeights = weights.join(',');
+                        dropSetReps = repsArr.join(',');
+                    }
+                }
+            }
+
+            if (time || reps || kg || dropSetWeights) {
+                setsData.push({
+                    date,
+                    exercise: name,
+                    set: rIdx + 1,
+                    reps,
+                    time,
+                    kg,
+                    isDropSet,
+                    dropSetWeights,
+                    dropSetReps
+                });
+            }
+        });
+    });
+
+    return setsData;
+}
+
+// Save workout data to localStorage
+function backupWorkoutData() {
+    if (!workoutStartTime) return; // No active workout
+
+    const setsData = collectWorkoutData();
+    if (!setsData || setsData.length === 0) return;
+
+    const backup = {
+        timestamp: Date.now(),
+        workoutStartTime: workoutStartTime,
+        workoutName: window.currentWorkoutName || 'Workout',
+        customWorkoutId: window.currentCustomWorkoutId || null,
+        duration: document.getElementById('workout-timer')?.innerText || '00:00',
+        sets: setsData
+    };
+
+    try {
+        localStorage.setItem(WORKOUT_BACKUP_KEY, JSON.stringify(backup));
+        console.log('💾 Workout auto-saved:', setsData.length, 'sets');
+    } catch (e) {
+        console.error('Failed to backup workout:', e);
+    }
+}
+
+// Clear backup after successful save
+function clearWorkoutBackup() {
+    try {
+        localStorage.removeItem(WORKOUT_BACKUP_KEY);
+        console.log('🗑️ Workout backup cleared');
+    } catch (e) {
+        console.error('Failed to clear workout backup:', e);
+    }
+}
+
+// Get any stored backup
+function getWorkoutBackup() {
+    try {
+        const backup = localStorage.getItem(WORKOUT_BACKUP_KEY);
+        if (!backup) return null;
+        return JSON.parse(backup);
+    } catch (e) {
+        console.error('Failed to read workout backup:', e);
+        return null;
+    }
+}
+
+// Start auto-save interval when workout begins
+function startWorkoutAutoSave() {
+    // Clear any existing interval
+    if (workoutAutoSaveInterval) {
+        clearInterval(workoutAutoSaveInterval);
+    }
+
+    // Auto-save every 30 seconds
+    workoutAutoSaveInterval = setInterval(() => {
+        backupWorkoutData();
+    }, 30000);
+
+    // Also save immediately when workout starts
+    setTimeout(backupWorkoutData, 1000);
+
+    console.log('📝 Workout auto-save enabled');
+}
+
+// Stop auto-save when workout ends
+function stopWorkoutAutoSave() {
+    if (workoutAutoSaveInterval) {
+        clearInterval(workoutAutoSaveInterval);
+        workoutAutoSaveInterval = null;
+    }
+}
+
+// Add event listeners to save on input change (with debounce)
+let saveDebounceTimer = null;
+function setupWorkoutInputListeners() {
+    const container = document.getElementById('workout-exercises-list');
+    if (!container) return;
+
+    // Use event delegation for all inputs
+    container.addEventListener('input', function(e) {
+        if (e.target.matches('.input-time, .input-reps, .input-kg, .drop-kg, .drop-reps')) {
+            // Debounce saves to avoid excessive writes
+            clearTimeout(saveDebounceTimer);
+            saveDebounceTimer = setTimeout(backupWorkoutData, 2000);
+        }
+    });
+}
+
+// Retry save with exponential backoff
+async function saveWorkoutWithRetry(setsToSave, userId, maxRetries = 3) {
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            await Promise.all(setsToSave.map(s => dbHelpers.workouts.createHistory(userId, s)));
+            return true; // Success
+        } catch (e) {
+            lastError = e;
+            console.error(`Save attempt ${attempt + 1} failed:`, e);
+
+            if (attempt < maxRetries) {
+                // Exponential backoff: 1s, 2s, 4s
+                const delay = Math.pow(2, attempt) * 1000;
+                console.log(`Retrying in ${delay/1000}s...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    }
+
+    throw lastError; // All retries failed
+}
+
+// Check for unsaved workout on page load
+function checkForUnsavedWorkout() {
+    const backup = getWorkoutBackup();
+    if (!backup || !backup.sets || backup.sets.length === 0) return;
+
+    // Check if backup is less than 24 hours old
+    const hoursSinceBackup = (Date.now() - backup.timestamp) / (1000 * 60 * 60);
+    if (hoursSinceBackup > 24) {
+        clearWorkoutBackup();
+        return;
+    }
+
+    // Show recovery dialog
+    const minutesAgo = Math.floor((Date.now() - backup.timestamp) / (1000 * 60));
+    const timeAgo = minutesAgo < 60
+        ? `${minutesAgo} minute${minutesAgo !== 1 ? 's' : ''} ago`
+        : `${Math.floor(minutesAgo / 60)} hour${Math.floor(minutesAgo / 60) !== 1 ? 's' : ''} ago`;
+
+    showWorkoutRecoveryDialog(backup, timeAgo);
+}
+
+// Show recovery dialog to user
+function showWorkoutRecoveryDialog(backup, timeAgo) {
+    const exerciseCount = new Set(backup.sets.map(s => s.exercise)).size;
+    const setCount = backup.sets.length;
+
+    const dialog = document.createElement('div');
+    dialog.id = 'workout-recovery-dialog';
+    dialog.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.7); z-index: 999999;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+    `;
+
+    dialog.innerHTML = `
+        <div style="background: white; border-radius: 20px; padding: 25px; max-width: 340px; width: 100%; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 15px;">💪</div>
+            <h3 style="margin: 0 0 10px 0; color: var(--text-main); font-size: 1.2rem;">Unsaved Workout Found</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+                You have an unsaved workout from ${timeAgo}<br>
+                <strong>${exerciseCount} exercise${exerciseCount !== 1 ? 's' : ''}, ${setCount} set${setCount !== 1 ? 's' : ''}</strong>
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="recoverWorkout()" style="background: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;">
+                    Recover & Save Workout
+                </button>
+                <button onclick="dismissWorkoutRecovery()" style="background: #f1f5f9; color: var(--text-muted); border: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 0.9rem; cursor: pointer;">
+                    Discard
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(dialog);
+}
+
+// Recover and save the backed-up workout
+async function recoverWorkout() {
+    const dialog = document.getElementById('workout-recovery-dialog');
+    if (dialog) dialog.remove();
+
+    const backup = getWorkoutBackup();
+    if (!backup || !backup.sets || backup.sets.length === 0) {
+        alert('No workout data to recover.');
+        return;
+    }
+
+    const user = window.currentUser;
+    if (!user) {
+        alert('Please log in to save your workout.');
+        return;
+    }
+
+    // Show saving indicator
+    const savingDialog = document.createElement('div');
+    savingDialog.id = 'workout-saving-dialog';
+    savingDialog.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.7); z-index: 999999;
+        display: flex; align-items: center; justify-content: center;
+    `;
+    savingDialog.innerHTML = `
+        <div style="background: white; border-radius: 20px; padding: 30px; text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">💾</div>
+            <p style="margin: 0; color: var(--text-main); font-weight: 600;">Saving workout...</p>
+        </div>
+    `;
+    document.body.appendChild(savingDialog);
+
+    try {
+        await saveWorkoutWithRetry(backup.sets, user.id);
+        console.log('✅ Recovered workout saved successfully');
+
+        // Also check for personal bests and milestones
+        try {
+            const [milestones, newPBs] = await Promise.all([
+                dbHelpers.milestones.checkAndRecordMilestones(user.id),
+                dbHelpers.personalBests.checkAndUpdatePBs(user.id, backup.sets)
+            ]);
+
+            // Award points for any PBs
+            if (newPBs && newPBs.length > 0) {
+                for (const pb of newPBs) {
+                    const pbRefId = `pb_${pb.exercise}_${pb.type}_${Date.now()}`;
+                    await awardPointsForPersonalBest(pbRefId, pb);
+                }
+            }
+        } catch (progressError) {
+            console.error('Error checking progress for recovered workout:', progressError);
+        }
+
+        clearWorkoutBackup();
+        savingDialog.remove();
+        alert('Workout recovered and saved successfully! 🎉');
+    } catch (e) {
+        console.error('Failed to save recovered workout:', e);
+        savingDialog.remove();
+        alert('Failed to save workout. Your data is still backed up - please try again later or check your connection.');
+    }
+}
+
+// Dismiss recovery dialog and clear backup
+function dismissWorkoutRecovery() {
+    const dialog = document.getElementById('workout-recovery-dialog');
+    if (dialog) dialog.remove();
+    clearWorkoutBackup();
+}
+
+// Initialize recovery check when user is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit for user to be loaded
+    setTimeout(() => {
+        if (window.currentUser) {
+            checkForUnsavedWorkout();
+        }
+    }, 2000);
+});
+
+// Backup workout data when page goes to background or before unload
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden' && workoutStartTime) {
+        backupWorkoutData();
+        console.log('📱 Workout backed up (app went to background)');
+    }
+});
+
+window.addEventListener('beforeunload', function() {
+    if (workoutStartTime) {
+        backupWorkoutData();
+        console.log('📱 Workout backed up (page unloading)');
+    }
+});
+
+// Also backup when page loses focus (user might close browser)
+window.addEventListener('pagehide', function() {
+    if (workoutStartTime) {
+        backupWorkoutData();
+    }
+});
+
+// ===========================================
+// END WORKOUT BACKUP & RECOVERY SYSTEM
+// ===========================================
+
 async function finishWorkout() {
     clearInterval(workoutTimerInterval);
     clearAllYogaTimers(); // Clear any running yoga timers
+    stopWorkoutAutoSave(); // Stop auto-save interval
+
     const duration = document.getElementById('workout-timer').innerText;
-    workoutStartTime = null; // Reset start time
     document.getElementById('success-duration').innerText = duration;
+
+    // Backup workout data before attempting save (in case of failure)
+    backupWorkoutData();
 
     // Save logic
     const activeWorkout = document.getElementById('workout-exercises-list');
@@ -20319,9 +20694,13 @@ async function finishWorkout() {
     try {
         const user = window.currentUser;
         if(user && setsToSave.length > 0) {
-             // Save workout data
-             await Promise.all(setsToSave.map(s => dbHelpers.workouts.createHistory(user.id, s)));
+             // Save workout data with retry logic to handle network issues
+             await saveWorkoutWithRetry(setsToSave, user.id);
              console.log("✅ Workout saved to DB");
+
+             // Clear backup after successful save
+             clearWorkoutBackup();
+             workoutStartTime = null; // Reset start time
 
              // Update custom workout template with any added exercises
              if (window.currentCustomWorkoutId) {
@@ -20418,9 +20797,67 @@ async function finishWorkout() {
         }
     } catch(e) {
         console.error("Failed to save workout to DB:", e);
-        alert("Failed to save workout. Please try again.");
+        // Show user-friendly error dialog with retry option
+        const setCount = setsToSave.length;
+        const exerciseCount = new Set(setsToSave.map(s => s.exercise)).size;
+        showWorkoutSaveErrorDialog(exerciseCount, setCount);
         return;
     }
+}
+
+// Show error dialog with retry option when workout save fails
+function showWorkoutSaveErrorDialog(exerciseCount, setCount) {
+    const dialog = document.createElement('div');
+    dialog.id = 'workout-save-error-dialog';
+    dialog.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.7); z-index: 999999;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+    `;
+
+    dialog.innerHTML = `
+        <div style="background: white; border-radius: 20px; padding: 25px; max-width: 340px; width: 100%; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 15px;">⚠️</div>
+            <h3 style="margin: 0 0 10px 0; color: var(--text-main); font-size: 1.2rem;">Save Failed</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px;">
+                Couldn't save your workout after multiple attempts.
+            </p>
+            <p style="color: var(--primary); font-size: 0.85rem; margin-bottom: 20px; font-weight: 600;">
+                Don't worry - your data is backed up!<br>
+                (${exerciseCount} exercise${exerciseCount !== 1 ? 's' : ''}, ${setCount} set${setCount !== 1 ? 's' : ''})
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="retryWorkoutSave()" style="background: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;">
+                    Try Again
+                </button>
+                <button onclick="closeWorkoutSaveErrorDialog()" style="background: #f1f5f9; color: var(--text-muted); border: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 0.9rem; cursor: pointer;">
+                    Keep Workout Open
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(dialog);
+}
+
+// Close the error dialog and stay on workout screen
+function closeWorkoutSaveErrorDialog() {
+    const dialog = document.getElementById('workout-save-error-dialog');
+    if (dialog) dialog.remove();
+
+    // Restart auto-save since workout is still active
+    workoutStartTime = Date.now(); // Reset start time to continue workout
+    startWorkoutAutoSave();
+}
+
+// Retry saving the workout
+async function retryWorkoutSave() {
+    const dialog = document.getElementById('workout-save-error-dialog');
+    if (dialog) dialog.remove();
+
+    // Call finishWorkout again to retry
+    await finishWorkout();
 }
 
 // Store completed workout data for sharing
