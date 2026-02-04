@@ -276,11 +276,12 @@ BEGIN
     );
   END IF;
 
-  -- Check if lesson already completed (ever)
+  -- Check if lesson already completed with 100% score
   is_new_lesson := NOT (p_lesson_id = ANY(progress_record.lessons_completed));
 
-  -- Award XP only for new lessons
-  IF is_new_lesson THEN
+  -- Award XP only when user gets 100% AND hasn't already earned XP for this lesson
+  -- Users can retake quizzes to earn XP if they didn't get 100% before
+  IF score_pct = 100 AND is_new_lesson THEN
     xp_earned := xp_per_lesson;
   END IF;
 
@@ -299,12 +300,13 @@ BEGIN
       score_percentage = EXCLUDED.score_percentage;
 
   -- Update progress
+  -- Only mark lesson as completed when user gets 100% (so they can retake for XP)
   UPDATE public.user_learning_progress
   SET lessons_today = lessons_today + 1,
-      total_lessons_completed = CASE WHEN is_new_lesson THEN total_lessons_completed + 1 ELSE total_lessons_completed END,
+      total_lessons_completed = CASE WHEN is_new_lesson AND score_pct = 100 THEN total_lessons_completed + 1 ELSE total_lessons_completed END,
       total_xp_from_learning = total_xp_from_learning + xp_earned,
       lessons_completed = CASE
-        WHEN is_new_lesson THEN array_append(lessons_completed, p_lesson_id)
+        WHEN is_new_lesson AND score_pct = 100 THEN array_append(lessons_completed, p_lesson_id)
         ELSE lessons_completed
       END,
       updated_at = NOW()
@@ -331,6 +333,7 @@ BEGIN
     'xp_earned', xp_earned,
     'is_new_lesson', is_new_lesson,
     'score_percentage', score_pct,
+    'needs_perfect_score', score_pct < 100 AND is_new_lesson,
     'lessons_remaining_today', daily_limit - progress_record.lessons_today - 1
   );
 END;
