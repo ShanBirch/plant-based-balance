@@ -3667,13 +3667,27 @@ async function applyAppTheme(themeKey) {
         margin-bottom: 0;
     }
 
-    .edit-item-input {
+    .edit-item-inputs {
         flex: 1;
+        display: flex;
+        gap: 8px;
+    }
+
+    .edit-item-input {
         padding: 8px 12px;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
         font-size: 0.95rem;
         background: white;
+    }
+
+    .edit-item-input.edit-item-name {
+        flex: 2;
+    }
+
+    .edit-item-input.edit-item-portion {
+        flex: 1;
+        min-width: 80px;
     }
 
     .edit-item-input:focus {
@@ -23000,23 +23014,24 @@ hideAllAppViews = function() {
     </div>
 </div>
 
-<!-- Edit Food Items Modal -->
-<div class="edit-items-modal" id="editItemsModal" onclick="closeEditItemsModal()">
+<!-- Food Items Modal (Edit or Add mode) -->
+<div class="edit-items-modal" id="editItemsModal" onclick="closeFoodItemsModal()">
     <div class="edit-items-container" onclick="event.stopPropagation()">
         <div class="edit-items-header">
-            <h3>Edit Food Items</h3>
-            <button class="edit-items-close" onclick="closeEditItemsModal()">&times;</button>
+            <h3 id="foodItemsModalTitle">Edit Food Items</h3>
+            <button class="edit-items-close" onclick="closeFoodItemsModal()">&times;</button>
         </div>
         <div class="edit-items-list" id="editItemsList"></div>
         <div class="edit-items-add">
-            <input type="text" id="newItemInput" placeholder="Add new item (e.g., 'water' or '100g rice')" onkeypress="if(event.key==='Enter')addNewItem()">
+            <input type="text" id="newItemInput" placeholder="Food item (e.g., 'oats' or 'chicken breast')" onkeypress="if(event.key==='Enter')addNewItem()">
+            <input type="text" id="newItemPortionInput" placeholder="Amount (e.g., 200g)" onkeypress="if(event.key==='Enter')addNewItem()" style="max-width:120px;">
             <button onclick="addNewItem()">+ Add</button>
         </div>
         <div class="edit-items-actions">
-            <button class="edit-items-cancel" onclick="closeEditItemsModal()">Cancel</button>
-            <button class="edit-items-recalculate" onclick="recalculateWithGemini()" id="recalculateBtn">
-                <span class="recalc-text">🔄 Recalculate</span>
-                <span class="recalc-loading" style="display:none;">Calculating...</span>
+            <button class="edit-items-cancel" onclick="closeFoodItemsModal()">Cancel</button>
+            <button class="edit-items-recalculate" onclick="handleFoodItemsSubmit()" id="recalculateBtn">
+                <span class="recalc-text" id="foodItemsSubmitText">🔄 Recalculate</span>
+                <span class="recalc-loading" style="display:none;">Processing...</span>
             </button>
         </div>
     </div>
@@ -31719,9 +31734,12 @@ window.submitDailyCycleSync = submitDailyCycleSync;
         &times;
     </button>
 
-    <!-- Meal Description Input -->
+    <!-- Add Food Items Button -->
     <div style="position:absolute; bottom:110px; left:20px; right:20px; z-index:13;">
-        <textarea id="meal-description-input" placeholder="Add a description (optional)..." style="width:100%; max-width:500px; margin:0 auto; display:block; background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.3); border-radius:15px; color:white; padding:12px 15px; font-size:1rem; resize:none; height:60px; backdrop-filter:blur(10px); font-family:inherit;" maxlength="200"></textarea>
+        <button onclick="openAddItemsModal()" id="add-items-btn" style="width:100%; max-width:500px; margin:0 auto; display:flex; align-items:center; justify-content:center; gap:8px; background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.3); border-radius:15px; color:white; padding:14px 20px; font-size:1rem; cursor:pointer; backdrop-filter:blur(10px); font-family:inherit; transition:all 0.2s;">
+            <span>➕</span>
+            <span id="add-items-btn-text">Add Food Items (optional)</span>
+        </button>
     </div>
 
     <!-- Analyze Button -->
@@ -35892,11 +35910,9 @@ function closeMealPreviewModal() {
         previewModal.style.display = 'none';
     }
 
-    // Clear description input
-    const descriptionInput = document.getElementById('meal-description-input');
-    if (descriptionInput) {
-        descriptionInput.value = '';
-    }
+    // Reset added food items for photo
+    addedFoodItemsForPhoto = [];
+    updateAddItemsButton();
 
     capturedMealFile = null;
 }
@@ -35920,11 +35936,18 @@ async function useMealPhoto() {
     // Store file reference before closing modal (modal clears capturedMealFile)
     const fileToAnalyze = capturedMealFile;
 
-    // Get meal description if provided
-    const descriptionInput = document.getElementById('meal-description-input');
-    const mealDescription = descriptionInput ? descriptionInput.value.trim() : '';
+    // Build meal description from added food items
+    let mealDescription = '';
+    if (addedFoodItemsForPhoto.length > 0) {
+        const itemDescriptions = addedFoodItemsForPhoto.map(item => {
+            const name = item.name.trim();
+            const portion = item.portion ? item.portion.trim() : '';
+            return portion ? `${portion} ${name}` : name;
+        });
+        mealDescription = itemDescriptions.join(', ');
+    }
 
-    // Close preview modal
+    // Close preview modal (this also resets addedFoodItemsForPhoto)
     closeMealPreviewModal();
 
     // Show loading state
@@ -36965,15 +36988,14 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Edit Items Modal State
+// Food Items Modal State
 let currentEditingMealIndex = null;
 let editingFoodItems = [];
+let foodItemsModalMode = 'edit'; // 'edit' or 'add'
+let addedFoodItemsForPhoto = []; // Items added before photo analysis
 
-// Open edit items modal
+// Open edit items modal (from meal detail popup)
 function openEditItemsModal() {
-    const mealDetailPopup = document.getElementById('mealDetailPopup');
-    // Find which meal we're editing from currentMealsList
-    // We need to track this when opening the detail popup
     if (currentEditingMealIndex === null) {
         console.error('No meal selected for editing');
         return;
@@ -36985,8 +37007,15 @@ function openEditItemsModal() {
         return;
     }
 
+    // Set mode to edit
+    foodItemsModalMode = 'edit';
+
     // Clone the food items for editing
     editingFoodItems = meal.food_items.map(item => ({ ...item }));
+
+    // Update modal title and button text
+    document.getElementById('foodItemsModalTitle').textContent = 'Edit Food Items';
+    document.getElementById('foodItemsSubmitText').textContent = '🔄 Recalculate';
 
     // Render the editable list
     renderEditItemsList();
@@ -36996,12 +37025,39 @@ function openEditItemsModal() {
     modal.classList.add('visible');
 }
 
-// Close edit items modal
-function closeEditItemsModal() {
+// Open add items modal (from meal photo preview)
+function openAddItemsModal() {
+    // Set mode to add
+    foodItemsModalMode = 'add';
+
+    // Load any previously added items
+    editingFoodItems = [...addedFoodItemsForPhoto];
+
+    // Update modal title and button text
+    document.getElementById('foodItemsModalTitle').textContent = 'Add Food Items';
+    document.getElementById('foodItemsSubmitText').textContent = '✓ Done';
+
+    // Render the editable list
+    renderEditItemsList();
+
+    // Show the modal
+    const modal = document.getElementById('editItemsModal');
+    modal.classList.add('visible');
+}
+
+// Close food items modal (unified function)
+function closeFoodItemsModal() {
     const modal = document.getElementById('editItemsModal');
     modal.classList.remove('visible');
     editingFoodItems = [];
     document.getElementById('newItemInput').value = '';
+    const portionInput = document.getElementById('newItemPortionInput');
+    if (portionInput) portionInput.value = '';
+}
+
+// Legacy alias for backwards compatibility
+function closeEditItemsModal() {
+    closeFoodItemsModal();
 }
 
 // Render editable items list
@@ -37015,11 +37071,17 @@ function renderEditItemsList() {
 
     let html = '';
     editingFoodItems.forEach((item, index) => {
+        const portion = item.portion || '';
         html += `
             <div class="edit-item-row" data-index="${index}">
-                <input type="text" class="edit-item-input" value="${escapeHtml(item.name)}"
-                       onchange="updateItemName(${index}, this.value)"
-                       placeholder="Food item name">
+                <div class="edit-item-inputs">
+                    <input type="text" class="edit-item-input edit-item-name" value="${escapeHtml(item.name)}"
+                           onchange="updateItemName(${index}, this.value)"
+                           placeholder="Food item">
+                    <input type="text" class="edit-item-input edit-item-portion" value="${escapeHtml(portion)}"
+                           onchange="updateItemPortion(${index}, this.value)"
+                           placeholder="Amount (e.g., 200g)">
+                </div>
                 <button class="edit-item-delete" onclick="deleteEditItem(${index})" title="Remove item">🗑️</button>
             </div>
         `;
@@ -37042,6 +37104,13 @@ function updateItemName(index, newName) {
     }
 }
 
+// Update item portion
+function updateItemPortion(index, newPortion) {
+    if (editingFoodItems[index]) {
+        editingFoodItems[index].portion = newPortion.trim();
+    }
+}
+
 // Delete item from edit list
 function deleteEditItem(index) {
     editingFoodItems.splice(index, 1);
@@ -37050,15 +37119,17 @@ function deleteEditItem(index) {
 
 // Add new item to edit list
 function addNewItem() {
-    const input = document.getElementById('newItemInput');
-    const newItemName = input.value.trim();
+    const nameInput = document.getElementById('newItemInput');
+    const portionInput = document.getElementById('newItemPortionInput');
+    const newItemName = nameInput.value.trim();
+    const newItemPortion = portionInput ? portionInput.value.trim() : '';
 
     if (!newItemName) return;
 
-    // Add a placeholder item - Gemini will calculate the real values
+    // Add the item with portion
     editingFoodItems.push({
         name: newItemName,
-        portion: 'TBD',
+        portion: newItemPortion || '',
         calories: 0,
         protein_g: 0,
         carbs_g: 0,
@@ -37066,8 +37137,34 @@ function addNewItem() {
         fiber_g: 0
     });
 
-    input.value = '';
+    nameInput.value = '';
+    if (portionInput) portionInput.value = '';
     renderEditItemsList();
+}
+
+// Handle submit button based on mode
+function handleFoodItemsSubmit() {
+    if (foodItemsModalMode === 'add') {
+        // Save items for photo analysis and close modal
+        addedFoodItemsForPhoto = editingFoodItems.filter(item => item.name.trim().length > 0);
+        updateAddItemsButton();
+        closeFoodItemsModal();
+    } else {
+        // Edit mode - recalculate with Gemini
+        recalculateWithGemini();
+    }
+}
+
+// Update the add items button text to show count
+function updateAddItemsButton() {
+    const btnText = document.getElementById('add-items-btn-text');
+    if (btnText) {
+        if (addedFoodItemsForPhoto.length > 0) {
+            btnText.textContent = `${addedFoodItemsForPhoto.length} item${addedFoodItemsForPhoto.length > 1 ? 's' : ''} added ✓`;
+        } else {
+            btnText.textContent = 'Add Food Items (optional)';
+        }
+    }
 }
 
 // Recalculate nutrition with Gemini
@@ -37077,18 +37174,23 @@ async function recalculateWithGemini() {
         return;
     }
 
-    // Get all current item names (filter out empty ones)
-    const itemNames = editingFoodItems
-        .map(item => item.name.trim())
-        .filter(name => name.length > 0);
+    // Get all current items with portions (filter out empty names)
+    const itemDescriptions = editingFoodItems
+        .filter(item => item.name.trim().length > 0)
+        .map(item => {
+            const name = item.name.trim();
+            const portion = item.portion ? item.portion.trim() : '';
+            // Include portion if specified (e.g., "200g oats" or "oats 200g")
+            return portion ? `${portion} ${name}` : name;
+        });
 
-    if (itemNames.length === 0) {
+    if (itemDescriptions.length === 0) {
         showToast('Please enter at least one food item name', 'error');
         return;
     }
 
-    // Create description for Gemini
-    const description = itemNames.join(', ');
+    // Create description for Gemini with portions
+    const description = itemDescriptions.join(', ');
 
     // Show loading state
     const btn = document.getElementById('recalculateBtn');
