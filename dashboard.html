@@ -3558,6 +3558,239 @@ async function applyAppTheme(themeKey) {
         font-weight: 500;
     }
 
+    .meal-detail-edit-btn {
+        display: block;
+        width: 100%;
+        margin-top: 16px;
+        padding: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .meal-detail-edit-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .meal-detail-edit-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Edit Items Modal Styles */
+    .edit-items-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10001;
+        padding: 20px;
+    }
+
+    .edit-items-modal.visible {
+        display: flex;
+    }
+
+    .edit-items-container {
+        background: white;
+        border-radius: 20px;
+        width: 100%;
+        max-width: 420px;
+        max-height: 80vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    }
+
+    .edit-items-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .edit-items-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .edit-items-close {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: #f5f5f5;
+        border-radius: 50%;
+        font-size: 1.2rem;
+        color: #666;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .edit-items-close:hover {
+        background: #eee;
+    }
+
+    .edit-items-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px 20px;
+        max-height: 300px;
+    }
+
+    .edit-item-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        margin-bottom: 10px;
+    }
+
+    .edit-item-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .edit-item-input {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        background: white;
+    }
+
+    .edit-item-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    }
+
+    .edit-item-delete {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: #fee2e2;
+        border-radius: 8px;
+        color: #ef4444;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .edit-item-delete:hover {
+        background: #fecaca;
+    }
+
+    .edit-items-add {
+        display: flex;
+        gap: 10px;
+        padding: 0 20px 16px;
+    }
+
+    .edit-items-add input {
+        flex: 1;
+        padding: 12px;
+        border: 2px dashed #e0e0e0;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        background: #fafafa;
+    }
+
+    .edit-items-add input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+    }
+
+    .edit-items-add button {
+        padding: 12px 16px;
+        background: #10b981;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .edit-items-add button:hover {
+        background: #059669;
+    }
+
+    .edit-items-actions {
+        display: flex;
+        gap: 12px;
+        padding: 16px 20px;
+        border-top: 1px solid #f0f0f0;
+        background: #fafafa;
+    }
+
+    .edit-items-cancel {
+        flex: 1;
+        padding: 14px;
+        background: #f5f5f5;
+        color: var(--text-muted);
+        border: none;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .edit-items-cancel:hover {
+        background: #eee;
+    }
+
+    .edit-items-recalculate {
+        flex: 2;
+        padding: 14px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .edit-items-recalculate:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .edit-items-recalculate:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .edit-items-empty {
+        text-align: center;
+        padding: 30px;
+        color: var(--text-muted);
+    }
+
     .empty-state {
         text-align: center;
         padding: 40px 20px;
@@ -22760,6 +22993,31 @@ hideAllAppViews = function() {
                 </div>
             </div>
             <div class="meal-detail-items" id="mealDetailItems"></div>
+            <button class="meal-detail-edit-btn" id="mealDetailEditBtn" onclick="openEditItemsModal()">
+                ✏️ Edit Items
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Food Items Modal -->
+<div class="edit-items-modal" id="editItemsModal" onclick="closeEditItemsModal()">
+    <div class="edit-items-container" onclick="event.stopPropagation()">
+        <div class="edit-items-header">
+            <h3>Edit Food Items</h3>
+            <button class="edit-items-close" onclick="closeEditItemsModal()">&times;</button>
+        </div>
+        <div class="edit-items-list" id="editItemsList"></div>
+        <div class="edit-items-add">
+            <input type="text" id="newItemInput" placeholder="Add new item (e.g., 'water' or '100g rice')" onkeypress="if(event.key==='Enter')addNewItem()">
+            <button onclick="addNewItem()">+ Add</button>
+        </div>
+        <div class="edit-items-actions">
+            <button class="edit-items-cancel" onclick="closeEditItemsModal()">Cancel</button>
+            <button class="edit-items-recalculate" onclick="recalculateWithGemini()" id="recalculateBtn">
+                <span class="recalc-text">🔄 Recalculate</span>
+                <span class="recalc-loading" style="display:none;">Calculating...</span>
+            </button>
         </div>
     </div>
 </div>
@@ -36605,6 +36863,9 @@ function openMealDetailPopup(index) {
     const meal = currentMealsList[index];
     if (!meal) return;
 
+    // Track which meal is being viewed for edit functionality
+    currentEditingMealIndex = index;
+
     const popup = document.getElementById('mealDetailPopup');
     const photoSection = document.getElementById('mealDetailPhotoSection');
     const timeEl = document.getElementById('mealDetailTime');
@@ -36687,6 +36948,7 @@ function closeMealDetailPopup() {
     const popup = document.getElementById('mealDetailPopup');
     popup.classList.remove('visible');
     document.body.style.overflow = '';
+    currentEditingMealIndex = null;
 }
 
 // Close popup on escape key
@@ -36696,8 +36958,238 @@ document.addEventListener('keydown', function(e) {
         if (popup && popup.classList.contains('visible')) {
             closeMealDetailPopup();
         }
+        const editModal = document.getElementById('editItemsModal');
+        if (editModal && editModal.classList.contains('visible')) {
+            closeEditItemsModal();
+        }
     }
 });
+
+// Edit Items Modal State
+let currentEditingMealIndex = null;
+let editingFoodItems = [];
+
+// Open edit items modal
+function openEditItemsModal() {
+    const mealDetailPopup = document.getElementById('mealDetailPopup');
+    // Find which meal we're editing from currentMealsList
+    // We need to track this when opening the detail popup
+    if (currentEditingMealIndex === null) {
+        console.error('No meal selected for editing');
+        return;
+    }
+
+    const meal = currentMealsList[currentEditingMealIndex];
+    if (!meal || !Array.isArray(meal.food_items)) {
+        console.error('No food items to edit');
+        return;
+    }
+
+    // Clone the food items for editing
+    editingFoodItems = meal.food_items.map(item => ({ ...item }));
+
+    // Render the editable list
+    renderEditItemsList();
+
+    // Show the modal
+    const modal = document.getElementById('editItemsModal');
+    modal.classList.add('visible');
+}
+
+// Close edit items modal
+function closeEditItemsModal() {
+    const modal = document.getElementById('editItemsModal');
+    modal.classList.remove('visible');
+    editingFoodItems = [];
+    document.getElementById('newItemInput').value = '';
+}
+
+// Render editable items list
+function renderEditItemsList() {
+    const listEl = document.getElementById('editItemsList');
+
+    if (editingFoodItems.length === 0) {
+        listEl.innerHTML = '<div class="edit-items-empty">No items. Add some items below.</div>';
+        return;
+    }
+
+    let html = '';
+    editingFoodItems.forEach((item, index) => {
+        html += `
+            <div class="edit-item-row" data-index="${index}">
+                <input type="text" class="edit-item-input" value="${escapeHtml(item.name)}"
+                       onchange="updateItemName(${index}, this.value)"
+                       placeholder="Food item name">
+                <button class="edit-item-delete" onclick="deleteEditItem(${index})" title="Remove item">🗑️</button>
+            </div>
+        `;
+    });
+
+    listEl.innerHTML = html;
+}
+
+// Escape HTML for safe display
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Update item name
+function updateItemName(index, newName) {
+    if (editingFoodItems[index]) {
+        editingFoodItems[index].name = newName.trim();
+    }
+}
+
+// Delete item from edit list
+function deleteEditItem(index) {
+    editingFoodItems.splice(index, 1);
+    renderEditItemsList();
+}
+
+// Add new item to edit list
+function addNewItem() {
+    const input = document.getElementById('newItemInput');
+    const newItemName = input.value.trim();
+
+    if (!newItemName) return;
+
+    // Add a placeholder item - Gemini will calculate the real values
+    editingFoodItems.push({
+        name: newItemName,
+        portion: 'TBD',
+        calories: 0,
+        protein_g: 0,
+        carbs_g: 0,
+        fat_g: 0,
+        fiber_g: 0
+    });
+
+    input.value = '';
+    renderEditItemsList();
+}
+
+// Recalculate nutrition with Gemini
+async function recalculateWithGemini() {
+    if (editingFoodItems.length === 0) {
+        showToast('Please add at least one food item', 'error');
+        return;
+    }
+
+    // Get all current item names (filter out empty ones)
+    const itemNames = editingFoodItems
+        .map(item => item.name.trim())
+        .filter(name => name.length > 0);
+
+    if (itemNames.length === 0) {
+        showToast('Please enter at least one food item name', 'error');
+        return;
+    }
+
+    // Create description for Gemini
+    const description = itemNames.join(', ');
+
+    // Show loading state
+    const btn = document.getElementById('recalculateBtn');
+    const textSpan = btn.querySelector('.recalc-text');
+    const loadingSpan = btn.querySelector('.recalc-loading');
+    btn.disabled = true;
+    textSpan.style.display = 'none';
+    loadingSpan.style.display = 'inline';
+
+    try {
+        // Call Gemini text analysis endpoint
+        const response = await fetch('/.netlify/functions/analyze-meal-text', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                description: description,
+                mealType: null
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to analyze meal');
+        }
+
+        const result = await response.json();
+
+        if (!result.success || !result.data) {
+            throw new Error('Invalid response from analysis');
+        }
+
+        const nutritionData = result.data;
+
+        // Update the meal in the database
+        await updateMealWithNewNutrition(nutritionData);
+
+        // Show success
+        showToast('Meal updated successfully!', 'success');
+
+        // Close modal and refresh
+        closeEditItemsModal();
+        closeMealDetailPopup();
+        await loadTodayNutrition();
+
+    } catch (error) {
+        console.error('Error recalculating nutrition:', error);
+        showToast(error.message || 'Failed to recalculate. Please try again.', 'error');
+    } finally {
+        // Reset button state
+        btn.disabled = false;
+        textSpan.style.display = 'inline';
+        loadingSpan.style.display = 'none';
+    }
+}
+
+// Update meal in database with new nutrition data
+async function updateMealWithNewNutrition(nutritionData) {
+    if (currentEditingMealIndex === null) {
+        throw new Error('No meal selected for update');
+    }
+
+    const meal = currentMealsList[currentEditingMealIndex];
+    if (!meal || !meal.id) {
+        throw new Error('Invalid meal data');
+    }
+
+    const { data: userData } = await window.supabaseClient.auth.getUser();
+    if (!userData?.user?.id) {
+        throw new Error('User not authenticated');
+    }
+
+    // Prepare updated meal data
+    const updateData = {
+        food_items: nutritionData.foodItems,
+        calories: nutritionData.totals.calories,
+        protein_g: nutritionData.totals.protein_g,
+        carbs_g: nutritionData.totals.carbs_g,
+        fat_g: nutritionData.totals.fat_g,
+        fiber_g: nutritionData.totals.fiber_g || 0,
+        micronutrients: nutritionData.micronutrients || {},
+        ai_confidence: nutritionData.confidence || 'medium',
+        analysis_timestamp: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    };
+
+    const { error } = await window.supabaseClient
+        .from('meal_logs')
+        .update(updateData)
+        .eq('id', meal.id)
+        .eq('user_id', userData.user.id);
+
+    if (error) {
+        console.error('Database update error:', error);
+        throw new Error('Failed to save changes');
+    }
+
+    // Trigger recalculation of daily nutrition
+    await recalculateDailyNutrition();
+}
 
 // Delete meal log
 async function deleteMealLog(mealId) {
