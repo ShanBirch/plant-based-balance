@@ -23018,7 +23018,7 @@ hideAllAppViews = function() {
 <div class="edit-items-modal" id="editItemsModal" onclick="closeFoodItemsModal()">
     <div class="edit-items-container" onclick="event.stopPropagation()">
         <div class="edit-items-header">
-            <h3 id="foodItemsModalTitle">Edit Food Items</h3>
+            <h3 id="foodItemsModalTitle">Edit Food</h3>
             <button class="edit-items-close" onclick="closeFoodItemsModal()">&times;</button>
         </div>
         <div class="edit-items-list" id="editItemsList"></div>
@@ -37014,7 +37014,7 @@ function openEditItemsModal() {
     editingFoodItems = meal.food_items.map(item => ({ ...item }));
 
     // Update modal title and button text
-    document.getElementById('foodItemsModalTitle').textContent = 'Edit Food Items';
+    document.getElementById('foodItemsModalTitle').textContent = 'Edit Food';
     document.getElementById('foodItemsSubmitText').textContent = '🔄 Recalculate';
 
     // Render the editable list
@@ -37034,7 +37034,7 @@ function openAddItemsModal() {
     editingFoodItems = [...addedFoodItemsForPhoto];
 
     // Update modal title and button text
-    document.getElementById('foodItemsModalTitle').textContent = 'Add Food Items';
+    document.getElementById('foodItemsModalTitle').textContent = 'Add Food';
     document.getElementById('foodItemsSubmitText').textContent = '✓ Done';
 
     // Render the editable list
