@@ -4781,7 +4781,10 @@ async function applyAppTheme(themeKey) {
             // Update dashboard workout card to show today's recommended workout
             if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
 
-            // Check and show daily weigh-in card
+            // Check and show daily weigh-in modal on first login of day
+            if(typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
+
+            // Also check and show daily weigh-in card (fallback if modal was skipped)
             if(typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
 
             // Also refresh community feed if function exists
@@ -32281,6 +32284,250 @@ window.submitDailyCycleSync = submitDailyCycleSync;
         to { opacity: 1; transform: scale(1); }
     }
 </style>
+
+<!-- DAILY WEIGH-IN PROMPT MODAL (First login of day) -->
+<div id="weigh-in-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; padding:15px;">
+    <div class="modal-content" style="background: white; width: 100%; border-radius: 24px; padding: 0; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: fadeInScale 0.2s ease-out;">
+
+        <!-- Header -->
+        <div style="padding: 25px 25px 20px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 24px 24px 0 0; color: white; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+            <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+            <div style="position: relative; z-index: 1;">
+                <div style="font-size: 2.5rem; margin-bottom: 10px;">⚖️</div>
+                <h3 style="margin: 0 0 5px 0; font-family: 'Playfair Display'; font-size: 1.5rem;">Daily Weigh-In</h3>
+                <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">Start your day by tracking your progress</p>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 25px;">
+            <div id="weigh-in-modal-input-section">
+                <label style="display: block; font-weight: 600; color: var(--text-main); margin-bottom: 12px; font-size: 0.95rem;">Enter today's weight</label>
+                <div style="position: relative; margin-bottom: 20px;">
+                    <input type="number" id="weigh-in-modal-input" placeholder="Enter weight" step="0.1" min="20" max="500" style="width: 100%; padding: 16px 60px 16px 20px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.1rem; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='#667eea'" onblur="this.style.borderColor='#e2e8f0'">
+                    <span id="weigh-in-modal-unit-label" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #666; font-size: 1rem; font-weight: 600;">kg</span>
+                </div>
+                <p id="weigh-in-modal-last-weight" style="margin: 0 0 20px 0; font-size: 0.85rem; color: var(--text-muted); text-align: center;"></p>
+
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="closeWeighInModal()" style="flex: 1; background: #f1f5f9; color: var(--text-main); border: none; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s;">
+                        Skip
+                    </button>
+                    <button onclick="submitWeighInModal()" style="flex: 2; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                        Log It (+1 XP)
+                    </button>
+                </div>
+            </div>
+
+            <div id="weigh-in-modal-success-section" style="display: none; text-align: center; padding: 20px 0;">
+                <div style="font-size: 3rem; margin-bottom: 15px;">🎉</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #667eea; margin-bottom: 8px;">+1 XP</div>
+                <p style="margin: 0; font-weight: 600; color: var(--text-main);">Weigh-in complete!</p>
+                <p style="margin: 10px 0 0 0; font-size: 0.85rem; color: var(--text-muted);">Keep up the great consistency!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== DAILY WEIGH-IN MODAL LOGIC (First Login of Day) =====
+
+/**
+ * Check if this is the first login of the day and show weigh-in modal
+ */
+async function checkAndShowWeighInModal() {
+    if (!window.currentUser) return;
+
+    // Check if we've already prompted today
+    const lastPromptDate = localStorage.getItem('lastWeighInPromptDate');
+    const today = new Date().toDateString();
+
+    if (lastPromptDate === today) {
+        // Already prompted today, don't show again
+        return;
+    }
+
+    try {
+        // Check if user has already weighed in today
+        const todaysWeighIn = await db.weighIns.getTodaysWeighIn(window.currentUser.id);
+
+        if (todaysWeighIn) {
+            // Already weighed in today, mark as prompted and don't show modal
+            localStorage.setItem('lastWeighInPromptDate', today);
+            return;
+        }
+
+        // Show the weigh-in modal
+        openWeighInModal();
+
+    } catch (error) {
+        console.error('Error checking weigh-in for modal:', error);
+    }
+}
+
+/**
+ * Open the daily weigh-in modal
+ */
+async function openWeighInModal() {
+    const modal = document.getElementById('weigh-in-modal');
+    const inputSection = document.getElementById('weigh-in-modal-input-section');
+    const successSection = document.getElementById('weigh-in-modal-success-section');
+    const input = document.getElementById('weigh-in-modal-input');
+    const unitLabel = document.getElementById('weigh-in-modal-unit-label');
+    const lastWeightText = document.getElementById('weigh-in-modal-last-weight');
+
+    if (!modal) return;
+
+    // Reset modal state
+    if (inputSection) inputSection.style.display = 'block';
+    if (successSection) successSection.style.display = 'none';
+    if (input) input.value = '';
+
+    // Set unit preference
+    const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+    if (unitLabel) {
+        unitLabel.textContent = preferLbs ? 'lbs' : 'kg';
+    }
+    if (input) {
+        input.step = preferLbs ? '1' : '0.1';
+    }
+
+    // Show last known weight as reference
+    try {
+        const latestWeighIn = await db.weighIns.getLatest(window.currentUser.id);
+        if (latestWeighIn && lastWeightText) {
+            const displayWeight = preferLbs
+                ? (latestWeighIn.weight_kg * 2.20462).toFixed(1) + ' lbs'
+                : latestWeighIn.weight_kg.toFixed(1) + ' kg';
+            lastWeightText.textContent = `Last weigh-in: ${displayWeight}`;
+            lastWeightText.style.display = 'block';
+        } else if (lastWeightText) {
+            lastWeightText.style.display = 'none';
+        }
+    } catch (e) {
+        if (lastWeightText) lastWeightText.style.display = 'none';
+    }
+
+    // Show modal
+    modal.style.display = 'flex';
+}
+
+/**
+ * Close the weigh-in modal
+ */
+function closeWeighInModal() {
+    const modal = document.getElementById('weigh-in-modal');
+    if (modal) modal.style.display = 'none';
+
+    // Mark as prompted today even if skipped
+    localStorage.setItem('lastWeighInPromptDate', new Date().toDateString());
+
+    // Hide the card on dashboard since user chose to skip
+    const card = document.getElementById('daily-weigh-in-card');
+    if (card) card.style.display = 'none';
+}
+
+/**
+ * Submit weight from the modal
+ */
+async function submitWeighInModal() {
+    if (!window.currentUser) {
+        alert('Please log in to track your weight.');
+        return;
+    }
+
+    const input = document.getElementById('weigh-in-modal-input');
+    const inputSection = document.getElementById('weigh-in-modal-input-section');
+    const successSection = document.getElementById('weigh-in-modal-success-section');
+    const modal = document.getElementById('weigh-in-modal');
+
+    let weightValue = parseFloat(input?.value);
+
+    if (!weightValue || weightValue < 20 || weightValue > 500) {
+        alert('Please enter a valid weight.');
+        return;
+    }
+
+    // Convert lbs to kg if needed
+    const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+    if (preferLbs) {
+        weightValue = weightValue * 0.453592;
+    }
+
+    try {
+        // Log the weigh-in
+        await db.weighIns.log(window.currentUser.id, weightValue);
+
+        // Award 1 XP
+        try {
+            const { data: currentPoints } = await supabaseClient
+                .from('user_points')
+                .select('lifetime_points')
+                .eq('user_id', window.currentUser.id)
+                .single();
+
+            if (currentPoints) {
+                await supabaseClient
+                    .from('user_points')
+                    .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 1 })
+                    .eq('user_id', window.currentUser.id);
+            } else {
+                await supabaseClient
+                    .from('user_points')
+                    .insert({ user_id: window.currentUser.id, lifetime_points: 1, current_points: 0 });
+            }
+
+            if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+            if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+        } catch (xpError) {
+            console.log('XP award skipped:', xpError);
+        }
+
+        // Update user's current weight in profile
+        try {
+            await db.users.update(window.currentUser.id, { weight: weightValue });
+        } catch (updateError) {
+            console.log('Profile weight update skipped:', updateError);
+        }
+
+        // Show success animation
+        if (inputSection) inputSection.style.display = 'none';
+        if (successSection) successSection.style.display = 'block';
+
+        // Mark as prompted today
+        localStorage.setItem('lastWeighInPromptDate', new Date().toDateString());
+
+        // Hide the card on dashboard since already logged
+        const card = document.getElementById('daily-weigh-in-card');
+        if (card) card.style.display = 'none';
+
+        // Close modal after showing success
+        setTimeout(() => {
+            if (modal) modal.style.display = 'none';
+            // Reset for next use
+            if (inputSection) inputSection.style.display = 'block';
+            if (successSection) successSection.style.display = 'none';
+            if (input) input.value = '';
+        }, 2000);
+
+        // Refresh points display
+        if (typeof refreshPointsDisplay === 'function') {
+            refreshPointsDisplay();
+        }
+
+    } catch (error) {
+        console.error('Error logging weigh-in from modal:', error);
+        alert('Failed to log weigh-in. Please try again.');
+    }
+}
+
+// Make functions globally available
+window.checkAndShowWeighInModal = checkAndShowWeighInModal;
+window.openWeighInModal = openWeighInModal;
+window.closeWeighInModal = closeWeighInModal;
+window.submitWeighInModal = submitWeighInModal;
+</script>
 
 <!-- Share Referral Modal -->
 <div id="share-referral-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:10006; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
