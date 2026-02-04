@@ -3682,12 +3682,13 @@ async function applyAppTheme(themeKey) {
     }
 
     .edit-item-input.edit-item-name {
-        flex: 2;
+        flex: 1;
+        min-width: 0;
     }
 
     .edit-item-input.edit-item-portion {
-        flex: 1;
-        min-width: 80px;
+        max-width: 100px;
+        flex-shrink: 0;
     }
 
     .edit-item-input:focus {
