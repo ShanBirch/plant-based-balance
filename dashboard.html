@@ -3594,6 +3594,48 @@ async function applyAppTheme(themeKey) {
         }
     }
 
+    /* Learning Tab Styles */
+    .learning-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #e5e7eb;
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: learningSpin 0.8s linear infinite;
+        margin: 0 auto;
+    }
+
+    @keyframes learningSpin {
+        to { transform: rotate(360deg); }
+    }
+
+    .learning-module-card:active {
+        transform: scale(0.98);
+    }
+
+    .learning-progress-ring {
+        transform: rotate(-90deg);
+    }
+
+    .fill-blank-option:hover {
+        border-color: var(--primary);
+        background: var(--accent-green);
+    }
+
+    .fill-blank-option.selected {
+        border-color: var(--primary);
+        background: var(--accent-green);
+    }
+
+    .order-item:active {
+        cursor: grabbing;
+    }
+
+    .match-item:hover:not(.matched) {
+        border-color: #a5b4fc;
+        background: #f5f3ff;
+    }
+
     </style>
 </head>
 <body>
@@ -10997,6 +11039,10 @@ function viewWorkoutHistoryDetail(date) {
             <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
             <span>Progress</span>
         </button>
+        <button class="nav-item" onclick="switchAppTab('learning', this)">
+            <svg viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>
+            <span>Learn</span>
+        </button>
         <button class="nav-item" id="nav-cycle-btn" onclick="switchAppTab('cycle', this)">
            <svg id="nav-cycle-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.22-7.52-3.22 3.22 7.52 3.22-7.52z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
            <span id="nav-cycle-label">Cycle</span>
@@ -11611,6 +11657,27 @@ function viewWorkoutHistoryDetail(date) {
             <!-- Modal Content -->
             <div id="exercise-chart-content">
                 <!-- Chart will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- LEARNING / EDUCATION VIEW -->
+    <div id="view-learning" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc;">
+        <!-- Header -->
+        <div style="padding: 20px 25px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
+            <div>
+                <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Learn</h2>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Master fitness, nutrition & mindset</div>
+            </div>
+            <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
+        </div>
+
+        <!-- Learning Content Container -->
+        <div id="learning-content" style="padding: 0;">
+            <!-- Content rendered by learning.js -->
+            <div style="text-align: center; padding: 60px 20px;">
+                <div class="learning-spinner"></div>
+                <div style="color: var(--text-muted); margin-top: 15px;">Loading...</div>
             </div>
         </div>
     </div>
@@ -13427,6 +13494,12 @@ function _switchAppTabReal(tabName, btn) {
         if(el) {
             el.style.display = 'block';
             if(typeof initProgressView === 'function') initProgressView();
+        }
+    } else if (tabName === 'learning') {
+        const el = document.getElementById('view-learning');
+        if(el) {
+            el.style.display = 'block';
+            if(typeof initLearning === 'function') initLearning();
         }
     } else if (tabName === 'cycle') {
         const el = document.getElementById('view-cycle');
@@ -19330,7 +19403,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
@@ -39122,6 +39195,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     })();
     </script>
+
+    <!-- Learning System Script -->
+    <script src="lib/learning-inline.js"></script>
 </body>
 </html>
 
