@@ -12754,7 +12754,10 @@ function viewWorkoutHistoryDetail(date) {
 
             // Show the wizard
             console.log('Showing recalculate wizard modal');
-            document.getElementById('recalculate-calories-wizard').style.display = 'flex';
+            const wizardModal = document.getElementById('recalculate-calories-wizard');
+            wizardModal.classList.add('active');
+            wizardModal.style.display = 'flex';
+            wizardModal.style.opacity = '1';
         } catch (domError) {
             console.error('Error setting up wizard DOM:', domError);
             throw domError;
@@ -12765,7 +12768,10 @@ function viewWorkoutHistoryDetail(date) {
      * Close the recalculate wizard
      */
     function closeRecalculateWizard() {
-        document.getElementById('recalculate-calories-wizard').style.display = 'none';
+        const wizardModal = document.getElementById('recalculate-calories-wizard');
+        wizardModal.classList.remove('active');
+        wizardModal.style.display = 'none';
+        wizardModal.style.opacity = '0';
         recalcWizardStep = 1;
         recalcWizardData = {};
     }
