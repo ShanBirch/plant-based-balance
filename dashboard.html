@@ -12653,76 +12653,270 @@ function viewWorkoutHistoryDetail(date) {
     }
 
     /**
-     * Recalculate calories based on current profile data
-     * Updates calorie and macro goals in database and refreshes UI
+     * Recalculate calories - opens wizard to allow user to update their profile data
      */
-    async function recalculateCalories() {
+    function recalculateCalories() {
+        // Check if user is logged in
+        if (!window.currentUser?.id) {
+            alert('Please log in to recalculate your calories.');
+            return;
+        }
+
+        // Open the recalculate calories wizard
+        openRecalculateWizard();
+    }
+
+    // Recalculate Wizard State
+    let recalcWizardStep = 1;
+    const totalRecalcSteps = 3;
+    let recalcWizardData = {};
+
+    /**
+     * Open the recalculate calories wizard and pre-fill with current data
+     */
+    async function openRecalculateWizard() {
+        // Reset wizard state
+        recalcWizardStep = 1;
+        recalcWizardData = {};
+
+        // Fetch current profile data to pre-fill the form
+        let profileData = {};
         try {
-            // Show loading state
-            const btn = event.target.closest('button');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<span>🔄</span> Calculating...';
-            btn.disabled = true;
+            if (typeof dbHelpers !== 'undefined' && window.currentUser?.id) {
+                const quizData = await dbHelpers.quizResults.getLatest(window.currentUser.id);
+                if (quizData) profileData = quizData;
+            }
+        } catch (e) {
+            console.log('Could not fetch quiz data:', e);
+        }
 
-            // Get current user's quiz data from database
-            if (!window.currentUser?.id) {
-                alert('Please log in to recalculate your calories.');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+        // Also check localStorage for backup data
+        const localProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        profileData = { ...localProfile, ...sessionProfile, ...profileData };
+
+        // Pre-fill form fields with current data
+        if (profileData.sex) {
+            document.getElementById('recalc-wizard-gender').value = profileData.sex;
+            selectRecalcGender(profileData.sex, true); // true = don't auto-advance
+        }
+        if (profileData.age) document.getElementById('recalc-wizard-age').value = profileData.age;
+        if (profileData.height) document.getElementById('recalc-wizard-height').value = profileData.height;
+        if (profileData.weight) document.getElementById('recalc-wizard-weight').value = profileData.weight;
+        if (profileData.goal_weight) document.getElementById('recalc-wizard-goal-weight').value = profileData.goal_weight;
+        if (profileData.activity_level) document.getElementById('recalc-wizard-activity-level').value = profileData.activity_level;
+
+        // Handle goal body type
+        const goalType = profileData.goalBodyType || profileData.goal_body_type || '';
+        if (goalType) document.getElementById('recalc-wizard-goal-type').value = goalType;
+
+        // Reset slides to initial state
+        document.querySelectorAll('.recalc-wizard-slide').forEach(slide => {
+            slide.style.display = 'none';
+            slide.classList.remove('active');
+        });
+        document.getElementById('recalc-slide-1').style.display = 'block';
+        document.getElementById('recalc-slide-1').classList.add('active');
+
+        // Update progress dots
+        updateRecalcProgress(1);
+
+        // Update buttons
+        document.getElementById('recalc-btn-back').style.display = 'none';
+        document.getElementById('recalc-btn-next').textContent = 'Next';
+
+        // Show the wizard
+        document.getElementById('recalculate-calories-wizard').style.display = 'flex';
+    }
+
+    /**
+     * Close the recalculate wizard
+     */
+    function closeRecalculateWizard() {
+        document.getElementById('recalculate-calories-wizard').style.display = 'none';
+        recalcWizardStep = 1;
+        recalcWizardData = {};
+    }
+
+    /**
+     * Select gender in recalculate wizard
+     */
+    function selectRecalcGender(gender, noAdvance = false) {
+        document.getElementById('recalc-wizard-gender').value = gender;
+        recalcWizardData.sex = gender;
+
+        // Update button styles
+        const femaleBtn = document.getElementById('recalc-gender-btn-female');
+        const maleBtn = document.getElementById('recalc-gender-btn-male');
+
+        femaleBtn.style.border = gender === 'female' ? '2px solid var(--primary)' : '2px solid #e2e8f0';
+        femaleBtn.style.background = gender === 'female' ? 'rgba(72,134,75,0.1)' : 'white';
+        maleBtn.style.border = gender === 'male' ? '2px solid var(--primary)' : '2px solid #e2e8f0';
+        maleBtn.style.background = gender === 'male' ? 'rgba(72,134,75,0.1)' : 'white';
+
+        // Auto-advance to next step if not pre-filling
+        if (!noAdvance) {
+            setTimeout(() => recalcWizardNext(), 300);
+        }
+    }
+
+    /**
+     * Update progress dots for recalculate wizard
+     */
+    function updateRecalcProgress(step) {
+        const dots = document.querySelectorAll('.recalc-wizard-progress .dot');
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('active', index < step);
+        });
+    }
+
+    /**
+     * Navigate to next step in recalculate wizard
+     */
+    async function recalcWizardNext() {
+        // Validate current step
+        if (recalcWizardStep === 1) {
+            const gender = document.getElementById('recalc-wizard-gender').value;
+            if (!gender) {
+                alert('Please select your program.');
+                return;
+            }
+            recalcWizardData.sex = gender;
+        } else if (recalcWizardStep === 2) {
+            // Validate step 2 fields
+            const age = document.getElementById('recalc-wizard-age').value;
+            const height = document.getElementById('recalc-wizard-height').value;
+            const weight = document.getElementById('recalc-wizard-weight').value;
+            const goalWeight = document.getElementById('recalc-wizard-goal-weight').value;
+            const activityLevel = document.getElementById('recalc-wizard-activity-level').value;
+            const goalType = document.getElementById('recalc-wizard-goal-type').value;
+
+            if (!age || !height || !weight || !goalWeight || !activityLevel || !goalType) {
+                alert('Please fill in all fields.');
                 return;
             }
 
-            // Fetch current quiz results
-            let quizData = null;
-            if (typeof dbHelpers !== 'undefined') {
-                quizData = await dbHelpers.quizResults.getLatest(window.currentUser.id);
-            }
+            recalcWizardData.age = parseInt(age);
+            recalcWizardData.height = parseFloat(height);
+            recalcWizardData.weight = parseFloat(weight);
+            recalcWizardData.goal_weight = parseFloat(goalWeight);
+            recalcWizardData.activity_level = activityLevel;
+            recalcWizardData.goalBodyType = goalType;
 
-            // Also check localStorage for backup data
-            const localProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-            const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
-
-            // Merge data sources (database takes priority)
-            const profileData = { ...localProfile, ...sessionProfile, ...quizData };
-
-            // Normalize goalBodyType - check both field names and default to 'Athletic'
-            const effectiveGoalBodyType = profileData.goalBodyType || profileData.goal_body_type || 'Athletic';
-
-            // Validate required fields for calculation (goalBodyType is optional, defaults to Athletic)
-            const requiredFields = ['age', 'height', 'weight', 'goal_weight', 'sex', 'activity_level'];
-            const missingFields = requiredFields.filter(field => !profileData[field]);
-
-            if (missingFields.length > 0) {
-                alert(`Missing required profile data: ${missingFields.join(', ')}. Please complete your profile setup first.`);
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                return;
-            }
-
-            // Calculate new nutrition goals using the nutrition calculator
+            // Calculate nutrition goals and show results
             const nutritionGoals = calculateNutritionGoals({
-                age: parseInt(profileData.age),
-                height: parseFloat(profileData.height),
-                weight: parseFloat(profileData.weight),
-                goal_weight: parseFloat(profileData.goal_weight),
-                sex: profileData.sex,
-                activity_level: profileData.activity_level,
-                goalBodyType: effectiveGoalBodyType
+                age: recalcWizardData.age,
+                height: recalcWizardData.height,
+                weight: recalcWizardData.weight,
+                goal_weight: recalcWizardData.goal_weight,
+                sex: recalcWizardData.sex,
+                activity_level: recalcWizardData.activity_level,
+                goalBodyType: recalcWizardData.goalBodyType
             });
 
             if (!nutritionGoals) {
-                alert('Failed to calculate nutrition goals. Please check your profile data.');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+                alert('Failed to calculate nutrition goals. Please check your data.');
                 return;
             }
 
-            console.log('✅ New nutrition goals calculated:', nutritionGoals);
+            recalcWizardData.nutritionGoals = nutritionGoals;
+
+            // Update results display
+            document.getElementById('recalc-result-calories').textContent = nutritionGoals.calorie_goal + ' kcal';
+            document.getElementById('recalc-result-protein').textContent = nutritionGoals.protein_goal_g + 'g';
+            document.getElementById('recalc-result-carbs').textContent = nutritionGoals.carbs_goal_g + 'g';
+            document.getElementById('recalc-result-fat').textContent = nutritionGoals.fat_goal_g + 'g';
+
+            // Update summary text
+            let summaryText = '';
+            if (recalcWizardData.weight > recalcWizardData.goal_weight) {
+                summaryText = `We've set a calorie deficit to help you lose ${(recalcWizardData.weight - recalcWizardData.goal_weight).toFixed(1)}kg.`;
+            } else if (recalcWizardData.weight < recalcWizardData.goal_weight) {
+                summaryText = `We've set a calorie surplus to help you gain ${(recalcWizardData.goal_weight - recalcWizardData.weight).toFixed(1)}kg.`;
+            } else {
+                summaryText = `Your goals are set to maintain your current weight.`;
+            }
+            document.getElementById('recalc-summary-text').textContent = summaryText;
+        } else if (recalcWizardStep === 3) {
+            // Save and close
+            await saveRecalculateWizardData();
+            return;
+        }
+
+        // Move to next step
+        recalcWizardStep++;
+        showRecalcSlide(recalcWizardStep);
+    }
+
+    /**
+     * Navigate to previous step in recalculate wizard
+     */
+    function recalcWizardBack() {
+        if (recalcWizardStep > 1) {
+            recalcWizardStep--;
+            showRecalcSlide(recalcWizardStep);
+        }
+    }
+
+    /**
+     * Show specific slide in recalculate wizard
+     */
+    function showRecalcSlide(step) {
+        // Hide all slides
+        document.querySelectorAll('.recalc-wizard-slide').forEach(slide => {
+            slide.style.display = 'none';
+            slide.classList.remove('active');
+        });
+
+        // Show target slide
+        const targetSlide = document.getElementById(`recalc-slide-${step}`);
+        if (targetSlide) {
+            targetSlide.style.display = 'block';
+            targetSlide.classList.add('active');
+        }
+
+        // Update progress
+        updateRecalcProgress(step);
+
+        // Update buttons
+        const backBtn = document.getElementById('recalc-btn-back');
+        const nextBtn = document.getElementById('recalc-btn-next');
+
+        backBtn.style.display = step > 1 ? 'block' : 'none';
+
+        if (step === totalRecalcSteps) {
+            nextBtn.textContent = 'Save & Update';
+        } else {
+            nextBtn.textContent = 'Next';
+        }
+
+        // Update title
+        const titles = ['Update Your Goals', 'Your Details', 'Your New Goals'];
+        document.getElementById('recalc-wizard-title').textContent = titles[step - 1] || 'Update Your Goals';
+    }
+
+    /**
+     * Save recalculate wizard data to database
+     */
+    async function saveRecalculateWizardData() {
+        const nextBtn = document.getElementById('recalc-btn-next');
+        nextBtn.textContent = 'Saving...';
+        nextBtn.disabled = true;
+
+        try {
+            const nutritionGoals = recalcWizardData.nutritionGoals;
 
             // Update quiz_results in database
             if (window.supabaseClient && window.currentUser?.id) {
                 const { error } = await window.supabaseClient.from('quiz_results')
                     .update({
+                        age: recalcWizardData.age,
+                        height: recalcWizardData.height,
+                        weight: recalcWizardData.weight,
+                        goal_weight: recalcWizardData.goal_weight,
+                        sex: recalcWizardData.sex,
+                        activity_level: recalcWizardData.activity_level,
+                        goal_body_type: recalcWizardData.goalBodyType,
                         bmr: nutritionGoals.bmr,
                         tdee: nutritionGoals.tdee,
                         calorie_goal: nutritionGoals.calorie_goal,
@@ -12733,16 +12927,28 @@ function viewWorkoutHistoryDetail(date) {
                     .eq('user_id', window.currentUser.id);
 
                 if (error) {
-                    console.error('Failed to save new calorie goals:', error);
-                    alert('Failed to save new calorie goals. Please try again.');
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
+                    console.error('Failed to save new goals:', error);
+                    alert('Failed to save your new goals. Please try again.');
+                    nextBtn.textContent = 'Save & Update';
+                    nextBtn.disabled = false;
                     return;
                 }
+
+                // Also update users table with sex if changed
+                await window.supabaseClient.from('users')
+                    .update({ sex: recalcWizardData.sex })
+                    .eq('id', window.currentUser.id);
             }
 
             // Update localStorage and sessionStorage
-            const updatedGoals = {
+            const updatedData = {
+                age: recalcWizardData.age,
+                height: recalcWizardData.height,
+                weight: recalcWizardData.weight,
+                goal_weight: recalcWizardData.goal_weight,
+                sex: recalcWizardData.sex,
+                activity_level: recalcWizardData.activity_level,
+                goalBodyType: recalcWizardData.goalBodyType,
                 bmr: nutritionGoals.bmr,
                 tdee: nutritionGoals.tdee,
                 calorie_goal: nutritionGoals.calorie_goal,
@@ -12752,16 +12958,16 @@ function viewWorkoutHistoryDetail(date) {
             };
 
             const storedLocal = JSON.parse(localStorage.getItem('userProfile') || '{}');
-            Object.assign(storedLocal, updatedGoals);
+            Object.assign(storedLocal, updatedData);
             localStorage.setItem('userProfile', JSON.stringify(storedLocal));
 
             const storedSession = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
-            Object.assign(storedSession, updatedGoals);
+            Object.assign(storedSession, updatedData);
             sessionStorage.setItem('userProfile', JSON.stringify(storedSession));
 
             // Update window.userProfile cache
             if (window.userProfile) {
-                Object.assign(window.userProfile, updatedGoals);
+                Object.assign(window.userProfile, updatedData);
             }
 
             // Update today's daily_nutrition record with new goals
@@ -12786,22 +12992,17 @@ function viewWorkoutHistoryDetail(date) {
                 loadNutritionData();
             }
 
-            // Show success message
-            btn.innerHTML = '<span>✅</span> Updated!';
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }, 2000);
+            console.log('✅ New nutrition goals saved:', nutritionGoals);
 
-            // Show detailed confirmation
-            alert(`Your calories have been recalculated!\n\nNew Daily Goals:\n• Calories: ${nutritionGoals.calorie_goal} kcal\n• Protein: ${nutritionGoals.protein_goal_g}g\n• Carbs: ${nutritionGoals.carbs_goal_g}g\n• Fat: ${nutritionGoals.fat_goal_g}g`);
+            // Close wizard and show success
+            closeRecalculateWizard();
+            alert(`Your goals have been updated!\n\nNew Daily Goals:\n• Calories: ${nutritionGoals.calorie_goal} kcal\n• Protein: ${nutritionGoals.protein_goal_g}g\n• Carbs: ${nutritionGoals.carbs_goal_g}g\n• Fat: ${nutritionGoals.fat_goal_g}g`);
 
         } catch (error) {
-            console.error('Error recalculating calories:', error);
-            alert('An error occurred while recalculating calories. Please try again.');
-            const btn = event.target.closest('button');
-            btn.innerHTML = '<span>🔄</span> Recalculate My Calories';
-            btn.disabled = false;
+            console.error('Error saving recalculate wizard data:', error);
+            alert('An error occurred while saving your goals. Please try again.');
+            nextBtn.textContent = 'Save & Update';
+            nextBtn.disabled = false;
         }
     }
     </script>
@@ -23912,6 +24113,155 @@ function openAsClient() {
 
             <button onclick="saveCycleTrackingData()" style="width:100%; background:var(--primary); color:white; border:none; padding:16px; border-radius:50px; font-weight:700; font-size:1rem; cursor:pointer;">Save Changes</button>
         </div>
+    </div>
+</div>
+
+<!-- Recalculate Calories Wizard Modal -->
+<div class="onboarding-overlay" id="recalculate-calories-wizard" style="display:none; z-index:12000;">
+    <div class="onboarding-modal wizard-container" style="max-width: 450px; max-height: 90vh; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+
+        <!-- HEADER -->
+        <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative; flex-shrink: 0;">
+            <div onclick="closeRecalculateWizard()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
+            <div class="recalc-wizard-progress" style="display:flex; justify-content:center; gap:6px; margin-bottom:15px;">
+                <div class="dot active"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+            <h2 id="recalc-wizard-title" style="margin:0; color:var(--primary);">Update Your Goals</h2>
+        </div>
+
+        <!-- CONTENT SLIDES -->
+        <div class="wizard-content" style="flex: 1; padding: 25px; overflow-y: auto; min-height: 0;">
+
+            <!-- SLIDE 1: SEX SELECTION -->
+            <div class="recalc-wizard-slide active" id="recalc-slide-1">
+                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🔄</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Let's Update Your Profile</h3>
+                <p style="text-align:center; color:#666; margin-bottom:30px;">Select your program:</p>
+
+                <div style="display:flex; flex-direction:column; gap:15px; max-width:300px; margin:0 auto;">
+                    <button type="button" id="recalc-gender-btn-female" onclick="selectRecalcGender('female')" class="gender-select-btn" style="
+                        display:flex; align-items:center; justify-content:center; gap:15px;
+                        padding:20px 30px; border-radius:16px; border:2px solid #e2e8f0;
+                        background:white; cursor:pointer; transition:all 0.3s ease;
+                        font-size:1.1rem; font-weight:600; color:#334155;
+                    ">
+                        <span style="font-size:2rem;">🌸</span>
+                        <span>For Her</span>
+                    </button>
+
+                    <button type="button" id="recalc-gender-btn-male" onclick="selectRecalcGender('male')" class="gender-select-btn" style="
+                        display:flex; align-items:center; justify-content:center; gap:15px;
+                        padding:20px 30px; border-radius:16px; border:2px solid #e2e8f0;
+                        background:white; cursor:pointer; transition:all 0.3s ease;
+                        font-size:1.1rem; font-weight:600; color:#334155;
+                    ">
+                        <span style="font-size:2rem;">💪</span>
+                        <span>For Him</span>
+                    </button>
+                </div>
+
+                <input type="hidden" id="recalc-wizard-gender" value="">
+            </div>
+
+            <!-- SLIDE 2: ESSENTIAL DATA -->
+            <div class="recalc-wizard-slide" id="recalc-slide-2" style="display:none;">
+                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">📋</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Your Details</h3>
+                <p style="text-align:center; color:#666; margin-bottom:25px;">Update your information to recalculate your goals.</p>
+
+                <!-- Age -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Age</label>
+                    <input type="number" id="recalc-wizard-age" class="wizard-input" placeholder="25" min="18" max="100" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                </div>
+
+                <!-- Height & Weight -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px;">
+                    <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Height (cm)</label>
+                        <input type="number" id="recalc-wizard-height" class="wizard-input" placeholder="170" min="100" max="250" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                    </div>
+                    <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Weight (kg)</label>
+                        <input type="number" id="recalc-wizard-weight" class="wizard-input" placeholder="70" min="30" max="300" step="0.1" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                    </div>
+                </div>
+
+                <!-- Goal Weight -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Goal Weight (kg)</label>
+                    <input type="number" id="recalc-wizard-goal-weight" class="wizard-input" placeholder="65" min="30" max="300" step="0.1" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                </div>
+
+                <!-- Activity Level -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Activity Level</label>
+                    <select id="recalc-wizard-activity-level" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                        <option value="">Select</option>
+                        <option value="sedentary">Sedentary (Little or no exercise)</option>
+                        <option value="light">Lightly Active (Exercise 1-3 days/week)</option>
+                        <option value="moderate">Moderately Active (Exercise 3-5 days/week)</option>
+                        <option value="very">Very Active (Exercise 6-7 days/week)</option>
+                    </select>
+                </div>
+
+                <!-- Primary Goal -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">What's your primary goal?</label>
+                    <select id="recalc-wizard-goal-type" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                        <option value="">Select your goal</option>
+                        <option value="Flat">Lose weight / Get lean</option>
+                        <option value="Athletic">Get toned / Maintain fitness</option>
+                        <option value="Body Builder">Build muscle / Gain strength</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SLIDE 3: CONFIRMATION -->
+            <div class="recalc-wizard-slide" id="recalc-slide-3" style="display:none;">
+                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">✨</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Your New Goals</h3>
+                <p style="text-align:center; color:#666; margin-bottom:25px;">Here are your updated daily targets:</p>
+
+                <div id="recalc-results" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:20px; border-radius:12px; margin-bottom:20px;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                        <div style="text-align:center; padding:15px; background:white; border-radius:10px;">
+                            <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">Daily Calories</div>
+                            <div id="recalc-result-calories" style="font-size:1.5rem; font-weight:700; color:var(--primary);">--</div>
+                        </div>
+                        <div style="text-align:center; padding:15px; background:white; border-radius:10px;">
+                            <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">Protein</div>
+                            <div id="recalc-result-protein" style="font-size:1.5rem; font-weight:700; color:var(--primary);">--</div>
+                        </div>
+                        <div style="text-align:center; padding:15px; background:white; border-radius:10px;">
+                            <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">Carbs</div>
+                            <div id="recalc-result-carbs" style="font-size:1.5rem; font-weight:700; color:var(--primary);">--</div>
+                        </div>
+                        <div style="text-align:center; padding:15px; background:white; border-radius:10px;">
+                            <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">Fat</div>
+                            <div id="recalc-result-fat" style="font-size:1.5rem; font-weight:700; color:var(--primary);">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background:rgba(72,134,75,0.1); border-radius:10px; padding:12px; text-align:center;">
+                    <p style="margin:0; font-size:0.85rem; color:#1a4d2e;">
+                        <strong>📊 Based on your profile:</strong><br>
+                        <span id="recalc-summary-text">Your goals have been personalized for your journey.</span>
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- FOOTER WITH BUTTONS -->
+        <div class="wizard-footer" style="padding: 0 25px 25px 25px; flex-shrink: 0;">
+            <div style="display:flex; gap:10px;">
+                <button id="recalc-btn-back" onclick="recalcWizardBack()" style="flex:1; padding:14px; border-radius:50px; border:2px solid var(--primary); background:white; color:var(--primary); font-weight:700; cursor:pointer; display:none;">Back</button>
+                <button id="recalc-btn-next" onclick="recalcWizardNext()" style="flex:2; padding:14px; border-radius:50px; border:none; background:var(--primary); color:white; font-weight:700; cursor:pointer;">Next</button>
+            </div>
+        </div>
+
     </div>
 </div>
 
