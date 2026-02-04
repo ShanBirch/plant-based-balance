@@ -13023,11 +13023,8 @@ function viewWorkoutHistoryDetail(date) {
             }
 
             // Refresh UI widgets
-            if (typeof refreshNutritionWidgets === 'function') {
-                refreshNutritionWidgets();
-            }
-            if (typeof loadNutritionData === 'function') {
-                loadNutritionData();
+            if (typeof loadTodayNutrition === 'function') {
+                await loadTodayNutrition();
             }
 
             console.log('✅ New nutrition goals saved:', nutritionGoals);
