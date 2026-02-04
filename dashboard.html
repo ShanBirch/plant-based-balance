@@ -3649,6 +3649,7 @@ async function applyAppTheme(themeKey) {
     .edit-items-list {
         flex: 1;
         overflow-y: auto;
+        overflow-x: hidden;
         padding: 16px 20px;
         max-height: 300px;
     }
@@ -3656,8 +3657,8 @@ async function applyAppTheme(themeKey) {
     .edit-item-row {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 12px;
+        gap: 8px;
+        padding: 10px 12px;
         background: #f8f9fa;
         border-radius: 12px;
         margin-bottom: 10px;
@@ -3671,23 +3672,26 @@ async function applyAppTheme(themeKey) {
         flex: 1;
         display: flex;
         gap: 8px;
+        min-width: 0;
+        overflow: hidden;
     }
 
     .edit-item-input {
-        padding: 8px 12px;
+        padding: 8px 10px;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         background: white;
+        min-width: 0;
     }
 
     .edit-item-input.edit-item-name {
-        flex: 2;
+        flex: 1;
     }
 
     .edit-item-input.edit-item-portion {
-        flex: 1;
-        min-width: 80px;
+        width: 70px;
+        flex-shrink: 0;
     }
 
     .edit-item-input:focus {
@@ -3717,17 +3721,27 @@ async function applyAppTheme(themeKey) {
 
     .edit-items-add {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         padding: 0 20px 16px;
+        overflow: hidden;
     }
 
     .edit-items-add input {
-        flex: 1;
-        padding: 12px;
+        padding: 10px 12px;
         border: 2px dashed #e0e0e0;
         border-radius: 12px;
         font-size: 0.9rem;
         background: #fafafa;
+        min-width: 0;
+    }
+
+    .edit-items-add input#newItemInput {
+        flex: 1;
+    }
+
+    .edit-items-add input#newItemPortionInput {
+        width: 80px;
+        flex-shrink: 0;
     }
 
     .edit-items-add input:focus {
@@ -3737,7 +3751,7 @@ async function applyAppTheme(themeKey) {
     }
 
     .edit-items-add button {
-        padding: 12px 16px;
+        padding: 10px 14px;
         background: #10b981;
         color: white;
         border: none;
@@ -3745,6 +3759,7 @@ async function applyAppTheme(themeKey) {
         font-weight: 600;
         cursor: pointer;
         white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .edit-items-add button:hover {
@@ -23023,8 +23038,8 @@ hideAllAppViews = function() {
         </div>
         <div class="edit-items-list" id="editItemsList"></div>
         <div class="edit-items-add">
-            <input type="text" id="newItemInput" placeholder="Food item (e.g., 'oats' or 'chicken breast')" onkeypress="if(event.key==='Enter')addNewItem()">
-            <input type="text" id="newItemPortionInput" placeholder="Amount (e.g., 200g)" onkeypress="if(event.key==='Enter')addNewItem()" style="max-width:120px;">
+            <input type="text" id="newItemInput" placeholder="Add new item..." onkeypress="if(event.key==='Enter')addNewItem()">
+            <input type="text" id="newItemPortionInput" placeholder="Amount" onkeypress="if(event.key==='Enter')addNewItem()">
             <button onclick="addNewItem()">+ Add</button>
         </div>
         <div class="edit-items-actions">
