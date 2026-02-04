@@ -11394,7 +11394,7 @@ function viewWorkoutHistoryDetail(date) {
                 <div onclick="openCoachChatFromFriends()" style="display: flex; align-items: center; padding: 12px 16px; cursor: pointer; background: linear-gradient(90deg, rgba(123,168,131,0.08) 0%, transparent 100%); border-bottom: 1px solid #f1f5f9;">
                     <div style="position: relative; margin-right: 12px;">
                         <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--primary);">
-                            <img src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\"color: white; font-size: 1.4rem; font-weight: 700;\">S</span>'">
+                            <img src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\'color: white; font-size: 1.4rem; font-weight: 700;\'>S</span>'">
                         </div>
                         <div style="position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></div>
                     </div>
@@ -17329,7 +17329,7 @@ function initializeCharacterCustomization() {
     wizardCharacterColors = window.getCharacterColors ? window.getCharacterColors() : {
         hair: '#4a3728',
         shirt: '#7BA883',
-        shorts: '#2C3E50',
+        pants: '#2C3E50',
         shoes: '#1a202c',
         skin: '#DEB887'
     };
@@ -17339,7 +17339,7 @@ function initializeCharacterCustomization() {
     // Render color buttons for each category
     renderColorButtons('hair', colorOptions.hair, 'wizard-hair-colors');
     renderColorButtons('shirt', colorOptions.shirt, 'wizard-shirt-colors');
-    renderColorButtons('shorts', colorOptions.shorts, 'wizard-shorts-colors');
+    renderColorButtons('pants', colorOptions.pants, 'wizard-pants-colors');
     renderColorButtons('shoes', colorOptions.shoes, 'wizard-shoes-colors');
     renderColorButtons('skin', colorOptions.skin, 'wizard-skin-colors');
 
@@ -25145,10 +25145,10 @@ function openAsClient() {
                         <div id="wizard-shirt-colors" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
                     </div>
 
-                    <!-- Shorts Color -->
+                    <!-- Pants Color -->
                     <div class="color-option-group" style="margin-bottom: 15px;">
-                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Shorts Color</label>
-                        <div id="wizard-shorts-colors" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Pants Color</label>
+                        <div id="wizard-pants-colors" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
                     </div>
 
                     <!-- Shoes Color -->
@@ -39918,7 +39918,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     <!-- Tamagotchi Initialization Logic -->
     <script>
     (function() {
-        const TAMAGOTCHI_EVOLUTIONS = [
+        const TAMAGOTCHI_EVOLUTIONS_MALE = [
             { level: 1,  xp: 0,    title: "Newcomer",  src: "assets/shazylvl1.glb" },
             { level: 5,  xp: 15,   title: "Beginner",  src: "assets/shazylvl1.glb" },
             { level: 10, xp: 46,   title: "Rising",    src: "assets/shazylvl10.glb" },
@@ -39933,83 +39933,124 @@ document.addEventListener('DOMContentLoaded', async function() {
             { level: 99, xp: 1605, title: "Legend",    src: "assets/shazie_legend.glb" }
         ];
 
+        const TAMAGOTCHI_EVOLUTIONS_FEMALE = [
+            { level: 1,  xp: 0,    title: "Newcomer",  src: "assets/female_lvl1.glb" },
+            { level: 5,  xp: 15,   title: "Beginner",  src: "assets/female_lvl1.glb" },
+            { level: 10, xp: 46,   title: "Rising",    src: "assets/female_lvl10.glb" },
+            { level: 20, xp: 133,  title: "Growing",   src: "assets/female_lvl20.glb" },
+            { level: 30, xp: 251,  title: "Consistent",src: "assets/female_lvl30.glb" }
+        ];
+
+        // Default to Male for backward compatibility, will be overridden by user fact
+        let TAMAGOTCHI_EVOLUTIONS = TAMAGOTCHI_EVOLUTIONS_MALE;
+
         // Character material mappings for each level model
         // Maps body part names to material indices for color customization
         const CHARACTER_MATERIAL_MAPPINGS = {
+            // --- MALE MODELS ---
             'shazylvl1.glb': {
-                shirt: { material: 'Material_tripo_part_11', index: 0 },
-                skin: { material: 'Material_tripo_part_12', index: 1 },
-                shoes: { material: 'Material_tripo_part_2', index: 2 },
-                hair: { material: 'Material_tripo_part_5', index: 3 },
-                shorts: { material: 'Material_tripo_part_6', index: 4 }
+                shirt: { index: 0 },
+                skin: { index: 1 },
+                shoes: { index: 2 },
+                hair: { index: 3 },
+                pants: { index: 4 }
             },
             'shazylvl10.glb': {
-                shirt: { material: 'tripo_part_3', index: 0 },
-                skin: { material: 'tripo_part_5', index: 1 },
-                hair: { material: 'tripo_part_6', index: 2 },
-                shorts: { material: 'tripo_part_8', index: 3 },
-                shoes: { material: 'tripo_part_new_0', index: 4 }
+                shirt: { index: 0 },
+                skin: { index: 1 },
+                hair: { index: 2 },
+                pants: { index: 3 },
+                shoes: { index: 4 }
             },
             'shazylvl20.glb': {
-                skin: { material: 'tripo_part_8', index: 0 },
-                shoes: { material: 'tripo_part_12', index: 1 },
-                shirt: { material: 'tripo_part_2', index: 2 },
-                hair: { material: 'tripo_part_5', index: 3 },
-                shorts: { material: 'tripo_part_9', index: 5 }
+                skin: { index: 0 },
+                shoes: { index: 1 },
+                shirt: { index: 2 },
+                hair: { index: 3 },
+                pants: { index: 5 }
             },
             'shazylvl30.glb': {
-                skin: { material: 'tripo_part_13', index: 0 },
-                shoes: { material: 'tripo_part_2.001', index: 1 },
-                hair: { material: 'tripo_part_4', index: 2 },
-                shorts: { material: 'tripo_part_5.001', index: 3 },
-                shirt: { material: 'tripo_part_6.001', index: 4 }
+                skin: { index: 0 },
+                shoes: { index: 1 },
+                hair: { index: 2 },
+                pants: { index: 3 },
+                shirt: { index: 4 }
             },
             'shazylvl40.glb': {
-                skin: { material: 'tripo_part_10', index: 0 },
-                shoes: { material: 'tripo_part_2.002', index: 1 },
-                shirt: { material: 'tripo_part_3', index: 2 },
-                hair: { material: 'tripo_part_5.002', index: 3 },
-                shorts: { material: 'tripo_part_6.002', index: 4 }
+                skin: { index: 0 },
+                shoes: { index: 1 },
+                shirt: { index: 2 },
+                hair: { index: 3 },
+                pants: { index: 4 }
             },
             'shazylvl50.glb': {
-                skin: { material: 'tripo_part_11', index: 0 },
-                hair: { material: 'tripo_part_4.001', index: 2 },
-                shirt: { material: 'tripo_part_5.003', index: 3 },
-                shorts: { material: 'tripo_part_new_0_3', index: 5 },
-                shoes: { material: 'tripo_part_new_0_0', index: 4 }
+                skin: { index: 0 },
+                hair: { index: 2 },
+                shirt: { index: 3 },
+                pants: { index: 5 },
+                shoes: { index: 4 }
             },
             'shazylvl60.glb': {
-                skin: { material: 'tripo_part_18', index: 0 },
-                shoes: { material: 'tripo_part_3.001', index: 1 },
-                shirt: { material: 'tripo_part_7', index: 2 },
-                shorts: { material: 'tripo_part_9.001', index: 3 },
-                hair: { material: 'tripo_part_new_0', index: 4 }
+                skin: { index: 0 },
+                shoes: { index: 1 },
+                shirt: { index: 2 },
+                pants: { index: 3 },
+                hair: { index: 4 }
             },
             'shazylvl70.glb': {
-                skin: { material: 'tripo_part_0.001', index: 0 },
-                shoes: { material: 'tripo_part_2.003', index: 1 },
-                shorts: { material: 'tripo_part_7.001', index: 2 },
-                hair: { material: 'tripo_part_new_0.001', index: 3 }
+                skin: { index: 0 },
+                shoes: { index: 1 },
+                pants: { index: 2 },
+                hair: { index: 3 }
             },
             'shazylvl80.glb': {
-                skin: { material: 'tripo_part_12.001', index: 0 },
-                shorts: { material: 'tripo_part_15.001', index: 1 },
-                shoes: { material: 'tripo_part_3.002', index: 2 },
-                hair: { material: 'tripo_part_new_0.002', index: 3 }
+                skin: { index: 0 },
+                pants: { index: 1 },
+                shoes: { index: 2 },
+                hair: { index: 3 }
             },
             'shazylvl90.glb': {
-                skin: { material: 'tripo_part_11.001', index: 0 },
-                shoes: { material: 'tripo_part_2.004', index: 1 },
-                shorts: { material: 'tripo_part_7.002', index: 2 },
-                hair: { material: 'tripo_part_new_0.003', index: 3 }
+                skin: { index: 0 },
+                shoes: { index: 1 },
+                pants: { index: 2 },
+                hair: { index: 3 }
             },
             'shazie_legend.glb': {
-                skin: { material: 'tripo_part_13.001', index: 1 },
-                hair: { material: 'tripo_part_17', index: 3 },
-                hairSecondary: { material: 'tripo_part_11.002', index: 0 },
-                shorts: { material: 'tripo_part_15.002', index: 2 },
-                shoes: { material: 'tripo_part_25', index: 5 },
-                shoesAccent: { material: 'tripo_part_2.005', index: 4 }
+                skin: { index: 1 },
+                hair: { index: 3 },
+                hairSecondary: { index: 0 },
+                pants: { index: 2 },
+                shoes: { index: 5 },
+                shoesAccent: { index: 4 }
+            },
+            // --- FEMALE MODELS ---
+            'female_lvl1.glb': {
+                skin: { names: ['part_new'] },
+                hair: { names: ['part_2'] },
+                pants: { names: ['part_4'] },
+                shoes: { names: ['part_11'] },
+                shirt: { names: ['part_8'] }
+            },
+            'female_lvl10.glb': {
+                skin: { names: ['part_8.001'] },
+                hair: { names: ['part_new_0.001', 'part_new.001'] },
+                shirt: { names: ['part_new_0_0.001'] },
+                pants: { names: ['part_6.001'] },
+                shoes: { names: ['part_1.001', 'part_10.001'] }
+            },
+            'female_lvl20.glb': {
+                skin: { names: ['tripo_part_new_0_0'] },
+                hair: { names: ['tripo_part_8'] },
+                shirt: { names: ['tripo_part_5'] },
+                pants: { names: ['tripo_part_4'] },
+                shoes: { names: ['tripo_part_9'] }
+            },
+            'female_lvl30.glb': {
+                skin: { names: ['part_2.001'] },
+                hair: { names: ['part_new_0_0'] },
+                shirt: { names: ['part_0.001'] },
+                pants: { names: ['part_7.001'] },
+                shoes: { names: ['part_11.001'] }
             }
         };
 
@@ -40039,7 +40080,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 { name: 'White', hex: '#ECF0F1' },
                 { name: 'Teal', hex: '#16A085' }
             ],
-            shorts: [
+            pants: [
                 { name: 'Black', hex: '#2C3E50' },
                 { name: 'Navy', hex: '#1a365d' },
                 { name: 'Gray', hex: '#718096' },
@@ -40075,7 +40116,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const DEFAULT_CHARACTER_COLORS = {
             hair: '#4a3728',      // Brown
             shirt: '#7BA883',     // Green
-            shorts: '#2C3E50',    // Black
+            pants: '#2C3E50',    // Black
             shoes: '#1a202c',     // Black
             skin: '#DEB887'       // Medium
         };
@@ -40093,7 +40134,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return { ...DEFAULT_CHARACTER_COLORS };
         };
 
-        // Load character colors from database (call on page load)
+        // Load character colors and gender from database
         window.loadCharacterColorsFromDb = async function() {
             if (!window.currentUser || !window.dbHelpers) return;
 
@@ -40101,17 +40142,29 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const userId = window.currentUser.id || window.currentUser.user_id;
                 const facts = await window.dbHelpers.userFacts.get(userId);
 
-                if (facts?.additional_data?.character_colors) {
-                    const dbColors = facts.additional_data.character_colors;
-                    // Merge with defaults to ensure all keys exist
-                    const mergedColors = { ...DEFAULT_CHARACTER_COLORS, ...dbColors };
-                    localStorage.setItem('characterColors', JSON.stringify(mergedColors));
-                    console.log('Character colors loaded from database:', mergedColors);
+                if (facts) {
+                    // Handle Gender-based evolutions
+                    const userSex = facts.sex || facts.biological_sex || 'female'; 
+                    window.currentUserGender = userSex;
+                    if (userSex.toLowerCase() === 'female') {
+                        TAMAGOTCHI_EVOLUTIONS = TAMAGOTCHI_EVOLUTIONS_FEMALE;
+                        console.log('Character system: Switched to Female evolution path');
+                    } else {
+                        TAMAGOTCHI_EVOLUTIONS = TAMAGOTCHI_EVOLUTIONS_MALE;
+                        console.log('Character system: Switched to Male evolution path');
+                    }
 
-                    // Re-apply to model if loaded
-                    const modelViewer = document.getElementById('tamagotchi-model');
-                    if (modelViewer && modelViewer.model) {
-                        window.applyCharacterColors(modelViewer, modelViewer.getAttribute('src'));
+                    if (facts.additional_data?.character_colors) {
+                        const dbColors = facts.additional_data.character_colors;
+                        const mergedColors = { ...DEFAULT_CHARACTER_COLORS, ...dbColors };
+                        localStorage.setItem('characterColors', JSON.stringify(mergedColors));
+                        console.log('Character colors loaded from database:', mergedColors);
+
+                        // Re-apply to model if loaded
+                        const modelViewer = document.getElementById('tamagotchi-model');
+                        if (modelViewer && modelViewer.model) {
+                            window.applyCharacterColors(modelViewer, modelViewer.getAttribute('src'));
+                        }
                     }
                 }
             } catch (e) {
@@ -40182,17 +40235,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const colorKey = part.replace('Secondary', '').replace('Accent', '');
                 const colorHex = colors[colorKey];
 
-                if (colorHex && model.materials[config.index]) {
+                if (colorHex) {
                     try {
-                        const material = model.materials[config.index];
-                        const rgb = hexToRgb(colorHex);
-                        if (rgb && material.pbrMetallicRoughness) {
-                            material.pbrMetallicRoughness.setBaseColorFactor([
-                                rgb.r / 255,
-                                rgb.g / 255,
-                                rgb.b / 255,
-                                1
-                            ]);
+                        if (config.names) {
+                            // Name-based mapping (for segmented Tripo models)
+                            model.materials.forEach(mat => {
+                                const name = (mat.name || "").toLowerCase();
+                                if (config.names.some(target => name.includes(target.toLowerCase()))) {
+                                    applyColorToMaterial(mat, colorHex);
+                                }
+                            });
+                        } else if (config.index !== undefined && model.materials[config.index]) {
+                            // Index-based mapping (for legacy models)
+                            applyColorToMaterial(model.materials[config.index], colorHex);
                         }
                     } catch (e) {
                         console.log('Could not apply color to', part, e);
@@ -40200,6 +40255,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
         };
+
+        // Helper function to apply color and clear textures for visibility
+        function applyColorToMaterial(material, colorHex) {
+            const rgb = hexToRgb(colorHex);
+            if (rgb && material.pbrMetallicRoughness) {
+                const pbr = material.pbrMetallicRoughness;
+                // Clearing baseColorTexture is key for Tripo-segmented models to show custom colors
+                pbr.baseColorTexture = null; 
+                pbr.setBaseColorFactor([
+                    rgb.r / 255,
+                    rgb.g / 255,
+                    rgb.b / 255,
+                    1
+                ]);
+            }
+        }
 
         // Helper function to convert hex to RGB
         function hexToRgb(hex) {
@@ -40249,6 +40320,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (streakEl) streakEl.textContent = currentStreak;
 
             // Find matching evolution for the model
+            // Ensure gender is loaded
+            if (!window.currentUserGender && window.currentUser) {
+                loadCharacterColorsFromDb();
+            }
+            
             const currentEvolution = [...TAMAGOTCHI_EVOLUTIONS].reverse().find(e => level >= e.level) || TAMAGOTCHI_EVOLUTIONS[0];
             if (rankEl) rankEl.textContent = currentEvolution.title;
 
@@ -40280,10 +40356,33 @@ document.addEventListener('DOMContentLoaded', async function() {
                     modelViewer.addEventListener('load', function onModelLoad() {
                         console.log('Model loaded:', currentEvolution.src);
                         console.log('Available animations:', modelViewer.availableAnimations);
+                        
+                        // Force opaque materials for all parts
+                        if (modelViewer.model) {
+                            modelViewer.model.materials.forEach(m => m.setAlphaMode("OPAQUE"));
+                        }
+
                         // Apply user's custom character colors to the new model
                         if (window.applyCharacterColors) {
                             window.applyCharacterColors(modelViewer, currentEvolution.src);
                         }
+                        
+                        // Setup correct Idle animation for the new model/gender
+                        setTimeout(() => {
+                            let idleAnim = 'Idle';
+                            const isFemale = window.currentUserGender?.toLowerCase() === 'female';
+                            
+                            if (isFemale) {
+                                if (level === 1) idleAnim = 'NlaTrack.022';
+                                else idleAnim = 'NlaTrack.007';
+                            }
+                            
+                            if (modelViewer.availableAnimations.includes(idleAnim)) {
+                                modelViewer.animationName = idleAnim;
+                                modelViewer.play();
+                            }
+                        }, 500);
+
                         modelViewer.removeEventListener('load', onModelLoad);
                     }, { once: true });
                 } else {
@@ -40298,6 +40397,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (level >= 99) cameraDist = 12.0;
                 else if (level >= 40) cameraDist = 18.0 - ((level - 40) / 59 * 6.0);
                 else cameraDist = 22.0 - (level / 40 * 4.0);
+
+                // Female models use a different scale and logic
+                if (window.currentUserGender?.toLowerCase() === 'female') {
+                    if (level >= 20) cameraDist = 4.2;
+                    else if (level >= 10) cameraDist = 7.0;
+                    else cameraDist = 9.5;
+                }
 
                 modelViewer.setAttribute('camera-orbit', `0deg 85deg ${cameraDist}m`);
             }
