@@ -3723,6 +3723,7 @@ async function applyAppTheme(themeKey) {
 
     .edit-items-add input {
         flex: 1;
+        min-width: 0;
         padding: 12px;
         border: 2px dashed #e0e0e0;
         border-radius: 12px;
@@ -3745,6 +3746,7 @@ async function applyAppTheme(themeKey) {
         font-weight: 600;
         cursor: pointer;
         white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .edit-items-add button:hover {
