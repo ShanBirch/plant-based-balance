@@ -12676,6 +12676,7 @@ function viewWorkoutHistoryDetail(date) {
      * Recalculate calories - opens wizard to allow user to update their profile data
      */
     function recalculateCalories() {
+        console.log('recalculateCalories called');
         // Check if user is logged in
         if (!window.currentUser?.id) {
             alert('Please log in to recalculate your calories.');
@@ -12683,7 +12684,10 @@ function viewWorkoutHistoryDetail(date) {
         }
 
         // Open the recalculate calories wizard
-        openRecalculateWizard();
+        openRecalculateWizard().catch(err => {
+            console.error('Error opening recalculate wizard:', err);
+            alert('Error opening wizard. Please try again.');
+        });
     }
 
     // Recalculate Wizard State
@@ -12695,6 +12699,8 @@ function viewWorkoutHistoryDetail(date) {
      * Open the recalculate calories wizard and pre-fill with current data
      */
     async function openRecalculateWizard() {
+        console.log('openRecalculateWizard called');
+
         // Reset wizard state
         recalcWizardStep = 1;
         recalcWizardData = {};
@@ -12715,38 +12721,44 @@ function viewWorkoutHistoryDetail(date) {
         const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
         profileData = { ...localProfile, ...sessionProfile, ...profileData };
 
-        // Pre-fill form fields with current data
-        if (profileData.sex) {
-            document.getElementById('recalc-wizard-gender').value = profileData.sex;
-            selectRecalcGender(profileData.sex, true); // true = don't auto-advance
+        try {
+            // Pre-fill form fields with current data
+            if (profileData.sex) {
+                document.getElementById('recalc-wizard-gender').value = profileData.sex;
+                selectRecalcGender(profileData.sex, true); // true = don't auto-advance
+            }
+            if (profileData.age) document.getElementById('recalc-wizard-age').value = profileData.age;
+            if (profileData.height) document.getElementById('recalc-wizard-height').value = profileData.height;
+            if (profileData.weight) document.getElementById('recalc-wizard-weight').value = profileData.weight;
+            if (profileData.goal_weight) document.getElementById('recalc-wizard-goal-weight').value = profileData.goal_weight;
+            if (profileData.activity_level) document.getElementById('recalc-wizard-activity-level').value = profileData.activity_level;
+
+            // Handle goal body type
+            const goalType = profileData.goalBodyType || profileData.goal_body_type || '';
+            if (goalType) document.getElementById('recalc-wizard-goal-type').value = goalType;
+
+            // Reset slides to initial state
+            document.querySelectorAll('.recalc-wizard-slide').forEach(slide => {
+                slide.style.display = 'none';
+                slide.classList.remove('active');
+            });
+            document.getElementById('recalc-slide-1').style.display = 'block';
+            document.getElementById('recalc-slide-1').classList.add('active');
+
+            // Update progress dots
+            updateRecalcProgress(1);
+
+            // Update buttons
+            document.getElementById('recalc-btn-back').style.display = 'none';
+            document.getElementById('recalc-btn-next').textContent = 'Next';
+
+            // Show the wizard
+            console.log('Showing recalculate wizard modal');
+            document.getElementById('recalculate-calories-wizard').style.display = 'flex';
+        } catch (domError) {
+            console.error('Error setting up wizard DOM:', domError);
+            throw domError;
         }
-        if (profileData.age) document.getElementById('recalc-wizard-age').value = profileData.age;
-        if (profileData.height) document.getElementById('recalc-wizard-height').value = profileData.height;
-        if (profileData.weight) document.getElementById('recalc-wizard-weight').value = profileData.weight;
-        if (profileData.goal_weight) document.getElementById('recalc-wizard-goal-weight').value = profileData.goal_weight;
-        if (profileData.activity_level) document.getElementById('recalc-wizard-activity-level').value = profileData.activity_level;
-
-        // Handle goal body type
-        const goalType = profileData.goalBodyType || profileData.goal_body_type || '';
-        if (goalType) document.getElementById('recalc-wizard-goal-type').value = goalType;
-
-        // Reset slides to initial state
-        document.querySelectorAll('.recalc-wizard-slide').forEach(slide => {
-            slide.style.display = 'none';
-            slide.classList.remove('active');
-        });
-        document.getElementById('recalc-slide-1').style.display = 'block';
-        document.getElementById('recalc-slide-1').classList.add('active');
-
-        // Update progress dots
-        updateRecalcProgress(1);
-
-        // Update buttons
-        document.getElementById('recalc-btn-back').style.display = 'none';
-        document.getElementById('recalc-btn-next').textContent = 'Next';
-
-        // Show the wizard
-        document.getElementById('recalculate-calories-wizard').style.display = 'flex';
     }
 
     /**
@@ -24137,7 +24149,7 @@ function openAsClient() {
 </div>
 
 <!-- Recalculate Calories Wizard Modal -->
-<div class="onboarding-overlay" id="recalculate-calories-wizard" style="display:none; z-index:12000;">
+<div class="onboarding-overlay" id="recalculate-calories-wizard" style="display:none; z-index:200000;">
     <div class="onboarding-modal wizard-container" style="max-width: 450px; max-height: 90vh; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
 
         <!-- HEADER -->
