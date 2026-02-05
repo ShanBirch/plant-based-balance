@@ -1,4 +1,4 @@
-import Stripe from "https://esm.sh/stripe?target=deno";
+import Stripe from "stripe";
 
 export default async (request, context) => {
     if (request.method !== "POST") {
