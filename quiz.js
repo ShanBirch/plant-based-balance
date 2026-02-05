@@ -4759,13 +4759,13 @@ const QuizEngagement = {
             }
         }, { once: true });
 
-        // Show widgets after intro
-        this.hideWidgets();
+        // Hide streak widget initially (mascot stays visible)
+        document.body.classList.add('hide-widgets');
 
         // Random initial greeting after a delay
         setTimeout(() => {
             this.showMascotMessage(this.getRandomMessage('greeting'));
-        }, 2000);
+        }, 3000);
 
         console.log('🎮 Quiz Engagement System initialized');
     },
@@ -4776,13 +4776,13 @@ const QuizEngagement = {
         return messages[Math.floor(Math.random() * messages.length)];
     },
 
-    // Show/hide widgets based on step type
+    // Show/hide streak widget based on step type (mascot always visible)
     updateWidgetsVisibility(stepType) {
         const hideTypes = ['intro', 'loading', 'email_custom'];
         if (hideTypes.includes(stepType)) {
-            this.hideWidgets();
+            document.body.classList.add('hide-widgets');
         } else {
-            this.showWidgets();
+            document.body.classList.remove('hide-widgets');
         }
     },
 
@@ -4792,12 +4792,7 @@ const QuizEngagement = {
 
     showWidgets() {
         document.body.classList.remove('hide-widgets');
-        const xpWidget = document.getElementById('xpWidget');
         const streakWidget = document.getElementById('streakWidget');
-
-        setTimeout(() => {
-            if (xpWidget) xpWidget.classList.add('visible');
-        }, 300);
 
         setTimeout(() => {
             if (streakWidget && this.streak > 0) streakWidget.classList.add('visible');
@@ -4805,45 +4800,36 @@ const QuizEngagement = {
     },
 
     // Handle answer selection with visual feedback
-    onAnswerSelected(buttonElement, isCorrect = true) {
+    onAnswerSelected(buttonElement) {
         this.questionsAnswered++;
 
         // Add visual feedback class
         if (buttonElement) {
-            buttonElement.classList.add(isCorrect ? 'correct-answer' : 'wrong-answer');
+            buttonElement.classList.add('correct-answer');
         }
 
         // Play sound
-        this.playSound(isCorrect ? 'correct' : 'incorrect');
+        this.playSound('correct');
 
         // Update streak
-        if (isCorrect) {
-            this.streak++;
-            this.updateStreakDisplay();
+        this.streak++;
+        this.updateStreakDisplay();
 
-            // Show streak widget when streak starts
-            if (this.streak === 1) {
-                const streakWidget = document.getElementById('streakWidget');
-                if (streakWidget) streakWidget.classList.add('visible');
-            }
+        // Show streak widget when streak starts
+        if (this.streak === 1) {
+            const streakWidget = document.getElementById('streakWidget');
+            if (streakWidget) streakWidget.classList.add('visible');
+        }
 
-            // Milestone celebrations
-            if (this.streak % 5 === 0 && this.streak > 0) {
-                this.celebrateStreak();
-            }
+        // Milestone celebrations (every 5 answers)
+        if (this.streak % 5 === 0 && this.streak > 0) {
+            this.celebrateStreak();
+        }
 
-            // Award XP
-            this.addXP(5);
-
-            // Mascot reaction
-            this.mascotReaction('happy');
-            if (this.streak >= 3 && Math.random() > 0.6) {
-                this.showMascotMessage(this.getRandomMessage('encouragement'));
-            }
-        } else {
-            this.streak = 0;
-            this.updateStreakDisplay();
-            this.mascotReaction('sad');
+        // Mascot reaction
+        this.mascotReaction('happy');
+        if (this.streak >= 3 && Math.random() > 0.6) {
+            this.showMascotMessage(this.getRandomMessage('encouragement'));
         }
 
         // Progress bar animation
@@ -4958,8 +4944,8 @@ const QuizEngagement = {
         this.playSound('pop');
     },
 
-    // Phase completion celebration
-    celebratePhaseComplete(phaseName, xpAmount = 10) {
+    // Phase completion celebration (no XP, just visual celebration)
+    celebratePhaseComplete(phaseName) {
         const celebration = document.getElementById('phaseCelebration');
         const icon = document.getElementById('celebrationIcon');
         const text = document.getElementById('celebrationText');
@@ -4970,7 +4956,7 @@ const QuizEngagement = {
         // Set content
         if (icon) icon.textContent = '🎉';
         if (text) text.textContent = `${phaseName} Complete!`;
-        if (subtext) subtext.textContent = `+${xpAmount} XP`;
+        if (subtext) subtext.textContent = 'Great progress!';
 
         // Show celebration
         celebration.classList.add('active');
@@ -4981,9 +4967,6 @@ const QuizEngagement = {
         // Create confetti
         this.createConfetti(50);
 
-        // Add XP
-        this.addXP(xpAmount);
-
         // Mascot celebrates
         this.mascotReaction('excited');
 
@@ -4991,6 +4974,20 @@ const QuizEngagement = {
         setTimeout(() => {
             celebration.classList.remove('active');
         }, 2500);
+    },
+
+    // Quiz completion - awards 1 XP
+    onQuizComplete() {
+        // Award 1 XP for completing the quiz
+        this.xp = 1;
+
+        // Big celebration
+        this.createConfetti(80);
+        this.playSound('celebration');
+        this.mascotReaction('excited');
+        this.showMascotMessage("Quiz complete! +1 XP 🎉", 5000);
+
+        console.log('🎮 Quiz completed! Awarded 1 XP');
     },
 
     // Create confetti particles
@@ -5128,21 +5125,21 @@ const QuizEngagement = {
 
     // Track phase transitions
     checkPhaseTransition(currentStepId) {
-        // Define phase markers
+        // Define phase markers (no XP, just celebration)
         const phaseMarkers = {
-            'activity_level': { phase: 'Profile', xp: 15 },
-            'symptoms': { phase: 'Symptoms', xp: 20 },
-            'calendar_preview': { phase: 'Workout Plan', xp: 25 },
-            'goal_weight': { phase: 'Calibration', xp: 15 }
+            'activity_level': 'Profile',
+            'symptoms': 'Symptoms',
+            'calendar_preview': 'Workout Plan',
+            'goal_weight': 'Calibration'
         };
 
         if (phaseMarkers[currentStepId] && this.lastPhase !== currentStepId) {
-            const { phase, xp } = phaseMarkers[currentStepId];
+            const phaseName = phaseMarkers[currentStepId];
             this.lastPhase = currentStepId;
 
             // Delay celebration slightly
             setTimeout(() => {
-                this.celebratePhaseComplete(phase, xp);
+                this.celebratePhaseComplete(phaseName);
             }, 300);
         }
     },
@@ -5173,13 +5170,13 @@ selectOption = function(id, value, saveAsKey) {
     const buttons = document.querySelectorAll('.option-btn, .option-card');
     buttons.forEach(btn => {
         if (btn.classList.contains('option-btn') && btn.textContent.trim() === value) {
-            QuizEngagement.onAnswerSelected(btn, true);
+            QuizEngagement.onAnswerSelected(btn);
         }
     });
 
     // If no button matched by text, just trigger feedback on any active element
     if (document.activeElement && document.activeElement.classList.contains('option-btn')) {
-        QuizEngagement.onAnswerSelected(document.activeElement, true);
+        QuizEngagement.onAnswerSelected(document.activeElement);
     }
 
     // Check for phase transitions
@@ -5192,6 +5189,16 @@ selectOption = function(id, value, saveAsKey) {
     setTimeout(() => {
         originalSelectOption(id, value, saveAsKey);
     }, 400);
+};
+
+// Hook into finishQuiz to award 1 XP on completion
+const originalFinishQuiz = finishQuiz;
+finishQuiz = function() {
+    // Award 1 XP for completing the quiz
+    QuizEngagement.onQuizComplete();
+
+    // Call original function
+    originalFinishQuiz();
 };
 
 // Hook into renderStep to update widget visibility
