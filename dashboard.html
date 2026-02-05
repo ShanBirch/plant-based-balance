@@ -40411,31 +40411,34 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             try {
                 const userId = window.currentUser.id || window.currentUser.user_id;
+
+                // Get user profile from users table (which has the sex field)
+                const userProfile = await window.dbHelpers.users.get(userId);
                 const facts = await window.dbHelpers.userFacts.get(userId);
 
-                if (facts) {
-                    // Handle Gender-based evolutions
-                    const userSex = facts.sex || facts.biological_sex || 'female'; 
-                    window.currentUserGender = userSex;
-                    if (userSex.toLowerCase() === 'female') {
-                        TAMAGOTCHI_EVOLUTIONS = TAMAGOTCHI_EVOLUTIONS_FEMALE;
-                        console.log('Character system: Switched to Female evolution path');
-                    } else {
-                        TAMAGOTCHI_EVOLUTIONS = TAMAGOTCHI_EVOLUTIONS_MALE;
-                        console.log('Character system: Switched to Male evolution path');
-                    }
+                // Get gender from user profile (users table has the authoritative sex field)
+                const userSex = userProfile?.sex || 'female';
+                window.currentUserGender = userSex;
 
-                    if (facts.additional_data?.character_colors) {
-                        const dbColors = facts.additional_data.character_colors;
-                        const mergedColors = { ...DEFAULT_CHARACTER_COLORS, ...dbColors };
-                        localStorage.setItem('characterColors', JSON.stringify(mergedColors));
-                        console.log('Character colors loaded from database:', mergedColors);
+                if (userSex.toLowerCase() === 'female') {
+                    TAMAGOTCHI_EVOLUTIONS = TAMAGOTCHI_EVOLUTIONS_FEMALE;
+                    console.log('Character system: Switched to Female evolution path');
+                } else {
+                    TAMAGOTCHI_EVOLUTIONS = TAMAGOTCHI_EVOLUTIONS_MALE;
+                    console.log('Character system: Switched to Male evolution path');
+                }
 
-                        // Re-apply to model if loaded
-                        const modelViewer = document.getElementById('tamagotchi-model');
-                        if (modelViewer && modelViewer.model) {
-                            window.applyCharacterColors(modelViewer, modelViewer.getAttribute('src'));
-                        }
+                // Load character colors from user_facts if available
+                if (facts?.additional_data?.character_colors) {
+                    const dbColors = facts.additional_data.character_colors;
+                    const mergedColors = { ...DEFAULT_CHARACTER_COLORS, ...dbColors };
+                    localStorage.setItem('characterColors', JSON.stringify(mergedColors));
+                    console.log('Character colors loaded from database:', mergedColors);
+
+                    // Re-apply to model if loaded
+                    const modelViewer = document.getElementById('tamagotchi-model');
+                    if (modelViewer && modelViewer.model) {
+                        window.applyCharacterColors(modelViewer, modelViewer.getAttribute('src'));
                     }
                 }
             } catch (e) {
