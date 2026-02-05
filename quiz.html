@@ -35,6 +35,7 @@
     <script src="https://unpkg.com/lucide@latest" defer></script>
     <script src="analytics.js" defer></script>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="lib/learning-animations.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         html, body {
@@ -256,8 +257,505 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* ========================================
+           DUOLINGO-STYLE ENGAGEMENT FEATURES
+           ======================================== */
+
+        /* Mascot Widget */
+        .quiz-mascot {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .mascot-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #48864B, #6ab04c);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(72, 134, 75, 0.4);
+            cursor: pointer;
+            transition: transform 0.3s var(--spring-easing, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+            overflow: hidden;
+            border: 3px solid white;
+        }
+
+        .mascot-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .mascot-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: auto;
+        }
+
+        .mascot-avatar .mascot-emoji {
+            font-size: 36px;
+            line-height: 1;
+        }
+
+        .mascot-speech {
+            position: absolute;
+            bottom: 85px;
+            right: 0;
+            background: white;
+            padding: 10px 14px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a4d2e;
+            max-width: 180px;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(10px) scale(0.9);
+            transition: all 0.3s var(--spring-easing, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+            pointer-events: none;
+        }
+
+        .mascot-speech.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .mascot-speech::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            right: 25px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid white;
+        }
+
+        /* Mascot Reactions */
+        .mascot-avatar.happy {
+            animation: mascotHappy 0.6s ease;
+        }
+
+        .mascot-avatar.sad {
+            animation: mascotSad 0.5s ease;
+        }
+
+        .mascot-avatar.excited {
+            animation: mascotExcited 0.4s ease infinite;
+        }
+
+        .mascot-avatar.thinking {
+            animation: mascotThinking 1s ease-in-out infinite;
+        }
+
+        @keyframes mascotHappy {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.2) rotate(-10deg); }
+            50% { transform: scale(1.15) rotate(10deg); }
+            75% { transform: scale(1.1) rotate(-5deg); }
+        }
+
+        @keyframes mascotSad {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(5px); }
+        }
+
+        @keyframes mascotExcited {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-8px) scale(1.1); }
+        }
+
+        @keyframes mascotThinking {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-3deg); }
+            75% { transform: rotate(3deg); }
+        }
+
+        /* Streak Counter */
+        .streak-widget {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #ff9500, #ff5e3a);
+            padding: 8px 14px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(255, 149, 0, 0.4);
+            color: white;
+            font-weight: 800;
+            font-size: 14px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.4s var(--spring-easing, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+        }
+
+        .streak-widget.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .streak-widget .streak-fire {
+            font-size: 18px;
+            animation: fireBurn 0.6s ease-in-out infinite;
+        }
+
+        @keyframes fireBurn {
+            0%, 100% { transform: scale(1) rotate(-5deg); }
+            25% { transform: scale(1.15) rotate(5deg); }
+            50% { transform: scale(1.1) rotate(-3deg); }
+            75% { transform: scale(1.2) rotate(3deg); }
+        }
+
+        .streak-widget .streak-count {
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .streak-widget.milestone {
+            animation: streakMilestone 0.6s ease;
+        }
+
+        @keyframes streakMilestone {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); box-shadow: 0 0 30px rgba(255, 149, 0, 0.8); }
+            100% { transform: scale(1); }
+        }
+
+        /* XP Widget */
+        .xp-widget {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #48864B, #6ab04c);
+            padding: 8px 14px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(72, 134, 75, 0.4);
+            color: white;
+            font-weight: 800;
+            font-size: 14px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.4s var(--spring-easing, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+        }
+
+        .xp-widget.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .xp-widget .xp-icon {
+            font-size: 16px;
+        }
+
+        /* XP Float Animation */
+        .xp-float-text {
+            position: fixed;
+            font-size: 20px;
+            font-weight: 800;
+            color: #48864B;
+            pointer-events: none;
+            z-index: 10000;
+            animation: xpFloatUp 1.2s ease-out forwards;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        @keyframes xpFloatUp {
+            0% { opacity: 1; transform: translateY(0) scale(0.5); }
+            30% { opacity: 1; transform: translateY(-20px) scale(1.2); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1); }
+        }
+
+        /* Visual Answer Feedback */
+        .option-btn.correct-answer {
+            background: #10b981 !important;
+            animation: correctPop 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-btn.correct-answer::after {
+            content: '✓';
+            position: absolute;
+            right: 15px;
+            font-size: 20px;
+            animation: checkmarkPop 0.3s ease 0.1s both;
+        }
+
+        .option-btn.wrong-answer {
+            background: #ef4444 !important;
+            animation: incorrectShake 0.5s ease;
+        }
+
+        .option-card.correct-answer .option-card-btn {
+            background: #10b981 !important;
+            animation: correctPop 0.5s ease;
+        }
+
+        .option-card.wrong-answer .option-card-btn {
+            background: #ef4444 !important;
+            animation: incorrectShake 0.5s ease;
+        }
+
+        @keyframes correctPop {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes checkmarkPop {
+            0% { opacity: 0; transform: scale(0); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Button Hover Enhancements */
+        .option-btn {
+            transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .option-btn:active {
+            transform: scale(0.98);
+        }
+
+        .option-btn:hover {
+            box-shadow: 0 6px 20px rgba(72, 134, 75, 0.3);
+        }
+
+        /* Phase Celebration Overlay */
+        .phase-celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .phase-celebration.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .phase-celebration .celebration-icon {
+            font-size: 80px;
+            animation: celebrationBounce 0.8s var(--spring-easing, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+            margin-bottom: 20px;
+        }
+
+        .phase-celebration .celebration-text {
+            color: white;
+            font-size: 24px;
+            font-weight: 800;
+            text-align: center;
+            animation: textReveal 0.5s ease 0.3s both;
+        }
+
+        .phase-celebration .celebration-subtext {
+            color: rgba(255,255,255,0.7);
+            font-size: 16px;
+            margin-top: 10px;
+            animation: textReveal 0.5s ease 0.5s both;
+        }
+
+        @keyframes celebrationBounce {
+            0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+            60% { transform: scale(1.2) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        @keyframes textReveal {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Progress Bar Enhancement */
+        .progress-bar {
+            position: relative;
+            overflow: visible;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background: #48864B;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(72, 134, 75, 0.6);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .progress-bar.animating::after {
+            opacity: 1;
+            animation: progressDot 0.5s ease;
+        }
+
+        @keyframes progressDot {
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.5); }
+        }
+
+        /* Confetti Container */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10002;
+            overflow: hidden;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+        }
+
+        /* Tip Banner */
+        .tip-banner {
+            position: fixed;
+            bottom: 160px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 320px;
+            opacity: 0;
+            transition: all 0.4s var(--spring-easing, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+            z-index: 9997;
+        }
+
+        .tip-banner.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .tip-banner .tip-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .tip-banner .tip-text {
+            font-size: 13px;
+            color: #78350f;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        /* Hide widgets on intro/loading screens */
+        body.hide-widgets .quiz-mascot,
+        body.hide-widgets .streak-widget,
+        body.hide-widgets .xp-widget {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 480px) {
+            .quiz-mascot {
+                bottom: 70px;
+                right: 15px;
+            }
+
+            .mascot-avatar {
+                width: 55px;
+                height: 55px;
+            }
+
+            .mascot-speech {
+                max-width: 150px;
+                font-size: 12px;
+                right: -5px;
+            }
+
+            .streak-widget, .xp-widget {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+
+            .tip-banner {
+                max-width: 280px;
+                bottom: 140px;
+            }
+        }
     </style>
 </head>
+<body>
+    <!-- Duolingo-Style Engagement Widgets -->
+
+    <!-- XP Counter -->
+    <div class="xp-widget" id="xpWidget">
+        <span class="xp-icon">⭐</span>
+        <span class="xp-count" id="xpCount">0 XP</span>
+    </div>
+
+    <!-- Streak Counter -->
+    <div class="streak-widget" id="streakWidget">
+        <span class="streak-fire">🔥</span>
+        <span class="streak-count" id="streakCount">0</span>
+    </div>
+
+    <!-- Mascot Character -->
+    <div class="quiz-mascot" id="quizMascot">
+        <div class="mascot-speech" id="mascotSpeech">Let's do this!</div>
+        <div class="mascot-avatar" id="mascotAvatar" onclick="window.QuizEngagement?.mascotTapped()">
+            <span class="mascot-emoji">🌱</span>
+        </div>
+    </div>
+
+    <!-- Phase Celebration Overlay -->
+    <div class="phase-celebration" id="phaseCelebration">
+        <div class="celebration-icon" id="celebrationIcon">🎉</div>
+        <div class="celebration-text" id="celebrationText">Phase Complete!</div>
+        <div class="celebration-subtext" id="celebrationSubtext">+10 XP</div>
+    </div>
+
+    <!-- Confetti Container -->
+    <div class="confetti-container" id="confettiContainer"></div>
+
+    <!-- Tip Banner -->
+    <div class="tip-banner" id="tipBanner">
+        <span class="tip-icon">💡</span>
+        <span class="tip-text" id="tipText">Did you know? Plant proteins can be just as effective as animal proteins!</span>
+    </div>
+
     <div class="quiz-container">
         <!-- Centered Logo at Top -->
         <div id="logoRow" class="hidden" style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 10px; padding: 0 10px; flex-shrink: 0;">
