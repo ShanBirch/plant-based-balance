@@ -3989,9 +3989,137 @@ async function applyAppTheme(themeKey) {
         background: #f5f3ff;
     }
 
+    /* ========================================
+       LEARNING MASCOT STYLES
+       ======================================== */
+
+    .learn-mascot {
+        position: fixed;
+        bottom: 100px;
+        right: 20px;
+        z-index: 9999;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .learn-mascot.visible {
+        display: flex;
+    }
+
+    .learn-mascot-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #48864B, #6ab04c);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(72, 134, 75, 0.4);
+        cursor: pointer;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        overflow: hidden;
+        border: 3px solid white;
+    }
+
+    .learn-mascot-avatar:hover {
+        transform: scale(1.1);
+    }
+
+    .learn-mascot-avatar .mascot-emoji {
+        font-size: 30px;
+        line-height: 1;
+    }
+
+    .learn-mascot-speech {
+        position: absolute;
+        bottom: 75px;
+        right: 0;
+        background: white;
+        padding: 10px 14px;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        font-size: 12px;
+        font-weight: 600;
+        color: #1a4d2e;
+        max-width: 160px;
+        text-align: center;
+        opacity: 0;
+        transform: translateY(10px) scale(0.9);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        pointer-events: none;
+    }
+
+    .learn-mascot-speech.visible {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    .learn-mascot-speech::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        right: 20px;
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-top: 8px solid white;
+    }
+
+    /* Mascot Reactions */
+    .learn-mascot-avatar.happy {
+        animation: mascotHappy 0.6s ease;
+    }
+
+    .learn-mascot-avatar.sad {
+        animation: mascotSad 0.5s ease;
+    }
+
+    .learn-mascot-avatar.excited {
+        animation: mascotExcited 0.4s ease infinite;
+    }
+
+    .learn-mascot-avatar.thinking {
+        animation: mascotThinking 1s ease-in-out infinite;
+    }
+
+    @keyframes mascotHappy {
+        0%, 100% { transform: scale(1) rotate(0deg); }
+        25% { transform: scale(1.2) rotate(-10deg); }
+        50% { transform: scale(1.15) rotate(10deg); }
+        75% { transform: scale(1.1) rotate(-5deg); }
+    }
+
+    @keyframes mascotSad {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(5px); }
+    }
+
+    @keyframes mascotExcited {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-8px) scale(1.1); }
+    }
+
+    @keyframes mascotThinking {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-3deg); }
+        75% { transform: rotate(3deg); }
+    }
+
     </style>
 </head>
 <body>
+<!-- Learning Mascot Character -->
+<div class="learn-mascot" id="learnMascot">
+    <div class="learn-mascot-speech" id="learnMascotSpeech">You got this!</div>
+    <div class="learn-mascot-avatar" id="learnMascotAvatar" onclick="window.LearningMascot?.tapped()">
+        <span class="mascot-emoji">🌱</span>
+    </div>
+</div>
+
 <div class="container">
 <!-- DASHBOARD VIEW (HOME) -->
 <div id="view-dashboard" class="app-view">
