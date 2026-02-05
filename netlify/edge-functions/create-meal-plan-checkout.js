@@ -1,4 +1,4 @@
-import Stripe from "https://esm.sh/stripe?target=deno";
+import Stripe from "stripe";
 
 /**
  * Create a Stripe checkout session for one-time meal plan purchases
