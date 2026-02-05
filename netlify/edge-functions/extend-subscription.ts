@@ -4,7 +4,7 @@
  */
 
 import type { Context } from "https://edge.netlify.com";
-import Stripe from 'https://esm.sh/stripe@14.21.0';
+import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2024-11-20.acacia',
