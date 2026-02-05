@@ -35645,6 +35645,17 @@ async function awardWorkoutSharePoint(shareType, photoTimestamp, photoHash) {
             }
 
             showToast(`+1 point for ${shareType === 'story' ? 'story' : 'group chat'} share!`, 'success');
+
+            // Refresh tamagotchi display to sync XP with database
+            if (typeof window.refreshLevelDisplay === 'function') {
+                window.refreshLevelDisplay();
+            }
+
+            // Trigger XP bar rainbow animation
+            if (typeof window.triggerXPBarRainbow === 'function') {
+                window.triggerXPBarRainbow();
+            }
+
             return result;
         }
     } catch (error) {
