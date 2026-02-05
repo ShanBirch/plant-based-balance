@@ -2,6 +2,9 @@
   publish = "."
   functions = "netlify/functions"
 
+[edge_functions]
+  deno_import_map = "./netlify/edge-functions/import_map.json"
+
 # Edge Function Mappings
 [[edge_functions]]
   function = "stripe-webhook"
