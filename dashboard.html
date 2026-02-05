@@ -13387,9 +13387,34 @@ async function handleLogout() {
             await authHelpers.signOut();
             // Clear any cached data
             sessionStorage.clear();
-            localStorage.removeItem('userProfile');
-            localStorage.removeItem('userGender'); // Clear gender on logout
-            localStorage.removeItem('onboardingComplete'); // Reset onboarding status
+
+            // Clear all user-specific localStorage items to prevent data leak between accounts
+            const userSpecificKeys = [
+                'userProfile',
+                'userGender',
+                'onboardingComplete',
+                'characterColors',
+                'userThemePreference',
+                'userCycleData',
+                'profile_photo',
+                'selected_meal_plan',
+                'user_food_preferences',
+                'meal_reminder_settings',
+                'lastWellnessCheck',
+                'lastWeighInPromptDate',
+                'equipmentUpdatedAt',
+                'gym_split_start_date',
+                'calendarViewPreference',
+                'referral_banner_dismissed',
+                'pwa_banner_dismissed_v2',
+                'user_notifications_enabled',
+                'pbb_biometric_credential',
+                'pbb_biometric_email',
+                'pbb_biometric_user_id'
+            ];
+
+            userSpecificKeys.forEach(key => localStorage.removeItem(key));
+
             window.location.href = '/login.html';
         } catch (error) {
             console.error('Logout failed:', error);
