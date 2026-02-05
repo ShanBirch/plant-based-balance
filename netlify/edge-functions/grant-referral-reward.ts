@@ -5,7 +5,7 @@
  */
 
 import type { Context } from "https://edge.netlify.com";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8?target=deno';
 
 interface GrantRewardRequest {
   userId: string;
