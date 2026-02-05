@@ -435,54 +435,6 @@
             100% { transform: scale(1); }
         }
 
-        /* XP Widget */
-        .xp-widget {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 9998;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: linear-gradient(135deg, #48864B, #6ab04c);
-            padding: 8px 14px;
-            border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(72, 134, 75, 0.4);
-            color: white;
-            font-weight: 800;
-            font-size: 14px;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: all 0.4s var(--spring-easing, cubic-bezier(0.175, 0.885, 0.32, 1.275));
-        }
-
-        .xp-widget.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .xp-widget .xp-icon {
-            font-size: 16px;
-        }
-
-        /* XP Float Animation */
-        .xp-float-text {
-            position: fixed;
-            font-size: 20px;
-            font-weight: 800;
-            color: #48864B;
-            pointer-events: none;
-            z-index: 10000;
-            animation: xpFloatUp 1.2s ease-out forwards;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        @keyframes xpFloatUp {
-            0% { opacity: 1; transform: translateY(0) scale(0.5); }
-            30% { opacity: 1; transform: translateY(-20px) scale(1.2); }
-            100% { opacity: 0; transform: translateY(-60px) scale(1); }
-        }
-
         /* Visual Answer Feedback */
         .option-btn.correct-answer {
             background: #10b981 !important;
@@ -680,9 +632,17 @@
         }
 
         /* Hide widgets on intro/loading screens */
-        body.hide-widgets .quiz-mascot,
-        body.hide-widgets .streak-widget,
-        body.hide-widgets .xp-widget {
+        body.hide-widgets .streak-widget {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* Mascot is always visible (except on very first intro) */
+        .quiz-mascot {
+            opacity: 1;
+        }
+
+        body.hide-mascot .quiz-mascot {
             opacity: 0 !important;
             pointer-events: none !important;
         }
@@ -719,12 +679,6 @@
 </head>
 <body>
     <!-- Duolingo-Style Engagement Widgets -->
-
-    <!-- XP Counter -->
-    <div class="xp-widget" id="xpWidget">
-        <span class="xp-icon">⭐</span>
-        <span class="xp-count" id="xpCount">0 XP</span>
-    </div>
 
     <!-- Streak Counter -->
     <div class="streak-widget" id="streakWidget">
