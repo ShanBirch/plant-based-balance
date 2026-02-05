@@ -10407,14 +10407,15 @@ async function startCustomBuilderWorkout() {
         card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
 
         const videoUrl = findVideoMatch(ex.name);
-        const prevData = findPreviousSetData(ex.name);
+        const previousSummaryHtml = formatPreviousWorkoutSummary(ex.name);
+        const previousSummary = getPreviousWorkoutSummary(ex.name);
         const escapedName = ex.name.replace(/'/g, "\\'");
 
         card.innerHTML = `
             <div style="padding: 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                 <h3 style="margin: 0 0 5px 0; font-size: 1.05rem; font-weight: 700; color: var(--text-main);">${ex.name}</h3>
                 <div style="color: var(--text-muted); font-size: 0.85rem;">Custom Exercise</div>
-                ${prevData ? `<div style="color: var(--primary); font-size: 0.75rem; margin-top: 5px;">Last: ${prevData}</div>` : ''}
+                ${previousSummaryHtml}
             </div>
 
             ${videoUrl ? `
@@ -10428,6 +10429,18 @@ async function startCustomBuilderWorkout() {
                     </svg>
                 </div>
             </div>` : ''}
+
+            <!-- Volume Tracker -->
+            <div class="volume-display" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-bottom: 1px solid #fef08a;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #ca8a04;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: #a16207; text-transform: uppercase;">Volume</span>
+                </div>
+                <div style="text-align: right;">
+                    <div class="volume-value" style="font-size: 1rem; font-weight: 800; color: #854d0e;">0 kg</div>
+                    <div class="volume-comparison" style="font-size: 0.7rem; font-weight: 600;">${previousSummary ? `<span style="color: #94a3b8;">Last: ${previousSummary.totalVolume.toLocaleString()} kg</span>` : '<span style="color: #94a3b8;">Enter weight & reps</span>'}</div>
+                </div>
+            </div>
 
             <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
                 <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
@@ -10466,6 +10479,9 @@ async function startCustomBuilderWorkout() {
             </div>
         `;
         list.appendChild(card);
+
+        // Setup volume tracking for this card
+        setupVolumeTracking(card);
     });
 
     hideAllAppViews();
@@ -20043,7 +20059,8 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
         }
 
         const videoUrl = findVideoMatch(ex.name);
-        const prevData = findPreviousSetData(ex.name);
+        const previousSummaryHtml = formatPreviousWorkoutSummary(ex.name);
+        const previousSummary = getPreviousWorkoutSummary(ex.name);
         const isUserAdded = ex.isUserAdded || false;
         const escapedName = ex.name.replace(/'/g, "\\'");
 
@@ -20056,7 +20073,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
                             ${isUserAdded ? '<span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>' : ''}
                         </div>
                         <p style="margin:0; font-size:0.85rem; color:var(--text-muted); line-height:1.3;">${ex.desc || ''}</p>
-                        ${prevData ? `<div style="color: var(--primary); font-size: 0.75rem; margin-top: 5px;">Last: ${prevData}</div>` : ''}
+                        ${previousSummaryHtml}
                     </div>
                     <button onclick="deleteExerciseFromWorkout('${escapedName}', ${isUserAdded})" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
                         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
@@ -20078,7 +20095,19 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
                 </div>
             </div>` : ''}
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:0 15px 10px 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+            <!-- Volume Tracker -->
+            <div class="volume-display" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-bottom: 1px solid #fef08a;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #ca8a04;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: #a16207; text-transform: uppercase;">Volume</span>
+                </div>
+                <div style="text-align: right;">
+                    <div class="volume-value" style="font-size: 1rem; font-weight: 800; color: #854d0e;">0 kg</div>
+                    <div class="volume-comparison" style="font-size: 0.7rem; font-weight: 600;">${previousSummary ? `<span style="color: #94a3b8;">Last: ${previousSummary.totalVolume.toLocaleString()} kg</span>` : '<span style="color: #94a3b8;">Enter weight & reps</span>'}</div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
                 <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
             </div>
 
@@ -20091,6 +20120,9 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
             </div>
         `;
         list.appendChild(card);
+
+        // Setup volume tracking for this card
+        setupVolumeTracking(card);
     });
 
     hideAllAppViews();
@@ -20136,6 +20168,155 @@ function findPreviousSetData(name) {
         return `${recent.kg}kg x ${val}`;
     }
     return val ? `${val}` : null;
+}
+
+// Get full previous workout summary for an exercise (all sets from last session)
+function getPreviousWorkoutSummary(exerciseName) {
+    const history = window.workoutHistoryCache || [];
+    const exerciseHistory = history.filter(h => h.exercise === exerciseName);
+
+    if (exerciseHistory.length === 0) return null;
+
+    // Group by date to find the most recent workout date for this exercise
+    const dateGroups = {};
+    exerciseHistory.forEach(h => {
+        const date = h.date || h.workout_date;
+        if (!dateGroups[date]) dateGroups[date] = [];
+        dateGroups[date].push(h);
+    });
+
+    // Get the most recent date
+    const dates = Object.keys(dateGroups).sort((a, b) => new Date(b) - new Date(a));
+    if (dates.length === 0) return null;
+
+    const lastDate = dates[0];
+    const lastWorkoutSets = dateGroups[lastDate].sort((a, b) => (a.set || 0) - (b.set || 0));
+
+    // Calculate total volume from last workout
+    let totalVolume = 0;
+    const sets = lastWorkoutSets.map(s => {
+        const weight = parseFloat(s.kg) || 0;
+        const reps = parseFloat(s.reps) || 0;
+        const setVolume = weight * reps;
+        totalVolume += setVolume;
+        return {
+            set: s.set,
+            reps: s.reps,
+            kg: s.kg,
+            time: s.time,
+            volume: setVolume
+        };
+    });
+
+    return {
+        date: lastDate,
+        sets: sets,
+        totalVolume: totalVolume,
+        setCount: sets.length
+    };
+}
+
+// Calculate total volume for an exercise card
+function calculateExerciseVolume(card) {
+    if (!card) return 0;
+
+    const setWrappers = card.querySelectorAll('.set-wrapper');
+    let totalVolume = 0;
+
+    setWrappers.forEach(wrapper => {
+        const kgInput = wrapper.querySelector('.input-kg');
+        const repsInput = wrapper.querySelector('.input-reps');
+
+        const kg = parseFloat(kgInput?.value) || 0;
+        const reps = parseFloat(repsInput?.value) || 0;
+
+        totalVolume += kg * reps;
+
+        // Also count drop sets
+        const dropContainer = wrapper.querySelector('.drop-set-container');
+        if (dropContainer && dropContainer.classList.contains('visible')) {
+            const dropRows = dropContainer.querySelectorAll('.drop-set-row');
+            dropRows.forEach(row => {
+                const dropKg = parseFloat(row.querySelector('.drop-kg')?.value) || 0;
+                const dropReps = parseFloat(row.querySelector('.drop-reps')?.value) || 0;
+                totalVolume += dropKg * dropReps;
+            });
+        }
+    });
+
+    return totalVolume;
+}
+
+// Update volume display for an exercise card
+function updateVolumeDisplay(card) {
+    if (!card) return;
+
+    const volumeDisplay = card.querySelector('.volume-display');
+    if (!volumeDisplay) return;
+
+    const totalVolume = calculateExerciseVolume(card);
+    const volumeValue = volumeDisplay.querySelector('.volume-value');
+    const volumeComparison = volumeDisplay.querySelector('.volume-comparison');
+
+    if (volumeValue) {
+        volumeValue.textContent = totalVolume.toLocaleString() + ' kg';
+    }
+
+    // Compare to previous workout if available
+    const exerciseName = card.getAttribute('data-exercise-name');
+    const previousSummary = getPreviousWorkoutSummary(exerciseName);
+
+    if (volumeComparison && previousSummary && previousSummary.totalVolume > 0) {
+        const diff = totalVolume - previousSummary.totalVolume;
+        const percentage = ((diff / previousSummary.totalVolume) * 100).toFixed(0);
+
+        if (totalVolume === 0) {
+            volumeComparison.innerHTML = `<span style="color: #94a3b8;">Last: ${previousSummary.totalVolume.toLocaleString()} kg</span>`;
+        } else if (diff > 0) {
+            volumeComparison.innerHTML = `<span style="color: #22c55e;">+${diff.toLocaleString()} kg (+${percentage}%)</span>`;
+        } else if (diff < 0) {
+            volumeComparison.innerHTML = `<span style="color: #f59e0b;">${diff.toLocaleString()} kg (${percentage}%)</span>`;
+        } else {
+            volumeComparison.innerHTML = `<span style="color: #94a3b8;">Same as last</span>`;
+        }
+    } else if (volumeComparison) {
+        volumeComparison.innerHTML = totalVolume > 0 ? '' : '<span style="color: #94a3b8;">Enter weight & reps</span>';
+    }
+}
+
+// Setup volume tracking event listeners for a card
+function setupVolumeTracking(card) {
+    if (!card) return;
+
+    const inputs = card.querySelectorAll('.input-kg, .input-reps, .drop-kg, .drop-reps');
+    inputs.forEach(input => {
+        input.addEventListener('input', () => updateVolumeDisplay(card));
+    });
+}
+
+// Format previous workout summary as HTML
+function formatPreviousWorkoutSummary(exerciseName) {
+    const summary = getPreviousWorkoutSummary(exerciseName);
+    if (!summary) return '';
+
+    const dateStr = new Date(summary.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const setsStr = summary.sets.map(s => {
+        if (s.kg && s.kg !== '0' && s.kg !== '') {
+            return `${s.kg}kg x ${s.reps || s.time}`;
+        }
+        return s.reps || s.time || '-';
+    }).join(', ');
+
+    return `
+        <div class="previous-workout-summary" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 10px; padding: 10px 12px; margin-top: 8px; border-left: 3px solid var(--primary);">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: var(--primary);"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                <span style="font-size: 0.7rem; font-weight: 700; color: var(--primary); text-transform: uppercase;">Last: ${dateStr}</span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-main); font-weight: 600;">${setsStr}</div>
+            <div style="font-size: 0.7rem; color: #64748b; margin-top: 3px;">Total Volume: ${summary.totalVolume.toLocaleString()} kg</div>
+        </div>
+    `;
 }
 
 function getSetRowHtml(exName, setNum, isTimeBased) {
@@ -20189,19 +20370,25 @@ function addWorkoutSet(btn, exName, isTimeBased) {
     }
 
     const setNum = container.children.length + 1;
-    
+
     // Create new div wrapper (since getSetRowHtml returns a string)
     const div = document.createElement('div');
     div.innerHTML = getSetRowHtml(exName, setNum, isTimeBased).trim();
-    
+
     // Optional: Add simple animation
     const newRow = div.firstElementChild;
     newRow.style.opacity = '0';
     newRow.style.transform = 'translateY(-10px)';
     newRow.style.transition = 'all 0.3s ease';
-    
+
     container.appendChild(newRow);
-    
+
+    // Add volume tracking for the new inputs
+    const inputs = newRow.querySelectorAll('.input-kg, .input-reps, .drop-kg, .drop-reps');
+    inputs.forEach(input => {
+        input.addEventListener('input', () => updateVolumeDisplay(card));
+    });
+
     // Trigger reflow for animation
     requestAnimationFrame(() => {
         newRow.style.opacity = '1';
@@ -20212,6 +20399,7 @@ function addWorkoutSet(btn, exName, isTimeBased) {
 function deleteSetRow(btn) {
     const wrapper = btn.closest('.set-wrapper');
     const container = wrapper.closest('.sets-list-container');
+    const card = wrapper.closest('.exercise-logger-card');
 
     if (!container) {
         console.error("Could not find .sets-list-container");
@@ -20240,6 +20428,11 @@ function deleteSetRow(btn) {
                 setNumEl.textContent = idx + 1;
             }
         });
+
+        // Recalculate volume after set deletion
+        if (card) {
+            updateVolumeDisplay(card);
+        }
     }, 200);
 }
 
@@ -20247,6 +20440,7 @@ function deleteSetRow(btn) {
 function toggleDropSet(btn) {
     const wrapper = btn.closest('.set-wrapper');
     const container = wrapper.querySelector('.drop-set-container');
+    const card = wrapper.closest('.exercise-logger-card');
 
     btn.classList.toggle('active');
     container.classList.toggle('visible');
@@ -20255,6 +20449,20 @@ function toggleDropSet(btn) {
     if (container.classList.contains('visible')) {
         const firstInput = container.querySelector('.drop-reps');
         if (firstInput) firstInput.focus();
+
+        // Setup volume tracking for drop set inputs
+        const dropInputs = container.querySelectorAll('.drop-kg, .drop-reps');
+        dropInputs.forEach(input => {
+            if (!input.hasAttribute('data-volume-tracked')) {
+                input.setAttribute('data-volume-tracked', 'true');
+                input.addEventListener('input', () => updateVolumeDisplay(card));
+            }
+        });
+    }
+
+    // Recalculate volume when drop sets are toggled
+    if (card) {
+        updateVolumeDisplay(card);
     }
 }
 
@@ -20262,6 +20470,7 @@ function addDropRow(btn) {
     const inputsContainer = btn.closest('.drop-set-inputs');
     const currentRows = inputsContainer.querySelectorAll('.drop-set-row');
     const dropNum = currentRows.length + 1;
+    const card = btn.closest('.exercise-logger-card');
 
     // Change current row's + button to - button
     btn.className = 'drop-remove-btn';
@@ -20283,6 +20492,13 @@ function addDropRow(btn) {
 
     inputsContainer.appendChild(newRow);
 
+    // Add volume tracking for new inputs
+    const dropInputs = newRow.querySelectorAll('.drop-kg, .drop-reps');
+    dropInputs.forEach(input => {
+        input.setAttribute('data-volume-tracked', 'true');
+        input.addEventListener('input', () => updateVolumeDisplay(card));
+    });
+
     // Animate in
     requestAnimationFrame(() => {
         newRow.style.opacity = '1';
@@ -20296,6 +20512,7 @@ function addDropRow(btn) {
 function removeDropRow(btn) {
     const row = btn.closest('.drop-set-row');
     const inputsContainer = row.parentElement;
+    const card = btn.closest('.exercise-logger-card');
 
     // Animate out
     row.style.opacity = '0';
@@ -20319,6 +20536,11 @@ function removeDropRow(btn) {
                 lastBtn.textContent = '+';
                 lastBtn.onclick = function() { addDropRow(this); };
             }
+        }
+
+        // Recalculate volume after drop row removal
+        if (card) {
+            updateVolumeDisplay(card);
         }
     }, 200);
 }
@@ -23330,7 +23552,8 @@ function processBulkEntry() {
 function addExerciseWithSets(exerciseName, sets) {
     const container = document.getElementById('workout-exercises-list');
     const videoUrl = findVideoMatch(exerciseName);
-    const prevData = findPreviousSetData(exerciseName);
+    const previousSummaryHtml = formatPreviousWorkoutSummary(exerciseName);
+    const previousSummary = getPreviousWorkoutSummary(exerciseName);
     const escapedName = exerciseName.replace(/'/g, "\\'");
 
     const setsHtml = sets.map((set, idx) => {
@@ -23369,7 +23592,7 @@ function addExerciseWithSets(exerciseName, sets) {
                             <span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">QUICK</span>
                         </div>
                         <div style="color: var(--text-muted); font-size: 0.85rem;">Added via quick entry</div>
-                        ${prevData ? `<div style="color: var(--primary); font-size: 0.75rem; margin-top: 5px;">Last: ${prevData}</div>` : ''}
+                        ${previousSummaryHtml}
                     </div>
                     <button onclick="deleteExerciseFromWorkout('${escapedName}', true)" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
                         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
@@ -23390,6 +23613,18 @@ function addExerciseWithSets(exerciseName, sets) {
                     </svg>
                 </div>
             </div>` : ''}
+
+            <!-- Volume Tracker -->
+            <div class="volume-display" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-bottom: 1px solid #fef08a;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #ca8a04;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: #a16207; text-transform: uppercase;">Volume</span>
+                </div>
+                <div style="text-align: right;">
+                    <div class="volume-value" style="font-size: 1rem; font-weight: 800; color: #854d0e;">0 kg</div>
+                    <div class="volume-comparison" style="font-size: 0.7rem; font-weight: 600;">${previousSummary ? `<span style="color: #94a3b8;">Last: ${previousSummary.totalVolume.toLocaleString()} kg</span>` : '<span style="color: #94a3b8;">Enter weight & reps</span>'}</div>
+                </div>
+            </div>
 
             <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
                 <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
@@ -23415,10 +23650,13 @@ function addExerciseWithSets(exerciseName, sets) {
         goalEl.textContent = currentText.replace(/\d+ Exercise[s]?/, `${exerciseCount} Exercise${exerciseCount !== 1 ? 's' : ''}`);
     }
 
-    // Scroll to the new exercise
+    // Scroll to the new exercise and setup volume tracking
     const newCard = container.lastElementChild;
     if (newCard) {
         newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setupVolumeTracking(newCard);
+        // Update volume with any pre-filled values
+        updateVolumeDisplay(newCard);
     }
 }
 
@@ -23607,7 +23845,8 @@ async function selectExerciseToAdd(exerciseName) {
 function addExerciseToUI(exercise) {
     const container = document.getElementById('workout-exercises-list');
     const videoUrl = findVideoMatch(exercise.name);
-    const prevData = findPreviousSetData(exercise.name);
+    const previousSummaryHtml = formatPreviousWorkoutSummary(exercise.name);
+    const previousSummary = getPreviousWorkoutSummary(exercise.name);
     const escapedName = exercise.name.replace(/'/g, "\\'");
 
     const exerciseHtml = `
@@ -23620,7 +23859,7 @@ function addExerciseToUI(exercise) {
                             <span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>
                         </div>
                         <div style="color: var(--text-muted); font-size: 0.85rem;">${exercise.desc || ''}</div>
-                        ${prevData ? `<div style="color: var(--primary); font-size: 0.75rem; margin-top: 5px;">Last: ${prevData}</div>` : ''}
+                        ${previousSummaryHtml}
                     </div>
                     <button onclick="deleteExerciseFromWorkout('${escapedName}', true)" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
                         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
@@ -23641,6 +23880,18 @@ function addExerciseToUI(exercise) {
                     </svg>
                 </div>
             </div>` : ''}
+
+            <!-- Volume Tracker -->
+            <div class="volume-display" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-bottom: 1px solid #fef08a;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #ca8a04;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: #a16207; text-transform: uppercase;">Volume</span>
+                </div>
+                <div style="text-align: right;">
+                    <div class="volume-value" style="font-size: 1rem; font-weight: 800; color: #854d0e;">0 kg</div>
+                    <div class="volume-comparison" style="font-size: 0.7rem; font-weight: 600;">${previousSummary ? `<span style="color: #94a3b8;">Last: ${previousSummary.totalVolume.toLocaleString()} kg</span>` : '<span style="color: #94a3b8;">Enter weight & reps</span>'}</div>
+                </div>
+            </div>
 
             <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
                 <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
@@ -23690,10 +23941,11 @@ function addExerciseToUI(exercise) {
         goalEl.textContent = currentText.replace(/\d+ Exercise[s]?/, `${exerciseCount} Exercise${exerciseCount !== 1 ? 's' : ''}`);
     }
 
-    // Scroll to the new exercise
+    // Scroll to the new exercise and setup volume tracking
     const newCard = container.lastElementChild;
     if (newCard) {
         newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setupVolumeTracking(newCard);
     }
 }
 
