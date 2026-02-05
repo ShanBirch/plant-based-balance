@@ -4,7 +4,7 @@
  */
 
 import type { Context } from "https://edge.netlify.com";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0?target=denonext&deps=@supabase/functions-js@2.1.5';
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 
 const POINTS_FOR_FREE_WEEK = 200;

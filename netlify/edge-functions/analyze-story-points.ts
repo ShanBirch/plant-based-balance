@@ -4,7 +4,7 @@
  */
 
 import type { Context } from "https://edge.netlify.com";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0?target=denonext&deps=@supabase/functions-js@2.1.5';
 
 // Points configuration for story posts
 const STORY_POINTS_CONFIG = {
