@@ -34474,6 +34474,8 @@ async function loadPointsWidget() {
 
 // Expose to window for other scripts (stories.js) to refresh points
 window.loadUserPoints = loadPointsWidget;
+// Alias for learning-inline.js and other scripts that call refreshLevelDisplay
+window.refreshLevelDisplay = loadPointsWidget;
 
 // Update points display with current data
 function updatePointsDisplay(pointsData) {
