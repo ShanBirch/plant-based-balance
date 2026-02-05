@@ -439,9 +439,9 @@ BEGIN
     RETURN json_build_object(
       'total_lessons_completed', 0,
       'total_xp_from_learning', 0,
-      'modules_completed', '{}',
-      'units_completed', '{}',
-      'lessons_completed', '{}',
+      'modules_completed', ARRAY[]::TEXT[],
+      'units_completed', ARRAY[]::TEXT[],
+      'lessons_completed', ARRAY[]::TEXT[],
       'current_streak', 0,
       'longest_streak', 0,
       'daily_status', daily_check
