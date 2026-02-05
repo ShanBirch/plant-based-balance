@@ -2604,6 +2604,103 @@ async function applyAppTheme(themeKey) {
         transform: scale(0.95);
     }
 
+    /* Battle Trigger Button */
+    .battle-trigger-btn {
+        position: absolute;
+        bottom: 15px;
+        right: 65px; /* Positioned to the left of the film icon */
+        background: rgba(220, 50, 50, 0.4);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 100, 100, 0.4);
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.2s ease;
+        font-size: 1.3rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .battle-trigger-btn:hover {
+        background: rgba(220, 50, 50, 0.6);
+        transform: scale(1.1);
+    }
+
+    .battle-trigger-btn:active {
+        transform: scale(0.95);
+    }
+
+    /* Fireball Projectile */
+    .fireball {
+        position: absolute;
+        width: 80px;
+        height: 80px;
+        pointer-events: none;
+        z-index: 100;
+        will-change: transform;
+        filter: drop-shadow(0 0 10px #ff5500);
+    }
+
+    .fireball img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        image-rendering: pixelated;
+    }
+
+    /* Battle Flash Effect */
+    .battle-flash {
+        animation: battleFlash 0.3s ease-out;
+    }
+
+    @keyframes battleFlash {
+        0% { filter: brightness(1); }
+        50% { filter: brightness(2) contrast(1.2); }
+        100% { filter: brightness(1); }
+    }
+
+    /* Battle Stance / Positioning */
+    .character-battle-pos {
+        transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    }
+
+    .battle-side-left {
+        transform: translateX(-100px) !important;
+    }
+
+    /* Battle Overlay Title */
+    .battle-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 200;
+        pointer-events: none;
+    }
+
+    .battle-overlay.active {
+        display: flex;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .battle-text {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 900;
+        text-shadow: 0 0 20px rgba(255,0,0,0.8);
+        font-family: 'Outfit', sans-serif;
+        text-transform: uppercase;
+    }
+
     /* Animation unlock toast */
     .animation-unlock-toast {
         position: fixed;
@@ -3957,9 +4054,19 @@ async function applyAppTheme(themeKey) {
                 </div>
             </div>
 
-            <!-- Animation Selector Button (inside character container for proper positioning) -->
+            <!-- Battle Trigger Button -->
+            <div class="battle-trigger-btn" onclick="startBattle()" title="Battle Mode">
+                🥊
+            </div>
+
+            <!-- Animation Selector Button -->
             <div class="animation-trigger-btn" onclick="showAnimationSelector()" title="Shazie's Moves">
                 🎬
+            </div>
+
+            <!-- Battle Overlay -->
+            <div id="battle-mode-overlay" class="battle-overlay">
+                <div class="battle-text">BATTLE!</div>
             </div>
         </div>
 
@@ -40693,7 +40800,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Mutant Flexing Muscles, Pistol, Punch Combo, Punch To Elbow Combo, Push Up,
         // Quick Formal Bow, Situps, Sleeping Idle, Strong Gesture, Victory Idle, Walking
         const ANIMATION_UNLOCKS = [
-            // Basic animations - unlocked early (Greetings)
             { name: 'Quick Formal Bow', displayName: 'Wave', unlockLevel: 1, icon: '👋', category: 'greetings' },
 
             // Reactions - early unlocks
@@ -40717,7 +40823,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             { name: 'Bicycle Crunch', displayName: 'Bicycle Crunch', unlockLevel: 25, icon: '🚴', category: 'exercise' },
 
             // Combat/Fighting animations
-            { name: 'Boxing', displayName: 'Boxing', unlockLevel: 18, icon: '🥊', category: 'combat' },
+            { name: 'Boxing', displayName: 'Boxing', unlockLevel: 1, icon: '🥊', category: 'combat' },
             { name: 'Boxing (1)', displayName: 'Boxing Combo', unlockLevel: 22, icon: '🥊', category: 'combat' },
             { name: 'Punch Combo', displayName: 'Punch Combo', unlockLevel: 28, icon: '👊', category: 'combat' },
             { name: 'Punch To Elbow Combo', displayName: 'Elbow Combo', unlockLevel: 35, icon: '💥', category: 'combat' },
@@ -40994,6 +41100,194 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }, 3000);
             }
         });
+
+        // --- BATTLE SYSTEM INTEGRATION ---
+        let isDuringBattle = false;
+
+        window.startBattle = async function() {
+            if (isDuringBattle) return;
+            isDuringBattle = true;
+
+            const mv = document.getElementById('tamagotchi-model');
+            const overlay = document.getElementById('battle-mode-overlay');
+            const overlayText = overlay?.querySelector('.battle-text');
+            const container = document.getElementById('tamagotchi-widget-container');
+
+            if (overlay) {
+                overlayText.innerText = "BATTLE MODE!";
+                overlay.classList.add('active');
+            }
+
+            // Flash Screen
+            if (container) {
+                container.classList.add('battle-flash');
+                setTimeout(() => container.classList.remove('battle-flash'), 500);
+            }
+
+            // Get current level to find best moves
+            const level = getCurrentUserLevel();
+
+            // 1. SELECT BEST ATTACK ANIMATION
+            const unlockedCombatMoves = ANIMATION_UNLOCKS.filter(a => a.category === 'combat' && level >= a.unlockLevel);
+            let attackMoveName = 'Boxing'; // Root fallback
+            if (unlockedCombatMoves.length > 0) {
+                // Get the highest unlocked combat move
+                const best = unlockedCombatMoves.reduce((prev, current) => (current.unlockLevel > prev.unlockLevel) ? current : prev);
+                attackMoveName = best.name;
+            }
+
+            // Find matching animation track on model
+            const anims = mv.availableAnimations || [];
+            let attackAnimTrack = anims.find(a => 
+                a.toLowerCase().includes(attackMoveName.toLowerCase())
+            );
+            
+            // If no match by name, fall back to any combat-like move
+            if (!attackAnimTrack) {
+                attackAnimTrack = anims.find(a => 
+                    a.toLowerCase().includes('kick') || 
+                    a.toLowerCase().includes('punch') || 
+                    a.toLowerCase().includes('boxing') ||
+                    a.toLowerCase().includes('mma')
+                ) || anims[0];
+            }
+
+            // Move character to side
+            mv.classList.add('character-battle-pos', 'battle-side-left');
+            mv.cameraOrbit = "90deg 85deg 22m"; 
+
+            await new Promise(r => setTimeout(r, 1200));
+            if (overlay) overlay.classList.remove('active');
+
+            // Turn to profile
+            mv.cameraOrbit = "0deg 85deg 22m";
+            await new Promise(r => setTimeout(r, 500));
+
+            // ROUNDS
+            for (let round = 1; round <= 3; round++) {
+                if (overlayText && overlay) {
+                    overlayText.innerText = `ROUND ${round}`;
+                    overlay.classList.add('active');
+                    await new Promise(r => setTimeout(r, 1000));
+                    overlay.classList.remove('active');
+                }
+
+                // ATTACK PHASE (3 Hits)
+                for (let i = 0; i < 3; i++) {
+                    mv.animationName = attackAnimTrack;
+                    mv.play();
+                    
+                    await new Promise(r => setTimeout(r, 450));
+                    spawnFireball('assets/fireball.png');
+                    
+                    await new Promise(r => setTimeout(r, 750));
+                }
+
+                await new Promise(r => setTimeout(r, 800));
+
+                // DEFENSE PHASE (Incoming Blue Fireballs)
+                const hitAnim = anims.find(a => 
+                    a.toLowerCase().includes('hurt') || 
+                    a.toLowerCase().includes('hit') || 
+                    a.toLowerCase().includes('reaction') ||
+                    a.toLowerCase().includes('down')
+                ) || anims[0];
+
+                for (let i = 0; i < 2; i++) {
+                    await spawnIncomingFireball(hitAnim, 'assets/fireballblue.svg');
+                    await new Promise(r => setTimeout(r, 800));
+                }
+            }
+
+            // VICTORY PHASE
+            const victoryAnim = anims.find(a => 
+                a.toLowerCase().includes('victory') || 
+                a.toLowerCase().includes('cheer') || 
+                a.toLowerCase().includes('happy') ||
+                a.toLowerCase().includes('excited')
+            ) || anims[0];
+
+            mv.animationName = victoryAnim;
+            mv.play();
+            
+            if (overlayText && overlay) {
+                overlayText.innerText = "VICTORIOUS!";
+                overlay.classList.add('active');
+            }
+            
+            await new Promise(r => setTimeout(r, 3500));
+
+            // Reset Sequence
+            if (overlay) overlay.classList.remove('active');
+            mv.classList.remove('battle-side-left');
+            mv.cameraOrbit = "0deg 85deg 22m";
+            
+            setTimeout(() => {
+                mv.classList.remove('character-battle-pos');
+                mv.removeAttribute('animation-name');
+                isDuringBattle = false;
+            }, 800);
+        };
+
+        function spawnFireball(imgSrc) {
+            const container = document.getElementById('tamagotchi-widget-container');
+            const fb = document.createElement('div');
+            fb.className = 'fireball';
+            fb.innerHTML = `<img src="${imgSrc}">`;
+            
+            fb.style.left = '35%'; 
+            fb.style.top = '48%';
+            container.appendChild(fb);
+
+            let posX = 35;
+            const targetX = 120; 
+            
+            function move() {
+                posX += 5;
+                fb.style.left = posX + '%';
+                fb.style.marginTop = `${(Math.random() - 0.5) * 15}px`;
+
+                if (posX > targetX) {
+                    fb.remove();
+                } else {
+                    setTimeout(move, 40);
+                }
+            }
+            move();
+        }
+
+        function spawnIncomingFireball(hitAnim, imgSrc) {
+            return new Promise(resolve => {
+                const container = document.getElementById('tamagotchi-widget-container');
+                const fb = document.createElement('div');
+                fb.className = 'fireball';
+                fb.innerHTML = `<img src="${imgSrc}" style="transform: scaleX(-1);">`;
+                
+                fb.style.left = '100%';
+                fb.style.top = '48%';
+                container.appendChild(fb);
+
+                let posX = 100;
+                const targetHitX = 35;
+
+                function move() {
+                    posX -= 5;
+                    fb.style.left = posX + '%';
+                    fb.style.marginTop = `${(Math.random() - 0.5) * 15}px`;
+
+                    if (posX <= targetHitX) {
+                        fb.remove();
+                        const mv = document.getElementById('tamagotchi-model');
+                        mv.animationName = hitAnim;
+                        mv.play();
+                        resolve();
+                    } else {
+                        setTimeout(move, 40);
+                    }
+                }
+                move();
+            });
+        }
     })();
     </script>
 
