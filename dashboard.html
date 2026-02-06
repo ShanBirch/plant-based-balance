@@ -43441,23 +43441,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.warn('Could not fetch friends for battle invite:', e);
             }
 
-            // If no friends, show empty state
-            if (!friendsHtml) {
-                friendsHtml = `
-                    <div class="battle-invite-empty">
-                        <div class="empty-icon">👥</div>
-                        <div class="empty-text">Add friends to challenge them to battles!</div>
-                        <button class="empty-btn" onclick="closeBattleInvite(); if(typeof openAddFriendModal==='function') openAddFriendModal();">Find Friends</button>
-                    </div>`;
-            }
+            // No friends? That's fine - bot option is always available
 
             overlay.innerHTML = `
                 <div class="battle-invite-modal">
                     <div class="battle-invite-header">
-                        <h2>⚔️ Challenge a Friend</h2>
-                        <p>Choose an opponent for battle</p>
+                        <h2>⚔️ Battle Mode</h2>
+                        <p>Choose your opponent</p>
                     </div>
                     <div class="battle-invite-body">
+                        <div class="battle-invite-friend battle-bot-option" onclick="closeBattleInvite(); window._runBattle('Bot');">
+                            <div class="battle-invite-avatar" style="background: linear-gradient(135deg, rgba(100,100,255,0.4), rgba(150,50,255,0.4));">🤖</div>
+                            <div class="battle-invite-info">
+                                <div class="battle-invite-name">Fight a Bot</div>
+                                <div class="battle-invite-status active">Ready to fight!</div>
+                            </div>
+                            <button class="battle-invite-btn" style="background: linear-gradient(135deg, #7c3aed, #6366f1);">Fight</button>
+                        </div>
+                        ${friendsHtml ? '<div style="padding: 8px 0 4px; font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px;">Or challenge a friend</div>' : ''}
                         ${friendsHtml}
                     </div>
                     <div class="battle-invite-footer">
@@ -43502,26 +43503,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.warn('Could not send battle invite:', e);
             }
 
-            // Show waiting overlay in the tamagotchi widget
-            const widget = document.getElementById('tamagotchi-widget-container');
-            if (widget) {
-                const waiting = document.createElement('div');
-                waiting.className = 'battle-waiting-overlay';
-                waiting.id = 'battle-waiting-overlay';
-                waiting.innerHTML = `
-                    <div class="battle-waiting-spinner"></div>
-                    <div class="battle-waiting-text">Challenge sent to ${friendName}!</div>
-                    <div class="battle-waiting-sub">Waiting for them to accept...</div>
-                    <button class="battle-waiting-cancel" onclick="cancelBattleWait()">Start Battle Anyway</button>
-                `;
-                widget.appendChild(waiting);
-
-                // Auto-start battle after 8 seconds (simulate opponent accepting)
-                // In a real implementation, this would listen for a realtime DB event
-                window._battleWaitTimer = setTimeout(() => {
-                    cancelBattleWait(friendName);
-                }, 8000);
-            }
+            // Start battle directly against the friend (as a bot stand-in)
+            window._runBattle(friendName || 'Opponent');
         };
 
         window.cancelBattleWait = function(opponentName) {
@@ -43641,6 +43624,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (window._battleInProgress) return;
             window._battleInProgress = true;
 
+            try {
+
             const viewer = document.getElementById('tamagotchi-model');
             const overlay = document.getElementById('battle-mode-overlay');
             const overlayText = overlay?.querySelector('.battle-text');
@@ -43659,6 +43644,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Get stats
             const stats = getBattleStats();
+            const level = window.getCurrentUserLevel ? window.getCurrentUserLevel() : 1;
             const baseDmg = 20;
             const playerMaxHP = 100 + (stats.hp * 5);
             const playerSTR = stats.str;
@@ -44107,7 +44093,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 viewer.removeAttribute('animation-name');
             }, 500);
 
-            window._battleInProgress = false;
+            } catch (e) {
+                console.error('Battle error:', e);
+            } finally {
+                window._battleInProgress = false;
+            }
         };
 
         // ============================================================
