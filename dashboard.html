@@ -2574,6 +2574,56 @@ async function applyAppTheme(themeKey) {
         margin-top: 1px;
     }
 
+    /* Skin levels grid in moves modal */
+    .skin-levels-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+
+    .skin-level-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 8px 4px;
+        border-radius: 10px;
+        text-align: center;
+        gap: 2px;
+    }
+
+    .skin-level-item.unlocked {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .skin-level-item.locked {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        opacity: 0.5;
+    }
+
+    .skin-level-badge {
+        font-size: 0.55rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+    }
+
+    .skin-level-icon {
+        font-size: 1.2rem;
+    }
+
+    .skin-level-title {
+        font-size: 0.55rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.1;
+    }
+
+    .skin-level-item.locked .skin-level-title {
+        color: rgba(255, 255, 255, 0.4);
+    }
+
     /* Animation button on Tamagotchi widget */
     .animation-trigger-btn {
         position: absolute;
@@ -5189,7 +5239,7 @@ async function applyAppTheme(themeKey) {
             </div>
 
             <!-- Animation Selector Button -->
-            <div class="animation-trigger-btn" onclick="showAnimationSelector()" title="Shazie's Moves">
+            <div class="animation-trigger-btn" onclick="showAnimationSelector()" title="My Moves">
                 🎬
             </div>
 
@@ -26812,7 +26862,7 @@ function openAsClient() {
             <div class="wizard-slide" id="slide-14" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">✨</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Customize Your Character</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">Make Shazie your own! Choose your favorite colors.</p>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Make your character your own! Choose your favorite colors.</p>
 
                 <!-- Character Preview -->
                 <div id="wizard-character-preview" style="width: 100%; height: 180px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 20px; position: relative;">
@@ -42477,11 +42527,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 'special': '⭐ Special'
             };
 
+            // Get the user's first name for the title
+            const userName = (function() {
+                const profileNameEl = document.getElementById('profile-name-display');
+                const fullName = profileNameEl?.innerText || window.currentUser?.user_metadata?.full_name || '';
+                const firstName = fullName.split(' ')[0];
+                return firstName || 'Your';
+            })();
+            const possessiveTitle = userName === 'Your' ? "Your Moves" : `${userName}'s Moves`;
+
             let html = `
                 <div class="animation-selector-backdrop" onclick="closeAnimationSelector()"></div>
                 <div class="animation-selector-modal">
                     <div class="animation-selector-header">
-                        <h3>Shazie's Moves</h3>
+                        <h3>${possessiveTitle}</h3>
                         <span class="animation-selector-close" onclick="closeAnimationSelector()">&times;</span>
                     </div>
                     <div class="animation-selector-content">
@@ -42515,6 +42574,30 @@ document.addEventListener('DOMContentLoaded', async function() {
                     html += `</div></div>`;
                 }
             });
+
+            // Add Character Skins section showing level unlocks
+            const skinEvolutions = TAMAGOTCHI_EVOLUTIONS.filter((e, i, arr) => {
+                // Only show entries where the model source changes (actual new skin)
+                return i === 0 || e.src !== arr[i - 1].src;
+            });
+
+            html += `<div class="animation-category">
+                <div class="animation-category-title">🎨 Character Skins</div>
+                <div class="skin-levels-grid">`;
+
+            skinEvolutions.forEach(evo => {
+                const isUnlocked = level >= evo.level;
+                const skinClass = isUnlocked ? 'skin-level-item unlocked' : 'skin-level-item locked';
+                const checkOrLock = isUnlocked ? '✅' : '🔒';
+                html += `
+                    <div class="${skinClass}">
+                        <span class="skin-level-badge">Lvl ${evo.level}</span>
+                        <span class="skin-level-icon">${checkOrLock}</span>
+                        <span class="skin-level-title">${evo.title}</span>
+                    </div>`;
+            });
+
+            html += `</div></div>`;
 
             html += `
                     </div>
