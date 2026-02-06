@@ -40707,26 +40707,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     <script>
     (function() {
         const TAMAGOTCHI_EVOLUTIONS_MALE = [
-            { level: 1,  xp: 0,    title: "Newcomer",  src: "assets/shazylvl1.glb" },
-            { level: 5,  xp: 15,   title: "Beginner",  src: "assets/shazylvl1.glb" },
-            { level: 10, xp: 46,   title: "Rising",    src: "assets/shazylvl10.glb" },
-            { level: 20, xp: 133,  title: "Growing",   src: "assets/shazylvl20.glb" },
-            { level: 30, xp: 251,  title: "Consistent",src: "assets/shazylvl30.glb" },
-            { level: 40, xp: 393,  title: "Committed", src: "assets/shazylvl40.glb" },
-            { level: 50, xp: 557,  title: "Dedicated", src: "assets/shazylvl50.glb" },
-            { level: 60, xp: 739,  title: "Veteran",   src: "assets/shazylvl60.glb" },
-            { level: 70, xp: 938,  title: "Expert",    src: "assets/shazylvl70.glb" },
-            { level: 80, xp: 1152, title: "Champion",  src: "assets/shazylvl80.glb" },
-            { level: 90, xp: 1381, title: "Master",    src: "assets/shazylvl90.glb" },
-            { level: 99, xp: 1605, title: "Legend",    src: "assets/shazie_legend.glb" }
+            { level: 1,  xp: 0,    title: "Newcomer",  src: "assets/level_1_good_final.glb" },
+            { level: 5,  xp: 15,   title: "Beginner",  src: "assets/level_1_good_final.glb" },
+            { level: 10, xp: 46,   title: "Rising",    src: "assets/level_10_real_final.glb" },
+            { level: 20, xp: 133,  title: "Growing",   src: "assets/level_20_real_final.glb" },
+            { level: 30, xp: 251,  title: "Consistent",src: "assets/level_30_real_final.glb" },
+            { level: 40, xp: 393,  title: "Committed", src: "assets/level_40_real_final.glb" },
+            { level: 50, xp: 557,  title: "Dedicated", src: "assets/level_50_real_final.glb" },
+            { level: 60, xp: 739,  title: "Veteran",   src: "assets/level_50_real_final.glb" }, 
+            { level: 70, xp: 938,  title: "Expert",    src: "assets/level_50_real_final.glb" },
+            { level: 80, xp: 1152, title: "Champion",  src: "assets/level_50_real_final.glb" },
+            { level: 90, xp: 1381, title: "Master",    src: "assets/level_50_real_final.glb" },
+            { level: 99, xp: 1605, title: "Legend",    src: "assets/level_99_real_final.glb" }
         ];
 
         const TAMAGOTCHI_EVOLUTIONS_FEMALE = [
-            { level: 1,  xp: 0,    title: "Newcomer",  src: "assets/female_lvl1.glb" },
-            { level: 5,  xp: 15,   title: "Beginner",  src: "assets/female_lvl1.glb" },
-            { level: 10, xp: 46,   title: "Rising",    src: "assets/female_lvl10.glb" },
-            { level: 20, xp: 133,  title: "Growing",   src: "assets/female_lvl20.glb" },
-            { level: 30, xp: 251,  title: "Consistent",src: "assets/female_lvl30.glb" }
+            { level: 1,  xp: 0,    title: "Newcomer",  src: "assets/level_1_female_final.glb" },
+            { level: 5,  xp: 15,   title: "Beginner",  src: "assets/level_1_female_final.glb" },
+            { level: 10, xp: 46,   title: "Rising",    src: "assets/level_10_female_final.glb" },
+            { level: 20, xp: 133,  title: "Growing",   src: "assets/level_20_female_final.glb" },
+            { level: 30, xp: 251,  title: "Consistent",src: "assets/level_30_female_final.glb" },
+            { level: 40, xp: 393,  title: "Committed", src: "assets/level_40_female_final.glb" },
+            { level: 50, xp: 557,  title: "Dedicated", src: "assets/level_50_female_final.glb" }
         ];
 
         // Default to Male for backward compatibility, will be overridden by user fact
@@ -40735,111 +40737,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Character material mappings for each level model
         // Maps body part names to material indices for color customization
         const CHARACTER_MATERIAL_MAPPINGS = {
-            // --- MALE MODELS ---
-            'shazylvl1.glb': {
-                shirt: { index: 0 },
-                skin: { index: 1 },
-                shoes: { index: 2 },
-                hair: { index: 3 },
-                pants: { index: 4 }
-            },
-            'shazylvl10.glb': {
-                shirt: { index: 0 },
-                skin: { index: 1 },
-                hair: { index: 2 },
-                pants: { index: 3 },
-                shoes: { index: 4 }
-            },
-            'shazylvl20.glb': {
-                skin: { index: 0 },
-                shoes: { index: 1 },
-                shirt: { index: 2 },
-                hair: { index: 3 },
-                pants: { index: 5 }
-            },
-            'shazylvl30.glb': {
-                skin: { index: 0 },
-                shoes: { index: 1 },
-                hair: { index: 2 },
-                pants: { index: 3 },
-                shirt: { index: 4 }
-            },
-            'shazylvl40.glb': {
-                skin: { index: 0 },
-                shoes: { index: 1 },
-                shirt: { index: 2 },
-                hair: { index: 3 },
-                pants: { index: 4 }
-            },
-            'shazylvl50.glb': {
-                skin: { index: 0 },
-                hair: { index: 2 },
-                shirt: { index: 3 },
-                pants: { index: 5 },
-                shoes: { index: 4 }
-            },
-            'shazylvl60.glb': {
-                skin: { index: 0 },
-                shoes: { index: 1 },
-                shirt: { index: 2 },
-                pants: { index: 3 },
-                hair: { index: 4 }
-            },
-            'shazylvl70.glb': {
-                skin: { index: 0 },
-                shoes: { index: 1 },
-                pants: { index: 2 },
-                hair: { index: 3 }
-            },
-            'shazylvl80.glb': {
-                skin: { index: 0 },
-                pants: { index: 1 },
-                shoes: { index: 2 },
-                hair: { index: 3 }
-            },
-            'shazylvl90.glb': {
-                skin: { index: 0 },
-                shoes: { index: 1 },
-                pants: { index: 2 },
-                hair: { index: 3 }
-            },
-            'shazie_legend.glb': {
-                skin: { index: 1 },
-                hair: { index: 3 },
-                hairSecondary: { index: 0 },
-                pants: { index: 2 },
-                shoes: { index: 5 },
-                shoesAccent: { index: 4 }
-            },
-            // --- FEMALE MODELS ---
-            'female_lvl1.glb': {
-                skin: { names: ['part_new'] },
-                hair: { names: ['part_2'] },
-                pants: { names: ['part_4'] },
-                shoes: { names: ['part_11'] },
-                shirt: { names: ['part_8'] }
-            },
-            'female_lvl10.glb': {
-                skin: { names: ['part_8.001'] },
-                hair: { names: ['part_new_0.001', 'part_new.001'] },
-                shirt: { names: ['part_new_0_0.001'] },
-                pants: { names: ['part_6.001'] },
-                shoes: { names: ['part_1.001', 'part_10.001'] }
-            },
-            'female_lvl20.glb': {
-                skin: { names: ['tripo_part_new_0_0'] },
-                hair: { names: ['tripo_part_8'] },
-                shirt: { names: ['tripo_part_5'] },
-                pants: { names: ['tripo_part_4'] },
-                shoes: { names: ['tripo_part_9'] }
-            },
-            'female_lvl30.glb': {
-                skin: { names: ['part_2.001'] },
-                hair: { names: ['part_new_0_0'] },
-                shirt: { names: ['part_0.001'] },
-                pants: { names: ['part_7.001'] },
-                shoes: { names: ['part_11.001'] }
-            }
+            // Dynamic logic used instead
         };
 
         // Color options for character customization
@@ -41701,6 +41599,271 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     <!-- Learning System Script -->
     <script src="lib/learning-inline.js"></script>
+    <!-- Battle System & Logic Overrides -->
+    <script>
+    console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES...");
+
+    // Sound System
+    const BATTLE_SOUNDS = {
+        intro: new Audio('assets/battle_intro.mp3'),
+        bell: new Audio('assets/bell.mp3'),
+        whoosh: new Audio('assets/whoosh.mp3'),
+        hit: new Audio('assets/hit.mp3'),
+        victory: new Audio('assets/victory.mp3')
+    };
+
+    function playBattleSound(name) {
+        if(BATTLE_SOUNDS[name]) {
+            BATTLE_SOUNDS[name].currentTime = 0;
+            BATTLE_SOUNDS[name].volume = 0.6;
+            BATTLE_SOUNDS[name].play().catch(e => console.log("Audio play failed:", e));
+        }
+    }
+
+    // --- BATTLE LOGIC ---
+    window.startBattle = async function() {
+        console.log("🥊 START BATTLE CLICKED");
+        const overlay = document.getElementById('battle-mode-overlay');
+        const overlayText = overlay.querySelector('.battle-text');
+        const widget = document.getElementById('tamagotchi-widget-container');
+        const viewer = document.getElementById('tamagotchi-model');
+
+        if(!widget || !viewer) return;
+
+        // Unlock Audio
+        playBattleSound('intro');
+
+        // Setup
+        overlayText.textContent = "BATTLE MODE!";
+        overlay.classList.add('active');
+        
+        // Flash
+        const flash = document.createElement('div');
+        flash.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:white;opacity:0.8;transition:opacity 0.5s;pointer-events:none;z-index:999;";
+        widget.appendChild(flash);
+        setTimeout(() => flash.style.opacity = 0, 50);
+        setTimeout(() => flash.remove(), 550);
+
+        // Intro Wait
+        await new Promise(r => setTimeout(r, 2000));
+        overlay.classList.remove('active');
+
+        // Camera Move
+        const originalOrbit = viewer.getAttribute('camera-orbit') || "0deg 85deg 22m";
+        viewer.setAttribute('camera-orbit', "90deg 90deg 18m");
+        await new Promise(r => setTimeout(r, 1000));
+
+        // Rounds
+        for(let round=1; round<=3; round++) {
+            overlayText.textContent = `ROUND ${round}`;
+            overlay.classList.add('active');
+            playBattleSound('bell');
+            await new Promise(r => setTimeout(r, 1500));
+            overlay.classList.remove('active');
+            await new Promise(r => setTimeout(r, 500));
+
+            // Attack (Red Fireball)
+            let anims = viewer.availableAnimations || [];
+            let attackAnim = anims.find(a => /punch|boxing|attack/i.test(a)) || anims[0];
+            
+            for(let i=0; i<3; i++) {
+                viewer.animationName = attackAnim;
+                viewer.play();
+                await new Promise(r => setTimeout(r, 400)); // Windup
+                
+                spawnFireball();
+                playBattleSound('whoosh');
+                
+                await new Promise(r => setTimeout(r, 800)); // Recover
+            }
+
+            await new Promise(r => setTimeout(r, 800));
+
+            // Defend (Blue Fireball)
+            let hitAnim = anims.find(a => /reaction|hit|damage/i.test(a)) || anims[0];
+            
+            for(let i=0; i<3; i++) {
+                await spawnIncomingFireball(hitAnim);
+                await new Promise(r => setTimeout(r, 800));
+            }
+            await new Promise(r => setTimeout(r, 500));
+        }
+
+        // Victory
+        let victoryAnim = (viewer.availableAnimations||[]).find(a => /victory|win/i.test(a)) || "Idle";
+        viewer.animationName = victoryAnim;
+        playBattleSound('victory');
+        
+        overlayText.textContent = "YOU WIN!";
+        overlay.style.color = "#00ff00";
+        overlay.style.textShadow = "0 0 20px #00ff00";
+        overlay.classList.add('active');
+
+        await new Promise(r => setTimeout(r, 4000));
+
+        // Reset
+        overlay.classList.remove('active');
+        overlay.style = "";
+        viewer.setAttribute('camera-orbit', originalOrbit);
+        viewer.animationName = "Idle";
+    };
+
+    function spawnFireball() {
+        const widget = document.getElementById('tamagotchi-widget-container');
+        const fb = document.createElement('div');
+        fb.innerHTML = `<img src="assets/fireball.png" style="width:60px;height:60px;filter:drop-shadow(0 0 8px orange);">`;
+        fb.style.cssText = "position:absolute; left:150px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;";
+        widget.appendChild(fb);
+
+        let posX = 150;
+        const speed = 25;
+        function move() {
+            posX += speed;
+            fb.style.left = posX + 'px';
+            if(posX > widget.clientWidth) fb.remove();
+            else requestAnimationFrame(move);
+        }
+        move();
+    }
+
+    function spawnIncomingFireball(animName) {
+        return new Promise(resolve => {
+            const widget = document.getElementById('tamagotchi-widget-container');
+            const viewer = document.getElementById('tamagotchi-model');
+            const fb = document.createElement('div');
+            // Blue Fireball, flipped locally to face left
+            fb.innerHTML = `<img src="assets/fireballblue.svg" style="width:60px;height:60px; transform:scaleX(-1); filter:drop-shadow(0 0 8px blue);">`;
+            fb.style.cssText = "position:absolute; right:-60px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;";
+            widget.appendChild(fb);
+
+            let posX = widget.clientWidth;
+            const targetX = widget.clientWidth / 2; 
+            const speed = 25;
+
+            function move() {
+                posX -= speed;
+                fb.style.left = posX + 'px';
+                if(posX <= targetX) {
+                    fb.remove();
+                    playBattleSound('hit');
+                    if(viewer) {
+                        viewer.animationName = animName;
+                        viewer.play();
+                    }
+                    // Red flash
+                    const flash = document.createElement('div');
+                    flash.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:red;opacity:0.4;z-index:998;pointer-events:none;";
+                    widget.appendChild(flash);
+                    setTimeout(() => flash.remove(), 100);
+                    resolve();
+                } else {
+                    requestAnimationFrame(move);
+                }
+            }
+            move();
+        });
+    }
+
+    // --- OVERRIDE COLOR APPLICATION ---
+    window.applyCharacterColors = async function(modelViewer, modelSrc) {
+        if(!modelViewer) return;
+        
+        // Wait for load
+        if(!modelViewer.model) {
+            await new Promise(r => modelViewer.addEventListener('load', r, {once:true}));
+        }
+        const model = modelViewer.model;
+        if(!model || !model.materials) return;
+
+        const colors = window.getCharacterColors(); // Uses existing helper which reads localStorage
+        const src = (modelSrc || modelViewer.src || "").toLowerCase();
+
+        // Hex to RGB Helper
+        const hexToRgb = (hex) => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1], 16)/255, g: parseInt(result[2], 16)/255, b: parseInt(result[3], 16)/255 } : null;
+        };
+
+        Object.keys(colors).forEach(cat => {
+            const hex = colors[cat];
+            if(!hex) return;
+            const linkColor = hexToRgb(hex);
+            if(!linkColor) return;
+
+            let targets = [];
+            
+            // KEYWORD MATCHING LOGIC
+            if (src.includes('level_50_female')) {
+                if(cat==='skin') targets=['part_11']; if(cat==='hair') targets=['part_4']; if(cat==='shirt') targets=['part_9']; if(cat==='shoes') targets=['part_9'];
+            } 
+            else if (src.includes('level_40_female')) {
+                 if(cat==='skin') targets=['part_1']; if(cat==='hair') targets=['part_10']; if(cat==='shirt') targets=['part_7']; if(cat==='pants') targets=['part_6']; if(cat==='shoes') targets=['part_2'];
+            }
+            else if (src.includes('level_30_female')) {
+                 if(cat==='skin') targets=['new_0_material']; if(cat==='hair') targets=['new_0_0']; if(cat==='shirt') targets=['part_10']; if(cat==='pants') targets=['part_2']; if(cat==='shoes') targets=['part_1'];
+            }
+            else if (src.includes('level_20_female')) {
+                 if(cat==='skin') targets=['part_11', 'part_8', 'tripo_part_new_0_0']; if(cat==='hair') targets=['part_0', 'tripo_part_8']; if(cat==='shirt') targets=['part_3', 'tripo_part_5']; if(cat==='pants') targets=['tripo_part_4']; if(cat==='shoes') targets=['part_1', 'tripo_part_9'];
+            }
+            else if (src.includes('level_10_female')) {
+                 if(cat==='skin') targets=['part_8.001']; if(cat==='hair') targets=['part_new_0.001', 'part_new.001']; if(cat==='shirt') targets=['part_new_0_0.001']; if(cat==='pants') targets=['part_6.001']; if(cat==='shoes') targets=['part_1.001', 'part_10.001'];
+            }
+            else if (src.includes('level_1_female')) {
+                 if(cat==='skin') targets=['part_new']; if(cat==='hair') targets=['part_2']; if(cat==='shirt') targets=['part_8']; if(cat==='pants') targets=['part_4']; if(cat==='shoes') targets=['part_11'];
+            }
+            // MALE / REAL MODELS
+            else if (src.includes('level_50_real')) {
+                 if(cat==='skin') targets=['part_4_material']; if(cat==='hair') targets=['part_1_material']; if(cat==='pants') targets=['new_0_material']; if(cat==='shoes') targets=['part_6_material'];
+            }
+            else if (src.includes('level_40_real')) {
+                 if(cat==='skin') targets=['part_3_material']; if(cat==='hair') targets=['part_5_material']; if(cat==='shirt') targets=['part_10_material']; if(cat==='pants') targets=['part_6_material']; if(cat==='shoes') targets=['part_2_material'];
+            }
+            else if (src.includes('level_30_real')) {
+                 if(cat==='skin') targets=['part_13_material']; if(cat==='hair') targets=['part_4_material']; if(cat==='shirt') targets=['new_0_material']; if(cat==='pants') targets=['part_5_material']; if(cat==='shoes') targets=['part_2_material'];
+            }
+            else if (src.includes('level_20_real')) {
+                 if(cat==='skin') targets=['part_0_material']; if(cat==='hair') targets=['part_12_material']; if(cat==='shirt') targets=['part_6_material']; if(cat==='pants') targets=['part_9_material']; if(cat==='shoes') targets=['part_2_material'];
+            }
+            else if (src.includes('level_10_real')) {
+                 if(cat==='skin') targets=['part_0_material']; if(cat==='hair') targets=['part_5_material']; if(cat==='shirt') targets=['part_12_material']; if(cat==='pants') targets=['part_6_material']; if(cat==='shoes') targets=['part_10_material'];
+            }
+            else if (src.includes('level_1_good') || src.includes('shazylvl1')) {
+                 if(cat==='skin') targets=['part_10_material']; if(cat==='hair') targets=['part_7_material']; if(cat==='shirt') targets=['part_5_material']; if(cat==='pants') targets=['part_6_material']; if(cat==='shoes') targets=['part_9_material'];
+            }
+            
+            // Fallback
+            if(targets.length === 0) {
+                 if(cat==='skin') targets=['skin', 'body', 'face', 'arm', 'hand'];
+                 if(cat==='hair') targets=['hair', 'head'];
+                 if(cat==='shirt') targets=['shirt', 'top', 'vest'];
+                 if(cat==='pants') targets=['pants', 'shorts', 'leg'];
+                 if(cat==='shoes') targets=['shoes', 'boot', 'feet'];
+            }
+
+            // Apply
+            model.materials.forEach(mat => {
+                const matName = (mat.name || "").toLowerCase();
+                const matched = targets.some(t => {
+                    if(t.startsWith('part_') || t.startsWith('new_')) {
+                        // Strict ID match
+                        return matName.includes(t);
+                    }
+                    return matName.includes(t);
+                });
+
+                if(matched) {
+                    const pbr = mat.pbrMetallicRoughness;
+                    pbr.baseColorTexture = null;
+                    pbr.setBaseColorFactor([linkColor.r, linkColor.g, linkColor.b, 1]);
+                    if(cat==='skin' || cat==='hair') {
+                        pbr.setRoughnessFactor(0.9);
+                        pbr.setMetallicFactor(0.0);
+                    }
+                }
+            });
+        });
+    };
+    </script>
 </body>
 </html>
 
