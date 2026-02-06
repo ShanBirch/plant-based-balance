@@ -43368,6 +43368,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Open stat allocation modal from settings
         window.openStatsFromSettings = function() {
+            // Check for any unclaimed retroactive points first
+            ensureRetroactiveStatPoints();
+            updateSettingsStatsUI();
             const pts = getUnallocatedPoints();
             if (pts <= 0) {
                 if (typeof showToast === 'function') {
@@ -43385,9 +43388,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             updateSettingsStatsUI();
         };
 
-        // Run retroactive check and update settings UI on load
+        // Update settings UI on load (stats display only, no auto-granting)
         setTimeout(() => {
-            ensureRetroactiveStatPoints();
             updateSettingsStatsUI();
         }, 3000);
 
