@@ -23958,44 +23958,12 @@ function openWorkoutSubcategories(categoryKey) {
     const grid = document.getElementById('subcategories-grid');
     grid.innerHTML = '';
 
-    // Muscle group images for gym subcategories (male users only)
-    let isDbzTheme = false;
-    try {
-        const currentTheme = localStorage.getItem('userThemePreference') || localStorage.getItem('app_theme') || localStorage.getItem('theme') || 'default';
-        isDbzTheme = currentTheme && currentTheme.startsWith('dbz-');
-    } catch (e) { console.error('Error checking theme', e); }
-
-    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
-
-    const muscleImages = {
-        'back': isDbzTheme ? '/assets/dbz_back_day.png' : '/assets/back.jpg',
-        'chest': isDbzTheme ? '/assets/dbz_chest_day.png' : '/assets/chest.jpg',
-        'legs': isDbzTheme ? '/assets/dbz_legs_day.png' : '/assets/legs.png',
-        'arms': isDbzTheme ? '/assets/dbz_arms_day.png' : '/assets/arms.jpg',
-        'shoulders': isDbzTheme ? '/assets/dbz_shoulders_day.png' : '/assets/shoulders.png',
-        'core': isDbzTheme ? '/assets/dbz_core_day.png' : '/assets/core.jpg',
-        'armscore': isDbzTheme ? '/assets/dbz_core_day.png' : '/assets/core.jpg',
-        'push': isDbzTheme ? '/assets/dbz_chest_day.png' : '/assets/chest.jpg',
-        'pull': isDbzTheme ? '/assets/dbz_back_day.png' : '/assets/back.jpg',
-        'upper': isDbzTheme ? '/assets/dbz_arms_day.png' : '/assets/arms.jpg',
-        'lower': isDbzTheme ? '/assets/dbz_legs_day.png' : '/assets/legs.png',
-        'fullbody': isDbzTheme ? '/assets/dbz_core_day.png' : '/assets/core.jpg'
-    };
-
     Object.keys(category.subcategories).forEach(subKey => {
         const subcategory = category.subcategories[subKey];
         const workoutCount = subcategory.workouts.length;
-        const muscleImg = muscleImages[subKey];
-        // Only show muscle photos for male users (these are male photos)
-        const hasImage = categoryKey === 'gym' && muscleImg && isMale;
 
         grid.innerHTML += `
-            <div class="library-category-card" onclick="openWorkoutList('${categoryKey}', '${subKey}')" style="${hasImage ? 'display: flex; align-items: center; gap: 15px;' : ''}">
-                ${hasImage ? `
-                    <div style="width: 70px; height: 70px; border-radius: 12px; overflow: hidden; flex-shrink: 0;">
-                        <img src="${muscleImg}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentNode.style.display='none';">
-                    </div>
-                ` : ''}
+            <div class="library-category-card" onclick="openWorkoutList('${categoryKey}', '${subKey}')">
                 <div style="flex: 1;">
                     <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 5px;">${subcategory.name}</div>
                     <div style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.4;">${subcategory.description}</div>
