@@ -42642,15 +42642,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ) || anims[0];
             }
 
-            // Move character to side
+            // Move character to side profile (instant snap to prevent visible spin)
             mv.classList.add('character-battle-pos', 'battle-side-left');
-            mv.cameraOrbit = "90deg 85deg 22m"; 
+            const hadAutoRotateV1 = mv.hasAttribute('auto-rotate');
+            mv.removeAttribute('auto-rotate');
+            mv.cameraOrbit = "90deg 85deg 22m";
+            if (typeof mv.jumpCameraToGoal === 'function') mv.jumpCameraToGoal();
 
             await new Promise(r => setTimeout(r, 1200));
             if (overlay) overlay.classList.remove('active');
-
-            // Turn to profile
-            mv.cameraOrbit = "0deg 85deg 22m";
             await new Promise(r => setTimeout(r, 500));
 
             // ROUNDS
@@ -42710,7 +42710,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (overlay) overlay.classList.remove('active');
             mv.classList.remove('battle-side-left');
             mv.cameraOrbit = "0deg 85deg 22m";
-            
+            if (hadAutoRotateV1) mv.setAttribute('auto-rotate', '');
+
             setTimeout(() => {
                 mv.classList.remove('character-battle-pos');
                 mv.removeAttribute('animation-name');
@@ -42831,10 +42832,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         await new Promise(r => setTimeout(r, 2000));
         overlay.classList.remove('active');
 
-        // Camera Move
+        // Camera Move to side profile (instant snap to prevent visible spin)
         const originalOrbit = viewer.getAttribute('camera-orbit') || "0deg 85deg 22m";
+        const hadAutoRotateV2 = viewer.hasAttribute('auto-rotate');
+        viewer.removeAttribute('auto-rotate');
         viewer.setAttribute('camera-orbit', "90deg 90deg 18m");
-        await new Promise(r => setTimeout(r, 1000));
+        if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
+        await new Promise(r => setTimeout(r, 600));
 
         // Rounds
         for(let round=1; round<=3; round++) {
@@ -42888,6 +42892,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         overlay.classList.remove('active');
         overlay.style = "";
         viewer.setAttribute('camera-orbit', originalOrbit);
+        if (hadAutoRotateV2) viewer.setAttribute('auto-rotate', '');
         viewer.animationName = "idle";
     };
 
@@ -43891,10 +43896,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (manaContainer) manaContainer.classList.add('active');
             if (actionContainer) actionContainer.classList.add('active');
 
-            // Camera Move to side
+            // Camera Move to side profile (instant snap to prevent visible spin)
             const originalOrbit = viewer.getAttribute('camera-orbit') || '0deg 85deg 22m';
+            const hadAutoRotate = viewer.hasAttribute('auto-rotate');
+            viewer.removeAttribute('auto-rotate');
             viewer.setAttribute('camera-orbit', '90deg 90deg 18m');
-            await new Promise(r => setTimeout(r, 1000));
+            if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
+            await new Promise(r => setTimeout(r, 600));
 
             // Start mana charging
             startManaCharge();
@@ -44223,6 +44231,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (actionContainer) actionContainer.classList.remove('active');
 
             viewer.setAttribute('camera-orbit', originalOrbit);
+            if (hadAutoRotate) viewer.setAttribute('auto-rotate', '');
             viewer.animationName = 'idle';
             setTimeout(() => {
                 viewer.pause();
