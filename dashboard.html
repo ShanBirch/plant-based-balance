@@ -10765,6 +10765,41 @@ function closeYourWorkouts() {
     switchAppTab('movement-tab');
 }
 
+function openProgressFromMovement() {
+    hideAllAppViews();
+
+    const viewEl = document.getElementById('view-progress');
+    if (viewEl) {
+        viewEl.style.display = 'block';
+        viewEl.scrollTop = 0;
+        window.scrollTo(0, 0);
+    }
+
+    // Hide bottom nav
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (bottomNav) {
+        bottomNav.style.display = 'none';
+    }
+
+    // Initialize progress data
+    if (typeof initProgressView === 'function') {
+        initProgressView();
+    }
+
+    // Push navigation state for back button support
+    if (typeof pushNavigationState === 'function') {
+        pushNavigationState('view-progress', () => closeProgressView());
+    }
+}
+
+function closeProgressView() {
+    const viewEl = document.getElementById('view-progress');
+    if (viewEl) {
+        viewEl.style.display = 'none';
+    }
+    switchAppTab('movement-tab');
+}
+
 async function renderYourWorkoutsList() {
     console.log('renderYourWorkoutsList: Starting...');
     const listContainer = document.getElementById('your-workouts-list');
@@ -11023,9 +11058,9 @@ function renderYourWorkoutsLibrary(container) {
 }
 
 function viewWorkoutHistoryDetail(date) {
-    // Navigate to progress tab where workout history is shown
+    // Navigate to progress view (now inside Movement tab)
     closeYourWorkouts();
-    switchAppTab('progress-tab');
+    setTimeout(() => { if(typeof openProgressFromMovement === 'function') openProgressFromMovement(); }, 100);
 }
 
 </script>
@@ -11551,10 +11586,6 @@ function viewWorkoutHistoryDetail(date) {
         <button class="nav-item" onclick="switchAppTab('movement-tab', this)">
             <svg viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22 14.86 20.57 16.29 22 18.43 19.86 19.86 21.29 21.29 19.86l-1.43-1.43L21.29 17l-1.43-1.43L18.43 17l-3.57-3.57z"/></svg>
             <span>Movement</span>
-        </button>
-        <button class="nav-item" onclick="switchAppTab('progress', this)">
-            <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
-            <span>Progress</span>
         </button>
         <button class="nav-item" onclick="switchAppTab('learning', this)">
             <svg viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>
@@ -12095,14 +12126,14 @@ function viewWorkoutHistoryDetail(date) {
     </div>
 
     <!-- PROGRESS / ANALYTICS VIEW -->
-    <div id="view-progress" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc;">
-        <!-- Header -->
-        <div style="padding: 20px 25px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
-            <div>
-                <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Your Progress</h2>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">Track your journey</div>
-            </div>
-            <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
+    <div id="view-progress" class="app-view" style="display:none; min-height: 100vh; height: auto; background: #f8fafc; z-index: 100000; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; overflow-y: auto; overflow-x: hidden;">
+        <!-- Header with back button -->
+        <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+            <button onclick="closeProgressView()" style="width: 40px; height: 40px; border: none; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-main);"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+            <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Your Progress</div>
+            <div style="width: 40px;"></div>
         </div>
 
         <!-- Progress Content Container -->
@@ -12182,7 +12213,7 @@ function viewWorkoutHistoryDetail(date) {
     </div>
 
     <!-- EXERCISE CHART MODAL -->
-    <div id="exercise-chart-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+    <div id="exercise-chart-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200000; align-items: center; justify-content: center; padding: 20px;">
         <div style="background: white; border-radius: 20px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
             <!-- Modal Header -->
             <div style="padding: 20px 25px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; border-radius: 20px 20px 0 0; z-index: 1;">
@@ -14201,11 +14232,15 @@ function _switchAppTabReal(tabName, btn) {
             }
         }
     } else if (tabName === 'progress') {
-        const el = document.getElementById('view-progress');
-        if(el) {
-            el.style.display = 'block';
-            if(typeof initProgressView === 'function') initProgressView();
+        // Progress is now inside Movement tab - redirect there and open progress view
+        const movEl = document.getElementById('movement-tab');
+        if(movEl) {
+            movEl.classList.add('active');
+            movEl.style.display='block';
+            renderMovementView();
         }
+        // Auto-open progress view from movement
+        setTimeout(() => { if(typeof openProgressFromMovement === 'function') openProgressFromMovement(); }, 100);
     } else if (tabName === 'learning') {
         const el = document.getElementById('view-learning');
         if(el) {
@@ -20042,6 +20077,21 @@ async function renderMovementView() {
         <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">💪</div>
     `;
     gridContainer.appendChild(yourWorkoutsDiv);
+
+    // Add 'Your Progress' Card - links to progress tracking view
+    const progressDiv = document.createElement('div');
+    progressDiv.onclick = () => openProgressFromMovement();
+    progressDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%); grid-column: span 2;";
+    progressDiv.innerHTML = `
+        <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.1), transparent);"></div>
+        <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
+            <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Track Journey</div>
+            <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">Your Progress</div>
+            <div style="font-size: 0.75rem; opacity: 0.9;">PBs, history & achievements</div>
+        </div>
+        <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">📈</div>
+    `;
+    gridContainer.appendChild(progressDiv);
 
     // Removed other workout cards - users now browse via Workout Library
     // Object.keys(WORKOUT_DB).forEach(key => {
