@@ -4413,16 +4413,14 @@ async function applyAppTheme(themeKey) {
         top: 12px;
         left: 12px;
         right: 12px;
-        display: flex;
+        display: none;
         justify-content: space-between;
         z-index: 150;
         pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.3s;
     }
 
     .battle-hp-container.active {
-        opacity: 1;
+        display: flex;
     }
 
     .battle-hp-box {
@@ -4486,12 +4484,11 @@ async function applyAppTheme(themeKey) {
         right: 12px;
         z-index: 150;
         pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.3s;
+        display: none;
     }
 
     .battle-mana-container.active {
-        opacity: 1;
+        display: block;
     }
 
     .battle-mana-label {
@@ -4536,16 +4533,14 @@ async function applyAppTheme(themeKey) {
         bottom: 12px;
         left: 12px;
         right: 12px;
-        display: flex;
         gap: 8px;
         z-index: 200;
-        opacity: 0;
-        transition: opacity 0.3s;
+        display: none;
         pointer-events: none;
     }
 
     .battle-action-container.active {
-        opacity: 1;
+        display: flex;
         pointer-events: auto;
     }
 
@@ -4693,6 +4688,324 @@ async function applyAppTheme(themeKey) {
         font-size: 0.55rem;
         color: rgba(255,255,255,0.5);
         margin-top: 2px;
+    }
+
+    /* ============================================================
+       BATTLE INVITE MODAL
+       ============================================================ */
+    .battle-invite-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: blur(8px);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .battle-invite-modal {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        border-radius: 24px;
+        width: 100%;
+        max-width: 380px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(220,50,50,0.15);
+        border: 1px solid rgba(255,255,255,0.1);
+        animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        overflow: hidden;
+    }
+
+    .battle-invite-header {
+        text-align: center;
+        padding: 24px 20px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .battle-invite-header h2 {
+        margin: 0 0 4px;
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #ff6b6b;
+        text-shadow: 0 0 20px rgba(255,107,107,0.3);
+    }
+
+    .battle-invite-header p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.6);
+    }
+
+    .battle-invite-body {
+        padding: 12px 16px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .battle-invite-friend {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .battle-invite-friend:hover {
+        background: rgba(255,255,255,0.12);
+        border-color: rgba(255,100,100,0.3);
+    }
+
+    .battle-invite-friend:active {
+        transform: scale(0.98);
+    }
+
+    .battle-invite-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(255,100,100,0.3), rgba(255,150,100,0.3));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1rem;
+        color: white;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .battle-invite-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .battle-invite-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .battle-invite-name {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .battle-invite-status {
+        font-size: 0.65rem;
+        color: rgba(255,255,255,0.5);
+        margin-top: 2px;
+    }
+
+    .battle-invite-status.active {
+        color: #4ecdc4;
+    }
+
+    .battle-invite-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s;
+        background: linear-gradient(135deg, rgba(255,68,68,0.6), rgba(255,100,100,0.4));
+        color: white;
+        border: 1px solid rgba(255,100,100,0.4);
+        flex-shrink: 0;
+    }
+
+    .battle-invite-btn:hover {
+        background: linear-gradient(135deg, rgba(255,68,68,0.8), rgba(255,100,100,0.6));
+        transform: scale(1.05);
+    }
+
+    .battle-invite-footer {
+        padding: 12px 16px 16px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        text-align: center;
+    }
+
+    .battle-invite-close {
+        padding: 10px 24px;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 12px;
+        background: transparent;
+        color: rgba(255,255,255,0.7);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .battle-invite-close:hover {
+        background: rgba(255,255,255,0.1);
+        color: white;
+    }
+
+    .battle-invite-empty {
+        text-align: center;
+        padding: 30px 20px;
+    }
+
+    .battle-invite-empty .empty-icon {
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+    }
+
+    .battle-invite-empty .empty-text {
+        font-size: 0.85rem;
+        color: rgba(255,255,255,0.6);
+        margin-bottom: 16px;
+    }
+
+    .battle-invite-empty .empty-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 12px;
+        background: var(--primary, #7BA883);
+        color: white;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    /* Waiting for opponent overlay */
+    .battle-waiting-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(6px);
+        z-index: 200;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .battle-waiting-text {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 8px;
+    }
+
+    .battle-waiting-sub {
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.6);
+        margin-bottom: 20px;
+    }
+
+    .battle-waiting-spinner {
+        width: 30px;
+        height: 30px;
+        border: 3px solid rgba(255,255,255,0.2);
+        border-top-color: #ff6b6b;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .battle-waiting-cancel {
+        padding: 8px 20px;
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 10px;
+        background: transparent;
+        color: rgba(255,255,255,0.7);
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    /* Incoming battle challenge notification */
+    .battle-challenge-toast {
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        background: linear-gradient(135deg, #1a1a2e, #2d1515);
+        border: 2px solid rgba(255,100,100,0.5);
+        border-radius: 20px;
+        padding: 16px 20px;
+        z-index: 10002;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.4), 0 0 20px rgba(255,100,100,0.2);
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        min-width: 280px;
+        max-width: 340px;
+    }
+
+    .battle-challenge-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    .battle-challenge-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .battle-challenge-icon {
+        font-size: 1.5rem;
+    }
+
+    .battle-challenge-title {
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: #ff6b6b;
+    }
+
+    .battle-challenge-from {
+        font-size: 0.75rem;
+        color: rgba(255,255,255,0.7);
+    }
+
+    .battle-challenge-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .battle-challenge-accept {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #ff4444, #ff6b6b);
+        color: white;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .battle-challenge-decline {
+        padding: 10px 16px;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 12px;
+        background: transparent;
+        color: rgba(255,255,255,0.6);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
     }
 
     /* ============================================================
@@ -43063,8 +43376,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Override the existing startBattle
         const ORIGINAL_START_BATTLE = window.startBattle;
 
+        // ============================================================
+        // BATTLE INVITE SYSTEM
+        // ============================================================
         window.startBattle = async function() {
-            console.log('🥊 ENHANCED BATTLE START');
+            console.log('🥊 BATTLE BUTTON CLICKED');
 
             // Level gate
             const level = getCurrentUserLevel ? getCurrentUserLevel() : 1;
@@ -43074,6 +43390,250 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 return;
             }
+
+            if (window._battleInProgress) return;
+
+            // Show the invite friend modal
+            showBattleInviteModal();
+        };
+
+        async function showBattleInviteModal() {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'battle-invite-overlay';
+            overlay.id = 'battle-invite-overlay';
+
+            let friendsHtml = '';
+
+            try {
+                // Fetch friends list
+                if (window.supabaseClient && window.currentUser) {
+                    const { data: friends, error } = await window.supabaseClient
+                        .rpc('get_friends_with_status', { user_uuid: window.currentUser.id });
+
+                    if (!error && friends && friends.length > 0) {
+                        friendsHtml = friends.map(friend => {
+                            const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
+                            const isActive = friend.has_workout_today || friend.has_meal_today;
+                            const statusText = isActive ? 'Active today' : (friend.days_inactive > 0 ? `${friend.days_inactive}d ago` : 'Online');
+                            const statusClass = isActive ? 'active' : '';
+                            const photoHtml = friend.friend_photo
+                                ? `<img src="${friend.friend_photo}" alt="${friend.friend_name}">`
+                                : initials;
+                            const streak = friend.current_streak > 0 ? ` 🔥${friend.current_streak}` : '';
+
+                            return `
+                                <div class="battle-invite-friend" onclick="window._sendBattleInvite('${friend.friend_id}', '${(friend.friend_name || '').replace(/'/g, "\\'")}')">
+                                    <div class="battle-invite-avatar">${photoHtml}</div>
+                                    <div class="battle-invite-info">
+                                        <div class="battle-invite-name">${friend.friend_name || 'Friend'}${streak}</div>
+                                        <div class="battle-invite-status ${statusClass}">${statusText}</div>
+                                    </div>
+                                    <button class="battle-invite-btn">Challenge</button>
+                                </div>`;
+                        }).join('');
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not fetch friends for battle invite:', e);
+            }
+
+            // If no friends, show empty state
+            if (!friendsHtml) {
+                friendsHtml = `
+                    <div class="battle-invite-empty">
+                        <div class="empty-icon">👥</div>
+                        <div class="empty-text">Add friends to challenge them to battles!</div>
+                        <button class="empty-btn" onclick="closeBattleInvite(); if(typeof openAddFriendModal==='function') openAddFriendModal();">Find Friends</button>
+                    </div>`;
+            }
+
+            overlay.innerHTML = `
+                <div class="battle-invite-modal">
+                    <div class="battle-invite-header">
+                        <h2>⚔️ Challenge a Friend</h2>
+                        <p>Choose an opponent for battle</p>
+                    </div>
+                    <div class="battle-invite-body">
+                        ${friendsHtml}
+                    </div>
+                    <div class="battle-invite-footer">
+                        <button class="battle-invite-close" onclick="closeBattleInvite()">Cancel</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            // Close on backdrop click
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closeBattleInvite();
+            });
+        }
+
+        function closeBattleInvite() {
+            const overlay = document.getElementById('battle-invite-overlay');
+            if (overlay) overlay.remove();
+        }
+
+        window._sendBattleInvite = async function(friendId, friendName) {
+            closeBattleInvite();
+
+            // Send battle invite via nudges table
+            try {
+                if (window.supabaseClient && window.currentUser) {
+                    const userId = window.currentUser.id || window.currentUser.user_id;
+
+                    // Insert battle challenge as a nudge message
+                    await window.supabaseClient
+                        .from('nudges')
+                        .insert({
+                            sender_id: userId,
+                            receiver_id: friendId,
+                            message: '⚔️ BATTLE CHALLENGE! Tap to accept and fight!'
+                        });
+
+                    console.log('Battle invite sent to', friendName);
+                }
+            } catch (e) {
+                console.warn('Could not send battle invite:', e);
+            }
+
+            // Show waiting overlay in the tamagotchi widget
+            const widget = document.getElementById('tamagotchi-widget-container');
+            if (widget) {
+                const waiting = document.createElement('div');
+                waiting.className = 'battle-waiting-overlay';
+                waiting.id = 'battle-waiting-overlay';
+                waiting.innerHTML = `
+                    <div class="battle-waiting-spinner"></div>
+                    <div class="battle-waiting-text">Challenge sent to ${friendName}!</div>
+                    <div class="battle-waiting-sub">Waiting for them to accept...</div>
+                    <button class="battle-waiting-cancel" onclick="cancelBattleWait()">Start Battle Anyway</button>
+                `;
+                widget.appendChild(waiting);
+
+                // Auto-start battle after 8 seconds (simulate opponent accepting)
+                // In a real implementation, this would listen for a realtime DB event
+                window._battleWaitTimer = setTimeout(() => {
+                    cancelBattleWait(friendName);
+                }, 8000);
+            }
+        };
+
+        window.cancelBattleWait = function(opponentName) {
+            if (window._battleWaitTimer) {
+                clearTimeout(window._battleWaitTimer);
+                window._battleWaitTimer = null;
+            }
+            const waiting = document.getElementById('battle-waiting-overlay');
+            if (waiting) waiting.remove();
+
+            // Start the actual battle
+            window._runBattle(opponentName || 'Opponent');
+        };
+
+        // ============================================================
+        // INCOMING BATTLE CHALLENGE NOTIFICATION
+        // ============================================================
+        function showBattleChallengeNotification(fromName, fromId) {
+            // Remove existing challenge toasts
+            document.querySelectorAll('.battle-challenge-toast').forEach(el => el.remove());
+
+            const toast = document.createElement('div');
+            toast.className = 'battle-challenge-toast';
+            toast.innerHTML = `
+                <div class="battle-challenge-header">
+                    <div class="battle-challenge-icon">⚔️</div>
+                    <div>
+                        <div class="battle-challenge-title">Battle Challenge!</div>
+                        <div class="battle-challenge-from">${fromName} wants to fight!</div>
+                    </div>
+                </div>
+                <div class="battle-challenge-actions">
+                    <button class="battle-challenge-accept" onclick="acceptBattleChallenge('${fromId}', '${fromName.replace(/'/g, "\\'")}', this)">Accept</button>
+                    <button class="battle-challenge-decline" onclick="this.closest('.battle-challenge-toast').remove()">Decline</button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Auto-dismiss after 30 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 400);
+                }
+            }, 30000);
+        }
+
+        window.acceptBattleChallenge = function(fromId, fromName, btn) {
+            const toast = btn.closest('.battle-challenge-toast');
+            if (toast) toast.remove();
+
+            // Navigate to dashboard if needed
+            if (typeof switchAppTab === 'function' && typeof currentActiveTab !== 'undefined' && currentActiveTab !== 'dashboard') {
+                const dashBtn = document.querySelector('.bottom-nav .nav-item');
+                switchAppTab('dashboard', dashBtn);
+                setTimeout(() => window._runBattle(fromName), 500);
+            } else {
+                window._runBattle(fromName);
+            }
+        };
+
+        // Poll for incoming battle challenges (check nudges)
+        async function checkForBattleChallenges() {
+            if (!window.supabaseClient || !window.currentUser) return;
+            try {
+                const userId = window.currentUser.id || window.currentUser.user_id;
+                const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+                const { data, error } = await window.supabaseClient
+                    .from('nudges')
+                    .select('id, sender_id, message, created_at')
+                    .eq('receiver_id', userId)
+                    .like('message', '%BATTLE CHALLENGE%')
+                    .is('read_at', null)
+                    .gte('created_at', fiveMinAgo)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (!error && data && data.length > 0) {
+                    const challenge = data[0];
+
+                    // Mark as read
+                    await window.supabaseClient
+                        .from('nudges')
+                        .update({ read_at: new Date().toISOString() })
+                        .eq('id', challenge.id);
+
+                    // Get sender name
+                    const { data: sender } = await window.supabaseClient
+                        .from('users')
+                        .select('name')
+                        .eq('id', challenge.sender_id)
+                        .single();
+
+                    const senderName = sender?.name || 'A friend';
+                    showBattleChallengeNotification(senderName, challenge.sender_id);
+                }
+            } catch (e) {
+                // Silently fail
+            }
+        }
+
+        // Check for challenges every 15 seconds
+        setInterval(checkForBattleChallenges, 15000);
+        // Initial check after page load
+        setTimeout(checkForBattleChallenges, 5000);
+
+        // ============================================================
+        // ACTUAL BATTLE ENGINE (renamed from startBattle)
+        // ============================================================
+        window._runBattle = async function(opponentName) {
+            console.log('🥊 ENHANCED BATTLE START vs', opponentName);
 
             if (window._battleInProgress) return;
             window._battleInProgress = true;
@@ -43178,10 +43738,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             enemyHP = enemyMaxHP;
             updateHPBars();
 
+            // Update opponent name in HP bar
+            const enemyNameEl = document.querySelector('.battle-hp-box.enemy .battle-hp-name');
+            if (enemyNameEl) enemyNameEl.textContent = (opponentName || 'OPPONENT').toUpperCase();
+
             // INTRO
             playSound('intro');
             if (overlayText && overlay) {
-                overlayText.textContent = 'BATTLE MODE!';
+                overlayText.textContent = `VS ${(opponentName || 'OPPONENT').toUpperCase()}!`;
                 overlay.classList.add('active');
             }
 
