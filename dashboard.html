@@ -43450,7 +43450,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <p>Choose your opponent</p>
                     </div>
                     <div class="battle-invite-body">
-                        <div class="battle-invite-friend battle-bot-option" onclick="closeBattleInvite(); window._runBattle('Bot');">
+                        <div class="battle-invite-friend battle-bot-option" onclick="window.closeBattleInvite(); window._runBattle('Bot');">
                             <div class="battle-invite-avatar" style="background: linear-gradient(135deg, rgba(100,100,255,0.4), rgba(150,50,255,0.4));">🤖</div>
                             <div class="battle-invite-info">
                                 <div class="battle-invite-name">Practice Mode</div>
@@ -43462,7 +43462,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         ${friendsHtml}
                     </div>
                     <div class="battle-invite-footer">
-                        <button class="battle-invite-close" onclick="closeBattleInvite()">Cancel</button>
+                        <button class="battle-invite-close" onclick="window.closeBattleInvite()">Cancel</button>
                     </div>
                 </div>
             `;
@@ -43471,17 +43471,17 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Close on backdrop click
             overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) closeBattleInvite();
+                if (e.target === overlay) window.closeBattleInvite();
             });
         }
 
-        function closeBattleInvite() {
+        window.closeBattleInvite = function() {
             const overlay = document.getElementById('battle-invite-overlay');
             if (overlay) overlay.remove();
-        }
+        };
 
         window._sendBattleInvite = async function(friendId, friendName) {
-            closeBattleInvite();
+            window.closeBattleInvite();
 
             // Send battle invite via nudges table
             try {
