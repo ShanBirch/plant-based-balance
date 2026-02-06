@@ -35271,14 +35271,14 @@ function triggerVictoryAnimation() {
     const mv = document.getElementById('tamagotchi-model');
     if (!mv || !mv.availableAnimations || !mv.availableAnimations.length) return;
 
-    // Find victory animation (victory is always unlocked for level-up celebrations)
+    // Find victory/celebration animation (always unlocked for level-up celebrations)
     const victoryAnim = mv.availableAnimations.find(a =>
-        a.toLowerCase().includes('victory') ||
-        a.toLowerCase().includes('celebrate') ||
-        a.toLowerCase().includes('cheer')
+        a === 'laugh' ||
+        a === 'clap' ||
+        a === 'arms_up_still'
     ) || mv.availableAnimations.find(a =>
-        a.toLowerCase().includes('jump') ||
-        a.toLowerCase().includes('wave')
+        a === 'greet' ||
+        a === 'dance'
     );
 
     if (victoryAnim) {
@@ -35327,7 +35327,7 @@ function checkNewAnimationUnlocks(previousLevel, newLevel) {
 
         // Check if this animation actually exists in the model
         const existsInModel = mv.availableAnimations.some(a =>
-            a.toLowerCase().includes(unlock.name.toLowerCase())
+            a.toLowerCase() === unlock.name.toLowerCase()
         );
 
         return wasLocked && isUnlockedNow && existsInModel;
@@ -35490,7 +35490,7 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
                     const wasLocked = previousLevel < unlock.unlockLevel;
                     const isUnlockedNow = newLevel >= unlock.unlockLevel;
                     const existsInModel = availableAnims.some(a =>
-                        a.toLowerCase().includes(unlock.name.toLowerCase())
+                        a.toLowerCase() === unlock.name.toLowerCase()
                     );
                     return wasLocked && isUnlockedNow && existsInModel;
                 });
@@ -41108,14 +41108,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         
                         // Setup correct Idle animation for the new model/gender
                         setTimeout(() => {
-                            let idleAnim = 'Idle';
-                            const isFemale = window.currentUserGender?.toLowerCase() === 'female';
-                            
-                            if (isFemale) {
-                                if (level === 1) idleAnim = 'NlaTrack.022';
-                                else idleAnim = 'NlaTrack.007';
-                            }
-                            
+                            let idleAnim = 'idle';
+
                             if (modelViewer.availableAnimations.includes(idleAnim)) {
                                 modelViewer.animationName = idleAnim;
                                 modelViewer.play();
@@ -41150,55 +41144,75 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Animation unlock system - animations unlocked at specific levels
         // Maps to actual available model animations:
-        // Air Squat, Angry, Bicycle Crunch, Boxing, Boxing (1), Cartwheel, Defeated,
-        // Dismissing Gesture, Dying Backwards, Head Gesture, Hip Hop Dancing, Idle,
-        // Jumping Jacks, Look Around, Looking Behind, Looking Down, Mma Kick,
-        // Mutant Flexing Muscles, Pistol, Punch Combo, Punch To Elbow Combo, Push Up,
-        // Quick Formal Bow, Situps, Sleeping Idle, Strong Gesture, Victory Idle, Walking
+        // laugh, walk, warm_up, greet, pitch, arms_up_still, greet_1, laugh_1,
+        // angry, karate, sad_stand, boxing, laugh_2, stretch, hit_to_1, dance,
+        // hit_to_2, fold_arms, die, laugh_3, angry_1, idle, stand_hands_on_hips,
+        // hit_to_head, strut, hit_to_side, dance_1, dance_2, dance_3, dance_4,
+        // sit, lose, kick, pushup, clap, boxing_1, angry_walk, boxing_2,
+        // cartwheel, basketball, greet_2, depressed_walk, angry_2, hit_to_3,
+        // bow, say_goodbye, block, die_1, volleyball, kick_2, dance_5, agree,
+        // stand, angry_3, heart_pose
         const ANIMATION_UNLOCKS = [
-            { name: 'Quick Formal Bow', displayName: 'Wave', unlockLevel: 1, icon: '👋', category: 'greetings' },
+            { name: 'greet', displayName: 'Wave', unlockLevel: 1, icon: '👋', category: 'greetings' },
+            { name: 'bow', displayName: 'Bow', unlockLevel: 5, icon: '🙇', category: 'greetings' },
+            { name: 'greet_1', displayName: 'Hey!', unlockLevel: 10, icon: '🤙', category: 'greetings' },
+            { name: 'say_goodbye', displayName: 'Goodbye', unlockLevel: 20, icon: '👋', category: 'greetings' },
 
             // Reactions - early unlocks
-            { name: 'Look Around', displayName: 'Look Around', unlockLevel: 1, icon: '👀', category: 'reactions' },
-            { name: 'Head Gesture', displayName: 'Head Gesture', unlockLevel: 3, icon: '🤔', category: 'reactions' },
-            { name: 'Looking Behind', displayName: 'Looking Behind', unlockLevel: 5, icon: '👀', category: 'reactions' },
-            { name: 'Looking Down', displayName: 'Looking Down', unlockLevel: 7, icon: '😔', category: 'reactions' },
-            { name: 'Angry', displayName: 'Angry', unlockLevel: 10, icon: '😠', category: 'reactions' },
-            { name: 'Dismissing Gesture', displayName: 'Dismissing', unlockLevel: 15, icon: '🙅', category: 'reactions' },
+            { name: 'agree', displayName: 'Agree', unlockLevel: 1, icon: '👍', category: 'reactions' },
+            { name: 'fold_arms', displayName: 'Fold Arms', unlockLevel: 3, icon: '🤔', category: 'reactions' },
+            { name: 'sad_stand', displayName: 'Sad', unlockLevel: 5, icon: '😔', category: 'reactions' },
+            { name: 'angry', displayName: 'Angry', unlockLevel: 7, icon: '😠', category: 'reactions' },
+            { name: 'angry_1', displayName: 'Annoyed', unlockLevel: 10, icon: '😤', category: 'reactions' },
+            { name: 'lose', displayName: 'Lose', unlockLevel: 15, icon: '😞', category: 'reactions' },
+            { name: 'depressed_walk', displayName: 'Sad Walk', unlockLevel: 20, icon: '🚶', category: 'reactions' },
+            { name: 'angry_walk', displayName: 'Angry Walk', unlockLevel: 25, icon: '😡', category: 'reactions' },
 
             // Celebration animations
-            { name: 'Victory Idle', displayName: 'Victory', unlockLevel: 5, icon: '🏆', category: 'celebrations' },
-            { name: 'Jumping Jacks', displayName: 'Star Jump', unlockLevel: 8, icon: '⬆️', category: 'celebrations' },
-            { name: 'Strong Gesture', displayName: 'Celebrate', unlockLevel: 12, icon: '🎉', category: 'celebrations' },
-            { name: 'Mutant Flexing Muscles', displayName: 'Cheer', unlockLevel: 15, icon: '📣', category: 'celebrations' },
+            { name: 'laugh', displayName: 'Laugh', unlockLevel: 1, icon: '😄', category: 'celebrations' },
+            { name: 'clap', displayName: 'Clap', unlockLevel: 5, icon: '👏', category: 'celebrations' },
+            { name: 'laugh_1', displayName: 'Giggle', unlockLevel: 8, icon: '😂', category: 'celebrations' },
+            { name: 'arms_up_still', displayName: 'Arms Up', unlockLevel: 12, icon: '🙌', category: 'celebrations' },
+            { name: 'heart_pose', displayName: 'Heart Pose', unlockLevel: 18, icon: '❤️', category: 'celebrations' },
+            { name: 'laugh_2', displayName: 'LOL', unlockLevel: 25, icon: '🤣', category: 'celebrations' },
 
             // Exercise animations
-            { name: 'Air Squat', displayName: 'Squat', unlockLevel: 10, icon: '🏋️', category: 'exercise' },
-            { name: 'Push Up', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
-            { name: 'Situps', displayName: 'Sit-Ups', unlockLevel: 20, icon: '🔄', category: 'exercise' },
-            { name: 'Bicycle Crunch', displayName: 'Bicycle Crunch', unlockLevel: 25, icon: '🚴', category: 'exercise' },
+            { name: 'warm_up', displayName: 'Warm Up', unlockLevel: 5, icon: '🔥', category: 'exercise' },
+            { name: 'stretch', displayName: 'Stretch', unlockLevel: 10, icon: '🧘', category: 'exercise' },
+            { name: 'pushup', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
+            { name: 'basketball', displayName: 'Basketball', unlockLevel: 20, icon: '🏀', category: 'exercise' },
+            { name: 'volleyball', displayName: 'Volleyball', unlockLevel: 25, icon: '🏐', category: 'exercise' },
 
             // Combat/Fighting animations
-            { name: 'Boxing', displayName: 'Boxing', unlockLevel: 1, icon: '🥊', category: 'combat' },
-            { name: 'Boxing (1)', displayName: 'Boxing Combo', unlockLevel: 22, icon: '🥊', category: 'combat' },
-            { name: 'Punch Combo', displayName: 'Punch Combo', unlockLevel: 28, icon: '👊', category: 'combat' },
-            { name: 'Punch To Elbow Combo', displayName: 'Elbow Combo', unlockLevel: 35, icon: '💥', category: 'combat' },
-            { name: 'Mma Kick', displayName: 'MMA Kick', unlockLevel: 40, icon: '🦵', category: 'combat' },
-            { name: 'Pistol', displayName: 'Pistol Squat', unlockLevel: 50, icon: '🎯', category: 'combat' },
+            { name: 'boxing', displayName: 'Boxing', unlockLevel: 1, icon: '🥊', category: 'combat' },
+            { name: 'kick', displayName: 'Kick', unlockLevel: 10, icon: '🦵', category: 'combat' },
+            { name: 'karate', displayName: 'Karate', unlockLevel: 15, icon: '🥋', category: 'combat' },
+            { name: 'boxing_1', displayName: 'Boxing Combo', unlockLevel: 22, icon: '🥊', category: 'combat' },
+            { name: 'hit_to_1', displayName: 'Punch', unlockLevel: 28, icon: '👊', category: 'combat' },
+            { name: 'boxing_2', displayName: 'Boxing Pro', unlockLevel: 35, icon: '💥', category: 'combat' },
+            { name: 'kick_2', displayName: 'Spin Kick', unlockLevel: 40, icon: '🌀', category: 'combat' },
+            { name: 'block', displayName: 'Block', unlockLevel: 45, icon: '🛡️', category: 'combat' },
 
             // Pose animations
-            { name: 'Mutant Flexing Muscles', displayName: 'Flex', unlockLevel: 20, icon: '💪', category: 'poses' },
-            { name: 'Strong Gesture', displayName: 'Strong Pose', unlockLevel: 30, icon: '🦾', category: 'poses' },
+            { name: 'stand_hands_on_hips', displayName: 'Power Pose', unlockLevel: 10, icon: '💪', category: 'poses' },
+            { name: 'stand', displayName: 'Stand Tall', unlockLevel: 20, icon: '🧍', category: 'poses' },
+            { name: 'pitch', displayName: 'Pitch', unlockLevel: 30, icon: '⚾', category: 'poses' },
 
             // Dance animations
-            { name: 'Hip Hop Dancing', displayName: 'Hip Hop', unlockLevel: 25, icon: '💃', category: 'dance' },
-            { name: 'Walking', displayName: 'Strut', unlockLevel: 35, icon: '🚶', category: 'dance' },
+            { name: 'dance', displayName: 'Dance', unlockLevel: 5, icon: '💃', category: 'dance' },
+            { name: 'strut', displayName: 'Strut', unlockLevel: 10, icon: '🚶', category: 'dance' },
+            { name: 'dance_1', displayName: 'Groove', unlockLevel: 15, icon: '🎵', category: 'dance' },
+            { name: 'dance_2', displayName: 'Moves', unlockLevel: 20, icon: '🎶', category: 'dance' },
+            { name: 'dance_3', displayName: 'Boogie', unlockLevel: 25, icon: '🕺', category: 'dance' },
+            { name: 'dance_4', displayName: 'Freestyle', unlockLevel: 30, icon: '🎧', category: 'dance' },
+            { name: 'dance_5', displayName: 'Show Off', unlockLevel: 35, icon: '✨', category: 'dance' },
 
             // Special animations - high level
-            { name: 'Cartwheel', displayName: 'Cartwheel', unlockLevel: 45, icon: '🤸', category: 'special' },
-            { name: 'Defeated', displayName: 'Defeated', unlockLevel: 55, icon: '😵', category: 'special' },
-            { name: 'Dying Backwards', displayName: 'Drama Fall', unlockLevel: 65, icon: '🎭', category: 'special' },
-            { name: 'Sleeping Idle', displayName: 'Sleepy', unlockLevel: 75, icon: '😴', category: 'special' },
+            { name: 'cartwheel', displayName: 'Cartwheel', unlockLevel: 30, icon: '🤸', category: 'special' },
+            { name: 'sit', displayName: 'Sit Down', unlockLevel: 40, icon: '🪑', category: 'special' },
+            { name: 'die', displayName: 'Drama Fall', unlockLevel: 50, icon: '🎭', category: 'special' },
+            { name: 'die_1', displayName: 'Play Dead', unlockLevel: 60, icon: '😵', category: 'special' },
+            { name: 'walk', displayName: 'Walk', unlockLevel: 1, icon: '🚶', category: 'special' },
         ];
 
         // Expose ANIMATION_UNLOCKS globally for use by checkNewAnimationUnlocks
@@ -41438,10 +41452,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             const mv = document.getElementById('tamagotchi-model');
             if (!mv || !mv.availableAnimations || !mv.availableAnimations.length) return;
 
-            // Find the greeting animation (Quick Formal Bow or Head Gesture)
-            let greetAnim = mv.availableAnimations.find(a => a.toLowerCase().includes('quick formal bow'));
+            // Find the greeting animation
+            let greetAnim = mv.availableAnimations.find(a => a === 'greet');
             if (!greetAnim) {
-                greetAnim = mv.availableAnimations.find(a => a.toLowerCase().includes('head gesture'));
+                greetAnim = mv.availableAnimations.find(a => a === 'bow');
             }
             if (greetAnim) {
                 mv.animationName = greetAnim;
@@ -41500,11 +41514,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // If no match by name, fall back to any combat-like move
             if (!attackAnimTrack) {
-                attackAnimTrack = anims.find(a => 
-                    a.toLowerCase().includes('kick') || 
-                    a.toLowerCase().includes('punch') || 
-                    a.toLowerCase().includes('boxing') ||
-                    a.toLowerCase().includes('mma')
+                attackAnimTrack = anims.find(a =>
+                    a === 'boxing' ||
+                    a === 'kick' ||
+                    a === 'karate' ||
+                    a === 'boxing_1'
                 ) || anims[0];
             }
 
@@ -41542,11 +41556,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 await new Promise(r => setTimeout(r, 800));
 
                 // DEFENSE PHASE (Incoming Blue Fireballs)
-                const hitAnim = anims.find(a => 
-                    a.toLowerCase().includes('hurt') || 
-                    a.toLowerCase().includes('hit') || 
-                    a.toLowerCase().includes('reaction') ||
-                    a.toLowerCase().includes('down')
+                const hitAnim = anims.find(a =>
+                    a === 'hit_to_1' ||
+                    a === 'hit_to_2' ||
+                    a === 'hit_to_head' ||
+                    a === 'hit_to_side'
                 ) || anims[0];
 
                 for (let i = 0; i < 2; i++) {
@@ -41556,11 +41570,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // VICTORY PHASE
-            const victoryAnim = anims.find(a => 
-                a.toLowerCase().includes('victory') || 
-                a.toLowerCase().includes('cheer') || 
-                a.toLowerCase().includes('happy') ||
-                a.toLowerCase().includes('excited')
+            const victoryAnim = anims.find(a =>
+                a === 'laugh' ||
+                a === 'clap' ||
+                a === 'arms_up_still'
             ) || anims[0];
 
             mv.animationName = victoryAnim;
@@ -41714,7 +41727,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Attack (Red Fireball)
             let anims = viewer.availableAnimations || [];
-            let attackAnim = anims.find(a => /punch|boxing|attack/i.test(a)) || anims[0];
+            let attackAnim = anims.find(a => /^boxing$|^kick$|^karate$/i.test(a)) || anims[0];
             
             for(let i=0; i<3; i++) {
                 viewer.animationName = attackAnim;
@@ -41730,7 +41743,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             await new Promise(r => setTimeout(r, 800));
 
             // Defend (Blue Fireball)
-            let hitAnim = anims.find(a => /reaction|hit|damage/i.test(a)) || anims[0];
+            let hitAnim = anims.find(a => /^hit_to_1$|^hit_to_2$|^hit_to_head$/i.test(a)) || anims[0];
             
             for(let i=0; i<3; i++) {
                 await spawnIncomingFireball(hitAnim);
@@ -41740,7 +41753,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // Victory
-        let victoryAnim = (viewer.availableAnimations||[]).find(a => /victory|win/i.test(a)) || "Idle";
+        let victoryAnim = (viewer.availableAnimations||[]).find(a => /laugh|clap|arms_up/i.test(a)) || "idle";
         viewer.animationName = victoryAnim;
         playBattleSound('victory');
         
@@ -41755,7 +41768,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         overlay.classList.remove('active');
         overlay.style = "";
         viewer.setAttribute('camera-orbit', originalOrbit);
-        viewer.animationName = "Idle";
+        viewer.animationName = "idle";
     };
 
     function spawnFireball() {
