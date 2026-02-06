@@ -2623,6 +2623,8 @@ async function applyAppTheme(themeKey) {
         transition: all 0.2s ease;
         font-size: 1.3rem;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        touch-action: manipulation;
+        pointer-events: auto;
     }
 
     .battle-trigger-btn:hover {
@@ -5182,7 +5184,7 @@ async function applyAppTheme(themeKey) {
             </div>
 
             <!-- Battle Trigger Button -->
-            <div class="battle-trigger-btn" onclick="startBattle()" title="Battle Mode">
+            <div class="battle-trigger-btn" onclick="event.stopPropagation(); startBattle();" title="Battle Mode">
                 🥊
             </div>
 
@@ -42292,6 +42294,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const levelEl = document.getElementById('tamagotchi-level');
             return levelEl ? parseInt(levelEl.textContent) || 1 : 1;
         }
+        window.getCurrentUserLevel = getCurrentUserLevel;
 
         // Check if an animation is unlocked for current user
         function isAnimationUnlocked(animName) {
@@ -43303,7 +43306,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         function updateBattleButtonLock() {
             const btn = document.querySelector('.battle-trigger-btn');
             if (!btn) return;
-            const level = getCurrentUserLevel ? getCurrentUserLevel() : 1;
+            const level = window.getCurrentUserLevel ? window.getCurrentUserLevel() : 1;
             if (level < 10) {
                 btn.classList.add('locked');
             } else {
@@ -43319,7 +43322,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // ============================================================
         function showMovePicker() {
             return new Promise((resolve) => {
-                const level = getCurrentUserLevel ? getCurrentUserLevel() : 1;
+                const level = window.getCurrentUserLevel ? window.getCurrentUserLevel() : 1;
                 const unlocks = (window.ANIMATION_UNLOCKS || []).filter(a => a.category === 'combat' && level >= a.unlockLevel);
 
                 if (unlocks.length === 0) {
@@ -43383,7 +43386,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.log('🥊 BATTLE BUTTON CLICKED');
 
             // Level gate
-            const level = getCurrentUserLevel ? getCurrentUserLevel() : 1;
+            const level = window.getCurrentUserLevel ? window.getCurrentUserLevel() : 1;
             if (level < 10) {
                 if (typeof showToast === 'function') {
                     showToast('Battle Mode unlocks at Level 10!', 'info');
