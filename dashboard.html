@@ -14152,6 +14152,11 @@ function _switchAppTabReal(tabName, btn) {
         if (typeof loadHomeChallenges === 'function') {
             loadHomeChallenges();
         }
+
+        // Refresh weigh-in card visibility (may have changed since last visit)
+        if (typeof checkAndShowWeighInCard === 'function') {
+            checkAndShowWeighInCard();
+        }
     } else if (tabName === 'meals') {
         document.getElementById('view-meals').style.display = 'block';
 
@@ -32949,9 +32954,7 @@ function closeWeighInModal() {
     // Mark as prompted today even if skipped
     localStorage.setItem('lastWeighInPromptDate', new Date().toDateString());
 
-    // Hide the card on dashboard since user chose to skip
-    const card = document.getElementById('daily-weigh-in-card');
-    if (card) card.style.display = 'none';
+    // Keep the dashboard card visible so user can still weigh in from the home screen
 }
 
 /**
