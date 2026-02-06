@@ -42725,11 +42725,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ) || anims[0];
             }
 
-            // Move character to side profile (instant snap to prevent visible spin)
+            // Lock character to side profile instantly (no matter what direction they were facing)
             mv.classList.add('character-battle-pos', 'battle-side-left');
             const hadAutoRotateV1 = mv.hasAttribute('auto-rotate');
+            const hadCameraControlsV1 = mv.hasAttribute('camera-controls');
+            const origMinOrbitV1 = mv.getAttribute('min-camera-orbit');
+            const origMaxOrbitV1 = mv.getAttribute('max-camera-orbit');
             mv.removeAttribute('auto-rotate');
-            mv.cameraOrbit = "90deg 85deg 22m";
+            mv.removeAttribute('camera-controls');
+            if (typeof mv.resetTurntableRotation === 'function') mv.resetTurntableRotation();
+            mv.setAttribute('camera-orbit', '90deg 85deg 22m');
+            mv.setAttribute('min-camera-orbit', '90deg 85deg 22m');
+            mv.setAttribute('max-camera-orbit', '90deg 85deg 22m');
             if (typeof mv.jumpCameraToGoal === 'function') mv.jumpCameraToGoal();
 
             await new Promise(r => setTimeout(r, 1200));
@@ -42789,10 +42796,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             await new Promise(r => setTimeout(r, 3500));
 
-            // Reset Sequence
+            // Reset Sequence - unlock camera
             if (overlay) overlay.classList.remove('active');
             mv.classList.remove('battle-side-left');
-            mv.cameraOrbit = "0deg 85deg 22m";
+            if (origMinOrbitV1) mv.setAttribute('min-camera-orbit', origMinOrbitV1);
+            else mv.removeAttribute('min-camera-orbit');
+            if (origMaxOrbitV1) mv.setAttribute('max-camera-orbit', origMaxOrbitV1);
+            else mv.removeAttribute('max-camera-orbit');
+            mv.setAttribute('camera-orbit', '0deg 85deg 22m');
+            if (hadCameraControlsV1) mv.setAttribute('camera-controls', '');
             if (hadAutoRotateV1) mv.setAttribute('auto-rotate', '');
 
             setTimeout(() => {
@@ -42915,11 +42927,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         await new Promise(r => setTimeout(r, 2000));
         overlay.classList.remove('active');
 
-        // Camera Move to side profile (instant snap to prevent visible spin)
+        // Lock character to side profile instantly (no matter what direction they were facing)
         const originalOrbit = viewer.getAttribute('camera-orbit') || "0deg 85deg 22m";
         const hadAutoRotateV2 = viewer.hasAttribute('auto-rotate');
+        const hadCameraControlsV2 = viewer.hasAttribute('camera-controls');
+        const origMinOrbitV2 = viewer.getAttribute('min-camera-orbit');
+        const origMaxOrbitV2 = viewer.getAttribute('max-camera-orbit');
         viewer.removeAttribute('auto-rotate');
+        viewer.removeAttribute('camera-controls');
+        if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
         viewer.setAttribute('camera-orbit', "90deg 90deg 18m");
+        viewer.setAttribute('min-camera-orbit', "90deg 90deg 18m");
+        viewer.setAttribute('max-camera-orbit', "90deg 90deg 18m");
         if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
         await new Promise(r => setTimeout(r, 600));
 
@@ -42971,10 +42990,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         await new Promise(r => setTimeout(r, 4000));
 
-        // Reset
+        // Reset - unlock camera
         overlay.classList.remove('active');
         overlay.style = "";
+        if (origMinOrbitV2) viewer.setAttribute('min-camera-orbit', origMinOrbitV2);
+        else viewer.removeAttribute('min-camera-orbit');
+        if (origMaxOrbitV2) viewer.setAttribute('max-camera-orbit', origMaxOrbitV2);
+        else viewer.removeAttribute('max-camera-orbit');
         viewer.setAttribute('camera-orbit', originalOrbit);
+        if (hadCameraControlsV2) viewer.setAttribute('camera-controls', '');
         if (hadAutoRotateV2) viewer.setAttribute('auto-rotate', '');
         viewer.animationName = "idle";
     };
@@ -43979,11 +44003,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (manaContainer) manaContainer.classList.add('active');
             if (actionContainer) actionContainer.classList.add('active');
 
-            // Camera Move to side profile (instant snap to prevent visible spin)
+            // Lock character to side profile instantly (no matter what direction they were facing)
             const originalOrbit = viewer.getAttribute('camera-orbit') || '0deg 85deg 22m';
             const hadAutoRotate = viewer.hasAttribute('auto-rotate');
+            const hadCameraControls = viewer.hasAttribute('camera-controls');
+            const origMinOrbit = viewer.getAttribute('min-camera-orbit');
+            const origMaxOrbit = viewer.getAttribute('max-camera-orbit');
             viewer.removeAttribute('auto-rotate');
+            viewer.removeAttribute('camera-controls');
+            if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
             viewer.setAttribute('camera-orbit', '90deg 90deg 18m');
+            viewer.setAttribute('min-camera-orbit', '90deg 90deg 18m');
+            viewer.setAttribute('max-camera-orbit', '90deg 90deg 18m');
             if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
             await new Promise(r => setTimeout(r, 600));
 
@@ -44313,7 +44344,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (manaContainer) manaContainer.classList.remove('active');
             if (actionContainer) actionContainer.classList.remove('active');
 
+            // Unlock camera and restore original settings
+            if (origMinOrbit) viewer.setAttribute('min-camera-orbit', origMinOrbit);
+            else viewer.removeAttribute('min-camera-orbit');
+            if (origMaxOrbit) viewer.setAttribute('max-camera-orbit', origMaxOrbit);
+            else viewer.removeAttribute('max-camera-orbit');
             viewer.setAttribute('camera-orbit', originalOrbit);
+            if (hadCameraControls) viewer.setAttribute('camera-controls', '');
             if (hadAutoRotate) viewer.setAttribute('auto-rotate', '');
             viewer.animationName = 'idle';
             setTimeout(() => {
