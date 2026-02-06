@@ -21572,7 +21572,7 @@ async function openQuickShareModal() {
         // Group sets by exercise and get best set for each
         const exerciseSets = {};
         completedWorkoutDataForShare.sets.forEach(set => {
-            const name = set.exercise_name || set.exerciseName || 'Exercise';
+            const name = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
             if (!exerciseSets[name]) {
                 exerciseSets[name] = [];
             }
@@ -21634,8 +21634,8 @@ async function openQuickShareModal() {
 
             // Find best set for summary display
             const bestSet = sets.reduce((best, current) => {
-                const currentWeight = current.weight || current.weight_kg || 0;
-                const bestWeight = best.weight || best.weight_kg || 0;
+                const currentWeight = current.kg || current.weight_kg || 0;
+                const bestWeight = best.kg || best.weight_kg || 0;
                 if (currentWeight > bestWeight) return current;
                 if (currentWeight === bestWeight) {
                     const currentReps = current.reps || 0;
@@ -21644,7 +21644,7 @@ async function openQuickShareModal() {
                 }
                 return best;
             }, sets[0]);
-            const bestWeight = bestSet.weight || bestSet.weight_kg || 0;
+            const bestWeight = bestSet.kg || bestSet.weight_kg || 0;
             const bestReps = bestSet.reps || 0;
 
             // Exercise header (clickable to expand)
@@ -21678,7 +21678,7 @@ async function openQuickShareModal() {
             // Individual sets (multi-selectable)
             sets.forEach((set, idx) => {
                 const setIndex = completedWorkoutDataForShare.sets.indexOf(set);
-                const weight = set.weight || set.weight_kg || 0;
+                const weight = set.kg || set.weight_kg || 0;
                 const reps = set.reps || 0;
                 const setNumber = set.set || (idx + 1);
 
@@ -21789,7 +21789,7 @@ function selectExerciseAllSets(exerciseName) {
     // Get all set indices for this exercise
     if (completedWorkoutDataForShare && completedWorkoutDataForShare.sets) {
         completedWorkoutDataForShare.sets.forEach((set, index) => {
-            const setExercise = set.exercise_name || set.exerciseName || 'Exercise';
+            const setExercise = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
             if (setExercise === exerciseName) {
                 shareSelection.selectedSetIndices.push(index);
             }
@@ -21993,7 +21993,7 @@ function updateSharePreview() {
             // Group sets by exercise for summary
             const exerciseSets = {};
             (sets || []).forEach(set => {
-                const name = set.exercise_name || set.exerciseName || 'Exercise';
+                const name = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
                 if (!exerciseSets[name]) exerciseSets[name] = [];
                 exerciseSets[name].push(set);
             });
@@ -22009,12 +22009,12 @@ function updateSharePreview() {
         case 'exercise_all': {
             // Sharing all sets of one exercise
             const exerciseName = shareSelection.selectedExercise;
-            const exerciseSets = (sets || []).filter(s => (s.exercise_name || s.exerciseName) === exerciseName);
+            const exerciseSets = (sets || []).filter(s => (s.exercise || s.exercise_name || s.exerciseName) === exerciseName);
             const setCount = exerciseSets.length;
 
             // Build summary of sets
             let setsSummary = exerciseSets.map(s => {
-                const w = s.weight || s.weight_kg || 0;
+                const w = s.kg || s.weight_kg || 0;
                 const r = s.reps || 0;
                 return `${w}kg×${r}`;
             }).join(', ');
@@ -22033,8 +22033,8 @@ function updateSharePreview() {
             if (count === 1) {
                 // Single set selected
                 const set = selectedSets[0];
-                const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
-                const weight = set.weight || set.weight_kg || 0;
+                const exerciseName = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
+                const weight = set.kg || set.weight_kg || 0;
                 const reps = set.reps || 0;
 
                 badge.innerText = '💪';
@@ -22044,7 +22044,7 @@ function updateSharePreview() {
                 // Multiple sets selected - group by exercise
                 const byExercise = {};
                 selectedSets.forEach(set => {
-                    const name = set.exercise_name || set.exerciseName || 'Exercise';
+                    const name = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
                     if (!byExercise[name]) byExercise[name] = [];
                     byExercise[name].push(set);
                 });
@@ -22054,7 +22054,7 @@ function updateSharePreview() {
                     // All from same exercise
                     const name = exerciseNames[0];
                     const setsSummary = byExercise[name].map(s => {
-                        const w = s.weight || s.weight_kg || 0;
+                        const w = s.kg || s.weight_kg || 0;
                         const r = s.reps || 0;
                         return `${w}kg×${r}`;
                     }).join(', ');
@@ -22081,8 +22081,8 @@ function updateSharePreview() {
             // Legacy: single lift selected via old method
             if (selectedLiftToShare !== null && sets && sets[selectedLiftToShare]) {
                 const set = sets[selectedLiftToShare];
-                const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
-                const weight = set.weight || set.weight_kg || 0;
+                const exerciseName = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
+                const weight = set.kg || set.weight_kg || 0;
                 const reps = set.reps || 0;
 
                 badge.innerText = '💪';
@@ -22151,7 +22151,7 @@ function getShareData() {
             // Share entire workout with all exercises and sets
             const exerciseSets = {};
             (sets || []).forEach(set => {
-                const name = set.exercise_name || set.exerciseName || 'Exercise';
+                const name = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
                 if (!exerciseSets[name]) exerciseSets[name] = [];
                 exerciseSets[name].push(set);
             });
@@ -22162,7 +22162,7 @@ function getShareData() {
             // Build detailed workout summary
             let workoutSummary = Object.entries(exerciseSets).map(([exercise, exSets]) => {
                 const setsInfo = exSets.map(s => {
-                    const w = s.weight || s.weight_kg || 0;
+                    const w = s.kg || s.weight_kg || 0;
                     const r = s.reps || 0;
                     return `${w}kg×${r}`;
                 }).join(', ');
@@ -22186,11 +22186,11 @@ function getShareData() {
         case 'exercise_all': {
             // Share all sets from a specific exercise
             const exerciseName = shareSelection.selectedExercise;
-            const exerciseSets = (sets || []).filter(s => (s.exercise_name || s.exerciseName) === exerciseName);
+            const exerciseSets = (sets || []).filter(s => (s.exercise || s.exercise_name || s.exerciseName) === exerciseName);
             const setCount = exerciseSets.length;
 
             const setsInfo = exerciseSets.map((s, i) => {
-                const w = s.weight || s.weight_kg || 0;
+                const w = s.kg || s.weight_kg || 0;
                 const r = s.reps || 0;
                 return `Set ${i + 1}: ${w}kg × ${r} reps`;
             }).join(', ');
@@ -22203,7 +22203,7 @@ function getShareData() {
                     exercise: exerciseName,
                     setCount,
                     sets: exerciseSets.map(s => ({
-                        weight: s.weight || s.weight_kg || 0,
+                        weight: s.kg || s.weight_kg || 0,
                         reps: s.reps || 0
                     }))
                 }
@@ -22218,8 +22218,8 @@ function getShareData() {
             if (count === 1) {
                 // Single set
                 const set = selectedSets[0];
-                const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
-                const weight = set.weight || set.weight_kg || 0;
+                const exerciseName = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
+                const weight = set.kg || set.weight_kg || 0;
                 const reps = set.reps || 0;
 
                 return {
@@ -22232,7 +22232,7 @@ function getShareData() {
             // Multiple sets - group by exercise
             const byExercise = {};
             selectedSets.forEach(set => {
-                const name = set.exercise_name || set.exerciseName || 'Exercise';
+                const name = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
                 if (!byExercise[name]) byExercise[name] = [];
                 byExercise[name].push(set);
             });
@@ -22242,7 +22242,7 @@ function getShareData() {
             if (exerciseNames.length === 1) {
                 const name = exerciseNames[0];
                 const setsInfo = byExercise[name].map(s => {
-                    const w = s.weight || s.weight_kg || 0;
+                    const w = s.kg || s.weight_kg || 0;
                     const r = s.reps || 0;
                     return `${w}kg×${r}`;
                 }).join(', ');
@@ -22251,7 +22251,7 @@ function getShareData() {
                 const summaryParts = exerciseNames.map(name => {
                     const exSets = byExercise[name];
                     const setsInfo = exSets.map(s => {
-                        const w = s.weight || s.weight_kg || 0;
+                        const w = s.kg || s.weight_kg || 0;
                         const r = s.reps || 0;
                         return `${w}kg×${r}`;
                     }).join(', ');
@@ -22277,8 +22277,8 @@ function getShareData() {
             // Legacy: single lift selected via old method
             if (selectedLiftToShare !== null && sets && sets[selectedLiftToShare]) {
                 const set = sets[selectedLiftToShare];
-                const exerciseName = set.exercise_name || set.exerciseName || 'Exercise';
-                const weight = set.weight || set.weight_kg || 0;
+                const exerciseName = set.exercise || set.exercise_name || set.exerciseName || 'Exercise';
+                const weight = set.kg || set.weight_kg || 0;
                 const reps = set.reps || 0;
 
                 return {
