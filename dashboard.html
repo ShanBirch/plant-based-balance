@@ -4110,6 +4110,678 @@ async function applyAppTheme(themeKey) {
         75% { transform: rotate(3deg); }
     }
 
+    /* ============================================================
+       BATTLE STATS SYSTEM - STR / HP / MANA
+       ============================================================ */
+    .battle-stats-row {
+        display: flex;
+        gap: 8px;
+        padding: 8px 20px 0;
+        background: linear-gradient(180deg, #16213e 0%, #1a1a2e 100%);
+    }
+
+    .battle-stat {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 8px;
+        padding: 5px 8px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .battle-stat:hover {
+        background: rgba(255,255,255,0.1);
+    }
+
+    .battle-stat-icon {
+        font-size: 0.75rem;
+        line-height: 1;
+    }
+
+    .battle-stat-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .battle-stat-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2px;
+    }
+
+    .battle-stat-name {
+        font-size: 0.5rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: rgba(255,255,255,0.6);
+    }
+
+    .battle-stat-value {
+        font-size: 0.55rem;
+        font-weight: 800;
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .battle-stat-bar {
+        height: 4px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .battle-stat-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .battle-stat.str .battle-stat-value { color: #ff6b6b; }
+    .battle-stat.str .battle-stat-fill { background: linear-gradient(90deg, #ff4444, #ff6b6b); }
+
+    .battle-stat.hp .battle-stat-value { color: #4ecdc4; }
+    .battle-stat.hp .battle-stat-fill { background: linear-gradient(90deg, #2ecc71, #4ecdc4); }
+
+    .battle-stat.mana .battle-stat-value { color: #45b7d1; }
+    .battle-stat.mana .battle-stat-fill { background: linear-gradient(90deg, #3498db, #45b7d1); }
+
+    /* ============================================================
+       STAT ALLOCATION MODAL
+       ============================================================ */
+    .stat-alloc-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: blur(8px);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .stat-alloc-modal {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        border-radius: 24px;
+        width: 100%;
+        max-width: 380px;
+        padding: 0;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(69,183,209,0.15);
+        border: 1px solid rgba(255,255,255,0.1);
+        animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        overflow: hidden;
+    }
+
+    .stat-alloc-header {
+        text-align: center;
+        padding: 24px 20px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .stat-alloc-header h2 {
+        margin: 0 0 4px;
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #FFD700;
+        text-shadow: 0 0 20px rgba(255,215,0,0.3);
+    }
+
+    .stat-alloc-points-left {
+        font-size: 0.85rem;
+        color: rgba(255,255,255,0.8);
+        font-weight: 600;
+    }
+
+    .stat-alloc-points-left span {
+        color: #FFD700;
+        font-weight: 900;
+        font-size: 1.1rem;
+    }
+
+    .stat-alloc-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .stat-alloc-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 14px;
+        padding: 14px;
+        border: 1px solid rgba(255,255,255,0.08);
+        transition: all 0.2s;
+    }
+
+    .stat-alloc-row:hover {
+        background: rgba(255,255,255,0.1);
+    }
+
+    .stat-alloc-icon {
+        font-size: 1.5rem;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        flex-shrink: 0;
+    }
+
+    .stat-alloc-icon.str { background: rgba(255,68,68,0.2); }
+    .stat-alloc-icon.hp { background: rgba(46,204,113,0.2); }
+    .stat-alloc-icon.mana { background: rgba(52,152,219,0.2); }
+
+    .stat-alloc-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .stat-alloc-name {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 2px;
+    }
+
+    .stat-alloc-desc {
+        font-size: 0.6rem;
+        color: rgba(255,255,255,0.5);
+    }
+
+    .stat-alloc-current {
+        font-size: 1.2rem;
+        font-weight: 900;
+        font-family: 'Outfit', sans-serif;
+        min-width: 30px;
+        text-align: center;
+    }
+
+    .stat-alloc-current.str { color: #ff6b6b; }
+    .stat-alloc-current.hp { color: #4ecdc4; }
+    .stat-alloc-current.mana { color: #45b7d1; }
+
+    .stat-alloc-btn {
+        width: 44px;
+        height: 44px;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.4rem;
+        font-weight: 900;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .stat-alloc-btn.str { background: rgba(255,68,68,0.3); color: #ff6b6b; }
+    .stat-alloc-btn.str:hover { background: rgba(255,68,68,0.5); transform: scale(1.1); }
+    .stat-alloc-btn.hp { background: rgba(46,204,113,0.3); color: #4ecdc4; }
+    .stat-alloc-btn.hp:hover { background: rgba(46,204,113,0.5); transform: scale(1.1); }
+    .stat-alloc-btn.mana { background: rgba(52,152,219,0.3); color: #45b7d1; }
+    .stat-alloc-btn.mana:hover { background: rgba(52,152,219,0.5); transform: scale(1.1); }
+
+    .stat-alloc-btn:active {
+        transform: scale(0.95);
+    }
+
+    .stat-alloc-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    .stat-alloc-footer {
+        padding: 16px 20px 20px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .stat-alloc-confirm {
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 14px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: #1a1a2e;
+    }
+
+    .stat-alloc-confirm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255,215,0,0.4);
+    }
+
+    .stat-alloc-confirm:disabled {
+        background: rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.3);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    @keyframes statAllocPop {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.3); }
+        100% { transform: scale(1); }
+    }
+
+    .stat-pop {
+        animation: statAllocPop 0.3s ease-out;
+    }
+
+    /* ============================================================
+       BATTLE LEVEL GATE
+       ============================================================ */
+    .battle-trigger-btn.locked {
+        opacity: 0.5;
+        position: relative;
+    }
+
+    .battle-trigger-btn.locked::after {
+        content: 'Lv.10';
+        position: absolute;
+        bottom: -14px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.45rem;
+        font-weight: 800;
+        color: rgba(255,255,255,0.6);
+        white-space: nowrap;
+        background: rgba(0,0,0,0.5);
+        padding: 1px 5px;
+        border-radius: 4px;
+    }
+
+    /* ============================================================
+       BATTLE HP BARS (In-Battle)
+       ============================================================ */
+    .battle-hp-container {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        display: flex;
+        justify-content: space-between;
+        z-index: 150;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .battle-hp-container.active {
+        opacity: 1;
+    }
+
+    .battle-hp-box {
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: blur(6px);
+        border-radius: 10px;
+        padding: 6px 10px;
+        min-width: 120px;
+        border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .battle-hp-box.enemy {
+        text-align: right;
+    }
+
+    .battle-hp-name {
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: rgba(255,255,255,0.8);
+        margin-bottom: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .battle-hp-bar-bg {
+        height: 6px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .battle-hp-bar-fill {
+        height: 100%;
+        border-radius: 6px;
+        transition: width 0.4s ease-out;
+    }
+
+    .battle-hp-bar-fill.player {
+        background: linear-gradient(90deg, #2ecc71, #4ecdc4);
+    }
+
+    .battle-hp-bar-fill.enemy {
+        background: linear-gradient(90deg, #e74c3c, #ff6b6b);
+    }
+
+    .battle-hp-text {
+        font-size: 0.5rem;
+        font-weight: 800;
+        color: rgba(255,255,255,0.7);
+        margin-top: 2px;
+        font-family: 'Outfit', sans-serif;
+    }
+
+    /* ============================================================
+       BATTLE MANA BAR (In-Battle)
+       ============================================================ */
+    .battle-mana-container {
+        position: absolute;
+        bottom: 65px;
+        left: 12px;
+        right: 12px;
+        z-index: 150;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .battle-mana-container.active {
+        opacity: 1;
+    }
+
+    .battle-mana-label {
+        font-size: 0.5rem;
+        font-weight: 700;
+        color: rgba(255,255,255,0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+    }
+
+    .battle-mana-bar-bg {
+        height: 8px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .battle-mana-bar-fill {
+        height: 100%;
+        border-radius: 8px;
+        background: linear-gradient(90deg, #3498db, #45b7d1, #9b59b6);
+        transition: width 0.2s linear;
+        box-shadow: 0 0 8px rgba(52,152,219,0.4);
+    }
+
+    .battle-mana-bar-fill.full {
+        animation: manaReady 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes manaReady {
+        0% { box-shadow: 0 0 8px rgba(52,152,219,0.4); }
+        100% { box-shadow: 0 0 20px rgba(155,89,182,0.8); }
+    }
+
+    /* ============================================================
+       BATTLE ACTION BUTTONS (PUNCH / BLOCK / SPECIAL)
+       ============================================================ */
+    .battle-action-container {
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+        right: 12px;
+        display: flex;
+        gap: 8px;
+        z-index: 200;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+    }
+
+    .battle-action-container.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .battle-action-btn {
+        flex: 1;
+        padding: 10px 6px;
+        border: none;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: all 0.1s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .battle-action-btn .btn-icon {
+        font-size: 1.2rem;
+    }
+
+    .battle-action-btn.punch {
+        background: linear-gradient(135deg, rgba(255,68,68,0.6), rgba(255,100,100,0.4));
+        color: white;
+        border: 1px solid rgba(255,100,100,0.5);
+    }
+
+    .battle-action-btn.block {
+        background: linear-gradient(135deg, rgba(52,152,219,0.6), rgba(69,183,209,0.4));
+        color: white;
+        border: 1px solid rgba(69,183,209,0.5);
+    }
+
+    .battle-action-btn.special {
+        background: linear-gradient(135deg, rgba(155,89,182,0.6), rgba(183,109,212,0.4));
+        color: white;
+        border: 1px solid rgba(183,109,212,0.5);
+        display: none;
+    }
+
+    .battle-action-btn.special.ready {
+        display: flex;
+        animation: specialReady 0.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes specialReady {
+        0% { box-shadow: 0 0 10px rgba(155,89,182,0.3); }
+        100% { box-shadow: 0 0 25px rgba(155,89,182,0.7); }
+    }
+
+    .battle-action-btn:active {
+        transform: scale(0.92);
+    }
+
+    .battle-action-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .battle-action-btn .timing-ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 12px;
+        border: 2px solid transparent;
+        transition: border-color 0.1s;
+    }
+
+    .battle-action-btn.perfect .timing-ring {
+        border-color: #FFD700;
+        box-shadow: inset 0 0 15px rgba(255,215,0,0.3);
+    }
+
+    /* ============================================================
+       MOVE PICKER (Pre-Battle)
+       ============================================================ */
+    .move-picker-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.8);
+        backdrop-filter: blur(8px);
+        z-index: 200;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .move-picker-title {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #FFD700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+    }
+
+    .move-picker-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        width: 100%;
+        max-width: 280px;
+    }
+
+    .move-picker-item {
+        background: rgba(255,255,255,0.1);
+        border: 2px solid rgba(255,255,255,0.2);
+        border-radius: 14px;
+        padding: 12px 8px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s;
+    }
+
+    .move-picker-item:hover {
+        background: rgba(255,255,255,0.2);
+        border-color: rgba(255,215,0,0.5);
+        transform: scale(1.05);
+    }
+
+    .move-picker-item:active {
+        transform: scale(0.97);
+    }
+
+    .move-picker-item .pick-icon {
+        font-size: 1.6rem;
+        margin-bottom: 4px;
+    }
+
+    .move-picker-item .pick-name {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: white;
+    }
+
+    .move-picker-item .pick-power {
+        font-size: 0.55rem;
+        color: rgba(255,255,255,0.5);
+        margin-top: 2px;
+    }
+
+    /* ============================================================
+       BACKGROUND THEMES
+       ============================================================ */
+    .tamagotchi-bg-gym {
+        background: linear-gradient(180deg, #1a1a2e 0%, #1c2333 40%, #1a1a2e 100%) !important;
+    }
+
+    .tamagotchi-bg-gym::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background:
+            radial-gradient(ellipse 15% 25% at 12% 70%, rgba(120,120,140,0.12) 0%, transparent 100%),
+            radial-gradient(ellipse 8% 15% at 88% 75%, rgba(120,120,140,0.1) 0%, transparent 100%),
+            radial-gradient(ellipse 6% 10% at 85% 65%, rgba(100,100,120,0.08) 0%, transparent 100%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .tamagotchi-bg-park {
+        background: linear-gradient(180deg, #0d2b1a 0%, #1a3d2e 40%, #0d2b1a 100%) !important;
+    }
+
+    .tamagotchi-bg-park::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background:
+            radial-gradient(ellipse 20% 40% at 10% 50%, rgba(34,139,34,0.1) 0%, transparent 100%),
+            radial-gradient(ellipse 15% 30% at 90% 55%, rgba(34,139,34,0.08) 0%, transparent 100%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .tamagotchi-bg-dojo {
+        background: linear-gradient(180deg, #1a0f0f 0%, #2d1515 40%, #1a0f0f 100%) !important;
+    }
+
+    .tamagotchi-bg-dojo::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background:
+            radial-gradient(ellipse 25% 20% at 50% 80%, rgba(200,50,50,0.06) 0%, transparent 100%),
+            linear-gradient(90deg, rgba(200,170,100,0.04) 1px, transparent 1px),
+            linear-gradient(0deg, rgba(200,170,100,0.04) 1px, transparent 1px);
+        background-size: 100% 100%, 40px 40px, 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .tamagotchi-bg-beach {
+        background: linear-gradient(180deg, #0a192f 0%, #0d2847 40%, #14344e 100%) !important;
+    }
+
+    .tamagotchi-bg-beach::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background:
+            radial-gradient(ellipse 60% 15% at 50% 90%, rgba(194,178,128,0.1) 0%, transparent 100%),
+            radial-gradient(ellipse 30% 20% at 80% 30%, rgba(255,255,200,0.03) 0%, transparent 100%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .tamagotchi-bg-arena {
+        background: linear-gradient(180deg, #0a0015 0%, #1a0040 40%, #0a0015 100%) !important;
+    }
+
+    .tamagotchi-bg-arena::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background:
+            radial-gradient(ellipse 50% 50% at 50% 50%, rgba(155,89,182,0.08) 0%, transparent 100%),
+            radial-gradient(ellipse 30% 30% at 50% 50%, rgba(255,215,0,0.05) 0%, transparent 100%);
+        pointer-events: none;
+        z-index: 0;
+        animation: arenaGlow 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes arenaGlow {
+        0% { opacity: 0.6; }
+        100% { opacity: 1; }
+    }
+
     </style>
 </head>
 <body>
@@ -4210,10 +4882,54 @@ async function applyAppTheme(themeKey) {
             <div id="battle-mode-overlay" class="battle-overlay">
                 <div class="battle-text">BATTLE!</div>
             </div>
+
+            <!-- Battle HP Bars (shown during battle) -->
+            <div id="battle-hp-container" class="battle-hp-container">
+                <div class="battle-hp-box player">
+                    <div class="battle-hp-name">YOU</div>
+                    <div class="battle-hp-bar-bg">
+                        <div id="battle-hp-player" class="battle-hp-bar-fill player" style="width: 100%;"></div>
+                    </div>
+                    <div id="battle-hp-player-text" class="battle-hp-text">500 / 500</div>
+                </div>
+                <div class="battle-hp-box enemy">
+                    <div class="battle-hp-name">OPPONENT</div>
+                    <div class="battle-hp-bar-bg">
+                        <div id="battle-hp-enemy" class="battle-hp-bar-fill enemy" style="width: 100%;"></div>
+                    </div>
+                    <div id="battle-hp-enemy-text" class="battle-hp-text">500 / 500</div>
+                </div>
+            </div>
+
+            <!-- Battle Mana Bar (shown during battle) -->
+            <div id="battle-mana-container" class="battle-mana-container">
+                <div class="battle-mana-label">SPECIAL <span id="battle-mana-pct">0%</span></div>
+                <div class="battle-mana-bar-bg">
+                    <div id="battle-mana-fill" class="battle-mana-bar-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Battle Action Buttons (shown during battle phases) -->
+            <div id="battle-action-container" class="battle-action-container">
+                <button id="battle-btn-punch" class="battle-action-btn punch" disabled>
+                    <span class="btn-icon">👊</span>
+                    <span>PUNCH!</span>
+                    <div class="timing-ring"></div>
+                </button>
+                <button id="battle-btn-block" class="battle-action-btn block" disabled>
+                    <span class="btn-icon">🛡️</span>
+                    <span>BLOCK!</span>
+                    <div class="timing-ring"></div>
+                </button>
+                <button id="battle-btn-special" class="battle-action-btn special">
+                    <span class="btn-icon">⚡</span>
+                    <span>SPECIAL!</span>
+                </button>
+            </div>
         </div>
 
         <!-- Tamagotchi Stats Bar (Below Character) -->
-        <div id="tamagotchi-stats-bar" style="background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; margin: 0 0 12px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+        <div id="tamagotchi-stats-bar" style="background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; margin: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
             <!-- Level & XP Section -->
             <div style="display: flex; align-items: center; gap: 14px;">
                 <div style="background: rgba(255,255,255,0.08); border-radius: 12px; padding: 8px 14px; min-width: 60px; text-align: center;">
@@ -4235,6 +4951,46 @@ async function applyAppTheme(themeKey) {
                     <span id="tamagotchi-streak" style="color: #ff6400; font-size: 0.9rem; font-weight: 800; font-family: 'Outfit', sans-serif;">0</span>
                 </div>
                 <div id="tamagotchi-rank" style="color: var(--secondary); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">NEWCOMER</div>
+            </div>
+        </div>
+
+        <!-- Battle Stats Row (STR / HP / MANA) -->
+        <div id="battle-stats-row" class="battle-stats-row" style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; padding-bottom: 10px; margin-bottom: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+            <div class="battle-stat str" onclick="showStatTooltip('str')" title="Strength - Increases attack damage">
+                <div class="battle-stat-icon">⚔️</div>
+                <div class="battle-stat-info">
+                    <div class="battle-stat-label">
+                        <span class="battle-stat-name">STR</span>
+                        <span class="battle-stat-value" id="stat-str-value">0</span>
+                    </div>
+                    <div class="battle-stat-bar">
+                        <div class="battle-stat-fill" id="stat-str-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="battle-stat hp" onclick="showStatTooltip('hp')" title="Health Points - Increases battle HP">
+                <div class="battle-stat-icon">❤️</div>
+                <div class="battle-stat-info">
+                    <div class="battle-stat-label">
+                        <span class="battle-stat-name">HP</span>
+                        <span class="battle-stat-value" id="stat-hp-value">0</span>
+                    </div>
+                    <div class="battle-stat-bar">
+                        <div class="battle-stat-fill" id="stat-hp-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="battle-stat mana" onclick="showStatTooltip('mana')" title="Mana - Faster special move charge">
+                <div class="battle-stat-icon">🔮</div>
+                <div class="battle-stat-info">
+                    <div class="battle-stat-label">
+                        <span class="battle-stat-name">MANA</span>
+                        <span class="battle-stat-value" id="stat-mana-value">0</span>
+                    </div>
+                    <div class="battle-stat-bar">
+                        <div class="battle-stat-fill" id="stat-mana-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -41926,6 +42682,899 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
     };
+    </script>
+
+    <!-- ============================================================
+         PROGRESSION & BATTLE SYSTEM
+         Stats (STR/HP/Mana), Stat Allocation, Battle Overhaul,
+         Backgrounds, Move Picker
+         ============================================================ -->
+    <script>
+    (function() {
+        'use strict';
+        console.log('🎮 Loading Progression & Battle System...');
+
+        // ============================================================
+        // STAT SYSTEM - Save/Load/Display
+        // ============================================================
+        const STAT_MAX = 150; // Visual max for bar display
+        const DEFAULT_STATS = { str: 0, hp: 0, mana: 0 };
+
+        // Points per level (front-loaded)
+        function getStatPointsForLevel(level) {
+            if (level <= 10) return 3;
+            if (level <= 20) return 2;
+            return 1;
+        }
+
+        // Bonus points at skin evolution levels
+        const EVOLUTION_BONUS_LEVELS = [10, 20, 30, 40, 50];
+        const EVOLUTION_BONUS_POINTS = 5;
+
+        function getBattleStats() {
+            try {
+                const saved = localStorage.getItem('battleStats');
+                return saved ? { ...DEFAULT_STATS, ...JSON.parse(saved) } : { ...DEFAULT_STATS };
+            } catch (e) {
+                return { ...DEFAULT_STATS };
+            }
+        }
+
+        function saveBattleStats(stats) {
+            localStorage.setItem('battleStats', JSON.stringify(stats));
+            updateStatBarsUI(stats);
+            // Also save to DB if available
+            saveBattleStatsToDb(stats);
+        }
+
+        async function saveBattleStatsToDb(stats) {
+            if (!window.currentUser || !window.dbHelpers) return;
+            try {
+                const userId = window.currentUser.id || window.currentUser.user_id;
+                const existing = await window.dbHelpers.userFacts.get(userId) || {};
+                const currentAdditional = existing.additional_data || {};
+                await window.dbHelpers.userFacts.upsert(userId, {
+                    additional_data: { ...currentAdditional, battle_stats: stats }
+                });
+            } catch (e) {
+                console.warn('Could not save battle stats to DB:', e);
+            }
+        }
+
+        async function loadBattleStatsFromDb() {
+            if (!window.currentUser || !window.dbHelpers) return;
+            try {
+                const userId = window.currentUser.id || window.currentUser.user_id;
+                const facts = await window.dbHelpers.userFacts.get(userId);
+                if (facts?.additional_data?.battle_stats) {
+                    const dbStats = { ...DEFAULT_STATS, ...facts.additional_data.battle_stats };
+                    localStorage.setItem('battleStats', JSON.stringify(dbStats));
+                    updateStatBarsUI(dbStats);
+                }
+            } catch (e) {
+                console.warn('Could not load battle stats from DB:', e);
+            }
+        }
+
+        function updateStatBarsUI(stats) {
+            const s = stats || getBattleStats();
+            ['str', 'hp', 'mana'].forEach(stat => {
+                const valEl = document.getElementById(`stat-${stat}-value`);
+                const fillEl = document.getElementById(`stat-${stat}-fill`);
+                if (valEl) valEl.textContent = s[stat];
+                if (fillEl) fillEl.style.width = `${Math.min(100, (s[stat] / STAT_MAX) * 100)}%`;
+            });
+        }
+
+        // Tooltip on stat tap
+        window.showStatTooltip = function(stat) {
+            const descriptions = {
+                str: 'Strength increases your attack damage in battle',
+                hp: 'Health Points give you more HP in battle',
+                mana: 'Mana makes your special move charge faster'
+            };
+            if (typeof showToast === 'function') {
+                showToast(descriptions[stat] || '', 'info');
+            }
+        };
+
+        // Initialize stats on page load
+        setTimeout(() => {
+            updateStatBarsUI();
+            loadBattleStatsFromDb();
+        }, 2000);
+
+        // ============================================================
+        // STAT ALLOCATION MODAL
+        // ============================================================
+        // Track pending allocations
+        let pendingAllocations = { str: 0, hp: 0, mana: 0 };
+
+        function getUnallocatedPoints() {
+            try {
+                return parseInt(localStorage.getItem('unallocatedStatPoints') || '0');
+            } catch (e) {
+                return 0;
+            }
+        }
+
+        function setUnallocatedPoints(pts) {
+            localStorage.setItem('unallocatedStatPoints', String(Math.max(0, pts)));
+        }
+
+        // Called when user levels up - grants stat points
+        function grantStatPoints(previousLevel, newLevel) {
+            let totalNewPoints = 0;
+            for (let lvl = previousLevel + 1; lvl <= newLevel; lvl++) {
+                totalNewPoints += getStatPointsForLevel(lvl);
+                if (EVOLUTION_BONUS_LEVELS.includes(lvl)) {
+                    totalNewPoints += EVOLUTION_BONUS_POINTS;
+                }
+            }
+            if (totalNewPoints > 0) {
+                const current = getUnallocatedPoints();
+                setUnallocatedPoints(current + totalNewPoints);
+                console.log(`🎮 Granted ${totalNewPoints} stat points (levels ${previousLevel+1}-${newLevel})`);
+                // Show allocation modal after celebration
+                setTimeout(() => showStatAllocationModal(), 5500);
+            }
+        }
+
+        function showStatAllocationModal() {
+            const pointsLeft = getUnallocatedPoints();
+            if (pointsLeft <= 0) return;
+
+            const stats = getBattleStats();
+            pendingAllocations = { str: 0, hp: 0, mana: 0 };
+
+            const overlay = document.createElement('div');
+            overlay.className = 'stat-alloc-overlay';
+            overlay.id = 'stat-alloc-overlay';
+            overlay.innerHTML = `
+                <div class="stat-alloc-modal">
+                    <div class="stat-alloc-header">
+                        <h2>Power Up!</h2>
+                        <div class="stat-alloc-points-left">You have <span id="alloc-points-left">${pointsLeft}</span> points to spend</div>
+                    </div>
+                    <div class="stat-alloc-body">
+                        <div class="stat-alloc-row">
+                            <div class="stat-alloc-icon str">⚔️</div>
+                            <div class="stat-alloc-details">
+                                <div class="stat-alloc-name">Strength</div>
+                                <div class="stat-alloc-desc">Increases attack damage</div>
+                            </div>
+                            <div class="stat-alloc-current str" id="alloc-str-val">${stats.str}</div>
+                            <button class="stat-alloc-btn str" onclick="window._allocStat('str')">+</button>
+                        </div>
+                        <div class="stat-alloc-row">
+                            <div class="stat-alloc-icon hp">❤️</div>
+                            <div class="stat-alloc-details">
+                                <div class="stat-alloc-name">Health Points</div>
+                                <div class="stat-alloc-desc">More HP in battle</div>
+                            </div>
+                            <div class="stat-alloc-current hp" id="alloc-hp-val">${stats.hp}</div>
+                            <button class="stat-alloc-btn hp" onclick="window._allocStat('hp')">+</button>
+                        </div>
+                        <div class="stat-alloc-row">
+                            <div class="stat-alloc-icon mana">🔮</div>
+                            <div class="stat-alloc-details">
+                                <div class="stat-alloc-name">Mana</div>
+                                <div class="stat-alloc-desc">Faster special move charge</div>
+                            </div>
+                            <div class="stat-alloc-current mana" id="alloc-mana-val">${stats.mana}</div>
+                            <button class="stat-alloc-btn mana" onclick="window._allocStat('mana')">+</button>
+                        </div>
+                    </div>
+                    <div class="stat-alloc-footer">
+                        <button class="stat-alloc-confirm" id="alloc-confirm-btn" onclick="window._confirmAlloc()" disabled>Allocate Points First</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        window._allocStat = function(stat) {
+            const pointsLeftEl = document.getElementById('alloc-points-left');
+            const currentPointsLeft = parseInt(pointsLeftEl.textContent);
+            if (currentPointsLeft <= 0) return;
+
+            const stats = getBattleStats();
+            pendingAllocations[stat]++;
+            const newVal = stats[stat] + pendingAllocations[stat];
+
+            // Update display
+            const valEl = document.getElementById(`alloc-${stat}-val`);
+            if (valEl) {
+                valEl.textContent = newVal;
+                valEl.classList.remove('stat-pop');
+                void valEl.offsetWidth;
+                valEl.classList.add('stat-pop');
+            }
+
+            pointsLeftEl.textContent = currentPointsLeft - 1;
+
+            // Update confirm button
+            const confirmBtn = document.getElementById('alloc-confirm-btn');
+            const totalAllocated = pendingAllocations.str + pendingAllocations.hp + pendingAllocations.mana;
+            if (totalAllocated > 0) {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = currentPointsLeft - 1 > 0 ? `Spend More or Confirm` : `Confirm Allocation`;
+            }
+
+            // Disable + buttons if no points left
+            if (currentPointsLeft - 1 <= 0) {
+                document.querySelectorAll('.stat-alloc-btn').forEach(btn => btn.disabled = true);
+            }
+        };
+
+        window._confirmAlloc = function() {
+            const stats = getBattleStats();
+            stats.str += pendingAllocations.str;
+            stats.hp += pendingAllocations.hp;
+            stats.mana += pendingAllocations.mana;
+            saveBattleStats(stats);
+
+            // Subtract spent points
+            const totalSpent = pendingAllocations.str + pendingAllocations.hp + pendingAllocations.mana;
+            const remaining = getUnallocatedPoints() - totalSpent;
+            setUnallocatedPoints(remaining);
+
+            // Close modal
+            const overlay = document.getElementById('stat-alloc-overlay');
+            if (overlay) overlay.remove();
+
+            if (typeof showToast === 'function') {
+                showToast('Stats allocated!', 'success');
+            }
+
+            pendingAllocations = { str: 0, hp: 0, mana: 0 };
+
+            // If still have points, show again
+            if (remaining > 0) {
+                setTimeout(() => showStatAllocationModal(), 500);
+            }
+        };
+
+        // Expose for level up system
+        window.grantStatPoints = grantStatPoints;
+        window.showStatAllocationModal = showStatAllocationModal;
+        window.getBattleStats = getBattleStats;
+
+        // ============================================================
+        // BACKGROUND THEMES
+        // ============================================================
+        const BACKGROUND_UNLOCKS = [
+            { level: 1,  theme: null,         name: 'Default' },
+            { level: 10, theme: 'tamagotchi-bg-gym',   name: 'Gym' },
+            { level: 20, theme: 'tamagotchi-bg-park',  name: 'Park' },
+            { level: 30, theme: 'tamagotchi-bg-dojo',  name: 'Dojo' },
+            { level: 40, theme: 'tamagotchi-bg-beach', name: 'Beach' },
+            { level: 50, theme: 'tamagotchi-bg-arena', name: 'Legendary Arena' }
+        ];
+
+        function applyBackgroundForLevel(level) {
+            const container = document.getElementById('tamagotchi-widget-container');
+            if (!container) return;
+
+            // Remove all bg themes
+            BACKGROUND_UNLOCKS.forEach(bg => {
+                if (bg.theme) container.classList.remove(bg.theme);
+            });
+
+            // Find best unlocked background
+            let bestBg = null;
+            for (let i = BACKGROUND_UNLOCKS.length - 1; i >= 0; i--) {
+                if (level >= BACKGROUND_UNLOCKS[i].level && BACKGROUND_UNLOCKS[i].theme) {
+                    bestBg = BACKGROUND_UNLOCKS[i];
+                    break;
+                }
+            }
+
+            if (bestBg) {
+                container.classList.add(bestBg.theme);
+            }
+        }
+
+        // Apply background on load
+        setTimeout(() => {
+            const levelEl = document.getElementById('tamagotchi-level');
+            const level = levelEl ? parseInt(levelEl.textContent) || 1 : 1;
+            applyBackgroundForLevel(level);
+        }, 2500);
+
+        window.applyBackgroundForLevel = applyBackgroundForLevel;
+
+        // ============================================================
+        // BATTLE LEVEL GATE
+        // ============================================================
+        function updateBattleButtonLock() {
+            const btn = document.querySelector('.battle-trigger-btn');
+            if (!btn) return;
+            const level = getCurrentUserLevel ? getCurrentUserLevel() : 1;
+            if (level < 10) {
+                btn.classList.add('locked');
+            } else {
+                btn.classList.remove('locked');
+            }
+        }
+
+        setTimeout(updateBattleButtonLock, 2500);
+        window.updateBattleButtonLock = updateBattleButtonLock;
+
+        // ============================================================
+        // MOVE PICKER (Pre-Battle)
+        // ============================================================
+        function showMovePicker() {
+            return new Promise((resolve) => {
+                const level = getCurrentUserLevel ? getCurrentUserLevel() : 1;
+                const unlocks = (window.ANIMATION_UNLOCKS || []).filter(a => a.category === 'combat' && level >= a.unlockLevel);
+
+                if (unlocks.length === 0) {
+                    resolve({ name: 'boxing', displayName: 'Boxing', power: 1 });
+                    return;
+                }
+
+                // Power rankings for combat moves
+                const powerMap = {
+                    'boxing': 1, 'kick': 1.5, 'karate': 2, 'boxing_1': 2.5,
+                    'hit_to_1': 3, 'boxing_2': 3.5, 'kick_2': 4, 'block': 0
+                };
+
+                const container = document.getElementById('tamagotchi-widget-container');
+                const picker = document.createElement('div');
+                picker.className = 'move-picker-overlay';
+                picker.id = 'move-picker';
+
+                let html = '<div class="move-picker-title">Choose Your Move</div><div class="move-picker-grid">';
+                unlocks.filter(u => u.name !== 'block').forEach(u => {
+                    const power = powerMap[u.name] || 1;
+                    const stars = '⭐'.repeat(Math.ceil(power));
+                    html += `
+                        <div class="move-picker-item" data-move="${u.name}" data-power="${power}">
+                            <div class="pick-icon">${u.icon}</div>
+                            <div class="pick-name">${u.displayName}</div>
+                            <div class="pick-power">${stars}</div>
+                        </div>`;
+                });
+                html += '</div>';
+                picker.innerHTML = html;
+                container.appendChild(picker);
+
+                picker.querySelectorAll('.move-picker-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const moveName = item.dataset.move;
+                        const movePower = parseFloat(item.dataset.power) || 1;
+                        const unlock = unlocks.find(u => u.name === moveName);
+                        picker.remove();
+                        resolve({
+                            name: moveName,
+                            displayName: unlock?.displayName || moveName,
+                            power: movePower,
+                            icon: unlock?.icon || '👊'
+                        });
+                    });
+                });
+            });
+        }
+
+        // ============================================================
+        // BATTLE SYSTEM OVERHAUL
+        // ============================================================
+        // Override the existing startBattle
+        const ORIGINAL_START_BATTLE = window.startBattle;
+
+        window.startBattle = async function() {
+            console.log('🥊 ENHANCED BATTLE START');
+
+            // Level gate
+            const level = getCurrentUserLevel ? getCurrentUserLevel() : 1;
+            if (level < 10) {
+                if (typeof showToast === 'function') {
+                    showToast('Battle Mode unlocks at Level 10!', 'info');
+                }
+                return;
+            }
+
+            if (window._battleInProgress) return;
+            window._battleInProgress = true;
+
+            const viewer = document.getElementById('tamagotchi-model');
+            const overlay = document.getElementById('battle-mode-overlay');
+            const overlayText = overlay?.querySelector('.battle-text');
+            const widget = document.getElementById('tamagotchi-widget-container');
+            const hpContainer = document.getElementById('battle-hp-container');
+            const manaContainer = document.getElementById('battle-mana-container');
+            const actionContainer = document.getElementById('battle-action-container');
+            const punchBtn = document.getElementById('battle-btn-punch');
+            const blockBtn = document.getElementById('battle-btn-block');
+            const specialBtn = document.getElementById('battle-btn-special');
+
+            if (!widget || !viewer) {
+                window._battleInProgress = false;
+                return;
+            }
+
+            // Get stats
+            const stats = getBattleStats();
+            const baseDmg = 20;
+            const playerMaxHP = 100 + (stats.hp * 5);
+            const playerSTR = stats.str;
+            const manaRate = 1 + (stats.mana / 50); // multiplier for mana charge speed
+
+            // Enemy scales with level
+            const enemyMaxHP = 80 + (level * 8);
+            const enemyBaseDmg = 15 + Math.floor(level * 1.5);
+
+            let playerHP = playerMaxHP;
+            let enemyHP = enemyMaxHP;
+            let manaCharge = 0;
+            let manaFull = false;
+            let manaInterval = null;
+
+            // Move picker
+            const chosenMove = await showMovePicker();
+            const movePower = chosenMove.power || 1;
+
+            // Update HP bars
+            function updateHPBars() {
+                const playerFill = document.getElementById('battle-hp-player');
+                const playerText = document.getElementById('battle-hp-player-text');
+                const enemyFill = document.getElementById('battle-hp-enemy');
+                const enemyText = document.getElementById('battle-hp-enemy-text');
+
+                const playerPct = Math.max(0, (playerHP / playerMaxHP) * 100);
+                const enemyPct = Math.max(0, (enemyHP / enemyMaxHP) * 100);
+
+                if (playerFill) playerFill.style.width = playerPct + '%';
+                if (playerText) playerText.textContent = `${Math.max(0, Math.round(playerHP))} / ${playerMaxHP}`;
+                if (enemyFill) enemyFill.style.width = enemyPct + '%';
+                if (enemyText) enemyText.textContent = `${Math.max(0, Math.round(enemyHP))} / ${enemyMaxHP}`;
+            }
+
+            function updateManaBar() {
+                const fill = document.getElementById('battle-mana-fill');
+                const pct = document.getElementById('battle-mana-pct');
+                if (fill) {
+                    fill.style.width = Math.min(100, manaCharge) + '%';
+                    if (manaCharge >= 100 && !manaFull) {
+                        fill.classList.add('full');
+                        manaFull = true;
+                        if (specialBtn) {
+                            specialBtn.classList.add('ready');
+                        }
+                    }
+                }
+                if (pct) pct.textContent = Math.min(100, Math.round(manaCharge)) + '%';
+            }
+
+            function startManaCharge() {
+                manaCharge = 0;
+                manaFull = false;
+                const fill = document.getElementById('battle-mana-fill');
+                if (fill) fill.classList.remove('full');
+                if (specialBtn) specialBtn.classList.remove('ready');
+                manaInterval = setInterval(() => {
+                    if (manaCharge < 100) {
+                        manaCharge += 2 * manaRate;
+                        updateManaBar();
+                    }
+                }, 200);
+            }
+
+            function stopManaCharge() {
+                if (manaInterval) {
+                    clearInterval(manaInterval);
+                    manaInterval = null;
+                }
+            }
+
+            // Sound helper
+            function playSound(name) {
+                if (typeof playBattleSound === 'function') playBattleSound(name);
+            }
+
+            // Reset HP display
+            playerHP = playerMaxHP;
+            enemyHP = enemyMaxHP;
+            updateHPBars();
+
+            // INTRO
+            playSound('intro');
+            if (overlayText && overlay) {
+                overlayText.textContent = 'BATTLE MODE!';
+                overlay.classList.add('active');
+            }
+
+            // Flash
+            const flash = document.createElement('div');
+            flash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:white;opacity:0.8;transition:opacity 0.5s;pointer-events:none;z-index:999;';
+            widget.appendChild(flash);
+            setTimeout(() => flash.style.opacity = 0, 50);
+            setTimeout(() => flash.remove(), 550);
+
+            await new Promise(r => setTimeout(r, 2000));
+            if (overlay) overlay.classList.remove('active');
+
+            // Show HP bars and mana
+            if (hpContainer) hpContainer.classList.add('active');
+            if (manaContainer) manaContainer.classList.add('active');
+            if (actionContainer) actionContainer.classList.add('active');
+
+            // Camera Move to side
+            const originalOrbit = viewer.getAttribute('camera-orbit') || '0deg 85deg 22m';
+            viewer.setAttribute('camera-orbit', '90deg 90deg 18m');
+            await new Promise(r => setTimeout(r, 1000));
+
+            // Start mana charging
+            startManaCharge();
+
+            // Find animation tracks
+            const anims = viewer.availableAnimations || [];
+            let attackAnim = anims.find(a => a.toLowerCase() === chosenMove.name.toLowerCase())
+                || anims.find(a => a.toLowerCase().includes(chosenMove.name.toLowerCase()))
+                || anims.find(a => /^boxing$/i.test(a))
+                || anims[0];
+            let hitAnim = anims.find(a => /^hit_to_1$|^hit_to_2$|^hit_to_head$/i.test(a)) || anims[0];
+            let blockAnim = anims.find(a => /^block$/i.test(a)) || hitAnim;
+            let loseAnim = anims.find(a => /^lose$|^die$/i.test(a)) || anims[0];
+
+            // Battle state helpers
+            let battleOver = false;
+            let waitingForPunch = false;
+            let waitingForBlock = false;
+            let punchResolve = null;
+            let blockResolve = null;
+
+            // Button handlers
+            function onPunch() {
+                if (!waitingForPunch || !punchResolve) return;
+                waitingForPunch = false;
+                punchBtn.disabled = true;
+                punchResolve('hit');
+                punchResolve = null;
+            }
+
+            function onBlock() {
+                if (!waitingForBlock || !blockResolve) return;
+                waitingForBlock = false;
+                blockBtn.disabled = true;
+                blockResolve('blocked');
+                blockResolve = null;
+            }
+
+            function onSpecial() {
+                if (!manaFull) return;
+                // Fire special attack
+                manaCharge = 0;
+                manaFull = false;
+                const fill = document.getElementById('battle-mana-fill');
+                if (fill) fill.classList.remove('full');
+                specialBtn.classList.remove('ready');
+                updateManaBar();
+
+                // Find best special move animation
+                const specialMoves = ['kick_2', 'boxing_2', 'karate', 'volleyball', 'kick'];
+                let specialAnim = null;
+                for (const sm of specialMoves) {
+                    specialAnim = anims.find(a => a.toLowerCase() === sm);
+                    if (specialAnim) break;
+                }
+                if (!specialAnim) specialAnim = attackAnim;
+
+                // Play special animation
+                viewer.animationName = specialAnim;
+                viewer.play();
+
+                // Big damage
+                const specialDmg = (baseDmg + playerSTR * 2) * 4;
+                enemyHP -= specialDmg;
+                updateHPBars();
+
+                // Special fireball (bigger)
+                spawnBattleFireball(widget, true);
+                playSound('whoosh');
+
+                // Screen shake
+                widget.style.animation = 'none';
+                void widget.offsetWidth;
+                widget.style.transform = 'translateX(5px)';
+                setTimeout(() => widget.style.transform = 'translateX(-5px)', 50);
+                setTimeout(() => widget.style.transform = 'translateX(3px)', 100);
+                setTimeout(() => widget.style.transform = '', 150);
+            }
+
+            punchBtn.addEventListener('click', onPunch);
+            blockBtn.addEventListener('click', onBlock);
+            specialBtn.addEventListener('click', onSpecial);
+
+            // Fireball spawn helper
+            function spawnBattleFireball(container, isSpecial = false) {
+                const fb = document.createElement('div');
+                const size = isSpecial ? 90 : 60;
+                const glowColor = isSpecial ? 'gold' : 'orange';
+                fb.innerHTML = `<img src="assets/fireball.png" style="width:${size}px;height:${size}px;filter:drop-shadow(0 0 ${isSpecial ? 15 : 8}px ${glowColor});">`;
+                fb.style.cssText = `position:absolute; left:150px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;`;
+                container.appendChild(fb);
+
+                let posX = 150;
+                const speed = isSpecial ? 35 : 25;
+                function move() {
+                    posX += speed;
+                    fb.style.left = posX + 'px';
+                    if (posX > container.clientWidth) fb.remove();
+                    else requestAnimationFrame(move);
+                }
+                move();
+            }
+
+            function spawnIncomingBattleFireball(container) {
+                return new Promise(resolve => {
+                    const fb = document.createElement('div');
+                    fb.innerHTML = `<img src="assets/fireballblue.svg" style="width:60px;height:60px; transform:scaleX(-1); filter:drop-shadow(0 0 8px blue);">`;
+                    fb.style.cssText = 'position:absolute; right:-60px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;';
+                    container.appendChild(fb);
+
+                    let posX = container.clientWidth;
+                    const targetX = container.clientWidth / 2;
+                    const speed = 25;
+
+                    function move() {
+                        posX -= speed;
+                        fb.style.left = posX + 'px';
+                        if (posX <= targetX) {
+                            fb.remove();
+                            resolve();
+                        } else {
+                            requestAnimationFrame(move);
+                        }
+                    }
+                    move();
+                });
+            }
+
+            // Wait for player punch with timeout
+            function waitForPunch(timeoutMs = 2000) {
+                return new Promise(resolve => {
+                    waitingForPunch = true;
+                    punchBtn.disabled = false;
+
+                    // Visual pulse for timing window
+                    punchBtn.classList.add('perfect');
+                    setTimeout(() => punchBtn.classList.remove('perfect'), 600);
+
+                    punchResolve = resolve;
+                    setTimeout(() => {
+                        if (waitingForPunch) {
+                            waitingForPunch = false;
+                            punchBtn.disabled = true;
+                            punchResolve = null;
+                            resolve('miss');
+                        }
+                    }, timeoutMs);
+                });
+            }
+
+            function waitForBlock(timeoutMs = 1200) {
+                return new Promise(resolve => {
+                    waitingForBlock = true;
+                    blockBtn.disabled = false;
+
+                    blockBtn.classList.add('perfect');
+                    setTimeout(() => blockBtn.classList.remove('perfect'), 500);
+
+                    blockResolve = resolve;
+                    setTimeout(() => {
+                        if (waitingForBlock) {
+                            waitingForBlock = false;
+                            blockBtn.disabled = true;
+                            blockResolve = null;
+                            resolve('miss');
+                        }
+                    }, timeoutMs);
+                });
+            }
+
+            // === ROUNDS ===
+            for (let round = 1; round <= 3; round++) {
+                if (battleOver) break;
+
+                // Round announcement
+                if (overlayText && overlay) {
+                    overlayText.textContent = `ROUND ${round}`;
+                    overlay.classList.add('active');
+                    playSound('bell');
+                    await new Promise(r => setTimeout(r, 1500));
+                    overlay.classList.remove('active');
+                    await new Promise(r => setTimeout(r, 500));
+                }
+
+                // === ATTACK PHASE (3 punches with button mashing) ===
+                for (let i = 0; i < 3; i++) {
+                    if (battleOver) break;
+
+                    // Wait for player to tap PUNCH
+                    const punchResult = await waitForPunch(2000);
+
+                    // Calculate damage
+                    let dmgMultiplier = 1;
+                    if (punchResult === 'hit') {
+                        dmgMultiplier = 1.0;
+                        // Check if they hit during the perfect window (first 600ms)
+                        dmgMultiplier = 1.2; // Reward tapping
+                    } else {
+                        dmgMultiplier = 0.5; // Miss/timeout = weak auto-attack
+                    }
+
+                    const damage = (baseDmg + playerSTR * 2) * movePower * dmgMultiplier;
+                    enemyHP -= damage;
+                    updateHPBars();
+
+                    // Play attack animation
+                    viewer.animationName = attackAnim;
+                    viewer.play();
+                    await new Promise(r => setTimeout(r, 400));
+
+                    spawnBattleFireball(widget);
+                    playSound('whoosh');
+                    await new Promise(r => setTimeout(r, 800));
+
+                    // Check enemy defeat
+                    if (enemyHP <= 0) {
+                        battleOver = true;
+                        break;
+                    }
+                }
+
+                if (battleOver) break;
+                await new Promise(r => setTimeout(r, 800));
+
+                // === DEFENSE PHASE (incoming fireballs + block mashing) ===
+                for (let i = 0; i < 3; i++) {
+                    if (battleOver) break;
+
+                    // Start incoming fireball and block prompt simultaneously
+                    const [_, blockResult] = await Promise.all([
+                        spawnIncomingBattleFireball(widget),
+                        waitForBlock(1200)
+                    ]);
+
+                    let damageTaken = enemyBaseDmg;
+                    if (blockResult === 'blocked') {
+                        damageTaken = Math.round(enemyBaseDmg * 0.4);
+                        viewer.animationName = blockAnim;
+                    } else {
+                        viewer.animationName = hitAnim;
+                    }
+                    viewer.play();
+
+                    playSound('hit');
+
+                    // Red flash on hit
+                    const hitFlash = document.createElement('div');
+                    const flashOpacity = blockResult === 'blocked' ? 0.15 : 0.4;
+                    hitFlash.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:red;opacity:${flashOpacity};z-index:998;pointer-events:none;`;
+                    widget.appendChild(hitFlash);
+                    setTimeout(() => hitFlash.remove(), 150);
+
+                    playerHP -= damageTaken;
+                    updateHPBars();
+                    await new Promise(r => setTimeout(r, 800));
+
+                    // Check player defeat
+                    if (playerHP <= 0) {
+                        battleOver = true;
+                        break;
+                    }
+                }
+
+                if (battleOver) break;
+                await new Promise(r => setTimeout(r, 500));
+            }
+
+            // === END BATTLE ===
+            stopManaCharge();
+
+            // Remove event listeners
+            punchBtn.removeEventListener('click', onPunch);
+            blockBtn.removeEventListener('click', onBlock);
+            specialBtn.removeEventListener('click', onSpecial);
+            punchBtn.disabled = true;
+            blockBtn.disabled = true;
+            specialBtn.classList.remove('ready');
+
+            const playerWon = enemyHP <= 0 || playerHP > 0;
+
+            if (playerWon) {
+                // VICTORY
+                const victoryAnim = anims.find(a => /laugh|clap|arms_up/i.test(a)) || 'idle';
+                viewer.animationName = victoryAnim;
+                viewer.play();
+                playSound('victory');
+
+                if (overlayText && overlay) {
+                    overlayText.textContent = 'YOU WIN!';
+                    overlay.style.color = '#00ff00';
+                    overlay.style.textShadow = '0 0 20px #00ff00';
+                    overlay.classList.add('active');
+                }
+
+                // Award XP for winning
+                if (typeof showToast === 'function') {
+                    setTimeout(() => showToast('Victory! +3 XP bonus', 'success'), 2000);
+                }
+            } else {
+                // DEFEAT
+                viewer.animationName = loseAnim;
+                viewer.play();
+
+                if (overlayText && overlay) {
+                    overlayText.textContent = 'DEFEATED!';
+                    overlay.style.color = '#ff4444';
+                    overlay.style.textShadow = '0 0 20px #ff4444';
+                    overlay.classList.add('active');
+                }
+
+                if (typeof showToast === 'function') {
+                    setTimeout(() => showToast('Train harder and try again!', 'info'), 2000);
+                }
+            }
+
+            await new Promise(r => setTimeout(r, 4000));
+
+            // === RESET ===
+            if (overlay) {
+                overlay.classList.remove('active');
+                overlay.style.color = '';
+                overlay.style.textShadow = '';
+            }
+            if (hpContainer) hpContainer.classList.remove('active');
+            if (manaContainer) manaContainer.classList.remove('active');
+            if (actionContainer) actionContainer.classList.remove('active');
+
+            viewer.setAttribute('camera-orbit', originalOrbit);
+            viewer.animationName = 'idle';
+            setTimeout(() => {
+                viewer.pause();
+                viewer.currentTime = 0;
+                viewer.animationName = null;
+                viewer.removeAttribute('animation-name');
+            }, 500);
+
+            window._battleInProgress = false;
+        };
+
+        // ============================================================
+        // HOOK INTO LEVEL UP CELEBRATION
+        // ============================================================
+        const originalTriggerLevelUp = window.triggerLevelUpCelebration;
+        if (typeof originalTriggerLevelUp === 'function') {
+            window.triggerLevelUpCelebration = function(newLevel, title, previousLevel, lifetimePoints, currentStreak, previousProgress) {
+                // Call original
+                originalTriggerLevelUp(newLevel, title, previousLevel, lifetimePoints, currentStreak, previousProgress);
+
+                // Grant stat points
+                if (previousLevel && newLevel > previousLevel) {
+                    grantStatPoints(previousLevel, newLevel);
+                }
+
+                // Update background
+                applyBackgroundForLevel(newLevel);
+
+                // Update battle button lock
+                updateBattleButtonLock();
+            };
+        }
+
+        // Also check for unallocated points on page load (in case user closed before allocating)
+        setTimeout(() => {
+            const unalloc = getUnallocatedPoints();
+            if (unalloc > 0) {
+                showStatAllocationModal();
+            }
+        }, 4000);
+
+        console.log('🎮 Progression & Battle System loaded!');
+    })();
     </script>
 </body>
 </html>
