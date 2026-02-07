@@ -3481,6 +3481,41 @@ async function applyAppTheme(themeKey) {
         white-space: nowrap;
     }
 
+    /* Verification Badge Styles */
+    .verified-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        background: #10b981;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        margin-left: 6px;
+        letter-spacing: 0.5px;
+    }
+
+    .verified-badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.65rem;
+        background: #ecfdf5;
+        color: #059669;
+        border: 1px solid #10b981;
+        padding: 1px 5px;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+
+    .verified-badge-pill svg {
+        width: 10px;
+        height: 10px;
+        fill: currentColor;
+    }
+
     .meal-log-delete {
         background: none;
         border: none;
@@ -5227,6 +5262,17 @@ async function applyAppTheme(themeKey) {
             <div style="position: absolute; bottom: 0; left: 10%; right: 10%; height: 30%; background: radial-gradient(ellipse 80% 40% at 50% 100%, rgba(100,140,200,0.15) 0%, transparent 70%); pointer-events: none; z-index: 2;"></div>
             <!-- Ambient room lighting glow -->
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 50%; background: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(80,100,140,0.2) 0%, transparent 70%); pointer-events: none; z-index: 1;"></div>
+            <!-- 3D Background Model (Hidden by default, shown via applyBackgroundForLevel) -->
+            <model-viewer
+                id="tamagotchi-bg-model"
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: none; --poster-color: transparent;"
+                camera-orbit="0deg 85deg 22m"
+                field-of-view="30deg"
+                shadow-intensity="1"
+                exposure="1.2"
+                interaction-prompt="none">
+            </model-viewer>
+
             <model-viewer
                 id="tamagotchi-model"
                 camera-controls
@@ -39692,11 +39738,18 @@ function renderMealsList(meals) {
             ? `<div class="meal-log-image" style="overflow: hidden;"><img src="${meal.photo_url}" alt="Meal" style="width: 100%; height: 100%; object-fit: cover;" referrerpolicy="no-referrer" onerror="try{console.log('Meal card image failed to load:', this.src);var p=this.parentElement;if(p){p.innerHTML='🍽️';p.style.display='flex';p.style.alignItems='center';p.style.justifyContent='center';p.style.fontSize='2rem';}}catch(e){}"></div>`
             : `<div class="meal-log-image" style="display: flex; align-items: center; justify-content: center; font-size: 2rem;">🍽️</div>`;
 
+        // Check if any item in this meal is verified
+        const isVerified = Array.isArray(meal.food_items) && meal.food_items.some(item => item.verified);
+        const verifiedTag = isVerified ? `<span class="verified-badge">✓ Verified</span>` : '';
+
         html += `
             <div class="meal-log-card" onclick="openMealDetailPopup(${index})">
                 ${imageHtml}
                 <div class="meal-log-content">
-                    <div class="meal-log-time">${time}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px;">
+                        <div class="meal-log-time">${time}</div>
+                        ${verifiedTag}
+                    </div>
                     <div class="meal-log-foods">${foodItemsText}</div>
                     <div class="meal-log-macros">
                         <span>${Math.round(meal.calories)} cal</span>
@@ -39785,9 +39838,16 @@ function openMealDetailPopup(index) {
         let itemsHtml = '<div class="meal-detail-items-title">Food Items</div>';
         meal.food_items.forEach(item => {
             const itemCals = item.calories ? Math.round(item.calories) : 0;
+            const verifiedHtml = item.verified 
+                ? `<span class="verified-badge-pill" title="Verified by ${item.db_source || 'Database'}"><svg viewBox="0 0 20 20"><path d="M7.629 14.571L3.125 10.067a.642.642 0 010-.909l.909-.909a.642.642 0 01.909 0l2.677 2.677 6.152-6.152a.642.642 0 01.909 0l.909.909a.642.642 0 010 .909l-7.962 7.962a.642.642 0 01-.909 0z"/></svg>Verified</span>`
+                : '';
+            
             itemsHtml += `
                 <div class="meal-detail-item">
-                    <span class="meal-detail-item-name">${item.name}</span>
+                    <div style="display: flex; flex-direction: column; flex: 1;">
+                        <span class="meal-detail-item-name">${item.name}</span>
+                        ${verifiedHtml}
+                    </div>
                     <span class="meal-detail-item-cals">${itemCals} cal</span>
                 </div>
             `;
@@ -42312,7 +42372,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     else cameraDist = 9.5;
                 }
 
-                modelViewer.setAttribute('camera-orbit', `0deg 85deg ${cameraDist}m`);
+                // Only update camera if not in battle (battle locks camera to side profile)
+                if (!window._battleInProgress && !window.isDuringBattle) {
+                    modelViewer.setAttribute('camera-orbit', `0deg 85deg ${cameraDist}m`);
+                }
             }
         };
 
@@ -42391,11 +42454,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Background unlock system - backgrounds unlocked at specific levels
         const BACKGROUND_UNLOCKS = [
-            { name: 'gym', displayName: 'Gym', unlockLevel: 1, icon: '🏋️', theme: 'tamagotchi-bg-gym' },
-            { name: 'park', displayName: 'Park', unlockLevel: 10, icon: '🌳', theme: 'tamagotchi-bg-park' },
-            { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏠', theme: 'tamagotchi-bg-home' },
-            { name: 'beach', displayName: 'Beach', unlockLevel: 30, icon: '🏖️', theme: 'tamagotchi-bg-beach' },
-            { name: 'mountain', displayName: 'Mountain', unlockLevel: 40, icon: '⛰️', theme: 'tamagotchi-bg-mountain' },
+            { name: 'gym', displayName: 'Gym', unlockLevel: 1, icon: '🏋️', theme: 'tamagotchi-bg-gym', model: 'assets/background_gym.glb' },
+            { name: 'park', displayName: 'Park', unlockLevel: 10, icon: '🌳', theme: 'tamagotchi-bg-park', model: null },
+            { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏠', theme: 'tamagotchi-bg-home', model: null },
+            { name: 'beach', displayName: 'Beach', unlockLevel: 30, icon: '🏖️', theme: 'tamagotchi-bg-beach', model: null },
+            { name: 'mountain', displayName: 'Mountain', unlockLevel: 40, icon: '⛰️', theme: 'tamagotchi-bg-mountain', model: null },
         ];
 
         // Expose ANIMATION_UNLOCKS globally for use by checkNewAnimationUnlocks
@@ -42685,8 +42748,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Remove all background theme classes
             ALL_BG_THEME_CLASSES.forEach(theme => container.classList.remove(theme));
 
-            // Apply the selected theme
+            // Apply the selected CSS theme
             container.classList.add(bg.theme);
+
+            // Handle 3D model background
+            const bgModel = document.getElementById('tamagotchi-bg-model');
+            const floor = document.getElementById('tamagotchi-floor');
+            if (bgModel) {
+                if (bg.model) {
+                    if (bgModel.getAttribute('src') !== bg.model) {
+                        bgModel.setAttribute('src', bg.model);
+                    }
+                    bgModel.style.display = 'block';
+                    if (floor) floor.style.opacity = '0';
+                } else {
+                    bgModel.style.display = 'none';
+                    if (floor) floor.style.opacity = '1';
+                }
+            }
 
             // Save selection to localStorage
             localStorage.setItem('selectedBackground', bgName);
@@ -42742,10 +42821,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // --- BATTLE SYSTEM INTEGRATION ---
         let isDuringBattle = false;
+        window.isDuringBattle = false;
 
         window.startBattle = async function() {
             if (isDuringBattle) return;
             isDuringBattle = true;
+            window.isDuringBattle = true;
 
             const mv = document.getElementById('tamagotchi-model');
             const overlay = document.getElementById('battle-mode-overlay');
@@ -42797,17 +42878,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hadCameraControlsV1 = mv.hasAttribute('camera-controls');
             const origMinOrbitV1 = mv.getAttribute('min-camera-orbit');
             const origMaxOrbitV1 = mv.getAttribute('max-camera-orbit');
+            // Read turntable rotation BEFORE disabling auto-rotate
+            // turntableRotation = accumulated yaw from auto-rotate (radians)
+            // apparent angle = camera_theta - turntableRotation
+            // We want apparent = +π/2 (90deg) so character faces RIGHT
+            // => camera_theta = π/2 + turntableRotation
+            const yawV1 = (typeof mv.turntableRotation === 'number') ? mv.turntableRotation : 0;
+            const battleThetaV1 = ((Math.PI / 2) + yawV1) * 180 / Math.PI;
+            const battleOrbitV1 = `${battleThetaV1.toFixed(1)}deg 85deg 14m`;
             mv.removeAttribute('auto-rotate');
             mv.removeAttribute('camera-controls');
-            // Reset turntable rotation accumulated from auto-rotate
-            if (typeof mv.resetTurntableRotation === 'function') mv.resetTurntableRotation();
-            // Wait for model-viewer to process the turntable reset before setting orbit
-            await new Promise(r => requestAnimationFrame(r));
-            await new Promise(r => requestAnimationFrame(r));
-            // Now set side profile from a clean turntable state
-            mv.setAttribute('camera-orbit', '90deg 80deg 10m');
-            mv.setAttribute('min-camera-orbit', '90deg 80deg 10m');
-            mv.setAttribute('max-camera-orbit', '90deg 80deg 10m');
+            mv.setAttribute('camera-orbit', battleOrbitV1);
+            mv.setAttribute('min-camera-orbit', battleOrbitV1);
+            mv.setAttribute('max-camera-orbit', battleOrbitV1);
             if (typeof mv.jumpCameraToGoal === 'function') mv.jumpCameraToGoal();
 
             await new Promise(r => setTimeout(r, 1200));
@@ -42882,6 +42965,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 mv.classList.remove('character-battle-pos');
                 mv.removeAttribute('animation-name');
                 isDuringBattle = false;
+                window.isDuringBattle = false;
             }, 800);
         };
 
@@ -42979,6 +43063,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const viewer = document.getElementById('tamagotchi-model');
 
         if(!widget || !viewer) return;
+        window._battleInProgress = true;
+        window.isDuringBattle = true;
 
         // Unlock Audio
         playBattleSound('intro');
@@ -43005,17 +43091,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         const hadCameraControlsV2 = viewer.hasAttribute('camera-controls');
         const origMinOrbitV2 = viewer.getAttribute('min-camera-orbit');
         const origMaxOrbitV2 = viewer.getAttribute('max-camera-orbit');
+        // Read turntable rotation BEFORE disabling auto-rotate
+        const yawV2 = (typeof viewer.turntableRotation === 'number') ? viewer.turntableRotation : 0;
+        const battleThetaV2 = ((Math.PI / 2) + yawV2) * 180 / Math.PI;
+        const battleOrbitV2 = `${battleThetaV2.toFixed(1)}deg 85deg 14m`;
         viewer.removeAttribute('auto-rotate');
         viewer.removeAttribute('camera-controls');
-        // Reset turntable rotation accumulated from auto-rotate
-        if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
-        // Wait for model-viewer to process the turntable reset before setting orbit
-        await new Promise(r => requestAnimationFrame(r));
-        await new Promise(r => requestAnimationFrame(r));
-        // Now set side profile from a clean turntable state
-        viewer.setAttribute('camera-orbit', "90deg 80deg 10m");
-        viewer.setAttribute('min-camera-orbit', "90deg 80deg 10m");
-        viewer.setAttribute('max-camera-orbit', "90deg 80deg 10m");
+        viewer.setAttribute('camera-orbit', battleOrbitV2);
+        viewer.setAttribute('min-camera-orbit', battleOrbitV2);
+        viewer.setAttribute('max-camera-orbit', battleOrbitV2);
         if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
         await new Promise(r => setTimeout(r, 600));
 
@@ -43081,6 +43165,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         viewer.animationName = "idle";
         setTimeout(() => {
             viewer.classList.remove('character-battle-pos');
+            window._battleInProgress = false;
+            window.isDuringBattle = false;
         }, 800);
     };
 
@@ -43596,6 +43682,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             'tamagotchi-bg-dojo', 'tamagotchi-bg-arena'
         ];
 
+        // Background theme + 3D model mapping (used by applyBackgroundForLevel)
+        const BG_THEME_MODELS = [
+            { level: 1,  theme: null,                    name: 'Default',          model: null },
+            { level: 1,  theme: 'tamagotchi-bg-gym',     name: 'Gym',              model: 'assets/background_gym.glb' },
+            { level: 10, theme: 'tamagotchi-bg-park',    name: 'Park',             model: null },
+            { level: 20, theme: 'tamagotchi-bg-home',    name: 'Home',             model: null },
+            { level: 30, theme: 'tamagotchi-bg-beach',   name: 'Beach',            model: null },
+            { level: 40, theme: 'tamagotchi-bg-mountain', name: 'Mountain',        model: null },
+            { level: 50, theme: 'tamagotchi-bg-arena',   name: 'Legendary Arena',  model: null }
+        ];
+
         function applyBackgroundForLevel(level) {
             // If user has manually selected a background, respect that choice
             const savedBg = localStorage.getItem('selectedBackground');
@@ -43605,14 +43702,40 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             const container = document.getElementById('tamagotchi-widget-container');
+            const bgModel = document.getElementById('tamagotchi-bg-model');
+            const floor = document.getElementById('tamagotchi-floor');
             if (!container) return;
 
             // Remove all bg themes
             ALL_BG_THEMES.forEach(theme => container.classList.remove(theme));
 
-            // Default: apply gym if unlocked (level >= 1)
-            if (level >= 1) {
-                container.classList.add('tamagotchi-bg-gym');
+            // Find best unlocked background
+            let bestBg = null;
+            for (let i = BG_THEME_MODELS.length - 1; i >= 0; i--) {
+                if (level >= BG_THEME_MODELS[i].level) {
+                    bestBg = BG_THEME_MODELS[i];
+                    break;
+                }
+            }
+
+            if (bestBg) {
+                if (bestBg.theme) container.classList.add(bestBg.theme);
+
+                // Handle 3D model background
+                if (bgModel) {
+                    if (bestBg.model) {
+                        // Only update if SRC is different to avoid flickering/reload
+                        if (bgModel.getAttribute('src') !== bestBg.model) {
+                            bgModel.setAttribute('src', bestBg.model);
+                        }
+                        bgModel.style.display = 'block';
+                        // Hide legacy floor if 3D model is present
+                        if (floor) floor.style.opacity = '0';
+                    } else {
+                        bgModel.style.display = 'none';
+                        if (floor) floor.style.opacity = '1';
+                    }
+                }
             }
         }
 
@@ -44090,17 +44213,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hadCameraControls = viewer.hasAttribute('camera-controls');
             const origMinOrbit = viewer.getAttribute('min-camera-orbit');
             const origMaxOrbit = viewer.getAttribute('max-camera-orbit');
+            // Read turntable rotation BEFORE disabling auto-rotate
+            const yaw = (typeof viewer.turntableRotation === 'number') ? viewer.turntableRotation : 0;
+            const battleTheta = ((Math.PI / 2) + yaw) * 180 / Math.PI;
+            const battleOrbit = `${battleTheta.toFixed(1)}deg 85deg 14m`;
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
-            // Reset turntable rotation accumulated from auto-rotate
-            if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
-            // Wait for model-viewer to process the turntable reset before setting orbit
-            await new Promise(r => requestAnimationFrame(r));
-            await new Promise(r => requestAnimationFrame(r));
-            // Now set side profile from a clean turntable state
-            viewer.setAttribute('camera-orbit', '90deg 80deg 10m');
-            viewer.setAttribute('min-camera-orbit', '90deg 80deg 10m');
-            viewer.setAttribute('max-camera-orbit', '90deg 80deg 10m');
+            viewer.setAttribute('camera-orbit', battleOrbit);
+            viewer.setAttribute('min-camera-orbit', battleOrbit);
+            viewer.setAttribute('max-camera-orbit', battleOrbit);
             if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
             await new Promise(r => setTimeout(r, 600));
 

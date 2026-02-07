@@ -1,5 +1,36 @@
-
 import { Context } from "@netlify/edge-functions";
+
+// Helper to look up food in Open Food Facts
+async function lookupOpenFoodFacts(query: string) {
+  try {
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=3`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    const products = data.products || [];
+    
+    // Find first product with calories
+    for (const product of products) {
+      const nutriments = product.nutriments;
+      if (nutriments && (nutriments['energy-kcal_100g'] || nutriments['energy-kcal'])) {
+        return {
+          name: product.product_name,
+          calories_100g: nutriments['energy-kcal_100g'] || nutriments['energy-kcal'],
+          protein_100g: nutriments.proteins_100g || 0,
+          carbs_100g: nutriments.carbohydrates_100g || 0,
+          fat_100g: nutriments.fat_100g || 0,
+          fiber_100g: nutriments.fiber_100g || 0,
+          brand: product.brands || "Generic"
+        };
+      }
+    }
+    return null;
+  } catch (e) {
+    console.error(`OFF Lookup failed for ${query}:`, e);
+    return null;
+  }
+}
 
 export default async function (request: Request, context: Context) {
   // Only accept POST
@@ -19,8 +50,8 @@ export default async function (request: Request, context: Context) {
       });
     }
 
-    if (!description || description.trim().length < 3) {
-      return new Response(JSON.stringify({ error: "Please describe what you ate" }), {
+    if (!description) {
+      return new Response(JSON.stringify({ error: "No description provided" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -29,19 +60,15 @@ export default async function (request: Request, context: Context) {
     // Prepare the Gemini API request (text-only, no image)
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
-    const mealContext = mealType ? `This was their ${mealType}.` : '';
-
-    const systemPrompt = `You are a nutrition analysis AI. A user has described what they ate, and you need to analyze it and provide nutritional information.
-
-USER'S MEAL DESCRIPTION: "${description}"
-${mealContext}
+    const systemPrompt = `You are a nutrition analysis AI. Analyze the following meal description and provide detailed nutritional information.
+MEAL DESCRIPTION: "${description}"
+MEAL TYPE: "${mealType || 'Not specified'}"
 
 INSTRUCTIONS:
-1. Identify all food items mentioned in the description
-2. Estimate reasonable portion sizes based on typical servings (if not specified)
+1. Break down the description into individual food items
+2. Estimate portion sizes (in grams if possible, or common units)
 3. Calculate nutritional values (calories, macros, and key micronutrients)
-4. Be realistic - if the description is vague, make reasonable assumptions
-5. Provide your confidence level (high if specific portions given, medium if typical, low if very vague)
+4. Provide your confidence level (high/medium/low)
 
 RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
 {
@@ -49,6 +76,7 @@ RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
     {
       "name": "Food item name",
       "portion": "estimated portion size",
+      "portion_weight_g": number,
       "calories": number,
       "protein_g": number,
       "carbs_g": number,
@@ -70,117 +98,93 @@ RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
     "potassium_mg": number
   },
   "confidence": "high/medium/low",
-  "notes": "Any assumptions made about portions or clarifications"
+  "notes": "Any additional observations or caveats about the analysis"
 }
 
 IMPORTANT:
 - Return RAW JSON only - no markdown, no code blocks, no backticks
 - Keep food item names SHORT (max 30 chars)
-- Be realistic with portion sizes - assume typical serving if not specified
-- If the user mentions a restaurant or brand, use typical nutritional values for that item
-- For home-cooked meals, estimate based on common recipes
-- Round numbers to 1 decimal place
-- Only include micronutrients if they're significant in the foods present`;
+- Be realistic with portion sizes
+- Round numbers to 1 decimal place`;
 
     const payload = {
       contents: [
         {
-          parts: [
-            {
-              text: systemPrompt
-            }
-          ]
+          parts: [{ text: systemPrompt }]
         }
       ],
       generationConfig: {
-        temperature: 0.3,
+        temperature: 0.1, // More deterministic
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 4096,
+        maxOutputTokens: 2048,
       }
     };
 
-    console.log("Analyzing meal from text description...");
+    console.log("Sending request to Gemini API for text-based food analysis...");
 
     const geminiResponse = await fetch(geminiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
     if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error("Gemini API error (Status:", geminiResponse.status, "):", errorText);
-
-      let userMessage = "Failed to analyze meal description";
-      if (geminiResponse.status === 429) {
-        userMessage = "Too many requests. Please try again in a few moments.";
-      }
-
-      return new Response(JSON.stringify({
-        error: userMessage,
-        status: geminiResponse.status,
-      }), {
-        status: geminiResponse.status,
-        headers: { "Content-Type": "application/json" },
-      });
+        const errorText = await geminiResponse.text();
+        return new Response(JSON.stringify({ error: "Gemini API error", details: errorText }), { status: geminiResponse.status });
     }
 
     const geminiData = await geminiResponse.json();
-    console.log("Gemini API response received for text analysis");
-
-    // Extract the text response
     const aiText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!aiText) {
-      console.error("No AI text in response. Full response:", JSON.stringify(geminiData));
-      return new Response(JSON.stringify({
-        error: "Couldn't analyze your meal description. Please try being more specific.",
-        geminiResponse: geminiData
-      }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!aiText) throw new Error("Empty AI response");
+
+    const cleanedText = aiText.replace(/\`\`\`json\n?/g, '').replace(/\`\`\`\n?/g, '').trim();
+    const nutritionData = JSON.parse(cleanedText);
+
+    // HYBRID UPGRADE: Fact check each item against Open Food Facts
+    console.log(`Fact checking ${nutritionData.foodItems.length} text items...`);
+    
+    for (let item of nutritionData.foodItems) {
+      const dbMatch = await lookupOpenFoodFacts(item.name);
+      
+      if (dbMatch) {
+        console.log(`✅ VERIFIED: ${item.name} matched with ${dbMatch.name} (${dbMatch.brand})`);
+        
+        // Use portion weight to calculate new verified values
+        const weightFactor = (item.portion_weight_g || 100) / 100;
+        
+        item.verified = true;
+        item.db_source = "Open Food Facts";
+        item.db_name = dbMatch.name;
+        item.db_brand = dbMatch.brand;
+        
+        // Update values with database truths
+        item.calories = Number((dbMatch.calories_100g * weightFactor).toFixed(1));
+        item.protein_g = Number((dbMatch.protein_100g * weightFactor).toFixed(1));
+        item.carbs_g = Number((dbMatch.carbs_100g * weightFactor).toFixed(1));
+        item.fat_g = Number((dbMatch.fat_100g * weightFactor).toFixed(1));
+        item.fiber_g = Number((dbMatch.fiber_100g * weightFactor).toFixed(1));
+      } else {
+        item.verified = false;
+        item.db_source = "Gemini AI Estimate";
+      }
     }
 
-    // Parse the JSON response from the AI
-    let nutritionData;
-    try {
-      // Remove markdown code blocks if present
-      const cleanedText = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      nutritionData = JSON.parse(cleanedText);
-    } catch (parseError) {
-      console.error("Failed to parse AI response as JSON:", aiText);
-      console.error("Parse error:", parseError);
-      return new Response(JSON.stringify({
-        error: "Couldn't process the analysis. Please try again.",
-        parseError: parseError.message,
-      }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    // Recalculate totals based on verified numbers
+    nutritionData.totals.calories = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.calories, 0).toFixed(1));
+    nutritionData.totals.protein_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.protein_g, 0).toFixed(1));
+    nutritionData.totals.carbs_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.carbs_g, 0).toFixed(1));
+    nutritionData.totals.fat_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.fat_g, 0).toFixed(1));
+    nutritionData.totals.fiber_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.fiber_g, 0).toFixed(1));
 
-    // Return the structured nutrition data
-    return new Response(JSON.stringify({
-      success: true,
-      data: nutritionData,
-      inputMethod: 'text'
-    }), {
+    return new Response(JSON.stringify({ success: true, data: nutritionData }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in analyze-meal-text function:", error);
-    return new Response(JSON.stringify({
-      error: "Internal server error",
-      message: error.message
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
