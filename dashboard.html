@@ -13856,6 +13856,9 @@ function viewWorkoutHistoryDetail(date) {
                 <button onclick="openCycleTrackingModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🌸</span> Cycle Tracking
                 </button>
+                <button id="settings-allocate-stats-btn" onclick="showStatAllocationModal()" style="display:none; background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; align-items:center; justify-content:center; gap:8px;">
+                    <span>⚔️</span> Allocate Battle Stats
+                </button>
             </div>
         </div>
 
@@ -15402,7 +15405,10 @@ function _switchAppTabReal(tabName, btn) {
             loadHomeChallenges();
         }
 
-        // Refresh weigh-in card visibility (may have changed since last visit)
+        // Refresh weigh-in card and modal visibility on dashboard visit
+        if (typeof checkAndShowWeighInModal === 'function') {
+            checkAndShowWeighInModal();
+        }
         if (typeof checkAndShowWeighInCard === 'function') {
             checkAndShowWeighInCard();
         }
@@ -15448,6 +15454,14 @@ function _switchAppTabReal(tabName, btn) {
             if (typeof updateSettingsIcon === 'function') {
                 setTimeout(updateSettingsIcon, 100);
             }
+            // Show/hide allocate battle stats button based on unallocated points
+            setTimeout(() => {
+                const allocBtn = document.getElementById('settings-allocate-stats-btn');
+                if (allocBtn && typeof getUnallocatedPoints === 'function') {
+                    const pts = getUnallocatedPoints();
+                    allocBtn.style.display = pts > 0 ? 'flex' : 'none';
+                }
+            }, 200);
         }
     } else if (tabName === 'progress') {
         // Progress is now inside Movement tab - redirect there and open progress view
@@ -18113,16 +18127,6 @@ async function checkAndTriggerOnboarding() {
             applyGenderSpecificUI();
         }
 
-        setTimeout(() => {
-            const today = new Date().toDateString();
-            const lastCheck = localStorage.getItem('lastWellnessCheck');
-            if (lastCheck !== today) {
-                const modal = document.getElementById('check-in-modal');
-                if (modal) {
-                    modal.style.display = 'flex';
-                }
-            }
-        }, 1500);
     }
 }
 
@@ -19644,22 +19648,6 @@ async function finishOnboarding() {
         }
     }
 
-    // Show the gender-specific daily check-in modal after onboarding
-    // This is the full check-in modal with gender-appropriate sections
-    setTimeout(() => {
-        const today = new Date().toDateString();
-        const lastCheck = localStorage.getItem('lastWellnessCheck');
-        if (lastCheck !== today) {
-            // Apply gender-specific UI to ensure correct sections are visible
-            if (typeof applyGenderSpecificUI === 'function') {
-                applyGenderSpecificUI();
-            }
-            const modal = document.getElementById('check-in-modal');
-            if (modal) {
-                modal.style.display = 'flex';
-            }
-        }
-    }, 500);
 }
 
 async function closeWizardManually() {
@@ -19677,17 +19665,6 @@ async function closeWizardManually() {
          applyGenderSpecificUI();
      }
 
-     // Show the gender-specific check-in modal if not shown today
-     setTimeout(() => {
-         const today = new Date().toDateString();
-         const lastCheck = localStorage.getItem('lastWellnessCheck');
-         if (lastCheck !== today) {
-             const modal = document.getElementById('check-in-modal');
-             if (modal) {
-                 modal.style.display = 'flex';
-             }
-         }
-     }, 500);
 }
 
 function toggleWizardPeriodInput() {
