@@ -44025,7 +44025,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 bashCount++;
                 updateBashUI();
 
-                // Rumble visual feedback on each tap
+                // Haptic rumble on each tap
+                if (navigator.vibrate) navigator.vibrate(50);
+
+                // Visual feedback on each tap
                 if (bashBtn) {
                     bashBtn.classList.remove('bash-rumble');
                     void bashBtn.offsetWidth; // force reflow to restart animation
@@ -44036,6 +44039,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (bashCount >= tapsNeeded && !superReady) {
                     superReady = true;
                     if (bashBtn) bashBtn.classList.add('attack-ready');
+                    if (navigator.vibrate) navigator.vibrate([50, 30, 100]); // strong burst for super ready
                 }
             }
 
