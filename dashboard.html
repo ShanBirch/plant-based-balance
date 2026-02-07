@@ -42833,216 +42833,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
 
-        // --- BATTLE SYSTEM INTEGRATION ---
-        let isDuringBattle = false;
+        // Battle state flags (used by camera distance update guard)
         window.isDuringBattle = false;
-
-        window.startBattle = async function() {
-            if (isDuringBattle) return;
-            isDuringBattle = true;
-            window.isDuringBattle = true;
-
-            const mv = document.getElementById('tamagotchi-model');
-            const overlay = document.getElementById('battle-mode-overlay');
-            const overlayText = overlay?.querySelector('.battle-text');
-            const container = document.getElementById('tamagotchi-widget-container');
-
-            if (overlay) {
-                overlayText.innerText = "BATTLE MODE!";
-                overlay.classList.add('active');
-            }
-
-            // Flash Screen
-            if (container) {
-                container.classList.add('battle-flash');
-                setTimeout(() => container.classList.remove('battle-flash'), 500);
-            }
-
-            // Get current level to find best moves
-            const level = getCurrentUserLevel();
-
-            // 1. SELECT BEST ATTACK ANIMATION
-            const unlockedCombatMoves = ANIMATION_UNLOCKS.filter(a => a.category === 'combat' && level >= a.unlockLevel);
-            let attackMoveName = 'Boxing'; // Root fallback
-            if (unlockedCombatMoves.length > 0) {
-                // Get the highest unlocked combat move
-                const best = unlockedCombatMoves.reduce((prev, current) => (current.unlockLevel > prev.unlockLevel) ? current : prev);
-                attackMoveName = best.name;
-            }
-
-            // Find matching animation track on model
-            const anims = mv.availableAnimations || [];
-            let attackAnimTrack = anims.find(a => 
-                a.toLowerCase().includes(attackMoveName.toLowerCase())
-            );
-            
-            // If no match by name, fall back to any combat-like move
-            if (!attackAnimTrack) {
-                attackAnimTrack = anims.find(a =>
-                    a === 'boxing' ||
-                    a === 'kick' ||
-                    a === 'karate' ||
-                    a === 'boxing_1'
-                ) || anims[0];
-            }
-
-            // Lock character to side profile instantly (no matter what direction they were facing)
-            mv.classList.add('character-battle-pos', 'battle-side-left');
-            const hadAutoRotateV1 = mv.hasAttribute('auto-rotate');
-            const hadCameraControlsV1 = mv.hasAttribute('camera-controls');
-            const origMinOrbitV1 = mv.getAttribute('min-camera-orbit');
-            const origMaxOrbitV1 = mv.getAttribute('max-camera-orbit');
-            mv.removeAttribute('auto-rotate');
-            mv.removeAttribute('camera-controls');
-            if (typeof mv.resetTurntableRotation === 'function') mv.resetTurntableRotation();
-            const origOrbitV1 = mv.getAttribute('camera-orbit') || '0deg 85deg 22m';
-            const origDistV1 = origOrbitV1.split(/\s+/)[2] || '22m';
-            const battleOrbitV1 = `90deg 85deg ${origDistV1}`;
-            mv.setAttribute('camera-orbit', battleOrbitV1);
-            mv.setAttribute('min-camera-orbit', battleOrbitV1);
-            mv.setAttribute('max-camera-orbit', battleOrbitV1);
-            if (typeof mv.jumpCameraToGoal === 'function') mv.jumpCameraToGoal();
-            // Re-apply after a frame to catch any stray overrides
-            requestAnimationFrame(() => {
-                mv.setAttribute('camera-orbit', battleOrbitV1);
-                if (typeof mv.jumpCameraToGoal === 'function') mv.jumpCameraToGoal();
-            });
-
-            await new Promise(r => setTimeout(r, 1200));
-            if (overlay) overlay.classList.remove('active');
-            await new Promise(r => setTimeout(r, 500));
-
-            // ROUNDS
-            for (let round = 1; round <= 3; round++) {
-                if (overlayText && overlay) {
-                    overlayText.innerText = `ROUND ${round}`;
-                    overlay.classList.add('active');
-                    await new Promise(r => setTimeout(r, 1000));
-                    overlay.classList.remove('active');
-                }
-
-                // ATTACK PHASE (3 Hits)
-                for (let i = 0; i < 3; i++) {
-                    mv.animationName = attackAnimTrack;
-                    mv.play();
-                    
-                    await new Promise(r => setTimeout(r, 450));
-                    spawnFireball('assets/fireball.png');
-                    
-                    await new Promise(r => setTimeout(r, 750));
-                }
-
-                await new Promise(r => setTimeout(r, 800));
-
-                // DEFENSE PHASE (Incoming Blue Fireballs)
-                const hitAnim = anims.find(a =>
-                    a === 'hit_to_1' ||
-                    a === 'hit_to_2' ||
-                    a === 'hit_to_head' ||
-                    a === 'hit_to_side'
-                ) || anims[0];
-
-                for (let i = 0; i < 2; i++) {
-                    await spawnIncomingFireball(hitAnim, 'assets/fireballblue.svg');
-                    await new Promise(r => setTimeout(r, 800));
-                }
-            }
-
-            // VICTORY PHASE
-            const victoryAnim = anims.find(a =>
-                a === 'laugh' ||
-                a === 'clap' ||
-                a === 'arms_up_still'
-            ) || anims[0];
-
-            mv.animationName = victoryAnim;
-            mv.play();
-            
-            if (overlayText && overlay) {
-                overlayText.innerText = "VICTORIOUS!";
-                overlay.classList.add('active');
-            }
-            
-            await new Promise(r => setTimeout(r, 3500));
-
-            // Reset Sequence - unlock camera
-            if (overlay) overlay.classList.remove('active');
-            mv.classList.remove('battle-side-left');
-            if (origMinOrbitV1) mv.setAttribute('min-camera-orbit', origMinOrbitV1);
-            else mv.removeAttribute('min-camera-orbit');
-            if (origMaxOrbitV1) mv.setAttribute('max-camera-orbit', origMaxOrbitV1);
-            else mv.removeAttribute('max-camera-orbit');
-            mv.setAttribute('camera-orbit', '0deg 85deg 22m');
-            if (hadCameraControlsV1) mv.setAttribute('camera-controls', '');
-            if (hadAutoRotateV1) mv.setAttribute('auto-rotate', '');
-
-            setTimeout(() => {
-                mv.classList.remove('character-battle-pos');
-                mv.removeAttribute('animation-name');
-                isDuringBattle = false;
-                window.isDuringBattle = false;
-            }, 800);
-        };
-
-        function spawnFireball(imgSrc) {
-            const container = document.getElementById('tamagotchi-widget-container');
-            const fb = document.createElement('div');
-            fb.className = 'fireball';
-            fb.innerHTML = `<img src="${imgSrc}">`;
-            
-            fb.style.left = '35%'; 
-            fb.style.top = '48%';
-            container.appendChild(fb);
-
-            let posX = 35;
-            const targetX = 120; 
-            
-            function move() {
-                posX += 5;
-                fb.style.left = posX + '%';
-                fb.style.marginTop = `${(Math.random() - 0.5) * 15}px`;
-
-                if (posX > targetX) {
-                    fb.remove();
-                } else {
-                    setTimeout(move, 40);
-                }
-            }
-            move();
-        }
-
-        function spawnIncomingFireball(hitAnim, imgSrc) {
-            return new Promise(resolve => {
-                const container = document.getElementById('tamagotchi-widget-container');
-                const fb = document.createElement('div');
-                fb.className = 'fireball';
-                fb.innerHTML = `<img src="${imgSrc}" style="transform: scaleX(-1);">`;
-                
-                fb.style.left = '100%';
-                fb.style.top = '48%';
-                container.appendChild(fb);
-
-                let posX = 100;
-                const targetHitX = 35;
-
-                function move() {
-                    posX -= 5;
-                    fb.style.left = posX + '%';
-                    fb.style.marginTop = `${(Math.random() - 0.5) * 15}px`;
-
-                    if (posX <= targetHitX) {
-                        fb.remove();
-                        const mv = document.getElementById('tamagotchi-model');
-                        mv.animationName = hitAnim;
-                        mv.play();
-                        resolve();
-                    } else {
-                        setTimeout(move, 40);
-                    }
-                }
-                move();
-            });
-        }
     })();
     </script>
 
@@ -43069,181 +42861,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // --- BATTLE LOGIC ---
-    window.startBattle = async function() {
-        console.log("🥊 START BATTLE CLICKED");
-        const overlay = document.getElementById('battle-mode-overlay');
-        const overlayText = overlay.querySelector('.battle-text');
-        const widget = document.getElementById('tamagotchi-widget-container');
-        const viewer = document.getElementById('tamagotchi-model');
-
-        if(!widget || !viewer) return;
-        window._battleInProgress = true;
-        window.isDuringBattle = true;
-
-        // Unlock Audio
-        playBattleSound('intro');
-
-        // Setup
-        overlayText.textContent = "BATTLE MODE!";
-        overlay.classList.add('active');
-        
-        // Flash
-        const flash = document.createElement('div');
-        flash.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:white;opacity:0.8;transition:opacity 0.5s;pointer-events:none;z-index:999;";
-        widget.appendChild(flash);
-        setTimeout(() => flash.style.opacity = 0, 50);
-        setTimeout(() => flash.remove(), 550);
-
-        // Intro Wait
-        await new Promise(r => setTimeout(r, 2000));
-        overlay.classList.remove('active');
-
-        // Lock character to side profile instantly (no matter what direction they were facing)
-        viewer.classList.add('character-battle-pos', 'battle-side-left');
-        const originalOrbit = viewer.getAttribute('camera-orbit') || "0deg 85deg 22m";
-        const hadAutoRotateV2 = viewer.hasAttribute('auto-rotate');
-        const hadCameraControlsV2 = viewer.hasAttribute('camera-controls');
-        const origMinOrbitV2 = viewer.getAttribute('min-camera-orbit');
-        const origMaxOrbitV2 = viewer.getAttribute('max-camera-orbit');
-        viewer.removeAttribute('auto-rotate');
-        viewer.removeAttribute('camera-controls');
-        if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
-        const origDistV2 = originalOrbit.split(/\s+/)[2] || '22m';
-        const battleOrbitV2 = `90deg 85deg ${origDistV2}`;
-        viewer.setAttribute('camera-orbit', battleOrbitV2);
-        viewer.setAttribute('min-camera-orbit', battleOrbitV2);
-        viewer.setAttribute('max-camera-orbit', battleOrbitV2);
-        if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
-        // Re-apply after a frame to catch any stray overrides
-        requestAnimationFrame(() => {
-            viewer.setAttribute('camera-orbit', battleOrbitV2);
-            if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
-        });
-        await new Promise(r => setTimeout(r, 600));
-
-        // Rounds
-        for(let round=1; round<=3; round++) {
-            overlayText.textContent = `ROUND ${round}`;
-            overlay.classList.add('active');
-            playBattleSound('bell');
-            await new Promise(r => setTimeout(r, 1500));
-            overlay.classList.remove('active');
-            await new Promise(r => setTimeout(r, 500));
-
-            // Attack (Red Fireball)
-            let anims = viewer.availableAnimations || [];
-            let attackAnim = anims.find(a => /^boxing$|^kick$|^karate$/i.test(a)) || anims[0];
-            
-            for(let i=0; i<3; i++) {
-                viewer.animationName = attackAnim;
-                viewer.play();
-                await new Promise(r => setTimeout(r, 400)); // Windup
-                
-                spawnFireball();
-                playBattleSound('whoosh');
-                
-                await new Promise(r => setTimeout(r, 800)); // Recover
-            }
-
-            await new Promise(r => setTimeout(r, 800));
-
-            // Defend (Blue Fireball)
-            let hitAnim = anims.find(a => /^hit_to_1$|^hit_to_2$|^hit_to_head$/i.test(a)) || anims[0];
-            
-            for(let i=0; i<3; i++) {
-                await spawnIncomingFireball(hitAnim);
-                await new Promise(r => setTimeout(r, 800));
-            }
-            await new Promise(r => setTimeout(r, 500));
-        }
-
-        // Victory
-        let victoryAnim = (viewer.availableAnimations||[]).find(a => /laugh|clap|arms_up/i.test(a)) || "idle";
-        viewer.animationName = victoryAnim;
-        playBattleSound('victory');
-        
-        overlayText.textContent = "YOU WIN!";
-        overlay.style.color = "#00ff00";
-        overlay.style.textShadow = "0 0 20px #00ff00";
-        overlay.classList.add('active');
-
-        await new Promise(r => setTimeout(r, 4000));
-
-        // Reset - unlock camera
-        overlay.classList.remove('active');
-        overlay.style = "";
-        viewer.classList.remove('battle-side-left');
-        if (origMinOrbitV2) viewer.setAttribute('min-camera-orbit', origMinOrbitV2);
-        else viewer.removeAttribute('min-camera-orbit');
-        if (origMaxOrbitV2) viewer.setAttribute('max-camera-orbit', origMaxOrbitV2);
-        else viewer.removeAttribute('max-camera-orbit');
-        viewer.setAttribute('camera-orbit', originalOrbit);
-        if (hadCameraControlsV2) viewer.setAttribute('camera-controls', '');
-        if (hadAutoRotateV2) viewer.setAttribute('auto-rotate', '');
-        viewer.animationName = "idle";
-        setTimeout(() => {
-            viewer.classList.remove('character-battle-pos');
-            window._battleInProgress = false;
-            window.isDuringBattle = false;
-        }, 800);
-    };
-
-    function spawnFireball() {
-        const widget = document.getElementById('tamagotchi-widget-container');
-        const fb = document.createElement('div');
-        fb.innerHTML = `<img src="assets/fireball.png" style="width:60px;height:60px;filter:drop-shadow(0 0 8px orange);">`;
-        fb.style.cssText = "position:absolute; left:150px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;";
-        widget.appendChild(fb);
-
-        let posX = 150;
-        const speed = 25;
-        function move() {
-            posX += speed;
-            fb.style.left = posX + 'px';
-            if(posX > widget.clientWidth) fb.remove();
-            else requestAnimationFrame(move);
-        }
-        move();
-    }
-
-    function spawnIncomingFireball(animName) {
-        return new Promise(resolve => {
-            const widget = document.getElementById('tamagotchi-widget-container');
-            const viewer = document.getElementById('tamagotchi-model');
-            const fb = document.createElement('div');
-            // Blue Fireball, flipped locally to face left
-            fb.innerHTML = `<img src="assets/fireballblue.svg" style="width:60px;height:60px; transform:scaleX(-1); filter:drop-shadow(0 0 8px blue);">`;
-            fb.style.cssText = "position:absolute; right:-60px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;";
-            widget.appendChild(fb);
-
-            let posX = widget.clientWidth;
-            const targetX = widget.clientWidth / 2; 
-            const speed = 25;
-
-            function move() {
-                posX -= speed;
-                fb.style.left = posX + 'px';
-                if(posX <= targetX) {
-                    fb.remove();
-                    playBattleSound('hit');
-                    if(viewer) {
-                        viewer.animationName = animName;
-                        viewer.play();
-                    }
-                    // Red flash
-                    const flash = document.createElement('div');
-                    flash.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:red;opacity:0.4;z-index:998;pointer-events:none;";
-                    widget.appendChild(flash);
-                    setTimeout(() => flash.remove(), 100);
-                    resolve();
-                } else {
-                    requestAnimationFrame(move);
-                }
-            }
-            move();
-        });
-    }
+    // (V2 battle logic removed - all battle logic is now in _runBattle below)
 
     // --- OVERRIDE COLOR APPLICATION ---
     window.applyCharacterColors = async function(modelViewer, modelSrc) {
@@ -43810,12 +43428,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // ============================================================
-        // BATTLE SYSTEM OVERHAUL
-        // ============================================================
-        // Override the existing startBattle
-        const ORIGINAL_START_BATTLE = window.startBattle;
-
-        // ============================================================
         // BATTLE INVITE SYSTEM
         // ============================================================
         window.startBattle = async function() {
@@ -44059,6 +43671,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (window._battleInProgress) return;
             window._battleInProgress = true;
+            window.isDuringBattle = true;
 
             try {
 
@@ -44199,12 +43812,28 @@ document.addEventListener('DOMContentLoaded', async function() {
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
             if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
-            const origDist = originalOrbit.split(/\s+/)[2] || '22m';
-            const battleOrbit = `90deg 85deg ${origDist}`;
+
+            // Calculate proper camera distance based on level (same logic as normal mode)
+            let battleCameraDist = 22.0;
+            if (level >= 99) battleCameraDist = 12.0;
+            else if (level >= 40) battleCameraDist = 18.0 - ((level - 40) / 59 * 6.0);
+            else battleCameraDist = 22.0 - (level / 40 * 4.0);
+            if (window.currentUserGender?.toLowerCase() === 'female') {
+                if (level >= 20) battleCameraDist = 4.2;
+                else if (level >= 10) battleCameraDist = 7.0;
+                else battleCameraDist = 9.5;
+            }
+
+            const battleOrbit = `90deg 85deg ${battleCameraDist}m`;
             viewer.setAttribute('camera-orbit', battleOrbit);
             viewer.setAttribute('min-camera-orbit', battleOrbit);
             viewer.setAttribute('max-camera-orbit', battleOrbit);
             if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
+            // Re-apply after a frame to catch any stray overrides
+            requestAnimationFrame(() => {
+                viewer.setAttribute('camera-orbit', battleOrbit);
+                if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
+            });
 
             await new Promise(r => setTimeout(r, 600));
 
@@ -44556,6 +44185,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.error('Battle error:', e);
             } finally {
                 window._battleInProgress = false;
+                window.isDuringBattle = false;
             }
         };
 
