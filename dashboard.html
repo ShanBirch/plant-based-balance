@@ -42775,19 +42775,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hadCameraControlsV1 = mv.hasAttribute('camera-controls');
             const origMinOrbitV1 = mv.getAttribute('min-camera-orbit');
             const origMaxOrbitV1 = mv.getAttribute('max-camera-orbit');
-            // Compute turntable-compensated orbit BEFORE disabling auto-rotate
-            // getCameraOrbit() returns effective angle (camera-orbit + turntable) in radians
-            let battleOrbitV1 = '90deg 85deg 22m';
-            try {
-                const eff = mv.getCameraOrbit();
-                const attrTheta = parseFloat(mv.getAttribute('camera-orbit') || '0') * Math.PI / 180;
-                const turntable = eff.theta - attrTheta;
-                const compensated = ((Math.PI / 2) - turntable) * 180 / Math.PI;
-                battleOrbitV1 = `${compensated.toFixed(1)}deg 85deg 22m`;
-            } catch(e) {
-                // Fallback: try resetTurntableRotation
-                if (typeof mv.resetTurntableRotation === 'function') mv.resetTurntableRotation();
-            }
+            // Read turntable rotation BEFORE disabling auto-rotate
+            // turntableRotation = accumulated yaw from auto-rotate (radians)
+            // apparent angle = camera_theta - turntableRotation
+            // We want apparent = +π/2 (90deg) so character faces RIGHT
+            // => camera_theta = π/2 + turntableRotation
+            const yawV1 = (typeof mv.turntableRotation === 'number') ? mv.turntableRotation : 0;
+            const battleThetaV1 = ((Math.PI / 2) + yawV1) * 180 / Math.PI;
+            const battleOrbitV1 = `${battleThetaV1.toFixed(1)}deg 85deg 14m`;
             mv.removeAttribute('auto-rotate');
             mv.removeAttribute('camera-controls');
             mv.setAttribute('camera-orbit', battleOrbitV1);
@@ -42990,17 +42985,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const hadCameraControlsV2 = viewer.hasAttribute('camera-controls');
         const origMinOrbitV2 = viewer.getAttribute('min-camera-orbit');
         const origMaxOrbitV2 = viewer.getAttribute('max-camera-orbit');
-        // Compute turntable-compensated orbit BEFORE disabling auto-rotate
-        let battleOrbitV2 = '90deg 85deg 22m';
-        try {
-            const eff = viewer.getCameraOrbit();
-            const attrTheta = parseFloat(viewer.getAttribute('camera-orbit') || '0') * Math.PI / 180;
-            const turntable = eff.theta - attrTheta;
-            const compensated = ((Math.PI / 2) - turntable) * 180 / Math.PI;
-            battleOrbitV2 = `${compensated.toFixed(1)}deg 85deg 22m`;
-        } catch(e) {
-            if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
-        }
+        // Read turntable rotation BEFORE disabling auto-rotate
+        const yawV2 = (typeof viewer.turntableRotation === 'number') ? viewer.turntableRotation : 0;
+        const battleThetaV2 = ((Math.PI / 2) + yawV2) * 180 / Math.PI;
+        const battleOrbitV2 = `${battleThetaV2.toFixed(1)}deg 85deg 14m`;
         viewer.removeAttribute('auto-rotate');
         viewer.removeAttribute('camera-controls');
         viewer.setAttribute('camera-orbit', battleOrbitV2);
@@ -44081,17 +44069,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hadCameraControls = viewer.hasAttribute('camera-controls');
             const origMinOrbit = viewer.getAttribute('min-camera-orbit');
             const origMaxOrbit = viewer.getAttribute('max-camera-orbit');
-            // Compute turntable-compensated orbit BEFORE disabling auto-rotate
-            let battleOrbit = '90deg 85deg 22m';
-            try {
-                const eff = viewer.getCameraOrbit();
-                const attrTheta = parseFloat(viewer.getAttribute('camera-orbit') || '0') * Math.PI / 180;
-                const turntable = eff.theta - attrTheta;
-                const compensated = ((Math.PI / 2) - turntable) * 180 / Math.PI;
-                battleOrbit = `${compensated.toFixed(1)}deg 85deg 22m`;
-            } catch(e) {
-                if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
-            }
+            // Read turntable rotation BEFORE disabling auto-rotate
+            const yaw = (typeof viewer.turntableRotation === 'number') ? viewer.turntableRotation : 0;
+            const battleTheta = ((Math.PI / 2) + yaw) * 180 / Math.PI;
+            const battleOrbit = `${battleTheta.toFixed(1)}deg 85deg 14m`;
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
             viewer.setAttribute('camera-orbit', battleOrbit);
