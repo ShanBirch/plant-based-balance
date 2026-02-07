@@ -2689,12 +2689,12 @@ async function applyAppTheme(themeKey) {
     /* Fireball Projectile */
     .fireball {
         position: absolute;
-        width: 80px;
-        height: 80px;
+        width: 200px;
+        height: 200px;
         pointer-events: none;
         z-index: 100;
         will-change: transform;
-        filter: drop-shadow(0 0 10px #ff5500);
+        filter: drop-shadow(0 0 25px #ff5500);
     }
 
     .fireball img {
@@ -43864,10 +43864,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Triple fireball using special.png
             function spawnTripleFireball(container) {
-                const offsets = [-40, 0, 40]; // top, middle, bottom spread
+                const offsets = [-80, 0, 80]; // top, middle, bottom spread
                 offsets.forEach((yOff, i) => {
                     const fb = document.createElement('div');
-                    fb.innerHTML = `<img src="./assets/special.png" style="width:55px;height:55px;border-radius:50%;filter:drop-shadow(0 0 12px gold) brightness(1.3);">`;
+                    fb.innerHTML = `<img src="./assets/special.png" style="width:140px;height:140px;border-radius:50%;filter:drop-shadow(0 0 30px gold) brightness(1.3);">`;
                     fb.style.cssText = `position:absolute; left:150px; top:calc(50% + ${yOff}px); transform:translateY(-50%); z-index:100; pointer-events:none;`;
                     container.appendChild(fb);
                     let posX = 150;
@@ -43886,8 +43886,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             function spawnIncomingBattleFireball(container) {
                 return new Promise(resolve => {
                     const fb = document.createElement('div');
-                    fb.innerHTML = `<img src="./assets/fireballblue.svg" style="width:60px;height:60px; transform:scaleX(-1); filter:drop-shadow(0 0 8px blue);" onerror="this.style.background='radial-gradient(circle, #4488ff, blue)'; this.style.borderRadius='50%';">`;
-                    fb.style.cssText = 'position:absolute; right:-60px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;';
+                    fb.innerHTML = `<img src="./assets/fireballblue.svg" style="width:150px;height:150px; transform:scaleX(-1); filter:drop-shadow(0 0 22px blue);" onerror="this.style.background='radial-gradient(circle, #4488ff, blue)'; this.style.borderRadius='50%';">`;
+                    fb.style.cssText = 'position:absolute; right:-150px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;';
                     container.appendChild(fb);
                     let posX = container.clientWidth;
                     const targetX = container.clientWidth / 2;
@@ -43908,7 +43908,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Normal auto-attack (character attacks on a timer)
             function spawnNormalFireball(container) {
                 const fb = document.createElement('div');
-                fb.innerHTML = `<img src="./assets/fireball.png" style="width:55px;height:55px;filter:drop-shadow(0 0 8px orange);" onerror="this.style.background='radial-gradient(circle, orange, red)'; this.style.borderRadius='50%';">`;
+                fb.innerHTML = `<img src="./assets/fireball.png" style="width:140px;height:140px;filter:drop-shadow(0 0 22px orange);" onerror="this.style.background='radial-gradient(circle, orange, red)'; this.style.borderRadius='50%';">`;
                 fb.style.cssText = `position:absolute; left:150px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;`;
                 container.appendChild(fb);
                 let posX = 150;
