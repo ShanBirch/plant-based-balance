@@ -5225,6 +5225,17 @@ async function applyAppTheme(themeKey) {
             <div style="position: absolute; bottom: 0; left: 10%; right: 10%; height: 30%; background: radial-gradient(ellipse 80% 40% at 50% 100%, rgba(100,140,200,0.15) 0%, transparent 70%); pointer-events: none; z-index: 2;"></div>
             <!-- Ambient room lighting glow -->
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 50%; background: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(80,100,140,0.2) 0%, transparent 70%); pointer-events: none; z-index: 1;"></div>
+            <!-- 3D Background Model (Hidden by default, shown via applyBackgroundForLevel) -->
+            <model-viewer
+                id="tamagotchi-bg-model"
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: none; --poster-color: transparent;"
+                camera-orbit="0deg 85deg 22m"
+                field-of-view="30deg"
+                shadow-intensity="1"
+                exposure="1.2"
+                interaction-prompt="none">
+            </model-viewer>
+
             <model-viewer
                 id="tamagotchi-model"
                 camera-controls
@@ -43569,16 +43580,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         // BACKGROUND THEMES
         // ============================================================
         const BACKGROUND_UNLOCKS = [
-            { level: 1,  theme: null,         name: 'Default' },
-            { level: 10, theme: 'tamagotchi-bg-gym',   name: 'Gym' },
-            { level: 20, theme: 'tamagotchi-bg-park',  name: 'Park' },
-            { level: 30, theme: 'tamagotchi-bg-dojo',  name: 'Dojo' },
-            { level: 40, theme: 'tamagotchi-bg-beach', name: 'Beach' },
-            { level: 50, theme: 'tamagotchi-bg-arena', name: 'Legendary Arena' }
+            { level: 1,  theme: null,         name: 'Default', model: null },
+            { level: 10, theme: 'tamagotchi-bg-gym',   name: 'Gym', model: 'assets/background_gym.glb' },
+            { level: 20, theme: 'tamagotchi-bg-park',  name: 'Park', model: null },
+            { level: 30, theme: 'tamagotchi-bg-dojo',  name: 'Dojo', model: null },
+            { level: 40, theme: 'tamagotchi-bg-beach', name: 'Beach', model: null },
+            { level: 50, theme: 'tamagotchi-bg-arena', name: 'Legendary Arena', model: null }
         ];
 
         function applyBackgroundForLevel(level) {
             const container = document.getElementById('tamagotchi-widget-container');
+            const bgModel = document.getElementById('tamagotchi-bg-model');
+            const floor = document.getElementById('tamagotchi-floor');
             if (!container) return;
 
             // Remove all bg themes
@@ -43589,14 +43602,30 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Find best unlocked background
             let bestBg = null;
             for (let i = BACKGROUND_UNLOCKS.length - 1; i >= 0; i--) {
-                if (level >= BACKGROUND_UNLOCKS[i].level && BACKGROUND_UNLOCKS[i].theme) {
+                if (level >= BACKGROUND_UNLOCKS[i].level) {
                     bestBg = BACKGROUND_UNLOCKS[i];
                     break;
                 }
             }
 
             if (bestBg) {
-                container.classList.add(bestBg.theme);
+                if (bestBg.theme) container.classList.add(bestBg.theme);
+                
+                // Handle 3D model background
+                if (bgModel) {
+                    if (bestBg.model) {
+                        // Only update if SRC is different to avoid flickering/reload
+                        if (bgModel.getAttribute('src') !== bestBg.model) {
+                            bgModel.setAttribute('src', bestBg.model);
+                        }
+                        bgModel.style.display = 'block';
+                        // Hide legacy floor if 3D model is present
+                        if (floor) floor.style.opacity = '0';
+                    } else {
+                        bgModel.style.display = 'none';
+                        if (floor) floor.style.opacity = '1';
+                    }
+                }
             }
         }
 
