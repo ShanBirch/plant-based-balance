@@ -43755,23 +43755,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
 
-            // Clear any accumulated turntable spin so the camera angle is predictable
-            if (typeof viewer.resetTurntableRotation === 'function') {
-                viewer.resetTurntableRotation();
-            }
-
-            // Orbit the camera to see side profile facing right
-            // theta=-90 puts camera to the character's left so they face right on screen
-            // We keep the same phi (vertical angle) and distance so size doesn't change
+            // Orbit camera to side profile facing right.
+            // We must account for the turntable offset that auto-rotate accumulated,
+            // since it's added on top of the camera-orbit attribute value.
+            // DO NOT use resetTurntableRotation/jumpCameraToGoal/min-max-orbit
+            // as those trigger model-viewer's internal reframing and push the model back.
             const orbitParts = (savedOrbit || '0deg 85deg 22m').split(/\s+/);
+            const goalThetaDeg = parseFloat(orbitParts[0]) || 0;
             const currentDist = orbitParts[2] || '22m';
-            const sideOrbit = `-90deg 85deg ${currentDist}`;
-            viewer.setAttribute('camera-orbit', sideOrbit);
-            viewer.setAttribute('min-camera-orbit', sideOrbit);
-            viewer.setAttribute('max-camera-orbit', sideOrbit);
-            if (typeof viewer.jumpCameraToGoal === 'function') {
-                viewer.jumpCameraToGoal();
-            }
+            const actual = viewer.getCameraOrbit();
+            const actualThetaDeg = actual.theta * (180 / Math.PI);
+            const turntableDeg = actualThetaDeg - goalThetaDeg;
+            // effective = goalTheta + turntable, we want effective = -90
+            const newGoalTheta = -90 - turntableDeg;
+            viewer.setAttribute('camera-orbit', `${newGoalTheta.toFixed(1)}deg 85deg ${currentDist}`);
 
             // Shift character to the left side of screen
             viewer.style.left = '-30%';
@@ -44136,8 +44133,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Restore camera, controls, and position
             if (savedOrbit) viewer.setAttribute('camera-orbit', savedOrbit);
-            viewer.removeAttribute('min-camera-orbit');
-            viewer.removeAttribute('max-camera-orbit');
             if (hadCameraControls) viewer.setAttribute('camera-controls', '');
             if (hadAutoRotate) viewer.setAttribute('auto-rotate', '');
             viewer.style.left = '0';
