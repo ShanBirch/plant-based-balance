@@ -2721,7 +2721,7 @@ async function applyAppTheme(themeKey) {
     }
 
     .battle-side-left {
-        transform: translateX(-100px) !important;
+        transform: translateX(-30%) !important;
     }
 
     /* Battle Overlay Title */
@@ -42701,7 +42701,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             const origMaxOrbitV1 = mv.getAttribute('max-camera-orbit');
             mv.removeAttribute('auto-rotate');
             mv.removeAttribute('camera-controls');
+            // First reset turntable and snap to front-facing baseline
             if (typeof mv.resetTurntableRotation === 'function') mv.resetTurntableRotation();
+            mv.setAttribute('camera-orbit', '0deg 85deg 22m');
+            if (typeof mv.jumpCameraToGoal === 'function') mv.jumpCameraToGoal();
+            // Wait a frame so model-viewer processes the turntable reset
+            await new Promise(r => requestAnimationFrame(r));
+            // Now set the exact 90deg side profile from the clean baseline
             mv.setAttribute('camera-orbit', '90deg 85deg 22m');
             mv.setAttribute('min-camera-orbit', '90deg 85deg 22m');
             mv.setAttribute('max-camera-orbit', '90deg 85deg 22m');
@@ -42896,6 +42902,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         overlay.classList.remove('active');
 
         // Lock character to side profile instantly (no matter what direction they were facing)
+        viewer.classList.add('character-battle-pos', 'battle-side-left');
         const originalOrbit = viewer.getAttribute('camera-orbit') || "0deg 85deg 22m";
         const hadAutoRotateV2 = viewer.hasAttribute('auto-rotate');
         const hadCameraControlsV2 = viewer.hasAttribute('camera-controls');
@@ -42903,7 +42910,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         const origMaxOrbitV2 = viewer.getAttribute('max-camera-orbit');
         viewer.removeAttribute('auto-rotate');
         viewer.removeAttribute('camera-controls');
+        // First reset turntable and snap to front-facing baseline
         if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
+        viewer.setAttribute('camera-orbit', "0deg 85deg 22m");
+        if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
+        // Wait a frame so model-viewer processes the turntable reset
+        await new Promise(r => requestAnimationFrame(r));
+        // Now set the exact 90deg side profile from the clean baseline
         viewer.setAttribute('camera-orbit', "90deg 90deg 18m");
         viewer.setAttribute('min-camera-orbit', "90deg 90deg 18m");
         viewer.setAttribute('max-camera-orbit', "90deg 90deg 18m");
@@ -42961,6 +42974,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Reset - unlock camera
         overlay.classList.remove('active');
         overlay.style = "";
+        viewer.classList.remove('battle-side-left');
         if (origMinOrbitV2) viewer.setAttribute('min-camera-orbit', origMinOrbitV2);
         else viewer.removeAttribute('min-camera-orbit');
         if (origMaxOrbitV2) viewer.setAttribute('max-camera-orbit', origMaxOrbitV2);
@@ -42969,6 +42983,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (hadCameraControlsV2) viewer.setAttribute('camera-controls', '');
         if (hadAutoRotateV2) viewer.setAttribute('auto-rotate', '');
         viewer.animationName = "idle";
+        setTimeout(() => {
+            viewer.classList.remove('character-battle-pos');
+        }, 800);
     };
 
     function spawnFireball() {
@@ -43972,6 +43989,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (actionContainer) actionContainer.classList.add('active');
 
             // Lock character to side profile instantly (no matter what direction they were facing)
+            viewer.classList.add('character-battle-pos', 'battle-side-left');
             const originalOrbit = viewer.getAttribute('camera-orbit') || '0deg 85deg 22m';
             const hadAutoRotate = viewer.hasAttribute('auto-rotate');
             const hadCameraControls = viewer.hasAttribute('camera-controls');
@@ -43979,7 +43997,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             const origMaxOrbit = viewer.getAttribute('max-camera-orbit');
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
+            // First reset turntable and snap to front-facing baseline
             if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
+            viewer.setAttribute('camera-orbit', '0deg 85deg 22m');
+            if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
+            // Wait a frame so model-viewer processes the turntable reset
+            await new Promise(r => requestAnimationFrame(r));
+            // Now set the exact 90deg side profile from the clean baseline
             viewer.setAttribute('camera-orbit', '90deg 90deg 18m');
             viewer.setAttribute('min-camera-orbit', '90deg 90deg 18m');
             viewer.setAttribute('max-camera-orbit', '90deg 90deg 18m');
@@ -44313,6 +44337,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (actionContainer) actionContainer.classList.remove('active');
 
             // Unlock camera and restore original settings
+            viewer.classList.remove('battle-side-left');
             if (origMinOrbit) viewer.setAttribute('min-camera-orbit', origMinOrbit);
             else viewer.removeAttribute('min-camera-orbit');
             if (origMaxOrbit) viewer.setAttribute('max-camera-orbit', origMaxOrbit);
@@ -44322,6 +44347,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (hadAutoRotate) viewer.setAttribute('auto-rotate', '');
             viewer.animationName = 'idle';
             setTimeout(() => {
+                viewer.classList.remove('character-battle-pos');
                 viewer.pause();
                 viewer.currentTime = 0;
                 viewer.animationName = null;
