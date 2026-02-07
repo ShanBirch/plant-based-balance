@@ -42726,17 +42726,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hadCameraControlsV1 = mv.hasAttribute('camera-controls');
             const origMinOrbitV1 = mv.getAttribute('min-camera-orbit');
             const origMaxOrbitV1 = mv.getAttribute('max-camera-orbit');
+            // Compute turntable-compensated orbit BEFORE disabling auto-rotate
+            // getCameraOrbit() returns effective angle (camera-orbit + turntable) in radians
+            let battleOrbitV1 = '90deg 85deg 22m';
+            try {
+                const eff = mv.getCameraOrbit();
+                const attrTheta = parseFloat(mv.getAttribute('camera-orbit') || '0') * Math.PI / 180;
+                const turntable = eff.theta - attrTheta;
+                const compensated = ((Math.PI / 2) - turntable) * 180 / Math.PI;
+                battleOrbitV1 = `${compensated.toFixed(1)}deg 85deg 22m`;
+            } catch(e) {
+                // Fallback: try resetTurntableRotation
+                if (typeof mv.resetTurntableRotation === 'function') mv.resetTurntableRotation();
+            }
             mv.removeAttribute('auto-rotate');
             mv.removeAttribute('camera-controls');
-            // Reset turntable rotation accumulated from auto-rotate
-            if (typeof mv.resetTurntableRotation === 'function') mv.resetTurntableRotation();
-            // Wait for model-viewer to process the turntable reset before setting orbit
-            await new Promise(r => requestAnimationFrame(r));
-            await new Promise(r => requestAnimationFrame(r));
-            // Now set side profile from a clean turntable state
-            mv.setAttribute('camera-orbit', '90deg 80deg 10m');
-            mv.setAttribute('min-camera-orbit', '90deg 80deg 10m');
-            mv.setAttribute('max-camera-orbit', '90deg 80deg 10m');
+            mv.setAttribute('camera-orbit', battleOrbitV1);
+            mv.setAttribute('min-camera-orbit', battleOrbitV1);
+            mv.setAttribute('max-camera-orbit', battleOrbitV1);
             if (typeof mv.jumpCameraToGoal === 'function') mv.jumpCameraToGoal();
 
             await new Promise(r => setTimeout(r, 1200));
@@ -42934,17 +42941,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         const hadCameraControlsV2 = viewer.hasAttribute('camera-controls');
         const origMinOrbitV2 = viewer.getAttribute('min-camera-orbit');
         const origMaxOrbitV2 = viewer.getAttribute('max-camera-orbit');
+        // Compute turntable-compensated orbit BEFORE disabling auto-rotate
+        let battleOrbitV2 = '90deg 85deg 22m';
+        try {
+            const eff = viewer.getCameraOrbit();
+            const attrTheta = parseFloat(viewer.getAttribute('camera-orbit') || '0') * Math.PI / 180;
+            const turntable = eff.theta - attrTheta;
+            const compensated = ((Math.PI / 2) - turntable) * 180 / Math.PI;
+            battleOrbitV2 = `${compensated.toFixed(1)}deg 85deg 22m`;
+        } catch(e) {
+            if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
+        }
         viewer.removeAttribute('auto-rotate');
         viewer.removeAttribute('camera-controls');
-        // Reset turntable rotation accumulated from auto-rotate
-        if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
-        // Wait for model-viewer to process the turntable reset before setting orbit
-        await new Promise(r => requestAnimationFrame(r));
-        await new Promise(r => requestAnimationFrame(r));
-        // Now set side profile from a clean turntable state
-        viewer.setAttribute('camera-orbit', "90deg 80deg 10m");
-        viewer.setAttribute('min-camera-orbit', "90deg 80deg 10m");
-        viewer.setAttribute('max-camera-orbit', "90deg 80deg 10m");
+        viewer.setAttribute('camera-orbit', battleOrbitV2);
+        viewer.setAttribute('min-camera-orbit', battleOrbitV2);
+        viewer.setAttribute('max-camera-orbit', battleOrbitV2);
         if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
         await new Promise(r => setTimeout(r, 600));
 
@@ -44020,17 +44032,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hadCameraControls = viewer.hasAttribute('camera-controls');
             const origMinOrbit = viewer.getAttribute('min-camera-orbit');
             const origMaxOrbit = viewer.getAttribute('max-camera-orbit');
+            // Compute turntable-compensated orbit BEFORE disabling auto-rotate
+            let battleOrbit = '90deg 85deg 22m';
+            try {
+                const eff = viewer.getCameraOrbit();
+                const attrTheta = parseFloat(viewer.getAttribute('camera-orbit') || '0') * Math.PI / 180;
+                const turntable = eff.theta - attrTheta;
+                const compensated = ((Math.PI / 2) - turntable) * 180 / Math.PI;
+                battleOrbit = `${compensated.toFixed(1)}deg 85deg 22m`;
+            } catch(e) {
+                if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
+            }
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
-            // Reset turntable rotation accumulated from auto-rotate
-            if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
-            // Wait for model-viewer to process the turntable reset before setting orbit
-            await new Promise(r => requestAnimationFrame(r));
-            await new Promise(r => requestAnimationFrame(r));
-            // Now set side profile from a clean turntable state
-            viewer.setAttribute('camera-orbit', '90deg 80deg 10m');
-            viewer.setAttribute('min-camera-orbit', '90deg 80deg 10m');
-            viewer.setAttribute('max-camera-orbit', '90deg 80deg 10m');
+            viewer.setAttribute('camera-orbit', battleOrbit);
+            viewer.setAttribute('min-camera-orbit', battleOrbit);
+            viewer.setAttribute('max-camera-orbit', battleOrbit);
             if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
             await new Promise(r => setTimeout(r, 600));
 
