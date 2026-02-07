@@ -42701,16 +42701,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             const origMaxOrbitV1 = mv.getAttribute('max-camera-orbit');
             mv.removeAttribute('auto-rotate');
             mv.removeAttribute('camera-controls');
-            // First reset turntable and snap to front-facing baseline
+            // Reset turntable rotation accumulated from auto-rotate
             if (typeof mv.resetTurntableRotation === 'function') mv.resetTurntableRotation();
-            mv.setAttribute('camera-orbit', '0deg 85deg 22m');
-            if (typeof mv.jumpCameraToGoal === 'function') mv.jumpCameraToGoal();
-            // Wait a frame so model-viewer processes the turntable reset
+            // Wait for model-viewer to process the turntable reset before setting orbit
             await new Promise(r => requestAnimationFrame(r));
-            // Now set the exact 90deg side profile from the clean baseline
-            mv.setAttribute('camera-orbit', '90deg 85deg 22m');
-            mv.setAttribute('min-camera-orbit', '90deg 85deg 22m');
-            mv.setAttribute('max-camera-orbit', '90deg 85deg 22m');
+            await new Promise(r => requestAnimationFrame(r));
+            // Now set side profile from a clean turntable state
+            mv.setAttribute('camera-orbit', '90deg 80deg 10m');
+            mv.setAttribute('min-camera-orbit', '90deg 80deg 10m');
+            mv.setAttribute('max-camera-orbit', '90deg 80deg 10m');
             if (typeof mv.jumpCameraToGoal === 'function') mv.jumpCameraToGoal();
 
             await new Promise(r => setTimeout(r, 1200));
@@ -42910,16 +42909,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         const origMaxOrbitV2 = viewer.getAttribute('max-camera-orbit');
         viewer.removeAttribute('auto-rotate');
         viewer.removeAttribute('camera-controls');
-        // First reset turntable and snap to front-facing baseline
+        // Reset turntable rotation accumulated from auto-rotate
         if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
-        viewer.setAttribute('camera-orbit', "0deg 85deg 22m");
-        if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
-        // Wait a frame so model-viewer processes the turntable reset
+        // Wait for model-viewer to process the turntable reset before setting orbit
         await new Promise(r => requestAnimationFrame(r));
-        // Now set the exact 90deg side profile from the clean baseline
-        viewer.setAttribute('camera-orbit', "90deg 90deg 18m");
-        viewer.setAttribute('min-camera-orbit', "90deg 90deg 18m");
-        viewer.setAttribute('max-camera-orbit', "90deg 90deg 18m");
+        await new Promise(r => requestAnimationFrame(r));
+        // Now set side profile from a clean turntable state
+        viewer.setAttribute('camera-orbit', "90deg 80deg 10m");
+        viewer.setAttribute('min-camera-orbit', "90deg 80deg 10m");
+        viewer.setAttribute('max-camera-orbit', "90deg 80deg 10m");
         if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
         await new Promise(r => setTimeout(r, 600));
 
@@ -43997,16 +43995,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             const origMaxOrbit = viewer.getAttribute('max-camera-orbit');
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
-            // First reset turntable and snap to front-facing baseline
+            // Reset turntable rotation accumulated from auto-rotate
             if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
-            viewer.setAttribute('camera-orbit', '0deg 85deg 22m');
-            if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
-            // Wait a frame so model-viewer processes the turntable reset
+            // Wait for model-viewer to process the turntable reset before setting orbit
             await new Promise(r => requestAnimationFrame(r));
-            // Now set the exact 90deg side profile from the clean baseline
-            viewer.setAttribute('camera-orbit', '90deg 90deg 18m');
-            viewer.setAttribute('min-camera-orbit', '90deg 90deg 18m');
-            viewer.setAttribute('max-camera-orbit', '90deg 90deg 18m');
+            await new Promise(r => requestAnimationFrame(r));
+            // Now set side profile from a clean turntable state
+            viewer.setAttribute('camera-orbit', '90deg 80deg 10m');
+            viewer.setAttribute('min-camera-orbit', '90deg 80deg 10m');
+            viewer.setAttribute('max-camera-orbit', '90deg 80deg 10m');
             if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
             await new Promise(r => setTimeout(r, 600));
 
