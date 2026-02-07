@@ -258,14 +258,18 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
     // Otherwise, streak resets to 1
 
-    // Check for streak bonus
+    // Check for streak bonus - only award when streak actually incremented (first post of a new day)
+    // Without this guard, the bonus is awarded on every post made on the milestone day
     let bonusPoints = 0;
     let bonusDescription = '';
 
-    const streakBonus = POINTS_CONFIG.STREAK_BONUSES.find(b => b.days === newStreak);
-    if (streakBonus) {
-      bonusPoints = streakBonus.points;
-      bonusDescription = streakBonus.label;
+    const streakJustIncremented = lastPostDate === yesterday;
+    if (streakJustIncremented) {
+      const streakBonus = POINTS_CONFIG.STREAK_BONUSES.find(b => b.days === newStreak);
+      if (streakBonus) {
+        bonusPoints = streakBonus.points;
+        bonusDescription = streakBonus.label;
+      }
     }
 
     // Calculate new totals
