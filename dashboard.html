@@ -4699,6 +4699,18 @@ async function applyAppTheme(themeKey) {
         box-shadow: inset 0 0 15px rgba(255,215,0,0.3);
     }
 
+    @keyframes bashTumble {
+        0%   { transform: scale(0.88) rotate(0deg); }
+        25%  { transform: scale(1.1) rotate(-15deg); }
+        50%  { transform: scale(0.95) rotate(12deg); }
+        75%  { transform: scale(1.05) rotate(-5deg); }
+        100% { transform: scale(1) rotate(0deg); }
+    }
+
+    .battle-bash-btn.bash-tumble {
+        animation: bashTumble 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
     /* ============================================================
        MOVE PICKER (Pre-Battle)
        ============================================================ */
@@ -44011,10 +44023,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 bashCount++;
                 updateBashUI();
 
-                // Small visual feedback on each tap
+                // Tumble visual feedback on each tap
                 if (bashBtn) {
-                    bashBtn.style.transform = 'scale(0.88)';
-                    setTimeout(() => bashBtn.style.transform = '', 50);
+                    bashBtn.classList.remove('bash-tumble');
+                    void bashBtn.offsetWidth; // force reflow to restart animation
+                    bashBtn.classList.add('bash-tumble');
                 }
 
                 // When bash threshold reached, mark super as ready (next auto-attack becomes super)
