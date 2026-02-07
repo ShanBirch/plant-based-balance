@@ -43750,26 +43750,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hadAutoRotate = viewer.hasAttribute('auto-rotate');
             const hadCameraControls = viewer.hasAttribute('camera-controls');
 
-            // Capture the ACTUAL camera angle (includes turntable offset from auto-rotate)
-            // MUST read this BEFORE removing auto-rotate, otherwise model-viewer
-            // starts interpolating back and getCameraOrbit() returns a mid-transition value
-            const actualOrbitBefore = viewer.getCameraOrbit();
-            const actualThetaDeg = actualOrbitBefore.theta * (180 / Math.PI);
-
             // === BATTLE CAMERA SETUP ===
             // Stop rotation and user controls
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
 
-            // Orbit camera to side profile facing right.
-            // The turntable offset from auto-rotate is still active internally,
-            // so we compensate: effective = attrTheta + turntable = -90deg
+            // Zero out the turntable so camera-orbit angle is exact
+            if (typeof viewer.resetTurntableRotation === 'function') {
+                viewer.resetTurntableRotation();
+            }
+
+            // With turntable at 0, -90deg = exact side profile facing right
             const orbitParts = (savedOrbit || '0deg 85deg 22m').split(/\s+/);
-            const attrThetaDeg = parseFloat(orbitParts[0]) || 0;
             const currentDist = orbitParts[2] || '22m';
-            const turntableDeg = actualThetaDeg - attrThetaDeg;
-            const newGoalTheta = -90 - turntableDeg;
-            viewer.setAttribute('camera-orbit', `${newGoalTheta.toFixed(1)}deg 85deg ${currentDist}`);
+            viewer.setAttribute('camera-orbit', `-90deg 85deg ${currentDist}`);
 
             // Shift character to the left side of screen
             viewer.style.left = '-30%';
