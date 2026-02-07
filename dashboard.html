@@ -43750,7 +43750,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const savedMinOrbit = viewer.getAttribute('min-camera-orbit');
             const savedMaxOrbit = viewer.getAttribute('max-camera-orbit');
             const savedOrientation = viewer.getAttribute('orientation');
-            const savedCameraTarget = viewer.getAttribute('camera-target');
             const hadAutoRotate = viewer.hasAttribute('auto-rotate');
             const hadCameraControls = viewer.hasAttribute('camera-controls');
 
@@ -43776,28 +43775,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             viewer.setAttribute('camera-orbit', lockedOrbit);
             viewer.setAttribute('min-camera-orbit', lockedOrbit);
             viewer.setAttribute('max-camera-orbit', lockedOrbit);
+            viewer.setAttribute('field-of-view', '30deg');
 
             // Jump camera to the locked position instantly
             if (typeof viewer.jumpCameraToGoal === 'function') {
                 viewer.jumpCameraToGoal();
             }
 
-            // Position character on the left side of screen using camera-target
-            // instead of CSS transforms (CSS translateX shifts the WebGL canvas
-            // in 2D which causes the 3D model to render at the wrong depth).
-            // camera-target shifts the look-at point in 3D space, so the model
-            // stays at its correct depth while appearing on the left of the viewport.
-            const distNum = parseFloat(currentDist) || 22;
-            const targetOffsetX = distNum * 0.107;
-            const battleTarget = `${targetOffsetX.toFixed(2)}m auto auto`;
-            viewer.setAttribute('camera-target', battleTarget);
+            // Position character on the left side via CSS left offset
+            // (not transform/camera-target which interfere with 3D depth)
+            viewer.style.left = '-30%';
 
-            // Re-enforce after a frame and again shortly after to
+            // Re-enforce camera after a frame and again shortly after to
             // override any late turntable drift or async resets
             requestAnimationFrame(() => {
                 viewer.setAttribute('camera-orbit', lockedOrbit);
                 viewer.setAttribute('orientation', '0deg 90deg 0deg');
-                viewer.setAttribute('camera-target', battleTarget);
+                viewer.setAttribute('field-of-view', '30deg');
                 if (typeof viewer.jumpCameraToGoal === 'function') {
                     viewer.jumpCameraToGoal();
                 }
@@ -43805,7 +43799,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             setTimeout(() => {
                 viewer.setAttribute('camera-orbit', lockedOrbit);
                 viewer.setAttribute('orientation', '0deg 90deg 0deg');
-                viewer.setAttribute('camera-target', battleTarget);
+                viewer.setAttribute('field-of-view', '30deg');
                 viewer.setAttribute('min-camera-orbit', lockedOrbit);
                 viewer.setAttribute('max-camera-orbit', lockedOrbit);
                 if (typeof viewer.jumpCameraToGoal === 'function') {
@@ -44182,15 +44176,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (savedMaxOrbit) viewer.setAttribute('max-camera-orbit', savedMaxOrbit);
             else viewer.removeAttribute('max-camera-orbit');
 
-            // Restore camera target (battle left-side offset)
-            if (savedCameraTarget) viewer.setAttribute('camera-target', savedCameraTarget);
-            else viewer.removeAttribute('camera-target');
-
             // Restore controls
             if (hadCameraControls) viewer.setAttribute('camera-controls', '');
             if (hadAutoRotate) viewer.setAttribute('auto-rotate', '');
 
-            // Remove battle state
+            // Remove battle positioning and reset state
+            viewer.style.left = '0';
             viewer.animationName = 'idle';
             setTimeout(() => {
                 viewer.pause();
