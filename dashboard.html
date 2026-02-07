@@ -43746,66 +43746,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // === SAVE ORIGINAL STATE ===
-            const savedOrbit = viewer.getAttribute('camera-orbit');
-            const savedMinOrbit = viewer.getAttribute('min-camera-orbit');
-            const savedMaxOrbit = viewer.getAttribute('max-camera-orbit');
-            const savedOrientation = viewer.getAttribute('orientation');
             const hadAutoRotate = viewer.hasAttribute('auto-rotate');
             const hadCameraControls = viewer.hasAttribute('camera-controls');
 
             // === BATTLE CAMERA SETUP ===
-            // Stop rotation and user controls
+            // Just stop rotation and user controls - character stays exactly as-is
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
-
-            // Reset the turntable rotation that auto-rotate accumulated
-            if (typeof viewer.resetTurntableRotation === 'function') {
-                viewer.resetTurntableRotation();
-            }
-
-            // Rotate the MODEL itself to face right (side profile)
-            // Positive 90deg Y rotation = model faces to the viewer's right
-            viewer.setAttribute('orientation', '0deg 90deg 0deg');
-
-            // Lock the camera at the front-facing position, preserving distance so size stays the same
-            const currentOrbit = savedOrbit || '0deg 85deg 22m';
-            const orbitParts = currentOrbit.split(/\s+/);
-            const currentDist = orbitParts[2] || '22m';
-            const lockedOrbit = `0deg 85deg ${currentDist}`;
-            viewer.setAttribute('camera-orbit', lockedOrbit);
-            viewer.setAttribute('min-camera-orbit', lockedOrbit);
-            viewer.setAttribute('max-camera-orbit', lockedOrbit);
-            viewer.setAttribute('field-of-view', '30deg');
-
-            // Jump camera to the locked position instantly
-            if (typeof viewer.jumpCameraToGoal === 'function') {
-                viewer.jumpCameraToGoal();
-            }
-
-            // Position character on the left side via CSS left offset
-            // (not transform/camera-target which interfere with 3D depth)
-            viewer.style.left = '-30%';
-
-            // Re-enforce camera after a frame and again shortly after to
-            // override any late turntable drift or async resets
-            requestAnimationFrame(() => {
-                viewer.setAttribute('camera-orbit', lockedOrbit);
-                viewer.setAttribute('orientation', '0deg 90deg 0deg');
-                viewer.setAttribute('field-of-view', '30deg');
-                if (typeof viewer.jumpCameraToGoal === 'function') {
-                    viewer.jumpCameraToGoal();
-                }
-            });
-            setTimeout(() => {
-                viewer.setAttribute('camera-orbit', lockedOrbit);
-                viewer.setAttribute('orientation', '0deg 90deg 0deg');
-                viewer.setAttribute('field-of-view', '30deg');
-                viewer.setAttribute('min-camera-orbit', lockedOrbit);
-                viewer.setAttribute('max-camera-orbit', lockedOrbit);
-                if (typeof viewer.jumpCameraToGoal === 'function') {
-                    viewer.jumpCameraToGoal();
-                }
-            }, 100);
 
             // Get stats
             const stats = getBattleStats();
@@ -44165,23 +44112,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (manaContainer) manaContainer.classList.remove('active');
             if (actionContainer) actionContainer.classList.remove('active');
 
-            // Restore model orientation (remove side profile rotation)
-            if (savedOrientation) viewer.setAttribute('orientation', savedOrientation);
-            else viewer.removeAttribute('orientation');
-
-            // Restore camera orbit
-            if (savedOrbit) viewer.setAttribute('camera-orbit', savedOrbit);
-            if (savedMinOrbit) viewer.setAttribute('min-camera-orbit', savedMinOrbit);
-            else viewer.removeAttribute('min-camera-orbit');
-            if (savedMaxOrbit) viewer.setAttribute('max-camera-orbit', savedMaxOrbit);
-            else viewer.removeAttribute('max-camera-orbit');
-
             // Restore controls
             if (hadCameraControls) viewer.setAttribute('camera-controls', '');
             if (hadAutoRotate) viewer.setAttribute('auto-rotate', '');
 
-            // Remove battle positioning and reset state
-            viewer.style.left = '0';
             viewer.animationName = 'idle';
             setTimeout(() => {
                 viewer.pause();
