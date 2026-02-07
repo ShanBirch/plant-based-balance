@@ -43889,7 +43889,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     fb.style.cssText = `position:absolute; left:150px; top:calc(50% + ${yOff}px); transform:translateY(-50%); z-index:100; pointer-events:none;`;
                     container.appendChild(fb);
                     let posX = 150;
-                    const speed = 10 + (i * 2); // slightly different speeds for spread effect
+                    const speed = 5 + i; // slightly different speeds for spread effect (50% slower)
                     function move() {
                         posX += speed;
                         fb.style.left = posX + 'px';
@@ -43904,12 +43904,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             function spawnIncomingBattleFireball(container) {
                 return new Promise(resolve => {
                     const fb = document.createElement('div');
-                    fb.innerHTML = `<img src="./assets/fireballblue.svg" style="width:150px;height:150px; transform:scaleX(-1); filter:drop-shadow(0 0 22px blue);" onerror="this.style.background='radial-gradient(circle, #4488ff, blue)'; this.style.borderRadius='50%';">`;
+                    fb.innerHTML = `<img src="./assets/fireball.png" style="width:140px;height:140px; transform:scaleX(-1); filter:drop-shadow(0 0 22px orange);" onerror="this.style.background='radial-gradient(circle, orange, red)'; this.style.borderRadius='50%';">`;
                     fb.style.cssText = 'position:absolute; right:-150px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;';
                     container.appendChild(fb);
                     let posX = container.clientWidth;
                     const targetX = container.clientWidth / 2;
-                    const speed = 8;
+                    const speed = 4;
                     function move() {
                         posX -= speed;
                         fb.style.left = posX + 'px';
@@ -43931,7 +43931,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 container.appendChild(fb);
                 let posX = 150;
                 function move() {
-                    posX += 10;
+                    posX += 5;
                     fb.style.left = posX + 'px';
                     if (posX > container.clientWidth) fb.remove();
                     else requestAnimationFrame(move);
