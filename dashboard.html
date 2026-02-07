@@ -380,55 +380,6 @@ async function applyAppTheme(themeKey) {
         border-color: #166534;
     }
 
-    /* Subscription Management Styles */
-    .subscription-menu {
-        display: none;
-        margin-top: 15px;
-        padding: 15px;
-        background: #f8fafc;
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-    }
-    .subscription-menu.active { display: block; }
-    .sub-action-btn {
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 10px;
-        border-radius: 8px;
-        border: 1px solid #cbd5e1;
-        background: white;
-        color: var(--text-main);
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-align: left;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .sub-action-btn:hover { background: #f1f5f9; }
-    .sub-action-btn.cancel { color: #dc2626; border-color: #fecaca; }
-    .sub-action-btn.cancel:hover { background: #fef2f2; }
-    
-    .pause-options {
-        display: none;
-        padding-top: 10px;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 5px;
-        margin-bottom: 8px;
-    }
-    .pause-options.active { display: grid; }
-    .pause-btn {
-        padding: 8px;
-        border: 1px solid var(--primary);
-        background: white;
-        color: var(--primary);
-        border-radius: 6px;
-        font-size: 0.8rem;
-        cursor: pointer;
-    }
-    .pause-btn:hover { background: #f0fdf4; }
-
     .profile-icon { 
         width: 35px; 
         height: 35px; 
@@ -14030,30 +13981,6 @@ function viewWorkoutHistoryDetail(date) {
             </div>
         </div>
 
-        <div style="padding: 0 25px; margin-top: 30px;">
-            <button class="btn-primary" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:var(--primary); color:white;" onclick="toggleSubscriptionMenu()">
-                MANAGE SUBSCRIPTION
-            </button>
-
-            <div id="subscription-management-menu" class="subscription-menu">
-                <button class="sub-action-btn" onclick="togglePauseOptions()">
-                    <span>??</span> Pause Subscription
-                </button>
-                <div id="pause-duration-options" class="pause-options">
-                    <button class="pause-btn" onclick="handlePause(1)">1 Month</button>
-                    <button class="pause-btn" onclick="handlePause(2)">2 Months</button>
-                    <button class="pause-btn" onclick="handlePause(3)">3 Months</button>
-                </div>
-
-                <button id="btn-cancel-sub" class="sub-action-btn cancel" onclick="handleSubscriptionAction('cancel')">
-                    <span>?</span> Cancel Subscription
-                </button>
-                <div id="sub-status-msg" style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 10px;">
-                    Managed securely via Stripe
-                </div>
-            </div>
-        </div>
-
         <!-- Logout Button -->
         <div style="padding: 0 25px; margin-top: 30px; margin-bottom: 40px;">
             <button onclick="handleLogout()" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:#ef4444; color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition: background 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
@@ -15304,89 +15231,6 @@ function connectApp(appName) {
     }, 1500);
 }
 
-function toggleSubscriptionMenu() {
-    const menu = document.getElementById('subscription-management-menu');
-    menu.classList.toggle('active');
-}
-
-function togglePauseOptions() {
-    const opts = document.getElementById('pause-duration-options');
-    opts.classList.toggle('active');
-}
-
-async function handlePause(months) {
-    if (!confirm(`Pause your subscription for ${months} month(s)? Your access will resume automatically.`)) return;
-
-    const msgEl = document.getElementById('sub-status-msg');
-    msgEl.innerText = "Processing pause request...";
-    
-    try {
-        const email = window.currentUser?.email || sessionStorage.getItem('userEmail') || "user@example.com"; 
-        
-        const response = await fetch('/.netlify/functions/pause-subscription', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email, durationMonths: months })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            msgEl.innerText = `? Paused for ${months} months.`;
-            msgEl.style.color = "var(--primary)";
-            alert(data.message);
-            togglePauseOptions(); // Hide options
-        } else {
-            throw new Error(data.error || "Pause failed");
-        }
-    } catch (err) {
-        console.error(err);
-        msgEl.innerText = "Error pausing subscription.";
-        msgEl.style.color = "red";
-        alert("Error: " + err.message);
-    }
-}
-
-async function handleSubscriptionAction(action) {
-    if (action === 'cancel') {
-        if (!confirm("Are you sure you want to cancel? You will lose access to new content at the end of your billing cycle.")) {
-            return;
-        }
-
-        const btn = document.getElementById('btn-cancel-sub');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "Processing...";
-        btn.disabled = true;
-
-        try {
-            const email = window.currentUser?.email || sessionStorage.getItem('userEmail') || "user@example.com"; // Fallback for dev
-            
-            const response = await fetch('/.netlify/functions/cancel-subscription', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                btn.innerHTML = "<span>?</span> Cancelled";
-                btn.classList.remove('cancel');
-                document.getElementById('sub-status-msg').innerText = "Subscription cancelled. Access remains until period end.";
-                document.getElementById('sub-status-msg').style.color = "var(--primary)";
-                alert(data.message);
-            } else {
-                throw new Error(data.error || "Cancellation failed");
-            }
-
-        } catch (err) {
-            console.error(err);
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            alert("Error cancelling subscription: " + err.message + ". Please try again or contact support.");
-        }
-    }
-}
 
 
 
