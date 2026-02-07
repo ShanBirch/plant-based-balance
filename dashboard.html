@@ -43729,7 +43729,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // ACTUAL BATTLE ENGINE (renamed from startBattle)
         // ============================================================
         window._runBattle = async function(opponentName) {
-            console.log('🥊 ENHANCED BATTLE START vs', opponentName);
+            console.log('🥊 BATTLE START vs', opponentName);
 
             if (window._battleInProgress) return;
             window._battleInProgress = true;
@@ -43750,8 +43750,59 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (!widget || !viewer) {
                 window._battleInProgress = false;
+                window.isDuringBattle = false;
                 return;
             }
+
+            // === SAVE ORIGINAL STATE ===
+            const savedOrbit = viewer.getAttribute('camera-orbit');
+            const savedMinOrbit = viewer.getAttribute('min-camera-orbit');
+            const savedMaxOrbit = viewer.getAttribute('max-camera-orbit');
+            const savedOrientation = viewer.getAttribute('orientation');
+            const hadAutoRotate = viewer.hasAttribute('auto-rotate');
+            const hadCameraControls = viewer.hasAttribute('camera-controls');
+
+            // === BATTLE CAMERA SETUP ===
+            // Stop rotation and user controls
+            viewer.removeAttribute('auto-rotate');
+            viewer.removeAttribute('camera-controls');
+
+            // Reset the turntable rotation that auto-rotate accumulated
+            // (without this, the camera stays at whatever angle it was spinning at)
+            if (typeof viewer.resetTurntableRotation === 'function') {
+                viewer.resetTurntableRotation();
+            }
+
+            // Rotate the MODEL itself to face right (side profile)
+            // This is much more reliable than trying to orbit the camera around,
+            // because it's immune to turntable rotation offsets
+            viewer.setAttribute('orientation', '0deg -90deg 0deg');
+
+            // Lock the camera at the front-facing position so it can't drift
+            const currentOrbit = savedOrbit || '0deg 85deg 22m';
+            const orbitParts = currentOrbit.split(/\s+/);
+            const currentDist = orbitParts[2] || '22m';
+            const lockedOrbit = `0deg 85deg ${currentDist}`;
+            viewer.setAttribute('camera-orbit', lockedOrbit);
+            viewer.setAttribute('min-camera-orbit', lockedOrbit);
+            viewer.setAttribute('max-camera-orbit', lockedOrbit);
+
+            // Jump camera to the locked position instantly
+            if (typeof viewer.jumpCameraToGoal === 'function') {
+                viewer.jumpCameraToGoal();
+            }
+
+            // Re-enforce after a frame (catches any late overrides)
+            requestAnimationFrame(() => {
+                viewer.setAttribute('camera-orbit', lockedOrbit);
+                viewer.setAttribute('orientation', '0deg -90deg 0deg');
+                if (typeof viewer.jumpCameraToGoal === 'function') {
+                    viewer.jumpCameraToGoal();
+                }
+            });
+
+            // Push character to the left of screen via CSS
+            viewer.classList.add('character-battle-pos', 'battle-side-left');
 
             // Get stats
             const stats = getBattleStats();
@@ -43759,9 +43810,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             const baseDmg = 20;
             const playerMaxHP = 100 + (stats.hp * 5);
             const playerSTR = stats.str;
-            const manaRate = 1 + (stats.mana / 50); // multiplier for mana charge speed
+            const manaRate = 1 + (stats.mana / 50);
 
-            // Enemy scales with level
             const enemyMaxHP = 80 + (level * 8);
             const enemyBaseDmg = 15 + Math.floor(level * 1.5);
 
@@ -43775,16 +43825,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             const chosenMove = await showMovePicker();
             const movePower = chosenMove.power || 1;
 
-            // Update HP bars
+            // HP bar updates
             function updateHPBars() {
                 const playerFill = document.getElementById('battle-hp-player');
                 const playerText = document.getElementById('battle-hp-player-text');
                 const enemyFill = document.getElementById('battle-hp-enemy');
                 const enemyText = document.getElementById('battle-hp-enemy-text');
-
                 const playerPct = Math.max(0, (playerHP / playerMaxHP) * 100);
                 const enemyPct = Math.max(0, (enemyHP / enemyMaxHP) * 100);
-
                 if (playerFill) playerFill.style.width = playerPct + '%';
                 if (playerText) playerText.textContent = `${Math.max(0, Math.round(playerHP))} / ${playerMaxHP}`;
                 if (enemyFill) enemyFill.style.width = enemyPct + '%';
@@ -43799,9 +43847,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (manaCharge >= 100 && !manaFull) {
                         fill.classList.add('full');
                         manaFull = true;
-                        if (specialBtn) {
-                            specialBtn.classList.add('ready');
-                        }
+                        if (specialBtn) specialBtn.classList.add('ready');
                     }
                 }
                 if (pct) pct.textContent = Math.min(100, Math.round(manaCharge)) + '%';
@@ -43822,27 +43868,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             function stopManaCharge() {
-                if (manaInterval) {
-                    clearInterval(manaInterval);
-                    manaInterval = null;
-                }
+                if (manaInterval) { clearInterval(manaInterval); manaInterval = null; }
             }
 
-            // Sound helper
             function playSound(name) {
                 if (typeof playBattleSound === 'function') playBattleSound(name);
             }
 
-            // Reset HP display
-            playerHP = playerMaxHP;
-            enemyHP = enemyMaxHP;
+            // Init HP
             updateHPBars();
-
-            // Update opponent name in HP bar
             const enemyNameEl = document.querySelector('.battle-hp-box.enemy .battle-hp-name');
             if (enemyNameEl) enemyNameEl.textContent = (opponentName || 'OPPONENT').toUpperCase();
 
-            // INTRO
+            // === INTRO ===
             playSound('intro');
             if (overlayText && overlay) {
                 overlayText.textContent = `VS ${(opponentName || 'OPPONENT').toUpperCase()}!`;
@@ -43859,50 +43897,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             await new Promise(r => setTimeout(r, 2000));
             if (overlay) overlay.classList.remove('active');
 
-            // Show HP bars and mana
+            // Show battle UI
             if (hpContainer) hpContainer.classList.add('active');
             if (manaContainer) manaContainer.classList.add('active');
             if (actionContainer) actionContainer.classList.add('active');
 
-            // Lock character to side profile instantly (no matter what direction they were facing)
-            viewer.classList.add('character-battle-pos', 'battle-side-left');
-            const originalOrbit = viewer.getAttribute('camera-orbit') || '0deg 85deg 22m';
-            const hadAutoRotate = viewer.hasAttribute('auto-rotate');
-            const hadCameraControls = viewer.hasAttribute('camera-controls');
-            const origMinOrbit = viewer.getAttribute('min-camera-orbit');
-            const origMaxOrbit = viewer.getAttribute('max-camera-orbit');
-            viewer.removeAttribute('auto-rotate');
-            viewer.removeAttribute('camera-controls');
-            if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
-
-            // Calculate proper camera distance based on level (same logic as normal mode)
-            let battleCameraDist = 22.0;
-            if (level >= 99) battleCameraDist = 12.0;
-            else if (level >= 40) battleCameraDist = 18.0 - ((level - 40) / 59 * 6.0);
-            else battleCameraDist = 22.0 - (level / 40 * 4.0);
-            if (window.currentUserGender?.toLowerCase() === 'female') {
-                if (level >= 20) battleCameraDist = 4.2;
-                else if (level >= 10) battleCameraDist = 7.0;
-                else battleCameraDist = 9.5;
-            }
-
-            const battleOrbit = `90deg 85deg ${battleCameraDist}m`;
-            viewer.setAttribute('camera-orbit', battleOrbit);
-            viewer.setAttribute('min-camera-orbit', battleOrbit);
-            viewer.setAttribute('max-camera-orbit', battleOrbit);
-            if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
-            // Re-apply after a frame to catch any stray overrides
-            requestAnimationFrame(() => {
-                viewer.setAttribute('camera-orbit', battleOrbit);
-                if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
-            });
-
             await new Promise(r => setTimeout(r, 600));
-
-            // Start mana charging
             startManaCharge();
 
-            // Find animation tracks
+            // Find animations
             const anims = viewer.availableAnimations || [];
             let attackAnim = anims.find(a => a.toLowerCase() === chosenMove.name.toLowerCase())
                 || anims.find(a => a.toLowerCase().includes(chosenMove.name.toLowerCase()))
@@ -43912,14 +43915,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             let blockAnim = anims.find(a => /^block$/i.test(a)) || hitAnim;
             let loseAnim = anims.find(a => /^lose$|^die$/i.test(a)) || anims[0];
 
-            // Battle state helpers
+            // Battle state
             let battleOver = false;
             let waitingForPunch = false;
             let waitingForBlock = false;
             let punchResolve = null;
             let blockResolve = null;
 
-            // Button handlers
             function onPunch() {
                 if (!waitingForPunch || !punchResolve) return;
                 waitingForPunch = false;
@@ -43927,7 +43929,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 punchResolve('hit');
                 punchResolve = null;
             }
-
             function onBlock() {
                 if (!waitingForBlock || !blockResolve) return;
                 waitingForBlock = false;
@@ -43935,10 +43936,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 blockResolve('blocked');
                 blockResolve = null;
             }
-
             function onSpecial() {
                 if (!manaFull) return;
-                // Fire special attack
                 manaCharge = 0;
                 manaFull = false;
                 const fill = document.getElementById('battle-mana-fill');
@@ -43946,7 +43945,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 specialBtn.classList.remove('ready');
                 updateManaBar();
 
-                // Find best special move animation
                 const specialMoves = ['kick_2', 'boxing_2', 'karate', 'volleyball', 'kick'];
                 let specialAnim = null;
                 for (const sm of specialMoves) {
@@ -43954,21 +43952,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (specialAnim) break;
                 }
                 if (!specialAnim) specialAnim = attackAnim;
-
-                // Play special animation
                 viewer.animationName = specialAnim;
                 viewer.play();
 
-                // Big damage
                 const specialDmg = (baseDmg + playerSTR * 2) * 4;
                 enemyHP -= specialDmg;
                 updateHPBars();
-
-                // Special fireball (bigger)
                 spawnBattleFireball(widget, true);
                 playSound('whoosh');
 
-                // Screen shake
                 widget.style.animation = 'none';
                 void widget.offsetWidth;
                 widget.style.transform = 'translateX(5px)';
@@ -43981,7 +43973,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             blockBtn.addEventListener('click', onBlock);
             specialBtn.addEventListener('click', onSpecial);
 
-            // Fireball spawn helper
+            // Fireball helpers
             function spawnBattleFireball(container, isSpecial = false) {
                 const fb = document.createElement('div');
                 const size = isSpecial ? 90 : 60;
@@ -43989,7 +43981,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 fb.innerHTML = `<img src="assets/fireball.png" style="width:${size}px;height:${size}px;filter:drop-shadow(0 0 ${isSpecial ? 15 : 8}px ${glowColor});">`;
                 fb.style.cssText = `position:absolute; left:150px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;`;
                 container.appendChild(fb);
-
                 let posX = 150;
                 const speed = isSpecial ? 35 : 25;
                 function move() {
@@ -44007,35 +43998,25 @@ document.addEventListener('DOMContentLoaded', async function() {
                     fb.innerHTML = `<img src="assets/fireballblue.svg" style="width:60px;height:60px; transform:scaleX(-1); filter:drop-shadow(0 0 8px blue);">`;
                     fb.style.cssText = 'position:absolute; right:-60px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;';
                     container.appendChild(fb);
-
                     let posX = container.clientWidth;
                     const targetX = container.clientWidth / 2;
                     const speed = 25;
-
                     function move() {
                         posX -= speed;
                         fb.style.left = posX + 'px';
-                        if (posX <= targetX) {
-                            fb.remove();
-                            resolve();
-                        } else {
-                            requestAnimationFrame(move);
-                        }
+                        if (posX <= targetX) { fb.remove(); resolve(); }
+                        else requestAnimationFrame(move);
                     }
                     move();
                 });
             }
 
-            // Wait for player punch with timeout
             function waitForPunch(timeoutMs = 2000) {
                 return new Promise(resolve => {
                     waitingForPunch = true;
                     punchBtn.disabled = false;
-
-                    // Visual pulse for timing window
                     punchBtn.classList.add('perfect');
                     setTimeout(() => punchBtn.classList.remove('perfect'), 600);
-
                     punchResolve = resolve;
                     setTimeout(() => {
                         if (waitingForPunch) {
@@ -44052,10 +44033,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return new Promise(resolve => {
                     waitingForBlock = true;
                     blockBtn.disabled = false;
-
                     blockBtn.classList.add('perfect');
                     setTimeout(() => blockBtn.classList.remove('perfect'), 500);
-
                     blockResolve = resolve;
                     setTimeout(() => {
                         if (waitingForBlock) {
@@ -44072,7 +44051,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             for (let round = 1; round <= 3; round++) {
                 if (battleOver) break;
 
-                // Round announcement
                 if (overlayText && overlay) {
                     overlayText.textContent = `ROUND ${round}`;
                     overlay.classList.add('active');
@@ -44082,56 +44060,33 @@ document.addEventListener('DOMContentLoaded', async function() {
                     await new Promise(r => setTimeout(r, 500));
                 }
 
-                // === ATTACK PHASE (3 punches with button mashing) ===
+                // Attack phase
                 for (let i = 0; i < 3; i++) {
                     if (battleOver) break;
-
-                    // Wait for player to tap PUNCH
                     const punchResult = await waitForPunch(2000);
-
-                    // Calculate damage
-                    let dmgMultiplier = 1;
-                    if (punchResult === 'hit') {
-                        dmgMultiplier = 1.0;
-                        // Check if they hit during the perfect window (first 600ms)
-                        dmgMultiplier = 1.2; // Reward tapping
-                    } else {
-                        dmgMultiplier = 0.5; // Miss/timeout = weak auto-attack
-                    }
-
+                    let dmgMultiplier = punchResult === 'hit' ? 1.2 : 0.5;
                     const damage = (baseDmg + playerSTR * 2) * movePower * dmgMultiplier;
                     enemyHP -= damage;
                     updateHPBars();
-
-                    // Play attack animation
                     viewer.animationName = attackAnim;
                     viewer.play();
                     await new Promise(r => setTimeout(r, 400));
-
                     spawnBattleFireball(widget);
                     playSound('whoosh');
                     await new Promise(r => setTimeout(r, 800));
-
-                    // Check enemy defeat
-                    if (enemyHP <= 0) {
-                        battleOver = true;
-                        break;
-                    }
+                    if (enemyHP <= 0) { battleOver = true; break; }
                 }
 
                 if (battleOver) break;
                 await new Promise(r => setTimeout(r, 800));
 
-                // === DEFENSE PHASE (incoming fireballs + block mashing) ===
+                // Defense phase
                 for (let i = 0; i < 3; i++) {
                     if (battleOver) break;
-
-                    // Start incoming fireball and block prompt simultaneously
                     const [_, blockResult] = await Promise.all([
                         spawnIncomingBattleFireball(widget),
                         waitForBlock(1200)
                     ]);
-
                     let damageTaken = enemyBaseDmg;
                     if (blockResult === 'blocked') {
                         damageTaken = Math.round(enemyBaseDmg * 0.4);
@@ -44140,25 +44095,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                         viewer.animationName = hitAnim;
                     }
                     viewer.play();
-
                     playSound('hit');
-
-                    // Red flash on hit
                     const hitFlash = document.createElement('div');
                     const flashOpacity = blockResult === 'blocked' ? 0.15 : 0.4;
                     hitFlash.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:red;opacity:${flashOpacity};z-index:998;pointer-events:none;`;
                     widget.appendChild(hitFlash);
                     setTimeout(() => hitFlash.remove(), 150);
-
                     playerHP -= damageTaken;
                     updateHPBars();
                     await new Promise(r => setTimeout(r, 800));
-
-                    // Check player defeat
-                    if (playerHP <= 0) {
-                        battleOver = true;
-                        break;
-                    }
+                    if (playerHP <= 0) { battleOver = true; break; }
                 }
 
                 if (battleOver) break;
@@ -44167,8 +44113,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // === END BATTLE ===
             stopManaCharge();
-
-            // Remove event listeners
             punchBtn.removeEventListener('click', onPunch);
             blockBtn.removeEventListener('click', onBlock);
             specialBtn.removeEventListener('click', onSpecial);
@@ -44179,35 +44123,28 @@ document.addEventListener('DOMContentLoaded', async function() {
             const playerWon = enemyHP <= 0 || playerHP > 0;
 
             if (playerWon) {
-                // VICTORY
                 const victoryAnim = anims.find(a => /laugh|clap|arms_up/i.test(a)) || 'idle';
                 viewer.animationName = victoryAnim;
                 viewer.play();
                 playSound('victory');
-
                 if (overlayText && overlay) {
                     overlayText.textContent = 'YOU WIN!';
                     overlay.style.color = '#00ff00';
                     overlay.style.textShadow = '0 0 20px #00ff00';
                     overlay.classList.add('active');
                 }
-
-                // Award XP for winning
                 if (typeof showToast === 'function') {
                     setTimeout(() => showToast('Victory! +3 XP bonus', 'success'), 2000);
                 }
             } else {
-                // DEFEAT
                 viewer.animationName = loseAnim;
                 viewer.play();
-
                 if (overlayText && overlay) {
                     overlayText.textContent = 'DEFEATED!';
                     overlay.style.color = '#ff4444';
                     overlay.style.textShadow = '0 0 20px #ff4444';
                     overlay.classList.add('active');
                 }
-
                 if (typeof showToast === 'function') {
                     setTimeout(() => showToast('Train harder and try again!', 'info'), 2000);
                 }
@@ -44215,7 +44152,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             await new Promise(r => setTimeout(r, 4000));
 
-            // === RESET ===
+            // === CLEAN RESET ===
             if (overlay) {
                 overlay.classList.remove('active');
                 overlay.style.color = '';
@@ -44225,15 +44162,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (manaContainer) manaContainer.classList.remove('active');
             if (actionContainer) actionContainer.classList.remove('active');
 
-            // Unlock camera and restore original settings
-            viewer.classList.remove('battle-side-left');
-            if (origMinOrbit) viewer.setAttribute('min-camera-orbit', origMinOrbit);
+            // Restore model orientation (remove side profile rotation)
+            if (savedOrientation) viewer.setAttribute('orientation', savedOrientation);
+            else viewer.removeAttribute('orientation');
+
+            // Restore camera orbit
+            if (savedOrbit) viewer.setAttribute('camera-orbit', savedOrbit);
+            if (savedMinOrbit) viewer.setAttribute('min-camera-orbit', savedMinOrbit);
             else viewer.removeAttribute('min-camera-orbit');
-            if (origMaxOrbit) viewer.setAttribute('max-camera-orbit', origMaxOrbit);
+            if (savedMaxOrbit) viewer.setAttribute('max-camera-orbit', savedMaxOrbit);
             else viewer.removeAttribute('max-camera-orbit');
-            viewer.setAttribute('camera-orbit', originalOrbit);
+
+            // Restore controls
             if (hadCameraControls) viewer.setAttribute('camera-controls', '');
             if (hadAutoRotate) viewer.setAttribute('auto-rotate', '');
+
+            // Remove battle positioning
+            viewer.classList.remove('battle-side-left');
             viewer.animationName = 'idle';
             setTimeout(() => {
                 viewer.classList.remove('character-battle-pos');
