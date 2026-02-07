@@ -117,6 +117,45 @@ export default async (request, context) => {
                 }
             }
 
+            // Handle Challenge Buy-In payment
+            if (session.metadata?.product_type === 'challenge_buyin' && session.metadata?.user_id && session.metadata?.challenge_id) {
+                const userId = session.metadata.user_id;
+                const challengeId = session.metadata.challenge_id;
+                const supabaseUrl = Deno.env.get('SUPABASE_URL');
+                const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+                if (supabaseUrl && supabaseServiceKey) {
+                    try {
+                        // Mark this participant as paid
+                        const patchResponse = await fetch(
+                            `${supabaseUrl}/rest/v1/challenge_participants?challenge_id=eq.${challengeId}&user_id=eq.${userId}`,
+                            {
+                                method: 'PATCH',
+                                headers: {
+                                    'apikey': supabaseServiceKey,
+                                    'Authorization': `Bearer ${supabaseServiceKey}`,
+                                    'Content-Type': 'application/json',
+                                    'Prefer': 'return=minimal'
+                                },
+                                body: JSON.stringify({
+                                    has_paid: true,
+                                    paid_at: new Date().toISOString(),
+                                    stripe_payment_id: session.payment_intent
+                                })
+                            }
+                        );
+
+                        if (patchResponse.ok) {
+                            console.log(`Challenge buy-in confirmed for user ${userId} in challenge ${challengeId}`);
+                        } else {
+                            console.error(`Failed to confirm buy-in: ${await patchResponse.text()}`);
+                        }
+                    } catch (err) {
+                        console.error("Error confirming challenge buy-in:", err.message);
+                    }
+                }
+            }
+
             // Store FB metadata on customer
             if (customerId && session.metadata?.fbc) {
                 await stripe.customers.update(customerId, {

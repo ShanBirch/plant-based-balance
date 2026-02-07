@@ -4,6 +4,10 @@
 
 # Edge Function Mappings
 [[edge_functions]]
+  function = "create-challenge-buyin-checkout"
+  path = "/.netlify/functions/create-challenge-buyin-checkout"
+
+[[edge_functions]]
   function = "stripe-webhook"
   path = "/.netlify/functions/stripe-webhook"
 
