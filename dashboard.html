@@ -42704,20 +42704,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hadCameraControlsV1 = mv.hasAttribute('camera-controls');
             const origMinOrbitV1 = mv.getAttribute('min-camera-orbit');
             const origMaxOrbitV1 = mv.getAttribute('max-camera-orbit');
-            // Read turntable rotation BEFORE disabling auto-rotate
-            // turntableRotation = accumulated yaw from auto-rotate (radians)
-            // apparent angle = camera_theta - turntableRotation
-            // We want apparent = +π/2 (90deg) so character faces RIGHT
-            // => camera_theta = π/2 + turntableRotation
-            const yawV1 = (typeof mv.turntableRotation === 'number') ? mv.turntableRotation : 0;
-            const battleThetaV1 = ((Math.PI / 2) + yawV1) * 180 / Math.PI;
-            const battleOrbitV1 = `${battleThetaV1.toFixed(1)}deg 85deg 14m`;
             mv.removeAttribute('auto-rotate');
             mv.removeAttribute('camera-controls');
+            if (typeof mv.resetTurntableRotation === 'function') mv.resetTurntableRotation();
+            const battleOrbitV1 = '90deg 85deg 14m';
             mv.setAttribute('camera-orbit', battleOrbitV1);
             mv.setAttribute('min-camera-orbit', battleOrbitV1);
             mv.setAttribute('max-camera-orbit', battleOrbitV1);
             if (typeof mv.jumpCameraToGoal === 'function') mv.jumpCameraToGoal();
+            // Re-apply after a frame to catch any stray overrides
+            requestAnimationFrame(() => {
+                mv.setAttribute('camera-orbit', battleOrbitV1);
+                if (typeof mv.jumpCameraToGoal === 'function') mv.jumpCameraToGoal();
+            });
 
             await new Promise(r => setTimeout(r, 1200));
             if (overlay) overlay.classList.remove('active');
@@ -42917,16 +42916,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         const hadCameraControlsV2 = viewer.hasAttribute('camera-controls');
         const origMinOrbitV2 = viewer.getAttribute('min-camera-orbit');
         const origMaxOrbitV2 = viewer.getAttribute('max-camera-orbit');
-        // Read turntable rotation BEFORE disabling auto-rotate
-        const yawV2 = (typeof viewer.turntableRotation === 'number') ? viewer.turntableRotation : 0;
-        const battleThetaV2 = ((Math.PI / 2) + yawV2) * 180 / Math.PI;
-        const battleOrbitV2 = `${battleThetaV2.toFixed(1)}deg 85deg 14m`;
         viewer.removeAttribute('auto-rotate');
         viewer.removeAttribute('camera-controls');
+        if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
+        const battleOrbitV2 = '90deg 85deg 14m';
         viewer.setAttribute('camera-orbit', battleOrbitV2);
         viewer.setAttribute('min-camera-orbit', battleOrbitV2);
         viewer.setAttribute('max-camera-orbit', battleOrbitV2);
         if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
+        // Re-apply after a frame to catch any stray overrides
+        requestAnimationFrame(() => {
+            viewer.setAttribute('camera-orbit', battleOrbitV2);
+            if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
+        });
         await new Promise(r => setTimeout(r, 600));
 
         // Rounds
@@ -44003,16 +44005,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hadCameraControls = viewer.hasAttribute('camera-controls');
             const origMinOrbit = viewer.getAttribute('min-camera-orbit');
             const origMaxOrbit = viewer.getAttribute('max-camera-orbit');
-            // Read turntable rotation BEFORE disabling auto-rotate
-            const yaw = (typeof viewer.turntableRotation === 'number') ? viewer.turntableRotation : 0;
-            const battleTheta = ((Math.PI / 2) + yaw) * 180 / Math.PI;
-            const battleOrbit = `${battleTheta.toFixed(1)}deg 85deg 14m`;
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
+            if (typeof viewer.resetTurntableRotation === 'function') viewer.resetTurntableRotation();
+            const battleOrbit = '90deg 85deg 14m';
             viewer.setAttribute('camera-orbit', battleOrbit);
             viewer.setAttribute('min-camera-orbit', battleOrbit);
             viewer.setAttribute('max-camera-orbit', battleOrbit);
             if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
+            // Re-apply after a frame to catch any stray overrides
+            requestAnimationFrame(() => {
+                viewer.setAttribute('camera-orbit', battleOrbit);
+                if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
+            });
             await new Promise(r => setTimeout(r, 600));
 
             // Start mana charging
