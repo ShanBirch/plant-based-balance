@@ -5265,12 +5265,14 @@ async function applyAppTheme(themeKey) {
             <!-- 3D Background Model (Hidden by default, shown via applyBackgroundForLevel) -->
             <model-viewer
                 id="tamagotchi-bg-model"
-                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: none; --poster-color: transparent;"
-                camera-orbit="0deg 85deg 22m"
-                field-of-view="30deg"
-                shadow-intensity="1"
-                exposure="1.2"
-                interaction-prompt="none">
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; display: none; --poster-color: transparent; pointer-events: none;"
+                camera-orbit="0deg 75deg 3m"
+                field-of-view="60deg"
+                shadow-intensity="0.5"
+                exposure="1.0"
+                interaction-prompt="none"
+                disable-zoom
+                disable-pan>
             </model-viewer>
 
             <model-viewer
