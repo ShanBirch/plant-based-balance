@@ -6110,6 +6110,691 @@ const WORKOUT_LIBRARY = {
         ]
       }
     }
+  },
+
+  // ====================
+  // HIIT TRAINING
+  // ====================
+  "hiit": {
+    name: "HIIT Training",
+    icon: "⚡",
+    description: "High-intensity interval training for maximum calorie burn",
+    subcategories: {
+
+      // BODYWEIGHT HIIT
+      "bodyweight": {
+        name: "Bodyweight HIIT",
+        description: "No equipment needed — just you and max effort",
+        workouts: [
+          {
+            id: "hiit-bodyweight-1",
+            name: "Bodyweight Blitz 1",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["None"],
+            exercises: [
+              { name: "Jumping Jack", sets: 4, reps: "40 sec", desc: "Full body warm-up cardio" },
+              { name: "Mountain Climber", sets: 4, reps: "30 sec", desc: "Core and cardio burst" },
+              { name: "Push Up", sets: 4, reps: "30 sec", desc: "Upper body push" },
+              { name: "High Knees", sets: 4, reps: "30 sec", desc: "Cardio intensity" },
+              { name: "Plank Hip Twist", sets: 4, reps: "30 sec", desc: "Core rotational work" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-2",
+            name: "Bodyweight Blitz 2",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["None"],
+            exercises: [
+              { name: "High Knees", sets: 4, reps: "40 sec", desc: "Cardio blast" },
+              { name: "Push Up", sets: 4, reps: "30 sec", desc: "Chest and triceps" },
+              { name: "Skater", sets: 4, reps: "30 sec", desc: "Lateral power" },
+              { name: "Plank Alternating Leg Lift", sets: 4, reps: "30 sec", desc: "Core stability" },
+              { name: "Pulse Sumo Squats", sets: 4, reps: "30 sec", desc: "Lower body burn" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-3",
+            name: "Bodyweight Blitz 3",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "Burpee", sets: 5, reps: "30 sec", desc: "Full body power" },
+              { name: "Mountain Climber", sets: 5, reps: "40 sec", desc: "Core cardio" },
+              { name: "Jump Squat", sets: 5, reps: "30 sec", desc: "Lower body explosive" },
+              { name: "Push Up to T-rotation", sets: 5, reps: "30 sec", desc: "Push with rotation" },
+              { name: "High Plank Jacks", sets: 5, reps: "30 sec", desc: "Plank cardio" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-4",
+            name: "Bodyweight Blitz 4",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "Alternating Jump Lunge", sets: 5, reps: "30 sec", desc: "Explosive lunges" },
+              { name: "Cross Body Mountain Climber", sets: 5, reps: "40 sec", desc: "Oblique focus" },
+              { name: "Burpee", sets: 5, reps: "30 sec", desc: "Full body conditioning" },
+              { name: "Jumping Jack", sets: 5, reps: "40 sec", desc: "Active recovery cardio" },
+              { name: "Oblique Crunch", sets: 5, reps: "30 sec", desc: "Core finisher" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-5",
+            name: "Bodyweight Blitz 5",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "High Knees", sets: 5, reps: "40 sec", desc: "Sprint in place" },
+              { name: "Tuck Jump to Push Up", sets: 5, reps: "30 sec", desc: "Explosive combo" },
+              { name: "Skater", sets: 5, reps: "30 sec", desc: "Lateral agility" },
+              { name: "Mountain Climbers to Plank Jack", sets: 5, reps: "40 sec", desc: "Core complex" },
+              { name: "Reverse Burpee", sets: 5, reps: "30 sec", desc: "Full body reverse" },
+              { name: "Pulse Squat to Curtsy Pulse", sets: 5, reps: "30 sec", desc: "Lower body burn" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-6",
+            name: "Bodyweight Blitz 6",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["None"],
+            exercises: [
+              { name: "Jumping Jack", sets: 4, reps: "40 sec", desc: "Get the heart rate up" },
+              { name: "Slow Mountain Climbers", sets: 4, reps: "30 sec", desc: "Controlled core work" },
+              { name: "Push Up", sets: 4, reps: "30 sec", desc: "Upper body strength" },
+              { name: "Pogo Hops", sets: 4, reps: "30 sec", desc: "Calf and ankle cardio" },
+              { name: "Plank Alternating Arm & Leg Lift", sets: 4, reps: "30 sec", desc: "Balance and core" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-7",
+            name: "Bodyweight Blitz 7",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "Burpee", sets: 5, reps: "30 sec", desc: "Full body explosive" },
+              { name: "Push Up to Cross Body Mountain Climbers", sets: 5, reps: "40 sec", desc: "Push and core combo" },
+              { name: "Jump Squat", sets: 5, reps: "30 sec", desc: "Quad and glute power" },
+              { name: "High Plank Jacks", sets: 5, reps: "30 sec", desc: "Plank cardio" },
+              { name: "Alternating Jump Lunge", sets: 5, reps: "30 sec", desc: "Single leg explosive" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-8",
+            name: "Bodyweight Blitz 8",
+            duration: "30 min",
+            difficulty: "Advanced",
+            equipment: ["None"],
+            exercises: [
+              { name: "Burpee to Tuck Jump", sets: 6, reps: "30 sec", desc: "Max intensity burst" },
+              { name: "Mountain Climber", sets: 6, reps: "40 sec", desc: "Speed core work" },
+              { name: "Tuck Jump to Push Up", sets: 6, reps: "30 sec", desc: "Explosive full body" },
+              { name: "Skater", sets: 6, reps: "30 sec", desc: "Lateral power" },
+              { name: "Cross Body Mountain Climber", sets: 6, reps: "40 sec", desc: "Oblique shred" },
+              { name: "Piked Push Up", sets: 6, reps: "30 sec", desc: "Shoulder burner" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-9",
+            name: "Bodyweight Blitz 9",
+            duration: "30 min",
+            difficulty: "Advanced",
+            equipment: ["None"],
+            exercises: [
+              { name: "Burpee Broad Jump", sets: 6, reps: "30 sec", desc: "Explosive distance" },
+              { name: "High Knees", sets: 6, reps: "40 sec", desc: "Sprint intervals" },
+              { name: "Push Up to T-rotation", sets: 6, reps: "30 sec", desc: "Anti-rotation push" },
+              { name: "Jump Squat", sets: 6, reps: "30 sec", desc: "Plyometric legs" },
+              { name: "Oblique Mountain Climbers", sets: 6, reps: "40 sec", desc: "Oblique focused" },
+              { name: "Reverse Burpee", sets: 6, reps: "30 sec", desc: "Coordination challenge" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-10",
+            name: "Bodyweight Blitz 10",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "High Knee Skipping", sets: 5, reps: "40 sec", desc: "Explosive cardio" },
+              { name: "Burpee", sets: 5, reps: "30 sec", desc: "Classic full body" },
+              { name: "Plank Hip Twist", sets: 5, reps: "30 sec", desc: "Rotational core" },
+              { name: "Jumping Jack", sets: 5, reps: "40 sec", desc: "Active recovery" },
+              { name: "Push Up", sets: 5, reps: "30 sec", desc: "Push endurance" },
+              { name: "Mountain Climber", sets: 5, reps: "30 sec", desc: "Core finisher" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-11",
+            name: "Bodyweight Blitz 11",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["None"],
+            exercises: [
+              { name: "Jumping Jack", sets: 4, reps: "40 sec", desc: "Warm up and go" },
+              { name: "Mountain Climber", sets: 4, reps: "30 sec", desc: "Core cardio" },
+              { name: "Pulse Lateral Lunge", sets: 4, reps: "30 sec", desc: "Inner thigh focus" },
+              { name: "High Knees", sets: 4, reps: "30 sec", desc: "Cardio spike" },
+              { name: "Push Up", sets: 4, reps: "30 sec", desc: "Upper body push" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-12",
+            name: "Bodyweight Blitz 12",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "Burpee to Target", sets: 5, reps: "30 sec", desc: "Targeted burpee" },
+              { name: "Skater", sets: 5, reps: "30 sec", desc: "Lateral explosiveness" },
+              { name: "High Plank Jacks", sets: 5, reps: "30 sec", desc: "Plank with cardio" },
+              { name: "Alternating Jump Lunge", sets: 5, reps: "30 sec", desc: "Split jump power" },
+              { name: "Cross Body Mountain Climber", sets: 5, reps: "40 sec", desc: "Oblique emphasis" },
+              { name: "Jump Squat", sets: 5, reps: "30 sec", desc: "Leg power finisher" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-13",
+            name: "Bodyweight Blitz 13",
+            duration: "30 min",
+            difficulty: "Advanced",
+            equipment: ["None"],
+            exercises: [
+              { name: "Burpee to Tuck Jump", sets: 6, reps: "30 sec", desc: "Max power output" },
+              { name: "Push Up to Cross Body Mountain Climbers", sets: 6, reps: "40 sec", desc: "Upper and core" },
+              { name: "Alternating Jump Lunge", sets: 6, reps: "30 sec", desc: "Single leg plyos" },
+              { name: "High Knees", sets: 6, reps: "40 sec", desc: "Sprint work" },
+              { name: "Reverse Burpee", sets: 6, reps: "30 sec", desc: "Full body reverse" },
+              { name: "Pistol Squat to Sit", sets: 6, reps: "30 sec", desc: "Unilateral leg strength" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-14",
+            name: "Bodyweight Blitz 14",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["None"],
+            exercises: [
+              { name: "High Knees", sets: 4, reps: "40 sec", desc: "Quick feet" },
+              { name: "Slow Mountain Climbers", sets: 4, reps: "30 sec", desc: "Controlled pace" },
+              { name: "Jumping Jack", sets: 4, reps: "40 sec", desc: "Classic cardio" },
+              { name: "Push Up", sets: 4, reps: "30 sec", desc: "Strength intervals" },
+              { name: "Plank Alternating Leg Lift", sets: 4, reps: "30 sec", desc: "Core stability" }
+            ]
+          },
+          {
+            id: "hiit-bodyweight-15",
+            name: "Bodyweight Blitz 15",
+            duration: "30 min",
+            difficulty: "Advanced",
+            equipment: ["None"],
+            exercises: [
+              { name: "Burpee Broad Jump", sets: 6, reps: "30 sec", desc: "Distance power" },
+              { name: "Tuck Jump to Push Up", sets: 6, reps: "30 sec", desc: "Complex combo" },
+              { name: "Mountain Climbers to Plank Jack", sets: 6, reps: "40 sec", desc: "Core complex" },
+              { name: "Jump Squat", sets: 6, reps: "30 sec", desc: "Explosive legs" },
+              { name: "Piked Push Up", sets: 6, reps: "30 sec", desc: "Shoulder intensity" },
+              { name: "Skater", sets: 6, reps: "30 sec", desc: "Lateral finisher" }
+            ]
+          }
+        ]
+      },
+
+      // DUMBBELL HIIT
+      "dumbbell": {
+        name: "Dumbbell HIIT",
+        description: "High-intensity circuits with dumbbells",
+        workouts: [
+          {
+            id: "hiit-dumbbell-1",
+            name: "Dumbbell Fire 1",
+            duration: "25 min",
+            difficulty: "Beginner",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbbell Squat to Press", sets: 4, reps: "40 sec", desc: "Full body compound" },
+              { name: "Mountain Climber", sets: 4, reps: "30 sec", desc: "Bodyweight cardio" },
+              { name: "Dumbbell Romanian Deadlift", sets: 4, reps: "40 sec", desc: "Posterior chain" },
+              { name: "Push Up", sets: 4, reps: "30 sec", desc: "Bodyweight push" },
+              { name: "Dumbbell Goblet Squat", sets: 4, reps: "40 sec", desc: "Front loaded squat" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-2",
+            name: "Dumbbell Fire 2",
+            duration: "25 min",
+            difficulty: "Beginner",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbbell Walking Lunge", sets: 4, reps: "40 sec", desc: "Walking legs" },
+              { name: "Jumping Jack", sets: 4, reps: "30 sec", desc: "Cardio burst" },
+              { name: "Dumbbell Standing Shoulder Press", sets: 4, reps: "40 sec", desc: "Overhead press" },
+              { name: "High Knees", sets: 4, reps: "30 sec", desc: "Cardio spike" },
+              { name: "Dumbbell Bent Over Reverse Fly", sets: 4, reps: "40 sec", desc: "Rear delt work" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-3",
+            name: "Dumbbell Fire 3",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbbell Squat to Curl to Press", sets: 5, reps: "40 sec", desc: "Triple combo" },
+              { name: "Burpee", sets: 5, reps: "30 sec", desc: "Bodyweight blast" },
+              { name: "Dumbbell Single Arm Snatch", sets: 5, reps: "30 sec each", desc: "Explosive pull" },
+              { name: "Mountain Climber", sets: 5, reps: "30 sec", desc: "Core cardio" },
+              { name: "Dumbbell Bulgarian Split Squat", sets: 5, reps: "30 sec each", desc: "Single leg power" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-4",
+            name: "Dumbbell Fire 4",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Half Burpee with Dumbbell", sets: 5, reps: "30 sec", desc: "Loaded burpee" },
+              { name: "Dumbbell Step-Up to Overhead Press", sets: 5, reps: "30 sec each", desc: "Step and press" },
+              { name: "High Plank Jacks", sets: 5, reps: "30 sec", desc: "Cardio plank" },
+              { name: "Dumbbell Squat to Press", sets: 5, reps: "40 sec", desc: "Thruster" },
+              { name: "Skater", sets: 5, reps: "30 sec", desc: "Lateral power" },
+              { name: "Dumbbell Shrug", sets: 5, reps: "40 sec", desc: "Trap pump" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-5",
+            name: "Dumbbell Fire 5",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbbell Squat Clean and Press", sets: 5, reps: "40 sec", desc: "Clean and press complex" },
+              { name: "Cross Body Mountain Climber", sets: 5, reps: "30 sec", desc: "Oblique cardio" },
+              { name: "Dumbbell Walking Lunge Curl to Shoulder Press", sets: 5, reps: "40 sec", desc: "Multi-joint combo" },
+              { name: "Jumping Jack", sets: 5, reps: "30 sec", desc: "Active recovery" },
+              { name: "Dumbbell Jump Squat to Press", sets: 5, reps: "30 sec", desc: "Explosive squat press" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-6",
+            name: "Dumbbell Fire 6",
+            duration: "30 min",
+            difficulty: "Advanced",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbell Burpee with Curl to Press", sets: 6, reps: "30 sec", desc: "Loaded burpee complex" },
+              { name: "Dumbbell Jump Squat to Press", sets: 6, reps: "30 sec", desc: "Explosive power" },
+              { name: "Mountain Climber", sets: 6, reps: "40 sec", desc: "Core cardio" },
+              { name: "Dumbbell Single Arm Snatch", sets: 6, reps: "30 sec each", desc: "Unilateral explosive" },
+              { name: "Burpee", sets: 6, reps: "30 sec", desc: "Full body blast" },
+              { name: "Dumbbell Squat to Curl to Press", sets: 6, reps: "40 sec", desc: "Complex finisher" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-7",
+            name: "Dumbbell Fire 7",
+            duration: "25 min",
+            difficulty: "Beginner",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbbell Goblet Squat", sets: 4, reps: "40 sec", desc: "Squat foundation" },
+              { name: "High Knees", sets: 4, reps: "30 sec", desc: "Cardio interval" },
+              { name: "Dumbbell Standing Overhead Push Press", sets: 4, reps: "40 sec", desc: "Push press power" },
+              { name: "Mountain Climber", sets: 4, reps: "30 sec", desc: "Core work" },
+              { name: "Dumbbell Romanian Deadlift", sets: 4, reps: "40 sec", desc: "Hinge pattern" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-8",
+            name: "Dumbbell Fire 8",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbell Burpee to Overhead Swing", sets: 5, reps: "30 sec", desc: "Overhead burpee" },
+              { name: "Dumbbell Step-Up to Curl Press (Alternating)", sets: 5, reps: "40 sec", desc: "Step up complex" },
+              { name: "Alternating Jump Lunge", sets: 5, reps: "30 sec", desc: "Plyometric lunge" },
+              { name: "Dumbbell Squat to Press", sets: 5, reps: "40 sec", desc: "Thruster" },
+              { name: "Cross Body Mountain Climber", sets: 5, reps: "30 sec", desc: "Oblique burn" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-9",
+            name: "Dumbbell Fire 9",
+            duration: "30 min",
+            difficulty: "Advanced",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbbell Squat Clean and Jerk", sets: 6, reps: "40 sec", desc: "Olympic-style complex" },
+              { name: "Burpee", sets: 6, reps: "30 sec", desc: "Full body burst" },
+              { name: "Dumbbell Single Arm Squat Clean and Press", sets: 6, reps: "30 sec each", desc: "Unilateral clean" },
+              { name: "High Plank Jacks", sets: 6, reps: "30 sec", desc: "Core cardio" },
+              { name: "Dumbbell Jump Squat to Press", sets: 6, reps: "30 sec", desc: "Max power" },
+              { name: "Mountain Climber", sets: 6, reps: "40 sec", desc: "Core finisher" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-10",
+            name: "Dumbbell Fire 10",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbbell Squat to Press", sets: 5, reps: "40 sec", desc: "Compound drive" },
+              { name: "Skater", sets: 5, reps: "30 sec", desc: "Lateral agility" },
+              { name: "Dumbbell Single Arm Squat Snatch", sets: 5, reps: "30 sec each", desc: "Single arm power" },
+              { name: "Jumping Jack", sets: 5, reps: "30 sec", desc: "Cardio interval" },
+              { name: "Half Burpee with Dumbbell", sets: 5, reps: "30 sec", desc: "Modified burpee" },
+              { name: "Plank Hip Twist", sets: 5, reps: "30 sec", desc: "Core rotation" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-11",
+            name: "Dumbbell Fire 11",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbbell Walking Lunge", sets: 4, reps: "40 sec", desc: "Leg conditioning" },
+              { name: "Jumping Jack", sets: 4, reps: "30 sec", desc: "Heart rate boost" },
+              { name: "Dumbbell Squat to Press", sets: 4, reps: "40 sec", desc: "Full body compound" },
+              { name: "Mountain Climber", sets: 4, reps: "30 sec", desc: "Core blast" },
+              { name: "Dumbbell Bent Over Reverse Fly", sets: 4, reps: "40 sec", desc: "Upper back" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-12",
+            name: "Dumbbell Fire 12",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbbell Squat Clean and Press", sets: 5, reps: "40 sec", desc: "Full body clean" },
+              { name: "Burpee", sets: 5, reps: "30 sec", desc: "Bodyweight blast" },
+              { name: "Dumbbell Step-Up to Overhead Press", sets: 5, reps: "30 sec each", desc: "Step and press" },
+              { name: "High Knees", sets: 5, reps: "30 sec", desc: "Sprint in place" },
+              { name: "Dumbbell Goblet Squat", sets: 5, reps: "40 sec", desc: "Squat endurance" },
+              { name: "Oblique Crunch", sets: 5, reps: "30 sec", desc: "Core finisher" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-13",
+            name: "Dumbbell Fire 13",
+            duration: "30 min",
+            difficulty: "Advanced",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbell Burpee Clean to Press", sets: 6, reps: "30 sec", desc: "Loaded clean burpee" },
+              { name: "Dumbbell Jump Squat to Press", sets: 6, reps: "30 sec", desc: "Explosive squat press" },
+              { name: "Cross Body Mountain Climber", sets: 6, reps: "40 sec", desc: "Oblique cardio" },
+              { name: "Dumbbell Single Arm Snatch", sets: 6, reps: "30 sec each", desc: "Power snatch" },
+              { name: "Alternating Jump Lunge", sets: 6, reps: "30 sec", desc: "Split jump" },
+              { name: "Dumbbell Squat to Curl to Press", sets: 6, reps: "40 sec", desc: "Triple threat" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-14",
+            name: "Dumbbell Fire 14",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbbell Goblet Squat", sets: 4, reps: "40 sec", desc: "Squat base" },
+              { name: "High Knees", sets: 4, reps: "30 sec", desc: "Cardio interval" },
+              { name: "Dumbbell Standing Shoulder Press", sets: 4, reps: "40 sec", desc: "Shoulder work" },
+              { name: "Jumping Jack", sets: 4, reps: "30 sec", desc: "Classic cardio" },
+              { name: "Dumbbell Walking Lunge", sets: 4, reps: "40 sec", desc: "Leg endurance" }
+            ]
+          },
+          {
+            id: "hiit-dumbbell-15",
+            name: "Dumbbell Fire 15",
+            duration: "30 min",
+            difficulty: "Advanced",
+            equipment: ["Dumbbells"],
+            exercises: [
+              { name: "Dumbell Burpee with Curl to Press", sets: 6, reps: "30 sec", desc: "Max effort complex" },
+              { name: "Dumbbell Squat Clean and Jerk", sets: 6, reps: "40 sec", desc: "Olympic complex" },
+              { name: "Tuck Jump to Push Up", sets: 6, reps: "30 sec", desc: "Bodyweight explosive" },
+              { name: "Dumbbell Single Arm Squat Snatch", sets: 6, reps: "30 sec each", desc: "Single arm power" },
+              { name: "Mountain Climbers to Plank Jack", sets: 6, reps: "40 sec", desc: "Core complex" },
+              { name: "Dumbbell Jump Squat to Press", sets: 6, reps: "30 sec", desc: "Power finisher" }
+            ]
+          }
+        ]
+      },
+
+      // KETTLEBELL HIIT
+      "kettlebell": {
+        name: "Kettlebell HIIT",
+        description: "Explosive kettlebell interval circuits",
+        workouts: [
+          {
+            id: "hiit-kettlebell-1",
+            name: "Kettlebell Storm 1",
+            duration: "25 min",
+            difficulty: "Beginner",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Goblet Squat", sets: 4, reps: "40 sec", desc: "Squat foundation" },
+              { name: "Mountain Climber", sets: 4, reps: "30 sec", desc: "Cardio burst" },
+              { name: "Kettlebell Kickstand Swing", sets: 4, reps: "40 sec", desc: "Hip hinge power" },
+              { name: "High Knees", sets: 4, reps: "30 sec", desc: "Sprint cardio" },
+              { name: "Kettlebell Kneeling Overhead Press", sets: 4, reps: "40 sec", desc: "Shoulder stability" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-2",
+            name: "Kettlebell Storm 2",
+            duration: "25 min",
+            difficulty: "Beginner",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Walking Lunges", sets: 4, reps: "40 sec", desc: "Walking leg work" },
+              { name: "Jumping Jack", sets: 4, reps: "30 sec", desc: "Cardio interval" },
+              { name: "Kettlebell Half Kneeling Overhead Press", sets: 4, reps: "30 sec each", desc: "Kneeling press" },
+              { name: "Burpee", sets: 4, reps: "30 sec", desc: "Full body blast" },
+              { name: "Kettlebell Goblet Squat", sets: 4, reps: "40 sec", desc: "Front squat" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-3",
+            name: "Kettlebell Storm 3",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Single Arm Clean and Press", sets: 5, reps: "30 sec each", desc: "Clean to press complex" },
+              { name: "Mountain Climber", sets: 5, reps: "30 sec", desc: "Core cardio" },
+              { name: "Kettlebell Kickstand Swing", sets: 5, reps: "40 sec", desc: "Hip power" },
+              { name: "High Plank Jacks", sets: 5, reps: "30 sec", desc: "Plank cardio" },
+              { name: "Kettlebell Pop Clean To Squat", sets: 5, reps: "40 sec", desc: "Explosive clean" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-4",
+            name: "Kettlebell Storm 4",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Single Arm Snatch", sets: 5, reps: "30 sec each", desc: "Snatch power" },
+              { name: "Burpee", sets: 5, reps: "30 sec", desc: "Bodyweight burst" },
+              { name: "Kettlebell Reverse Lunge with Ipsilateral Press", sets: 5, reps: "30 sec each", desc: "Lunge and press" },
+              { name: "Jumping Jack", sets: 5, reps: "30 sec", desc: "Active recovery" },
+              { name: "Kettlebell Goblet Squat", sets: 5, reps: "40 sec", desc: "Front loaded squat" },
+              { name: "Cross Body Mountain Climber", sets: 5, reps: "30 sec", desc: "Oblique work" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-5",
+            name: "Kettlebell Storm 5",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Curtsy to Clean", sets: 5, reps: "40 sec", desc: "Curtsy clean combo" },
+              { name: "High Knees", sets: 5, reps: "30 sec", desc: "Sprint intervals" },
+              { name: "Kettlebell Single Arm Clean and Press", sets: 5, reps: "30 sec each", desc: "Power clean press" },
+              { name: "Skater", sets: 5, reps: "30 sec", desc: "Lateral cardio" },
+              { name: "Kettlebell Side Lunge to Press", sets: 5, reps: "40 sec", desc: "Lateral lunge complex" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-6",
+            name: "Kettlebell Storm 6",
+            duration: "30 min",
+            difficulty: "Advanced",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Single Arm Snatch to Overhead Squat", sets: 6, reps: "30 sec each", desc: "Snatch to OH squat" },
+              { name: "Burpee to Tuck Jump", sets: 6, reps: "30 sec", desc: "Max intensity" },
+              { name: "Kettlebell Clean and Jerk", sets: 6, reps: "40 sec", desc: "Olympic KB complex" },
+              { name: "Mountain Climber", sets: 6, reps: "40 sec", desc: "Core burn" },
+              { name: "Kettlebell Single Arm Squat Clean", sets: 6, reps: "30 sec each", desc: "Deep clean" },
+              { name: "Tuck Jump to Push Up", sets: 6, reps: "30 sec", desc: "Plyometric combo" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-7",
+            name: "Kettlebell Storm 7",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Goblet Squat", sets: 4, reps: "40 sec", desc: "Goblet squat" },
+              { name: "Jumping Jack", sets: 4, reps: "30 sec", desc: "Heart rate up" },
+              { name: "Kettlebell Kickstand Swing", sets: 4, reps: "40 sec", desc: "Swing power" },
+              { name: "Mountain Climber", sets: 4, reps: "30 sec", desc: "Core work" },
+              { name: "Kettlebell Walking Lunges", sets: 4, reps: "40 sec", desc: "Loaded lunges" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-8",
+            name: "Kettlebell Storm 8",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Single Arm Squat Clean and Jerk", sets: 5, reps: "30 sec each", desc: "Full clean and jerk" },
+              { name: "Alternating Jump Lunge", sets: 5, reps: "30 sec", desc: "Explosive lunges" },
+              { name: "Kettlebell Pop Clean To Squat", sets: 5, reps: "40 sec", desc: "Pop clean" },
+              { name: "High Knees", sets: 5, reps: "30 sec", desc: "Sprint burst" },
+              { name: "Kettlebell Reverse Lunge with Contralateral Press", sets: 5, reps: "30 sec each", desc: "Cross body lunge press" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-9",
+            name: "Kettlebell Storm 9",
+            duration: "30 min",
+            difficulty: "Advanced",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Clean and Jerk", sets: 6, reps: "40 sec", desc: "KB Olympic lift" },
+              { name: "Burpee Broad Jump", sets: 6, reps: "30 sec", desc: "Distance burpee" },
+              { name: "Kettlebell Single Arm Snatch", sets: 6, reps: "30 sec each", desc: "Single arm power" },
+              { name: "Cross Body Mountain Climber", sets: 6, reps: "40 sec", desc: "Oblique shred" },
+              { name: "Kettlebell Single Leg Dead Lift to Snatch", sets: 6, reps: "30 sec each", desc: "Deadlift to snatch" },
+              { name: "High Plank Jacks", sets: 6, reps: "30 sec", desc: "Plank finisher" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-10",
+            name: "Kettlebell Storm 10",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Single Arm Clean and Press", sets: 5, reps: "30 sec each", desc: "Clean press combo" },
+              { name: "Skater", sets: 5, reps: "30 sec", desc: "Lateral agility" },
+              { name: "Kettlebell Curtsy to Clean", sets: 5, reps: "40 sec", desc: "Curtsy clean" },
+              { name: "Burpee", sets: 5, reps: "30 sec", desc: "Full body cardio" },
+              { name: "Kettlebell Goblet Squat", sets: 5, reps: "40 sec", desc: "Squat endurance" },
+              { name: "Oblique Mountain Climbers", sets: 5, reps: "30 sec", desc: "Core oblique" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-11",
+            name: "Kettlebell Storm 11",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Walking Lunges", sets: 4, reps: "40 sec", desc: "Loaded lunge walk" },
+              { name: "High Knees", sets: 4, reps: "30 sec", desc: "Quick feet" },
+              { name: "Kettlebell Standing Alternating Overhead Press", sets: 4, reps: "40 sec", desc: "Alternating press" },
+              { name: "Jumping Jack", sets: 4, reps: "30 sec", desc: "Classic cardio" },
+              { name: "Kettlebell Kickstand Swing", sets: 4, reps: "40 sec", desc: "Hip hinge" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-12",
+            name: "Kettlebell Storm 12",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Single Arm Snatch", sets: 5, reps: "30 sec each", desc: "Explosive snatch" },
+              { name: "Mountain Climbers to Plank Jack", sets: 5, reps: "40 sec", desc: "Core complex" },
+              { name: "Kettlebell Side Lunge to Press", sets: 5, reps: "30 sec each", desc: "Lateral lunge press" },
+              { name: "Alternating Jump Lunge", sets: 5, reps: "30 sec", desc: "Jump lunges" },
+              { name: "Kettlebell Pop Clean To Squat", sets: 5, reps: "40 sec", desc: "Pop clean squat" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-13",
+            name: "Kettlebell Storm 13",
+            duration: "30 min",
+            difficulty: "Advanced",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Single Arm Snatch to Overhead Squat", sets: 6, reps: "30 sec each", desc: "Full snatch complex" },
+              { name: "Burpee to Tuck Jump", sets: 6, reps: "30 sec", desc: "Max power burst" },
+              { name: "Kettlebell Single Arm Squat Clean and Jerk", sets: 6, reps: "30 sec each", desc: "Full KB complex" },
+              { name: "High Knees", sets: 6, reps: "40 sec", desc: "Sprint intervals" },
+              { name: "Kettlebell Clean and Jerk", sets: 6, reps: "40 sec", desc: "Double KB power" },
+              { name: "Cross Body Mountain Climber", sets: 6, reps: "30 sec", desc: "Oblique finisher" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-14",
+            name: "Kettlebell Storm 14",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Goblet Squat", sets: 4, reps: "40 sec", desc: "Goblet squat base" },
+              { name: "Mountain Climber", sets: 4, reps: "30 sec", desc: "Core cardio" },
+              { name: "Kettlebell Half Kneeling Bottom Up Press", sets: 4, reps: "30 sec each", desc: "Stability press" },
+              { name: "Jumping Jack", sets: 4, reps: "30 sec", desc: "Cardio recovery" },
+              { name: "Kettlebell Walking Lunges", sets: 4, reps: "40 sec", desc: "Lunge endurance" }
+            ]
+          },
+          {
+            id: "hiit-kettlebell-15",
+            name: "Kettlebell Storm 15",
+            duration: "30 min",
+            difficulty: "Advanced",
+            equipment: ["Kettlebell"],
+            exercises: [
+              { name: "Kettlebell Clean and Jerk", sets: 6, reps: "40 sec", desc: "Olympic KB power" },
+              { name: "Tuck Jump to Push Up", sets: 6, reps: "30 sec", desc: "Full body plyometric" },
+              { name: "Kettlebell Single Leg Dead Lift to Snatch", sets: 6, reps: "30 sec each", desc: "Unilateral power" },
+              { name: "Burpee", sets: 6, reps: "30 sec", desc: "Classic burpee" },
+              { name: "Kettlebell Single Arm Snatch to Overhead Squat", sets: 6, reps: "30 sec each", desc: "Snatch complex" },
+              { name: "Mountain Climbers to Plank Jack", sets: 6, reps: "40 sec", desc: "Core finisher" }
+            ]
+          }
+        ]
+      }
+    }
   }
 };
 
