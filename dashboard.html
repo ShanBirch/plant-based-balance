@@ -5126,6 +5126,37 @@ async function applyAppTheme(themeKey) {
         z-index: 0;
     }
 
+    .tamagotchi-bg-home {
+        background: linear-gradient(180deg, #1a1612 0%, #2a2218 40%, #1a1612 100%) !important;
+    }
+
+    .tamagotchi-bg-home::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background:
+            radial-gradient(ellipse 40% 40% at 50% 60%, rgba(255,180,80,0.08) 0%, transparent 100%),
+            radial-gradient(ellipse 20% 25% at 20% 70%, rgba(200,160,100,0.06) 0%, transparent 100%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .tamagotchi-bg-mountain {
+        background: linear-gradient(180deg, #0f1a2e 0%, #1a2a3e 40%, #0f1a2e 100%) !important;
+    }
+
+    .tamagotchi-bg-mountain::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background:
+            radial-gradient(ellipse 50% 30% at 50% 75%, rgba(200,200,220,0.06) 0%, transparent 100%),
+            radial-gradient(ellipse 30% 20% at 30% 60%, rgba(180,200,220,0.05) 0%, transparent 100%),
+            radial-gradient(ellipse 25% 15% at 70% 65%, rgba(180,200,220,0.04) 0%, transparent 100%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
     .tamagotchi-bg-arena {
         background: linear-gradient(180deg, #0a0015 0%, #1a0040 40%, #0a0015 100%) !important;
     }
@@ -5145,6 +5176,12 @@ async function applyAppTheme(themeKey) {
     @keyframes arenaGlow {
         0% { opacity: 0.6; }
         100% { opacity: 1; }
+    }
+
+    /* Selected background highlight in Unlocks panel */
+    .bg-selected {
+        border: 2px solid #4ade80 !important;
+        box-shadow: 0 0 8px rgba(74, 222, 128, 0.3);
     }
 
     </style>
@@ -42354,11 +42391,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Background unlock system - backgrounds unlocked at specific levels
         const BACKGROUND_UNLOCKS = [
-            { name: 'gym', displayName: 'Gym', unlockLevel: 1, icon: '🏋️' },
-            { name: 'park', displayName: 'Park', unlockLevel: 10, icon: '🌳' },
-            { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏠' },
-            { name: 'beach', displayName: 'Beach', unlockLevel: 30, icon: '🏖️' },
-            { name: 'mountain', displayName: 'Mountain', unlockLevel: 40, icon: '⛰️' },
+            { name: 'gym', displayName: 'Gym', unlockLevel: 1, icon: '🏋️', theme: 'tamagotchi-bg-gym' },
+            { name: 'park', displayName: 'Park', unlockLevel: 10, icon: '🌳', theme: 'tamagotchi-bg-park' },
+            { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏠', theme: 'tamagotchi-bg-home' },
+            { name: 'beach', displayName: 'Beach', unlockLevel: 30, icon: '🏖️', theme: 'tamagotchi-bg-beach' },
+            { name: 'mountain', displayName: 'Mountain', unlockLevel: 40, icon: '⛰️', theme: 'tamagotchi-bg-mountain' },
         ];
 
         // Expose ANIMATION_UNLOCKS globally for use by checkNewAnimationUnlocks
@@ -42574,11 +42611,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <div class="animation-category-title">🖼️ Backgrounds</div>
                 <div class="animation-grid">`;
 
+            const savedBg = localStorage.getItem('selectedBackground') || '';
             BACKGROUND_UNLOCKS.forEach(bg => {
                 const isBgUnlocked = level >= bg.unlockLevel;
+                const isSelected = savedBg === bg.name;
                 if (isBgUnlocked) {
                     html += `
-                        <div class="animation-item unlocked">
+                        <div class="animation-item unlocked bg-selector-item${isSelected ? ' bg-selected' : ''}" data-bg="${bg.name}" onclick="selectBackground('${bg.name}')">
                             <span class="animation-icon">${bg.icon}</span>
                             <span class="animation-name">${bg.displayName}</span>
                         </div>`;
@@ -42626,6 +42665,38 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.playAnimationFromSelector = function(animName) {
             playAnimation(animName, true);
             window.closeAnimationSelector();
+        };
+
+        // All possible background theme classes (for cleanup)
+        const ALL_BG_THEME_CLASSES = [
+            'tamagotchi-bg-gym', 'tamagotchi-bg-park', 'tamagotchi-bg-home',
+            'tamagotchi-bg-beach', 'tamagotchi-bg-mountain',
+            'tamagotchi-bg-dojo', 'tamagotchi-bg-arena'
+        ];
+
+        // Select and apply a background theme from the Unlocks panel
+        window.selectBackground = function(bgName) {
+            const bg = BACKGROUND_UNLOCKS.find(b => b.name === bgName);
+            if (!bg || !bg.theme) return;
+
+            const container = document.getElementById('tamagotchi-widget-container');
+            if (!container) return;
+
+            // Remove all background theme classes
+            ALL_BG_THEME_CLASSES.forEach(theme => container.classList.remove(theme));
+
+            // Apply the selected theme
+            container.classList.add(bg.theme);
+
+            // Save selection to localStorage
+            localStorage.setItem('selectedBackground', bgName);
+
+            // Update the selected state in the UI
+            document.querySelectorAll('.bg-selector-item').forEach(el => {
+                el.classList.remove('bg-selected');
+            });
+            const selectedEl = document.querySelector(`.bg-selector-item[data-bg="${bgName}"]`);
+            if (selectedEl) selectedEl.classList.add('bg-selected');
         };
 
         // Listen for initial model load to log available animations and apply colors
@@ -43519,43 +43590,42 @@ document.addEventListener('DOMContentLoaded', async function() {
         // ============================================================
         // BACKGROUND THEMES
         // ============================================================
-        const BACKGROUND_UNLOCKS = [
-            { level: 1,  theme: null,         name: 'Default' },
-            { level: 10, theme: 'tamagotchi-bg-gym',   name: 'Gym' },
-            { level: 20, theme: 'tamagotchi-bg-park',  name: 'Park' },
-            { level: 30, theme: 'tamagotchi-bg-dojo',  name: 'Dojo' },
-            { level: 40, theme: 'tamagotchi-bg-beach', name: 'Beach' },
-            { level: 50, theme: 'tamagotchi-bg-arena', name: 'Legendary Arena' }
+        const ALL_BG_THEMES = [
+            'tamagotchi-bg-gym', 'tamagotchi-bg-park', 'tamagotchi-bg-home',
+            'tamagotchi-bg-beach', 'tamagotchi-bg-mountain',
+            'tamagotchi-bg-dojo', 'tamagotchi-bg-arena'
         ];
 
         function applyBackgroundForLevel(level) {
+            // If user has manually selected a background, respect that choice
+            const savedBg = localStorage.getItem('selectedBackground');
+            if (savedBg && window.selectBackground) {
+                window.selectBackground(savedBg);
+                return;
+            }
+
             const container = document.getElementById('tamagotchi-widget-container');
             if (!container) return;
 
             // Remove all bg themes
-            BACKGROUND_UNLOCKS.forEach(bg => {
-                if (bg.theme) container.classList.remove(bg.theme);
-            });
+            ALL_BG_THEMES.forEach(theme => container.classList.remove(theme));
 
-            // Find best unlocked background
-            let bestBg = null;
-            for (let i = BACKGROUND_UNLOCKS.length - 1; i >= 0; i--) {
-                if (level >= BACKGROUND_UNLOCKS[i].level && BACKGROUND_UNLOCKS[i].theme) {
-                    bestBg = BACKGROUND_UNLOCKS[i];
-                    break;
-                }
-            }
-
-            if (bestBg) {
-                container.classList.add(bestBg.theme);
+            // Default: apply gym if unlocked (level >= 1)
+            if (level >= 1) {
+                container.classList.add('tamagotchi-bg-gym');
             }
         }
 
-        // Apply background on load
+        // Apply saved background or default on load
         setTimeout(() => {
-            const levelEl = document.getElementById('tamagotchi-level');
-            const level = levelEl ? parseInt(levelEl.textContent) || 1 : 1;
-            applyBackgroundForLevel(level);
+            const savedBg = localStorage.getItem('selectedBackground');
+            if (savedBg && window.selectBackground) {
+                window.selectBackground(savedBg);
+            } else {
+                const levelEl = document.getElementById('tamagotchi-level');
+                const level = levelEl ? parseInt(levelEl.textContent) || 1 : 1;
+                applyBackgroundForLevel(level);
+            }
         }, 2500);
 
         window.applyBackgroundForLevel = applyBackgroundForLevel;
