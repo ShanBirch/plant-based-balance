@@ -5300,7 +5300,7 @@ async function applyAppTheme(themeKey) {
                 shadow-softness="0.8"
                 exposure="0.9"
                 environment-image="neutral"
-                camera-orbit="0deg 85deg 22m"
+                camera-orbit="0deg 85deg 75m"
                 field-of-view="30deg"
                 style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; --poster-color: transparent; touch-action: none; background: transparent;"
                 interaction-prompt="none">
@@ -42376,16 +42376,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
 
                 // Camera distance logic based on level (larger values = smaller character in room)
-                let cameraDist = 22.0;
-                if (level >= 99) cameraDist = 12.0;
-                else if (level >= 40) cameraDist = 18.0 - ((level - 40) / 59 * 6.0);
-                else cameraDist = 22.0 - (level / 40 * 4.0);
+                // Distances are set so character appears at realistic scale inside gym environment
+                let cameraDist = 75.0;
+                if (level >= 99) cameraDist = 42.0;
+                else if (level >= 40) cameraDist = 63.0 - ((level - 40) / 59 * 21.0);
+                else cameraDist = 75.0 - (level / 40 * 12.0);
 
                 // Female models use a different scale and logic
                 if (window.currentUserGender?.toLowerCase() === 'female') {
-                    if (level >= 20) cameraDist = 4.2;
-                    else if (level >= 10) cameraDist = 7.0;
-                    else cameraDist = 9.5;
+                    if (level >= 20) cameraDist = 15.0;
+                    else if (level >= 10) cameraDist = 24.0;
+                    else cameraDist = 33.0;
                 }
 
                 // Only update camera if not in battle (battle locks camera to side profile)
@@ -42783,7 +42784,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const orbit = charViewer.getCameraOrbit();
                     const thetaDeg = (orbit.theta * 180 / Math.PI);
                     const phiDeg = (orbit.phi * 180 / Math.PI);
-                    const bgDist = orbit.radius * (1.5 / 22);
+                    const bgDist = 1.5; // fixed gym camera distance
                     bgModel.cameraOrbit = `${thetaDeg}deg ${phiDeg}deg ${bgDist}m`;
                     if (typeof bgModel.jumpCameraToGoal === 'function') {
                         bgModel.jumpCameraToGoal();
@@ -42831,10 +42832,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             const bgViewer = document.getElementById('tamagotchi-bg-model');
             if (!charViewer || !bgViewer) return;
 
-            // Base background camera distance - scales proportionally with character zoom
-            const BG_BASE_DISTANCE = 1.5; // meters at default character distance
-            const CHAR_BASE_DISTANCE = 22; // default character orbit distance
-            const BG_SCALE = BG_BASE_DISTANCE / CHAR_BASE_DISTANCE;
+            // Fixed background camera distance - gym stays same size regardless of character zoom
+            const BG_FIXED_DISTANCE = 1.5; // meters - controls how big the gym appears
 
             charViewer.addEventListener('camera-change', () => {
                 // Skip sync if background is hidden
@@ -42843,15 +42842,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const orbit = charViewer.getCameraOrbit();
                 // theta = horizontal rotation (radians)
                 // phi = vertical angle (radians)
-                // radius = distance from target (meters)
                 const thetaDeg = (orbit.theta * 180 / Math.PI);
                 const phiDeg = (orbit.phi * 180 / Math.PI);
 
-                // Scale bg distance proportionally to character zoom
-                // so gym scales naturally when character zooms in/out with level
-                const bgDist = orbit.radius * BG_SCALE;
-
-                bgViewer.cameraOrbit = `${thetaDeg}deg ${phiDeg}deg ${bgDist}m`;
+                // Use fixed distance so gym environment stays at constant scale
+                // Only sync rotation (theta/phi) with the character camera
+                bgViewer.cameraOrbit = `${thetaDeg}deg ${phiDeg}deg ${BG_FIXED_DISTANCE}m`;
                 bgViewer.jumpCameraToGoal();
             });
 
@@ -42944,7 +42940,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             mv.removeAttribute('auto-rotate');
             mv.removeAttribute('camera-controls');
             if (typeof mv.resetTurntableRotation === 'function') mv.resetTurntableRotation();
-            const origOrbitV1 = mv.getAttribute('camera-orbit') || '0deg 85deg 22m';
+            const origOrbitV1 = mv.getAttribute('camera-orbit') || '0deg 85deg 75m';
             const origDistV1 = origOrbitV1.split(/\s+/)[2] || '22m';
             const battleOrbitV1 = `90deg 85deg ${origDistV1}`;
             mv.setAttribute('camera-orbit', battleOrbitV1);
@@ -43021,7 +43017,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             else mv.removeAttribute('min-camera-orbit');
             if (origMaxOrbitV1) mv.setAttribute('max-camera-orbit', origMaxOrbitV1);
             else mv.removeAttribute('max-camera-orbit');
-            mv.setAttribute('camera-orbit', '0deg 85deg 22m');
+            mv.setAttribute('camera-orbit', '0deg 85deg 75m');
             if (hadCameraControlsV1) mv.setAttribute('camera-controls', '');
             if (hadAutoRotateV1) mv.setAttribute('auto-rotate', '');
 
@@ -43150,7 +43146,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Lock character to side profile instantly (no matter what direction they were facing)
         viewer.classList.add('character-battle-pos', 'battle-side-left');
-        const originalOrbit = viewer.getAttribute('camera-orbit') || "0deg 85deg 22m";
+        const originalOrbit = viewer.getAttribute('camera-orbit') || "0deg 85deg 75m";
         const hadAutoRotateV2 = viewer.hasAttribute('auto-rotate');
         const hadCameraControlsV2 = viewer.hasAttribute('camera-controls');
         const origMinOrbitV2 = viewer.getAttribute('min-camera-orbit');
@@ -43774,7 +43770,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const orbit = charViewer.getCameraOrbit();
                         const thetaDeg = (orbit.theta * 180 / Math.PI);
                         const phiDeg = (orbit.phi * 180 / Math.PI);
-                        const bgDist = orbit.radius * (1.5 / 22);
+                        const bgDist = 1.5; // fixed gym camera distance
                         bgModel.cameraOrbit = `${thetaDeg}deg ${phiDeg}deg ${bgDist}m`;
                         if (typeof bgModel.jumpCameraToGoal === 'function') {
                             bgModel.jumpCameraToGoal();
@@ -44253,7 +44249,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Lock character to side profile instantly (no matter what direction they were facing)
             viewer.classList.add('character-battle-pos', 'battle-side-left');
-            const originalOrbit = viewer.getAttribute('camera-orbit') || '0deg 85deg 22m';
+            const originalOrbit = viewer.getAttribute('camera-orbit') || '0deg 85deg 75m';
             const hadAutoRotate = viewer.hasAttribute('auto-rotate');
             const hadCameraControls = viewer.hasAttribute('camera-controls');
             const origMinOrbit = viewer.getAttribute('min-camera-orbit');
