@@ -13859,50 +13859,6 @@ function viewWorkoutHistoryDetail(date) {
             </div>
         </div>
 
-        <!-- BATTLE STATS SETTINGS -->
-        <div class="settings-card" id="battle-stats-settings" style="margin: 0 25px 25px 25px; background: white; border-radius: 16px; border: 1px solid #f1f5f9; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-            <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 15px 20px; border-bottom: 1px solid #e2e8f0;">
-                <h3 style="margin:0; font-size: 0.95rem; color: #fff; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-                    <span>⚔️</span> Battle Stats
-                </h3>
-            </div>
-            <div style="padding: 15px 20px;">
-                <!-- Current Stats Display -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 15px;">
-                    <div style="text-align: center; padding: 12px 8px; background: #fef2f2; border-radius: 10px;">
-                        <div style="font-size: 1.2rem; margin-bottom: 4px;">⚔️</div>
-                        <div style="font-size: 0.7rem; color: #991b1b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">STR</div>
-                        <div id="settings-stat-str" style="font-size: 1.3rem; font-weight: 800; color: #dc2626;">0</div>
-                    </div>
-                    <div style="text-align: center; padding: 12px 8px; background: #fef2f2; border-radius: 10px;">
-                        <div style="font-size: 1.2rem; margin-bottom: 4px;">❤️</div>
-                        <div style="font-size: 0.7rem; color: #991b1b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">HP</div>
-                        <div id="settings-stat-hp" style="font-size: 1.3rem; font-weight: 800; color: #dc2626;">0</div>
-                    </div>
-                    <div style="text-align: center; padding: 12px 8px; background: #eff6ff; border-radius: 10px;">
-                        <div style="font-size: 1.2rem; margin-bottom: 4px;">🔮</div>
-                        <div style="font-size: 0.7rem; color: #1e40af; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">MANA</div>
-                        <div id="settings-stat-mana" style="font-size: 1.3rem; font-weight: 800; color: #2563eb;">0</div>
-                    </div>
-                </div>
-                <!-- Unallocated Points Banner -->
-                <div id="settings-unalloc-banner" style="background: linear-gradient(135deg, #fbbf24, #f59e0b); padding: 12px 16px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div>
-                        <div style="font-weight: 700; color: #78350f; font-size: 0.95rem;">Unspent Points</div>
-                        <div style="font-size: 0.8rem; color: #92400e;">Tap to power up your stats</div>
-                    </div>
-                    <div id="settings-unalloc-count" style="font-size: 1.5rem; font-weight: 900; color: #78350f;">0</div>
-                </div>
-                <!-- Allocate Button -->
-                <button id="settings-allocate-btn" onclick="window.openStatsFromSettings()" style="width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; transition: opacity 0.2s;">
-                    Allocate Stat Points
-                </button>
-                <div id="settings-no-points-msg" style="display: none; text-align: center; padding: 8px; font-size: 0.8rem; color: var(--text-muted);">
-                    Level up to earn more stat points!
-                </div>
-            </div>
-        </div>
-
         <!-- APP SETTINGS -->
         <h3 style="padding: 0 25px; margin-bottom: 20px; display:flex; align-items:center; gap:10px;">
             <!-- Regular Settings Gear Icon -->
@@ -15491,10 +15447,6 @@ function _switchAppTabReal(tabName, btn) {
             // Update settings icon when profile view is shown
             if (typeof updateSettingsIcon === 'function') {
                 setTimeout(updateSettingsIcon, 100);
-            }
-            // Refresh battle stats display in settings
-            if (typeof window.updateSettingsStatsUI === 'function') {
-                setTimeout(window.updateSettingsStatsUI, 200);
             }
         }
     } else if (tabName === 'progress') {
@@ -43336,61 +43288,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
-        // Update the stats display in the settings card
-        function updateSettingsStatsUI() {
-            const stats = getBattleStats();
-            const unalloc = getUnallocatedPoints();
-
-            const strEl = document.getElementById('settings-stat-str');
-            const hpEl = document.getElementById('settings-stat-hp');
-            const manaEl = document.getElementById('settings-stat-mana');
-            const unallocCount = document.getElementById('settings-unalloc-count');
-            const unallocBanner = document.getElementById('settings-unalloc-banner');
-            const allocBtn = document.getElementById('settings-allocate-btn');
-            const noPointsMsg = document.getElementById('settings-no-points-msg');
-
-            if (strEl) strEl.textContent = stats.str;
-            if (hpEl) hpEl.textContent = stats.hp;
-            if (manaEl) manaEl.textContent = stats.mana;
-            if (unallocCount) unallocCount.textContent = unalloc;
-
-            if (unalloc > 0) {
-                if (unallocBanner) unallocBanner.style.display = 'flex';
-                if (allocBtn) allocBtn.style.display = 'flex';
-                if (noPointsMsg) noPointsMsg.style.display = 'none';
-            } else {
-                if (unallocBanner) unallocBanner.style.display = 'none';
-                if (allocBtn) allocBtn.style.display = 'none';
-                if (noPointsMsg) noPointsMsg.style.display = 'block';
-            }
-        }
-
-        // Open stat allocation modal from settings
-        window.openStatsFromSettings = function() {
-            const pts = getUnallocatedPoints();
-            if (pts <= 0) {
-                if (typeof showToast === 'function') {
-                    showToast('No stat points to allocate. Level up to earn more!', 'info');
-                }
-                return;
-            }
-            showStatAllocationModal();
-        };
-
-        // Patch _confirmAlloc to also refresh settings UI
-        const _originalConfirmAlloc = window._confirmAlloc;
-        window._confirmAlloc = function() {
-            _originalConfirmAlloc();
-            updateSettingsStatsUI();
-        };
-
-        // Run retroactive check and update settings UI on load
+        // Run retroactive check on load
         setTimeout(() => {
             ensureRetroactiveStatPoints();
-            updateSettingsStatsUI();
         }, 3000);
 
-        window.updateSettingsStatsUI = updateSettingsStatsUI;
         window.ensureRetroactiveStatPoints = ensureRetroactiveStatPoints;
 
         // ============================================================
