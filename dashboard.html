@@ -4604,14 +4604,12 @@ async function applyAppTheme(themeKey) {
     }
 
     /* ============================================================
-       BATTLE ACTION BUTTONS (PUNCH / BLOCK / SPECIAL)
+       BATTLE BASH BUTTON (Digimon-style single button)
        ============================================================ */
     .battle-action-container {
         position: absolute;
         bottom: 12px;
-        left: 12px;
         right: 12px;
-        gap: 8px;
         z-index: 200;
         display: none;
         pointer-events: none;
@@ -4622,78 +4620,82 @@ async function applyAppTheme(themeKey) {
         pointer-events: auto;
     }
 
-    .battle-action-btn {
-        flex: 1;
-        padding: 10px 6px;
+    .battle-bash-btn {
+        width: 80px;
+        height: 80px;
         border: none;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #ff6b4a, #e63946);
+        color: white;
         cursor: pointer;
-        transition: all 0.1s;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 2px;
+        justify-content: center;
+        gap: 0;
         position: relative;
-        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(230,57,70,0.5), inset 0 2px 4px rgba(255,255,255,0.2);
+        transition: transform 0.05s;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        touch-action: manipulation;
     }
 
-    .battle-action-btn .btn-icon {
-        font-size: 1.2rem;
+    .battle-bash-btn:active {
+        transform: scale(0.88);
+        box-shadow: 0 2px 10px rgba(230,57,70,0.7), inset 0 2px 4px rgba(0,0,0,0.2);
     }
 
-    .battle-action-btn.punch {
-        background: linear-gradient(135deg, rgba(255,68,68,0.6), rgba(255,100,100,0.4));
-        color: white;
-        border: 1px solid rgba(255,100,100,0.5);
+    .battle-bash-btn .bash-icon {
+        font-size: 1.5rem;
+        line-height: 1;
     }
 
-    .battle-action-btn.block {
-        background: linear-gradient(135deg, rgba(52,152,219,0.6), rgba(69,183,209,0.4));
-        color: white;
-        border: 1px solid rgba(69,183,209,0.5);
+    .battle-bash-btn .bash-label {
+        font-size: 0.55rem;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-transform: uppercase;
     }
 
-    .battle-action-btn.special {
-        background: linear-gradient(135deg, rgba(155,89,182,0.6), rgba(183,109,212,0.4));
-        color: white;
-        border: 1px solid rgba(183,109,212,0.5);
-        display: none;
-    }
 
-    .battle-action-btn.special.ready {
-        display: flex;
-        animation: specialReady 0.6s ease-in-out infinite alternate;
-    }
-
-    @keyframes specialReady {
-        0% { box-shadow: 0 0 10px rgba(155,89,182,0.3); }
-        100% { box-shadow: 0 0 25px rgba(155,89,182,0.7); }
-    }
-
-    .battle-action-btn:active {
-        transform: scale(0.92);
-    }
-
-    .battle-action-btn:disabled {
-        opacity: 0.3;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    .battle-action-btn .timing-ring {
+    .battle-bash-btn .bash-progress-ring {
         position: absolute;
-        inset: 0;
-        border-radius: 12px;
-        border: 2px solid transparent;
-        transition: border-color 0.1s;
+        inset: -4px;
+        pointer-events: none;
     }
 
-    .battle-action-btn.perfect .timing-ring {
-        border-color: #FFD700;
+    .battle-bash-btn .bash-progress-ring svg {
+        width: 100%;
+        height: 100%;
+    }
+
+    .bash-ring-bg {
+        fill: none;
+        stroke: rgba(255,255,255,0.15);
+        stroke-width: 3;
+    }
+
+    .bash-ring-fill {
+        fill: none;
+        stroke: #FFD700;
+        stroke-width: 3;
+        stroke-dasharray: 163.36;
+        stroke-dashoffset: 163.36;
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.1s;
+        transform: rotate(-90deg);
+        transform-origin: center;
+    }
+
+    .battle-bash-btn.attack-ready {
+        animation: bashReady 0.3s ease-in-out infinite alternate;
+        background: radial-gradient(circle at 30% 30%, #FFD700, #ff8c00);
+    }
+
+    @keyframes bashReady {
+        0% { box-shadow: 0 0 15px rgba(255,215,0,0.5); transform: scale(1); }
+        100% { box-shadow: 0 0 30px rgba(255,215,0,0.9); transform: scale(1.05); }
         box-shadow: inset 0 0 15px rgba(255,215,0,0.3);
     }
 
@@ -5090,17 +5092,14 @@ async function applyAppTheme(themeKey) {
        BACKGROUND THEMES
        ============================================================ */
     .tamagotchi-bg-gym {
-        background: linear-gradient(180deg, #1a1a2e 0%, #1c2333 40%, #1a1a2e 100%) !important;
+        background: url('./assets/gym_bg.jpeg') center center / cover no-repeat !important;
     }
 
     .tamagotchi-bg-gym::before {
         content: '';
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
-        background:
-            radial-gradient(ellipse 15% 25% at 12% 70%, rgba(120,120,140,0.12) 0%, transparent 100%),
-            radial-gradient(ellipse 8% 15% at 88% 75%, rgba(120,120,140,0.1) 0%, transparent 100%),
-            radial-gradient(ellipse 6% 10% at 85% 65%, rgba(100,100,120,0.08) 0%, transparent 100%);
+        background: rgba(0,0,0,0.15);
         pointer-events: none;
         z-index: 0;
     }
@@ -5121,18 +5120,14 @@ async function applyAppTheme(themeKey) {
     }
 
     .tamagotchi-bg-dojo {
-        background: linear-gradient(180deg, #1a0f0f 0%, #2d1515 40%, #1a0f0f 100%) !important;
+        background: url('./assets/battle_dojo_bg.jpeg') center center / cover no-repeat !important;
     }
 
     .tamagotchi-bg-dojo::before {
         content: '';
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
-        background:
-            radial-gradient(ellipse 25% 20% at 50% 80%, rgba(200,50,50,0.06) 0%, transparent 100%),
-            linear-gradient(90deg, rgba(200,170,100,0.04) 1px, transparent 1px),
-            linear-gradient(0deg, rgba(200,170,100,0.04) 1px, transparent 1px);
-        background-size: 100% 100%, 40px 40px, 40px 40px;
+        background: rgba(0,0,0,0.15);
         pointer-events: none;
         z-index: 0;
     }
@@ -5258,20 +5253,20 @@ async function applyAppTheme(themeKey) {
              <span id="daily-progress-counter" class="welcome-text" style="display: none; color: white; font-weight: 700;">Day 1 of 28</span>
         </div>
         <!-- Tamagotchi Widget (Modern Header View) -->
-        <div id="tamagotchi-widget-container" style="background: linear-gradient(180deg, #1a1a2e 0%, #16213e 40%, #1a1a2e 100%); backdrop-filter: blur(20px); border-radius: 0; overflow: hidden; margin: 0; height: 420px; position: relative;">
-            <!-- Room floor with perspective depth -->
-            <div id="tamagotchi-floor" style="position: absolute; bottom: 0; left: 0; right: 0; height: 55%; background: linear-gradient(180deg, transparent 0%, rgba(30,40,60,0.3) 20%, rgba(40,55,80,0.6) 50%, rgba(50,70,100,0.8) 80%, rgba(60,85,120,0.95) 100%); transform: perspective(500px) rotateX(25deg); transform-origin: bottom center; pointer-events: none; z-index: 1;"></div>
-            <!-- Floor reflection/shine -->
-            <div style="position: absolute; bottom: 0; left: 10%; right: 10%; height: 30%; background: radial-gradient(ellipse 80% 40% at 50% 100%, rgba(100,140,200,0.15) 0%, transparent 70%); pointer-events: none; z-index: 2;"></div>
-            <!-- Ambient room lighting glow -->
-            <div style="position: absolute; top: 0; left: 0; right: 0; height: 50%; background: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(80,100,140,0.2) 0%, transparent 70%); pointer-events: none; z-index: 1;"></div>
+        <div id="tamagotchi-widget-container" style="background: #1a1a2e; backdrop-filter: blur(20px); border-radius: 0; overflow: hidden; margin: 0; height: 420px; position: relative;">
+            <!-- Room floor with perspective depth (hidden when static bg is active) -->
+            <div id="tamagotchi-floor" style="position: absolute; bottom: 0; left: 0; right: 0; height: 55%; background: linear-gradient(180deg, transparent 0%, rgba(30,40,60,0.3) 20%, rgba(40,55,80,0.6) 50%, rgba(50,70,100,0.8) 80%, rgba(60,85,120,0.95) 100%); transform: perspective(500px) rotateX(25deg); transform-origin: bottom center; pointer-events: none; z-index: 1; display: none;"></div>
+            <!-- Static gym background image -->
+            <div id="tamagotchi-static-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; display: none;"></div>
             <!-- 3D Background Environment - part of the scene with camera sync -->
             <model-viewer
                 id="tamagotchi-bg-model"
                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; display: none; pointer-events: none; background: transparent;"
-                camera-orbit="0deg 85deg 1.5m"
-                camera-target="0m 0.2m 0m"
-                field-of-view="30deg"
+                camera-orbit="0deg 85deg 8.0m"
+                camera-target="0m -0.1m 0m"
+                field-of-view="16deg"
+                min-field-of-view="5deg"
+                max-field-of-view="120deg"
                 shadow-intensity="0.8"
                 exposure="1.0"
                 environment-image="neutral"
@@ -5292,7 +5287,9 @@ async function applyAppTheme(themeKey) {
                 exposure="0.9"
                 environment-image="neutral"
                 camera-orbit="0deg 85deg 22m"
-                field-of-view="30deg"
+                field-of-view="55deg"
+                min-field-of-view="20deg"
+                max-field-of-view="120deg"
                 style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; --poster-color: transparent; touch-action: none; background: transparent;"
                 interaction-prompt="none">
             </model-viewer>
@@ -5364,21 +5361,17 @@ async function applyAppTheme(themeKey) {
                 </div>
             </div>
 
-            <!-- Battle Action Buttons (shown during battle phases) -->
+            <!-- Battle Action Button (single bash button - Digimon style) -->
             <div id="battle-action-container" class="battle-action-container">
-                <button id="battle-btn-punch" class="battle-action-btn punch" disabled>
-                    <span class="btn-icon">👊</span>
-                    <span>PUNCH!</span>
-                    <div class="timing-ring"></div>
-                </button>
-                <button id="battle-btn-block" class="battle-action-btn block" disabled>
-                    <span class="btn-icon">🛡️</span>
-                    <span>BLOCK!</span>
-                    <div class="timing-ring"></div>
-                </button>
-                <button id="battle-btn-special" class="battle-action-btn special">
-                    <span class="btn-icon">⚡</span>
-                    <span>SPECIAL!</span>
+                <button id="battle-btn-bash" class="battle-bash-btn">
+                    <span class="bash-icon">👊</span>
+                    <span class="bash-label">BASH!</span>
+                    <div class="bash-progress-ring">
+                        <svg viewBox="0 0 60 60">
+                            <circle cx="30" cy="30" r="26" class="bash-ring-bg"/>
+                            <circle cx="30" cy="30" r="26" class="bash-ring-fill" id="bash-ring-fill"/>
+                        </svg>
+                    </div>
                 </button>
             </div>
         </div>
@@ -39261,6 +39254,7 @@ async function saveMealLog(mealData) {
 // Manually recalculate and update daily nutrition totals
 async function recalculateDailyNutrition() {
     try {
+        if (!window.supabaseClient) { console.log('Supabase not initialized'); return; }
         const user = await window.supabaseClient.auth.getUser();
         const userId = user?.data?.user?.id;
 
@@ -39448,6 +39442,7 @@ async function loadTodayNutrition() {
         // Check if it's a new day
         checkAndResetNewDay();
 
+        if (!window.supabaseClient) { console.log('Supabase not initialized'); return; }
         const user = await window.supabaseClient.auth.getUser();
         const userId = user?.data?.user?.id;
 
@@ -42373,15 +42368,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                 else cameraDist = 22.0 - (level / 40 * 4.0);
 
                 // Female models use a different scale and logic
+                // Use field-of-view to control zoom (camera-orbit distance gets clamped by model-viewer)
+                let fov = 30; // default narrow FOV (character fills screen)
                 if (window.currentUserGender?.toLowerCase() === 'female') {
-                    if (level >= 20) cameraDist = 4.2;
-                    else if (level >= 10) cameraDist = 7.0;
-                    else cameraDist = 9.5;
+                    if (level >= 20) { cameraDist = 14.0; fov = 100; }
+                    else if (level >= 10) { cameraDist = 16.0; fov = 85; }
+                    else { cameraDist = 18.0; fov = 70; }
                 }
 
                 // Only update camera if not in battle (battle locks camera to side profile)
                 if (!window._battleInProgress && !window.isDuringBattle) {
                     modelViewer.setAttribute('camera-orbit', `0deg 85deg ${cameraDist}m`);
+                    modelViewer.setAttribute('field-of-view', `${fov}deg`);
                 }
             }
         };
@@ -42461,12 +42459,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Background unlock system - backgrounds unlocked at specific levels
         const BACKGROUND_UNLOCKS = [
-            { name: 'gym', displayName: 'Gym', unlockLevel: 1, icon: '🏋️', theme: 'tamagotchi-bg-gym', model: 'assets/background_gym.glb' },
-            { name: 'park', displayName: 'Park', unlockLevel: 10, icon: '🌳', theme: 'tamagotchi-bg-park', model: null },
-            { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏠', theme: 'tamagotchi-bg-home', model: null },
-            { name: 'beach', displayName: 'Beach', unlockLevel: 30, icon: '🏖️', theme: 'tamagotchi-bg-beach', model: null },
-            { name: 'mountain', displayName: 'Mountain', unlockLevel: 40, icon: '⛰️', theme: 'tamagotchi-bg-mountain', model: null },
+            { name: 'gym', displayName: 'Gym', unlockLevel: 1, icon: '🏋️', theme: 'tamagotchi-bg-gym', image: './assets/gym_bg.jpeg' },
+            { name: 'park', displayName: 'Park', unlockLevel: 10, icon: '🌳', theme: 'tamagotchi-bg-park', image: './assets/park.jpeg' },
+            { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏠', theme: 'tamagotchi-bg-home', image: './assets/home.jpeg' },
+            { name: 'beach', displayName: 'Beach', unlockLevel: 30, icon: '🏖️', theme: 'tamagotchi-bg-beach', image: './assets/beach.jpeg' },
+            { name: 'mountain', displayName: 'Mountain', unlockLevel: 40, icon: '⛰️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
         ];
+        // Expose globally so battle restore can look up the saved background image
+        window.BACKGROUND_UNLOCKS = BACKGROUND_UNLOCKS;
 
         // Expose ANIMATION_UNLOCKS globally for use by checkNewAnimationUnlocks
         window.ANIMATION_UNLOCKS = ANIMATION_UNLOCKS;
@@ -42746,7 +42746,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Select and apply a background theme from the Unlocks panel
         window.selectBackground = function(bgName) {
-            const bg = BACKGROUND_UNLOCKS.find(b => b.name === bgName);
+            const bg = (window.BACKGROUND_UNLOCKS || BACKGROUND_UNLOCKS).find(b => b.name === bgName);
             if (!bg || !bg.theme) return;
 
             const container = document.getElementById('tamagotchi-widget-container');
@@ -42758,31 +42758,25 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Apply the selected CSS theme (gradient backdrop)
             container.classList.add(bg.theme);
 
-            // Handle 3D background model-viewer
+            // Handle background display - ALL backgrounds use static images now
             const bgModel = document.getElementById('tamagotchi-bg-model');
             const floor = document.getElementById('tamagotchi-floor');
-            if (bg.model && bgModel) {
-                if (bgModel.getAttribute('src') !== bg.model) {
-                    bgModel.setAttribute('src', bg.model);
-                }
-                bgModel.style.display = 'block';
-                if (floor) floor.style.opacity = '0';
+            const staticBg = document.getElementById('tamagotchi-static-bg');
 
-                // Sync background camera to character's current rotation
-                const charViewer = document.getElementById('tamagotchi-model');
-                if (charViewer && typeof charViewer.getCameraOrbit === 'function') {
-                    const orbit = charViewer.getCameraOrbit();
-                    const thetaDeg = (orbit.theta * 180 / Math.PI);
-                    const phiDeg = (orbit.phi * 180 / Math.PI);
-                    const bgDist = orbit.radius * (1.5 / 22);
-                    bgModel.cameraOrbit = `${thetaDeg}deg ${phiDeg}deg ${bgDist}m`;
-                    if (typeof bgModel.jumpCameraToGoal === 'function') {
-                        bgModel.jumpCameraToGoal();
-                    }
-                }
-            } else {
-                if (bgModel) bgModel.style.display = 'none';
-                if (floor) floor.style.opacity = '1';
+            // Hide 3D model and floor - we use static images for everything
+            if (bgModel) bgModel.style.display = 'none';
+            if (floor) floor.style.display = 'none';
+
+            if (bg.image && staticBg) {
+                // Show static background image
+                staticBg.style.display = 'block';
+                staticBg.style.backgroundImage = "url('" + bg.image + "')";
+                staticBg.style.backgroundSize = 'cover';
+                staticBg.style.backgroundPosition = 'center center';
+            } else if (staticBg) {
+                // No image available (e.g. Home) - hide static bg, show floor as fallback
+                staticBg.style.display = 'none';
+                if (floor) floor.style.display = 'block';
             }
 
             // Save selection to localStorage
@@ -42823,7 +42817,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (!charViewer || !bgViewer) return;
 
             // Base background camera distance - scales proportionally with character zoom
-            const BG_BASE_DISTANCE = 1.5; // meters at default character distance
+            // Higher BG_BASE_DISTANCE = gym appears larger/closer
+            const BG_BASE_DISTANCE = 8.0; // meters at default character distance
             const CHAR_BASE_DISTANCE = 22; // default character orbit distance
             const BG_SCALE = BG_BASE_DISTANCE / CHAR_BASE_DISTANCE;
 
@@ -42886,11 +42881,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Sound System
     const BATTLE_SOUNDS = {
-        intro: new Audio('assets/battle_intro.mp3'),
-        bell: new Audio('assets/bell.mp3'),
-        whoosh: new Audio('assets/whoosh.mp3'),
-        hit: new Audio('assets/hit.mp3'),
-        victory: new Audio('assets/victory.mp3')
+        intro: new Audio('assets/battle_intro.wav'),
+        bell: new Audio('assets/bell.wav'),
+        whoosh: new Audio('assets/whoosh.wav'),
+        hit: new Audio('assets/hit.wav'),
+        victory: new Audio('assets/victory.wav')
     };
 
     function playBattleSound(name) {
@@ -43002,6 +42997,42 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
     };
+    </script>
+
+    <!-- ============================================================
+         BACKGROUND INITIALIZATION (separate script to avoid battle errors blocking it)
+         ============================================================ -->
+    <script>
+    (function() {
+        function initBackground() {
+            const savedBg = localStorage.getItem('selectedBackground') || 'gym';
+            if (window.selectBackground) {
+                window.selectBackground(savedBg);
+                return;
+            }
+            // Fallback if selectBackground not yet available
+            const container = document.getElementById('tamagotchi-widget-container');
+            if (!container) return;
+            const ALL_BG = ['tamagotchi-bg-gym','tamagotchi-bg-park','tamagotchi-bg-home','tamagotchi-bg-beach','tamagotchi-bg-mountain','tamagotchi-bg-dojo','tamagotchi-bg-arena'];
+            ALL_BG.forEach(t => container.classList.remove(t));
+            container.classList.add('tamagotchi-bg-gym');
+            const staticBg = document.getElementById('tamagotchi-static-bg');
+            const bgModel = document.getElementById('tamagotchi-bg-model');
+            const floor = document.getElementById('tamagotchi-floor');
+            if (staticBg) {
+                staticBg.style.display = 'block';
+                staticBg.style.backgroundImage = "url('./assets/gym_bg.jpeg')";
+                staticBg.style.backgroundSize = 'cover';
+                staticBg.style.backgroundPosition = 'center center';
+            }
+            if (bgModel) bgModel.style.display = 'none';
+            if (floor) floor.style.display = 'none';
+        }
+        // Run after a short delay so models have time to initialize
+        setTimeout(initBackground, 2500);
+        // Also expose for other code
+        window._initBackground = initBackground;
+    })();
     </script>
 
     <!-- ============================================================
@@ -43365,31 +43396,27 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (!container) return;
 
             // Remove all CSS bg themes
-            ALL_BG_THEME_CLASSES.forEach(theme => container.classList.remove(theme));
+            const ALL_BG_THEME_CLASSES_LOCAL = [
+                'tamagotchi-bg-gym', 'tamagotchi-bg-park', 'tamagotchi-bg-home',
+                'tamagotchi-bg-beach', 'tamagotchi-bg-mountain',
+                'tamagotchi-bg-dojo', 'tamagotchi-bg-arena'
+            ];
+            ALL_BG_THEME_CLASSES_LOCAL.forEach(theme => container.classList.remove(theme));
 
-            // Default to gym bg with 3D model
+            // Default to gym bg
             if (level >= 1) {
                 container.classList.add('tamagotchi-bg-gym');
+                const staticBg = document.getElementById('tamagotchi-static-bg');
                 const bgModel = document.getElementById('tamagotchi-bg-model');
                 const floor = document.getElementById('tamagotchi-floor');
-                if (bgModel) {
-                    bgModel.setAttribute('src', 'assets/background_gym.glb');
-                    bgModel.style.display = 'block';
-                    if (floor) floor.style.opacity = '0';
-
-                    // Sync background camera to character's current rotation
-                    const charViewer = document.getElementById('tamagotchi-model');
-                    if (charViewer && typeof charViewer.getCameraOrbit === 'function') {
-                        const orbit = charViewer.getCameraOrbit();
-                        const thetaDeg = (orbit.theta * 180 / Math.PI);
-                        const phiDeg = (orbit.phi * 180 / Math.PI);
-                        const bgDist = orbit.radius * (1.5 / 22);
-                        bgModel.cameraOrbit = `${thetaDeg}deg ${phiDeg}deg ${bgDist}m`;
-                        if (typeof bgModel.jumpCameraToGoal === 'function') {
-                            bgModel.jumpCameraToGoal();
-                        }
-                    }
+                if (staticBg) {
+                    staticBg.style.display = 'block';
+                    staticBg.style.backgroundImage = "url('./assets/gym_bg.jpeg')";
+                    staticBg.style.backgroundSize = 'cover';
+                    staticBg.style.backgroundPosition = 'center center';
                 }
+                if (bgModel) bgModel.style.display = 'none';
+                if (floor) floor.style.display = 'none';
             }
         }
 
@@ -43735,9 +43762,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hpContainer = document.getElementById('battle-hp-container');
             const manaContainer = document.getElementById('battle-mana-container');
             const actionContainer = document.getElementById('battle-action-container');
-            const punchBtn = document.getElementById('battle-btn-punch');
-            const blockBtn = document.getElementById('battle-btn-block');
-            const specialBtn = document.getElementById('battle-btn-special');
+            const bashBtn = document.getElementById('battle-btn-bash');
 
             if (!widget || !viewer) {
                 window._battleInProgress = false;
@@ -43750,23 +43775,31 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hadAutoRotate = viewer.hasAttribute('auto-rotate');
             const hadCameraControls = viewer.hasAttribute('camera-controls');
 
+            // === BATTLE DOJO BACKGROUND ===
+            const battleBgClasses = ['tamagotchi-bg-gym','tamagotchi-bg-park','tamagotchi-bg-home','tamagotchi-bg-beach','tamagotchi-bg-mountain','tamagotchi-bg-dojo','tamagotchi-bg-arena'];
+            const savedBgClasses = battleBgClasses.filter(c => widget.classList.contains(c));
+            battleBgClasses.forEach(c => widget.classList.remove(c));
+            widget.classList.add('tamagotchi-bg-dojo');
+            const battleStaticBg = document.getElementById('tamagotchi-static-bg');
+            if (battleStaticBg) {
+                battleStaticBg.style.display = 'block';
+                battleStaticBg.style.backgroundImage = "url('./assets/battle_dojo_bg.jpeg')";
+                battleStaticBg.style.backgroundSize = 'cover';
+                battleStaticBg.style.backgroundPosition = 'center center';
+            }
+
             // === BATTLE CAMERA SETUP ===
-            // Stop rotation and user controls
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
 
-            // Zero out the turntable so camera-orbit angle is exact
             if (typeof viewer.resetTurntableRotation === 'function') {
                 viewer.resetTurntableRotation();
             }
 
-            // With turntable at 0, set to front view (0deg) first
-            // TODO: once front view is confirmed working, change to -90deg for side profile
             const orbitParts = (savedOrbit || '0deg 85deg 22m').split(/\s+/);
             const currentDist = orbitParts[2] || '22m';
             viewer.setAttribute('camera-orbit', `0deg 85deg ${currentDist}`);
 
-            // Shift character to the left side of screen
             viewer.style.left = '-30%';
 
             // Get stats
@@ -43775,20 +43808,47 @@ document.addEventListener('DOMContentLoaded', async function() {
             const baseDmg = 20;
             const playerMaxHP = 100 + (stats.hp * 5);
             const playerSTR = stats.str;
-            const manaRate = 1 + (stats.mana / 50);
+            const playerMana = stats.mana;
 
             const enemyMaxHP = 80 + (level * 8);
             const enemyBaseDmg = 15 + Math.floor(level * 1.5);
 
             let playerHP = playerMaxHP;
             let enemyHP = enemyMaxHP;
-            let manaCharge = 0;
-            let manaFull = false;
-            let manaInterval = null;
 
             // Move picker
             const chosenMove = await showMovePicker();
             const movePower = chosenMove.power || 1;
+
+            // Animations (shared across all battle functions) - declared early
+            const anims = viewer.availableAnimations || [];
+            const attackAnim = anims.find(a => a.toLowerCase() === chosenMove.name.toLowerCase())
+                || anims.find(a => a.toLowerCase().includes(chosenMove.name.toLowerCase()))
+                || anims.find(a => /^boxing$/i.test(a))
+                || anims[0];
+            const hitAnim = anims.find(a => /^hit_to_1$|^hit_to_2$|^hit_to_head$/i.test(a)) || anims[0];
+            const loseAnim = anims.find(a => /^lose$|^die$/i.test(a)) || anims[0];
+
+            // Bash system: mana reduces taps needed (30 base, min 10)
+            const baseTapsNeeded = 30;
+            const manaReduction = Math.floor(playerMana / 5); // every 5 mana = 1 less tap
+            const tapsNeeded = Math.max(10, baseTapsNeeded - manaReduction);
+            let bashCount = 0;
+            let battleOver = false;
+            let battleTimer = null;
+            const BATTLE_DURATION = 30000; // 30 seconds
+
+            // UI elements
+            const bashRingFill = document.getElementById('bash-ring-fill');
+            const ringCircumference = 163.36; // 2 * PI * 26
+
+            function updateBashUI() {
+                // Update progress ring
+                const progress = (bashCount % tapsNeeded) / tapsNeeded;
+                if (bashRingFill) {
+                    bashRingFill.style.strokeDashoffset = ringCircumference * (1 - progress);
+                }
+            }
 
             // HP bar updates
             function updateHPBars() {
@@ -43804,168 +43864,40 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (enemyText) enemyText.textContent = `${Math.max(0, Math.round(enemyHP))} / ${enemyMaxHP}`;
             }
 
-            function updateManaBar() {
-                const fill = document.getElementById('battle-mana-fill');
-                const pct = document.getElementById('battle-mana-pct');
-                if (fill) {
-                    fill.style.width = Math.min(100, manaCharge) + '%';
-                    if (manaCharge >= 100 && !manaFull) {
-                        fill.classList.add('full');
-                        manaFull = true;
-                        if (specialBtn) specialBtn.classList.add('ready');
-                    }
-                }
-                if (pct) pct.textContent = Math.min(100, Math.round(manaCharge)) + '%';
-            }
-
-            function startManaCharge() {
-                manaCharge = 0;
-                manaFull = false;
-                const fill = document.getElementById('battle-mana-fill');
-                if (fill) fill.classList.remove('full');
-                if (specialBtn) specialBtn.classList.remove('ready');
-                manaInterval = setInterval(() => {
-                    if (manaCharge < 100) {
-                        manaCharge += 2 * manaRate;
-                        updateManaBar();
-                    }
-                }, 200);
-            }
-
-            function stopManaCharge() {
-                if (manaInterval) { clearInterval(manaInterval); manaInterval = null; }
-            }
-
             function playSound(name) {
                 if (typeof playBattleSound === 'function') playBattleSound(name);
             }
 
-            // Init HP
-            updateHPBars();
-            const enemyNameEl = document.querySelector('.battle-hp-box.enemy .battle-hp-name');
-            if (enemyNameEl) enemyNameEl.textContent = (opponentName || 'OPPONENT').toUpperCase();
-
-            // === INTRO ===
-            playSound('intro');
-            if (overlayText && overlay) {
-                overlayText.textContent = `VS ${(opponentName || 'OPPONENT').toUpperCase()}!`;
-                overlay.classList.add('active');
+            // Triple fireball using special.png
+            function spawnTripleFireball(container) {
+                const offsets = [-40, 0, 40]; // top, middle, bottom spread
+                offsets.forEach((yOff, i) => {
+                    const fb = document.createElement('div');
+                    fb.innerHTML = `<img src="./assets/special.png" style="width:55px;height:55px;border-radius:50%;filter:drop-shadow(0 0 12px gold) brightness(1.3);">`;
+                    fb.style.cssText = `position:absolute; left:150px; top:calc(50% + ${yOff}px); transform:translateY(-50%); z-index:100; pointer-events:none;`;
+                    container.appendChild(fb);
+                    let posX = 150;
+                    const speed = 10 + (i * 2); // slightly different speeds for spread effect
+                    function move() {
+                        posX += speed;
+                        fb.style.left = posX + 'px';
+                        if (posX > container.clientWidth) fb.remove();
+                        else requestAnimationFrame(move);
+                    }
+                    setTimeout(() => move(), i * 60); // stagger slightly
+                });
             }
 
-            // Flash
-            const flash = document.createElement('div');
-            flash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:white;opacity:0.8;transition:opacity 0.5s;pointer-events:none;z-index:999;';
-            widget.appendChild(flash);
-            setTimeout(() => flash.style.opacity = 0, 50);
-            setTimeout(() => flash.remove(), 550);
-
-            await new Promise(r => setTimeout(r, 2000));
-            if (overlay) overlay.classList.remove('active');
-
-            // Show battle UI
-            if (hpContainer) hpContainer.classList.add('active');
-            if (manaContainer) manaContainer.classList.add('active');
-            if (actionContainer) actionContainer.classList.add('active');
-
-            await new Promise(r => setTimeout(r, 600));
-            startManaCharge();
-
-            // Find animations
-            const anims = viewer.availableAnimations || [];
-            let attackAnim = anims.find(a => a.toLowerCase() === chosenMove.name.toLowerCase())
-                || anims.find(a => a.toLowerCase().includes(chosenMove.name.toLowerCase()))
-                || anims.find(a => /^boxing$/i.test(a))
-                || anims[0];
-            let hitAnim = anims.find(a => /^hit_to_1$|^hit_to_2$|^hit_to_head$/i.test(a)) || anims[0];
-            let blockAnim = anims.find(a => /^block$/i.test(a)) || hitAnim;
-            let loseAnim = anims.find(a => /^lose$|^die$/i.test(a)) || anims[0];
-
-            // Battle state
-            let battleOver = false;
-            let waitingForPunch = false;
-            let waitingForBlock = false;
-            let punchResolve = null;
-            let blockResolve = null;
-
-            function onPunch() {
-                if (!waitingForPunch || !punchResolve) return;
-                waitingForPunch = false;
-                punchBtn.disabled = true;
-                punchResolve('hit');
-                punchResolve = null;
-            }
-            function onBlock() {
-                if (!waitingForBlock || !blockResolve) return;
-                waitingForBlock = false;
-                blockBtn.disabled = true;
-                blockResolve('blocked');
-                blockResolve = null;
-            }
-            function onSpecial() {
-                if (!manaFull) return;
-                manaCharge = 0;
-                manaFull = false;
-                const fill = document.getElementById('battle-mana-fill');
-                if (fill) fill.classList.remove('full');
-                specialBtn.classList.remove('ready');
-                updateManaBar();
-
-                const specialMoves = ['kick_2', 'boxing_2', 'karate', 'volleyball', 'kick'];
-                let specialAnim = null;
-                for (const sm of specialMoves) {
-                    specialAnim = anims.find(a => a.toLowerCase() === sm);
-                    if (specialAnim) break;
-                }
-                if (!specialAnim) specialAnim = attackAnim;
-                viewer.animationName = specialAnim;
-                viewer.play();
-
-                const specialDmg = (baseDmg + playerSTR * 2) * 4;
-                enemyHP -= specialDmg;
-                updateHPBars();
-                spawnBattleFireball(widget, true);
-                playSound('whoosh');
-
-                widget.style.animation = 'none';
-                void widget.offsetWidth;
-                widget.style.transform = 'translateX(5px)';
-                setTimeout(() => widget.style.transform = 'translateX(-5px)', 50);
-                setTimeout(() => widget.style.transform = 'translateX(3px)', 100);
-                setTimeout(() => widget.style.transform = '', 150);
-            }
-
-            punchBtn.addEventListener('click', onPunch);
-            blockBtn.addEventListener('click', onBlock);
-            specialBtn.addEventListener('click', onSpecial);
-
-            // Fireball helpers
-            function spawnBattleFireball(container, isSpecial = false) {
-                const fb = document.createElement('div');
-                const size = isSpecial ? 90 : 60;
-                const glowColor = isSpecial ? 'gold' : 'orange';
-                fb.innerHTML = `<img src="assets/fireball.png" style="width:${size}px;height:${size}px;filter:drop-shadow(0 0 ${isSpecial ? 15 : 8}px ${glowColor});">`;
-                fb.style.cssText = `position:absolute; left:150px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;`;
-                container.appendChild(fb);
-                let posX = 150;
-                const speed = isSpecial ? 35 : 25;
-                function move() {
-                    posX += speed;
-                    fb.style.left = posX + 'px';
-                    if (posX > container.clientWidth) fb.remove();
-                    else requestAnimationFrame(move);
-                }
-                move();
-            }
-
+            // Incoming enemy fireball
             function spawnIncomingBattleFireball(container) {
                 return new Promise(resolve => {
                     const fb = document.createElement('div');
-                    fb.innerHTML = `<img src="assets/fireballblue.svg" style="width:60px;height:60px; transform:scaleX(-1); filter:drop-shadow(0 0 8px blue);">`;
+                    fb.innerHTML = `<img src="./assets/fireballblue.svg" style="width:60px;height:60px; transform:scaleX(-1); filter:drop-shadow(0 0 8px blue);" onerror="this.style.background='radial-gradient(circle, #4488ff, blue)'; this.style.borderRadius='50%';">`;
                     fb.style.cssText = 'position:absolute; right:-60px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;';
                     container.appendChild(fb);
                     let posX = container.clientWidth;
                     const targetX = container.clientWidth / 2;
-                    const speed = 25;
+                    const speed = 8;
                     function move() {
                         posX -= speed;
                         fb.style.left = posX + 'px';
@@ -43976,114 +43908,207 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
 
-            function waitForPunch(timeoutMs = 2000) {
-                return new Promise(resolve => {
-                    waitingForPunch = true;
-                    punchBtn.disabled = false;
-                    punchBtn.classList.add('perfect');
-                    setTimeout(() => punchBtn.classList.remove('perfect'), 600);
-                    punchResolve = resolve;
-                    setTimeout(() => {
-                        if (waitingForPunch) {
-                            waitingForPunch = false;
-                            punchBtn.disabled = true;
-                            punchResolve = null;
-                            resolve('miss');
-                        }
-                    }, timeoutMs);
-                });
+            // Track if super attack is ready
+            let superReady = false;
+
+            // Normal auto-attack (character attacks on a timer)
+            function spawnNormalFireball(container) {
+                const fb = document.createElement('div');
+                fb.innerHTML = `<img src="./assets/fireball.png" style="width:55px;height:55px;filter:drop-shadow(0 0 8px orange);" onerror="this.style.background='radial-gradient(circle, orange, red)'; this.style.borderRadius='50%';">`;
+                fb.style.cssText = `position:absolute; left:150px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;`;
+                container.appendChild(fb);
+                let posX = 150;
+                function move() {
+                    posX += 10;
+                    fb.style.left = posX + 'px';
+                    if (posX > container.clientWidth) fb.remove();
+                    else requestAnimationFrame(move);
+                }
+                move();
             }
 
-            function waitForBlock(timeoutMs = 1200) {
-                return new Promise(resolve => {
-                    waitingForBlock = true;
-                    blockBtn.disabled = false;
-                    blockBtn.classList.add('perfect');
-                    setTimeout(() => blockBtn.classList.remove('perfect'), 500);
-                    blockResolve = resolve;
-                    setTimeout(() => {
-                        if (waitingForBlock) {
-                            waitingForBlock = false;
-                            blockBtn.disabled = true;
-                            blockResolve = null;
-                            resolve('miss');
-                        }
-                    }, timeoutMs);
-                });
+            // Fire super attack (3 parallel fireballs with special.jpeg)
+            function fireSuperAttack() {
+                viewer.animationName = attackAnim;
+                viewer.play();
+
+                const damage = (baseDmg + playerSTR * 2) * movePower * 3;
+                enemyHP -= damage;
+                updateHPBars();
+                spawnTripleFireball(widget);
+                playSound('whoosh');
+
+                // Screen shake
+                widget.style.transform = 'translateX(5px)';
+                setTimeout(() => widget.style.transform = 'translateX(-5px)', 50);
+                setTimeout(() => widget.style.transform = 'translateX(3px)', 100);
+                setTimeout(() => widget.style.transform = '', 150);
+
+                // Flash bash button gold briefly
+                if (bashBtn) {
+                    bashBtn.classList.add('attack-ready');
+                    setTimeout(() => bashBtn.classList.remove('attack-ready'), 400);
+                }
+
+                superReady = false;
+                bashCount = 0;
+                updateBashUI();
+
+                if (enemyHP <= 0) {
+                    battleOver = true;
+                }
             }
 
-            // === ROUNDS ===
-            for (let round = 1; round <= 3; round++) {
-                if (battleOver) break;
+            // Normal auto-attack
+            function fireNormalAttack() {
+                viewer.animationName = attackAnim;
+                viewer.play();
 
-                if (overlayText && overlay) {
-                    overlayText.textContent = `ROUND ${round}`;
-                    overlay.classList.add('active');
-                    playSound('bell');
-                    await new Promise(r => setTimeout(r, 1500));
-                    overlay.classList.remove('active');
-                    await new Promise(r => setTimeout(r, 500));
+                const damage = (baseDmg + playerSTR) * movePower * 0.5;
+                enemyHP -= damage;
+                updateHPBars();
+                spawnNormalFireball(widget);
+                playSound('whoosh');
+
+                if (enemyHP <= 0) {
+                    battleOver = true;
                 }
+            }
 
-                // Attack phase
-                for (let i = 0; i < 3; i++) {
-                    if (battleOver) break;
-                    const punchResult = await waitForPunch(2000);
-                    let dmgMultiplier = punchResult === 'hit' ? 1.2 : 0.5;
-                    const damage = (baseDmg + playerSTR * 2) * movePower * dmgMultiplier;
-                    enemyHP -= damage;
-                    updateHPBars();
-                    viewer.animationName = attackAnim;
-                    viewer.play();
-                    await new Promise(r => setTimeout(r, 400));
-                    spawnBattleFireball(widget);
-                    playSound('whoosh');
-                    await new Promise(r => setTimeout(r, 800));
-                    if (enemyHP <= 0) { battleOver = true; break; }
-                }
-
-                if (battleOver) break;
-                await new Promise(r => setTimeout(r, 800));
-
-                // Defense phase
-                for (let i = 0; i < 3; i++) {
-                    if (battleOver) break;
-                    const [_, blockResult] = await Promise.all([
-                        spawnIncomingBattleFireball(widget),
-                        waitForBlock(1200)
-                    ]);
-                    let damageTaken = enemyBaseDmg;
-                    if (blockResult === 'blocked') {
-                        damageTaken = Math.round(enemyBaseDmg * 0.4);
-                        viewer.animationName = blockAnim;
+            // Auto-attack timer: character attacks every 2.5s, super replaces normal when ready
+            let autoAttackInterval = null;
+            function startAutoAttacks() {
+                autoAttackInterval = setInterval(() => {
+                    if (battleOver) return;
+                    if (superReady) {
+                        fireSuperAttack();
                     } else {
-                        viewer.animationName = hitAnim;
+                        fireNormalAttack();
                     }
+                }, 2500);
+            }
+
+            // Enemy counter-attacks periodically
+            let enemyAttackInterval = null;
+            function startEnemyAttacks() {
+                const attackEvery = Math.max(2000, 5000 - (level * 100));
+                enemyAttackInterval = setInterval(async () => {
+                    if (battleOver) return;
+
+                    await spawnIncomingBattleFireball(widget);
+                    viewer.animationName = hitAnim;
                     viewer.play();
                     playSound('hit');
+
                     const hitFlash = document.createElement('div');
-                    const flashOpacity = blockResult === 'blocked' ? 0.15 : 0.4;
-                    hitFlash.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:red;opacity:${flashOpacity};z-index:998;pointer-events:none;`;
+                    hitFlash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:red;opacity:0.3;z-index:998;pointer-events:none;';
                     widget.appendChild(hitFlash);
                     setTimeout(() => hitFlash.remove(), 150);
-                    playerHP -= damageTaken;
-                    updateHPBars();
-                    await new Promise(r => setTimeout(r, 800));
-                    if (playerHP <= 0) { battleOver = true; break; }
-                }
 
-                if (battleOver) break;
-                await new Promise(r => setTimeout(r, 500));
+                    playerHP -= enemyBaseDmg;
+                    updateHPBars();
+                    if (playerHP <= 0) battleOver = true;
+                }, attackEvery);
             }
 
+            // Bash button handler — bashing charges the super attack
+            function onBash() {
+                if (battleOver) return;
+                bashCount++;
+                updateBashUI();
+
+                // Small visual feedback on each tap
+                if (bashBtn) {
+                    bashBtn.style.transform = 'scale(0.88)';
+                    setTimeout(() => bashBtn.style.transform = '', 50);
+                }
+
+                // When bash threshold reached, mark super as ready (next auto-attack becomes super)
+                if (bashCount >= tapsNeeded && !superReady) {
+                    superReady = true;
+                    if (bashBtn) bashBtn.classList.add('attack-ready');
+                }
+            }
+
+            // Init HP
+            updateHPBars();
+            updateBashUI();
+            const enemyNameEl = document.querySelector('.battle-hp-box.enemy .battle-hp-name');
+            if (enemyNameEl) enemyNameEl.textContent = (opponentName || 'BOT').toUpperCase();
+
+            // === INTRO ===
+            playSound('intro');
+            if (overlayText && overlay) {
+                overlayText.textContent = `VS ${(opponentName || 'BOT').toUpperCase()}!`;
+                overlay.classList.add('active');
+            }
+
+            const flash = document.createElement('div');
+            flash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:white;opacity:0.8;transition:opacity 0.5s;pointer-events:none;z-index:999;';
+            widget.appendChild(flash);
+            setTimeout(() => flash.style.opacity = 0, 50);
+            setTimeout(() => flash.remove(), 550);
+
+            await new Promise(r => setTimeout(r, 2000));
+            if (overlay) overlay.classList.remove('active');
+
+            // Hide battle trigger + unlocks buttons during battle
+            const battleTriggerBtn = document.querySelector('.battle-trigger-btn');
+            const animTriggerBtn = document.querySelector('.animation-trigger-btn');
+            if (battleTriggerBtn) battleTriggerBtn.style.display = 'none';
+            if (animTriggerBtn) animTriggerBtn.style.display = 'none';
+
+            // Show battle UI (hide mana bar - not needed anymore)
+            if (hpContainer) hpContainer.classList.add('active');
+            if (manaContainer) manaContainer.style.display = 'none';
+            if (actionContainer) actionContainer.classList.add('active');
+
+            await new Promise(r => setTimeout(r, 600));
+
+            // Start battle!
+            if (overlayText && overlay) {
+                overlayText.textContent = 'BASH!';
+                overlay.classList.add('active');
+                playSound('bell');
+                await new Promise(r => setTimeout(r, 1000));
+                overlay.classList.remove('active');
+            }
+
+            // Add bash listener
+            bashBtn.addEventListener('click', onBash);
+            bashBtn.addEventListener('touchstart', (e) => { e.preventDefault(); onBash(); }, { passive: false });
+
+            // Start auto-attacks and enemy attacks
+            startAutoAttacks();
+            startEnemyAttacks();
+
+            // Battle timer - 30 seconds
+            await new Promise(resolve => {
+                battleTimer = setInterval(() => {
+                    if (battleOver) {
+                        clearInterval(battleTimer);
+                        resolve();
+                    }
+                }, 100);
+
+                // Time limit
+                setTimeout(() => {
+                    if (!battleOver) {
+                        battleOver = true;
+                    }
+                }, BATTLE_DURATION);
+            });
+
             // === END BATTLE ===
-            stopManaCharge();
-            punchBtn.removeEventListener('click', onPunch);
-            blockBtn.removeEventListener('click', onBlock);
-            specialBtn.removeEventListener('click', onSpecial);
-            punchBtn.disabled = true;
-            blockBtn.disabled = true;
-            specialBtn.classList.remove('ready');
+            if (autoAttackInterval) clearInterval(autoAttackInterval);
+            if (enemyAttackInterval) clearInterval(enemyAttackInterval);
+            if (battleTimer) clearInterval(battleTimer);
+            bashBtn.removeEventListener('click', onBash);
+            bashBtn.replaceWith(bashBtn.cloneNode(true)); // Remove all listeners including touch
+
+            // Restore hidden buttons
+            if (battleTriggerBtn) battleTriggerBtn.style.display = '';
+            if (animTriggerBtn) animTriggerBtn.style.display = '';
 
             const playerWon = enemyHP <= 0 || playerHP > 0;
 
@@ -44124,8 +44149,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 overlay.style.textShadow = '';
             }
             if (hpContainer) hpContainer.classList.remove('active');
-            if (manaContainer) manaContainer.classList.remove('active');
+            if (manaContainer) { manaContainer.classList.remove('active'); manaContainer.style.display = ''; }
             if (actionContainer) actionContainer.classList.remove('active');
+
+            // Restore background to whatever was selected before battle
+            widget.classList.remove('tamagotchi-bg-dojo');
+            savedBgClasses.forEach(c => widget.classList.add(c));
+            const restoreStaticBg = document.getElementById('tamagotchi-static-bg');
+            if (restoreStaticBg) {
+                // Look up the saved background's image from BACKGROUND_UNLOCKS
+                const savedBgName = localStorage.getItem('selectedBackground') || 'gym';
+                const savedBgObj = (window.BACKGROUND_UNLOCKS || []).find(b => b.name === savedBgName);
+                const restoreImage = savedBgObj && savedBgObj.image ? savedBgObj.image : './assets/gym_bg.jpeg';
+                restoreStaticBg.style.display = 'block';
+                restoreStaticBg.style.backgroundImage = "url('" + restoreImage + "')";
+                restoreStaticBg.style.backgroundSize = 'cover';
+                restoreStaticBg.style.backgroundPosition = 'center center';
+            }
 
             // Restore camera, controls, and position
             if (savedOrbit) viewer.setAttribute('camera-orbit', savedOrbit);
