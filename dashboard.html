@@ -43885,7 +43885,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     fb.style.cssText = `position:absolute; left:150px; top:calc(50% + ${yOff}px); transform:translateY(-50%); z-index:100; pointer-events:none;`;
                     container.appendChild(fb);
                     let posX = 150;
-                    const speed = 10 + (i * 2); // slightly different speeds for spread effect
+                    const speed = 5 + i; // slightly different speeds for spread effect (50% slower)
                     function move() {
                         posX += speed;
                         fb.style.left = posX + 'px';
@@ -43905,7 +43905,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     container.appendChild(fb);
                     let posX = container.clientWidth;
                     const targetX = container.clientWidth / 2;
-                    const speed = 8;
+                    const speed = 4;
                     function move() {
                         posX -= speed;
                         fb.style.left = posX + 'px';
@@ -43927,7 +43927,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 container.appendChild(fb);
                 let posX = 150;
                 function move() {
-                    posX += 10;
+                    posX += 5;
                     fb.style.left = posX + 'px';
                     if (posX > container.clientWidth) fb.remove();
                     else requestAnimationFrame(move);
