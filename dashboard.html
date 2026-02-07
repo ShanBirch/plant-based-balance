@@ -42376,10 +42376,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
 
                 // Camera distance logic based on level (larger values = smaller character in room)
-                let cameraDist = 22.0;
-                if (level >= 99) cameraDist = 12.0;
-                else if (level >= 40) cameraDist = 18.0 - ((level - 40) / 59 * 6.0);
-                else cameraDist = 22.0 - (level / 40 * 4.0);
+                let cameraDist = 30.0;
+                if (level >= 99) cameraDist = 20.0;
+                else if (level >= 40) cameraDist = 26.0 - ((level - 40) / 59 * 6.0);
+                else cameraDist = 30.0 - (level / 40 * 4.0);
 
                 // Use consistent field-of-view for both male and female characters
                 let fov = 50;
