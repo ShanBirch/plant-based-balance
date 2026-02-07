@@ -43768,17 +43768,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             viewer.removeAttribute('camera-controls');
 
             // Reset the turntable rotation that auto-rotate accumulated
-            // (without this, the camera stays at whatever angle it was spinning at)
             if (typeof viewer.resetTurntableRotation === 'function') {
                 viewer.resetTurntableRotation();
             }
 
             // Rotate the MODEL itself to face right (side profile)
-            // This is much more reliable than trying to orbit the camera around,
-            // because it's immune to turntable rotation offsets
-            viewer.setAttribute('orientation', '0deg -90deg 0deg');
+            // Positive 90deg Y rotation = model faces to the viewer's right
+            viewer.setAttribute('orientation', '0deg 90deg 0deg');
 
-            // Lock the camera at the front-facing position so it can't drift
+            // Lock the camera at the front-facing position, preserving distance so size stays the same
             const currentOrbit = savedOrbit || '0deg 85deg 22m';
             const orbitParts = currentOrbit.split(/\s+/);
             const currentDist = orbitParts[2] || '22m';
@@ -43792,14 +43790,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                 viewer.jumpCameraToGoal();
             }
 
-            // Re-enforce after a frame (catches any late overrides)
+            // Re-enforce after a frame and again shortly after to
+            // override any late turntable drift or async resets
             requestAnimationFrame(() => {
                 viewer.setAttribute('camera-orbit', lockedOrbit);
-                viewer.setAttribute('orientation', '0deg -90deg 0deg');
+                viewer.setAttribute('orientation', '0deg 90deg 0deg');
                 if (typeof viewer.jumpCameraToGoal === 'function') {
                     viewer.jumpCameraToGoal();
                 }
             });
+            setTimeout(() => {
+                viewer.setAttribute('camera-orbit', lockedOrbit);
+                viewer.setAttribute('orientation', '0deg 90deg 0deg');
+                viewer.setAttribute('min-camera-orbit', lockedOrbit);
+                viewer.setAttribute('max-camera-orbit', lockedOrbit);
+                if (typeof viewer.jumpCameraToGoal === 'function') {
+                    viewer.jumpCameraToGoal();
+                }
+            }, 100);
 
             // Push character to the left of screen via CSS
             viewer.classList.add('character-battle-pos', 'battle-side-left');
