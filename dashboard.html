@@ -5239,7 +5239,7 @@ async function applyAppTheme(themeKey) {
             </div>
 
             <!-- Animation Selector Button -->
-            <div class="animation-trigger-btn" onclick="showAnimationSelector()" title="My Moves">
+            <div class="animation-trigger-btn" onclick="showAnimationSelector()" title="Unlocks">
                 🎬
             </div>
 
@@ -42352,6 +42352,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             { name: 'walk', displayName: 'Walk', unlockLevel: 1, icon: '🚶', category: 'special' },
         ];
 
+        // Background unlock system - backgrounds unlocked at specific levels
+        const BACKGROUND_UNLOCKS = [
+            { name: 'gym', displayName: 'Gym', unlockLevel: 1, icon: '🏋️' },
+            { name: 'park', displayName: 'Park', unlockLevel: 10, icon: '🌳' },
+            { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏠' },
+            { name: 'beach', displayName: 'Beach', unlockLevel: 30, icon: '🏖️' },
+            { name: 'mountain', displayName: 'Mountain', unlockLevel: 40, icon: '⛰️' },
+        ];
+
         // Expose ANIMATION_UNLOCKS globally for use by checkNewAnimationUnlocks
         window.ANIMATION_UNLOCKS = ANIMATION_UNLOCKS;
 
@@ -42495,20 +42504,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 'special': '⭐ Special'
             };
 
-            // Get the user's first name for the title
-            const userName = (function() {
-                const profileNameEl = document.getElementById('profile-name-display');
-                const fullName = profileNameEl?.innerText || window.currentUser?.user_metadata?.full_name || '';
-                const firstName = fullName.split(' ')[0];
-                return firstName || 'Your';
-            })();
-            const possessiveTitle = userName === 'Your' ? "Your Moves" : `${userName}'s Moves`;
+            const selectorTitle = "Unlocks";
 
             let html = `
                 <div class="animation-selector-backdrop" onclick="closeAnimationSelector()"></div>
                 <div class="animation-selector-modal">
                     <div class="animation-selector-header">
-                        <h3>${possessiveTitle}</h3>
+                        <h3>${selectorTitle}</h3>
                         <span class="animation-selector-close" onclick="closeAnimationSelector()">&times;</span>
                     </div>
                     <div class="animation-selector-content">
@@ -42563,6 +42565,31 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <span class="skin-level-icon">${checkOrLock}</span>
                         <span class="skin-level-title">${evo.title}</span>
                     </div>`;
+            });
+
+            html += `</div></div>`;
+
+            // Add Backgrounds section
+            html += `<div class="animation-category">
+                <div class="animation-category-title">🖼️ Backgrounds</div>
+                <div class="animation-grid">`;
+
+            BACKGROUND_UNLOCKS.forEach(bg => {
+                const isBgUnlocked = level >= bg.unlockLevel;
+                if (isBgUnlocked) {
+                    html += `
+                        <div class="animation-item unlocked">
+                            <span class="animation-icon">${bg.icon}</span>
+                            <span class="animation-name">${bg.displayName}</span>
+                        </div>`;
+                } else {
+                    html += `
+                        <div class="animation-item locked">
+                            <span class="animation-icon">🔒</span>
+                            <span class="animation-name">${bg.displayName}</span>
+                            <span class="animation-unlock-level">Lvl ${bg.unlockLevel}</span>
+                        </div>`;
+                }
             });
 
             html += `</div></div>`;
