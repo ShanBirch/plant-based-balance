@@ -42367,14 +42367,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 else if (level >= 40) cameraDist = 18.0 - ((level - 40) / 59 * 6.0);
                 else cameraDist = 22.0 - (level / 40 * 4.0);
 
-                // Female models use a different scale and logic
-                // Use field-of-view to control zoom (camera-orbit distance gets clamped by model-viewer)
-                let fov = 30; // default narrow FOV (character fills screen)
-                if (window.currentUserGender?.toLowerCase() === 'female') {
-                    if (level >= 20) { cameraDist = 14.0; fov = 100; }
-                    else if (level >= 10) { cameraDist = 16.0; fov = 85; }
-                    else { cameraDist = 18.0; fov = 70; }
-                }
+                // Use consistent field-of-view for both male and female characters
+                let fov = 50;
 
                 // Only update camera if not in battle (battle locks camera to side profile)
                 if (!window._battleInProgress && !window.isDuringBattle) {
