@@ -42335,7 +42335,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     else cameraDist = 9.5;
                 }
 
-                modelViewer.setAttribute('camera-orbit', `0deg 85deg ${cameraDist}m`);
+                // Only update camera if not in battle (battle locks camera to side profile)
+                if (!window._battleInProgress && !window.isDuringBattle) {
+                    modelViewer.setAttribute('camera-orbit', `0deg 85deg ${cameraDist}m`);
+                }
             }
         };
 
@@ -42731,10 +42734,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // --- BATTLE SYSTEM INTEGRATION ---
         let isDuringBattle = false;
+        window.isDuringBattle = false;
 
         window.startBattle = async function() {
             if (isDuringBattle) return;
             isDuringBattle = true;
+            window.isDuringBattle = true;
 
             const mv = document.getElementById('tamagotchi-model');
             const overlay = document.getElementById('battle-mode-overlay');
@@ -42873,6 +42878,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 mv.classList.remove('character-battle-pos');
                 mv.removeAttribute('animation-name');
                 isDuringBattle = false;
+                window.isDuringBattle = false;
             }, 800);
         };
 
@@ -42970,6 +42976,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const viewer = document.getElementById('tamagotchi-model');
 
         if(!widget || !viewer) return;
+        window._battleInProgress = true;
+        window.isDuringBattle = true;
 
         // Unlock Audio
         playBattleSound('intro');
@@ -43070,6 +43078,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         viewer.animationName = "idle";
         setTimeout(() => {
             viewer.classList.remove('character-battle-pos');
+            window._battleInProgress = false;
+            window.isDuringBattle = false;
         }, 800);
     };
 
