@@ -74,6 +74,17 @@
 <!-- <script src="lib/avatar.js"></script> -->
 <!-- <link rel="stylesheet" href="lib/avatar.css"> -->
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+window.THREE = THREE;
+window.GLTFLoader = GLTFLoader;
+window.DRACOLoader = DRACOLoader;
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
 
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
@@ -5262,19 +5273,6 @@ async function applyAppTheme(themeKey) {
             <div style="position: absolute; bottom: 0; left: 10%; right: 10%; height: 30%; background: radial-gradient(ellipse 80% 40% at 50% 100%, rgba(100,140,200,0.15) 0%, transparent 70%); pointer-events: none; z-index: 2;"></div>
             <!-- Ambient room lighting glow -->
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 50%; background: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(80,100,140,0.2) 0%, transparent 70%); pointer-events: none; z-index: 1;"></div>
-            <!-- 3D Background Model (Hidden by default, shown via applyBackgroundForLevel) -->
-            <model-viewer
-                id="tamagotchi-bg-model"
-                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; display: none; --poster-color: transparent; pointer-events: none;"
-                camera-orbit="0deg 75deg 3m"
-                field-of-view="60deg"
-                shadow-intensity="0.5"
-                exposure="1.0"
-                interaction-prompt="none"
-                disable-zoom
-                disable-pan>
-            </model-viewer>
-
             <model-viewer
                 id="tamagotchi-model"
                 camera-controls
@@ -42739,6 +42737,95 @@ document.addEventListener('DOMContentLoaded', async function() {
             'tamagotchi-bg-dojo', 'tamagotchi-bg-arena'
         ];
 
+        // ============================================================
+        // 3D BACKGROUND INJECTION INTO CHARACTER MODEL-VIEWER
+        // Loads a GLB environment into the same Three.js scene as the
+        // character so they share camera, lighting, and perspective.
+        // ============================================================
+        let currentBgScene = null; // Track the currently loaded background object
+
+        function getModelViewerScene(mv) {
+            // model-viewer stores its Three.js scene in a Symbol property
+            for (const sym of Object.getOwnPropertySymbols(mv)) {
+                const desc = sym.description || sym.toString();
+                if (desc === 'scene') {
+                    const modelScene = mv[sym];
+                    // modelScene is a ModelScene which extends THREE.Scene or has a .scene property
+                    if (modelScene && modelScene.isScene) return modelScene;
+                    if (modelScene && modelScene.scene) return modelScene.scene;
+                    // If it's a ModelScene wrapper, it may have children directly
+                    if (modelScene && modelScene.add) return modelScene;
+                }
+            }
+            return null;
+        }
+
+        async function loadBackgroundIntoScene(glbPath) {
+            const mv = document.getElementById('tamagotchi-model');
+            if (!mv) return;
+
+            // Wait for THREE to be available from our importmap
+            if (!window.THREE || !window.GLTFLoader) {
+                console.warn('Three.js not loaded yet, retrying in 1s...');
+                setTimeout(() => loadBackgroundIntoScene(glbPath), 1000);
+                return;
+            }
+
+            const threeScene = getModelViewerScene(mv);
+            if (!threeScene) {
+                console.warn('Could not access model-viewer Three.js scene');
+                return;
+            }
+
+            // Remove existing background if any
+            if (currentBgScene) {
+                threeScene.remove(currentBgScene);
+                currentBgScene = null;
+            }
+
+            if (!glbPath) return; // Just clearing
+
+            try {
+                const loader = new window.GLTFLoader();
+                const dracoLoader = new window.DRACOLoader();
+                dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+                loader.setDRACOLoader(dracoLoader);
+
+                const gltf = await loader.loadAsync(glbPath);
+                const bgModel = gltf.scene;
+
+                // Scale and position the background around the character
+                // Adjust these values based on your specific background model
+                bgModel.position.set(0, -0.5, 0);
+                bgModel.scale.set(1, 1, 1);
+                bgModel.name = '__bg_environment';
+
+                // Make background receive shadows but not cast them
+                bgModel.traverse(child => {
+                    if (child.isMesh) {
+                        child.receiveShadow = true;
+                        child.castShadow = false;
+                    }
+                });
+
+                threeScene.add(bgModel);
+                currentBgScene = bgModel;
+
+                // Hide the CSS floor since we have a 3D environment
+                const floor = document.getElementById('tamagotchi-floor');
+                if (floor) floor.style.opacity = '0';
+
+                // Tell model-viewer to re-render
+                mv.requestUpdate && mv.requestUpdate();
+
+                console.log('3D background loaded:', glbPath);
+            } catch(err) {
+                console.error('Failed to load 3D background:', err);
+            }
+        }
+
+        window.loadBackgroundIntoScene = loadBackgroundIntoScene;
+
         // Select and apply a background theme from the Unlocks panel
         window.selectBackground = function(bgName) {
             const bg = BACKGROUND_UNLOCKS.find(b => b.name === bgName);
@@ -42747,26 +42834,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             const container = document.getElementById('tamagotchi-widget-container');
             if (!container) return;
 
-            // Remove all background theme classes
+            // Remove all background CSS theme classes
             ALL_BG_THEME_CLASSES.forEach(theme => container.classList.remove(theme));
 
-            // Apply the selected CSS theme
+            // Apply the selected CSS theme (gradient backdrop)
             container.classList.add(bg.theme);
 
-            // Handle 3D model background
-            const bgModel = document.getElementById('tamagotchi-bg-model');
-            const floor = document.getElementById('tamagotchi-floor');
-            if (bgModel) {
-                if (bg.model) {
-                    if (bgModel.getAttribute('src') !== bg.model) {
-                        bgModel.setAttribute('src', bg.model);
-                    }
-                    bgModel.style.display = 'block';
-                    if (floor) floor.style.opacity = '0';
-                } else {
-                    bgModel.style.display = 'none';
-                    if (floor) floor.style.opacity = '1';
-                }
+            // Load 3D background model into the character's scene
+            if (bg.model) {
+                loadBackgroundIntoScene(bg.model);
+            } else {
+                // No 3D model — clear any existing one and show CSS floor
+                loadBackgroundIntoScene(null);
+                const floor = document.getElementById('tamagotchi-floor');
+                if (floor) floor.style.opacity = '1';
             }
 
             // Save selection to localStorage
@@ -43676,25 +43757,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.ensureRetroactiveStatPoints = ensureRetroactiveStatPoints;
 
         // ============================================================
-        // BACKGROUND THEMES
+        // BACKGROUND THEMES (combined into character model-viewer)
         // ============================================================
-        const ALL_BG_THEMES = [
-            'tamagotchi-bg-gym', 'tamagotchi-bg-park', 'tamagotchi-bg-home',
-            'tamagotchi-bg-beach', 'tamagotchi-bg-mountain',
-            'tamagotchi-bg-dojo', 'tamagotchi-bg-arena'
-        ];
-
-        // Background theme + 3D model mapping (used by applyBackgroundForLevel)
-        const BG_THEME_MODELS = [
-            { level: 1,  theme: null,                    name: 'Default',          model: null },
-            { level: 1,  theme: 'tamagotchi-bg-gym',     name: 'Gym',              model: 'assets/background_gym.glb' },
-            { level: 10, theme: 'tamagotchi-bg-park',    name: 'Park',             model: null },
-            { level: 20, theme: 'tamagotchi-bg-home',    name: 'Home',             model: null },
-            { level: 30, theme: 'tamagotchi-bg-beach',   name: 'Beach',            model: null },
-            { level: 40, theme: 'tamagotchi-bg-mountain', name: 'Mountain',        model: null },
-            { level: 50, theme: 'tamagotchi-bg-arena',   name: 'Legendary Arena',  model: null }
-        ];
-
         function applyBackgroundForLevel(level) {
             // If user has manually selected a background, respect that choice
             const savedBg = localStorage.getItem('selectedBackground');
@@ -43704,40 +43768,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             const container = document.getElementById('tamagotchi-widget-container');
-            const bgModel = document.getElementById('tamagotchi-bg-model');
-            const floor = document.getElementById('tamagotchi-floor');
             if (!container) return;
 
-            // Remove all bg themes
-            ALL_BG_THEMES.forEach(theme => container.classList.remove(theme));
+            // Remove all CSS bg themes
+            ALL_BG_THEME_CLASSES.forEach(theme => container.classList.remove(theme));
 
-            // Find best unlocked background
-            let bestBg = null;
-            for (let i = BG_THEME_MODELS.length - 1; i >= 0; i--) {
-                if (level >= BG_THEME_MODELS[i].level) {
-                    bestBg = BG_THEME_MODELS[i];
-                    break;
-                }
-            }
-
-            if (bestBg) {
-                if (bestBg.theme) container.classList.add(bestBg.theme);
-
-                // Handle 3D model background
-                if (bgModel) {
-                    if (bestBg.model) {
-                        // Only update if SRC is different to avoid flickering/reload
-                        if (bgModel.getAttribute('src') !== bestBg.model) {
-                            bgModel.setAttribute('src', bestBg.model);
-                        }
-                        bgModel.style.display = 'block';
-                        // Hide legacy floor if 3D model is present
-                        if (floor) floor.style.opacity = '0';
-                    } else {
-                        bgModel.style.display = 'none';
-                        if (floor) floor.style.opacity = '1';
-                    }
-                }
+            // Default to gym bg
+            if (level >= 1) {
+                container.classList.add('tamagotchi-bg-gym');
+                loadBackgroundIntoScene('assets/background_gym.glb');
             }
         }
 
