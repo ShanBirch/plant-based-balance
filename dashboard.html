@@ -44013,12 +44013,38 @@ document.addEventListener('DOMContentLoaded', async function() {
             viewer.setAttribute('min-camera-orbit', battleOrbit);
             viewer.setAttribute('max-camera-orbit', battleOrbit);
             if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
-            // Re-apply after a frame to catch any stray overrides
-            requestAnimationFrame(() => {
-                viewer.setAttribute('camera-orbit', battleOrbit);
-                if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
+
+            // DEBUG: Log what's happening with camera and turntable
+            console.log('[BATTLE CAM] resetTurntableRotation exists:', typeof viewer.resetTurntableRotation === 'function');
+            console.log('[BATTLE CAM] turntableRotation exists:', typeof viewer.turntableRotation);
+            console.log('[BATTLE CAM] turntableRotation value:', viewer.turntableRotation);
+            console.log('[BATTLE CAM] jumpCameraToGoal exists:', typeof viewer.jumpCameraToGoal === 'function');
+            console.log('[BATTLE CAM] camera-orbit set to:', viewer.getAttribute('camera-orbit'));
+            console.log('[BATTLE CAM] getCameraOrbit():', viewer.getCameraOrbit?.());
+
+            // Watch for anything overriding the camera orbit during battle
+            const battleCamObserver = new MutationObserver((mutations) => {
+                mutations.forEach(m => {
+                    if (m.attributeName === 'camera-orbit') {
+                        const newVal = viewer.getAttribute('camera-orbit');
+                        if (newVal !== battleOrbit) {
+                            console.warn('[BATTLE CAM] OVERRIDE DETECTED! camera-orbit changed to:', newVal);
+                            console.trace('[BATTLE CAM] Override stack trace');
+                            // Fight back: re-apply battle orbit
+                            viewer.setAttribute('camera-orbit', battleOrbit);
+                            if (typeof viewer.jumpCameraToGoal === 'function') viewer.jumpCameraToGoal();
+                        }
+                    }
+                });
             });
+            battleCamObserver.observe(viewer, { attributes: true, attributeFilter: ['camera-orbit'] });
+
             await new Promise(r => setTimeout(r, 600));
+
+            // Log again after the wait to see if anything changed
+            console.log('[BATTLE CAM] After 600ms - camera-orbit:', viewer.getAttribute('camera-orbit'));
+            console.log('[BATTLE CAM] After 600ms - turntableRotation:', viewer.turntableRotation);
+            console.log('[BATTLE CAM] After 600ms - getCameraOrbit():', viewer.getCameraOrbit?.());
 
             // Start mana charging
             startManaCharge();
@@ -44337,6 +44363,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             await new Promise(r => setTimeout(r, 4000));
 
             // === RESET ===
+            // Stop watching for camera overrides
+            if (battleCamObserver) battleCamObserver.disconnect();
+
             if (overlay) {
                 overlay.classList.remove('active');
                 overlay.style.color = '';
