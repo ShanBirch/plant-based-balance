@@ -43750,23 +43750,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hadAutoRotate = viewer.hasAttribute('auto-rotate');
             const hadCameraControls = viewer.hasAttribute('camera-controls');
 
+            // Capture the ACTUAL camera angle (includes turntable offset from auto-rotate)
+            // MUST read this BEFORE removing auto-rotate, otherwise model-viewer
+            // starts interpolating back and getCameraOrbit() returns a mid-transition value
+            const actualOrbitBefore = viewer.getCameraOrbit();
+            const actualThetaDeg = actualOrbitBefore.theta * (180 / Math.PI);
+
             // === BATTLE CAMERA SETUP ===
             // Stop rotation and user controls
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
 
             // Orbit camera to side profile facing right.
-            // We must account for the turntable offset that auto-rotate accumulated,
-            // since it's added on top of the camera-orbit attribute value.
-            // DO NOT use resetTurntableRotation/jumpCameraToGoal/min-max-orbit
-            // as those trigger model-viewer's internal reframing and push the model back.
+            // The turntable offset from auto-rotate is still active internally,
+            // so we compensate: effective = attrTheta + turntable = -90deg
             const orbitParts = (savedOrbit || '0deg 85deg 22m').split(/\s+/);
-            const goalThetaDeg = parseFloat(orbitParts[0]) || 0;
+            const attrThetaDeg = parseFloat(orbitParts[0]) || 0;
             const currentDist = orbitParts[2] || '22m';
-            const actual = viewer.getCameraOrbit();
-            const actualThetaDeg = actual.theta * (180 / Math.PI);
-            const turntableDeg = actualThetaDeg - goalThetaDeg;
-            // effective = goalTheta + turntable, we want effective = -90
+            const turntableDeg = actualThetaDeg - attrThetaDeg;
             const newGoalTheta = -90 - turntableDeg;
             viewer.setAttribute('camera-orbit', `${newGoalTheta.toFixed(1)}deg 85deg ${currentDist}`);
 
