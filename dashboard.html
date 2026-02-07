@@ -4699,6 +4699,20 @@ async function applyAppTheme(themeKey) {
         box-shadow: inset 0 0 15px rgba(255,215,0,0.3);
     }
 
+    @keyframes bashRumble {
+        0%   { transform: translate(0, 0) scale(0.92); }
+        15%  { transform: translate(-4px, 2px) scale(0.92); }
+        30%  { transform: translate(4px, -2px) scale(0.95); }
+        45%  { transform: translate(-3px, -1px) scale(0.97); }
+        60%  { transform: translate(3px, 1px) scale(0.99); }
+        75%  { transform: translate(-1px, 1px) scale(1); }
+        100% { transform: translate(0, 0) scale(1); }
+    }
+
+    .battle-bash-btn.bash-rumble {
+        animation: bashRumble 0.35s ease-out;
+    }
+
     /* ============================================================
        MOVE PICKER (Pre-Battle)
        ============================================================ */
@@ -44011,16 +44025,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                 bashCount++;
                 updateBashUI();
 
-                // Small visual feedback on each tap
+                // Haptic rumble on each tap
+                if (navigator.vibrate) navigator.vibrate(50);
+
+                // Visual feedback on each tap
                 if (bashBtn) {
-                    bashBtn.style.transform = 'scale(0.88)';
-                    setTimeout(() => bashBtn.style.transform = '', 50);
+                    bashBtn.classList.remove('bash-rumble');
+                    void bashBtn.offsetWidth; // force reflow to restart animation
+                    bashBtn.classList.add('bash-rumble');
                 }
 
                 // When bash threshold reached, mark super as ready (next auto-attack becomes super)
                 if (bashCount >= tapsNeeded && !superReady) {
                     superReady = true;
                     if (bashBtn) bashBtn.classList.add('attack-ready');
+                    if (navigator.vibrate) navigator.vibrate([50, 30, 100]); // strong burst for super ready
                 }
             }
 
