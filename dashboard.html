@@ -5278,8 +5278,8 @@ async function applyAppTheme(themeKey) {
             <model-viewer
                 id="tamagotchi-bg-model"
                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; display: none; pointer-events: none; background: transparent;"
-                camera-orbit="0deg 85deg 4m"
-                camera-target="0m 0.3m 0m"
+                camera-orbit="0deg 85deg 1.5m"
+                camera-target="0m 0.2m 0m"
                 field-of-view="30deg"
                 shadow-intensity="0.8"
                 exposure="1.0"
@@ -42783,7 +42783,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const orbit = charViewer.getCameraOrbit();
                     const thetaDeg = (orbit.theta * 180 / Math.PI);
                     const phiDeg = (orbit.phi * 180 / Math.PI);
-                    const bgDist = orbit.radius * (4 / 22);
+                    const bgDist = orbit.radius * (1.5 / 22);
                     bgModel.cameraOrbit = `${thetaDeg}deg ${phiDeg}deg ${bgDist}m`;
                     if (typeof bgModel.jumpCameraToGoal === 'function') {
                         bgModel.jumpCameraToGoal();
@@ -42832,7 +42832,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (!charViewer || !bgViewer) return;
 
             // Base background camera distance - scales proportionally with character zoom
-            const BG_BASE_DISTANCE = 4; // meters at default character distance
+            const BG_BASE_DISTANCE = 1.5; // meters at default character distance
             const CHAR_BASE_DISTANCE = 22; // default character orbit distance
             const BG_SCALE = BG_BASE_DISTANCE / CHAR_BASE_DISTANCE;
 
@@ -43392,7 +43392,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const orbit = charViewer.getCameraOrbit();
                         const thetaDeg = (orbit.theta * 180 / Math.PI);
                         const phiDeg = (orbit.phi * 180 / Math.PI);
-                        const bgDist = orbit.radius * (4 / 22);
+                        const bgDist = orbit.radius * (1.5 / 22);
                         bgModel.cameraOrbit = `${thetaDeg}deg ${phiDeg}deg ${bgDist}m`;
                         if (typeof bgModel.jumpCameraToGoal === 'function') {
                             bgModel.jumpCameraToGoal();
