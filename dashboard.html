@@ -43746,13 +43746,32 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // === SAVE ORIGINAL STATE ===
+            const savedOrbit = viewer.getAttribute('camera-orbit');
             const hadAutoRotate = viewer.hasAttribute('auto-rotate');
             const hadCameraControls = viewer.hasAttribute('camera-controls');
 
             // === BATTLE CAMERA SETUP ===
-            // Just stop rotation and user controls - character stays exactly as-is
+            // Stop rotation and user controls
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
+
+            // Clear any accumulated turntable spin so the camera angle is predictable
+            if (typeof viewer.resetTurntableRotation === 'function') {
+                viewer.resetTurntableRotation();
+            }
+
+            // Orbit the camera to see side profile facing right
+            // theta=-90 puts camera to the character's left so they face right on screen
+            // We keep the same phi (vertical angle) and distance so size doesn't change
+            const orbitParts = (savedOrbit || '0deg 85deg 22m').split(/\s+/);
+            const currentDist = orbitParts[2] || '22m';
+            const sideOrbit = `-90deg 85deg ${currentDist}`;
+            viewer.setAttribute('camera-orbit', sideOrbit);
+            viewer.setAttribute('min-camera-orbit', sideOrbit);
+            viewer.setAttribute('max-camera-orbit', sideOrbit);
+            if (typeof viewer.jumpCameraToGoal === 'function') {
+                viewer.jumpCameraToGoal();
+            }
 
             // Shift character to the left side of screen
             viewer.style.left = '-30%';
@@ -44115,7 +44134,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (manaContainer) manaContainer.classList.remove('active');
             if (actionContainer) actionContainer.classList.remove('active');
 
-            // Restore controls and position
+            // Restore camera, controls, and position
+            if (savedOrbit) viewer.setAttribute('camera-orbit', savedOrbit);
+            viewer.removeAttribute('min-camera-orbit');
+            viewer.removeAttribute('max-camera-orbit');
             if (hadCameraControls) viewer.setAttribute('camera-controls', '');
             if (hadAutoRotate) viewer.setAttribute('auto-rotate', '');
             viewer.style.left = '0';
