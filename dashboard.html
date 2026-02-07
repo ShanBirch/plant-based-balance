@@ -3481,6 +3481,41 @@ async function applyAppTheme(themeKey) {
         white-space: nowrap;
     }
 
+    /* Verification Badge Styles */
+    .verified-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        background: #10b981;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        margin-left: 6px;
+        letter-spacing: 0.5px;
+    }
+
+    .verified-badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.65rem;
+        background: #ecfdf5;
+        color: #059669;
+        border: 1px solid #10b981;
+        padding: 1px 5px;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+
+    .verified-badge-pill svg {
+        width: 10px;
+        height: 10px;
+        fill: currentColor;
+    }
+
     .meal-log-delete {
         background: none;
         border: none;
@@ -39655,11 +39690,18 @@ function renderMealsList(meals) {
             ? `<div class="meal-log-image" style="overflow: hidden;"><img src="${meal.photo_url}" alt="Meal" style="width: 100%; height: 100%; object-fit: cover;" referrerpolicy="no-referrer" onerror="try{console.log('Meal card image failed to load:', this.src);var p=this.parentElement;if(p){p.innerHTML='🍽️';p.style.display='flex';p.style.alignItems='center';p.style.justifyContent='center';p.style.fontSize='2rem';}}catch(e){}"></div>`
             : `<div class="meal-log-image" style="display: flex; align-items: center; justify-content: center; font-size: 2rem;">🍽️</div>`;
 
+        // Check if any item in this meal is verified
+        const isVerified = Array.isArray(meal.food_items) && meal.food_items.some(item => item.verified);
+        const verifiedTag = isVerified ? `<span class="verified-badge">✓ Verified</span>` : '';
+
         html += `
             <div class="meal-log-card" onclick="openMealDetailPopup(${index})">
                 ${imageHtml}
                 <div class="meal-log-content">
-                    <div class="meal-log-time">${time}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px;">
+                        <div class="meal-log-time">${time}</div>
+                        ${verifiedTag}
+                    </div>
                     <div class="meal-log-foods">${foodItemsText}</div>
                     <div class="meal-log-macros">
                         <span>${Math.round(meal.calories)} cal</span>
@@ -39748,9 +39790,16 @@ function openMealDetailPopup(index) {
         let itemsHtml = '<div class="meal-detail-items-title">Food Items</div>';
         meal.food_items.forEach(item => {
             const itemCals = item.calories ? Math.round(item.calories) : 0;
+            const verifiedHtml = item.verified 
+                ? `<span class="verified-badge-pill" title="Verified by ${item.db_source || 'Database'}"><svg viewBox="0 0 20 20"><path d="M7.629 14.571L3.125 10.067a.642.642 0 010-.909l.909-.909a.642.642 0 01.909 0l2.677 2.677 6.152-6.152a.642.642 0 01.909 0l.909.909a.642.642 0 010 .909l-7.962 7.962a.642.642 0 01-.909 0z"/></svg>Verified</span>`
+                : '';
+            
             itemsHtml += `
                 <div class="meal-detail-item">
-                    <span class="meal-detail-item-name">${item.name}</span>
+                    <div style="display: flex; flex-direction: column; flex: 1;">
+                        <span class="meal-detail-item-name">${item.name}</span>
+                        ${verifiedHtml}
+                    </div>
                     <span class="meal-detail-item-cals">${itemCals} cal</span>
                 </div>
             `;
