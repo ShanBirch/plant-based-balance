@@ -43822,8 +43822,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             const playerSTR = stats.str;
             const playerMana = stats.mana;
 
-            const enemyMaxHP = 80 + (level * 8);
-            const enemyBaseDmg = 15 + Math.floor(level * 1.5);
+            const enemyMaxHP = 130 + (level * 12);
+            const enemyBaseDmg = 18 + Math.floor(level * 2);
 
             let playerHP = playerMaxHP;
             let enemyHP = enemyMaxHP;
@@ -43944,7 +43944,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 viewer.animationName = attackAnim;
                 viewer.play();
 
-                const damage = (baseDmg + playerSTR * 2) * movePower * 3;
+                const damage = (baseDmg + playerSTR) * movePower * 1.5;
                 enemyHP -= damage;
                 updateHPBars();
                 spawnTripleFireball(widget);
@@ -43976,7 +43976,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 viewer.animationName = attackAnim;
                 viewer.play();
 
-                const damage = (baseDmg + playerSTR) * movePower * 0.5;
+                const damage = (baseDmg + playerSTR) * movePower * 0.35;
                 enemyHP -= damage;
                 updateHPBars();
                 spawnNormalFireball(widget);
@@ -44003,7 +44003,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Enemy counter-attacks periodically
             let enemyAttackInterval = null;
             function startEnemyAttacks() {
-                const attackEvery = Math.max(2000, 5000 - (level * 100));
+                const attackEvery = Math.max(1800, 4500 - (level * 100));
                 enemyAttackInterval = setInterval(async () => {
                     if (battleOver) return;
 
