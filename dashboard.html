@@ -5213,6 +5213,18 @@ async function applyAppTheme(themeKey) {
         100% { opacity: 1; }
     }
 
+    /* Character model-viewer must be transparent so 3D background shows through */
+    #tamagotchi-model {
+        background: transparent !important;
+        --poster-color: transparent;
+    }
+
+    /* 3D background model-viewer fills behind the character */
+    #tamagotchi-bg-model {
+        background: transparent !important;
+        --poster-color: transparent;
+    }
+
     /* Selected background highlight in Unlocks panel */
     .bg-selected {
         border: 2px solid #4ade80 !important;
@@ -5262,17 +5274,21 @@ async function applyAppTheme(themeKey) {
             <div style="position: absolute; bottom: 0; left: 10%; right: 10%; height: 30%; background: radial-gradient(ellipse 80% 40% at 50% 100%, rgba(100,140,200,0.15) 0%, transparent 70%); pointer-events: none; z-index: 2;"></div>
             <!-- Ambient room lighting glow -->
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 50%; background: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(80,100,140,0.2) 0%, transparent 70%); pointer-events: none; z-index: 1;"></div>
-            <!-- 3D Background Model (Hidden by default, shown via applyBackgroundForLevel) -->
+            <!-- 3D Background Environment - fills the container behind character -->
             <model-viewer
                 id="tamagotchi-bg-model"
-                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: none; --poster-color: transparent;"
-                camera-orbit="0deg 85deg 22m"
-                field-of-view="30deg"
-                shadow-intensity="1"
-                exposure="1.2"
-                interaction-prompt="none">
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; display: none; pointer-events: none; background: transparent;"
+                camera-orbit="0deg 80deg 1.5m"
+                camera-target="0m 0.5m 0m"
+                field-of-view="75deg"
+                shadow-intensity="0.8"
+                exposure="1.0"
+                environment-image="neutral"
+                interaction-prompt="none"
+                disable-zoom
+                disable-pan>
             </model-viewer>
-
+            <!-- Character model - transparent background so 3D environment shows through -->
             <model-viewer
                 id="tamagotchi-model"
                 camera-controls
@@ -5286,7 +5302,7 @@ async function applyAppTheme(themeKey) {
                 environment-image="neutral"
                 camera-orbit="0deg 85deg 22m"
                 field-of-view="30deg"
-                style="width: 100%; height: 100%; position: relative; z-index: 3; --poster-color: transparent; touch-action: none;"
+                style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; --poster-color: transparent; touch-action: none; background: transparent;"
                 interaction-prompt="none">
             </model-viewer>
 
@@ -42745,26 +42761,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             const container = document.getElementById('tamagotchi-widget-container');
             if (!container) return;
 
-            // Remove all background theme classes
+            // Remove all background CSS theme classes
             ALL_BG_THEME_CLASSES.forEach(theme => container.classList.remove(theme));
 
-            // Apply the selected CSS theme
+            // Apply the selected CSS theme (gradient backdrop)
             container.classList.add(bg.theme);
 
-            // Handle 3D model background
+            // Handle 3D background model-viewer
             const bgModel = document.getElementById('tamagotchi-bg-model');
             const floor = document.getElementById('tamagotchi-floor');
-            if (bgModel) {
-                if (bg.model) {
-                    if (bgModel.getAttribute('src') !== bg.model) {
-                        bgModel.setAttribute('src', bg.model);
-                    }
-                    bgModel.style.display = 'block';
-                    if (floor) floor.style.opacity = '0';
-                } else {
-                    bgModel.style.display = 'none';
-                    if (floor) floor.style.opacity = '1';
+            if (bg.model && bgModel) {
+                if (bgModel.getAttribute('src') !== bg.model) {
+                    bgModel.setAttribute('src', bg.model);
                 }
+                bgModel.style.display = 'block';
+                if (floor) floor.style.opacity = '0';
+            } else {
+                if (bgModel) bgModel.style.display = 'none';
+                if (floor) floor.style.opacity = '1';
             }
 
             // Save selection to localStorage
@@ -43679,25 +43693,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.ensureRetroactiveStatPoints = ensureRetroactiveStatPoints;
 
         // ============================================================
-        // BACKGROUND THEMES
+        // BACKGROUND THEMES (combined into character model-viewer)
         // ============================================================
-        const ALL_BG_THEMES = [
-            'tamagotchi-bg-gym', 'tamagotchi-bg-park', 'tamagotchi-bg-home',
-            'tamagotchi-bg-beach', 'tamagotchi-bg-mountain',
-            'tamagotchi-bg-dojo', 'tamagotchi-bg-arena'
-        ];
-
-        // Background theme + 3D model mapping (used by applyBackgroundForLevel)
-        const BG_THEME_MODELS = [
-            { level: 1,  theme: null,                    name: 'Default',          model: null },
-            { level: 1,  theme: 'tamagotchi-bg-gym',     name: 'Gym',              model: 'assets/background_gym.glb' },
-            { level: 10, theme: 'tamagotchi-bg-park',    name: 'Park',             model: null },
-            { level: 20, theme: 'tamagotchi-bg-home',    name: 'Home',             model: null },
-            { level: 30, theme: 'tamagotchi-bg-beach',   name: 'Beach',            model: null },
-            { level: 40, theme: 'tamagotchi-bg-mountain', name: 'Mountain',        model: null },
-            { level: 50, theme: 'tamagotchi-bg-arena',   name: 'Legendary Arena',  model: null }
-        ];
-
         function applyBackgroundForLevel(level) {
             // If user has manually selected a background, respect that choice
             const savedBg = localStorage.getItem('selectedBackground');
@@ -43707,39 +43704,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             const container = document.getElementById('tamagotchi-widget-container');
-            const bgModel = document.getElementById('tamagotchi-bg-model');
-            const floor = document.getElementById('tamagotchi-floor');
             if (!container) return;
 
-            // Remove all bg themes
-            ALL_BG_THEMES.forEach(theme => container.classList.remove(theme));
+            // Remove all CSS bg themes
+            ALL_BG_THEME_CLASSES.forEach(theme => container.classList.remove(theme));
 
-            // Find best unlocked background
-            let bestBg = null;
-            for (let i = BG_THEME_MODELS.length - 1; i >= 0; i--) {
-                if (level >= BG_THEME_MODELS[i].level) {
-                    bestBg = BG_THEME_MODELS[i];
-                    break;
-                }
-            }
-
-            if (bestBg) {
-                if (bestBg.theme) container.classList.add(bestBg.theme);
-
-                // Handle 3D model background
+            // Default to gym bg with 3D model
+            if (level >= 1) {
+                container.classList.add('tamagotchi-bg-gym');
+                const bgModel = document.getElementById('tamagotchi-bg-model');
+                const floor = document.getElementById('tamagotchi-floor');
                 if (bgModel) {
-                    if (bestBg.model) {
-                        // Only update if SRC is different to avoid flickering/reload
-                        if (bgModel.getAttribute('src') !== bestBg.model) {
-                            bgModel.setAttribute('src', bestBg.model);
-                        }
-                        bgModel.style.display = 'block';
-                        // Hide legacy floor if 3D model is present
-                        if (floor) floor.style.opacity = '0';
-                    } else {
-                        bgModel.style.display = 'none';
-                        if (floor) floor.style.opacity = '1';
-                    }
+                    bgModel.setAttribute('src', 'assets/background_gym.glb');
+                    bgModel.style.display = 'block';
+                    if (floor) floor.style.opacity = '0';
                 }
             }
         }
