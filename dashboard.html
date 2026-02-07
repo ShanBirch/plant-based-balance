@@ -12484,28 +12484,19 @@ function viewWorkoutHistoryDetail(date) {
         <!-- Earn Points by Sharing Section -->
         <div id="share-section-combined" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin: 10px 0; position: relative;">
             <button onclick="this.parentElement.style.display='none'; localStorage.setItem('share_section_dismissed','true');" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.25); border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: white; line-height: 1;">×</button>
-            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; padding-right: 20px;">Earn Points by Sharing</div>
-            <p style="font-size: 0.85rem; opacity: 0.85; margin-bottom: 15px;">Take a photo and share to earn up to 2 points!</p>
+            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; padding-right: 20px;">Post a Workout Photo</div>
+            <p style="font-size: 0.85rem; opacity: 0.85; margin-bottom: 15px;">Snap a photo of your workout to earn +1 XP!</p>
 
-            <!-- Two share buttons side by side -->
-            <div style="display: flex; gap: 10px;">
-                <button onclick="shareWorkoutToStory()" style="flex: 1; background: white; color: var(--primary); padding: 14px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                    <span style="font-size: 1.3rem;">📸</span>
-                    <span style="font-size: 0.85rem;">Post to Feed</span>
-                    <span style="font-size: 0.7rem; opacity: 0.7;">+1 point</span>
-                </button>
-                <button onclick="shareWorkoutToGroupChat()" style="flex: 1; background: linear-gradient(135deg, #f59e0b, #eab308); color: white; padding: 14px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                    <span style="font-size: 1.3rem;">💬</span>
-                    <span style="font-size: 0.85rem;">Group Chat</span>
-                    <span style="font-size: 0.7rem; opacity: 0.9;">+1 point</span>
-                </button>
-            </div>
+            <button onclick="shareWorkoutToStory()" style="width: 100%; background: white; color: var(--primary); padding: 14px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="font-size: 1.3rem;">📸</span>
+                <span style="font-size: 0.95rem;">Post Photo (+1 XP)</span>
+            </button>
         </div>
 
-        <!-- Points Awarded Confirmation (shown after sharing) -->
+        <!-- XP Awarded Confirmation (shown after sharing) -->
         <div id="workout-points-awarded" style="display: none; background: rgba(68, 255, 68, 0.2); padding: 12px 20px; border-radius: 14px; margin: 10px 0; border: 2px solid rgba(68, 255, 68, 0.5);">
-            <div id="workout-points-text" style="font-size: 1.1rem; font-weight: 700;">+1 Point Earned!</div>
-            <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 3px;">Workout shared successfully</div>
+            <div id="workout-points-text" style="font-size: 1.1rem; font-weight: 700;">+1 XP Earned!</div>
+            <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 3px;">Workout photo posted</div>
         </div>
 
         <!-- Small spacer before DONE button -->
@@ -12855,9 +12846,10 @@ function viewWorkoutHistoryDetail(date) {
         </div>
 
         <!-- Points incentive for posting -->
-        <div style="margin: 0 15px 12px 15px; padding: 10px 14px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; display: flex; align-items: center; gap: 10px; border: 1px solid #fcd34d;">
-            <span style="font-size: 1.2rem;">+2</span>
-            <span style="font-size: 0.8rem; color: #92400e; font-weight: 600;">Post a workout photo to earn points!</span>
+        <div id="feed-post-incentive" style="margin: 0 15px 12px 15px; padding: 10px 14px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; display: flex; align-items: center; gap: 10px; border: 1px solid #fcd34d; position: relative;">
+            <button onclick="this.parentElement.style.display='none'; localStorage.setItem('feed_incentive_dismissed','true');" style="position: absolute; top: 6px; right: 6px; background: rgba(146,64,14,0.15); border: none; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: #92400e; line-height: 1;">×</button>
+            <span style="font-size: 1.2rem;">+1</span>
+            <span style="font-size: 0.8rem; color: #92400e; font-weight: 600; padding-right: 16px;">Post a workout photo to earn 1 XP!</span>
         </div>
 
         <!-- Friends Feed - Full photo feed grid -->
@@ -12875,12 +12867,6 @@ function viewWorkoutHistoryDetail(date) {
             </div>
         </div>
 
-        <!-- Activity Feed (IG Style) -->
-        <div id="friends-feed-section" style="padding: 0; margin-bottom: 10px;">
-            <div id="friends-feed-container">
-                <!-- IG-style posts loaded dynamically -->
-            </div>
-        </div>
 
         <!-- Hidden stories carousel (kept for compatibility) -->
         <div id="friends-stories-section" style="display: none;">
@@ -30176,181 +30162,17 @@ async function initFriendsView() {
         const banner = document.getElementById('friends-referral-banner');
         if (banner) banner.style.display = 'none';
     }
+    if (localStorage.getItem('feed_incentive_dismissed') === 'true') {
+        const incentive = document.getElementById('feed-post-incentive');
+        if (incentive) incentive.style.display = 'none';
+    }
     // Load photo feed on feed page
     if (typeof loadPhotoFeed === 'function') {
         loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
     }
-    // Load IG-style activity feed
-    loadFriendsActivityFeed();
     // Load group chats and friends in background (for messages panel)
     await loadGroupChats();
     await loadFriendsCards();
-}
-
-// ============================================================
-// INSTAGRAM-STYLE ACTIVITY FEED
-// ============================================================
-
-// In-memory store for likes and comments per session
-const feedInteractions = {};
-
-function getFeedInteractions(activityId) {
-    if (!feedInteractions[activityId]) {
-        const stored = JSON.parse(localStorage.getItem('feed_interactions') || '{}');
-        feedInteractions[activityId] = stored[activityId] || { liked: false, comments: [] };
-    }
-    return feedInteractions[activityId];
-}
-
-function saveFeedInteractions() {
-    localStorage.setItem('feed_interactions', JSON.stringify(feedInteractions));
-}
-
-function toggleFeedLike(activityId, btn) {
-    const data = getFeedInteractions(activityId);
-    data.liked = !data.liked;
-    saveFeedInteractions();
-    const heart = btn.querySelector('.feed-heart');
-    if (heart) {
-        heart.textContent = data.liked ? '❤️' : '🤍';
-        if (data.liked) {
-            heart.style.transform = 'scale(1.4)';
-            setTimeout(() => heart.style.transform = 'scale(1)', 200);
-        }
-    }
-}
-
-function addFeedComment(activityId) {
-    const input = document.getElementById('feed-comment-input-' + activityId);
-    if (!input || !input.value.trim()) return;
-    const text = input.value.trim();
-    input.value = '';
-    const data = getFeedInteractions(activityId);
-    const userName = window.currentUser?.user_metadata?.name || window.currentUser?.email?.split('@')[0] || 'You';
-    data.comments.push({ name: userName, text: text, time: Date.now() });
-    saveFeedInteractions();
-    renderFeedComments(activityId);
-}
-
-function renderFeedComments(activityId) {
-    const container = document.getElementById('feed-comments-' + activityId);
-    if (!container) return;
-    const data = getFeedInteractions(activityId);
-    if (data.comments.length === 0) {
-        container.innerHTML = '';
-        return;
-    }
-    container.innerHTML = data.comments.map(c =>
-        `<div style="padding: 4px 0; font-size: 0.85rem;"><span style="font-weight: 600; color: var(--text-main);">${c.name}</span> <span style="color: var(--text-main);">${c.text}</span></div>`
-    ).join('');
-}
-
-async function loadFriendsActivityFeed() {
-    const container = document.getElementById('friends-feed-container');
-    if (!container || !window.currentUser) return;
-
-    try {
-        const { data: activities, error } = await window.supabaseClient
-            .rpc('get_friend_activity_feed', { user_uuid: window.currentUser.id, days_back: 7 });
-
-        if (error) throw error;
-
-        const items = activities || [];
-        if (items.length === 0) {
-            container.innerHTML = '';
-            return;
-        }
-
-        container.innerHTML = items.map((activity, idx) => {
-            const initials = (activity.user_name || '?').charAt(0).toUpperCase();
-            const timeAgo = typeof getTimeAgo === 'function' ? getTimeAgo(new Date(activity.activity_time)) : '';
-            const actId = 'feed_' + idx;
-            const interactions = getFeedInteractions(actId);
-            const heartIcon = interactions.liked ? '❤️' : '🤍';
-
-            const typeConfig = {
-                workout: { icon: '💪', color: '#16a34a', label: 'completed a workout' },
-                meal: { icon: '🥗', color: '#d97706', label: 'logged a meal' },
-                story: { icon: '📸', color: '#6366f1', label: 'shared a story' },
-                achievement: { icon: '🏆', color: '#ef4444', label: 'earned an achievement' },
-                free_week: { icon: '🎉', color: '#22c55e', label: 'unlocked a free week' },
-                referral_reward: { icon: '🎁', color: '#c026d3', label: 'received a reward' }
-            };
-            const config = typeConfig[activity.activity_type] || typeConfig.workout;
-
-            // Build photo section if story type or has photo data
-            let photoHtml = '';
-            if (activity.activity_type === 'story' && activity.activity_photo) {
-                photoHtml = `<div style="width: 100%; aspect-ratio: 1/1; background: #f1f5f9; overflow: hidden;">
-                    <img src="${activity.activity_photo}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.style.display='none'">
-                </div>`;
-            } else {
-                // Activity type illustration card
-                photoHtml = `<div style="width: 100%; padding: 30px 20px; background: linear-gradient(135deg, #f8fafc, #f1f5f9); display: flex; align-items: center; justify-content: center; gap: 12px;">
-                    <span style="font-size: 2.5rem;">${config.icon}</span>
-                    <div>
-                        <div style="font-weight: 700; font-size: 1.05rem; color: var(--text-main);">${activity.activity_title}</div>
-                        ${activity.activity_details ? `<div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">${activity.activity_details}</div>` : ''}
-                    </div>
-                </div>`;
-            }
-
-            // Existing comments
-            const commentsHtml = interactions.comments.length > 0
-                ? interactions.comments.map(c =>
-                    `<div style="padding: 4px 0; font-size: 0.85rem;"><span style="font-weight: 600; color: var(--text-main);">${c.name}</span> <span style="color: var(--text-main);">${c.text}</span></div>`
-                ).join('')
-                : '';
-
-            return `
-            <div style="background: white; border-bottom: 1px solid #efefef;">
-                <!-- Post Header -->
-                <div style="display: flex; align-items: center; padding: 12px 15px; gap: 10px;">
-                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; overflow: hidden;">
-                        ${activity.user_photo ? `<img src="${activity.user_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-main);">${activity.user_name}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">${config.label}</div>
-                    </div>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">${timeAgo}</span>
-                </div>
-
-                <!-- Post Image / Content -->
-                ${photoHtml}
-
-                <!-- Action Bar -->
-                <div style="display: flex; align-items: center; padding: 10px 15px; gap: 16px;">
-                    <button onclick="toggleFeedLike('${actId}', this)" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1.5rem; line-height: 1; transition: transform 0.2s;">
-                        <span class="feed-heart">${heartIcon}</span>
-                    </button>
-                    <button onclick="document.getElementById('feed-comment-input-${actId}').focus()" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1.35rem; line-height: 1;">💬</button>
-                    <button onclick="sendCheers('${activity.user_id}', '${activity.activity_type}')" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1.35rem; line-height: 1;">🙌</button>
-                </div>
-
-                <!-- Caption -->
-                <div style="padding: 0 15px 4px;">
-                    <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-main);">${activity.user_name}</span>
-                    <span style="font-size: 0.9rem; color: var(--text-main);"> ${activity.activity_title}${activity.activity_details ? ' — ' + activity.activity_details : ''}</span>
-                </div>
-
-                <!-- Comments -->
-                <div id="feed-comments-${actId}" style="padding: 0 15px;">
-                    ${commentsHtml}
-                </div>
-
-                <!-- Comment Input -->
-                <div style="display: flex; align-items: center; padding: 10px 15px; gap: 10px; border-top: 1px solid #efefef; margin-top: 6px;">
-                    <input id="feed-comment-input-${actId}" type="text" placeholder="Add a comment..." style="flex: 1; border: none; outline: none; font-size: 0.85rem; color: var(--text-main); background: transparent;" onkeypress="if(event.key==='Enter') addFeedComment('${actId}')">
-                    <button onclick="addFeedComment('${actId}')" style="background: none; border: none; color: var(--primary); font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap;">Post</button>
-                </div>
-            </div>`;
-        }).join('');
-
-    } catch (error) {
-        console.error('Error loading friends activity feed:', error);
-        container.innerHTML = '';
-    }
 }
 
 // Load friend cards for the Instagram DM-style list
@@ -37484,13 +37306,12 @@ async function awardWorkoutSharePoint(shareType, photoTimestamp, photoHash) {
             const pointsText = document.getElementById('workout-points-text');
             if (pointsAwarded) {
                 pointsAwarded.style.display = 'block';
-                const totalPoints = (workoutPointsEarnedThisSession.story ? 1 : 0) + (workoutPointsEarnedThisSession.groupchat ? 1 : 0);
                 if (pointsText) {
-                    pointsText.textContent = `+${totalPoints} Point${totalPoints > 1 ? 's' : ''} Earned!`;
+                    pointsText.textContent = '+1 XP Earned!';
                 }
             }
 
-            showToast(`+1 point for ${shareType === 'story' ? 'feed post' : 'group chat'} share!`, 'success');
+            showToast('+1 XP for posting your workout photo!', 'success');
 
             // Refresh tamagotchi display to sync XP with database
             if (typeof window.refreshLevelDisplay === 'function') {
