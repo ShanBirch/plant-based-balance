@@ -12490,8 +12490,9 @@ function viewWorkoutHistoryDetail(date) {
         </div>
 
         <!-- Earn Points by Sharing Section -->
-        <div id="share-section-combined" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin: 10px 0;">
-            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 5px;">Earn Points by Sharing</div>
+        <div id="share-section-combined" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin: 10px 0; position: relative;">
+            <button onclick="this.parentElement.style.display='none'; localStorage.setItem('share_section_dismissed','true');" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.25); border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: white; line-height: 1;">×</button>
+            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; padding-right: 20px;">Earn Points by Sharing</div>
             <p style="font-size: 0.85rem; opacity: 0.85; margin-bottom: 15px;">Take a photo and share to earn up to 2 points!</p>
 
             <!-- Two share buttons side by side -->
@@ -12845,8 +12846,9 @@ function viewWorkoutHistoryDetail(date) {
         </div>
 
         <!-- Referral Banner -->
-        <div id="friends-referral-banner" style="margin: 15px; padding: 20px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <div id="friends-referral-banner" style="margin: 15px; padding: 20px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2); position: relative;">
+            <button onclick="this.parentElement.style.display='none'; localStorage.setItem('referral_banner_dismissed','true');" style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.25); border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: white; line-height: 1;">×</button>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-right: 20px;">
                 <div style="font-size: 2rem;">🎁</div>
                 <div style="flex: 1;">
                     <div style="font-weight: 700; font-size: 1.1rem; color: white; margin-bottom: 4px;">You BOTH Get 1 Week Double XP!</div>
@@ -12875,6 +12877,13 @@ function viewWorkoutHistoryDetail(date) {
                     <p style="margin: 5px 0 0 0; font-size: 0.75rem; color: var(--text-muted); white-space: normal; width: 70px;">Your Story</p>
                 </div>
                 <!-- Friend story rings will be injected here -->
+            </div>
+        </div>
+
+        <!-- Activity Feed (IG Style) -->
+        <div id="friends-feed-section" style="padding: 0; margin-bottom: 10px;">
+            <div id="friends-feed-container">
+                <!-- IG-style posts loaded dynamically -->
             </div>
         </div>
 
@@ -22720,6 +22729,12 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
 
     document.getElementById('view-workout-success').style.display = 'flex';
 
+    // Hide earn-points card if previously dismissed
+    if (localStorage.getItem('share_section_dismissed') === 'true') {
+        const shareCard = document.getElementById('share-section-combined');
+        if (shareCard) shareCard.style.display = 'none';
+    }
+
     // Push navigation state for Android back button
     pushNavigationState('view-workout-success', () => closeSuccessScreen());
 }
@@ -30109,12 +30124,185 @@ async function updateFriendsCount() {
 // Initialize Friends View
 async function initFriendsView() {
     console.log('Initializing Friends View...');
+    // Hide dismissed promo cards
+    if (localStorage.getItem('referral_banner_dismissed') === 'true') {
+        const banner = document.getElementById('friends-referral-banner');
+        if (banner) banner.style.display = 'none';
+    }
     // Load stories carousel on friends page
     if (typeof loadStoriesCarousel === 'function') {
         loadStoriesCarousel();
     }
+    // Load IG-style activity feed
+    loadFriendsActivityFeed();
     await loadGroupChats();
     await loadFriendsCards();
+}
+
+// ============================================================
+// INSTAGRAM-STYLE ACTIVITY FEED
+// ============================================================
+
+// In-memory store for likes and comments per session
+const feedInteractions = {};
+
+function getFeedInteractions(activityId) {
+    if (!feedInteractions[activityId]) {
+        const stored = JSON.parse(localStorage.getItem('feed_interactions') || '{}');
+        feedInteractions[activityId] = stored[activityId] || { liked: false, comments: [] };
+    }
+    return feedInteractions[activityId];
+}
+
+function saveFeedInteractions() {
+    localStorage.setItem('feed_interactions', JSON.stringify(feedInteractions));
+}
+
+function toggleFeedLike(activityId, btn) {
+    const data = getFeedInteractions(activityId);
+    data.liked = !data.liked;
+    saveFeedInteractions();
+    const heart = btn.querySelector('.feed-heart');
+    if (heart) {
+        heart.textContent = data.liked ? '❤️' : '🤍';
+        if (data.liked) {
+            heart.style.transform = 'scale(1.4)';
+            setTimeout(() => heart.style.transform = 'scale(1)', 200);
+        }
+    }
+}
+
+function addFeedComment(activityId) {
+    const input = document.getElementById('feed-comment-input-' + activityId);
+    if (!input || !input.value.trim()) return;
+    const text = input.value.trim();
+    input.value = '';
+    const data = getFeedInteractions(activityId);
+    const userName = window.currentUser?.user_metadata?.name || window.currentUser?.email?.split('@')[0] || 'You';
+    data.comments.push({ name: userName, text: text, time: Date.now() });
+    saveFeedInteractions();
+    renderFeedComments(activityId);
+}
+
+function renderFeedComments(activityId) {
+    const container = document.getElementById('feed-comments-' + activityId);
+    if (!container) return;
+    const data = getFeedInteractions(activityId);
+    if (data.comments.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    container.innerHTML = data.comments.map(c =>
+        `<div style="padding: 4px 0; font-size: 0.85rem;"><span style="font-weight: 600; color: var(--text-main);">${c.name}</span> <span style="color: var(--text-main);">${c.text}</span></div>`
+    ).join('');
+}
+
+async function loadFriendsActivityFeed() {
+    const container = document.getElementById('friends-feed-container');
+    if (!container || !window.currentUser) return;
+
+    try {
+        const { data: activities, error } = await window.supabaseClient
+            .rpc('get_friend_activity_feed', { user_uuid: window.currentUser.id, days_back: 7 });
+
+        if (error) throw error;
+
+        const items = activities || [];
+        if (items.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = items.map((activity, idx) => {
+            const initials = (activity.user_name || '?').charAt(0).toUpperCase();
+            const timeAgo = typeof getTimeAgo === 'function' ? getTimeAgo(new Date(activity.activity_time)) : '';
+            const actId = 'feed_' + idx;
+            const interactions = getFeedInteractions(actId);
+            const heartIcon = interactions.liked ? '❤️' : '🤍';
+
+            const typeConfig = {
+                workout: { icon: '💪', color: '#16a34a', label: 'completed a workout' },
+                meal: { icon: '🥗', color: '#d97706', label: 'logged a meal' },
+                story: { icon: '📸', color: '#6366f1', label: 'shared a story' },
+                achievement: { icon: '🏆', color: '#ef4444', label: 'earned an achievement' },
+                free_week: { icon: '🎉', color: '#22c55e', label: 'unlocked a free week' },
+                referral_reward: { icon: '🎁', color: '#c026d3', label: 'received a reward' }
+            };
+            const config = typeConfig[activity.activity_type] || typeConfig.workout;
+
+            // Build photo section if story type or has photo data
+            let photoHtml = '';
+            if (activity.activity_type === 'story' && activity.activity_photo) {
+                photoHtml = `<div style="width: 100%; aspect-ratio: 1/1; background: #f1f5f9; overflow: hidden;">
+                    <img src="${activity.activity_photo}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.style.display='none'">
+                </div>`;
+            } else {
+                // Activity type illustration card
+                photoHtml = `<div style="width: 100%; padding: 30px 20px; background: linear-gradient(135deg, #f8fafc, #f1f5f9); display: flex; align-items: center; justify-content: center; gap: 12px;">
+                    <span style="font-size: 2.5rem;">${config.icon}</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 1.05rem; color: var(--text-main);">${activity.activity_title}</div>
+                        ${activity.activity_details ? `<div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">${activity.activity_details}</div>` : ''}
+                    </div>
+                </div>`;
+            }
+
+            // Existing comments
+            const commentsHtml = interactions.comments.length > 0
+                ? interactions.comments.map(c =>
+                    `<div style="padding: 4px 0; font-size: 0.85rem;"><span style="font-weight: 600; color: var(--text-main);">${c.name}</span> <span style="color: var(--text-main);">${c.text}</span></div>`
+                ).join('')
+                : '';
+
+            return `
+            <div style="background: white; border-bottom: 1px solid #efefef;">
+                <!-- Post Header -->
+                <div style="display: flex; align-items: center; padding: 12px 15px; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; overflow: hidden;">
+                        ${activity.user_photo ? `<img src="${activity.user_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-main);">${activity.user_name}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${config.label}</div>
+                    </div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">${timeAgo}</span>
+                </div>
+
+                <!-- Post Image / Content -->
+                ${photoHtml}
+
+                <!-- Action Bar -->
+                <div style="display: flex; align-items: center; padding: 10px 15px; gap: 16px;">
+                    <button onclick="toggleFeedLike('${actId}', this)" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1.5rem; line-height: 1; transition: transform 0.2s;">
+                        <span class="feed-heart">${heartIcon}</span>
+                    </button>
+                    <button onclick="document.getElementById('feed-comment-input-${actId}').focus()" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1.35rem; line-height: 1;">💬</button>
+                    <button onclick="sendCheers('${activity.user_id}', '${activity.activity_type}')" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1.35rem; line-height: 1;">🙌</button>
+                </div>
+
+                <!-- Caption -->
+                <div style="padding: 0 15px 4px;">
+                    <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-main);">${activity.user_name}</span>
+                    <span style="font-size: 0.9rem; color: var(--text-main);"> ${activity.activity_title}${activity.activity_details ? ' — ' + activity.activity_details : ''}</span>
+                </div>
+
+                <!-- Comments -->
+                <div id="feed-comments-${actId}" style="padding: 0 15px;">
+                    ${commentsHtml}
+                </div>
+
+                <!-- Comment Input -->
+                <div style="display: flex; align-items: center; padding: 10px 15px; gap: 10px; border-top: 1px solid #efefef; margin-top: 6px;">
+                    <input id="feed-comment-input-${actId}" type="text" placeholder="Add a comment..." style="flex: 1; border: none; outline: none; font-size: 0.85rem; color: var(--text-main); background: transparent;" onkeypress="if(event.key==='Enter') addFeedComment('${actId}')">
+                    <button onclick="addFeedComment('${actId}')" style="background: none; border: none; color: var(--primary); font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap;">Post</button>
+                </div>
+            </div>`;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading friends activity feed:', error);
+        container.innerHTML = '';
+    }
 }
 
 // Load friend cards for the Instagram DM-style list
