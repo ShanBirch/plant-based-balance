@@ -5459,43 +5459,6 @@ async function applyAppTheme(themeKey) {
 
     <!-- Duplicate Install Banner Removed -->
 
-    <!-- Photo Feed Section -->
-    <div id="photo-feed-section" style="padding: 0 0 10px 0; background: transparent;">
-        <!-- Feed Header with Post button and Messages -->
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px 8px 20px;">
-            <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-main); font-weight: 700;">Feed</h3>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <!-- Messages Bubble (Group Chats + Friends) -->
-                <div onclick="openFeedMessagesPanel()" style="width: 38px; height: 38px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
-                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
-                    <div id="feed-messages-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; background: #ef4444; color: white; font-size: 0.6rem; font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center;">0</div>
-                </div>
-                <!-- New Post Button -->
-                <button onclick="openStoryCamera()" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                    <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" fill="none" stroke="white" stroke-width="2"/><circle cx="12" cy="13" r="4" fill="none" stroke="white" stroke-width="2"/></svg>
-                    Post
-                </button>
-            </div>
-        </div>
-        <!-- Points incentive banner -->
-        <div style="margin: 0 20px 10px 20px; padding: 8px 14px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; display: flex; align-items: center; gap: 8px; border: 1px solid #fcd34d;">
-            <span style="font-size: 1.1rem;">+2</span>
-            <span style="font-size: 0.8rem; color: #92400e; font-weight: 600;">Earn points for workout posts!</span>
-        </div>
-        <!-- Photo Feed Grid -->
-        <div id="photo-feed-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 0 2px;">
-            <!-- Feed posts will be injected here by loadPhotoFeed() -->
-        </div>
-        <!-- Empty state -->
-        <div id="photo-feed-empty" style="display: none; text-align: center; padding: 30px 20px;">
-            <div style="font-size: 2.5rem; margin-bottom: 10px;">📸</div>
-            <div style="font-size: 0.95rem; color: var(--text-main); font-weight: 600; margin-bottom: 5px;">No posts yet</div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Be the first to share a workout photo!</div>
-            <button onclick="openStoryCamera()" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; padding: 10px 24px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; cursor: pointer;">
-                Share a Post
-            </button>
-        </div>
-    </div>
     <!-- Hidden inputs for camera -->
     <input type="file" id="story-camera-input" accept="image/*,video/*" capture style="display:none;" onchange="handleStoryFileSelect(event)">
     <input type="file" id="meal-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleMealPhotoSelect(event)">
@@ -37615,7 +37578,6 @@ async function uploadStory() {
 
         // Refresh feed and stories
         if (typeof loadPhotoFeed === 'function') {
-            loadPhotoFeed();
             loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
         }
         if (typeof loadStories === 'function') {
