@@ -43754,6 +43754,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             viewer.removeAttribute('auto-rotate');
             viewer.removeAttribute('camera-controls');
 
+            // Shift character to the left side of screen
+            viewer.style.left = '-30%';
+
             // Get stats
             const stats = getBattleStats();
             const level = window.getCurrentUserLevel ? window.getCurrentUserLevel() : 1;
@@ -44112,9 +44115,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (manaContainer) manaContainer.classList.remove('active');
             if (actionContainer) actionContainer.classList.remove('active');
 
-            // Restore controls
+            // Restore controls and position
             if (hadCameraControls) viewer.setAttribute('camera-controls', '');
             if (hadAutoRotate) viewer.setAttribute('auto-rotate', '');
+            viewer.style.left = '0';
 
             viewer.animationName = 'idle';
             setTimeout(() => {
