@@ -156,6 +156,47 @@ export default async (request, context) => {
                 }
             }
 
+            // Handle Coin Pack purchase
+            if (session.metadata?.product_type === 'coin_pack' && session.metadata?.user_id) {
+                const userId = session.metadata.user_id;
+                const coinAmount = parseInt(session.metadata.coin_amount) || 0;
+                const packId = session.metadata.pack_id;
+                const supabaseUrl = Deno.env.get('SUPABASE_URL');
+                const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+                if (supabaseUrl && supabaseServiceKey && coinAmount > 0) {
+                    try {
+                        // Credit coins via RPC function
+                        const rpcResponse = await fetch(
+                            `${supabaseUrl}/rest/v1/rpc/credit_coins`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'apikey': supabaseServiceKey,
+                                    'Authorization': `Bearer ${supabaseServiceKey}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    user_uuid: userId,
+                                    coin_amount: coinAmount,
+                                    txn_type: 'pack_purchase',
+                                    txn_description: `Purchased ${packId} pack (${coinAmount} coins)`,
+                                    txn_reference: session.payment_intent
+                                })
+                            }
+                        );
+
+                        if (rpcResponse.ok) {
+                            console.log(`Credited ${coinAmount} coins to user ${userId} (${packId} pack)`);
+                        } else {
+                            console.error(`Failed to credit coins: ${await rpcResponse.text()}`);
+                        }
+                    } catch (err) {
+                        console.error("Error crediting coins:", err.message);
+                    }
+                }
+            }
+
             // Store FB metadata on customer
             if (customerId && session.metadata?.fbc) {
                 await stripe.customers.update(customerId, {
