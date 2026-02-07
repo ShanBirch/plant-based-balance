@@ -43760,10 +43760,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 viewer.resetTurntableRotation();
             }
 
-            // With turntable at 0, -90deg = exact side profile facing right
+            // With turntable at 0, set to front view (0deg) first
+            // TODO: once front view is confirmed working, change to -90deg for side profile
             const orbitParts = (savedOrbit || '0deg 85deg 22m').split(/\s+/);
             const currentDist = orbitParts[2] || '22m';
-            viewer.setAttribute('camera-orbit', `-90deg 85deg ${currentDist}`);
+            viewer.setAttribute('camera-orbit', `0deg 85deg ${currentDist}`);
 
             // Shift character to the left side of screen
             viewer.style.left = '-30%';
