@@ -5718,8 +5718,22 @@ async function applyAppTheme(themeKey) {
             </div>
          </div>
 
+        <!-- Coin Balance Bar -->
+        <div onclick="openCoinShop()" style="margin: 30px 0 15px 0; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 14px; padding: 14px 18px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(245,158,11,0.25);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.5rem;">🪙</span>
+                <div>
+                    <div style="font-weight: 700; color: white; font-size: 1.2rem;" id="coin-balance-display">0</div>
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.8);">Coins</div>
+                </div>
+            </div>
+            <button onclick="event.stopPropagation(); openCoinShop()" style="background: rgba(255,255,255,0.25); border: 2px solid rgba(255,255,255,0.5); color: white; padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+                + Buy Coins
+            </button>
+        </div>
+
         <!-- Live Challenges Section -->
-        <div style="margin: 30px 0 15px 0; display: flex; justify-content: space-between; align-items: center;">
+        <div style="margin: 20px 0 15px 0; display: flex; justify-content: space-between; align-items: center;">
             <h3 style="margin: 0;">Live Challenges</h3>
             <button onclick="openCreateChallengeModal()" style="background: none; border: none; color: var(--primary); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
                 <span style="font-size: 1.1rem;">+</span> New
@@ -13016,21 +13030,40 @@ function viewWorkoutHistoryDetail(date) {
             </div>
             <!-- Content -->
             <div style="padding: 20px; overflow-y: auto; max-height: calc(85vh - 140px);">
+                <!-- How It Works -->
+                <div style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="font-weight: 700; color: #1e40af; font-size: 0.95rem; margin-bottom: 10px;">How Challenges Work</div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <span style="color: #3b82f6; font-weight: 700; font-size: 0.85rem; min-width: 18px;">1.</span>
+                            <span style="color: #1e3a5f; font-size: 0.85rem;">Spend <strong>200 Coins</strong> to enter. Everyone pays, everyone competes.</span>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <span style="color: #3b82f6; font-weight: 700; font-size: 0.85rem; min-width: 18px;">2.</span>
+                            <span style="color: #1e3a5f; font-size: 0.85rem;">Earn <strong>double XP</strong> on everything for 30 days -- meals, workouts, streaks.</span>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <span style="color: #3b82f6; font-weight: 700; font-size: 0.85rem; min-width: 18px;">3.</span>
+                            <span style="color: #1e3a5f; font-size: 0.85rem;">Whoever earns the <strong>most XP</strong> by the end wins.</span>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <span style="color: #3b82f6; font-weight: 700; font-size: 0.85rem; min-width: 18px;">4.</span>
+                            <span style="color: #1e3a5f; font-size: 0.85rem;">Winner gets <strong>rare drops</strong> -- exclusive 3D props, skins, and badges for your profile.</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Challenge Name -->
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Challenge Name</label>
-                    <input type="text" id="challenge-name-input" placeholder="e.g., January Points Battle" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box;">
+                    <input type="text" id="challenge-name-input" placeholder="e.g., February Grind" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box;">
                 </div>
 
-                <!-- Duration -->
+                <!-- Duration (fixed 30 days, shown as info) -->
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Duration</label>
-                    <select id="challenge-duration-select" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; background: white;">
-                        <option value="30">1 Month (30 days)</option>
-                        <option value="45">6 Weeks (45 days)</option>
-                        <option value="60">2 Months (60 days)</option>
-                        <option value="90">3 Months (90 days)</option>
-                    </select>
+                    <div style="padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; background: #f8fafc; color: var(--text-main);">30 days</div>
+                    <input type="hidden" id="challenge-duration-select" value="30">
                 </div>
 
                 <!-- Start Date -->
@@ -13041,7 +13074,7 @@ function viewWorkoutHistoryDetail(date) {
 
                 <!-- Select Friends -->
                 <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Invite Friends</label>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Invite Friends (min. 1)</label>
                     <div id="challenge-friends-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px;">
                         <!-- Friends will be loaded here -->
                         <div style="padding: 20px; text-align: center; color: var(--text-muted);">Loading friends...</div>
@@ -13052,20 +13085,32 @@ function viewWorkoutHistoryDetail(date) {
                 </div>
 
                 <!-- Prize Info -->
-                <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; padding: 15px; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                         <span style="font-size: 1.5rem;">🏆</span>
                         <div>
-                            <div style="font-weight: 700; color: #92400e; font-size: 0.95rem;">Winner Gets 200 Points!</div>
-                            <div style="font-size: 0.8rem; color: #a16207;">Massive XP boost for leveling up</div>
+                            <div style="font-weight: 700; color: #92400e; font-size: 0.95rem;">Winner Gets Rare Drops!</div>
+                            <div style="font-size: 0.8rem; color: #a16207;">Exclusive 3D props, skins &amp; badges</div>
                         </div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #a16207; border-top: 1px solid rgba(146,64,14,0.15); padding-top: 8px;">
+                        All participants earn double XP + a participation reward. Only the winner unlocks the rare stuff.
+                    </div>
+                </div>
+
+                <!-- Entry Fee Info -->
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.3rem;">🪙</span>
+                    <div>
+                        <div style="font-weight: 700; color: #166534; font-size: 0.9rem;">200 Coins entry fee</div>
+                        <div style="font-size: 0.78rem; color: #15803d;">Deducted when you and your friends join</div>
                     </div>
                 </div>
             </div>
             <!-- Footer -->
             <div style="padding: 15px 20px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
                 <button onclick="closeCreateChallengeModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: var(--text-muted); cursor: pointer;">Cancel</button>
-                <button onclick="createChallenge()" id="create-challenge-btn" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: white; cursor: pointer;">Create Challenge</button>
+                <button onclick="createChallenge()" id="create-challenge-btn" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: white; cursor: pointer;">Create (200 Coins)</button>
             </div>
         </div>
     </div>
@@ -13150,57 +13195,117 @@ function viewWorkoutHistoryDetail(date) {
         </div>
     </div>
 
-    <!-- Challenge Pass Purchase Modal -->
+    <!-- Challenge Buy-In Modal (Coins) -->
     <div id="challenge-pass-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10010; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
         <div style="background: white; border-radius: 24px; max-width: 380px; width: 90%; padding: 30px; text-align: center; animation: fadeInScale 0.3s ease-out;">
             <!-- Icon -->
             <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
-                <svg viewBox="0 0 24 24" style="width: 40px; height: 40px; fill: white;">
-                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-                </svg>
+                <span style="font-size: 2.2rem;">🪙</span>
             </div>
 
             <!-- Title -->
-            <h3 style="margin: 0 0 10px; font-size: 1.4rem; font-weight: 700; color: #1a4d2e; font-family: 'Montserrat', sans-serif;">Unlock Challenge Pass</h3>
+            <h3 style="margin: 0 0 10px; font-size: 1.4rem; font-weight: 700; color: #1a4d2e; font-family: 'Montserrat', sans-serif;">Join Challenge</h3>
 
             <!-- Description -->
             <p style="margin: 0 0 20px; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
-                Get <strong style="color: #f59e0b;">2x XP</strong> in all challenges! Earn points twice as fast and level up quicker.
+                Spend <strong style="color: #f59e0b;">200 Coins</strong> to enter. Earn double XP for 30 days and compete for rare drops!
             </p>
 
             <!-- Benefits -->
             <div style="background: #fef3c7; border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: left;">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                     <span style="color: #f59e0b; font-size: 1.1rem;">✓</span>
-                    <span style="color: #92400e; font-size: 0.9rem;">Double XP on all challenge activities</span>
+                    <span style="color: #92400e; font-size: 0.9rem;">Double XP on all activities for 30 days</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                     <span style="color: #f59e0b; font-size: 1.1rem;">✓</span>
-                    <span style="color: #92400e; font-size: 0.9rem;">Works on every challenge you join</span>
+                    <span style="color: #92400e; font-size: 0.9rem;">Winner gets exclusive rare drops</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="color: #f59e0b; font-size: 1.1rem;">✓</span>
-                    <span style="color: #92400e; font-size: 0.9rem;">One-time purchase, yours forever</span>
+                    <span style="color: #92400e; font-size: 0.9rem;">All participants get a reward</span>
                 </div>
             </div>
 
-            <!-- Price -->
-            <div style="margin-bottom: 20px;">
-                <span style="font-size: 2rem; font-weight: 700; color: #1a4d2e;">$9.99</span>
-                <span style="color: #64748b; font-size: 0.9rem;"> AUD</span>
+            <!-- Cost -->
+            <div style="margin-bottom: 8px;">
+                <span style="font-size: 2rem; font-weight: 700; color: #1a4d2e;">🪙 200</span>
+                <span style="color: #64748b; font-size: 0.9rem;"> Coins</span>
             </div>
+            <div style="margin-bottom: 20px; font-size: 0.8rem; color: var(--text-muted);">Your balance: <strong id="challenge-modal-coin-balance">0</strong> coins</div>
 
             <!-- Buttons -->
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button id="buy-challenge-pass-btn" onclick="purchaseChallengePass()" style="width: 100%; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white; border: none; padding: 16px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: 'Montserrat', sans-serif; box-shadow: 0 4px 15px rgba(245,158,11,0.3);">
-                    Get Challenge Pass
+                <button id="buy-challenge-pass-btn" onclick="spendCoinsToJoinChallenge()" style="width: 100%; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white; border: none; padding: 16px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: 'Montserrat', sans-serif; box-shadow: 0 4px 15px rgba(245,158,11,0.3);">
+                    Spend 200 Coins &amp; Join
                 </button>
-                <button onclick="joinChallengeWithoutPass()" style="width: 100%; background: #f1f5f9; color: #64748b; border: none; padding: 14px; border-radius: 12px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
-                    Join without 2x XP
+                <button onclick="openCoinShop(); closeChallengePassModal();" style="width: 100%; background: #f1f5f9; color: #64748b; border: none; padding: 14px; border-radius: 12px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+                    Need more coins? Buy here
                 </button>
                 <button onclick="closeChallengePassModal()" style="background: none; border: none; color: #94a3b8; font-size: 0.85rem; cursor: pointer; margin-top: 5px;">
                     Cancel
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coin Shop Modal -->
+    <div id="coin-shop-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10010; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: white; border-radius: 24px; max-width: 420px; width: 92%; padding: 0; overflow: hidden; animation: fadeInScale 0.3s ease-out;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #fbbf24, #f59e0b); padding: 20px; text-align: center; position: relative;">
+                <button onclick="closeCoinShop()" style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 1.5rem; color: rgba(255,255,255,0.8); cursor: pointer;">&times;</button>
+                <span style="font-size: 2.5rem;">🪙</span>
+                <h3 style="margin: 8px 0 4px; font-size: 1.3rem; font-weight: 700; color: white; font-family: 'Montserrat', sans-serif;">Coin Shop</h3>
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Your balance: <strong id="coin-shop-balance">0</strong> coins</div>
+            </div>
+            <!-- Packs -->
+            <div style="padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+                <!-- Starter -->
+                <div onclick="buyCoinPack('starter')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                    <div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">500 Coins</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Starter Pack</div>
+                    </div>
+                    <div style="background: var(--primary); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$4.99</div>
+                </div>
+                <!-- Popular -->
+                <div onclick="buyCoinPack('popular')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #fffbeb; border: 2px solid #fbbf24; border-radius: 12px; cursor: pointer; transition: all 0.2s; position: relative;">
+                    <div style="position: absolute; top: -8px; right: 12px; background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700;">BEST VALUE</div>
+                    <div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">1,200 Coins</div>
+                        <div style="font-size: 0.78rem; color: #f59e0b; font-weight: 600;">+20% bonus</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$9.99</div>
+                </div>
+                <!-- Pro -->
+                <div onclick="buyCoinPack('pro')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                    <div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">2,800 Coins</div>
+                        <div style="font-size: 0.78rem; color: #16a34a; font-weight: 600;">+40% bonus</div>
+                    </div>
+                    <div style="background: #16a34a; color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$19.99</div>
+                </div>
+                <!-- Ultimate -->
+                <div onclick="buyCoinPack('ultimate')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: linear-gradient(135deg, #eff6ff, #e0e7ff); border: 2px solid #818cf8; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                    <div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">8,000 Coins</div>
+                        <div style="font-size: 0.78rem; color: #6366f1; font-weight: 600;">+60% bonus</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #6366f1, #7c3aed); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$49.99</div>
+                </div>
+            </div>
+            <!-- What coins are for -->
+            <div style="padding: 0 20px 20px;">
+                <div style="background: #f8fafc; border-radius: 10px; padding: 12px 14px;">
+                    <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">SPEND COINS ON</div>
+                    <div style="display: flex; gap: 12px; font-size: 0.78rem; color: var(--text-main); flex-wrap: wrap;">
+                        <span>🏆 Challenges</span>
+                        <span>⚔️ Battle Bets</span>
+                        <span>🎭 Characters</span>
+                        <span>✨ Cosmetics</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -14548,24 +14653,25 @@ window.stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFP
 
 // PWA & Navigation Logic
 document.addEventListener('DOMContentLoaded', () => {
-    // Handle Challenge Pass purchase return
+    // Handle Coin Pack purchase return
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('challenge_pass') === 'success') {
-        // Remove the query param from URL
+    if (urlParams.get('coin_purchase') === 'success') {
+        const packName = urlParams.get('pack') || 'coins';
         window.history.replaceState({}, document.title, window.location.pathname);
-
-        // Show success message
         setTimeout(() => {
-            alert('Challenge Pass activated! You now earn 2x XP in all challenges.');
+            alert('Coins added to your balance! Time to compete.');
+            if (typeof loadCoinBalance === 'function') loadCoinBalance();
+        }, 500);
+    }
 
-            // Check if there was a pending challenge to join
-            const pendingChallengeId = sessionStorage.getItem('pending_challenge_id');
-            if (pendingChallengeId) {
-                sessionStorage.removeItem('pending_challenge_id');
-                // Accept the pending challenge
-                if (typeof doAcceptChallenge === 'function') {
-                    doAcceptChallenge(pendingChallengeId);
-                }
+    // Handle legacy challenge pass/buyin returns
+    if (urlParams.get('challenge_pass') === 'success' || urlParams.get('challenge_buyin') === 'success') {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setTimeout(() => {
+            const pendingId = urlParams.get('challenge_id') || sessionStorage.getItem('pending_challenge_id');
+            sessionStorage.removeItem('pending_challenge_id');
+            if (pendingId && typeof doAcceptChallenge === 'function') {
+                doAcceptChallenge(pendingId);
             }
         }, 500);
     }
@@ -15295,6 +15401,11 @@ function _switchAppTabReal(tabName, btn) {
         // Load live challenges on home screen
         if (typeof loadHomeChallenges === 'function') {
             loadHomeChallenges();
+        }
+
+        // Load coin balance
+        if (typeof loadCoinBalance === 'function') {
+            loadCoinBalance();
         }
 
         // Refresh weigh-in card and modal visibility on dashboard visit
@@ -30917,10 +31028,13 @@ async function loadHomeChallenges() {
                                 <div style="font-size: 0.8rem; color: var(--text-muted);">
                                     from ${challenge.creator_name} · 👥 ${challenge.participant_count} joined
                                 </div>
+                                <div style="font-size: 0.75rem; color: #16a34a; font-weight: 600; margin-top: 2px;">
+                                    30 days · 2x XP · Win rare drops
+                                </div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px; margin-top: 12px;">
-                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Accept</button>
+                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">200 Coins & Join</button>
                             <button onclick="declineChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: #f1f5f9; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Decline</button>
                         </div>
                     </div>
@@ -31019,7 +31133,7 @@ async function loadChallenges() {
                     ` : ''}
                     <div style="display: flex; gap: 8px;">
                         ${isInvited ? `
-                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Accept</button>
+                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">200 Coins & Join</button>
                             <button onclick="declineChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: #f1f5f9; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Decline</button>
                         ` : `
                             <button onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">View Leaderboard</button>
@@ -31103,7 +31217,7 @@ function updateSelectedCount() {
     if (countEl) countEl.textContent = checkboxes.length;
 }
 
-// Create a new challenge
+// Create a new challenge (with $9.99 buy-in for creator)
 async function createChallenge() {
     const nameInput = document.getElementById('challenge-name-input');
     const durationSelect = document.getElementById('challenge-duration-select');
@@ -31111,7 +31225,7 @@ async function createChallenge() {
     const selectedFriends = document.querySelectorAll('.challenge-friend-checkbox:checked');
 
     const name = nameInput?.value.trim();
-    const duration = parseInt(durationSelect?.value) || 30;
+    const duration = 30; // Fixed 30-day duration
     const startDate = startDateInput?.value;
 
     if (!name) {
@@ -31157,7 +31271,7 @@ async function createChallenge() {
 
         if (createError) throw createError;
 
-        // Add creator as participant (auto-accepted)
+        // Add creator as participant (pending payment)
         const { data: userPoints } = await window.supabaseClient
             .from('user_points')
             .select('current_points')
@@ -31191,8 +31305,29 @@ async function createChallenge() {
 
         if (inviteError) throw inviteError;
 
+        // Debit coins from creator
+        const { data: newBalance, error: coinError } = await window.supabaseClient
+            .rpc('debit_coins', {
+                user_uuid: window.currentUser.id,
+                coin_amount: CHALLENGE_ENTRY_COST,
+                txn_type: 'challenge_entry',
+                txn_description: 'Created challenge: ' + name,
+                txn_reference: challenge.id
+            });
+
+        if (coinError) throw coinError;
+
+        if (newBalance === -1) {
+            // Not enough coins - clean up the challenge we just created
+            await window.supabaseClient.from('challenge_participants').delete().eq('challenge_id', challenge.id);
+            await window.supabaseClient.from('challenges').delete().eq('id', challenge.id);
+            alert('Not enough coins! You need ' + CHALLENGE_ENTRY_COST + ' coins to create a challenge.');
+            openCoinShop();
+            return;
+        }
+
+        updateCoinBalanceDisplay(newBalance);
         closeCreateChallengeModal();
-        // Refresh challenges on home screen
         if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
         alert('Challenge created! Invitations sent to your friends.');
 
@@ -31202,44 +31337,19 @@ async function createChallenge() {
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.textContent = 'Create Challenge';
+            btn.textContent = 'Create (200 Coins)';
         }
     }
 }
 
-// Store pending challenge ID for pass modal
+// Store pending challenge ID for buy-in modal
 let pendingChallengeId = null;
 
-// Check if user has challenge pass
-async function userHasChallengePass() {
-    try {
-        const { data, error } = await window.supabaseClient
-            .from('users')
-            .select('has_challenge_pass')
-            .eq('id', window.currentUser.id)
-            .single();
-
-        return data?.has_challenge_pass === true;
-    } catch (error) {
-        console.error('Error checking challenge pass:', error);
-        return false;
-    }
-}
-
-// Accept challenge invitation
+// Accept challenge invitation - always requires payment
 async function acceptChallengeInvite(challengeId) {
     pendingChallengeId = challengeId;
-
-    // Check if user has challenge pass
-    const hasPass = await userHasChallengePass();
-
-    if (!hasPass) {
-        // Show the challenge pass purchase modal
-        showChallengePassModal();
-    } else {
-        // User has pass, accept directly
-        await doAcceptChallenge(challengeId);
-    }
+    // Show the buy-in payment modal
+    showChallengePassModal();
 }
 
 // Actually accept the challenge
@@ -31263,11 +31373,12 @@ async function doAcceptChallenge(challengeId) {
     }
 }
 
-// Show challenge pass modal
+// Show challenge buy-in modal
 function showChallengePassModal() {
     const modal = document.getElementById('challenge-pass-modal');
     if (modal) {
         modal.style.display = 'flex';
+        loadCoinBalance(); // Refresh balance display
     }
 }
 
@@ -31280,58 +31391,121 @@ function closeChallengePassModal() {
     pendingChallengeId = null;
 }
 
-// Purchase challenge pass
-async function purchaseChallengePass() {
+// Spend coins to join a challenge (200 coins)
+const CHALLENGE_ENTRY_COST = 200;
+
+async function spendCoinsToJoinChallenge() {
+    const challengeId = pendingChallengeId;
+    if (!challengeId) {
+        alert('No challenge selected');
+        return;
+    }
+
     const btn = document.getElementById('buy-challenge-pass-btn');
     if (btn) {
         btn.disabled = true;
-        btn.textContent = 'Connecting...';
+        btn.textContent = 'Joining...';
     }
 
     try {
-        const response = await fetch('/.netlify/functions/create-challenge-pass-checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: window.currentUser.id,
-                email: window.currentUser.email
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.error) {
-            throw new Error(data.error.message);
-        }
-
-        // Store the pending challenge ID so we can accept after purchase
-        if (pendingChallengeId) {
-            sessionStorage.setItem('pending_challenge_id', pendingChallengeId);
-        }
-
-        // Redirect to Stripe checkout
-        const { error } = await window.stripe.redirectToCheckout({
-            sessionId: data.sessionId
-        });
+        // Debit coins via RPC
+        const { data: newBalance, error } = await window.supabaseClient
+            .rpc('debit_coins', {
+                user_uuid: window.currentUser.id,
+                coin_amount: CHALLENGE_ENTRY_COST,
+                txn_type: 'challenge_entry',
+                txn_description: 'Challenge entry fee',
+                txn_reference: challengeId
+            });
 
         if (error) throw error;
 
+        if (newBalance === -1) {
+            alert('Not enough coins! You need ' + CHALLENGE_ENTRY_COST + ' coins to enter.');
+            closeChallengePassModal();
+            openCoinShop();
+            return;
+        }
+
+        // Update displayed balance
+        updateCoinBalanceDisplay(newBalance);
+
+        // Close modal and accept challenge
+        closeChallengePassModal();
+        await doAcceptChallenge(challengeId);
+        pendingChallengeId = null;
+
     } catch (error) {
-        console.error('Error purchasing challenge pass:', error);
-        alert('Failed to start checkout. Please try again.');
+        console.error('Error spending coins for challenge:', error);
+        alert('Failed to join challenge. Please try again.');
         if (btn) {
             btn.disabled = false;
-            btn.textContent = 'Get Challenge Pass';
+            btn.textContent = 'Spend 200 Coins & Join';
         }
     }
 }
 
-// Join challenge without purchasing pass (regular 1x XP)
-async function joinChallengeWithoutPass() {
-    closeChallengePassModal();
-    if (pendingChallengeId) {
-        await doAcceptChallenge(pendingChallengeId);
-        pendingChallengeId = null;
+// Coin balance management
+async function loadCoinBalance() {
+    if (!window.supabaseClient || !window.currentUser) return 0;
+    try {
+        const { data, error } = await window.supabaseClient
+            .rpc('get_coin_balance', { user_uuid: window.currentUser.id });
+        if (error) throw error;
+        const balance = data || 0;
+        updateCoinBalanceDisplay(balance);
+        return balance;
+    } catch (e) {
+        console.error('Error loading coin balance:', e);
+        return 0;
+    }
+}
+
+function updateCoinBalanceDisplay(balance) {
+    const displays = ['coin-balance-display', 'coin-shop-balance', 'challenge-modal-coin-balance'];
+    displays.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = balance.toLocaleString();
+    });
+}
+
+// Coin shop functions
+function openCoinShop() {
+    const modal = document.getElementById('coin-shop-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        loadCoinBalance();
+    }
+}
+
+function closeCoinShop() {
+    const modal = document.getElementById('coin-shop-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function buyCoinPack(packId) {
+    try {
+        const response = await fetch('/.netlify/functions/create-coin-pack-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: window.currentUser.id,
+                email: window.currentUser.email,
+                packId: packId
+            })
+        });
+
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+
+        const { error } = await window.stripe.redirectToCheckout({
+            sessionId: data.sessionId
+        });
+        if (error) throw error;
+
+    } catch (error) {
+        console.error('Error buying coin pack:', error);
+        alert('Failed to start checkout. Please try again.');
     }
 }
 
@@ -43532,11 +43706,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             showBattleInviteModal();
         };
 
+        // Track current battle bet amount
+        window._currentBattleBet = 0;
+
         async function showBattleInviteModal() {
             // Create overlay
             const overlay = document.createElement('div');
             overlay.className = 'battle-invite-overlay';
             overlay.id = 'battle-invite-overlay';
+
+            // Get coin balance for display
+            let coinBalance = 0;
+            try {
+                if (window.supabaseClient && window.currentUser) {
+                    const { data } = await window.supabaseClient.rpc('get_coin_balance', { user_uuid: window.currentUser.id });
+                    coinBalance = data || 0;
+                }
+            } catch (e) {}
 
             let friendsHtml = '';
 
@@ -43573,8 +43759,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.warn('Could not fetch friends for battle invite:', e);
             }
 
-            // No friends? That's fine - bot option is always available
-
             overlay.innerHTML = `
                 <div class="battle-invite-modal">
                     <div class="battle-invite-header">
@@ -43582,15 +43766,33 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <p>Choose your opponent</p>
                     </div>
                     <div class="battle-invite-body">
+                        <!-- Coin Bet Picker -->
+                        <div style="padding: 10px 0 14px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">WAGER COINS</span>
+                                <span style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">Balance: 🪙 ${coinBalance.toLocaleString()}</span>
+                            </div>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <button onclick="window._setBattleBet(0, this)" class="battle-bet-btn active" style="flex: 1; min-width: 50px; padding: 8px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; color: white; font-weight: 700; font-size: 0.8rem; cursor: pointer;">Free</button>
+                                <button onclick="window._setBattleBet(10, this)" class="battle-bet-btn" style="flex: 1; min-width: 50px; padding: 8px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.8rem; cursor: pointer;">🪙 10</button>
+                                <button onclick="window._setBattleBet(50, this)" class="battle-bet-btn" style="flex: 1; min-width: 50px; padding: 8px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.8rem; cursor: pointer;">🪙 50</button>
+                                <button onclick="window._setBattleBet(100, this)" class="battle-bet-btn" style="flex: 1; min-width: 50px; padding: 8px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.8rem; cursor: pointer;">🪙 100</button>
+                                <button onclick="window._setBattleBet(500, this)" class="battle-bet-btn" style="flex: 1; min-width: 50px; padding: 8px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.8rem; cursor: pointer;">🪙 500</button>
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <input type="number" id="battle-custom-bet" placeholder="Or enter custom amount..." min="0" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 0.85rem; box-sizing: border-box;" oninput="window._setBattleBet(parseInt(this.value) || 0)">
+                            </div>
+                        </div>
+
                         <div class="battle-invite-friend battle-bot-option" onclick="window.closeBattleInvite(); window._runBattle('Bot');">
                             <div class="battle-invite-avatar" style="background: linear-gradient(135deg, rgba(100,100,255,0.4), rgba(150,50,255,0.4));">🤖</div>
                             <div class="battle-invite-info">
                                 <div class="battle-invite-name">Practice Mode</div>
-                                <div class="battle-invite-status active">Train against a bot</div>
+                                <div class="battle-invite-status active">Free training, no bet</div>
                             </div>
                             <button class="battle-invite-btn" style="background: linear-gradient(135deg, #7c3aed, #6366f1);">Fight</button>
                         </div>
-                        ${friendsHtml ? '<div style="padding: 8px 0 4px; font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px;">Or challenge a friend</div>' : ''}
+                        ${friendsHtml ? '<div style="padding: 8px 0 4px; font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px;">Challenge a friend (bet applies)</div>' : ''}
                         ${friendsHtml}
                     </div>
                     <div class="battle-invite-footer">
@@ -43607,12 +43809,56 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
+        window._setBattleBet = function(amount, btnEl) {
+            window._currentBattleBet = amount;
+            // Update active button styling
+            if (btnEl) {
+                document.querySelectorAll('.battle-bet-btn').forEach(b => {
+                    b.style.background = 'rgba(255,255,255,0.08)';
+                    b.style.borderColor = 'rgba(255,255,255,0.15)';
+                    b.className = 'battle-bet-btn';
+                });
+                btnEl.style.background = 'rgba(255,255,255,0.15)';
+                btnEl.style.borderColor = 'rgba(255,255,255,0.3)';
+                btnEl.className = 'battle-bet-btn active';
+            }
+        };
+
         window.closeBattleInvite = function() {
             const overlay = document.getElementById('battle-invite-overlay');
             if (overlay) overlay.remove();
         };
 
         window._sendBattleInvite = async function(friendId, friendName) {
+            const betAmount = window._currentBattleBet || 0;
+
+            // Debit coins for the bet before starting
+            if (betAmount > 0 && window.supabaseClient && window.currentUser) {
+                try {
+                    const { data: newBalance, error } = await window.supabaseClient
+                        .rpc('debit_coins', {
+                            user_uuid: window.currentUser.id,
+                            coin_amount: betAmount,
+                            txn_type: 'battle_bet',
+                            txn_description: 'Battle bet vs ' + friendName,
+                            txn_reference: friendId
+                        });
+
+                    if (error) throw error;
+
+                    if (newBalance === -1) {
+                        alert('Not enough coins for this bet!');
+                        return;
+                    }
+
+                    if (typeof updateCoinBalanceDisplay === 'function') updateCoinBalanceDisplay(newBalance);
+                } catch (e) {
+                    console.warn('Could not debit battle bet:', e);
+                    alert('Failed to place bet. Please try again.');
+                    return;
+                }
+            }
+
             window.closeBattleInvite();
 
             // Send battle invite via nudges table
@@ -43620,20 +43866,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (window.supabaseClient && window.currentUser) {
                     const userId = window.currentUser.id || window.currentUser.user_id;
 
-                    // Insert battle challenge as a nudge message
                     await window.supabaseClient
                         .from('nudges')
                         .insert({
                             sender_id: userId,
                             receiver_id: friendId,
-                            message: '⚔️ BATTLE CHALLENGE! Tap to accept and fight!'
+                            message: betAmount > 0
+                                ? '⚔️ BATTLE CHALLENGE! 🪙 ' + betAmount + ' coin bet! Tap to accept and fight!'
+                                : '⚔️ BATTLE CHALLENGE! Tap to accept and fight!',
+                            coin_bet: betAmount
                         });
 
-                    console.log('Battle invite sent to', friendName);
+                    console.log('Battle invite sent to', friendName, 'bet:', betAmount);
                 }
             } catch (e) {
                 console.warn('Could not send battle invite:', e);
             }
+
+            // Store bet amount for result settlement
+            window._activeBattleBet = betAmount;
+            window._activeBattleOpponentId = friendId;
 
             // Start battle directly against the friend (as a bot stand-in)
             window._runBattle(friendName || 'Opponent');
@@ -44121,6 +44373,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const playerWon = enemyHP <= 0 || playerHP > 0;
 
+            // Settle battle bet
+            const battleBet = window._activeBattleBet || 0;
+            const opponentId = window._activeBattleOpponentId || null;
+
             if (playerWon) {
                 const victoryAnim = anims.find(a => /laugh|clap|arms_up/i.test(a)) || 'idle';
                 viewer.animationName = victoryAnim;
@@ -44132,8 +44388,32 @@ document.addEventListener('DOMContentLoaded', async function() {
                     overlay.style.textShadow = '0 0 20px #00ff00';
                     overlay.classList.add('active');
                 }
-                if (typeof showToast === 'function') {
-                    setTimeout(() => showToast('Victory! +3 XP bonus', 'success'), 2000);
+
+                // Credit winnings (bet x2 -- your bet back + opponent's bet)
+                if (battleBet > 0 && window.supabaseClient && window.currentUser) {
+                    try {
+                        const winnings = battleBet * 2;
+                        await window.supabaseClient.rpc('credit_coins', {
+                            user_uuid: window.currentUser.id,
+                            coin_amount: winnings,
+                            txn_type: 'battle_win',
+                            txn_description: 'Won battle bet (' + winnings + ' coins)',
+                            txn_reference: opponentId || 'battle'
+                        });
+                        if (typeof loadCoinBalance === 'function') loadCoinBalance();
+                        if (typeof showToast === 'function') {
+                            setTimeout(() => showToast('Victory! +3 XP bonus + 🪙 ' + winnings + ' coins won!', 'success'), 2000);
+                        }
+                    } catch (e) {
+                        console.warn('Could not settle battle bet:', e);
+                        if (typeof showToast === 'function') {
+                            setTimeout(() => showToast('Victory! +3 XP bonus', 'success'), 2000);
+                        }
+                    }
+                } else {
+                    if (typeof showToast === 'function') {
+                        setTimeout(() => showToast('Victory! +3 XP bonus', 'success'), 2000);
+                    }
                 }
             } else {
                 viewer.animationName = loseAnim;
@@ -44145,9 +44425,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                     overlay.classList.add('active');
                 }
                 if (typeof showToast === 'function') {
-                    setTimeout(() => showToast('Train harder and try again!', 'info'), 2000);
+                    const lossMsg = battleBet > 0
+                        ? 'Defeated! Lost 🪙 ' + battleBet + ' coins. Train harder!'
+                        : 'Train harder and try again!';
+                    setTimeout(() => showToast(lossMsg, 'info'), 2000);
                 }
             }
+
+            // Reset battle bet state
+            window._activeBattleBet = 0;
+            window._activeBattleOpponentId = null;
 
             await new Promise(r => setTimeout(r, 4000));
 
