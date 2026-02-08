@@ -13548,6 +13548,15 @@ function viewWorkoutHistoryDetail(date) {
                 <p>Bet coins &amp; earn double XP for 30 days</p>
             </div>
             <div class="challenge-buyin-body">
+                <!-- Rare Reward Info (dynamically shown) -->
+                <div id="challenge-pass-rare-info" style="display: none;"></div>
+
+                <!-- Locked Entry Fee Display -->
+                <div style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; text-align: center;">
+                    <div id="challenge-pass-fee-info" style="font-weight: 700; color: #fbbf24; font-size: 1rem;">🪙 10,000 Coins entry fee</div>
+                    <div style="font-size: 0.7rem; color: rgba(251,191,36,0.6); margin-top: 2px;">Matches the challenger's entry fee</div>
+                </div>
+
                 <!-- Benefits -->
                 <div class="challenge-buyin-benefits">
                     <div class="challenge-buyin-benefit">
@@ -13564,8 +13573,8 @@ function viewWorkoutHistoryDetail(date) {
                     </div>
                 </div>
 
-                <!-- Coin Bet Picker -->
-                <div style="padding: 10px 0 14px;">
+                <!-- Coin Bet Picker (hidden — accepter must match creator's fee) -->
+                <div class="challenge-bet-picker" style="padding: 10px 0 14px; display: none;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                         <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">WAGER COINS (min. 10,000)</span>
                         <span style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span id="challenge-modal-coin-balance">0</span></span>
@@ -31379,14 +31388,34 @@ async function loadHomeChallenges() {
 
         let html = '';
 
-        // Show pending invites first
+        // Show pending invites first — fetch extra details (entry_fee, rare_reward_id) per challenge
         if (pendingInvites.length > 0) {
-            html += pendingInvites.map(challenge => `
+            // Batch fetch challenge details for invite cards
+            const challengeIds = pendingInvites.map(c => c.challenge_id);
+            let challengeDetails = {};
+            try {
+                const { data: details } = await window.supabaseClient
+                    .from('challenges')
+                    .select('id, entry_fee, rare_reward_id')
+                    .in('id', challengeIds);
+                if (details) {
+                    details.forEach(d => challengeDetails[d.id] = d);
+                }
+            } catch (e) { console.warn('Could not fetch challenge details for invites:', e); }
+
+            html += pendingInvites.map(challenge => {
+                const detail = challengeDetails[challenge.challenge_id] || {};
+                const entryFee = detail.entry_fee || 10000;
+                const rareId = detail.rare_reward_id;
+                const rare = rareId && typeof RARE_COLLECTION !== 'undefined' ? RARE_COLLECTION.find(r => r.id === rareId) : null;
+                const tierData = rare ? (RARE_TIERS[rare.tier] || RARE_TIERS.COMMON) : null;
+
+                return `
                 <div class="card" style="border-left: 5px solid #f59e0b; margin-bottom: 10px;">
                     <div class="card-body" style="max-height: none; padding: 16px; opacity: 1;">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <div style="background: #fef3c7; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-                                🎯
+                                ${rare ? rare.emoji : '🎯'}
                             </div>
                             <div style="flex: 1; min-width: 0;">
                                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
@@ -31397,17 +31426,18 @@ async function loadHomeChallenges() {
                                     from ${challenge.creator_name} · 👥 ${challenge.participant_count} joined
                                 </div>
                                 <div style="font-size: 0.75rem; color: #16a34a; font-weight: 600; margin-top: 2px;">
-                                    30 days · 2x XP · Win rare drops
+                                    🪙 ${entryFee.toLocaleString()} entry · 2x XP · ${rare ? rare.emoji + ' Win ' + rare.name : 'Win rare drops'}
                                 </div>
+                                ${tierData ? `<span style="display: inline-block; margin-top: 3px; padding: 1px 6px; border-radius: 3px; font-size: 0.55rem; font-weight: 800; background: ${tierData.gradient}; color: white;">${tierData.label}</span>` : ''}
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px; margin-top: 12px;">
-                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">🪙 Join Challenge</button>
+                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">🪙 Join (${entryFee.toLocaleString()})</button>
                             <button onclick="declineChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: #f1f5f9; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Decline</button>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         // Show active challenges
@@ -31734,6 +31764,34 @@ async function createChallenge() {
     }
 
     try {
+        // Validate and get bet amount FIRST (before any DB writes)
+        const betAmount = createChallengeBetAmount;
+        if (betAmount < 10000) {
+            alert('Minimum bet is 10,000 coins.');
+            if (btn) { btn.disabled = false; btn.textContent = 'Create Challenge'; }
+            return;
+        }
+
+        // Debit coins from creator FIRST (before creating anything)
+        const { data: newBalance, error: coinError } = await window.supabaseClient
+            .rpc('debit_coins', {
+                user_uuid: window.currentUser.id,
+                coin_amount: betAmount,
+                txn_type: 'challenge_entry',
+                txn_description: 'Created challenge: ' + name + ' (' + betAmount.toLocaleString() + ' coins)'
+            });
+
+        if (coinError) throw coinError;
+
+        if (newBalance === -1) {
+            alert('Not enough coins! You need ' + betAmount.toLocaleString() + ' coins to create a challenge.');
+            if (typeof openCoinShop === 'function') openCoinShop();
+            if (btn) { btn.disabled = false; btn.textContent = 'Create Challenge'; }
+            return;
+        }
+
+        updateCoinBalanceDisplay(newBalance);
+
         // Calculate end date
         const start = new Date(startDate);
         const end = new Date(start);
@@ -31748,16 +31806,16 @@ async function createChallenge() {
             if (randomDrop) rareRewardId = randomDrop.id;
         }
 
-        // Create challenge
+        // Create challenge (with entry_fee so accepters know the amount)
         const challengeInsert = {
             name: name,
             creator_id: window.currentUser.id,
             start_date: startDate,
             end_date: end.toISOString().split('T')[0],
             duration_days: duration,
-            status: 'pending'
+            status: 'pending',
+            entry_fee: betAmount
         };
-        // Store rare reward in metadata (uses existing columns or ignored gracefully)
         if (rareRewardId) challengeInsert.rare_reward_id = rareRewardId;
 
         const { data: challenge, error: createError } = await window.supabaseClient
@@ -31768,7 +31826,7 @@ async function createChallenge() {
 
         if (createError) throw createError;
 
-        // Add creator as participant (pending payment)
+        // Add creator as participant
         const { data: userPoints } = await window.supabaseClient
             .from('user_points')
             .select('current_points')
@@ -31786,13 +31844,16 @@ async function createChallenge() {
                 accepted_at: new Date().toISOString(),
                 starting_points: currentPoints,
                 current_points: currentPoints,
-                challenge_points: 0
+                challenge_points: 0,
+                has_paid: true,
+                paid_at: new Date().toISOString()
             });
 
         // Invite selected friends
-        const invites = Array.from(selectedFriends).map(cb => ({
+        const friendIds = Array.from(selectedFriends).map(cb => cb.value);
+        const invites = friendIds.map(friendId => ({
             challenge_id: challenge.id,
-            user_id: cb.value,
+            user_id: friendId,
             status: 'invited'
         }));
 
@@ -31802,38 +31863,31 @@ async function createChallenge() {
 
         if (inviteError) throw inviteError;
 
-        // Validate bet amount
-        const betAmount = createChallengeBetAmount;
-        if (betAmount < CHALLENGE_MIN_BET) {
-            alert('Minimum bet is ' + CHALLENGE_MIN_BET.toLocaleString() + ' coins.');
-            return;
+        // Send nudge notification to each invited friend
+        const creatorName = window.currentUser?.user_metadata?.name || window.currentUser?.email || 'Someone';
+        const rareInfo = rareRewardId ? RARE_COLLECTION.find(r => r.id === rareRewardId) : null;
+        const nudgeMessage = rareInfo
+            ? `⚔️ CHALLENGE! ${creatorName} challenged you to "${name}" — win ${rareInfo.emoji} ${rareInfo.name}! 🪙 ${betAmount.toLocaleString()} entry`
+            : `⚔️ CHALLENGE! ${creatorName} challenged you to "${name}"! 🪙 ${betAmount.toLocaleString()} entry`;
+
+        for (const friendId of friendIds) {
+            try {
+                await window.supabaseClient
+                    .from('nudges')
+                    .insert({
+                        sender_id: window.currentUser.id,
+                        receiver_id: friendId,
+                        message: nudgeMessage,
+                        nudge_type: 'challenge_invite'
+                    });
+            } catch (nudgeErr) {
+                console.warn('Failed to send nudge to', friendId, nudgeErr);
+            }
         }
 
-        // Debit coins from creator
-        const { data: newBalance, error: coinError } = await window.supabaseClient
-            .rpc('debit_coins', {
-                user_uuid: window.currentUser.id,
-                coin_amount: betAmount,
-                txn_type: 'challenge_entry',
-                txn_description: 'Created challenge: ' + name + ' (' + betAmount.toLocaleString() + ' coins)',
-                txn_reference: challenge.id
-            });
-
-        if (coinError) throw coinError;
-
-        if (newBalance === -1) {
-            // Not enough coins - clean up the challenge we just created
-            await window.supabaseClient.from('challenge_participants').delete().eq('challenge_id', challenge.id);
-            await window.supabaseClient.from('challenges').delete().eq('id', challenge.id);
-            alert('Not enough coins! You need ' + betAmount.toLocaleString() + ' coins to create a challenge.');
-            openCoinShop();
-            return;
-        }
-
-        updateCoinBalanceDisplay(newBalance);
         closeCreateChallengeModal();
         if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
-        alert('Challenge created! Invitations sent to your friends.');
+        showToast('Challenge created! Invitations sent.', 'success');
 
     } catch (error) {
         console.error('Error creating challenge:', error);
@@ -31852,8 +31906,33 @@ let pendingChallengeId = null;
 // Accept challenge invitation - always requires payment
 async function acceptChallengeInvite(challengeId) {
     pendingChallengeId = challengeId;
-    // Show the buy-in payment modal
-    showChallengePassModal();
+
+    // Fetch the challenge to get the entry_fee and rare_reward_id
+    try {
+        const { data: challenge } = await window.supabaseClient
+            .from('challenges')
+            .select('entry_fee, rare_reward_id, name')
+            .eq('id', challengeId)
+            .single();
+
+        if (challenge) {
+            window._pendingChallengeEntryFee = challenge.entry_fee || 10000;
+            window._pendingChallengeRareId = challenge.rare_reward_id || null;
+            window._pendingChallengeName = challenge.name || 'Challenge';
+        } else {
+            window._pendingChallengeEntryFee = 10000;
+            window._pendingChallengeRareId = null;
+            window._pendingChallengeName = 'Challenge';
+        }
+    } catch (e) {
+        console.warn('Could not fetch challenge details:', e);
+        window._pendingChallengeEntryFee = 10000;
+        window._pendingChallengeRareId = null;
+        window._pendingChallengeName = 'Challenge';
+    }
+
+    // Show the buy-in payment modal locked to the creator's entry fee
+    showChallengePassModal(window._pendingChallengeEntryFee, window._pendingChallengeRareId);
 }
 
 // Actually accept the challenge
@@ -31877,23 +31956,56 @@ async function doAcceptChallenge(challengeId) {
     }
 }
 
-// Show challenge buy-in modal
-function showChallengePassModal() {
+// Show challenge buy-in modal (locked to the challenge's entry fee)
+function showChallengePassModal(lockedEntryFee, rareRewardId) {
     const modal = document.getElementById('challenge-pass-modal');
-    if (modal) {
-        // Reset bet to minimum
-        currentChallengeBet = CHALLENGE_MIN_BET;
-        const joinBtn = document.getElementById('buy-challenge-pass-btn');
-        if (joinBtn) joinBtn.innerHTML = 'Spend 🪙 ' + CHALLENGE_MIN_BET.toLocaleString() + ' Coins &amp; Join';
-        // Reset picker buttons
-        const btns = modal.querySelectorAll('.challenge-bet-btn');
-        btns.forEach((b, i) => b.classList.toggle('active', i === 0));
-        const customInput = document.getElementById('challenge-custom-bet');
-        if (customInput) customInput.value = '';
+    if (!modal) return;
 
-        modal.style.display = 'flex';
-        loadCoinBalance(); // Refresh balance display
+    const entryFee = lockedEntryFee || 10000;
+    currentChallengeBet = entryFee;
+
+    const joinBtn = document.getElementById('buy-challenge-pass-btn');
+    if (joinBtn) joinBtn.innerHTML = 'Spend 🪙 ' + entryFee.toLocaleString() + ' Coins &amp; Join';
+
+    // Hide the wager picker entirely — accepter must match creator's entry fee
+    const betPicker = modal.querySelector('.challenge-bet-picker');
+    if (betPicker) betPicker.style.display = 'none';
+    const customInput = document.getElementById('challenge-custom-bet');
+    if (customInput) customInput.parentElement.style.display = 'none';
+
+    // Show the locked entry fee info
+    const feeInfo = document.getElementById('challenge-pass-fee-info');
+    if (feeInfo) {
+        feeInfo.textContent = '🪙 ' + entryFee.toLocaleString() + ' Coins entry fee';
     }
+
+    // Show rare reward info if available
+    const rareInfoEl = document.getElementById('challenge-pass-rare-info');
+    if (rareInfoEl) {
+        if (rareRewardId && typeof RARE_COLLECTION !== 'undefined') {
+            const rare = RARE_COLLECTION.find(r => r.id === rareRewardId);
+            if (rare) {
+                const tierData = RARE_TIERS[rare.tier] || RARE_TIERS.COMMON;
+                rareInfoEl.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.2); border-radius: 12px; padding: 10px 14px; margin-bottom: 12px;">
+                        <span style="font-size: 1.5rem;">${rare.emoji}</span>
+                        <div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Win This Rare</div>
+                            <div style="font-weight: 700; color: var(--text-main);">${rare.name} <span style="padding: 1px 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; background: ${tierData.gradient}; color: white;">${tierData.label}</span></div>
+                        </div>
+                    </div>
+                `;
+                rareInfoEl.style.display = 'block';
+            } else {
+                rareInfoEl.style.display = 'none';
+            }
+        } else {
+            rareInfoEl.style.display = 'none';
+        }
+    }
+
+    modal.style.display = 'flex';
+    loadCoinBalance();
 }
 
 // Close challenge pass modal
@@ -31984,6 +32096,16 @@ async function spendCoinsToJoinChallenge() {
         // Close modal and accept challenge
         closeChallengePassModal();
         await doAcceptChallenge(challengeId);
+
+        // Mark as paid on the participant record
+        try {
+            await window.supabaseClient
+                .from('challenge_participants')
+                .update({ has_paid: true, paid_at: new Date().toISOString() })
+                .eq('challenge_id', challengeId)
+                .eq('user_id', window.currentUser.id);
+        } catch (e) { console.warn('Could not update has_paid:', e); }
+
         pendingChallengeId = null;
 
     } catch (error) {
