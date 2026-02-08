@@ -4956,6 +4956,167 @@ async function applyAppTheme(themeKey) {
         cursor: pointer;
     }
 
+    /* Challenge Buy-In Modal (Battle-mode style) */
+    .challenge-buyin-modal {
+        background: linear-gradient(135deg, #1a1a2e 0%, #2e1a0e 50%, #3d2e0a 100%);
+        border-radius: 24px;
+        width: 100%;
+        max-width: 380px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(245,158,11,0.15);
+        border: 1px solid rgba(255,255,255,0.1);
+        animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        overflow: hidden;
+    }
+
+    .challenge-buyin-header {
+        text-align: center;
+        padding: 24px 20px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .challenge-buyin-header h2 {
+        margin: 0 0 4px;
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #fbbf24;
+        text-shadow: 0 0 20px rgba(251,191,36,0.3);
+    }
+
+    .challenge-buyin-header p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.6);
+    }
+
+    .challenge-buyin-body {
+        padding: 12px 16px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .challenge-buyin-benefits {
+        background: rgba(251,191,36,0.1);
+        border: 1px solid rgba(251,191,36,0.2);
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 14px;
+    }
+
+    .challenge-buyin-benefit {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+
+    .challenge-buyin-benefit:last-child {
+        margin-bottom: 0;
+    }
+
+    .challenge-buyin-benefit span.check {
+        color: #fbbf24;
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .challenge-buyin-benefit span.text {
+        color: rgba(255,255,255,0.8);
+        font-size: 0.82rem;
+    }
+
+    .challenge-bet-btn {
+        flex: 1;
+        min-width: 60px;
+        padding: 8px;
+        background: rgba(255,255,255,0.08);
+        border: 2px solid rgba(255,255,255,0.15);
+        border-radius: 8px;
+        color: white;
+        font-weight: 700;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .challenge-bet-btn:hover {
+        background: rgba(251,191,36,0.15);
+        border-color: rgba(251,191,36,0.4);
+    }
+
+    .challenge-bet-btn.active {
+        background: rgba(251,191,36,0.2);
+        border-color: rgba(251,191,36,0.6);
+    }
+
+    .challenge-buyin-footer {
+        padding: 12px 16px 16px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .challenge-buyin-join-btn {
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(245,158,11,0.3);
+        transition: all 0.2s;
+    }
+
+    .challenge-buyin-join-btn:hover {
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(245,158,11,0.4);
+    }
+
+    .challenge-buyin-join-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .challenge-buyin-secondary-btn {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 12px;
+        background: transparent;
+        color: rgba(255,255,255,0.7);
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .challenge-buyin-secondary-btn:hover {
+        background: rgba(255,255,255,0.1);
+        color: white;
+    }
+
+    .challenge-buyin-cancel {
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.4);
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin-top: 2px;
+        transition: color 0.2s;
+    }
+
+    .challenge-buyin-cancel:hover {
+        color: rgba(255,255,255,0.7);
+    }
+
     /* Waiting for opponent overlay */
     .battle-waiting-overlay {
         position: absolute;
@@ -13077,7 +13238,7 @@ function viewWorkoutHistoryDetail(date) {
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <span style="color: #3b82f6; font-weight: 700; font-size: 0.85rem; min-width: 18px;">1.</span>
-                            <span style="color: #1e3a5f; font-size: 0.85rem;">Spend <strong>200 Coins</strong> to enter. Everyone pays, everyone competes.</span>
+                            <span style="color: #1e3a5f; font-size: 0.85rem;">Choose your wager (min. <strong>10,000 Coins</strong>). Everyone pays, everyone competes.</span>
                         </div>
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <span style="color: #3b82f6; font-weight: 700; font-size: 0.85rem; min-width: 18px;">2.</span>
@@ -13139,11 +13300,24 @@ function viewWorkoutHistoryDetail(date) {
                     </div>
                 </div>
 
+                <!-- Bet Amount Picker -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Wager Amount (min. 10,000 coins)</label>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+                        <button type="button" onclick="window._setCreateChallengeBet(10000, this)" class="create-challenge-bet-btn active" style="flex: 1; min-width: 60px; padding: 10px 6px; background: var(--primary); color: white; border: 2px solid var(--primary); border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">🪙 10K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(25000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 60px; padding: 10px 6px; background: #f8fafc; color: var(--text-main); border: 2px solid #e2e8f0; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">🪙 25K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(50000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 60px; padding: 10px 6px; background: #f8fafc; color: var(--text-main); border: 2px solid #e2e8f0; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">🪙 50K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(100000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 60px; padding: 10px 6px; background: #f8fafc; color: var(--text-main); border: 2px solid #e2e8f0; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">🪙 100K</button>
+                    </div>
+                    <input type="number" id="create-challenge-custom-bet" placeholder="Or enter custom amount (min 10,000)..." min="10000" step="1000" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem; box-sizing: border-box;" oninput="window._setCreateChallengeBet(parseInt(this.value) || 0)">
+                    <div style="margin-top: 6px; font-size: 0.78rem; color: var(--text-muted);">Your balance: <strong class="coin-balance-sync">0</strong> coins. Everyone pays to enter.</div>
+                </div>
+
                 <!-- Entry Fee Info -->
                 <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.3rem;">🪙</span>
                     <div>
-                        <div style="font-weight: 700; color: #166534; font-size: 0.9rem;">200 Coins entry fee</div>
+                        <div style="font-weight: 700; color: #166534; font-size: 0.9rem;" id="create-challenge-fee-display">10,000 Coins entry fee</div>
                         <div style="font-size: 0.78rem; color: #15803d;">Deducted when you and your friends join</div>
                     </div>
                 </div>
@@ -13151,7 +13325,7 @@ function viewWorkoutHistoryDetail(date) {
             <!-- Footer -->
             <div style="padding: 15px 20px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
                 <button onclick="closeCreateChallengeModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: var(--text-muted); cursor: pointer;">Cancel</button>
-                <button onclick="createChallenge()" id="create-challenge-btn" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: white; cursor: pointer;">Create (200 Coins)</button>
+                <button onclick="createChallenge()" id="create-challenge-btn" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: white; cursor: pointer;">Create Challenge</button>
             </div>
         </div>
     </div>
@@ -13236,54 +13410,55 @@ function viewWorkoutHistoryDetail(date) {
         </div>
     </div>
 
-    <!-- Challenge Buy-In Modal (Coins) -->
+    <!-- Challenge Buy-In Modal (Coins) - Battle Mode Style -->
     <div id="challenge-pass-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10010; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-        <div style="background: white; border-radius: 24px; max-width: 380px; width: 90%; padding: 30px; text-align: center; animation: fadeInScale 0.3s ease-out;">
-            <!-- Icon -->
-            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 2.2rem;">🪙</span>
+        <div class="challenge-buyin-modal">
+            <div class="challenge-buyin-header">
+                <h2>🏆 Challenge Mode</h2>
+                <p>Bet coins &amp; earn double XP for 30 days</p>
             </div>
-
-            <!-- Title -->
-            <h3 style="margin: 0 0 10px; font-size: 1.4rem; font-weight: 700; color: #1a4d2e; font-family: 'Montserrat', sans-serif;">Join Challenge</h3>
-
-            <!-- Description -->
-            <p style="margin: 0 0 20px; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
-                Spend <strong style="color: #f59e0b;">200 Coins</strong> to enter. Earn double XP for 30 days and compete for rare drops!
-            </p>
-
-            <!-- Benefits -->
-            <div style="background: #fef3c7; border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: left;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                    <span style="color: #f59e0b; font-size: 1.1rem;">✓</span>
-                    <span style="color: #92400e; font-size: 0.9rem;">Double XP on all activities for 30 days</span>
+            <div class="challenge-buyin-body">
+                <!-- Benefits -->
+                <div class="challenge-buyin-benefits">
+                    <div class="challenge-buyin-benefit">
+                        <span class="check">✓</span>
+                        <span class="text">Double XP on all activities for 30 days</span>
+                    </div>
+                    <div class="challenge-buyin-benefit">
+                        <span class="check">✓</span>
+                        <span class="text">Winner gets exclusive rare drops</span>
+                    </div>
+                    <div class="challenge-buyin-benefit">
+                        <span class="check">✓</span>
+                        <span class="text">All participants get a reward</span>
+                    </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                    <span style="color: #f59e0b; font-size: 1.1rem;">✓</span>
-                    <span style="color: #92400e; font-size: 0.9rem;">Winner gets exclusive rare drops</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="color: #f59e0b; font-size: 1.1rem;">✓</span>
-                    <span style="color: #92400e; font-size: 0.9rem;">All participants get a reward</span>
+
+                <!-- Coin Bet Picker -->
+                <div style="padding: 10px 0 14px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">WAGER COINS (min. 10,000)</span>
+                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span id="challenge-modal-coin-balance">0</span></span>
+                    </div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <button onclick="window._setChallengeBet(10000, this)" class="challenge-bet-btn active">🪙 10K</button>
+                        <button onclick="window._setChallengeBet(25000, this)" class="challenge-bet-btn">🪙 25K</button>
+                        <button onclick="window._setChallengeBet(50000, this)" class="challenge-bet-btn">🪙 50K</button>
+                        <button onclick="window._setChallengeBet(100000, this)" class="challenge-bet-btn">🪙 100K</button>
+                    </div>
+                    <div style="margin-top: 8px;">
+                        <input type="number" id="challenge-custom-bet" placeholder="Or enter custom amount (min 10,000)..." min="10000" step="1000" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 0.85rem; box-sizing: border-box;" oninput="window._setChallengeBet(parseInt(this.value) || 0)">
+                    </div>
                 </div>
             </div>
-
-            <!-- Cost -->
-            <div style="margin-bottom: 8px;">
-                <span style="font-size: 2rem; font-weight: 700; color: #1a4d2e;">🪙 200</span>
-                <span style="color: #64748b; font-size: 0.9rem;"> Coins</span>
-            </div>
-            <div style="margin-bottom: 20px; font-size: 0.8rem; color: var(--text-muted);">Your balance: <strong id="challenge-modal-coin-balance">0</strong> coins</div>
-
-            <!-- Buttons -->
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button id="buy-challenge-pass-btn" onclick="spendCoinsToJoinChallenge()" style="width: 100%; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white; border: none; padding: 16px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: 'Montserrat', sans-serif; box-shadow: 0 4px 15px rgba(245,158,11,0.3);">
-                    Spend 200 Coins &amp; Join
+            <div class="challenge-buyin-footer">
+                <button id="buy-challenge-pass-btn" onclick="spendCoinsToJoinChallenge()" class="challenge-buyin-join-btn">
+                    Spend 🪙 10,000 Coins &amp; Join
                 </button>
-                <button onclick="openCoinShop(); closeChallengePassModal();" style="width: 100%; background: #f1f5f9; color: #64748b; border: none; padding: 14px; border-radius: 12px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+                <button onclick="openCoinShop(); closeChallengePassModal();" class="challenge-buyin-secondary-btn">
                     Need more coins? Buy here
                 </button>
-                <button onclick="closeChallengePassModal()" style="background: none; border: none; color: #94a3b8; font-size: 0.85rem; cursor: pointer; margin-top: 5px;">
+                <button onclick="closeChallengePassModal()" class="challenge-buyin-cancel">
                     Cancel
                 </button>
             </div>
@@ -31087,7 +31262,7 @@ async function loadHomeChallenges() {
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px; margin-top: 12px;">
-                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">200 Coins & Join</button>
+                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">🪙 Join Challenge</button>
                             <button onclick="declineChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: #f1f5f9; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Decline</button>
                         </div>
                     </div>
@@ -31186,7 +31361,7 @@ async function loadChallenges() {
                     ` : ''}
                     <div style="display: flex; gap: 8px;">
                         ${isInvited ? `
-                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">200 Coins & Join</button>
+                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">🪙 Join Challenge</button>
                             <button onclick="declineChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: #f1f5f9; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Decline</button>
                         ` : `
                             <button onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">View Leaderboard</button>
@@ -31270,7 +31445,54 @@ function updateSelectedCount() {
     if (countEl) countEl.textContent = checkboxes.length;
 }
 
-// Create a new challenge (with $9.99 buy-in for creator)
+// Create challenge bet amount (for the create modal)
+let createChallengeBetAmount = CHALLENGE_MIN_BET;
+
+window._setCreateChallengeBet = function(amount, btnEl) {
+    if (amount < CHALLENGE_MIN_BET && amount !== 0) {
+        amount = CHALLENGE_MIN_BET;
+    }
+    createChallengeBetAmount = Math.max(amount, CHALLENGE_MIN_BET);
+
+    // Update active button styling
+    if (btnEl) {
+        document.querySelectorAll('.create-challenge-bet-btn').forEach(b => {
+            b.style.background = '#f8fafc';
+            b.style.color = 'var(--text-main)';
+            b.style.borderColor = '#e2e8f0';
+            b.classList.remove('active');
+        });
+        btnEl.style.background = 'var(--primary)';
+        btnEl.style.color = 'white';
+        btnEl.style.borderColor = 'var(--primary)';
+        btnEl.classList.add('active');
+        // Clear custom input
+        const customInput = document.getElementById('create-challenge-custom-bet');
+        if (customInput) customInput.value = '';
+    } else {
+        // Custom input used - deactivate all preset buttons
+        document.querySelectorAll('.create-challenge-bet-btn').forEach(b => {
+            b.style.background = '#f8fafc';
+            b.style.color = 'var(--text-main)';
+            b.style.borderColor = '#e2e8f0';
+            b.classList.remove('active');
+        });
+    }
+
+    // Update fee display
+    const feeDisplay = document.getElementById('create-challenge-fee-display');
+    if (feeDisplay) {
+        feeDisplay.textContent = createChallengeBetAmount.toLocaleString() + ' Coins entry fee';
+    }
+
+    // Update create button
+    const createBtn = document.getElementById('create-challenge-btn');
+    if (createBtn && !createBtn.disabled) {
+        createBtn.textContent = 'Create Challenge';
+    }
+};
+
+// Create a new challenge (with coin buy-in for creator)
 async function createChallenge() {
     const nameInput = document.getElementById('challenge-name-input');
     const durationSelect = document.getElementById('challenge-duration-select');
@@ -31358,13 +31580,20 @@ async function createChallenge() {
 
         if (inviteError) throw inviteError;
 
+        // Validate bet amount
+        const betAmount = createChallengeBetAmount;
+        if (betAmount < CHALLENGE_MIN_BET) {
+            alert('Minimum bet is ' + CHALLENGE_MIN_BET.toLocaleString() + ' coins.');
+            return;
+        }
+
         // Debit coins from creator
         const { data: newBalance, error: coinError } = await window.supabaseClient
             .rpc('debit_coins', {
                 user_uuid: window.currentUser.id,
-                coin_amount: CHALLENGE_ENTRY_COST,
+                coin_amount: betAmount,
                 txn_type: 'challenge_entry',
-                txn_description: 'Created challenge: ' + name,
+                txn_description: 'Created challenge: ' + name + ' (' + betAmount.toLocaleString() + ' coins)',
                 txn_reference: challenge.id
             });
 
@@ -31374,7 +31603,7 @@ async function createChallenge() {
             // Not enough coins - clean up the challenge we just created
             await window.supabaseClient.from('challenge_participants').delete().eq('challenge_id', challenge.id);
             await window.supabaseClient.from('challenges').delete().eq('id', challenge.id);
-            alert('Not enough coins! You need ' + CHALLENGE_ENTRY_COST + ' coins to create a challenge.');
+            alert('Not enough coins! You need ' + betAmount.toLocaleString() + ' coins to create a challenge.');
             openCoinShop();
             return;
         }
@@ -31390,7 +31619,7 @@ async function createChallenge() {
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.textContent = 'Create (200 Coins)';
+            btn.textContent = 'Create Challenge';
         }
     }
 }
@@ -31430,6 +31659,16 @@ async function doAcceptChallenge(challengeId) {
 function showChallengePassModal() {
     const modal = document.getElementById('challenge-pass-modal');
     if (modal) {
+        // Reset bet to minimum
+        currentChallengeBet = CHALLENGE_MIN_BET;
+        const joinBtn = document.getElementById('buy-challenge-pass-btn');
+        if (joinBtn) joinBtn.innerHTML = 'Spend 🪙 ' + CHALLENGE_MIN_BET.toLocaleString() + ' Coins &amp; Join';
+        // Reset picker buttons
+        const btns = modal.querySelectorAll('.challenge-bet-btn');
+        btns.forEach((b, i) => b.classList.toggle('active', i === 0));
+        const customInput = document.getElementById('challenge-custom-bet');
+        if (customInput) customInput.value = '';
+
         modal.style.display = 'flex';
         loadCoinBalance(); // Refresh balance display
     }
@@ -31444,13 +31683,50 @@ function closeChallengePassModal() {
     pendingChallengeId = null;
 }
 
-// Spend coins to join a challenge (200 coins)
-const CHALLENGE_ENTRY_COST = 200;
+// Spend coins to join a challenge (minimum 10,000 coins)
+const CHALLENGE_MIN_BET = 10000;
+let currentChallengeBet = CHALLENGE_MIN_BET;
+
+// Set challenge bet amount from join modal picker
+window._setChallengeBet = function(amount, btnEl) {
+    if (amount < CHALLENGE_MIN_BET && amount !== 0) {
+        amount = CHALLENGE_MIN_BET;
+    }
+    currentChallengeBet = Math.max(amount, CHALLENGE_MIN_BET);
+
+    // Update active button styling
+    if (btnEl) {
+        document.querySelectorAll('#challenge-pass-modal .challenge-bet-btn').forEach(b => {
+            b.classList.remove('active');
+        });
+        btnEl.classList.add('active');
+        // Clear custom input when a preset button is clicked
+        const customInput = document.getElementById('challenge-custom-bet');
+        if (customInput) customInput.value = '';
+    } else {
+        // Custom input was used, deactivate all preset buttons
+        document.querySelectorAll('#challenge-pass-modal .challenge-bet-btn').forEach(b => {
+            b.classList.remove('active');
+        });
+    }
+
+    // Update join button text
+    const joinBtn = document.getElementById('buy-challenge-pass-btn');
+    if (joinBtn) {
+        joinBtn.innerHTML = 'Spend 🪙 ' + currentChallengeBet.toLocaleString() + ' Coins &amp; Join';
+    }
+};
 
 async function spendCoinsToJoinChallenge() {
     const challengeId = pendingChallengeId;
     if (!challengeId) {
         alert('No challenge selected');
+        return;
+    }
+
+    const betAmount = currentChallengeBet;
+    if (betAmount < CHALLENGE_MIN_BET) {
+        alert('Minimum bet is ' + CHALLENGE_MIN_BET.toLocaleString() + ' coins.');
         return;
     }
 
@@ -31465,16 +31741,16 @@ async function spendCoinsToJoinChallenge() {
         const { data: newBalance, error } = await window.supabaseClient
             .rpc('debit_coins', {
                 user_uuid: window.currentUser.id,
-                coin_amount: CHALLENGE_ENTRY_COST,
+                coin_amount: betAmount,
                 txn_type: 'challenge_entry',
-                txn_description: 'Challenge entry fee',
+                txn_description: 'Challenge entry fee (' + betAmount.toLocaleString() + ' coins)',
                 txn_reference: challengeId
             });
 
         if (error) throw error;
 
         if (newBalance === -1) {
-            alert('Not enough coins! You need ' + CHALLENGE_ENTRY_COST + ' coins to enter.');
+            alert('Not enough coins! You need ' + betAmount.toLocaleString() + ' coins to enter.');
             closeChallengePassModal();
             openCoinShop();
             return;
@@ -31493,7 +31769,7 @@ async function spendCoinsToJoinChallenge() {
         alert('Failed to join challenge. Please try again.');
         if (btn) {
             btn.disabled = false;
-            btn.textContent = 'Spend 200 Coins & Join';
+            btn.innerHTML = 'Spend 🪙 ' + betAmount.toLocaleString() + ' Coins &amp; Join';
         }
     }
 }
