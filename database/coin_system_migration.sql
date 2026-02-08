@@ -45,6 +45,7 @@ CREATE POLICY "Service can insert transactions" ON public.coin_transactions
     FOR INSERT WITH CHECK (true);
 
 -- Function to credit coins (used by webhook after Stripe purchase)
+DROP FUNCTION IF EXISTS credit_coins(UUID, INTEGER, TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION credit_coins(
     user_uuid UUID,
     coin_amount INTEGER,
@@ -73,6 +74,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION credit_coins(UUID, INTEGER, TEXT, TEXT, TEXT) TO authenticated;
 
 -- Function to debit coins (returns new balance, or -1 if insufficient)
+DROP FUNCTION IF EXISTS debit_coins(UUID, INTEGER, TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION debit_coins(
     user_uuid UUID,
     coin_amount INTEGER,
@@ -113,6 +115,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION debit_coins(UUID, INTEGER, TEXT, TEXT, TEXT) TO authenticated;
 
 -- Function to process battle bet (debit from loser, credit to winner)
+DROP FUNCTION IF EXISTS settle_battle_bet(UUID, UUID, INTEGER, TEXT);
 CREATE OR REPLACE FUNCTION settle_battle_bet(
     winner_uuid UUID,
     loser_uuid UUID,
@@ -142,6 +145,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION settle_battle_bet(UUID, UUID, INTEGER, TEXT) TO authenticated;
 
 -- Function to get user's coin balance
+DROP FUNCTION IF EXISTS get_coin_balance(UUID);
 CREATE OR REPLACE FUNCTION get_coin_balance(user_uuid UUID)
 RETURNS INTEGER AS $$
 BEGIN
@@ -189,6 +193,7 @@ ALTER TABLE public.cosmetic_items ADD CONSTRAINT cosmetic_items_item_type_check
     CHECK (item_type IN ('avatar_border', 'profile_badge', 'profile_background', 'name_color', 'reaction_emoji', 'post_frame', 'victory_animation', 'trophy', '3d_prop', 'character'));
 
 -- Function to purchase a cosmetic/character with coins
+DROP FUNCTION IF EXISTS purchase_item(UUID, UUID);
 CREATE OR REPLACE FUNCTION purchase_item(
     user_uuid UUID,
     target_item_id UUID

@@ -70,6 +70,8 @@ ON CONFLICT DO NOTHING;
 
 -- Update accept_challenge_invitation to enforce single-challenge double XP
 -- Double XP (xp_multiplier = 2) only applies to ONE challenge at a time
+-- Drop first because return type may have changed
+DROP FUNCTION IF EXISTS accept_challenge_invitation(UUID, UUID);
 CREATE OR REPLACE FUNCTION accept_challenge_invitation(
     challenge_uuid UUID,
     user_uuid UUID
@@ -117,6 +119,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION accept_challenge_invitation(UUID, UUID) TO authenticated;
 
 -- Update complete_challenge to award cosmetic prizes
+-- Drop first because return type may have changed
+DROP FUNCTION IF EXISTS complete_challenge(UUID);
 CREATE OR REPLACE FUNCTION complete_challenge(challenge_uuid UUID)
 RETURNS JSONB AS $$
 DECLARE
@@ -246,6 +250,7 @@ CREATE POLICY "Service can insert inventory" ON public.user_inventory
     FOR INSERT WITH CHECK (true);
 
 -- Function to get user's inventory
+DROP FUNCTION IF EXISTS get_user_inventory(UUID);
 CREATE OR REPLACE FUNCTION get_user_inventory(user_uuid UUID)
 RETURNS TABLE (
     inventory_id UUID,
@@ -286,6 +291,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION get_user_inventory(UUID) TO authenticated;
 
 -- Function to equip/unequip an item
+DROP FUNCTION IF EXISTS toggle_equip_item(UUID, UUID);
 CREATE OR REPLACE FUNCTION toggle_equip_item(user_uuid UUID, inventory_uuid UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
