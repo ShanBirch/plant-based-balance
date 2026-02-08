@@ -162,7 +162,12 @@ GRANT EXECUTE ON FUNCTION get_coin_balance(UUID) TO authenticated;
 ALTER TABLE public.cosmetic_items
 ADD COLUMN IF NOT EXISTS coin_price INTEGER DEFAULT 0;
 
--- Update existing items with prices and add characters
+-- Update the check constraint on item_type to include 'character' BEFORE inserting characters
+ALTER TABLE public.cosmetic_items DROP CONSTRAINT IF EXISTS cosmetic_items_item_type_check;
+ALTER TABLE public.cosmetic_items ADD CONSTRAINT cosmetic_items_item_type_check
+    CHECK (item_type IN ('avatar_border', 'profile_badge', 'profile_background', 'name_color', 'reaction_emoji', 'post_frame', 'victory_animation', 'trophy', '3d_prop', 'character'));
+
+-- Update existing items with prices
 UPDATE public.cosmetic_items SET coin_price = 100 WHERE rarity = 'common';
 UPDATE public.cosmetic_items SET coin_price = 400 WHERE rarity = 'uncommon';
 UPDATE public.cosmetic_items SET coin_price = 600 WHERE rarity = 'rare';
@@ -186,11 +191,6 @@ INSERT INTO public.cosmetic_items (name, description, item_type, rarity, coin_pr
     ('Storm Broccoli', 'Broccoli with lightning aura', 'character', 'legendary', 1200, 'launch'),
     ('Phoenix Chilli', 'A fiery phoenix warrior', 'character', 'legendary', 1200, 'launch')
 ON CONFLICT DO NOTHING;
-
--- Also update the check constraint on item_type to include 'character'
-ALTER TABLE public.cosmetic_items DROP CONSTRAINT IF EXISTS cosmetic_items_item_type_check;
-ALTER TABLE public.cosmetic_items ADD CONSTRAINT cosmetic_items_item_type_check
-    CHECK (item_type IN ('avatar_border', 'profile_badge', 'profile_background', 'name_color', 'reaction_emoji', 'post_frame', 'victory_animation', 'trophy', '3d_prop', 'character'));
 
 -- Function to purchase a cosmetic/character with coins
 DROP FUNCTION IF EXISTS purchase_item(UUID, UUID);
