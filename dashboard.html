@@ -13409,6 +13409,57 @@ function viewWorkoutHistoryDetail(date) {
         </div>
     </div>
 
+    <!-- Rare Skin Unlock Celebration Modal -->
+    <div id="rare-unlock-celebration" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 10020; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+        <div style="text-align: center; max-width: 380px; width: 92%; animation: fadeInScale 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <!-- Sparkle burst background -->
+            <div id="unlock-sparkles" style="position: absolute; inset: 0; pointer-events: none; overflow: hidden;"></div>
+
+            <!-- Victory text -->
+            <div style="font-size: 1rem; font-weight: 700; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 8px;">Challenge Complete</div>
+            <div id="unlock-result-text" style="font-size: 1.8rem; font-weight: 900; color: #4ade80; margin-bottom: 6px; text-shadow: 0 0 30px rgba(74,222,128,0.5);">YOU WON!</div>
+
+            <!-- 3D Model Reveal -->
+            <div style="position: relative; margin: 20px auto;">
+                <div id="unlock-glow-ring" style="position: absolute; inset: -20px; border-radius: 50%; background: radial-gradient(circle, rgba(251,191,36,0.3) 0%, transparent 70%); animation: pulseGlow 2s ease-in-out infinite;"></div>
+                <model-viewer id="unlock-rare-viewer" style="width: 200px; height: 200px; margin: 0 auto; position: relative; z-index: 2; --poster-color: transparent;" auto-rotate camera-controls interaction-prompt="none" shadow-intensity="0.8" auto-rotate-delay="0" rotation-per-second="40deg"></model-viewer>
+            </div>
+
+            <!-- Rare info -->
+            <div id="unlock-tier-badge" style="display: inline-block; padding: 4px 14px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; letter-spacing: 2px; color: white; margin-bottom: 10px;">LEGENDARY</div>
+            <div id="unlock-rare-name" style="font-size: 1.6rem; font-weight: 900; color: white; margin-bottom: 4px;">Character Name</div>
+            <div id="unlock-rare-desc" style="font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 24px;">Description</div>
+
+            <!-- NEW badge -->
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.3); border-radius: 10px; padding: 8px 16px; margin-bottom: 24px;">
+                <span style="font-size: 1.2rem;">🎉</span>
+                <span style="color: #4ade80; font-weight: 700; font-size: 0.85rem;">NEW RARE SKIN UNLOCKED!</span>
+            </div>
+
+            <!-- Action buttons -->
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="equipUnlockedRare()" id="unlock-equip-btn" style="padding: 14px 28px; background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; border-radius: 14px; color: white; font-weight: 700; font-size: 0.9rem; cursor: pointer; box-shadow: 0 4px 20px rgba(59,130,246,0.4); transition: transform 0.2s;">Equip Now</button>
+                <button onclick="closeUnlockCelebration()" style="padding: 14px 28px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 14px; color: rgba(255,255,255,0.7); font-weight: 600; font-size: 0.9rem; cursor: pointer;">Later</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.15); opacity: 1; }
+        }
+        @keyframes sparkleFloat {
+            0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translateY(-120px) rotate(360deg) scale(0); opacity: 0; }
+        }
+        @keyframes slideReveal {
+            0% { transform: scale(0.3) rotateY(180deg); opacity: 0; }
+            60% { transform: scale(1.1) rotateY(10deg); opacity: 1; }
+            100% { transform: scale(1) rotateY(0deg); opacity: 1; }
+        }
+    </style>
+
     <!-- Challenge Leaderboard View -->
     <div id="challenge-leaderboard-modal" style="display: none; position: fixed; inset: 0; background: #f0f7ff; z-index: 10009; overflow-y: auto;">
         <!-- Header -->
@@ -15713,6 +15764,11 @@ function _switchAppTabReal(tabName, btn) {
         // Render featured monthly rare card
         if (typeof renderFeaturedRareCard === 'function') {
             renderFeaturedRareCard();
+        }
+
+        // Check for expired challenges that need completing (grants rare rewards)
+        if (typeof checkAndCompleteExpiredChallenges === 'function') {
+            checkAndCompleteExpiredChallenges();
         }
 
         // Load coin balance
@@ -32047,8 +32103,24 @@ async function openChallengeLeaderboard(challengeId) {
 
         if (challenge) {
             document.getElementById('challenge-leaderboard-title').textContent = challenge.name;
-            const daysRemaining = Math.max(0, Math.ceil((new Date(challenge.end_date) - new Date()) / (1000 * 60 * 60 * 24)));
-            document.getElementById('challenge-days-remaining').textContent = `${daysRemaining} days remaining`;
+            const endDate = new Date(challenge.end_date);
+            const now = new Date();
+            const daysRemaining = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
+
+            if (challenge.status === 'completed') {
+                document.getElementById('challenge-days-remaining').textContent = '✅ Challenge Complete!';
+                document.getElementById('challenge-days-remaining').style.color = '#16a34a';
+            } else if (daysRemaining === 0 && endDate < now) {
+                document.getElementById('challenge-days-remaining').textContent = '⏰ Challenge ended — finalizing results...';
+                document.getElementById('challenge-days-remaining').style.color = '#f59e0b';
+                // Trigger completion if not already done
+                if (!challenge.winner_rewarded && typeof completeAndRewardChallenge === 'function') {
+                    completeAndRewardChallenge(challenge.id);
+                }
+            } else {
+                document.getElementById('challenge-days-remaining').textContent = `${daysRemaining} days remaining`;
+                document.getElementById('challenge-days-remaining').style.color = '#0369a1';
+            }
         }
 
         // Get leaderboard
@@ -45589,6 +45661,180 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             </div>
         `;
+    }
+
+    // ============================================================
+    // CHALLENGE COMPLETION & RARE REWARD GRANTING
+    // ============================================================
+
+    // Check for expired challenges that need completion
+    async function checkAndCompleteExpiredChallenges() {
+        if (!window.currentUser) return;
+
+        try {
+            // Get all active/pending challenges for this user that have passed their end date
+            const { data: challenges, error } = await window.supabaseClient
+                .from('challenge_participants')
+                .select('challenge_id, challenges!inner(id, name, end_date, status, winner_id, winner_rewarded, rare_reward_id)')
+                .eq('user_id', window.currentUser.id)
+                .eq('status', 'accepted')
+                .in('challenges.status', ['active', 'pending']);
+
+            if (error || !challenges) return;
+
+            const now = new Date();
+            for (const cp of challenges) {
+                const challenge = cp.challenges;
+                const endDate = new Date(challenge.end_date);
+
+                // If challenge has passed its end date and hasn't been completed
+                if (endDate < now && !challenge.winner_rewarded) {
+                    console.log('Completing expired challenge:', challenge.name);
+                    await completeAndRewardChallenge(challenge.id);
+                }
+            }
+        } catch (err) {
+            console.error('Error checking expired challenges:', err);
+        }
+    }
+
+    // Complete a challenge and handle rare reward
+    async function completeAndRewardChallenge(challengeId) {
+        try {
+            const { data: result, error } = await window.supabaseClient
+                .rpc('complete_challenge', { challenge_uuid: challengeId });
+
+            if (error) {
+                console.error('Error completing challenge:', error);
+                return;
+            }
+
+            if (result?.error) {
+                console.log('Challenge already completed:', result.message);
+                return;
+            }
+
+            const winnerId = result?.winner_id;
+            const rareRewardId = result?.rare_reward_id;
+            const isCurrentUserWinner = winnerId === window.currentUser?.id;
+
+            if (isCurrentUserWinner && rareRewardId) {
+                // Unlock the rare skin locally
+                unlockRare(rareRewardId);
+                // Show the epic celebration modal
+                showRareUnlockCelebration(rareRewardId, result.winner_name, true);
+            } else if (isCurrentUserWinner) {
+                // Winner but no rare reward — just show a simple congrats
+                showToast('🏆 You won the challenge! +200 XP', 'success');
+            } else {
+                // Not the winner
+                const winnerName = result?.winner_name || 'Someone';
+                showToast(`Challenge complete! ${winnerName} won.`, 'info');
+            }
+
+            // Refresh challenges on home screen
+            if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+
+        } catch (err) {
+            console.error('Error in completeAndRewardChallenge:', err);
+        }
+    }
+
+    // ============================================================
+    // UNLOCK CELEBRATION MODAL
+    // ============================================================
+
+    // Track which rare was just unlocked for the equip button
+    window._lastUnlockedRareId = null;
+
+    function showRareUnlockCelebration(rareId, winnerName, isWinner) {
+        const rare = RARE_COLLECTION.find(r => r.id === rareId);
+        if (!rare) return;
+
+        const tierData = RARE_TIERS[rare.tier] || RARE_TIERS.COMMON;
+        window._lastUnlockedRareId = rareId;
+
+        const modal = document.getElementById('rare-unlock-celebration');
+        if (!modal) return;
+
+        // Set result text
+        const resultText = document.getElementById('unlock-result-text');
+        if (resultText) {
+            resultText.textContent = isWinner ? 'YOU WON!' : 'REWARD UNLOCKED!';
+            resultText.style.color = isWinner ? '#4ade80' : '#fbbf24';
+        }
+
+        // Set 3D model
+        const viewer = document.getElementById('unlock-rare-viewer');
+        if (viewer) viewer.setAttribute('src', rare.model);
+
+        // Set glow ring color
+        const glowRing = document.getElementById('unlock-glow-ring');
+        if (glowRing) {
+            glowRing.style.background = `radial-gradient(circle, ${tierData.glow} 0%, transparent 70%)`;
+        }
+
+        // Set tier badge
+        const badgeEl = document.getElementById('unlock-tier-badge');
+        if (badgeEl) {
+            badgeEl.textContent = tierData.label;
+            badgeEl.style.background = tierData.gradient;
+        }
+
+        // Set name and desc
+        const nameEl = document.getElementById('unlock-rare-name');
+        if (nameEl) nameEl.textContent = rare.name;
+        const descEl = document.getElementById('unlock-rare-desc');
+        if (descEl) descEl.textContent = rare.desc;
+
+        // Generate sparkles
+        generateSparkles(tierData.color);
+
+        // Show the modal
+        modal.style.display = 'flex';
+
+        // Haptic feedback (if available)
+        if (navigator.vibrate) navigator.vibrate([100, 50, 200, 50, 100]);
+    }
+
+    function generateSparkles(color) {
+        const container = document.getElementById('unlock-sparkles');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const emojis = ['✨', '⭐', '🌟', '💫', '🎆', '🎇'];
+        for (let i = 0; i < 20; i++) {
+            const sparkle = document.createElement('div');
+            sparkle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            sparkle.style.cssText = `
+                position: absolute;
+                font-size: ${0.8 + Math.random() * 1.5}rem;
+                left: ${10 + Math.random() * 80}%;
+                bottom: ${Math.random() * 40}%;
+                animation: sparkleFloat ${1.5 + Math.random() * 2}s ease-out ${Math.random() * 1}s forwards;
+                opacity: 0;
+                pointer-events: none;
+            `;
+            // Start the animation after a brief delay
+            setTimeout(() => sparkle.style.opacity = '1', i * 80);
+            container.appendChild(sparkle);
+        }
+    }
+
+    function equipUnlockedRare() {
+        if (window._lastUnlockedRareId) {
+            selectRareSkin(window._lastUnlockedRareId);
+        }
+        closeUnlockCelebration();
+    }
+
+    function closeUnlockCelebration() {
+        const modal = document.getElementById('rare-unlock-celebration');
+        if (modal) modal.style.display = 'none';
+        // Clear the viewer to stop loading
+        const viewer = document.getElementById('unlock-rare-viewer');
+        if (viewer) viewer.removeAttribute('src');
+        window._lastUnlockedRareId = null;
     }
 
     function openRareRewardsModal() {
