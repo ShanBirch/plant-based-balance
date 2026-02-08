@@ -15,3 +15,4 @@ Cover_Letter_*.pdf
 Cover_Letter_*.html
 deploy_package/
 .env.development
+backblaze_upload/
