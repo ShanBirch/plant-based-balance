@@ -12816,7 +12816,6 @@ function viewWorkoutHistoryDetail(date) {
         <div style="padding: 20px 25px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
             <div>
                 <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Feed</h2>
-                <div id="friends-subtitle" style="font-size: 0.8rem; color: var(--text-muted);">See what everyone's posting</div>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <!-- Coin Balance Widget -->
@@ -13598,7 +13597,6 @@ function viewWorkoutHistoryDetail(date) {
         <div style="padding: 20px 25px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
             <div>
                 <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Learn</h2>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">Master fitness, nutrition & mindset</div>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <div class="coin-header-widget" onclick="openCoinShop()">
@@ -13627,7 +13625,6 @@ function viewWorkoutHistoryDetail(date) {
         <div style="padding: 20px 25px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
             <div>
                 <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Hormone Hub</h2>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">Sync your life to your cycle</div>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <div class="coin-header-widget" onclick="openCoinShop()">
@@ -18527,7 +18524,7 @@ function applyGenderSpecificUI() {
             const title = hormoneHubHeader.querySelector('h2');
             const subtitle = hormoneHubHeader.querySelector('div[style*="0.8rem"]');
             if (title) title.textContent = 'Performance Hub';
-            if (subtitle) subtitle.textContent = 'Optimize your training & recovery';
+            if (subtitle) subtitle.remove();
         }
 
         // Hide Daily Sync feature for male users
