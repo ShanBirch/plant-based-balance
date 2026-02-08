@@ -1,80 +1,6 @@
 
 import { Context } from "@netlify/edge-functions";
 
-// Look up food in USDA FoodData Central (Foundation + SR Legacy = real whole foods)
-async function lookupUSDA(query: string) {
-  try {
-    const usdaKey = Deno.env.get("USDA_API_KEY") || "DEMO_KEY";
-    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${usdaKey}&query=${encodeURIComponent(query)}&dataType=Foundation,SR%20Legacy&pageSize=7`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(4000) });
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    const foods = data.foods || [];
-    if (foods.length === 0) return null;
-
-    // Score each result to find the best match for the actual food
-    const queryWords = query.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(Boolean);
-
-    let bestMatch = null;
-    let bestScore = -1;
-
-    for (const food of foods) {
-      const desc = (food.description || '').toLowerCase();
-      let score = 0;
-
-      // How many query words appear in the description?
-      for (const word of queryWords) {
-        if (desc.includes(word)) score += 3;
-      }
-
-      // Bonus for Foundation data (lab-tested whole foods)
-      if (food.dataType === 'Foundation') score += 2;
-
-      // Bonus for "raw" (most relevant for whole food calorie lookup)
-      if (desc.includes('raw')) score += 2;
-
-      // Penalty for processed/prepared/baby food/oil/candy/bread products
-      const penalties = ['oil,', 'candy', 'candies', 'babyfood', 'baby food', 'muffin', 'bagel', 'bread,', 'cake', 'cookie', 'bar,', 'cereal', 'juice', 'sauce', 'soup'];
-      for (const p of penalties) {
-        if (desc.includes(p)) score -= 5;
-      }
-
-      // Penalty for descriptions much longer than query (likely a complex product)
-      const descWords = desc.split(/[\s,]+/).length;
-      if (descWords > queryWords.length + 4) score -= 1;
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = food;
-      }
-    }
-
-    // Only use if we have a reasonable match (at least the food name was found)
-    if (!bestMatch || bestScore < 3) return null;
-
-    // Extract nutrients from the match
-    const nutrients = bestMatch.foodNutrients || [];
-    const getNutrient = (name: string) => {
-      const n = nutrients.find((n: any) => n.nutrientName === name);
-      return n ? n.value : 0;
-    };
-
-    return {
-      name: bestMatch.description,
-      dataType: bestMatch.dataType,
-      calories_100g: getNutrient('Energy'),
-      protein_100g: getNutrient('Protein'),
-      carbs_100g: getNutrient('Carbohydrate, by difference'),
-      fat_100g: getNutrient('Total lipid (fat)'),
-      fiber_100g: getNutrient('Fiber, total dietary'),
-    };
-  } catch (e) {
-    console.error(`USDA lookup failed for ${query}:`, e);
-    return null;
-  }
-}
-
 export default async function (request: Request, context: Context) {
   // Only accept POST
   if (request.method !== "POST") {
@@ -111,17 +37,21 @@ INSTRUCTIONS:
 3. Calculate nutritional values using standard USDA nutrition data per 100g, then scale to the estimated portion
 4. Provide your confidence level (high/medium/low)
 
-CALORIE REFERENCE (per 100g raw weight):
-- Fruits: 30-90 kcal (berries ~57, banana ~89, apple ~52)
-- Vegetables: 15-40 kcal (broccoli ~34, spinach ~23)
-- Grains/rice (cooked): 100-150 kcal (white rice ~130, pasta ~131)
-- Chicken breast (cooked): ~165 kcal
-- Eggs: ~155 kcal
-- Bread: ~250 kcal
-- Nuts: 550-650 kcal
-- Oils/butter: 700-900 kcal
+CALORIE REFERENCE (per 100g unless stated):
+Fruits: berries ~57, banana ~89, apple ~52, mango ~60
+Vegetables: broccoli ~34, spinach ~23, sweet potato ~86, carrot ~41
+Grains (COOKED): white rice ~130, brown rice ~112, pasta ~131, oats/porridge ~71
+Protein: chicken breast (cooked) ~165, tofu ~76, eggs ~155, salmon ~208, lentils (cooked) ~116
+Dairy & drinks: whole milk ~61, semi-skimmed milk ~47, soy milk ~33, oat milk ~48
+Drinks: black coffee ~2, latte (whole milk) ~56 per 100ml (~135 for small 240ml), soy latte ~45 per 100ml (~108 for small 240ml), cappuccino ~40 per 100ml
+Bread & baked: bread ~250, bagel ~270, muffin ~340
+Nuts & fats: almonds ~579, peanut butter ~588, olive oil ~884, butter ~717
+Snacks: dark chocolate ~546, crisps/chips ~536
 
-Use these as anchors. If your estimate is wildly different from these ranges for a similar food, double-check your calculation.
+CRITICAL RULES:
+- A "small latte" is about 240ml and ~130-150 calories. A "large latte" is about 480ml and ~250-300 calories. Do NOT confuse drinks with their raw ingredient calories.
+- Use COOKED values for grains, rice, pasta, lentils — not raw/dry values (raw is roughly 3x higher)
+- A typical meal plate is 400-700 calories. If your total exceeds 1000 calories for a normal-looking meal, double-check your work.
 
 RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
 {
@@ -198,49 +128,11 @@ IMPORTANT:
 
     const geminiData = await geminiResponse.json();
     const aiText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-    
+
     if (!aiText) throw new Error("Empty AI response");
 
     const cleanedText = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const nutritionData = JSON.parse(cleanedText);
-
-    // Verify all food items against USDA FoodData Central (in parallel for speed)
-    console.log(`Verifying ${nutritionData.foodItems.length} items against USDA...`);
-
-    const usdaResults = await Promise.allSettled(
-      nutritionData.foodItems.map((item: any) => lookupUSDA(item.name))
-    );
-
-    for (let i = 0; i < nutritionData.foodItems.length; i++) {
-      const item = nutritionData.foodItems[i];
-      const result = usdaResults[i];
-      const usdaMatch = result.status === 'fulfilled' ? result.value : null;
-
-      if (usdaMatch && usdaMatch.calories_100g > 0) {
-        console.log(`✅ USDA VERIFIED: "${item.name}" → "${usdaMatch.name}" (${usdaMatch.dataType}) = ${usdaMatch.calories_100g} kcal/100g`);
-
-        const weightFactor = (item.portion_weight_g || 100) / 100;
-
-        item.calories = Number((usdaMatch.calories_100g * weightFactor).toFixed(1));
-        item.protein_g = Number((usdaMatch.protein_100g * weightFactor).toFixed(1));
-        item.carbs_g = Number((usdaMatch.carbs_100g * weightFactor).toFixed(1));
-        item.fat_g = Number((usdaMatch.fat_100g * weightFactor).toFixed(1));
-        item.fiber_g = Number((usdaMatch.fiber_100g * weightFactor).toFixed(1));
-        item.verified = true;
-        item.db_source = "USDA FoodData Central";
-      } else {
-        console.log(`⚠️ No USDA match for "${item.name}", keeping Gemini estimate`);
-        item.verified = false;
-        item.db_source = "Gemini AI Estimate";
-      }
-    }
-
-    // Recalculate totals from verified item values
-    nutritionData.totals.calories = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.calories, 0).toFixed(1));
-    nutritionData.totals.protein_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.protein_g, 0).toFixed(1));
-    nutritionData.totals.carbs_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.carbs_g, 0).toFixed(1));
-    nutritionData.totals.fat_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.fat_g, 0).toFixed(1));
-    nutritionData.totals.fiber_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.fiber_g, 0).toFixed(1));
 
     return new Response(JSON.stringify({ success: true, data: nutritionData }), {
       status: 200,
