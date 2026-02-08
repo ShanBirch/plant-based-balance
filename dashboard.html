@@ -38193,60 +38193,26 @@ async function submitSimpleMealText() {
         return;
     }
 
-    // Close modal and show loading
+    // Close modal immediately and show quick confirmation so user can continue
     closeMealTextModal();
-    showMealAnalysisLoading('Analyzing your meal description...');
+    showToast('📝 Analysing your meal in the background...', 'info');
 
-    try {
-        const response = await fetch('/.netlify/functions/analyze-meal-text', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                description: description,
-                mealType: selectedMealType
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(errorData.error || 'Failed to analyze meal');
+    // Run analysis in background — user can keep using the app
+    analyzeMealInBackground({
+        description: description,
+        mealType: selectedMealType,
+        inputMethod: 'text',
+        saveFn: async (nutritionData) => {
+            await saveMealLog({
+                photoUrl: 'text-input',
+                foodItems: nutritionData.foodItems,
+                totals: nutritionData.totals,
+                micronutrients: nutritionData.micronutrients,
+                confidence: nutritionData.confidence,
+                notes: nutritionData.notes || description
+            });
         }
-
-        const result = await response.json();
-
-        if (!result.success || !result.data) {
-            throw new Error('Invalid response from analysis');
-        }
-
-        const nutritionData = result.data;
-
-        // Save meal log to database (using same function as camera)
-        // Use 'text-input' as placeholder for photo_url since database has NOT NULL constraint
-        const savedMeal = await saveMealLog({
-            photoUrl: 'text-input',
-            foodItems: nutritionData.foodItems,
-            totals: nutritionData.totals,
-            micronutrients: nutritionData.micronutrients,
-            confidence: nutritionData.confidence,
-            notes: nutritionData.notes || description
-        });
-
-        // Text input meals don't earn points - only photo meals get points
-        // This encourages users to take photos for verified logging
-
-        // Refresh display
-        await recalculateDailyNutrition();
-        await loadTodayNutrition();
-        hideMealAnalysisLoading();
-
-        // Show success feedback
-        showMealAnalysisSuccess(nutritionData);
-
-    } catch (error) {
-        console.error('Error analyzing meal:', error);
-        hideMealAnalysisLoading();
-        alert('Failed to analyze meal: ' + error.message);
-    }
+    });
 }
 
 // Open the meal input modal (primary entry point)
@@ -38533,23 +38499,41 @@ async function submitMealDescription() {
         return;
     }
 
-    // Close the input modal
+    // Capture values before closing (modal resets them)
+    const capturedMealType = selectedMealType;
+    const capturedInputMethod = selectedInputMethod;
+
+    // Close modal immediately so user can continue using the app
     closeMealInputModal();
+    showToast('📝 Analysing your meal in the background...', 'info');
 
-    // Show loading state
-    showMealAnalysisLoading('Analyzing your meal description...');
+    // Run analysis in background
+    analyzeMealInBackground({
+        description: description,
+        mealType: capturedMealType,
+        inputMethod: capturedInputMethod,
+        saveFn: async (nutritionData) => {
+            await saveMealLogWithType({
+                foodItems: nutritionData.foodItems,
+                totals: nutritionData.totals,
+                micronutrients: nutritionData.micronutrients,
+                confidence: nutritionData.confidence,
+                notes: nutritionData.notes,
+                mealType: capturedMealType,
+                inputMethod: capturedInputMethod,
+                mealDescription: description
+            });
+        }
+    });
+}
 
+// Background meal analysis — fires off the API call and saves results without blocking the UI
+async function analyzeMealInBackground({ description, mealType, inputMethod, saveFn }) {
     try {
-        // Call the text analysis edge function
         const response = await fetch('/.netlify/functions/analyze-meal-text', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                description: description,
-                mealType: selectedMealType
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ description, mealType })
         });
 
         if (!response.ok) {
@@ -38565,32 +38549,18 @@ async function submitMealDescription() {
 
         const nutritionData = result.data;
 
-        // Save meal log to database (no photo)
-        const savedMeal = await saveMealLogWithType({
-            foodItems: nutritionData.foodItems,
-            totals: nutritionData.totals,
-            micronutrients: nutritionData.micronutrients,
-            confidence: nutritionData.confidence,
-            notes: nutritionData.notes,
-            mealType: selectedMealType,
-            inputMethod: selectedInputMethod,
-            mealDescription: description
-        });
+        // Save using the provided save function
+        await saveFn(nutritionData);
 
-        // Text/voice input meals don't earn points - only photo meals get points
-        // This encourages users to take photos for verified logging
-
-        // Recalculate daily nutrition
+        // Refresh the UI with new data
         await recalculateDailyNutrition();
-
-        // Refresh display
         await loadTodayNutrition();
 
-        // Show success
+        // Notify user of success
         showMealAnalysisSuccess(nutritionData);
 
     } catch (error) {
-        console.error('Error analyzing meal:', error);
+        console.error('Background meal analysis error:', error);
         showMealAnalysisError(error.message);
     }
 }
@@ -39250,17 +39220,23 @@ async function handleMealPhotoSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Show loading state
-    showMealAnalysisLoading();
-
-    // Compress image first to avoid 502 errors on large photos
+    // Compress image first (do this before background so user sees quick response)
     const compressedFile = await compressMealImage(file);
-
-    // Convert compressed image to base64
     const base64 = await fileToBase64(compressedFile);
-    const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+    const base64Data = base64.split(',')[1];
 
-    // Retry logic - try up to 5 times
+    // Reset file input immediately
+    event.target.value = '';
+
+    // Show quick confirmation and let user continue
+    showToast('📸 Analysing your photo in the background...', 'info');
+
+    // Run everything else in the background
+    analyzePhotoInBackground(file, compressedFile, base64, base64Data);
+}
+
+// Background photo analysis with retry logic
+async function analyzePhotoInBackground(originalFile, compressedFile, base64, base64Data) {
     const maxAttempts = 5;
     let attempt = 1;
     let success = false;
@@ -39269,21 +39245,13 @@ async function handleMealPhotoSelect(event) {
 
     while (!success && attempt <= maxAttempts) {
         try {
-            // Update loading message with retry attempt
-            if (attempt > 1) {
-                showMealAnalysisLoading(`Analyzing meal... (attempt ${attempt})`);
-            }
-
-            // Call Gemini API via edge function
             console.log(`Analyzing food photo (attempt ${attempt})...`);
             const response = await fetch('/.netlify/functions/analyze-food', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     imageBase64: base64Data,
-                    mimeType: file.type
+                    mimeType: originalFile.type
                 })
             });
 
@@ -39306,9 +39274,8 @@ async function handleMealPhotoSelect(event) {
             console.error(`Error analyzing meal (attempt ${attempt}):`, error);
             lastError = error;
 
-            // If not the last attempt, wait before retrying (exponential backoff)
             if (attempt < maxAttempts) {
-                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10 seconds
+                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
                 console.log(`Retrying in ${delay}ms...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
@@ -39316,21 +39283,16 @@ async function handleMealPhotoSelect(event) {
         }
     }
 
-    // Check if we failed after all attempts
     if (!success) {
         const errorDetails = lastError?.message || "Unknown error";
         showMealAnalysisError(`Failed after ${maxAttempts} attempts. Error: ${errorDetails}`);
-        // Reset file input
-        event.target.value = '';
         return;
     }
 
     // Success - save meal to database
     try {
-        // Upload photo to Supabase Storage
-        const photoUrl = await uploadMealPhoto(file);
+        const photoUrl = await uploadMealPhoto(originalFile);
 
-        // Save meal log to database
         const savedMeal = await saveMealLog({
             photoUrl,
             foodItems: nutritionData.foodItems,
@@ -39340,43 +39302,24 @@ async function handleMealPhotoSelect(event) {
             notes: nutritionData.notes
         });
 
-        // Award points for the meal (with anti-cheat data)
+        // Award points
         if (savedMeal && savedMeal[0]?.id) {
             try {
-                // Get photo timestamp from file
-                const photoTimestamp = file.lastModified ? new Date(file.lastModified).toISOString() : null;
-
-                // Generate photo hash for duplicate detection
+                const photoTimestamp = originalFile.lastModified ? new Date(originalFile.lastModified).toISOString() : null;
                 const photoHash = await window.db?.points?.generatePhotoHash(base64);
-
-                // Award points
-                await awardPointsForMeal(
-                    savedMeal[0].id,
-                    photoTimestamp,
-                    nutritionData.confidence,
-                    photoHash
-                );
+                await awardPointsForMeal(savedMeal[0].id, photoTimestamp, nutritionData.confidence, photoHash);
             } catch (pointsError) {
                 console.error('Error awarding points (meal still saved):', pointsError);
-                // Don't throw - meal was saved successfully, points are bonus
             }
         }
 
-        // Recalculate daily nutrition totals
         await recalculateDailyNutrition();
-
-        // Refresh display
         await loadTodayNutrition();
-
-        // Show success message
         showMealAnalysisSuccess(nutritionData);
 
     } catch (error) {
         console.error('Error saving meal:', error);
         showMealAnalysisError(error.message);
-    } finally {
-        // Reset file input
-        event.target.value = '';
     }
 }
 
