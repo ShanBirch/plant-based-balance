@@ -31568,7 +31568,7 @@ function openCreateChallengeModal(featuredRareId = null) {
         if (randomDropInfo) randomDropInfo.style.display = 'block';
         if (wagerSection) wagerSection.style.display = 'block';
         // Reset wager to default
-        createChallengeBetAmount = CHALLENGE_MIN_BET;
+        createChallengeBetAmount = 10000;
         const feeDisplay = document.getElementById('create-challenge-fee-display');
         if (feeDisplay) feeDisplay.textContent = '10,000 Coins entry fee';
         // Reset header
@@ -31655,7 +31655,7 @@ function updateSelectedCount() {
 }
 
 // Create challenge bet amount (for the create modal)
-let createChallengeBetAmount = CHALLENGE_MIN_BET;
+let createChallengeBetAmount = 10000;
 
 window._setCreateChallengeBet = function(amount, btnEl) {
     if (amount < CHALLENGE_MIN_BET && amount !== 0) {
