@@ -43918,6 +43918,26 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             window.closeBattleInvite();
 
+            // Create tamagotchi battle record in DB
+            let battleId = null;
+            const stats = getBattleStats();
+            const level = window.getCurrentUserLevel ? window.getCurrentUserLevel() : 1;
+            try {
+                if (window.supabaseClient && window.currentUser) {
+                    const { data, error } = await window.supabaseClient
+                        .rpc('create_tamagotchi_battle', {
+                            p_challenger_id: window.currentUser.id,
+                            p_opponent_id: friendId,
+                            p_coin_bet: betAmount,
+                            p_challenger_stats: { str: stats.str, hp: stats.hp, mana: stats.mana, level }
+                        });
+                    if (error) throw error;
+                    battleId = data;
+                }
+            } catch (e) {
+                console.warn('Could not create tamagotchi battle:', e);
+            }
+
             // Send battle invite via nudges table
             try {
                 if (window.supabaseClient && window.currentUser) {
@@ -43940,11 +43960,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.warn('Could not send battle invite:', e);
             }
 
-            // Store bet amount for result settlement
+            // Store battle info for PvP
             window._activeBattleBet = betAmount;
             window._activeBattleOpponentId = friendId;
+            window._activeBattleId = battleId;
+            window._isBattleChallenger = true;
 
-            // Start battle directly against the friend (as a bot stand-in)
+            // Start battle — will enter waiting room if PvP (battleId set)
             window._runBattle(friendName || 'Opponent');
         };
 
@@ -43963,10 +43985,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         // ============================================================
         // INCOMING BATTLE CHALLENGE NOTIFICATION
         // ============================================================
-        function showBattleChallengeNotification(fromName, fromId) {
+        function showBattleChallengeNotification(fromName, fromId, battleId, coinBet) {
             // Remove existing challenge toasts
-            document.querySelectorAll('.battle-challenge-toast').forEach(el => el.remove());
+            document.querySelectorAll('.battle-challenge-toast:not(.quiz-battle-challenge-toast)').forEach(el => el.remove());
 
+            const betText = coinBet > 0 ? ` 🪙 ${coinBet} coins` : '';
             const toast = document.createElement('div');
             toast.className = 'battle-challenge-toast';
             toast.innerHTML = `
@@ -43974,11 +43997,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <div class="battle-challenge-icon">⚔️</div>
                     <div>
                         <div class="battle-challenge-title">Battle Challenge!</div>
-                        <div class="battle-challenge-from">${fromName} wants to fight!</div>
+                        <div class="battle-challenge-from">${fromName} wants to fight!${betText}</div>
                     </div>
                 </div>
                 <div class="battle-challenge-actions">
-                    <button class="battle-challenge-accept" onclick="acceptBattleChallenge('${fromId}', '${fromName.replace(/'/g, "\\'")}', this)">Accept</button>
+                    <button class="battle-challenge-accept" onclick="acceptBattleChallenge('${fromId}', '${fromName.replace(/'/g, "\\'")}', this, '${battleId || ''}', ${coinBet || 0})">Accept</button>
                     <button class="battle-challenge-decline" onclick="this.closest('.battle-challenge-toast').remove()">Decline</button>
                 </div>
             `;
@@ -43996,9 +44019,61 @@ document.addEventListener('DOMContentLoaded', async function() {
             }, 30000);
         }
 
-        window.acceptBattleChallenge = function(fromId, fromName, btn) {
+        window.acceptBattleChallenge = async function(fromId, fromName, btn, battleId, coinBet) {
             const toast = btn.closest('.battle-challenge-toast');
             if (toast) toast.remove();
+
+            // If we have a battleId, this is a PvP battle — join it and debit coins
+            if (battleId && window.supabaseClient && window.currentUser) {
+                // Debit opponent's coins
+                if (coinBet > 0) {
+                    try {
+                        const { data: newBalance, error } = await window.supabaseClient
+                            .rpc('debit_coins', {
+                                user_uuid: window.currentUser.id,
+                                coin_amount: coinBet,
+                                txn_type: 'battle_bet',
+                                txn_description: 'Battle bet vs ' + fromName,
+                                txn_reference: battleId
+                            });
+                        if (error) throw error;
+                        if (newBalance === -1) {
+                            alert('Not enough coins for this bet!');
+                            return;
+                        }
+                        if (typeof updateCoinBalanceDisplay === 'function') updateCoinBalanceDisplay(newBalance);
+                    } catch (e) {
+                        console.warn('Could not debit battle bet:', e);
+                        alert('Failed to place bet. Please try again.');
+                        return;
+                    }
+                }
+
+                // Join the battle in DB
+                const stats = getBattleStats();
+                const level = window.getCurrentUserLevel ? window.getCurrentUserLevel() : 1;
+                try {
+                    const { data, error } = await window.supabaseClient
+                        .rpc('join_tamagotchi_battle', {
+                            p_battle_id: battleId,
+                            p_user_id: window.currentUser.id,
+                            p_opponent_stats: { str: stats.str, hp: stats.hp, mana: stats.mana, level }
+                        });
+                    if (error) throw error;
+                    if (data && data.error) {
+                        if (typeof showToast === 'function') showToast('Battle ' + data.error, 'error');
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Could not join tamagotchi battle:', e);
+                }
+
+                // Set PvP state
+                window._activeBattleBet = coinBet || 0;
+                window._activeBattleOpponentId = fromId;
+                window._activeBattleId = battleId;
+                window._isBattleChallenger = false;
+            }
 
             // Navigate to dashboard if needed
             if (typeof switchAppTab === 'function' && typeof currentActiveTab !== 'undefined' && currentActiveTab !== 'dashboard') {
@@ -44019,7 +44094,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 const { data, error } = await window.supabaseClient
                     .from('nudges')
-                    .select('id, sender_id, message, created_at')
+                    .select('id, sender_id, message, coin_bet, created_at')
                     .eq('receiver_id', userId)
                     .like('message', '%BATTLE CHALLENGE%')
                     .is('read_at', null)
@@ -44029,6 +44104,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 if (!error && data && data.length > 0) {
                     const challenge = data[0];
+
+                    // Skip quiz battle nudges
+                    if (challenge.message.includes('QUIZ BATTLE')) return;
 
                     // Mark as read
                     await window.supabaseClient
@@ -44044,7 +44122,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                         .single();
 
                     const senderName = sender?.name || 'A friend';
-                    showBattleChallengeNotification(senderName, challenge.sender_id);
+
+                    // Find the tamagotchi battle record
+                    let battleId = null;
+                    let coinBet = challenge.coin_bet || 0;
+                    try {
+                        const { data: battles } = await window.supabaseClient
+                            .from('tamagotchi_battles')
+                            .select('id, coin_bet')
+                            .eq('challenger_id', challenge.sender_id)
+                            .eq('opponent_id', userId)
+                            .eq('status', 'pending')
+                            .order('created_at', { ascending: false })
+                            .limit(1);
+                        if (battles && battles.length > 0) {
+                            battleId = battles[0].id;
+                            coinBet = battles[0].coin_bet;
+                        }
+                    } catch (e) {}
+
+                    showBattleChallengeNotification(senderName, challenge.sender_id, battleId, coinBet);
                 }
             } catch (e) {
                 // Silently fail
@@ -44168,6 +44265,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             window._battleInProgress = true;
             window.isDuringBattle = true;
 
+            // PvP state
+            const isPvP = !!window._activeBattleId;
+            const battleId = window._activeBattleId || null;
+            const isChallenger = window._isBattleChallenger || false;
+            let battleChannel = null;
+            let opponentReady = false;
+            let opponentStats = null;
+
             try {
 
             const viewer = document.getElementById('tamagotchi-model');
@@ -44225,8 +44330,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const playerSTR = stats.str;
             const playerMana = stats.mana;
 
-            const enemyMaxHP = 80 + (level * 8);
-            const enemyBaseDmg = 15 + Math.floor(level * 1.5);
+            // Enemy stats: for bot mode use level-based formula, for PvP will be set after opponent joins
+            let enemyMaxHP = 80 + (level * 8);
+            let enemyBaseDmg = 15 + Math.floor(level * 1.5);
 
             let playerHP = playerMaxHP;
             let enemyHP = enemyMaxHP;
@@ -44234,6 +44340,111 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Move picker
             const chosenMove = await showMovePicker();
             const movePower = chosenMove.power || 1;
+
+            // === PvP WAITING ROOM ===
+            if (isPvP && window.supabaseClient) {
+                // Set up Realtime channel
+                battleChannel = window.supabaseClient.channel('tamagotchi-battle-' + battleId);
+
+                // Wait for opponent to be ready
+                const myStats = { str: stats.str, hp: stats.hp, mana: stats.mana, movePower, level };
+                let waitingResolve = null;
+
+                battleChannel.on('broadcast', { event: 'ready' }, (payload) => {
+                    if (payload.payload.userId !== (window.currentUser?.id)) {
+                        opponentReady = true;
+                        opponentStats = payload.payload.stats;
+                        if (waitingResolve) waitingResolve();
+                    }
+                });
+
+                await battleChannel.subscribe((status) => {
+                    console.log('Battle channel status:', status);
+                });
+
+                // Broadcast our ready state
+                await battleChannel.send({
+                    type: 'broadcast',
+                    event: 'ready',
+                    payload: { userId: window.currentUser?.id, stats: myStats, name: window.currentUser?.user_metadata?.name || 'Player' }
+                });
+
+                // If challenger, show waiting room
+                if (isChallenger && !opponentReady) {
+                    if (overlayText && overlay) {
+                        overlayText.textContent = 'WAITING...';
+                        overlayText.style.fontSize = '1.5rem';
+                        overlay.classList.add('active');
+                    }
+
+                    // Wait up to 2 minutes for opponent
+                    await Promise.race([
+                        new Promise(resolve => { waitingResolve = resolve; }),
+                        new Promise(resolve => setTimeout(resolve, 120000))
+                    ]);
+                    waitingResolve = null;
+
+                    if (overlayText) overlayText.style.fontSize = '';
+                    if (overlay) overlay.classList.remove('active');
+
+                    if (!opponentReady) {
+                        // Timeout — fall back to bot mode
+                        if (typeof showToast === 'function') showToast('Opponent didn\'t join. Fighting bot instead!', 'info');
+                    }
+                } else if (!isChallenger) {
+                    // Opponent side: wait briefly for challenger's ready signal
+                    if (!opponentReady) {
+                        await Promise.race([
+                            new Promise(resolve => { waitingResolve = resolve; }),
+                            new Promise(resolve => setTimeout(resolve, 5000))
+                        ]);
+                        waitingResolve = null;
+                    }
+                }
+
+                // Set enemy stats from real opponent if PvP connected
+                if (opponentReady && opponentStats) {
+                    enemyMaxHP = 100 + ((opponentStats.hp || 0) * 5);
+                    enemyHP = enemyMaxHP;
+                    enemyBaseDmg = baseDmg; // PvP: damage comes from opponent's broadcasts, not this formula
+                }
+
+                // Synced countdown (challenger broadcasts)
+                if (isChallenger && opponentReady) {
+                    for (let c = 3; c >= 0; c--) {
+                        await battleChannel.send({ type: 'broadcast', event: 'countdown', payload: { count: c } });
+                        if (c > 0) {
+                            if (overlayText && overlay) {
+                                overlayText.textContent = '' + c;
+                                overlay.classList.add('active');
+                            }
+                            await new Promise(r => setTimeout(r, 1000));
+                        }
+                    }
+                    if (overlay) overlay.classList.remove('active');
+                } else if (!isChallenger && opponentReady) {
+                    // Listen for countdown from challenger
+                    await new Promise(resolve => {
+                        let countdownDone = false;
+                        battleChannel.on('broadcast', { event: 'countdown' }, (payload) => {
+                            const c = payload.payload.count;
+                            if (c > 0 && overlayText && overlay) {
+                                overlayText.textContent = '' + c;
+                                overlay.classList.add('active');
+                            }
+                            if (c <= 0 && !countdownDone) {
+                                countdownDone = true;
+                                if (overlay) overlay.classList.remove('active');
+                                resolve();
+                            }
+                        });
+                        // Fallback timeout
+                        setTimeout(() => { if (!countdownDone) { countdownDone = true; resolve(); } }, 6000);
+                    });
+                }
+            }
+
+            const pvpConnected = isPvP && opponentReady && opponentStats;
 
             // Animations (shared across all battle functions) - declared early
             const anims = viewer.availableAnimations || [];
@@ -44342,14 +44553,32 @@ document.addEventListener('DOMContentLoaded', async function() {
                 move();
             }
 
+            // Broadcast damage to opponent via Realtime (PvP only)
+            function broadcastAttack(damage, isSuper) {
+                if (battleChannel && pvpConnected) {
+                    battleChannel.send({
+                        type: 'broadcast',
+                        event: 'attack',
+                        payload: { userId: window.currentUser?.id, damage, isSuper }
+                    });
+                }
+            }
+
             // Fire super attack (3 parallel fireballs with special.jpeg)
             function fireSuperAttack() {
                 viewer.animationName = attackAnim;
                 viewer.play();
 
                 const damage = (baseDmg + playerSTR) * movePower * 1.0;
-                enemyHP -= damage;
-                updateHPBars();
+
+                // In PvP, don't reduce enemy HP locally — opponent handles their own HP
+                // In bot mode, reduce enemy HP directly
+                if (!pvpConnected) {
+                    enemyHP -= damage;
+                    updateHPBars();
+                }
+                broadcastAttack(damage, true);
+
                 spawnTripleFireball(widget);
                 playSound('whoosh');
 
@@ -44369,7 +44598,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 bashCount = 0;
                 updateBashUI();
 
-                if (enemyHP <= 0) {
+                if (!pvpConnected && enemyHP <= 0) {
                     battleOver = true;
                 }
             }
@@ -44380,12 +44609,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 viewer.play();
 
                 const damage = (baseDmg + playerSTR) * movePower * 0.2;
-                enemyHP -= damage;
-                updateHPBars();
+
+                if (!pvpConnected) {
+                    enemyHP -= damage;
+                    updateHPBars();
+                }
+                broadcastAttack(damage, false);
+
                 spawnNormalFireball(widget);
                 playSound('whoosh');
 
-                if (enemyHP <= 0) {
+                if (!pvpConnected && enemyHP <= 0) {
                     battleOver = true;
                 }
             }
@@ -44403,7 +44637,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }, 2500);
             }
 
-            // Enemy counter-attacks periodically
+            // Bot enemy counter-attacks (only used in bot mode)
             let enemyAttackInterval = null;
             function startEnemyAttacks() {
                 const attackEvery = Math.max(2000, 5000 - (level * 100));
@@ -44424,6 +44658,70 @@ document.addEventListener('DOMContentLoaded', async function() {
                     updateHPBars();
                     if (playerHP <= 0) battleOver = true;
                 }, attackEvery);
+            }
+
+            // PvP: listen for real opponent attacks via Realtime
+            function listenForOpponentAttacks() {
+                if (!battleChannel) return;
+                battleChannel.on('broadcast', { event: 'attack' }, async (payload) => {
+                    if (battleOver) return;
+                    if (payload.payload.userId === window.currentUser?.id) return; // Ignore own attacks
+
+                    const damage = payload.payload.damage || 0;
+                    const isSuper = payload.payload.isSuper;
+
+                    // Show incoming fireball + hit effects
+                    if (isSuper) {
+                        // Triple incoming fireball for super attacks
+                        const offsets = [-60, 0, 60];
+                        offsets.forEach((yOff, i) => {
+                            const fb = document.createElement('div');
+                            fb.innerHTML = `<img src="./assets/special.png" style="width:140px;height:140px;border-radius:50%;transform:scaleX(-1);filter:drop-shadow(0 0 30px red) brightness(1.2);">`;
+                            fb.style.cssText = `position:absolute; right:-150px; top:calc(50% + ${yOff}px); transform:translateY(-50%); z-index:100; pointer-events:none;`;
+                            widget.appendChild(fb);
+                            let posX = widget.clientWidth;
+                            const targetX = widget.clientWidth / 2;
+                            function move() {
+                                posX -= (5 + i);
+                                fb.style.left = posX + 'px';
+                                if (posX <= targetX) fb.remove();
+                                else requestAnimationFrame(move);
+                            }
+                            setTimeout(() => move(), i * 40);
+                        });
+
+                        // Screen shake from super hit
+                        widget.style.transform = 'translateX(-5px)';
+                        setTimeout(() => widget.style.transform = 'translateX(5px)', 50);
+                        setTimeout(() => widget.style.transform = 'translateX(-3px)', 100);
+                        setTimeout(() => widget.style.transform = '', 150);
+                    } else {
+                        await spawnIncomingBattleFireball(widget);
+                    }
+
+                    viewer.animationName = hitAnim;
+                    viewer.play();
+                    playSound('hit');
+
+                    // Red flash
+                    const hitFlash = document.createElement('div');
+                    hitFlash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:red;opacity:0.3;z-index:998;pointer-events:none;';
+                    widget.appendChild(hitFlash);
+                    setTimeout(() => hitFlash.remove(), 150);
+
+                    // Take real damage from opponent
+                    playerHP -= damage;
+                    updateHPBars();
+                    if (playerHP <= 0) battleOver = true;
+                });
+
+                // Listen for opponent finishing
+                battleChannel.on('broadcast', { event: 'finished' }, (payload) => {
+                    if (payload.payload.userId !== window.currentUser?.id) {
+                        // Opponent has submitted their result — we should finish too if not already
+                        console.log('Opponent finished battle');
+                    }
+                });
             }
 
             // Bash button handler — bashing charges the super attack
@@ -44456,21 +44754,25 @@ document.addEventListener('DOMContentLoaded', async function() {
             const enemyNameEl = document.querySelector('.battle-hp-box.enemy .battle-hp-name');
             if (enemyNameEl) enemyNameEl.textContent = (opponentName || 'BOT').toUpperCase();
 
-            // === INTRO ===
-            playSound('intro');
-            if (overlayText && overlay) {
-                overlayText.textContent = `VS ${(opponentName || 'BOT').toUpperCase()}!`;
-                overlay.classList.add('active');
+            // === INTRO (skip if PvP already did countdown) ===
+            if (!pvpConnected) {
+                playSound('intro');
+                if (overlayText && overlay) {
+                    overlayText.textContent = `VS ${(opponentName || 'BOT').toUpperCase()}!`;
+                    overlay.classList.add('active');
+                }
+
+                const flash = document.createElement('div');
+                flash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:white;opacity:0.8;transition:opacity 0.5s;pointer-events:none;z-index:999;';
+                widget.appendChild(flash);
+                setTimeout(() => flash.style.opacity = 0, 50);
+                setTimeout(() => flash.remove(), 550);
+
+                await new Promise(r => setTimeout(r, 2000));
+                if (overlay) overlay.classList.remove('active');
+            } else {
+                playSound('intro');
             }
-
-            const flash = document.createElement('div');
-            flash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:white;opacity:0.8;transition:opacity 0.5s;pointer-events:none;z-index:999;';
-            widget.appendChild(flash);
-            setTimeout(() => flash.style.opacity = 0, 50);
-            setTimeout(() => flash.remove(), 550);
-
-            await new Promise(r => setTimeout(r, 2000));
-            if (overlay) overlay.classList.remove('active');
 
             // Hide battle trigger + unlocks buttons during battle
             const battleTriggerBtn = document.querySelector('.battle-trigger-btn');
@@ -44487,7 +44789,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Start battle!
             if (overlayText && overlay) {
-                overlayText.textContent = 'BASH!';
+                overlayText.textContent = pvpConnected ? 'FIGHT!' : 'BASH!';
                 overlay.classList.add('active');
                 playSound('bell');
                 await new Promise(r => setTimeout(r, 1000));
@@ -44498,9 +44800,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             bashBtn.addEventListener('click', onBash);
             bashBtn.addEventListener('touchstart', (e) => { e.preventDefault(); onBash(); }, { passive: false });
 
-            // Start auto-attacks and enemy attacks
+            // Start auto-attacks
             startAutoAttacks();
-            startEnemyAttacks();
+
+            // Start enemy attacks: PvP uses real opponent, bot uses simulated
+            if (pvpConnected) {
+                listenForOpponentAttacks();
+            } else {
+                startEnemyAttacks();
+            }
 
             // Battle timer - 30 seconds
             await new Promise(resolve => {
@@ -44530,11 +44838,44 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (battleTriggerBtn) battleTriggerBtn.style.display = '';
             if (animTriggerBtn) animTriggerBtn.style.display = '';
 
-            const playerWon = enemyHP <= 0 || playerHP > 0;
+            const playerWon = pvpConnected ? (playerHP > 0) : (enemyHP <= 0 || playerHP > 0);
 
-            // Settle battle bet
+            // Settle battle
             const battleBet = window._activeBattleBet || 0;
             const opponentId = window._activeBattleOpponentId || null;
+
+            // PvP: broadcast finished + submit to server RPC
+            if (pvpConnected && battleChannel) {
+                battleChannel.send({
+                    type: 'broadcast',
+                    event: 'finished',
+                    payload: { userId: window.currentUser?.id, hpRemaining: Math.max(0, Math.round(playerHP)) }
+                });
+
+                // Submit result to server
+                try {
+                    if (window.supabaseClient && window.currentUser) {
+                        const { data: result } = await window.supabaseClient
+                            .rpc('finish_tamagotchi_battle', {
+                                p_battle_id: battleId,
+                                p_user_id: window.currentUser.id,
+                                p_hp_remaining: Math.max(0, Math.round(playerHP))
+                            });
+                        console.log('Battle result submitted:', result);
+
+                        // Reload coin balance after settlement
+                        if (result && result.finished) {
+                            if (typeof loadCoinBalance === 'function') loadCoinBalance();
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Could not submit battle result:', e);
+                }
+
+                // Cleanup channel
+                battleChannel.unsubscribe();
+                battleChannel = null;
+            }
 
             if (playerWon) {
                 const victoryAnim = anims.find(a => /laugh|clap|arms_up/i.test(a)) || 'idle';
@@ -44548,8 +44889,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                     overlay.classList.add('active');
                 }
 
-                // Credit winnings (bet x2 -- your bet back + opponent's bet)
-                if (battleBet > 0 && window.supabaseClient && window.currentUser) {
+                if (pvpConnected) {
+                    // PvP: coins settled by server RPC
+                    if (typeof showToast === 'function') {
+                        const msg = battleBet > 0 ? 'Victory! +3 XP bonus + 🪙 ' + (battleBet * 2) + ' coins won!' : 'Victory! +3 XP bonus';
+                        setTimeout(() => showToast(msg, 'success'), 2000);
+                    }
+                } else if (battleBet > 0 && window.supabaseClient && window.currentUser) {
+                    // Bot mode: settle coins client-side (as before)
                     try {
                         const winnings = battleBet * 2;
                         await window.supabaseClient.rpc('credit_coins', {
@@ -44591,9 +44938,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
 
-            // Reset battle bet state
+            // Reset battle state
             window._activeBattleBet = 0;
             window._activeBattleOpponentId = null;
+            window._activeBattleId = null;
+            window._isBattleChallenger = false;
 
             await new Promise(r => setTimeout(r, 4000));
 
@@ -44638,6 +44987,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             } catch (e) {
                 console.error('Battle error:', e);
+                if (battleChannel) { battleChannel.unsubscribe(); battleChannel = null; }
             } finally {
                 window._battleInProgress = false;
                 window.isDuringBattle = false;
