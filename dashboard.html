@@ -11902,11 +11902,16 @@ async function startCustomBuilderWorkout() {
             // Refresh the cache
             const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
             window.savedWorkoutsCache = savedWorkouts;
-            // Preload workout history for previous stats and volume tracking
-            window.workoutHistoryCache = await dbHelpers.workouts.getHistory(user.id);
         } catch(e) {
             console.error("Failed to auto-save workout:", e);
             window.currentCustomWorkoutId = null;
+        }
+
+        // Preload workout history separately so it loads even if save fails
+        try {
+            window.workoutHistoryCache = await dbHelpers.workouts.getHistory(user.id);
+        } catch(e) {
+            console.error("Failed to load workout history:", e);
         }
     }
 
