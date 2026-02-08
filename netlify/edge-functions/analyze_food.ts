@@ -204,32 +204,32 @@ IMPORTANT:
     const cleanedText = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const nutritionData = JSON.parse(cleanedText);
 
-    // Verify each food item against USDA FoodData Central
+    // Verify all food items against USDA FoodData Central (in parallel for speed)
     console.log(`Verifying ${nutritionData.foodItems.length} items against USDA...`);
 
-    for (let item of nutritionData.foodItems) {
-      try {
-        const usdaMatch = await lookupUSDA(item.name);
+    const usdaResults = await Promise.allSettled(
+      nutritionData.foodItems.map((item: any) => lookupUSDA(item.name))
+    );
 
-        if (usdaMatch && usdaMatch.calories_100g > 0) {
-          console.log(`✅ USDA VERIFIED: "${item.name}" → "${usdaMatch.name}" (${usdaMatch.dataType}) = ${usdaMatch.calories_100g} kcal/100g`);
+    for (let i = 0; i < nutritionData.foodItems.length; i++) {
+      const item = nutritionData.foodItems[i];
+      const result = usdaResults[i];
+      const usdaMatch = result.status === 'fulfilled' ? result.value : null;
 
-          const weightFactor = (item.portion_weight_g || 100) / 100;
+      if (usdaMatch && usdaMatch.calories_100g > 0) {
+        console.log(`✅ USDA VERIFIED: "${item.name}" → "${usdaMatch.name}" (${usdaMatch.dataType}) = ${usdaMatch.calories_100g} kcal/100g`);
 
-          item.calories = Number((usdaMatch.calories_100g * weightFactor).toFixed(1));
-          item.protein_g = Number((usdaMatch.protein_100g * weightFactor).toFixed(1));
-          item.carbs_g = Number((usdaMatch.carbs_100g * weightFactor).toFixed(1));
-          item.fat_g = Number((usdaMatch.fat_100g * weightFactor).toFixed(1));
-          item.fiber_g = Number((usdaMatch.fiber_100g * weightFactor).toFixed(1));
-          item.verified = true;
-          item.db_source = "USDA FoodData Central";
-        } else {
-          console.log(`⚠️ No USDA match for "${item.name}", keeping Gemini estimate`);
-          item.verified = false;
-          item.db_source = "Gemini AI Estimate";
-        }
-      } catch (e) {
-        console.error(`USDA check failed for "${item.name}":`, e);
+        const weightFactor = (item.portion_weight_g || 100) / 100;
+
+        item.calories = Number((usdaMatch.calories_100g * weightFactor).toFixed(1));
+        item.protein_g = Number((usdaMatch.protein_100g * weightFactor).toFixed(1));
+        item.carbs_g = Number((usdaMatch.carbs_100g * weightFactor).toFixed(1));
+        item.fat_g = Number((usdaMatch.fat_100g * weightFactor).toFixed(1));
+        item.fiber_g = Number((usdaMatch.fiber_100g * weightFactor).toFixed(1));
+        item.verified = true;
+        item.db_source = "USDA FoodData Central";
+      } else {
+        console.log(`⚠️ No USDA match for "${item.name}", keeping Gemini estimate`);
         item.verified = false;
         item.db_source = "Gemini AI Estimate";
       }
