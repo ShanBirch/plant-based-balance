@@ -5928,46 +5928,7 @@ async function applyAppTheme(themeKey) {
 
         <div id="rare-challenges-preview" style="display: flex; gap: 12px; overflow-x: auto; padding: 5px 5px 15px 5px; margin-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none;">
             <style>#rare-challenges-preview::-webkit-scrollbar { display: none; }</style>
-            <!-- These will be pre-made "Global" challenges people can buy into -->
-            <div class="card" onclick="openCreateChallengeModal()" style="min-width: 240px; padding: 20px; border: 2px solid var(--secondary); background: linear-gradient(135deg, #fff, var(--accent-green)); cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
-                <div style="position: absolute; top: -10px; right: -10px; font-size: 4rem; opacity: 0.1; transform: rotate(15deg);">🐲</div>
-                <div style="font-size: 2rem; margin-bottom: 12px;">🎭</div>
-                <div style="font-weight: 800; color: var(--primary); font-size: 1.1rem; margin-bottom: 4px;">The Oracle Challenge</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">30 Days • 10,000 Coins</div>
-                <div style="background: white; border: 1px solid var(--secondary); border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 1.2rem;">🏯</div>
-                    <div>
-                        <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Reward</div>
-                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">Rare: Gohan (Z)</div>
-                    </div>
-                </div>
-            </div>
-            <div class="card" onclick="openCreateChallengeModal()" style="min-width: 240px; padding: 20px; border: 2px solid var(--primary); background: linear-gradient(135deg, #fff, #eff6ff); cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
-                <div style="position: absolute; top: -10px; right: -10px; font-size: 4rem; opacity: 0.1; transform: rotate(15deg);">🚀</div>
-                <div style="font-size: 2rem; margin-bottom: 12px;">🌌</div>
-                <div style="font-weight: 800; color: var(--primary); font-size: 1.1rem; margin-bottom: 4px;">Cyber Titan Grind</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">30 Days • 25,000 Coins</div>
-                <div style="background: white; border: 1px solid var(--primary); border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 1.2rem;">🔋</div>
-                    <div>
-                        <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Reward</div>
-                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">Rare: Elon (CEO)</div>
-                    </div>
-                </div>
-            </div>
-            <div class="card" onclick="openCreateChallengeModal()" style="min-width: 240px; padding: 20px; border: 2px solid #ef4444; background: linear-gradient(135deg, #fff, #fff1f2); cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
-                <div style="position: absolute; top: -10px; right: -10px; font-size: 4rem; opacity: 0.1; transform: rotate(15deg);">🔥</div>
-                <div style="font-size: 2rem; margin-bottom: 12px;">👑</div>
-                <div style="font-weight: 800; color: var(--primary); font-size: 1.1rem; margin-bottom: 4px;">Saiyan Prince Prep</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">30 Days • 50,000 Coins</div>
-                <div style="background: white; border: 1px solid #ef4444; border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 1.2rem;">💥</div>
-                    <div>
-                        <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Reward</div>
-                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">Rare: Vegeta (Elite)</div>
-                    </div>
-                </div>
-            </div>
+            <!-- Featured monthly rare card rendered dynamically by renderFeaturedRareCard() -->
         </div>
 
         <div style="margin: 20px 0 15px 0; display: flex; justify-content: space-between; align-items: center;">
@@ -13334,6 +13295,25 @@ function viewWorkoutHistoryDetail(date) {
             </div>
             <!-- Content -->
             <div style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
+                <!-- Featured Rare Preview (shown when opening from featured card) -->
+                <div id="challenge-rare-preview" style="display: none; text-align: center; margin-bottom: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px;">
+                    <model-viewer id="challenge-rare-viewer" style="width: 140px; height: 140px; margin: 0 auto; --poster-color: transparent;" auto-rotate camera-controls interaction-prompt="none" shadow-intensity="0.5"></model-viewer>
+                    <div id="challenge-rare-name" style="font-size: 1.1rem; font-weight: 800; color: white; margin-top: 8px;">Character Name</div>
+                    <div id="challenge-rare-tier-badge" style="display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; letter-spacing: 1.5px; margin-top: 6px; color: white;">TIER</div>
+                    <div style="margin-top: 8px; font-size: 0.75rem; color: #4ade80; font-weight: 700;">GUARANTEED DROP</div>
+                </div>
+                <!-- Random Rare Drop Info (shown for generic challenges) -->
+                <div id="challenge-random-drop-info" style="display: none; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.2); border-radius: 14px; padding: 14px; margin-bottom: 16px; text-align: center;">
+                    <div style="font-size: 1.5rem; margin-bottom: 6px;">🎲</div>
+                    <div style="font-weight: 700; color: #c084fc; font-size: 0.9rem; margin-bottom: 4px;">Random Rare Drop</div>
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 8px;">Winner receives a random rare skin!</div>
+                    <div style="display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;">
+                        <span style="padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 700; background: rgba(107,114,128,0.3); color: #9ca3af;">COMMON 53%</span>
+                        <span style="padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 700; background: rgba(59,130,246,0.3); color: #60a5fa;">RARE 26%</span>
+                        <span style="padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 700; background: rgba(168,85,247,0.3); color: #c084fc;">EPIC 16%</span>
+                        <span style="padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 700; background: rgba(251,191,36,0.3); color: #fbbf24;">LEGENDARY 5%</span>
+                    </div>
+                </div>
                 <!-- How It Works -->
                 <div style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); border-radius: 14px; padding: 14px; margin-bottom: 16px;">
                     <div style="font-weight: 700; color: #93c5fd; font-size: 0.8rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">How It Works</div>
@@ -13389,7 +13369,7 @@ function viewWorkoutHistoryDetail(date) {
                 </div>
 
                 <!-- Wager Amount Picker -->
-                <div style="margin-bottom: 16px;">
+                <div id="challenge-wager-section" style="margin-bottom: 16px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                         <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Wager Coins</span>
                         <span style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span class="coin-balance-sync">0</span></span>
@@ -15728,6 +15708,11 @@ function _switchAppTabReal(tabName, btn) {
         // Load live challenges on home screen
         if (typeof loadHomeChallenges === 'function') {
             loadHomeChallenges();
+        }
+
+        // Render featured monthly rare card
+        if (typeof renderFeaturedRareCard === 'function') {
+            renderFeaturedRareCard();
         }
 
         // Load coin balance
@@ -31475,17 +31460,86 @@ async function loadChallenges() {
     }
 }
 
-// Open create challenge modal
-function openCreateChallengeModal() {
+// Open create challenge modal (optionally with a featured rare)
+function openCreateChallengeModal(featuredRareId = null) {
     const modal = document.getElementById('create-challenge-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-        loadFriendsForChallenge();
-        // Set default start date to tomorrow
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        document.getElementById('challenge-start-date').value = tomorrow.toISOString().split('T')[0];
+    if (!modal) return;
+
+    // Store featured rare context
+    window._challengeFeaturedRare = featuredRareId;
+
+    const rarePreview = document.getElementById('challenge-rare-preview');
+    const randomDropInfo = document.getElementById('challenge-random-drop-info');
+    const headerTitle = modal.querySelector('h3');
+    const wagerSection = document.getElementById('challenge-wager-section');
+    const feeSection = document.getElementById('challenge-fee-section');
+
+    if (featuredRareId) {
+        // Featured rare challenge mode
+        const rare = RARE_COLLECTION.find(r => r.id === featuredRareId);
+        if (rare) {
+            const tierData = RARE_TIERS[rare.tier];
+            // Show 3D preview
+            if (rarePreview) {
+                rarePreview.style.display = 'block';
+                const viewer = document.getElementById('challenge-rare-viewer');
+                if (viewer) viewer.setAttribute('src', rare.model);
+                const nameEl = document.getElementById('challenge-rare-name');
+                if (nameEl) nameEl.textContent = rare.name;
+                const badgeEl = document.getElementById('challenge-rare-tier-badge');
+                if (badgeEl) {
+                    badgeEl.textContent = tierData.label;
+                    badgeEl.style.background = tierData.gradient;
+                }
+            }
+            // Hide random drop info
+            if (randomDropInfo) randomDropInfo.style.display = 'none';
+            // Lock wager to tier buy-in
+            if (wagerSection) wagerSection.style.display = 'none';
+            createChallengeBetAmount = tierData.buyIn;
+            // Update fee display
+            const feeDisplay = document.getElementById('create-challenge-fee-display');
+            if (feeDisplay) feeDisplay.textContent = tierData.buyIn.toLocaleString() + ' Coins entry fee';
+            // Update header
+            if (headerTitle) {
+                headerTitle.innerHTML = `${rare.emoji} Featured Rare Challenge`;
+                headerTitle.style.color = tierData.color;
+            }
+        }
+    } else {
+        // Generic challenge mode
+        if (rarePreview) rarePreview.style.display = 'none';
+        if (randomDropInfo) randomDropInfo.style.display = 'block';
+        if (wagerSection) wagerSection.style.display = 'block';
+        // Reset wager to default
+        createChallengeBetAmount = CHALLENGE_MIN_BET;
+        const feeDisplay = document.getElementById('create-challenge-fee-display');
+        if (feeDisplay) feeDisplay.textContent = '10,000 Coins entry fee';
+        // Reset header
+        if (headerTitle) {
+            headerTitle.innerHTML = '🏆 Create Challenge';
+            headerTitle.style.color = '#60a5fa';
+        }
+        // Reset wager buttons
+        document.querySelectorAll('.create-challenge-bet-btn').forEach((b, i) => {
+            if (i === 0) {
+                b.style.background = 'rgba(255,255,255,0.15)';
+                b.style.borderColor = 'rgba(255,255,255,0.3)';
+                b.classList.add('active');
+            } else {
+                b.style.background = 'rgba(255,255,255,0.08)';
+                b.style.borderColor = 'rgba(255,255,255,0.15)';
+                b.classList.remove('active');
+            }
+        });
     }
+
+    modal.style.display = 'flex';
+    loadFriendsForChallenge();
+    // Set default start date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('challenge-start-date').value = tomorrow.toISOString().split('T')[0];
 }
 
 // Close create challenge modal
@@ -31629,17 +31683,30 @@ async function createChallenge() {
         const end = new Date(start);
         end.setDate(end.getDate() + duration);
 
+        // Determine rare reward: featured = guaranteed specific, generic = random weighted
+        let rareRewardId = null;
+        if (window._challengeFeaturedRare) {
+            rareRewardId = window._challengeFeaturedRare;
+        } else {
+            const randomDrop = getRandomRareDrop();
+            if (randomDrop) rareRewardId = randomDrop.id;
+        }
+
         // Create challenge
+        const challengeInsert = {
+            name: name,
+            creator_id: window.currentUser.id,
+            start_date: startDate,
+            end_date: end.toISOString().split('T')[0],
+            duration_days: duration,
+            status: 'pending'
+        };
+        // Store rare reward in metadata (uses existing columns or ignored gracefully)
+        if (rareRewardId) challengeInsert.rare_reward_id = rareRewardId;
+
         const { data: challenge, error: createError } = await window.supabaseClient
             .from('challenges')
-            .insert({
-                name: name,
-                creator_id: window.currentUser.id,
-                start_date: startDate,
-                end_date: end.toISOString().split('T')[0],
-                duration_days: duration,
-                status: 'pending'
-            })
+            .insert(challengeInsert)
             .select()
             .single();
 
@@ -42920,10 +42987,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (xpTextEl) xpTextEl.textContent = `${lifetimePoints} XP (MAX)`;
             }
 
-            // Update Model if changed
+            // Update Model if changed (but respect active rare skin)
             if (modelViewer) {
+                const activeRareSkinId = localStorage.getItem('active_rare_skin');
+                if (activeRareSkinId && typeof RARE_COLLECTION !== 'undefined' && typeof isRareUnlocked === 'function') {
+                    const rareData = RARE_COLLECTION.find(r => r.id === activeRareSkinId);
+                    if (rareData && isRareUnlocked(activeRareSkinId)) {
+                        // Rare skin is active - use it instead of level evolution
+                        const currentSrc = modelViewer.getAttribute('src');
+                        if (currentSrc !== rareData.model) {
+                            modelViewer.setAttribute('src', rareData.model);
+                        }
+                        // Skip the rest of model update (level evolution)
+                    } else {
+                        // Rare skin invalid/locked, clear it
+                        localStorage.removeItem('active_rare_skin');
+                    }
+                }
                 const currentSrc = modelViewer.getAttribute('src');
-                if (currentSrc !== currentEvolution.src) {
+                const activeRareCheck = localStorage.getItem('active_rare_skin');
+                if (!activeRareCheck && currentSrc !== currentEvolution.src) {
                     modelViewer.setAttribute('src', currentEvolution.src);
 
                     // Trigger "evolution" effect if it actually changed
@@ -43276,6 +43359,45 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <span class="skin-level-title">${evo.title}</span>
                     </div>`;
             });
+
+            html += `</div></div>`;
+
+            // Add Rare Skins section
+            const activeRareSkin = localStorage.getItem('active_rare_skin') || '';
+            html += `<div class="animation-category">
+                <div class="animation-category-title">💎 Rare Skins</div>
+                <div class="skin-levels-grid">`;
+
+            RARE_COLLECTION.forEach(rare => {
+                const rareUnlocked = isRareUnlocked(rare.id);
+                const tierData = RARE_TIERS[rare.tier];
+                const isActive = activeRareSkin === rare.id;
+                if (rareUnlocked) {
+                    html += `
+                        <div class="skin-level-item unlocked${isActive ? ' rare-skin-active' : ''}" onclick="selectRareSkin('${rare.id}')" style="cursor: pointer; position: relative; ${isActive ? 'border: 2px solid ' + tierData.color + '; box-shadow: 0 0 10px ' + tierData.glow + ';' : ''}">
+                            <span class="skin-level-badge" style="background: ${tierData.gradient}; color: white; font-size: 0.55rem;">${tierData.label}</span>
+                            <span class="skin-level-icon">${rare.emoji}</span>
+                            <span class="skin-level-title">${rare.name}</span>
+                        </div>`;
+                } else {
+                    html += `
+                        <div class="skin-level-item locked" style="position: relative;">
+                            <span class="skin-level-badge" style="background: ${tierData.gradient}; color: white; font-size: 0.55rem;">${tierData.label}</span>
+                            <span class="skin-level-icon">🔒</span>
+                            <span class="skin-level-title" style="opacity: 0.5;">${rare.name}</span>
+                        </div>`;
+                }
+            });
+
+            // Add "Use Level Skin" reset option if a rare skin is active
+            if (activeRareSkin) {
+                html += `
+                    <div class="skin-level-item unlocked" onclick="clearRareSkin()" style="cursor: pointer; border: 1px dashed rgba(255,255,255,0.3);">
+                        <span class="skin-level-badge" style="background: rgba(255,255,255,0.2); color: white; font-size: 0.55rem;">RESET</span>
+                        <span class="skin-level-icon">↩️</span>
+                        <span class="skin-level-title">Level Skin</span>
+                    </div>`;
+            }
 
             html += `</div></div>`;
 
@@ -45346,19 +45468,128 @@ document.addEventListener('DOMContentLoaded', async function() {
     })();
     </script>
     <script>
+    const RARE_TIERS = {
+        LEGENDARY: { label: 'LEGENDARY', color: '#fbbf24', glow: 'rgba(251,191,36,0.4)', gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)', buyIn: 100000, weight: 1 },
+        EPIC:      { label: 'EPIC',      color: '#a855f7', glow: 'rgba(168,85,247,0.4)', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)', buyIn: 50000,  weight: 3 },
+        RARE:      { label: 'RARE',      color: '#3b82f6', glow: 'rgba(59,130,246,0.4)', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)', buyIn: 25000,  weight: 5 },
+        COMMON:    { label: 'COMMON',    color: '#6b7280', glow: 'rgba(107,114,128,0.4)', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)', buyIn: 10000,  weight: 10 }
+    };
+
     const RARE_COLLECTION = [
-        { id: 'arny', name: 'Arny', model: 'assets/rares/arny.glb', emoji: '🥋', desc: 'The Austrian Oak', locked: true },
-        { id: 'cbum', name: 'CBum', model: 'assets/rares/cbum.glb', emoji: '🥇', desc: 'Modern Classic Physique', locked: true },
-        { id: 'elon', name: 'Elon', model: 'assets/rares/elon.glb', emoji: '🚀', desc: 'Techno-King Mode', locked: true },
-        { id: 'gohan', name: 'Gohan', model: 'assets/rares/gohan.glb', emoji: '🐲', desc: 'Beast Within', locked: true },
-        { id: 'goku', name: 'Goku', model: 'assets/rares/goku.glb', emoji: '🌌', desc: 'Super Saiyan God', locked: true },
-        { id: 'itadori', name: 'Itadori', model: 'assets/rares/itadori.glb', emoji: '👹', desc: 'Sukuna\'s Vessel', locked: true },
-        { id: 'optimus', name: 'Optimus', model: 'assets/rares/optimus.glb', emoji: '🚛', desc: 'Prime Leadership', locked: true },
-        { id: 'ronny', name: 'Ronny', model: 'assets/rares/ronny.glb', emoji: '👑', desc: 'The King of Intensity', locked: true },
-        { id: 'steve_irwin', name: 'Steve Irwin', model: 'assets/rares/steve_irwin.glb', emoji: '🐊', desc: 'The Crocodile Hunter', locked: true },
-        { id: 'trump', name: 'Trump', model: 'assets/rares/trump.glb', emoji: '🇺🇸', desc: 'High Stakes Player', locked: true },
-        { id: 'vegeta', name: 'Vegeta', model: 'assets/rares/vegeta.glb', emoji: '🤴', desc: 'Prince of All Saiyans', locked: true }
+        { id: 'arny', name: 'Arny', model: 'assets/rares/arny.glb', emoji: '🥋', desc: 'The Austrian Oak', tier: 'LEGENDARY' },
+        { id: 'optimus', name: 'Optimus', model: 'assets/rares/optimus.glb', emoji: '🚛', desc: 'Prime Leadership', tier: 'EPIC' },
+        { id: 'gohan', name: 'Gohan', model: 'assets/rares/gohan.glb', emoji: '🐲', desc: 'Beast Within', tier: 'EPIC' },
+        { id: 'goku', name: 'Goku', model: 'assets/rares/goku.glb', emoji: '🌌', desc: 'Super Saiyan God', tier: 'EPIC' },
+        { id: 'vegeta', name: 'Vegeta', model: 'assets/rares/vegeta.glb', emoji: '🤴', desc: 'Prince of All Saiyans', tier: 'EPIC' },
+        { id: 'cbum', name: 'CBum', model: 'assets/rares/cbum.glb', emoji: '🥇', desc: 'Modern Classic Physique', tier: 'RARE' },
+        { id: 'ronny', name: 'Ronny', model: 'assets/rares/ronny.glb', emoji: '👑', desc: 'The King of Intensity', tier: 'RARE' },
+        { id: 'steve_irwin', name: 'Steve Irwin', model: 'assets/rares/steve_irwin.glb', emoji: '🐊', desc: 'The Crocodile Hunter', tier: 'RARE' },
+        { id: 'itadori', name: 'Itadori', model: 'assets/rares/itadori.glb', emoji: '👹', desc: 'Sukuna\'s Vessel', tier: 'RARE' },
+        { id: 'elon', name: 'Elon', model: 'assets/rares/elon.glb', emoji: '🚀', desc: 'Techno-King Mode', tier: 'COMMON' },
+        { id: 'trump', name: 'Trump', model: 'assets/rares/trump.glb', emoji: '🇺🇸', desc: 'High Stakes Player', tier: 'COMMON' }
     ];
+
+    // Helper: check if a rare skin is unlocked
+    function isRareUnlocked(id) {
+        const unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]');
+        return unlocked.includes(id);
+    }
+
+    // Helper: unlock a rare skin
+    function unlockRare(id) {
+        const unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]');
+        if (!unlocked.includes(id)) {
+            unlocked.push(id);
+            localStorage.setItem('user_rares_unlocked', JSON.stringify(unlocked));
+        }
+    }
+
+    // Helper: get weighted random rare drop (from all rares, weighted by tier)
+    function getRandomRareDrop() {
+        const pool = [];
+        RARE_COLLECTION.forEach(rare => {
+            const tierData = RARE_TIERS[rare.tier];
+            if (tierData) {
+                for (let i = 0; i < tierData.weight; i++) {
+                    pool.push(rare);
+                }
+            }
+        });
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    // Helper: get featured monthly rare (deterministic rotation by month)
+    function getFeaturedMonthlyRare() {
+        const now = new Date();
+        const monthIndex = now.getFullYear() * 12 + now.getMonth();
+        return RARE_COLLECTION[monthIndex % RARE_COLLECTION.length];
+    }
+
+    // Select a rare skin as active tamagotchi skin
+    function selectRareSkin(id) {
+        const rare = RARE_COLLECTION.find(r => r.id === id);
+        if (!rare || !isRareUnlocked(id)) return;
+        localStorage.setItem('active_rare_skin', id);
+        // Update the main model-viewer immediately
+        const modelViewer = document.getElementById('tamagotchi-viewer') || document.querySelector('model-viewer');
+        if (modelViewer) {
+            modelViewer.setAttribute('src', rare.model);
+        }
+        // Refresh the tamagotchi modal skins display if open
+        if (typeof populateTamagotchiAnimations === 'function') {
+            populateTamagotchiAnimations();
+        }
+        showToast(rare.emoji + ' ' + rare.name + ' skin equipped!', 'success');
+    }
+
+    // Clear rare skin and revert to level-based evolution
+    function clearRareSkin() {
+        localStorage.removeItem('active_rare_skin');
+        // Trigger level-based model update
+        if (typeof updateTamagotchiDisplay === 'function') {
+            updateTamagotchiDisplay();
+        }
+        // Refresh the tamagotchi modal skins display if open
+        if (typeof populateTamagotchiAnimations === 'function') {
+            populateTamagotchiAnimations();
+        }
+        showToast('Reverted to level skin!', 'success');
+    }
+
+    // Render the featured monthly rare card on the home page
+    function renderFeaturedRareCard() {
+        const container = document.getElementById('rare-challenges-preview');
+        if (!container) return;
+
+        const featured = getFeaturedMonthlyRare();
+        if (!featured) return;
+
+        const tierData = RARE_TIERS[featured.tier];
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const currentMonth = monthNames[new Date().getMonth()];
+
+        container.innerHTML = `
+            <div class="card" onclick="openCreateChallengeModal('${featured.id}')" style="min-width: 280px; max-width: 340px; padding: 20px; border: 2px solid ${tierData.color}; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3), 0 0 20px ${tierData.glow}; border-radius: 16px;">
+                <div style="position: absolute; top: -15px; right: -15px; font-size: 5rem; opacity: 0.08; transform: rotate(15deg);">${featured.emoji}</div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                    <span style="font-size: 2rem;">${featured.emoji}</span>
+                    <div>
+                        <div style="font-weight: 800; color: white; font-size: 1.15rem;">${currentMonth} Featured</div>
+                        <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; letter-spacing: 1.5px; background: ${tierData.gradient}; color: white;">${tierData.label}</span>
+                    </div>
+                </div>
+                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 14px;">30 Days • ${tierData.buyIn.toLocaleString()} Coins</div>
+                <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 1.4rem;">${featured.emoji}</div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 0.6rem; color: rgba(255,255,255,0.5); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Guaranteed Drop</div>
+                        <div style="font-size: 0.85rem; font-weight: 700; color: ${tierData.color};">${featured.name}</div>
+                    </div>
+                    <div style="background: ${tierData.gradient}; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 800;">WIN</div>
+                </div>
+            </div>
+        `;
+    }
 
     function openRareRewardsModal() {
         const modal = document.getElementById('rare-rewards-modal');
@@ -45381,8 +45612,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const userProgress = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]');
         grid.innerHTML = RARE_COLLECTION.map(rare => {
             const isUnlocked = userProgress.includes(rare.id);
+            const tierData = RARE_TIERS[rare.tier] || RARE_TIERS.COMMON;
             return `
-                <div onclick="previewRare('${rare.id}')" class="rare-item-card" style="aspect-ratio: 1; border: 2px solid ${isUnlocked ? 'var(--secondary)' : '#f1f5f9'}; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; background: ${isUnlocked ? '#fffbeb' : 'white'};">
+                <div onclick="previewRare('${rare.id}')" class="rare-item-card" style="aspect-ratio: 1; border: 2px solid ${isUnlocked ? tierData.color : '#f1f5f9'}; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; background: ${isUnlocked ? '#fffbeb' : 'white'};">
+                    <div style="position: absolute; top: 4px; left: 4px; padding: 1px 5px; border-radius: 3px; font-size: 0.45rem; font-weight: 800; letter-spacing: 1px; background: ${tierData.gradient}; color: white;">${tierData.label}</div>
                     <div style="font-size: 2rem; filter: ${isUnlocked ? 'none' : 'grayscale(1) opacity(0.5)'};">${rare.emoji}</div>
                     <div style="font-size: 0.65rem; font-weight: 700; margin-top: 5px; color: ${isUnlocked ? 'var(--primary)' : '#94a3b8'};">${rare.name.toUpperCase()}</div>
                     ${!isUnlocked ? '<div style="position: absolute; top: 5px; right: 5px; font-size: 0.7rem;">🔒</div>' : ''}
@@ -45394,6 +45627,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     function previewRare(id) {
         const rare = RARE_COLLECTION.find(r => r.id === id);
         if (!rare) return;
+        const tierData = RARE_TIERS[rare.tier] || RARE_TIERS.COMMON;
         const viewer = document.getElementById('rare-reward-viewer');
         const loader = document.getElementById('rare-preview-loading');
         const info = document.getElementById('rare-info-panel');
@@ -45404,10 +45638,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         loader.style.display = 'flex';
         info.style.display = 'block';
         if (nameEl) nameEl.textContent = rare.name;
-        if (descEl) descEl.textContent = rare.desc;
+        if (descEl) descEl.textContent = `${tierData.label} • ${rare.desc} • ${tierData.buyIn.toLocaleString()} Coins`;
         const unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]').includes(id);
         if (statusEl) {
-            statusEl.textContent = unlocked ? '🎉 COMPLETED' : '🏆 CHALLENGE DROPS ONLY';
+            statusEl.textContent = unlocked ? '🎉 UNLOCKED' : '🏆 CHALLENGE DROPS ONLY';
             statusEl.style.background = unlocked ? '#f0fdf4' : '#fef3c7';
             statusEl.style.color = unlocked ? '#166534' : '#92400e';
         }
