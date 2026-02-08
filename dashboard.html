@@ -44057,6 +44057,108 @@ document.addEventListener('DOMContentLoaded', async function() {
         setTimeout(checkForBattleChallenges, 5000);
 
         // ============================================================
+        // INCOMING QUIZ BATTLE CHALLENGE NOTIFICATION
+        // ============================================================
+        function showQuizBattleChallengeNotification(fromName, fromId, battleId, coinBet) {
+            // Remove existing quiz battle toasts
+            document.querySelectorAll('.quiz-battle-challenge-toast').forEach(el => el.remove());
+
+            const toast = document.createElement('div');
+            toast.className = 'battle-challenge-toast quiz-battle-challenge-toast';
+            toast.innerHTML = `
+                <div class="battle-challenge-header">
+                    <div class="battle-challenge-icon" style="background: linear-gradient(135deg, rgba(124,58,237,0.3), rgba(99,102,241,0.3));">⚡</div>
+                    <div>
+                        <div class="battle-challenge-title">Quiz Battle!</div>
+                        <div class="battle-challenge-from">${fromName} challenges you!${coinBet > 0 ? ' 🪙 ' + coinBet + ' coins' : ''}</div>
+                    </div>
+                </div>
+                <div class="battle-challenge-actions">
+                    <button class="battle-challenge-accept" style="background: linear-gradient(135deg, #7c3aed, #6366f1);" onclick="window._acceptQuizBattleFromToast('${battleId}', '${fromName.replace(/'/g, "\\'")}', ${coinBet}, this)">Accept</button>
+                    <button class="battle-challenge-decline" onclick="this.closest('.battle-challenge-toast').remove()">Decline</button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Auto-dismiss after 60 seconds (longer for quiz battles)
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 400);
+                }
+            }, 60000);
+        }
+
+        window._acceptQuizBattleFromToast = function(battleId, fromName, coinBet, btn) {
+            const toast = btn.closest('.battle-challenge-toast');
+            if (toast) toast.remove();
+
+            // Call the acceptQuizBattle function from learning-inline.js
+            if (typeof window.acceptQuizBattle === 'function') {
+                window.acceptQuizBattle(battleId, fromName, coinBet);
+            }
+        };
+
+        // Poll for incoming quiz battle challenges
+        async function checkForQuizBattleChallenges() {
+            if (!window.supabaseClient || !window.currentUser) return;
+            try {
+                const userId = window.currentUser.id || window.currentUser.user_id;
+                const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+                const { data, error } = await window.supabaseClient
+                    .from('nudges')
+                    .select('id, sender_id, message, coin_bet, created_at')
+                    .eq('receiver_id', userId)
+                    .like('message', '%QUIZ BATTLE%')
+                    .is('read_at', null)
+                    .gte('created_at', fiveMinAgo)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (!error && data && data.length > 0) {
+                    const challenge = data[0];
+
+                    // Mark as read
+                    await window.supabaseClient
+                        .from('nudges')
+                        .update({ read_at: new Date().toISOString() })
+                        .eq('id', challenge.id);
+
+                    // Get sender name
+                    const { data: sender } = await window.supabaseClient
+                        .from('users')
+                        .select('name')
+                        .eq('id', challenge.sender_id)
+                        .single();
+
+                    const senderName = sender?.name || 'A friend';
+
+                    // Find the quiz battle record
+                    const { data: battles } = await window.supabaseClient
+                        .from('quiz_battles')
+                        .select('id, coin_bet')
+                        .eq('challenger_id', challenge.sender_id)
+                        .eq('opponent_id', userId)
+                        .eq('status', 'pending')
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+
+                    if (battles && battles.length > 0) {
+                        showQuizBattleChallengeNotification(senderName, challenge.sender_id, battles[0].id, battles[0].coin_bet);
+                    }
+                }
+            } catch (e) {
+                // Silently fail
+            }
+        }
+
+        // Check for quiz battle challenges every 15 seconds
+        setInterval(checkForQuizBattleChallenges, 15000);
+        setTimeout(checkForQuizBattleChallenges, 6000);
+
+        // ============================================================
         // ACTUAL BATTLE ENGINE (renamed from startBattle)
         // ============================================================
         window._runBattle = async function(opponentName) {
