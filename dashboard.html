@@ -5916,10 +5916,65 @@ async function applyAppTheme(themeKey) {
          </div>
 
         <!-- Live Challenges Section -->
+        <div style="margin: 20px 0 15px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-green); padding-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <h3 style="margin: 0;">Monthly Rares</h3>
+                <span style="background: linear-gradient(135deg, #f59e0b, #f97316); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; letter-spacing: 1px;">LIMITED</span>
+            </div>
+            <button onclick="openRareRewardsModal()" style="background: none; border: none; color: var(--primary); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; text-decoration: underline;">
+                View Collection &rarr;
+            </button>
+        </div>
+
+        <div id="rare-challenges-preview" style="display: flex; gap: 12px; overflow-x: auto; padding: 5px 5px 15px 5px; margin-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none;">
+            <style>#rare-challenges-preview::-webkit-scrollbar { display: none; }</style>
+            <!-- These will be pre-made "Global" challenges people can buy into -->
+            <div class="card" onclick="openCreateChallengeModal()" style="min-width: 240px; padding: 20px; border: 2px solid var(--secondary); background: linear-gradient(135deg, #fff, var(--accent-green)); cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                <div style="position: absolute; top: -10px; right: -10px; font-size: 4rem; opacity: 0.1; transform: rotate(15deg);">🐲</div>
+                <div style="font-size: 2rem; margin-bottom: 12px;">🎭</div>
+                <div style="font-weight: 800; color: var(--primary); font-size: 1.1rem; margin-bottom: 4px;">The Oracle Challenge</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">30 Days • 10,000 Coins</div>
+                <div style="background: white; border: 1px solid var(--secondary); border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 1.2rem;">🏯</div>
+                    <div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Reward</div>
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">Rare: Gohan (Z)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" onclick="openCreateChallengeModal()" style="min-width: 240px; padding: 20px; border: 2px solid var(--primary); background: linear-gradient(135deg, #fff, #eff6ff); cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                <div style="position: absolute; top: -10px; right: -10px; font-size: 4rem; opacity: 0.1; transform: rotate(15deg);">🚀</div>
+                <div style="font-size: 2rem; margin-bottom: 12px;">🌌</div>
+                <div style="font-weight: 800; color: var(--primary); font-size: 1.1rem; margin-bottom: 4px;">Cyber Titan Grind</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">30 Days • 25,000 Coins</div>
+                <div style="background: white; border: 1px solid var(--primary); border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 1.2rem;">🔋</div>
+                    <div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Reward</div>
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">Rare: Elon (CEO)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" onclick="openCreateChallengeModal()" style="min-width: 240px; padding: 20px; border: 2px solid #ef4444; background: linear-gradient(135deg, #fff, #fff1f2); cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                <div style="position: absolute; top: -10px; right: -10px; font-size: 4rem; opacity: 0.1; transform: rotate(15deg);">🔥</div>
+                <div style="font-size: 2rem; margin-bottom: 12px;">👑</div>
+                <div style="font-weight: 800; color: var(--primary); font-size: 1.1rem; margin-bottom: 4px;">Saiyan Prince Prep</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">30 Days • 50,000 Coins</div>
+                <div style="background: white; border: 1px solid #ef4444; border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 1.2rem;">💥</div>
+                    <div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Reward</div>
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">Rare: Vegeta (Elite)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div style="margin: 20px 0 15px 0; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0;">Live Challenges</h3>
+            <h3 style="margin: 0;">Friend Challenges</h3>
             <button onclick="openCreateChallengeModal()" style="background: none; border: none; color: var(--primary); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                <span style="font-size: 1.1rem;">+</span> New
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                Create Challenge
             </button>
         </div>
         <div id="home-challenges-container">
@@ -13223,7 +13278,52 @@ function viewWorkoutHistoryDetail(date) {
     </div>
 
     <!-- Create Challenge Modal -->
-    <div id="create-challenge-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10008; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+    <!-- Rare Rewards Collection Modal -->
+    <div id="rare-rewards-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 10009; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+        <div class="modal-content" style="width: 95%; max-width: 600px; max-height: 90vh; background: white; border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+            <div style="padding: 25px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(to right, #ffffff, var(--accent-green));">
+                <div>
+                    <h2 style="margin: 0; font-family: 'Playfair Display'; color: var(--primary);">Rare Drops</h2>
+                    <p style="margin: 5px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">Win these by completing Monthly Challenges</p>
+                </div>
+                <button onclick="closeRareRewardsModal()" style="background: #f1f5f9; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <svg style="width: 20px; height: 20px; stroke: #64748b;" fill="none" viewBox="0 0 24 24" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div style="flex: 1; overflow-y: auto; padding: 25px;">
+                <!-- 3D Preview Stage -->
+                <div id="rare-preview-stage" style="width: 100%; height: 300px; background: radial-gradient(circle, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px; margin-bottom: 25px; position: relative;">
+                    <div id="rare-preview-loading" style="display: none; position: absolute; inset: 0; align-items: center; justify-content: center; background: rgba(255,255,255,0.7); z-index: 2; border-radius: 16px;">
+                        <div class="learning-spinner"></div>
+                    </div>
+                    <model-viewer id="rare-reward-viewer" 
+                                  camera-controls 
+                                  auto-rotate 
+                                  rotation-per-second="30deg"
+                                  shadow-intensity="1" 
+                                  environment-image="neutral"
+                                  style="width: 100%; height: 100%;"
+                                  loading="lazy">
+                    </model-viewer>
+                </div>
+
+                <div id="rare-info-panel" style="text-align: center; margin-bottom: 25px; display: none;">
+                    <h3 id="rare-reward-name" style="margin: 0; color: var(--primary);">Character Name</h3>
+                    <p id="rare-reward-desc" style="margin: 5px 0; font-size: 0.9rem; color: var(--text-muted);">Description</p>
+                    <div id="rare-reward-status" style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;">LOCKED</div>
+                </div>
+
+                <div id="rares-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                    <!-- Rares will be injected here -->
+                </div>
+            </div>
+            
+            <div style="padding: 20px; background: #f8fafc; border-top: 1px solid #f1f5f9;">
+                <button onclick="closeRareRewardsModal(); switchAppTab('dashboard');" style="width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">Back to Challenges</button>
+            </div>
+        </div>
+    </div>
         <div style="background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 85vh; overflow: hidden; animation: fadeInScale 0.3s ease-out;">
             <!-- Header -->
             <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
@@ -45245,6 +45345,78 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         console.log('🎮 Progression & Battle System loaded!');
     })();
+    </script>
+    <script>
+    const RARE_COLLECTION = [
+        { id: 'arny', name: 'Arny', model: 'assets/rares/arny.glb', emoji: '🥋', desc: 'The Austrian Oak', locked: true },
+        { id: 'cbum', name: 'CBum', model: 'assets/rares/cbum.glb', emoji: '🥇', desc: 'Modern Classic Physique', locked: true },
+        { id: 'elon', name: 'Elon', model: 'assets/rares/elon.glb', emoji: '🚀', desc: 'Techno-King Mode', locked: true },
+        { id: 'gohan', name: 'Gohan', model: 'assets/rares/gohan.glb', emoji: '🐲', desc: 'Beast Within', locked: true },
+        { id: 'goku', name: 'Goku', model: 'assets/rares/goku.glb', emoji: '🌌', desc: 'Super Saiyan God', locked: true },
+        { id: 'itadori', name: 'Itadori', model: 'assets/rares/itadori.glb', emoji: '👹', desc: 'Sukuna\'s Vessel', locked: true },
+        { id: 'optimus', name: 'Optimus', model: 'assets/rares/optimus.glb', emoji: '🚛', desc: 'Prime Leadership', locked: true },
+        { id: 'ronny', name: 'Ronny', model: 'assets/rares/ronny.glb', emoji: '👑', desc: 'The King of Intensity', locked: true },
+        { id: 'steve_irwin', name: 'Steve Irwin', model: 'assets/rares/steve_irwin.glb', emoji: '🐊', desc: 'The Crocodile Hunter', locked: true },
+        { id: 'trump', name: 'Trump', model: 'assets/rares/trump.glb', emoji: '🇺🇸', desc: 'High Stakes Player', locked: true },
+        { id: 'vegeta', name: 'Vegeta', model: 'assets/rares/vegeta.glb', emoji: '🤴', desc: 'Prince of All Saiyans', locked: true }
+    ];
+
+    function openRareRewardsModal() {
+        const modal = document.getElementById('rare-rewards-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            renderRaresGrid();
+            previewRare(RARE_COLLECTION[0].id);
+        }
+    }
+
+    function closeRareRewardsModal() {
+        const modal = document.getElementById('rare-rewards-modal');
+        if (modal) modal.style.display = 'none';
+        const viewer = document.getElementById('rare-reward-viewer');
+        if (viewer) viewer.src = '';
+    }
+
+    function renderRaresGrid() {
+        const grid = document.getElementById('rares-grid');
+        const userProgress = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]');
+        grid.innerHTML = RARE_COLLECTION.map(rare => {
+            const isUnlocked = userProgress.includes(rare.id);
+            return `
+                <div onclick="previewRare('${rare.id}')" class="rare-item-card" style="aspect-ratio: 1; border: 2px solid ${isUnlocked ? 'var(--secondary)' : '#f1f5f9'}; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; background: ${isUnlocked ? '#fffbeb' : 'white'};">
+                    <div style="font-size: 2rem; filter: ${isUnlocked ? 'none' : 'grayscale(1) opacity(0.5)'};">${rare.emoji}</div>
+                    <div style="font-size: 0.65rem; font-weight: 700; margin-top: 5px; color: ${isUnlocked ? 'var(--primary)' : '#94a3b8'};">${rare.name.toUpperCase()}</div>
+                    ${!isUnlocked ? '<div style="position: absolute; top: 5px; right: 5px; font-size: 0.7rem;">🔒</div>' : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    function previewRare(id) {
+        const rare = RARE_COLLECTION.find(r => r.id === id);
+        if (!rare) return;
+        const viewer = document.getElementById('rare-reward-viewer');
+        const loader = document.getElementById('rare-preview-loading');
+        const info = document.getElementById('rare-info-panel');
+        const nameEl = document.getElementById('rare-reward-name');
+        const descEl = document.getElementById('rare-reward-desc');
+        const statusEl = document.getElementById('rare-reward-status');
+        if (!viewer) return;
+        loader.style.display = 'flex';
+        info.style.display = 'block';
+        if (nameEl) nameEl.textContent = rare.name;
+        if (descEl) descEl.textContent = rare.desc;
+        const unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]').includes(id);
+        if (statusEl) {
+            statusEl.textContent = unlocked ? '🎉 COMPLETED' : '🏆 CHALLENGE DROPS ONLY';
+            statusEl.style.background = unlocked ? '#f0fdf4' : '#fef3c7';
+            statusEl.style.color = unlocked ? '#166534' : '#92400e';
+        }
+        viewer.src = rare.model;
+        viewer.addEventListener('load', () => {
+            loader.style.display = 'none';
+        }, { once: true });
+    }
     </script>
 </body>
 </html>
