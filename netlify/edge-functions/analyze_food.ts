@@ -1,39 +1,6 @@
 
 import { Context } from "@netlify/edge-functions";
 
-// Helper to look up food in Open Food Facts
-async function lookupOpenFoodFacts(query: string) {
-  try {
-    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=3`;
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    
-    const data = await response.json();
-    const products = data.products || [];
-    
-    // Find first product with calories
-    for (const product of products) {
-      const nutriments = product.nutriments;
-      if (nutriments && (nutriments['energy-kcal_100g'] || nutriments['energy-kcal'])) {
-        return {
-          name: product.product_name,
-          calories_100g: nutriments['energy-kcal_100g'] || nutriments['energy-kcal'],
-          protein_100g: nutriments.proteins_100g || 0,
-          carbs_100g: nutriments.carbohydrates_100g || 0,
-          fat_100g: nutriments.fat_100g || 0,
-          fiber_100g: nutriments.fiber_100g || 0,
-          brand: product.brands || "Generic",
-          verified: true
-        };
-      }
-    }
-    return null;
-  } catch (e) {
-    console.error(`OFF Lookup failed for ${query}:`, e);
-    return null;
-  }
-}
-
 export default async function (request: Request, context: Context) {
   // Only accept POST
   if (request.method !== "POST") {
@@ -62,13 +29,25 @@ export default async function (request: Request, context: Context) {
     // Prepare the Gemini API request
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
-    const systemPrompt = `You are a nutrition analysis AI. Analyze the food in this image and provide detailed nutritional information.
+    const systemPrompt = `You are a precise nutrition analysis AI. Analyze the food in this image and provide accurate nutritional information.
 ${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : ''}
 INSTRUCTIONS:
 1. Identify all food items visible in the image
-2. Estimate portion sizes (in grams if possible, or common units)
-3. Calculate nutritional values (calories, macros, and key micronutrients)
+2. Estimate portion sizes in grams based on visual cues (plate size, item proportions)
+3. Calculate nutritional values using standard USDA nutrition data per 100g, then scale to the estimated portion
 4. Provide your confidence level (high/medium/low)
+
+CALORIE REFERENCE (per 100g raw weight):
+- Fruits: 30-90 kcal (berries ~57, banana ~89, apple ~52)
+- Vegetables: 15-40 kcal (broccoli ~34, spinach ~23)
+- Grains/rice (cooked): 100-150 kcal (white rice ~130, pasta ~131)
+- Chicken breast (cooked): ~165 kcal
+- Eggs: ~155 kcal
+- Bread: ~250 kcal
+- Nuts: 550-650 kcal
+- Oils/butter: 700-900 kcal
+
+Use these as anchors. If your estimate is wildly different from these ranges for a similar food, double-check your calculation.
 
 RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
 {
@@ -105,7 +84,8 @@ IMPORTANT:
 - Return RAW JSON only - no markdown, no code blocks, no backticks
 - Keep food item names SHORT (max 30 chars)
 - Be realistic with portion sizes
-- Round numbers to 1 decimal place`;
+- Round numbers to 1 decimal place
+- Calculate each item as: (calories_per_100g * portion_weight_g / 100)`;
 
     const payload = {
       contents: [
@@ -149,42 +129,6 @@ IMPORTANT:
 
     const cleanedText = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const nutritionData = JSON.parse(cleanedText);
-
-    // HYBRID UPGRADE: Fact check each item against Open Food Facts
-    console.log(`Fact checking ${nutritionData.foodItems.length} items...`);
-    
-    for (let item of nutritionData.foodItems) {
-      const dbMatch = await lookupOpenFoodFacts(item.name);
-      
-      if (dbMatch) {
-        console.log(`✅ VERIFIED: ${item.name} matched with ${dbMatch.name} (${dbMatch.brand})`);
-        
-        // Use portion weight to calculate new verified values
-        const weightFactor = (item.portion_weight_g || 100) / 100;
-        
-        item.verified = true;
-        item.db_source = "Open Food Facts";
-        item.db_name = dbMatch.name;
-        item.db_brand = dbMatch.brand;
-        
-        // Update values with database truths
-        item.calories = Number((dbMatch.calories_100g * weightFactor).toFixed(1));
-        item.protein_g = Number((dbMatch.protein_100g * weightFactor).toFixed(1));
-        item.carbs_g = Number((dbMatch.carbs_100g * weightFactor).toFixed(1));
-        item.fat_g = Number((dbMatch.fat_100g * weightFactor).toFixed(1));
-        item.fiber_g = Number((dbMatch.fiber_100g * weightFactor).toFixed(1));
-      } else {
-        item.verified = false;
-        item.db_source = "Gemini AI Estimate";
-      }
-    }
-
-    // Recalculate totals based on verified numbers
-    nutritionData.totals.calories = Number(nutritionData.foodItems.reduce((sum, i) => sum + i.calories, 0).toFixed(1));
-    nutritionData.totals.protein_g = Number(nutritionData.foodItems.reduce((sum, i) => sum + i.protein_g, 0).toFixed(1));
-    nutritionData.totals.carbs_g = Number(nutritionData.foodItems.reduce((sum, i) => sum + i.carbs_g, 0).toFixed(1));
-    nutritionData.totals.fat_g = Number(nutritionData.foodItems.reduce((sum, i) => sum + i.fat_g, 0).toFixed(1));
-    nutritionData.totals.fiber_g = Number(nutritionData.foodItems.reduce((sum, i) => sum + i.fiber_g, 0).toFixed(1));
 
     return new Response(JSON.stringify({ success: true, data: nutritionData }), {
       status: 200,
