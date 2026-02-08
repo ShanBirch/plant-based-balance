@@ -13325,109 +13325,106 @@ function viewWorkoutHistoryDetail(date) {
     </div>
 
     <!-- Create Challenge Modal -->
-    <div id="create-challenge-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10009; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-        <div style="background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 85vh; overflow: hidden; animation: fadeInScale 0.3s ease-out;">
+    <div id="create-challenge-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10009; align-items: center; justify-content: center; backdrop-filter: blur(6px);">
+        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 24px; max-width: 420px; width: 92%; max-height: 85vh; overflow: hidden; animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(59,130,246,0.15);">
             <!-- Header -->
-            <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
-                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-main);">Create Challenge</h3>
-                <button onclick="closeCreateChallengeModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</button>
+            <div style="text-align: center; padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="margin: 0 0 4px; font-size: 1.3rem; font-weight: 800; color: #60a5fa; text-shadow: 0 0 20px rgba(96,165,250,0.3);">🏆 Create Challenge</h3>
+                <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.6);">30-day XP battle with friends</p>
             </div>
             <!-- Content -->
-            <div style="padding: 20px; overflow-y: auto; max-height: calc(85vh - 140px);">
+            <div style="padding: 16px; overflow-y: auto; max-height: calc(85vh - 140px);">
                 <!-- How It Works -->
-                <div style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-                    <div style="font-weight: 700; color: #1e40af; font-size: 0.95rem; margin-bottom: 10px;">How Challenges Work</div>
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); border-radius: 14px; padding: 14px; margin-bottom: 16px;">
+                    <div style="font-weight: 700; color: #93c5fd; font-size: 0.8rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">How It Works</div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
-                            <span style="color: #3b82f6; font-weight: 700; font-size: 0.85rem; min-width: 18px;">1.</span>
-                            <span style="color: #1e3a5f; font-size: 0.85rem;">Choose your wager (min. <strong>10,000 Coins</strong>). Everyone pays, everyone competes.</span>
+                            <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">1.</span>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Choose your wager (min. <strong style="color: #fbbf24;">10,000 Coins</strong>). Everyone pays in.</span>
                         </div>
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
-                            <span style="color: #3b82f6; font-weight: 700; font-size: 0.85rem; min-width: 18px;">2.</span>
-                            <span style="color: #1e3a5f; font-size: 0.85rem;">Earn <strong>double XP</strong> on everything for 30 days -- meals, workouts, streaks.</span>
+                            <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">2.</span>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Earn <strong style="color: #4ade80;">double XP</strong> on everything for 30 days.</span>
                         </div>
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
-                            <span style="color: #3b82f6; font-weight: 700; font-size: 0.85rem; min-width: 18px;">3.</span>
-                            <span style="color: #1e3a5f; font-size: 0.85rem;">Whoever earns the <strong>most XP</strong> by the end wins.</span>
+                            <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">3.</span>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Most <strong style="color: #c084fc;">XP</strong> at the end wins.</span>
                         </div>
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
-                            <span style="color: #3b82f6; font-weight: 700; font-size: 0.85rem; min-width: 18px;">4.</span>
-                            <span style="color: #1e3a5f; font-size: 0.85rem;">Winner gets <strong>rare drops</strong> -- exclusive 3D props, skins, and badges for your profile.</span>
+                            <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">4.</span>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Winner gets <strong style="color: #fbbf24;">rare drops</strong> — 3D skins &amp; badges.</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Challenge Name -->
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Challenge Name</label>
-                    <input type="text" id="challenge-name-input" placeholder="e.g., February Grind" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box;">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;">Challenge Name</label>
+                    <input type="text" id="challenge-name-input" placeholder="e.g., February Grind" style="width: 100%; padding: 10px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; font-size: 0.9rem; color: white; box-sizing: border-box;">
                 </div>
 
                 <!-- Duration (fixed 30 days, shown as info) -->
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Duration</label>
-                    <div style="padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; background: #f8fafc; color: var(--text-main);">30 days</div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;">Duration</label>
+                    <div style="padding: 10px 12px; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; font-size: 0.9rem; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8);">30 days</div>
                     <input type="hidden" id="challenge-duration-select" value="30">
                 </div>
 
                 <!-- Start Date -->
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Start Date</label>
-                    <input type="date" id="challenge-start-date" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box;">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;">Start Date</label>
+                    <input type="date" id="challenge-start-date" style="width: 100%; padding: 10px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; font-size: 0.9rem; color: white; box-sizing: border-box; color-scheme: dark;">
                 </div>
 
                 <!-- Select Friends -->
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Invite Friends (min. 1)</label>
-                    <div id="challenge-friends-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px;">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;">Invite Friends (min. 1)</label>
+                    <div id="challenge-friends-list" style="max-height: 180px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.04);">
                         <!-- Friends will be loaded here -->
-                        <div style="padding: 20px; text-align: center; color: var(--text-muted);">Loading friends...</div>
+                        <div style="padding: 20px; text-align: center; color: rgba(255,255,255,0.5);">Loading friends...</div>
                     </div>
-                    <div style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
+                    <div style="margin-top: 6px; font-size: 0.75rem; color: rgba(255,255,255,0.4);">
                         <span id="challenge-selected-count">0</span> friend(s) selected
                     </div>
                 </div>
 
-                <!-- Prize Info -->
-                <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; padding: 15px; margin-bottom: 12px;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                        <span style="font-size: 1.5rem;">🏆</span>
-                        <div>
-                            <div style="font-weight: 700; color: #92400e; font-size: 0.95rem;">Winner Gets Rare Drops!</div>
-                            <div style="font-size: 0.8rem; color: #a16207;">Exclusive 3D props, skins &amp; badges</div>
-                        </div>
+                <!-- Wager Amount Picker -->
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Wager Coins</span>
+                        <span style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span class="coin-balance-sync">0</span></span>
                     </div>
-                    <div style="font-size: 0.8rem; color: #a16207; border-top: 1px solid rgba(146,64,14,0.15); padding-top: 8px;">
-                        All participants earn double XP + a participation reward. Only the winner unlocks the rare stuff.
-                    </div>
-                </div>
-
-                <!-- Bet Amount Picker -->
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Wager Amount (min. 10,000 coins)</label>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
-                        <button type="button" onclick="window._setCreateChallengeBet(10000, this)" class="create-challenge-bet-btn active" style="flex: 1; min-width: 60px; padding: 10px 6px; background: var(--primary); color: white; border: 2px solid var(--primary); border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">🪙 10K</button>
-                        <button type="button" onclick="window._setCreateChallengeBet(25000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 60px; padding: 10px 6px; background: #f8fafc; color: var(--text-main); border: 2px solid #e2e8f0; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">🪙 25K</button>
-                        <button type="button" onclick="window._setCreateChallengeBet(50000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 60px; padding: 10px 6px; background: #f8fafc; color: var(--text-main); border: 2px solid #e2e8f0; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">🪙 50K</button>
-                        <button type="button" onclick="window._setCreateChallengeBet(100000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 60px; padding: 10px 6px; background: #f8fafc; color: var(--text-main); border: 2px solid #e2e8f0; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">🪙 100K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(10000, this)" class="create-challenge-bet-btn active" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 10K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(25000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 25K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(50000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 50K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(100000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 100K</button>
                     </div>
-                    <input type="number" id="create-challenge-custom-bet" placeholder="Or enter custom amount (min 10,000)..." min="10000" step="1000" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem; box-sizing: border-box;" oninput="window._setCreateChallengeBet(parseInt(this.value) || 0)">
-                    <div style="margin-top: 6px; font-size: 0.78rem; color: var(--text-muted);">Your balance: <strong class="coin-balance-sync">0</strong> coins. Everyone pays to enter.</div>
+                    <input type="number" id="create-challenge-custom-bet" placeholder="Or enter custom amount..." min="10000" step="1000" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 0.85rem; box-sizing: border-box;" oninput="window._setCreateChallengeBet(parseInt(this.value) || 0)">
                 </div>
 
                 <!-- Entry Fee Info -->
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                <div style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.3rem;">🪙</span>
                     <div>
-                        <div style="font-weight: 700; color: #166534; font-size: 0.9rem;" id="create-challenge-fee-display">10,000 Coins entry fee</div>
-                        <div style="font-size: 0.78rem; color: #15803d;">Deducted when you and your friends join</div>
+                        <div style="font-weight: 700; color: #fbbf24; font-size: 0.85rem;" id="create-challenge-fee-display">10,000 Coins entry fee</div>
+                        <div style="font-size: 0.72rem; color: rgba(251,191,36,0.7);">Deducted when you and your friends join</div>
+                    </div>
+                </div>
+
+                <!-- Prize Info -->
+                <div style="background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.2); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.3rem;">✨</span>
+                    <div>
+                        <div style="font-weight: 700; color: #c084fc; font-size: 0.85rem;">Winner Gets Rare Drops!</div>
+                        <div style="font-size: 0.72rem; color: rgba(192,132,252,0.7);">Exclusive 3D skins, props &amp; badges</div>
                     </div>
                 </div>
             </div>
             <!-- Footer -->
-            <div style="padding: 15px 20px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
-                <button onclick="closeCreateChallengeModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: var(--text-muted); cursor: pointer;">Cancel</button>
-                <button onclick="createChallenge()" id="create-challenge-btn" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; color: white; cursor: pointer;">Create Challenge</button>
+            <div style="padding: 12px 16px 16px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px;">
+                <button onclick="closeCreateChallengeModal()" style="flex: 1; padding: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; background: transparent; color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button onclick="createChallenge()" id="create-challenge-btn" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; border-radius: 12px; font-size: 0.85rem; font-weight: 700; color: white; cursor: pointer; box-shadow: 0 4px 15px rgba(59,130,246,0.4);">Create Challenge</button>
             </div>
         </div>
     </div>
@@ -31509,21 +31506,21 @@ async function loadFriendsForChallenge() {
         if (error) throw error;
 
         if (!friends || friends.length === 0) {
-            container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">No friends yet. Add friends first!</div>';
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: rgba(255,255,255,0.5);">No friends yet. Add friends first!</div>';
             return;
         }
 
         container.innerHTML = friends.map(friend => {
             const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
             return `
-                <label style="display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer;">
-                    <input type="checkbox" class="challenge-friend-checkbox" value="${friend.friend_id}" style="width: 18px; height: 18px; accent-color: var(--primary);">
-                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem; overflow: hidden;">
+                <label style="display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
+                    <input type="checkbox" class="challenge-friend-checkbox" value="${friend.friend_id}" style="width: 18px; height: 18px; accent-color: #60a5fa;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, rgba(96,165,250,0.4), rgba(59,130,246,0.4)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem; overflow: hidden;">
                         ${friend.friend_photo ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
                     </div>
                     <div style="flex: 1;">
-                        <div style="font-weight: 600; color: var(--text-main);">${friend.friend_name}</div>
-                        ${friend.current_streak > 0 ? `<div style="font-size: 0.75rem; color: var(--text-muted);">🔥 ${friend.current_streak} day streak</div>` : ''}
+                        <div style="font-weight: 600; color: white; font-size: 0.9rem;">${friend.friend_name}</div>
+                        ${friend.current_streak > 0 ? `<div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">🔥 ${friend.current_streak} day streak</div>` : ''}
                     </div>
                 </label>
             `;
@@ -31556,17 +31553,17 @@ window._setCreateChallengeBet = function(amount, btnEl) {
     }
     createChallengeBetAmount = Math.max(amount, CHALLENGE_MIN_BET);
 
-    // Update active button styling
+    // Update active button styling (dark theme)
     if (btnEl) {
         document.querySelectorAll('.create-challenge-bet-btn').forEach(b => {
-            b.style.background = '#f8fafc';
-            b.style.color = 'var(--text-main)';
-            b.style.borderColor = '#e2e8f0';
+            b.style.background = 'rgba(255,255,255,0.08)';
+            b.style.color = 'white';
+            b.style.borderColor = 'rgba(255,255,255,0.15)';
             b.classList.remove('active');
         });
-        btnEl.style.background = 'var(--primary)';
+        btnEl.style.background = 'rgba(255,255,255,0.15)';
         btnEl.style.color = 'white';
-        btnEl.style.borderColor = 'var(--primary)';
+        btnEl.style.borderColor = 'rgba(255,255,255,0.3)';
         btnEl.classList.add('active');
         // Clear custom input
         const customInput = document.getElementById('create-challenge-custom-bet');
@@ -31574,9 +31571,9 @@ window._setCreateChallengeBet = function(amount, btnEl) {
     } else {
         // Custom input used - deactivate all preset buttons
         document.querySelectorAll('.create-challenge-bet-btn').forEach(b => {
-            b.style.background = '#f8fafc';
-            b.style.color = 'var(--text-main)';
-            b.style.borderColor = '#e2e8f0';
+            b.style.background = 'rgba(255,255,255,0.08)';
+            b.style.color = 'white';
+            b.style.borderColor = 'rgba(255,255,255,0.15)';
             b.classList.remove('active');
         });
     }
