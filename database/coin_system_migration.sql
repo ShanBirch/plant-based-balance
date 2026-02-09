@@ -3,7 +3,7 @@
 
 -- Add coin balance to users table
 ALTER TABLE public.users
-ADD COLUMN IF NOT EXISTS coin_balance INTEGER DEFAULT 0;
+ADD COLUMN IF NOT EXISTS coin_balance INTEGER DEFAULT 1200;
 
 -- Coin transaction log (audit trail)
 CREATE TABLE IF NOT EXISTS public.coin_transactions (
