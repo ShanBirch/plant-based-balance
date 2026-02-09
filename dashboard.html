@@ -77,7 +77,7 @@
 <!-- <link rel="stylesheet" href="lib/avatar.css"> -->
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 <!-- Preload onboarding 3D models so they display instantly in the wizard -->
-<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby.glb" as="fetch" crossorigin>
+<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>
 <link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
 
@@ -18812,7 +18812,7 @@ function updateWizardUI() {
     if(currentWizardStep === 7) {
         const fitgotchiPreview = document.getElementById('wizard-fitgotchi-preview');
         if (fitgotchiPreview) {
-            const babySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby.glb';
+            const babySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
             if (fitgotchiPreview.getAttribute('src') !== babySrc) {
                 fitgotchiPreview.setAttribute('src', babySrc);
             }
@@ -19567,7 +19567,7 @@ function initializeCharacterCustomization() {
     const previewModel = document.getElementById('wizard-preview-model');
     if (previewModel) {
         // Baby model is unisex - same for all genders in onboarding
-        const babySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby.glb';
+        const babySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
         if (previewModel.getAttribute('src') !== babySrc) {
             previewModel.setAttribute('src', babySrc);
         }
@@ -27628,7 +27628,7 @@ function openAsClient() {
                 <div style="width: 100%; height: 320px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative;">
                     <model-viewer
                         id="wizard-fitgotchi-preview"
-                        src="https://f005.backblazeb2.com/file/shannonsvideos/baby.glb"
+                        src="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -27896,7 +27896,7 @@ function openAsClient() {
                 <div id="wizard-character-preview" style="width: 100%; height: 360px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative;">
                     <model-viewer
                         id="wizard-preview-model"
-                        src="https://f005.backblazeb2.com/file/shannonsvideos/baby.glb"
+                        src="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -43606,7 +43606,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     <script>
     (function() {
         const TAMAGOTCHI_EVOLUTIONS_MALE = [
-            { level: 1,  xp: 0,    title: "Hatchling", src: "https://f005.backblazeb2.com/file/shannonsvideos/baby.glb" },
+            { level: 1,  xp: 0,    title: "Hatchling", src: "https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" },
             { level: 5,  xp: 15,   title: "Newcomer",  src: "https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb" },
             { level: 10, xp: 46,   title: "Rising",    src: "https://f005.backblazeb2.com/file/shannonsvideos/level_10_real_final.glb" },
             { level: 20, xp: 133,  title: "Growing",   src: "https://f005.backblazeb2.com/file/shannonsvideos/level_20_real_final.glb" },
@@ -43621,7 +43621,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         ];
 
         const TAMAGOTCHI_EVOLUTIONS_FEMALE = [
-            { level: 1,  xp: 0,    title: "Hatchling", src: "https://f005.backblazeb2.com/file/shannonsvideos/baby.glb" },
+            { level: 1,  xp: 0,    title: "Hatchling", src: "https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" },
             { level: 5,  xp: 15,   title: "Newcomer",  src: "https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb" },
             { level: 10, xp: 46,   title: "Rising",    src: "https://f005.backblazeb2.com/file/shannonsvideos/level_10_female_final.glb" },
             { level: 20, xp: 133,  title: "Growing",   src: "https://f005.backblazeb2.com/file/shannonsvideos/level_20_female_final.glb" },
@@ -44035,67 +44035,73 @@ document.addEventListener('DOMContentLoaded', async function() {
         // bow, say_goodbye, block, die_1, volleyball, kick_2, dance_5, agree,
         // stand, angry_3, heart_pose
         const ANIMATION_UNLOCKS = [
-            // Baby (lvl 1-4) can only walk - everything else unlocks at lvl 5+
+            // Level 1 starter animations (baby has full animations now)
             { name: 'walk', displayName: 'Walk', unlockLevel: 1, icon: '🚶', category: 'special' },
+            { name: 'greet', displayName: 'Wave', unlockLevel: 1, icon: '👋', category: 'greetings' },
+            { name: 'agree', displayName: 'Agree', unlockLevel: 1, icon: '👍', category: 'reactions' },
+            { name: 'laugh', displayName: 'Laugh', unlockLevel: 1, icon: '😄', category: 'celebrations' },
+            { name: 'boxing', displayName: 'Boxing', unlockLevel: 1, icon: '🥊', category: 'combat' },
 
-            // Greetings - unlock from lvl 5
-            { name: 'greet', displayName: 'Wave', unlockLevel: 5, icon: '👋', category: 'greetings' },
-            { name: 'bow', displayName: 'Bow', unlockLevel: 8, icon: '🙇', category: 'greetings' },
-            { name: 'greet_1', displayName: 'Hey!', unlockLevel: 12, icon: '🤙', category: 'greetings' },
-            { name: 'say_goodbye', displayName: 'Goodbye', unlockLevel: 20, icon: '👋', category: 'greetings' },
+            // Level 3 unlocks
+            { name: 'fold_arms', displayName: 'Fold Arms', unlockLevel: 3, icon: '🤔', category: 'reactions' },
 
-            // Reactions - unlock from lvl 5
-            { name: 'agree', displayName: 'Agree', unlockLevel: 5, icon: '👍', category: 'reactions' },
-            { name: 'fold_arms', displayName: 'Fold Arms', unlockLevel: 7, icon: '🤔', category: 'reactions' },
-            { name: 'sad_stand', displayName: 'Sad', unlockLevel: 9, icon: '😔', category: 'reactions' },
-            { name: 'angry', displayName: 'Angry', unlockLevel: 12, icon: '😠', category: 'reactions' },
-            { name: 'angry_1', displayName: 'Annoyed', unlockLevel: 15, icon: '😤', category: 'reactions' },
-            { name: 'lose', displayName: 'Lose', unlockLevel: 18, icon: '😞', category: 'reactions' },
-            { name: 'depressed_walk', displayName: 'Sad Walk', unlockLevel: 22, icon: '🚶', category: 'reactions' },
-            { name: 'angry_walk', displayName: 'Angry Walk', unlockLevel: 28, icon: '😡', category: 'reactions' },
-
-            // Celebration animations - unlock from lvl 5
-            { name: 'laugh', displayName: 'Laugh', unlockLevel: 5, icon: '😄', category: 'celebrations' },
-            { name: 'clap', displayName: 'Clap', unlockLevel: 8, icon: '👏', category: 'celebrations' },
-            { name: 'laugh_1', displayName: 'Giggle', unlockLevel: 12, icon: '😂', category: 'celebrations' },
-            { name: 'arms_up_still', displayName: 'Arms Up', unlockLevel: 16, icon: '🙌', category: 'celebrations' },
-            { name: 'heart_pose', displayName: 'Heart Pose', unlockLevel: 20, icon: '❤️', category: 'celebrations' },
-            { name: 'laugh_2', displayName: 'LOL', unlockLevel: 25, icon: '🤣', category: 'celebrations' },
-
-            // Exercise animations - unlock from lvl 5
+            // Level 5 unlocks (Newcomer evolution)
+            { name: 'bow', displayName: 'Bow', unlockLevel: 5, icon: '🙇', category: 'greetings' },
+            { name: 'sad_stand', displayName: 'Sad', unlockLevel: 5, icon: '😔', category: 'reactions' },
+            { name: 'clap', displayName: 'Clap', unlockLevel: 5, icon: '👏', category: 'celebrations' },
             { name: 'warm_up', displayName: 'Warm Up', unlockLevel: 5, icon: '🔥', category: 'exercise' },
-            { name: 'stretch', displayName: 'Stretch', unlockLevel: 10, icon: '🧘', category: 'exercise' },
-            { name: 'pushup', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
-            { name: 'basketball', displayName: 'Basketball', unlockLevel: 20, icon: '🏀', category: 'exercise' },
-            { name: 'volleyball', displayName: 'Volleyball', unlockLevel: 25, icon: '🏐', category: 'exercise' },
-
-            // Combat/Fighting animations - unlock from lvl 10
-            { name: 'boxing', displayName: 'Boxing', unlockLevel: 10, icon: '🥊', category: 'combat' },
-            { name: 'kick', displayName: 'Kick', unlockLevel: 15, icon: '🦵', category: 'combat' },
-            { name: 'karate', displayName: 'Karate', unlockLevel: 18, icon: '🥋', category: 'combat' },
-            { name: 'boxing_1', displayName: 'Boxing Combo', unlockLevel: 22, icon: '🥊', category: 'combat' },
-            { name: 'hit_to_1', displayName: 'Punch', unlockLevel: 28, icon: '👊', category: 'combat' },
-            { name: 'boxing_2', displayName: 'Boxing Pro', unlockLevel: 35, icon: '💥', category: 'combat' },
-            { name: 'kick_2', displayName: 'Spin Kick', unlockLevel: 40, icon: '🌀', category: 'combat' },
-            { name: 'block', displayName: 'Block', unlockLevel: 45, icon: '🛡️', category: 'combat' },
-
-            // Pose animations
-            { name: 'stand_hands_on_hips', displayName: 'Power Pose', unlockLevel: 10, icon: '💪', category: 'poses' },
-            { name: 'stand', displayName: 'Stand Tall', unlockLevel: 20, icon: '🧍', category: 'poses' },
-            { name: 'pitch', displayName: 'Pitch', unlockLevel: 30, icon: '⚾', category: 'poses' },
-
-            // Dance animations - unlock from lvl 5
             { name: 'dance', displayName: 'Dance', unlockLevel: 5, icon: '💃', category: 'dance' },
+
+            // Level 8 unlocks
+            { name: 'angry', displayName: 'Angry', unlockLevel: 8, icon: '😠', category: 'reactions' },
+            { name: 'laugh_1', displayName: 'Giggle', unlockLevel: 8, icon: '😂', category: 'celebrations' },
+
+            // Level 10 unlocks (Rising evolution + Battle Mode)
+            { name: 'greet_1', displayName: 'Hey!', unlockLevel: 10, icon: '🤙', category: 'greetings' },
+            { name: 'angry_1', displayName: 'Annoyed', unlockLevel: 10, icon: '😤', category: 'reactions' },
+            { name: 'stretch', displayName: 'Stretch', unlockLevel: 10, icon: '🧘', category: 'exercise' },
+            { name: 'kick', displayName: 'Kick', unlockLevel: 10, icon: '🦵', category: 'combat' },
+            { name: 'stand_hands_on_hips', displayName: 'Power Pose', unlockLevel: 10, icon: '💪', category: 'poses' },
             { name: 'strut', displayName: 'Strut', unlockLevel: 10, icon: '🚶', category: 'dance' },
+
+            // Level 15 unlocks
+            { name: 'lose', displayName: 'Lose', unlockLevel: 15, icon: '😞', category: 'reactions' },
+            { name: 'pushup', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
+            { name: 'karate', displayName: 'Karate', unlockLevel: 15, icon: '🥋', category: 'combat' },
             { name: 'dance_1', displayName: 'Groove', unlockLevel: 15, icon: '🎵', category: 'dance' },
+            { name: 'arms_up_still', displayName: 'Arms Up', unlockLevel: 15, icon: '🙌', category: 'celebrations' },
+
+            // Level 20 unlocks (Growing evolution)
+            { name: 'say_goodbye', displayName: 'Goodbye', unlockLevel: 20, icon: '👋', category: 'greetings' },
+            { name: 'depressed_walk', displayName: 'Sad Walk', unlockLevel: 20, icon: '🚶', category: 'reactions' },
+            { name: 'heart_pose', displayName: 'Heart Pose', unlockLevel: 20, icon: '❤️', category: 'celebrations' },
+            { name: 'basketball', displayName: 'Basketball', unlockLevel: 20, icon: '🏀', category: 'exercise' },
+            { name: 'boxing_1', displayName: 'Boxing Combo', unlockLevel: 20, icon: '🥊', category: 'combat' },
+            { name: 'stand', displayName: 'Stand Tall', unlockLevel: 20, icon: '🧍', category: 'poses' },
             { name: 'dance_2', displayName: 'Moves', unlockLevel: 20, icon: '🎶', category: 'dance' },
+
+            // Level 25 unlocks
+            { name: 'angry_walk', displayName: 'Angry Walk', unlockLevel: 25, icon: '😡', category: 'reactions' },
+            { name: 'laugh_2', displayName: 'LOL', unlockLevel: 25, icon: '🤣', category: 'celebrations' },
+            { name: 'volleyball', displayName: 'Volleyball', unlockLevel: 25, icon: '🏐', category: 'exercise' },
+            { name: 'hit_to_1', displayName: 'Punch', unlockLevel: 25, icon: '👊', category: 'combat' },
             { name: 'dance_3', displayName: 'Boogie', unlockLevel: 25, icon: '🕺', category: 'dance' },
+
+            // Level 30 unlocks (Consistent evolution)
+            { name: 'pitch', displayName: 'Pitch', unlockLevel: 30, icon: '⚾', category: 'poses' },
+            { name: 'cartwheel', displayName: 'Cartwheel', unlockLevel: 30, icon: '🤸', category: 'special' },
             { name: 'dance_4', displayName: 'Freestyle', unlockLevel: 30, icon: '🎧', category: 'dance' },
+            { name: 'boxing_2', displayName: 'Boxing Pro', unlockLevel: 30, icon: '💥', category: 'combat' },
+
+            // Level 35 unlocks
             { name: 'dance_5', displayName: 'Show Off', unlockLevel: 35, icon: '✨', category: 'dance' },
 
-            // Special animations - high level
-            { name: 'cartwheel', displayName: 'Cartwheel', unlockLevel: 30, icon: '🤸', category: 'special' },
+            // Level 40 unlocks (Committed evolution)
+            { name: 'kick_2', displayName: 'Spin Kick', unlockLevel: 40, icon: '🌀', category: 'combat' },
             { name: 'sit', displayName: 'Sit Down', unlockLevel: 40, icon: '🪑', category: 'special' },
+            { name: 'block', displayName: 'Block', unlockLevel: 40, icon: '🛡️', category: 'combat' },
+
+            // Level 50+ unlocks (Dedicated evolution)
             { name: 'die', displayName: 'Drama Fall', unlockLevel: 50, icon: '🎭', category: 'special' },
             { name: 'die_1', displayName: 'Play Dead', unlockLevel: 60, icon: '😵', category: 'special' },
         ];
