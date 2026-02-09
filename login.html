@@ -1024,6 +1024,12 @@
         async function handleGoogleSignIn() {
             clearMessages();
 
+            // Save any referral code before redirecting to Google OAuth
+            const referralField = document.getElementById('signup-referral');
+            if (referralField && referralField.value.trim()) {
+                sessionStorage.setItem('balance_referral_code', referralField.value.trim().toUpperCase());
+            }
+
             const loginBtn = document.getElementById('google-login-btn');
             const signupBtn = document.getElementById('google-signup-btn');
 
