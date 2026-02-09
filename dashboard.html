@@ -18802,11 +18802,16 @@ function updateWizardUI() {
         else d.classList.remove('active');
     });
 
-    // 2b. Update FitGotchi preview model based on gender
+    // 2b. Ensure FitGotchi preview model matches gender (already preloaded at gender selection)
     if(currentWizardStep === 7) {
         const fitgotchiPreview = document.getElementById('wizard-fitgotchi-preview');
-        if (fitgotchiPreview && selectedGender === 'female') {
-            fitgotchiPreview.setAttribute('src', 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb');
+        if (fitgotchiPreview) {
+            const expectedSrc = selectedGender === 'female'
+                ? 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb'
+                : 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb';
+            if (fitgotchiPreview.getAttribute('src') !== expectedSrc) {
+                fitgotchiPreview.setAttribute('src', expectedSrc);
+            }
         }
     }
 
@@ -18986,6 +18991,15 @@ function selectGender(gender) {
         maleBtn.style.background = '#eff6ff';
         femaleBtn.style.border = '2px solid #e2e8f0';
         femaleBtn.style.background = 'white';
+    }
+
+    // Preload the correct FitGotchi model now so it's cached by the time we show it
+    const modelUrl = gender === 'female'
+        ? 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb'
+        : 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb';
+    const fitgotchiPreview = document.getElementById('wizard-fitgotchi-preview');
+    if (fitgotchiPreview) {
+        fitgotchiPreview.setAttribute('src', modelUrl);
     }
 
     // Auto-advance to next slide after selection
