@@ -17,6 +17,8 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link rel="preconnect" href="https://f005.backblazeb2.com" crossorigin/>
 <link rel="dns-prefetch" href="https://f005.backblazeb2.com"/>
+<link rel="prefetch" href="https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb" as="fetch" crossorigin/>
+<link rel="prefetch" href="https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb" as="fetch" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
 <link href="manifest.json" rel="manifest"/>
 <link rel="apple-touch-icon" href="assets/Logo_dots.jpg">
@@ -18993,14 +18995,15 @@ function selectGender(gender) {
         femaleBtn.style.background = 'white';
     }
 
-    // Preload the correct FitGotchi model now so it's cached by the time we show it
+    // Set the correct FitGotchi model on all onboarding model-viewers immediately
+    // (prefetch links in <head> already started downloading both models on page load)
     const modelUrl = gender === 'female'
         ? 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb'
         : 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb';
-    const fitgotchiPreview = document.getElementById('wizard-fitgotchi-preview');
-    if (fitgotchiPreview) {
-        fitgotchiPreview.setAttribute('src', modelUrl);
-    }
+    ['wizard-fitgotchi-preview', 'wizard-preview-model', 'mascot-model'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute('src', modelUrl);
+    });
 
     // Auto-advance to next slide after selection
     setTimeout(() => {
