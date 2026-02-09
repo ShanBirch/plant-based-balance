@@ -17,8 +17,6 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link rel="preconnect" href="https://f005.backblazeb2.com" crossorigin/>
 <link rel="dns-prefetch" href="https://f005.backblazeb2.com"/>
-<link rel="prefetch" href="https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb" as="fetch" crossorigin/>
-<link rel="prefetch" href="https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb" as="fetch" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
 <link href="manifest.json" rel="manifest"/>
 <link rel="apple-touch-icon" href="assets/Logo_dots.jpg">
@@ -62,6 +60,16 @@
         }
         console.log('✅ Early theme applied:', savedTheme);
     }
+})();
+</script>
+
+<!-- CRITICAL: Set correct FitGotchi model based on saved gender -->
+<script>
+(function() {
+    const savedGender = localStorage.getItem('userGender');
+    window._earlyGenderModel = savedGender === 'female'
+        ? 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb'
+        : 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb';
 })();
 </script>
 
@@ -5488,7 +5496,6 @@ async function applyAppTheme(themeKey) {
     <div class="learn-mascot-avatar" id="learnMascotAvatar" onclick="window.LearningMascot?.tapped()">
         <model-viewer
             id="mascot-model"
-            src="https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb"
             camera-orbit="0deg 85deg 2.5m"
             field-of-view="30deg"
             disable-zoom
@@ -5500,6 +5507,12 @@ async function applyAppTheme(themeKey) {
             style="width: 100%; height: 100%; pointer-events: none; --poster-color: transparent;"
             interaction-prompt="none">
         </model-viewer>
+        <script>
+        // Set mascot model src immediately using pre-computed gender URL
+        if (window._earlyGenderModel) {
+            document.getElementById('mascot-model').setAttribute('src', window._earlyGenderModel);
+        }
+        </script>
     </div>
 </div>
 
@@ -18995,8 +19008,7 @@ function selectGender(gender) {
         femaleBtn.style.background = 'white';
     }
 
-    // Set the correct FitGotchi model on all onboarding model-viewers immediately
-    // (prefetch links in <head> already started downloading both models on page load)
+    // Set the correct FitGotchi model on all model-viewers (starts download)
     const modelUrl = gender === 'female'
         ? 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb'
         : 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb';
@@ -19582,9 +19594,10 @@ function initializeCharacterCustomization() {
     const previewModel = document.getElementById('wizard-preview-model');
     if (previewModel) {
         // Set correct model based on gender
-        if (selectedGender === 'female') {
-            previewModel.setAttribute('src', 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb');
-        }
+        const previewSrc = selectedGender === 'female'
+            ? 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb'
+            : 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb';
+        previewModel.setAttribute('src', previewSrc);
         previewModel.addEventListener('load', function onLoad() {
             applyWizardCharacterColors();
             previewModel.removeEventListener('load', onLoad);
@@ -27768,7 +27781,6 @@ function openAsClient() {
                 <div style="width: 100%; height: 320px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative;">
                     <model-viewer
                         id="wizard-fitgotchi-preview"
-                        src="https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -28036,7 +28048,6 @@ function openAsClient() {
                 <div id="wizard-character-preview" style="width: 100%; height: 360px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative;">
                     <model-viewer
                         id="wizard-preview-model"
-                        src="https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -46860,51 +46871,34 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // ============================================================
     // BACKGROUND MODEL PREFETCH - warm browser cache for 3D models
+    // Only prefetch the active skin + featured rare. Others load on demand.
     // ============================================================
     (function prefetchRareModels() {
-        // Wait for page to finish loading critical content first
         const startPrefetch = () => {
-            // Prioritize: 1) active skin, 2) featured monthly rare, 3) first in collection, 4) rest
+            // Only prefetch models the user is likely to see soon
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
             const featured = getFeaturedMonthlyRareId();
-            const priorityIds = new Set();
-            if (activeRareSkinId) priorityIds.add(activeRareSkinId);
-            if (featured) priorityIds.add(featured);
-            priorityIds.add(RARE_COLLECTION[0].id); // First in list (shown when opening Rare Drops)
 
-            const priorityModels = [];
-            const remainingModels = [];
+            const modelsToPrefetch = [];
             RARE_COLLECTION.forEach(rare => {
-                if (priorityIds.has(rare.id)) {
-                    priorityModels.push(rare.model);
-                } else {
-                    remainingModels.push(rare.model);
+                if (rare.id === activeRareSkinId || rare.id === featured) {
+                    modelsToPrefetch.push(rare.model);
                 }
             });
 
-            // Prefetch priority models immediately (low-priority fetch to not block UI)
-            prefetchBatch(priorityModels).then(() => {
-                // Then prefetch remaining models with staggered delays
-                prefetchBatch(remainingModels);
-            });
+            // Prefetch one at a time with 1s gaps to avoid flooding Backblaze
+            let i = 0;
+            function prefetchNext() {
+                if (i >= modelsToPrefetch.length) return;
+                const url = modelsToPrefetch[i++];
+                fetch(url, { mode: 'cors', credentials: 'omit' })
+                    .then(() => console.log('Prefetched:', url.split('/').pop()))
+                    .catch(() => {})
+                    .finally(() => setTimeout(prefetchNext, 1000));
+            }
+            prefetchNext();
         };
 
-        function prefetchBatch(urls) {
-            const fetches = urls.map((url, i) => {
-                return new Promise(resolve => {
-                    // Stagger by 200ms each to avoid flooding the network
-                    setTimeout(() => {
-                        fetch(url, { mode: 'cors', credentials: 'omit' })
-                            .then(() => console.log('Prefetched:', url.split('/').pop()))
-                            .catch(() => {}) // Silently ignore prefetch failures
-                            .finally(resolve);
-                    }, i * 200);
-                });
-            });
-            return Promise.all(fetches);
-        }
-
-        // Helper to get featured rare ID without creating the full object
         function getFeaturedMonthlyRareId() {
             const now = new Date();
             const monthIndex = now.getFullYear() * 12 + now.getMonth();
@@ -46912,12 +46906,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             return rare ? rare.id : null;
         }
 
-        // Start prefetching after page is idle (use requestIdleCallback if available)
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => startPrefetch(), { timeout: 5000 });
-        } else {
-            setTimeout(startPrefetch, 3000);
-        }
+        // Wait 10 seconds after page load before prefetching rare models
+        // This ensures the main FitGotchi model has loaded first
+        setTimeout(startPrefetch, 10000);
     })();
 
     // Helper: check if a rare skin is unlocked
