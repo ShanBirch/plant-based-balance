@@ -42656,12 +42656,9 @@ async function useMealPhoto() {
         // Refresh display
         await loadTodayNutrition();
 
-<<<<<<< HEAD
-=======
         // Check meal badges
         try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
 
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
         // Show success message
         showMealAnalysisSuccess(nutritionData);
 
@@ -42676,19 +42673,6 @@ async function handleMealPhotoSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-<<<<<<< HEAD
-    // Show loading state
-    showMealAnalysisLoading();
-
-    // Compress image first to avoid 502 errors on large photos
-    const compressedFile = await compressMealImage(file);
-
-    // Convert compressed image to base64
-    const base64 = await fileToBase64(compressedFile);
-    const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
-
-    // Retry logic - try up to 5 times
-=======
     // Compress image first (do this before background so user sees quick response)
     const compressedFile = await compressMealImage(file);
     const base64 = await fileToBase64(compressedFile);
@@ -42706,7 +42690,6 @@ async function handleMealPhotoSelect(event) {
 
 // Background photo analysis with retry logic
 async function analyzePhotoInBackground(originalFile, compressedFile, base64, base64Data) {
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
     const maxAttempts = 5;
     let attempt = 1;
     let success = false;
@@ -42715,23 +42698,6 @@ async function analyzePhotoInBackground(originalFile, compressedFile, base64, ba
 
     while (!success && attempt <= maxAttempts) {
         try {
-<<<<<<< HEAD
-            // Update loading message with retry attempt
-            if (attempt > 1) {
-                showMealAnalysisLoading(`Analyzing meal... (attempt ${attempt})`);
-            }
-
-            // Call Gemini API via edge function
-            console.log(`Analyzing food photo (attempt ${attempt})...`);
-            const response = await fetch('/.netlify/functions/analyze-food', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    imageBase64: base64Data,
-                    mimeType: file.type
-=======
             console.log(`Analyzing food photo (attempt ${attempt})...`);
             const response = await fetch('/.netlify/functions/analyze-food', {
                 method: 'POST',
@@ -42739,7 +42705,6 @@ async function analyzePhotoInBackground(originalFile, compressedFile, base64, ba
                 body: JSON.stringify({
                     imageBase64: base64Data,
                     mimeType: originalFile.type
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
                 })
             });
 
@@ -42762,14 +42727,8 @@ async function analyzePhotoInBackground(originalFile, compressedFile, base64, ba
             console.error(`Error analyzing meal (attempt ${attempt}):`, error);
             lastError = error;
 
-<<<<<<< HEAD
-            // If not the last attempt, wait before retrying (exponential backoff)
-            if (attempt < maxAttempts) {
-                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10 seconds
-=======
             if (attempt < maxAttempts) {
                 const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
                 console.log(`Retrying in ${delay}ms...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
@@ -42777,26 +42736,16 @@ async function analyzePhotoInBackground(originalFile, compressedFile, base64, ba
         }
     }
 
-<<<<<<< HEAD
-    // Check if we failed after all attempts
     if (!success) {
         const errorDetails = lastError?.message || "Unknown error";
         showMealAnalysisError(`Failed after ${maxAttempts} attempts. Error: ${errorDetails}`);
-        // Reset file input
-        event.target.value = '';
-=======
-    if (!success) {
-        const errorDetails = lastError?.message || "Unknown error";
-        showMealAnalysisError(`Failed after ${maxAttempts} attempts. Error: ${errorDetails}`);
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
         return;
     }
 
     // Success - save meal to database
     try {
-<<<<<<< HEAD
         // Upload photo to Supabase Storage
-        const photoUrl = await uploadMealPhoto(file);
+        const photoUrl = await uploadMealPhoto(originalFile);
 
         // Save meal log to database
 =======
@@ -45798,41 +45747,28 @@ document.addEventListener('DOMContentLoaded', async function() {
             { level: 70, xp: 938,  title: "Expert",    src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb" },
             { level: 80, xp: 1152, title: "Champion",  src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb" },
             { level: 90, xp: 1381, title: "Master",    src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb" },
-            { level: 99, xp: 1605, title: "Legend",    src: "https://f005.backblazeb2.com/file/shannonsvideos/level_99_real_final.glb" }
-        ];
-
-        const TAMAGOTCHI_EVOLUTIONS_FEMALE = [
-            { level: 1,  xp: 0,    title: "Baby",      src: "assets/characters/baby.glb" },
-            { level: 5,  xp: 15,   title: "Beginner",  src: "https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb" },
-            { level: 10, xp: 46,   title: "Rising",    src: "https://f005.backblazeb2.com/file/shannonsvideos/level_10_female_final.glb" },
-            { level: 20, xp: 133,  title: "Growing",   src: "https://f005.backblazeb2.com/file/shannonsvideos/level_20_female_final.glb" },
-            { level: 30, xp: 251,  title: "Consistent",src: "https://f005.backblazeb2.com/file/shannonsvideos/level_30_female_final.glb" },
-            { level: 40, xp: 393,  title: "Committed", src: "https://f005.backblazeb2.com/file/shannonsvideos/level_40_female_final.glb" },
-            { level: 50, xp: 557,  title: "Dedicated", src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_female_final.glb" }
-=======
-            { level: 1,  xp: 0,    title: "Newcomer",  src: "https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb" },
+            { level: 1,  xp: 0,    title: "Baby",      src: "https://f005.backblazeb2.com/file/shannonsvideos/baby.glb" },
             { level: 5,  xp: 15,   title: "Beginner",  src: "https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb" },
             { level: 10, xp: 46,   title: "Rising",    src: "https://f005.backblazeb2.com/file/shannonsvideos/level_10_real_final.glb" },
             { level: 20, xp: 133,  title: "Growing",   src: "https://f005.backblazeb2.com/file/shannonsvideos/level_20_real_final.glb" },
             { level: 30, xp: 251,  title: "Consistent",src: "https://f005.backblazeb2.com/file/shannonsvideos/level_30_real_final.glb" },
             { level: 40, xp: 393,  title: "Committed", src: "https://f005.backblazeb2.com/file/shannonsvideos/level_40_real_final.glb" },
             { level: 50, xp: 557,  title: "Dedicated", src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb" },
-            { level: 60, xp: 739,  title: "Veteran",   src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb" },
+            { level: 60, xp: 739,  title: "Veteran",   src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb" }, 
             { level: 70, xp: 938,  title: "Expert",    src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb" },
             { level: 80, xp: 1152, title: "Champion",  src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb" },
             { level: 90, xp: 1381, title: "Master",    src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb" },
-            { level: 99, xp: 1605, title: "Legend",    src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb" }
+            { level: 99, xp: 1605, title: "Legend",    src: "https://f005.backblazeb2.com/file/shannonsvideos/level_99_real_final.glb" }
         ];
 
         const TAMAGOTCHI_EVOLUTIONS_FEMALE = [
-            { level: 1,  xp: 0,    title: "Newcomer",  src: "https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb" },
+            { level: 1,  xp: 0,    title: "Baby",      src: "https://f005.backblazeb2.com/file/shannonsvideos/baby.glb" },
             { level: 5,  xp: 15,   title: "Beginner",  src: "https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb" },
             { level: 10, xp: 46,   title: "Rising",    src: "https://f005.backblazeb2.com/file/shannonsvideos/level_10_female_final.glb" },
             { level: 20, xp: 133,  title: "Growing",   src: "https://f005.backblazeb2.com/file/shannonsvideos/level_20_female_final.glb" },
             { level: 30, xp: 251,  title: "Consistent",src: "https://f005.backblazeb2.com/file/shannonsvideos/level_30_female_final.glb" },
             { level: 40, xp: 393,  title: "Committed", src: "https://f005.backblazeb2.com/file/shannonsvideos/level_40_female_final.glb" },
             { level: 50, xp: 557,  title: "Dedicated", src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_female_final.glb" }
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
         ];
 
         // Default to Male for backward compatibility, will be overridden by user fact
@@ -45841,16 +45777,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Character material mappings for each level model
         // Maps body part names to material indices for color customization
         const CHARACTER_MATERIAL_MAPPINGS = {
-<<<<<<< HEAD
             'baby.glb': {
                 hair: { names: ['Material_tripo_part_0.001'] },
                 shoes: { names: ['Material_tripo_part_3.001'] },
                 pants: { names: ['Material_tripo_part_8.001'] },
                 skin: { names: ['Material_tripo_part_new_0.001'] }
             }
-=======
-            // Dynamic logic used instead
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
         };
 
         // Color options for character customization
