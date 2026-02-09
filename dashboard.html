@@ -22949,15 +22949,19 @@ function startWorkoutAutoSave() {
         clearInterval(workoutAutoSaveInterval);
     }
 
-    // Auto-save every 30 seconds
+    // Reset auto-save tracking for new workout
+    clearAutoSaveTracking();
+
+    // Auto-save every 30 seconds (localStorage + database)
     workoutAutoSaveInterval = setInterval(() => {
         backupWorkoutData();
+        autoSaveWorkoutToDatabase();
     }, 30000);
 
     // Also save immediately when workout starts
     setTimeout(backupWorkoutData, 1000);
 
-    console.log('📝 Workout auto-save enabled');
+    console.log('Workout auto-save enabled (localStorage + database)');
 }
 
 // Stop auto-save when workout ends
@@ -22977,9 +22981,13 @@ function setupWorkoutInputListeners() {
     // Use event delegation for all inputs
     container.addEventListener('input', function(e) {
         if (e.target.matches('.input-time, .input-reps, .input-kg, .drop-kg, .drop-reps')) {
-            // Debounce saves to avoid excessive writes
+            // Debounce localStorage backup (2 sec)
             clearTimeout(saveDebounceTimer);
             saveDebounceTimer = setTimeout(backupWorkoutData, 2000);
+
+            // Debounce database auto-save (3 sec - slightly longer to batch changes)
+            clearTimeout(dbAutoSaveTimer);
+            dbAutoSaveTimer = setTimeout(autoSaveWorkoutToDatabase, 3000);
         }
     });
 }
@@ -23151,14 +23159,16 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'hidden' && workoutStartTime) {
         backupWorkoutData();
-        console.log('📱 Workout backed up (app went to background)');
+        autoSaveWorkoutToDatabase(); // Also save to DB when backgrounded
+        console.log('Workout backed up (app went to background)');
     }
 });
 
 window.addEventListener('beforeunload', function() {
     if (workoutStartTime) {
         backupWorkoutData();
-        console.log('📱 Workout backed up (page unloading)');
+        autoSaveWorkoutToDatabase(); // Save to DB before page unload
+        console.log('Workout backed up (page unloading)');
     }
 });
 
@@ -23166,8 +23176,107 @@ window.addEventListener('beforeunload', function() {
 window.addEventListener('pagehide', function() {
     if (workoutStartTime) {
         backupWorkoutData();
+        autoSaveWorkoutToDatabase();
     }
 });
+
+// ===========================================
+// DATABASE AUTO-SAVE SYSTEM
+// Saves sets to DB as they're entered
+// ===========================================
+
+let autoSavedSets = new Map(); // key: "exercise_setNum" -> { dbId, dataJson }
+let dbAutoSaveTimer = null;
+let autoSaveIndicatorTimer = null;
+let isAutoSavingToDb = false;
+
+// Auto-save filled sets to the database
+async function autoSaveWorkoutToDatabase() {
+    if (!workoutStartTime || isAutoSavingToDb) return;
+    const user = window.currentUser;
+    if (!user) return;
+
+    const currentSets = collectWorkoutData();
+    if (!currentSets || currentSets.length === 0) return;
+
+    isAutoSavingToDb = true;
+    let savedCount = 0;
+
+    // Build a set of current keys to detect removed sets
+    const currentKeys = new Set();
+
+    for (const setData of currentSets) {
+        // Only save sets that have meaningful data (at least reps, time, or weight)
+        if (!setData.reps && !setData.time && !setData.kg) continue;
+
+        const key = `${setData.exercise}__${setData.set}`;
+        currentKeys.add(key);
+        const dataJson = JSON.stringify(setData);
+        const existing = autoSavedSets.get(key);
+
+        // Skip if data hasn't changed since last save
+        if (existing && existing.dataJson === dataJson) continue;
+
+        try {
+            if (existing && existing.dbId) {
+                // Update existing record in DB
+                await dbHelpers.workouts.updateHistorySet(existing.dbId, setData);
+                autoSavedSets.set(key, { dbId: existing.dbId, dataJson });
+            } else {
+                // Create new record in DB
+                const saved = await dbHelpers.workouts.createHistory(user.id, setData);
+                if (saved && saved.id) {
+                    autoSavedSets.set(key, { dbId: saved.id, dataJson });
+                }
+            }
+            savedCount++;
+        } catch (e) {
+            console.error('Auto-save to DB failed for set:', key, e);
+        }
+    }
+
+    isAutoSavingToDb = false;
+
+    if (savedCount > 0) {
+        showAutoSaveIndicator(savedCount);
+        console.log('Auto-saved ' + savedCount + ' set(s) to database');
+    }
+}
+
+// Show a subtle save indicator
+function showAutoSaveIndicator(count) {
+    let indicator = document.getElementById('auto-save-indicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'auto-save-indicator';
+        indicator.style.cssText = 'position:fixed;top:12px;right:12px;z-index:9999;background:rgba(34,197,94,0.92);color:white;padding:6px 14px;border-radius:20px;font-size:0.75rem;font-weight:600;opacity:0;transition:opacity 0.3s;pointer-events:none;';
+        document.body.appendChild(indicator);
+    }
+
+    indicator.textContent = 'Saved';
+    indicator.style.opacity = '1';
+    clearTimeout(autoSaveIndicatorTimer);
+    autoSaveIndicatorTimer = setTimeout(() => {
+        indicator.style.opacity = '0';
+    }, 2000);
+}
+
+// Get all auto-saved DB IDs (for cleanup if needed)
+function getAutoSavedDbIds() {
+    const ids = [];
+    autoSavedSets.forEach(val => {
+        if (val.dbId) ids.push(val.dbId);
+    });
+    return ids;
+}
+
+// Clear auto-save tracking state
+function clearAutoSaveTracking() {
+    autoSavedSets.clear();
+    clearTimeout(dbAutoSaveTimer);
+    dbAutoSaveTimer = null;
+    isAutoSavingToDb = false;
+}
 
 // ===========================================
 // END WORKOUT BACKUP & RECOVERY SYSTEM
@@ -23273,12 +23382,39 @@ async function finishWorkout() {
     try {
         const user = window.currentUser;
         if(user && setsToSave.length > 0) {
-             // Save workout data with retry logic to handle network issues
-             await saveWorkoutWithRetry(setsToSave, user.id);
-             console.log("✅ Workout saved to DB");
+             // Do a final auto-save to catch any last-second changes
+             // Then only save sets that haven't been auto-saved yet
+             const unsavedSets = [];
+             for (const setData of setsToSave) {
+                 const key = `${setData.exercise}__${setData.set}`;
+                 const existing = autoSavedSets.get(key);
+                 if (existing && existing.dbId) {
+                     // Already saved - check if data changed since last auto-save
+                     const dataJson = JSON.stringify(setData);
+                     if (existing.dataJson !== dataJson) {
+                         // Data changed since last auto-save, update it
+                         try {
+                             await dbHelpers.workouts.updateHistorySet(existing.dbId, setData);
+                         } catch (updateErr) {
+                             console.error('Failed to update auto-saved set:', key, updateErr);
+                             unsavedSets.push(setData);
+                         }
+                     }
+                     // else: already saved with same data, skip
+                 } else {
+                     unsavedSets.push(setData);
+                 }
+             }
 
-             // Clear backup after successful save
+             // Only save sets that weren't already auto-saved
+             if (unsavedSets.length > 0) {
+                 await saveWorkoutWithRetry(unsavedSets, user.id);
+             }
+             console.log("Workout saved to DB (" + (setsToSave.length - unsavedSets.length) + " auto-saved, " + unsavedSets.length + " saved on finish)");
+
+             // Clear backup and auto-save tracking after successful save
              clearWorkoutBackup();
+             clearAutoSaveTracking();
              workoutStartTime = null; // Reset start time
 
              // Update custom workout template with any added exercises
@@ -23572,12 +23708,28 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
 }
 
 function quitWorkout() {
-    if(confirm('Quit workout? Your progress won\'t be saved.')) {
+    const savedCount = autoSavedSets.size;
+    const msg = savedCount > 0
+        ? 'Quit workout? Your ' + savedCount + ' saved set(s) will stay in your history.'
+        : 'Quit workout? Your progress won\'t be saved.';
+
+    if(confirm(msg)) {
         console.log("Quitting workout...");
         clearInterval(workoutTimerInterval);
+
+        // If sets were auto-saved to DB, clear localStorage backup (data is safe in DB)
+        // If nothing was auto-saved, keep localStorage backup for recovery
+        if (savedCount > 0) {
+            clearWorkoutBackup();
+        } else if (workoutStartTime) {
+            backupWorkoutData(); // Keep localStorage backup for recovery
+        }
+
         workoutStartTime = null; // Reset start time
         window.currentCustomWorkoutId = null; // Reset custom workout tracking
         clearAllYogaTimers(); // Clear any running yoga timers
+        stopWorkoutAutoSave();
+        clearAutoSaveTracking();
         document.getElementById('view-active-workout').style.display = 'none'; // Force hide
         closeSuccessScreen();
     }
