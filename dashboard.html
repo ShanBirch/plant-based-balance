@@ -15,6 +15,8 @@
 
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link rel="preconnect" href="https://f005.backblazeb2.com" crossorigin/>
+<link rel="dns-prefetch" href="https://f005.backblazeb2.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
 <link href="manifest.json" rel="manifest"/>
 <link rel="apple-touch-icon" href="assets/Logo_dots.jpg">
@@ -13350,14 +13352,14 @@ function viewWorkoutHistoryDetail(date) {
                     <div id="rare-preview-loading" style="display: none; position: absolute; inset: 0; align-items: center; justify-content: center; background: rgba(255,255,255,0.7); z-index: 2; border-radius: 16px;">
                         <div class="learning-spinner"></div>
                     </div>
-                    <model-viewer id="rare-reward-viewer" 
-                                  camera-controls 
-                                  auto-rotate 
+                    <model-viewer id="rare-reward-viewer"
+                                  camera-controls
+                                  auto-rotate
                                   rotation-per-second="30deg"
-                                  shadow-intensity="1" 
+                                  shadow-intensity="1"
                                   environment-image="neutral"
                                   style="width: 100%; height: 100%;"
-                                  loading="lazy">
+                                  loading="eager">
                     </model-viewer>
                 </div>
 
@@ -46378,6 +46380,68 @@ document.addEventListener('DOMContentLoaded', async function() {
         { id: 'elon', name: 'Elon', model: 'https://f005.backblazeb2.com/file/shannonsvideos/elon.glb', emoji: '🚀', desc: 'Techno-King Mode', tier: 'COMMON' },
         { id: 'trump', name: 'Trump', model: 'https://f005.backblazeb2.com/file/shannonsvideos/trump.glb', emoji: '🇺🇸', desc: 'High Stakes Player', tier: 'COMMON' }
     ];
+
+    // ============================================================
+    // BACKGROUND MODEL PREFETCH - warm browser cache for 3D models
+    // ============================================================
+    (function prefetchRareModels() {
+        // Wait for page to finish loading critical content first
+        const startPrefetch = () => {
+            // Prioritize: 1) active skin, 2) featured monthly rare, 3) first in collection, 4) rest
+            const activeRareSkinId = localStorage.getItem('active_rare_skin');
+            const featured = getFeaturedMonthlyRareId();
+            const priorityIds = new Set();
+            if (activeRareSkinId) priorityIds.add(activeRareSkinId);
+            if (featured) priorityIds.add(featured);
+            priorityIds.add(RARE_COLLECTION[0].id); // First in list (shown when opening Rare Drops)
+
+            const priorityModels = [];
+            const remainingModels = [];
+            RARE_COLLECTION.forEach(rare => {
+                if (priorityIds.has(rare.id)) {
+                    priorityModels.push(rare.model);
+                } else {
+                    remainingModels.push(rare.model);
+                }
+            });
+
+            // Prefetch priority models immediately (low-priority fetch to not block UI)
+            prefetchBatch(priorityModels).then(() => {
+                // Then prefetch remaining models with staggered delays
+                prefetchBatch(remainingModels);
+            });
+        };
+
+        function prefetchBatch(urls) {
+            const fetches = urls.map((url, i) => {
+                return new Promise(resolve => {
+                    // Stagger by 200ms each to avoid flooding the network
+                    setTimeout(() => {
+                        fetch(url, { mode: 'cors', credentials: 'omit' })
+                            .then(() => console.log('Prefetched:', url.split('/').pop()))
+                            .catch(() => {}) // Silently ignore prefetch failures
+                            .finally(resolve);
+                    }, i * 200);
+                });
+            });
+            return Promise.all(fetches);
+        }
+
+        // Helper to get featured rare ID without creating the full object
+        function getFeaturedMonthlyRareId() {
+            const now = new Date();
+            const monthIndex = now.getFullYear() * 12 + now.getMonth();
+            const rare = RARE_COLLECTION[monthIndex % RARE_COLLECTION.length];
+            return rare ? rare.id : null;
+        }
+
+        // Start prefetching after page is idle (use requestIdleCallback if available)
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => startPrefetch(), { timeout: 5000 });
+        } else {
+            setTimeout(startPrefetch, 3000);
+        }
+    })();
 
     // Helper: check if a rare skin is unlocked
     function isRareUnlocked(id) {
