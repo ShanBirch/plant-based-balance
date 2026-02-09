@@ -117,6 +117,89 @@ export default async (request, context) => {
                 }
             }
 
+<<<<<<< HEAD
+=======
+            // Handle Challenge Buy-In payment
+            if (session.metadata?.product_type === 'challenge_buyin' && session.metadata?.user_id && session.metadata?.challenge_id) {
+                const userId = session.metadata.user_id;
+                const challengeId = session.metadata.challenge_id;
+                const supabaseUrl = Deno.env.get('SUPABASE_URL');
+                const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+                if (supabaseUrl && supabaseServiceKey) {
+                    try {
+                        // Mark this participant as paid
+                        const patchResponse = await fetch(
+                            `${supabaseUrl}/rest/v1/challenge_participants?challenge_id=eq.${challengeId}&user_id=eq.${userId}`,
+                            {
+                                method: 'PATCH',
+                                headers: {
+                                    'apikey': supabaseServiceKey,
+                                    'Authorization': `Bearer ${supabaseServiceKey}`,
+                                    'Content-Type': 'application/json',
+                                    'Prefer': 'return=minimal'
+                                },
+                                body: JSON.stringify({
+                                    has_paid: true,
+                                    paid_at: new Date().toISOString(),
+                                    stripe_payment_id: session.payment_intent
+                                })
+                            }
+                        );
+
+                        if (patchResponse.ok) {
+                            console.log(`Challenge buy-in confirmed for user ${userId} in challenge ${challengeId}`);
+                        } else {
+                            console.error(`Failed to confirm buy-in: ${await patchResponse.text()}`);
+                        }
+                    } catch (err) {
+                        console.error("Error confirming challenge buy-in:", err.message);
+                    }
+                }
+            }
+
+            // Handle Coin Pack purchase
+            if (session.metadata?.product_type === 'coin_pack' && session.metadata?.user_id) {
+                const userId = session.metadata.user_id;
+                const coinAmount = parseInt(session.metadata.coin_amount) || 0;
+                const packId = session.metadata.pack_id;
+                const supabaseUrl = Deno.env.get('SUPABASE_URL');
+                const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+                if (supabaseUrl && supabaseServiceKey && coinAmount > 0) {
+                    try {
+                        // Credit coins via RPC function
+                        const rpcResponse = await fetch(
+                            `${supabaseUrl}/rest/v1/rpc/credit_coins`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'apikey': supabaseServiceKey,
+                                    'Authorization': `Bearer ${supabaseServiceKey}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    user_uuid: userId,
+                                    coin_amount: coinAmount,
+                                    txn_type: 'pack_purchase',
+                                    txn_description: `Purchased ${packId} pack (${coinAmount} coins)`,
+                                    txn_reference: session.payment_intent
+                                })
+                            }
+                        );
+
+                        if (rpcResponse.ok) {
+                            console.log(`Credited ${coinAmount} coins to user ${userId} (${packId} pack)`);
+                        } else {
+                            console.error(`Failed to credit coins: ${await rpcResponse.text()}`);
+                        }
+                    } catch (err) {
+                        console.error("Error crediting coins:", err.message);
+                    }
+                }
+            }
+
+>>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
             // Store FB metadata on customer
             if (customerId && session.metadata?.fbc) {
                 await stripe.customers.update(customerId, {

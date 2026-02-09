@@ -1,6 +1,7 @@
 
 import { Context } from "@netlify/edge-functions";
 
+<<<<<<< HEAD
 // Helper to look up food in Open Food Facts
 async function lookupOpenFoodFacts(query: string) {
   try {
@@ -34,6 +35,8 @@ async function lookupOpenFoodFacts(query: string) {
   }
 }
 
+=======
+>>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
 export default async function (request: Request, context: Context) {
   // Only accept POST
   if (request.method !== "POST") {
@@ -62,6 +65,7 @@ export default async function (request: Request, context: Context) {
     // Prepare the Gemini API request
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
+<<<<<<< HEAD
     const systemPrompt = `You are a nutrition analysis AI. Analyze the food in this image and provide detailed nutritional information.
 ${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : ''}
 INSTRUCTIONS:
@@ -70,6 +74,32 @@ INSTRUCTIONS:
 3. Calculate nutritional values (calories, macros, and key micronutrients)
 4. Provide your confidence level (high/medium/low)
 
+=======
+    const systemPrompt = `You are a precise nutrition analysis AI. Analyze the food in this image and provide accurate nutritional information.
+${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : ''}
+INSTRUCTIONS:
+1. Identify all food items visible in the image
+2. Estimate portion sizes in grams based on visual cues (plate size, item proportions)
+3. Calculate nutritional values using standard USDA nutrition data per 100g, then scale to the estimated portion
+4. Provide your confidence level (high/medium/low)
+
+CALORIE REFERENCE (per 100g unless stated):
+Fruits: berries ~57, banana ~89, apple ~52, mango ~60
+Vegetables: broccoli ~34, spinach ~23, sweet potato ~86, carrot ~41
+Grains (COOKED): white rice ~130, brown rice ~112, pasta ~131, oats/porridge ~71
+Protein: chicken breast (cooked) ~165, tofu ~76, eggs ~155, salmon ~208, lentils (cooked) ~116
+Dairy & drinks: whole milk ~61, semi-skimmed milk ~47, soy milk ~33, oat milk ~48
+Drinks: black coffee ~2, latte (whole milk) ~56 per 100ml (~135 for small 240ml), soy latte ~45 per 100ml (~108 for small 240ml), cappuccino ~40 per 100ml
+Bread & baked: bread ~250, bagel ~270, muffin ~340
+Nuts & fats: almonds ~579, peanut butter ~588, olive oil ~884, butter ~717
+Snacks: dark chocolate ~546, crisps/chips ~536
+
+CRITICAL RULES:
+- A "small latte" is about 240ml and ~130-150 calories. A "large latte" is about 480ml and ~250-300 calories. Do NOT confuse drinks with their raw ingredient calories.
+- Use COOKED values for grains, rice, pasta, lentils — not raw/dry values (raw is roughly 3x higher)
+- A typical meal plate is 400-700 calories. If your total exceeds 1000 calories for a normal-looking meal, double-check your work.
+
+>>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
 RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
 {
   "foodItems": [
@@ -105,7 +135,12 @@ IMPORTANT:
 - Return RAW JSON only - no markdown, no code blocks, no backticks
 - Keep food item names SHORT (max 30 chars)
 - Be realistic with portion sizes
+<<<<<<< HEAD
 - Round numbers to 1 decimal place`;
+=======
+- Round numbers to 1 decimal place
+- Calculate each item as: (calories_per_100g * portion_weight_g / 100)`;
+>>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
 
     const payload = {
       contents: [
@@ -144,12 +179,17 @@ IMPORTANT:
 
     const geminiData = await geminiResponse.json();
     const aiText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
     if (!aiText) throw new Error("Empty AI response");
 
     const cleanedText = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const nutritionData = JSON.parse(cleanedText);
 
+<<<<<<< HEAD
     // HYBRID UPGRADE: Fact check each item against Open Food Facts
     console.log(`Fact checking ${nutritionData.foodItems.length} items...`);
     
@@ -186,6 +226,8 @@ IMPORTANT:
     nutritionData.totals.fat_g = Number(nutritionData.foodItems.reduce((sum, i) => sum + i.fat_g, 0).toFixed(1));
     nutritionData.totals.fiber_g = Number(nutritionData.foodItems.reduce((sum, i) => sum + i.fiber_g, 0).toFixed(1));
 
+=======
+>>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
     return new Response(JSON.stringify({ success: true, data: nutritionData }), {
       status: 200,
       headers: { "Content-Type": "application/json" },

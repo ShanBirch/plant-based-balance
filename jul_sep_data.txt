@@ -1,0 +1,638 @@
+
+30 Sep 2025	Facebook	−$30.04
+30 Sep 2025	STRIPE_T99RMnBVNgv	+$76.53
+30 Sep 2025	Facebook	−$28.15
+30 Sep 2025	IGA Local Grocer	−$7.49
+30 Sep 2025	IGA Local Grocer	−$3.25
+29 Sep 2025	STRIPE_T8mYwcmUiAj	+$52.09
+30 Sep 2025	Fees	−$1.05
+29 Sep 2025	TPG Telecom	−$84.99
+29 Sep 2025	IGA Local Grocer	−$31.05
+29 Sep 2025	Facebook	−$30.00
+29 Sep 2025	IGA Local Grocer	−$28.10
+30 Sep 2025	Fees	−$2.42
+30 Sep 2025	Fees	−$0.43
+29 Sep 2025	Wix.com	−$69.19
+29 Sep 2025	IGA Local Grocer	−$18.80
+29 Sep 2025	IGA Local Grocer	−$17.49
+29 Sep 2025	Facebook	−$12.42
+30 Sep 2025	Fees	−$3.22
+30 Sep 2025	Fees Refund	+$0.48
+29 Sep 2025	Cursor	−$91.97
+29 Sep 2025	IGA Local Grocer	−$31.49
+29 Sep 2025	IGA Local Grocer	−$6.75
+29 Sep 2025	CURSOR	+$13.73
+26 Sep 2025	STRIPE_T7ecTneyxzJ	+$201.48
+30 Sep 2025	Fees	−$1.45
+29 Sep 2025	Facebook	−$41.33
+29 Sep 2025	Colonial Fresh	−$16.49
+29 Sep 2025	Fees	−$1.54
+26 Sep 2025	Facebook	−$44.11
+26 Sep 2025	Chad OMP Pty Ltd	−$22.93
+26 Sep 2025	IGA Local Grocer	−$13.20
+25 Sep 2025	STRIPE_T7HKrux37Lt	+$518.85
+25 Sep 2025	IGA Local Grocer	−$17.29
+25 Sep 2025	IGA Local Grocer	−$11.84
+24 Sep 2025	STRIPE_T6u4nPhMu6F	+$262.91
+25 Sep 2025	Fees	−$1.99
+24 Sep 2025	Facebook	−$56.86
+24 Sep 2025	IGA Local Grocer	−$10.50
+23 Sep 2025	STRIPE_T6X3vBm98Yu	+$94.84
+26 Sep 2025	Uber Eats	−$37.35
+24 Sep 2025	BP (Brighton VIC)	−$7.70
+23 Sep 2025	IGA Local Grocer	−$26.05
+23 Sep 2025	IGA Local Grocer	−$8.60
+23 Sep 2025	IGA Local Grocer	−$7.49
+23 Sep 2025	Fees	−$1.76
+23 Sep 2025	Fees	−$0.49
+22 Sep 2025	Facebook	−$50.22
+22 Sep 2025	NIB	−$17.32
+22 Sep 2025	Wix.com	−$14.04
+22 Sep 2025	STRIPE_T69vaHDiYCs	+$51.67
+22 Sep 2025	Internal	+$100.00
+22 Sep 2025	Internal	+$150.00
+23 Sep 2025	Microsoft	−$16.00
+22 Sep 2025	IGA Local Grocer	−$13.89
+24 Sep 2025	Uber Eats	−$54.64
+23 Sep 2025	Google Australia	−$39.99
+23 Sep 2025	Fees	−$4.87
+22 Sep 2025	Facebook	−$139.00
+22 Sep 2025	Squash Melbourne	−$18.00
+22 Sep 2025	Latpay	−$11.64
+22 Sep 2025	IGA Local Grocer	−$10.29
+22 Sep 2025	IGA Local Grocer	−$15.35
+22 Sep 2025	IGA Local Grocer	−$12.95
+19 Sep 2025	WENDY PATRICIA	+$100.00
+19 Sep 2025	STRIPE_T51yHVPWV5s	+$143.14
+22 Sep 2025	Google Cloud	−$500.00
+22 Sep 2025	Fees	−$2.14
+22 Sep 2025	Google Cloud	+$364.83
+19 Sep 2025	CURSOR	−$61.25
+19 Sep 2025	Google Australia	−$14.99
+18 Sep 2025	Internal	+$400.00
+18 Sep 2025	STRIPE_T4efcWYKjtK	+$449.58
+19 Sep 2025	Google Australia	−$10.99
+19 Sep 2025	Fees	−$2.06
+18 Sep 2025	Google Cloud	−$200.00
+18 Sep 2025	Google Cloud	−$100.00
+18 Sep 2025	Facebook	−$58.92
+18 Sep 2025	IGA Local Grocer	−$33.00
+18 Sep 2025	IGA Local Grocer	−$13.60
+18 Sep 2025	Fees	−$4.05
+17 Sep 2025	ABC Trainerize	−$115.67
+17 Sep 2025	STRIPE_T4HTq8bFSKq	+$67.78
+17 Sep 2025	IGA Local Grocer	−$14.90
+16 Sep 2025	STRIPE_T3uKSSdQhx4	+$57.09
+16 Sep 2025	Internal	+$300.00
+17 Sep 2025	Fees	−$1.16
+16 Sep 2025	PERPLEXITY.AI	−$33.19
+16 Sep 2025	Bayside Pharmacy	−$14.61
+16 Sep 2025	IGA Local Grocer	−$13.19
+16 Sep 2025	IGA Local Grocer	−$8.40
+15 Sep 2025	STRIPE_T3XMMJFjcF3	+$33.53
+17 Sep 2025	Uber Eats	−$101.48
+15 Sep 2025	IGA Local Grocer	−$5.15
+17 Sep 2025	Fees	−$4.48
+16 Sep 2025	Facebook	−$128.00
+16 Sep 2025	Google Australia	−$39.99
+16 Sep 2025	Fees	−$0.07
+15 Sep 2025	IGA Local Grocer	−$22.20
+15 Sep 2025	IGA Local Grocer	−$11.25
+15 Sep 2025	Facebook	−$2.13
+16 Sep 2025	Fees	−$4.06
+16 Sep 2025	Fees	−$2.64
+15 Sep 2025	Facebook	−$115.87
+15 Sep 2025	Facebook	−$75.29
+15 Sep 2025	IGA Local Grocer	−$32.60
+15 Sep 2025	IGA Local Grocer	−$30.80
+12 Sep 2025	DEREK BIRCH	−$175.00
+12 Sep 2025	Facebook	−$0.03
+12 Sep 2025	STRIPE_T2PN1FhYfgN	+$32.12
+12 Sep 2025	ARMSTRONG JEROME	+$200.00
+15 Sep 2025	Uber	−$87.08
+15 Sep 2025	Google Australia	−$14.99
+15 Sep 2025	Burleigh Pavilion	−$6.77
+15 Sep 2025	Fees	−$2.63
+12 Sep 2025	Facebook	−$75.00
+12 Sep 2025	HMSHost Australia	−$25.33
+12 Sep 2025	Tugun Market Co.	−$17.40
+12 Sep 2025	HMSHost Australia	−$13.68
+12 Sep 2025	HMSHost Australia	−$11.40
+12 Sep 2025	EMF Fitness	−$3.00
+11 Sep 2025	WENDY PATRICIA	+$200.00
+11 Sep 2025	STRIPE_T22JuSdPzno	+$298.95
+15 Sep 2025	Uber Eats	−$68.23
+15 Sep 2025	Burleigh Pavilion	−$10.81
+12 Sep 2025	Fees	−$3.98
+11 Sep 2025	Facebook	−$113.58
+11 Sep 2025	Tugun Surf Life	−$7.11
+11 Sep 2025	Tugun Market Co.	−$3.89
+11 Sep 2025	EMF Fitness	−$3.00
+11 Sep 2025	Fees	−$1.06
+10 Sep 2025	Shannon Holihan	−$175.00
+10 Sep 2025	Cursor	−$30.42
+10 Sep 2025	Internal	+$100.00
+10 Sep 2025	STRIPE_T1evJNNasbi	+$169.85
+12 Sep 2025	Burleigh Pavilion	−$13.84
+11 Sep 2025	Spotify	−$13.99
+10 Sep 2025	Tugun Market Co.	−$35.73
+10 Sep 2025	EMF Fitness	−$3.00
+09 Sep 2025	DBRE PTY LTD	−$61.47
+09 Sep 2025	Internal	−$36.00
+09 Sep 2025	STRIPE_T1Ht9JWTqFG	+$66.55
+11 Sep 2025	Uber Eats	−$54.75
+11 Sep 2025	Uber Eats	−$20.68
+11 Sep 2025	Burleigh Pavilion	−$10.81
+10 Sep 2025	Fees	−$3.48
+10 Sep 2025	Fees	−$3.11
+09 Sep 2025	MANYCHAT.COM	−$99.36
+09 Sep 2025	Facebook	−$88.96
+09 Sep 2025	EMF Fitness	−$50.00
+09 Sep 2025	EMF Fitness	−$3.00
+09 Sep 2025	Fees	−$1.12
+08 Sep 2025	Bradley Woodward	−$75.00
+08 Sep 2025	CURSOR	−$31.99
+08 Sep 2025	NIB	−$17.32
+08 Sep 2025	STRIPE_T1unYnWxyZ2	+$138.82
+09 Sep 2025	Google Australia	−$39.99
+09 Sep 2025	Zambrero	−$18.40
+09 Sep 2025	Fees	−$2.64
+08 Sep 2025	Facebook	−$75.49
+09 Sep 2025	Delaware North	−$7.50
+08 Sep 2025	Boost Juice	−$11.41
+08 Sep 2025	Woolworths	−$37.95
+08 Sep 2025	Anytime Locksmiths	−$36.00
+08 Sep 2025	Uber Eats	−$23.39
+08 Sep 2025	IGA Local Grocer	−$7.90
+08 Sep 2025	IGA Local Grocer	−$4.50
+05 Sep 2025	Internal	−$350.00
+05 Sep 2025	STRIPE_Szmy8nLjojw	+$169.79
+09 Sep 2025	Fees	−$3.82
+08 Sep 2025	Facebook	−$109.00
+05 Sep 2025	IGA Local Grocer	−$23.30
+05 Sep 2025	IGA Local Grocer	−$4.15
+04 Sep 2025	STRIPE_SzPv2iA3Tnm	+$1,245.09
+08 Sep 2025	Fees	−$3.50
+05 Sep 2025	Facebook	−$100.00
+05 Sep 2025	Google Australia	−$17.99
+05 Sep 2025	Fees	−$2.00
+04 Sep 2025	Facebook	−$57.17
+04 Sep 2025	IGA Local Grocer	−$43.34
+03 Sep 2025	Internal	−$400.00
+03 Sep 2025	Internal	−$400.00
+03 Sep 2025	Internal	+$30.00
+03 Sep 2025	Internal	+$100.00
+03 Sep 2025	STRIPE_Sz2JMXL8knj	+$489.76
+04 Sep 2025	Fees	−$2.99
+03 Sep 2025	Facebook	−$85.36
+03 Sep 2025	Netflix	−$25.99
+03 Sep 2025	IGA Local Grocer	−$11.30
+03 Sep 2025	IGA Local Grocer	−$10.50
+03 Sep 2025	Google Cloud	−$9.25
+03 Sep 2025	IGA Local Grocer	−$3.99
+02 Sep 2025	STRIPE_SyfS8mjwVDx	+$46.08
+02 Sep 2025	Internal	+$300.00
+03 Sep 2025	Fees	−$0.01
+02 Sep 2025	Coles Online	−$125.70
+02 Sep 2025	IGA Local Grocer	−$3.00
+02 Sep 2025	Facebook	−$0.21
+01 Sep 2025	STRIPE_SyJA31EDphP	+$187.05
+03 Sep 2025	Uber Eats	−$23.39
+03 Sep 2025	Fees	−$1.75
+02 Sep 2025	Facebook	−$50.04
+02 Sep 2025	Uber	−$43.76
+01 Sep 2025	IGA Local Grocer	−$27.15
+02 Sep 2025	Fees	−$2.12
+01 Sep 2025	TPG Telecom	−$84.99
+01 Sep 2025	Facebook	−$60.56
+01 Sep 2025	Woolworths	−$50.73
+01 Sep 2025	Uber	−$27.22
+01 Sep 2025	IGA Local Grocer	−$14.49
+01 Sep 2025	Shell Reddy Express	−$12.79
+01 Sep 2025	IGA Local Grocer	−$9.60
+01 Sep 2025	IGA Local Grocer	−$4.95
+29 Aug 2025	Internal	−$250.00
+29 Aug 2025	Funds trns	−$30.00
+29 Aug 2025	STRIPE_SxA5FK8HMmb	+$198.37
+29 Aug 2025	Internal	+$200.00
+29 Aug 2025	IGA Local Grocer	−$39.89
+29 Aug 2025	IGA Local Grocer	−$13.15
+28 Aug 2025	Internal	−$300.00
+28 Aug 2025	STRIPE_SwmxmLnFe3f	+$413.24
+29 Aug 2025	Fees	−$0.51
+28 Aug 2025	Facebook	−$14.49
+28 Aug 2025	Fees	−$2.44
+27 Aug 2025	Wix.com	−$69.73
+27 Aug 2025	STRIPE_SwPsFj3C4VX	+$452.62
+28 Aug 2025	Fees	−$1.09
+27 Aug 2025	Facebook	−$31.11
+27 Aug 2025	Bayside Pharmacy	−$14.61
+27 Aug 2025	IGA Local Grocer	−$13.85
+27 Aug 2025	IGA Local Grocer	−$6.60
+27 Aug 2025	Woolworths	−$6.00
+26 Aug 2025	Internal	−$50.00
+26 Aug 2025	STRIPE_Sw2pSFiZNQK	+$46.39
+29 Aug 2025	Fees	−$2.43
+28 Aug 2025	Facebook	−$69.38
+27 Aug 2025	Fees	−$1.47
+26 Aug 2025	Facebook	−$41.94
+26 Aug 2025	IGA Local Grocer	−$14.40
+26 Aug 2025	IGA Local Grocer	−$4.40
+25 Aug 2025	NIB	−$17.32
+25 Aug 2025	Internal	+$150.00
+25 Aug 2025	STRIPE_SvfG6LG8usF	+$158.32
+26 Aug 2025	Fees	−$1.06
+25 Aug 2025	IGA Local Grocer	−$31.30
+25 Aug 2025	Facebook	−$30.19
+25 Aug 2025	IGA Local Grocer	−$11.90
+25 Aug 2025	Chicken Lads	−$9.07
+25 Aug 2025	IGA Local Grocer	−$4.40
+26 Aug 2025	Fees	−$1.05
+26 Aug 2025	Fees	−$0.73
+25 Aug 2025	Facebook	−$30.00
+25 Aug 2025	Facebook	−$20.94
+25 Aug 2025	IGA Local Grocer	−$20.85
+25 Aug 2025	Squash Melbourne	−$18.00
+25 Aug 2025	IGA Local Grocer	−$7.50
+25 Aug 2025	IGA Local Grocer	−$45.19
+25 Aug 2025	IGA Local Grocer	−$9.60
+25 Aug 2025	Fees	−$4.20
+25 Aug 2025	Fees	−$0.50
+22 Aug 2025	SML ATM	−$320.00
+22 Aug 2025	ABC Trainerize	−$120.09
+22 Aug 2025	Wix.com	−$14.41
+22 Aug 2025	SML ATM Fee	−$3.00
+22 Aug 2025	Internal	+$100.00
+22 Aug 2025	STRIPE_SuXk37625Lb	+$124.87
+22 Aug 2025	ARMSTRONG JEROME	+$350.00
+25 Aug 2025	Fees	−$0.91
+22 Aug 2025	Facebook	−$25.97
+22 Aug 2025	Microsoft	−$16.00
+22 Aug 2025	IGA Local Grocer	−$11.20
+22 Aug 2025	IGA Local Grocer	−$8.40
+22 Aug 2025	Fees	−$1.05
+21 Aug 2025	Internal	−$400.00
+21 Aug 2025	Internal	−$350.00
+21 Aug 2025	Facebook	−$30.00
+21 Aug 2025	STRIPE_SuAPAMBeMaF	+$438.44
+21 Aug 2025	IGA Local Grocer	−$17.39
+20 Aug 2025	STRIPE_StnXjaj6djf	+$412.71
+21 Aug 2025	Super Cheap Auto	−$172.49
+21 Aug 2025	BP (Brighton VIC)	−$35.96
+21 Aug 2025	Uber	−$18.89
+21 Aug 2025	Uber	−$18.76
+21 Aug 2025	Fees	−$1.05
+21 Aug 2025	Fees	−$0.42
+20 Aug 2025	Woolworths	−$44.00
+20 Aug 2025	Facebook	−$30.01
+20 Aug 2025	IGA Local Grocer	−$20.99
+20 Aug 2025	Facebook	−$11.90
+20 Aug 2025	IGA Local Grocer	−$2.90
+19 Aug 2025	STRIPE_StQCe2zAygM	+$95.14
+19 Aug 2025	Internal	+$250.00
+20 Aug 2025	Fees	−$1.04
+19 Aug 2025	Facebook	−$29.82
+19 Aug 2025	IGA Local Grocer	−$22.40
+19 Aug 2025	Google Australia	−$14.99
+18 Aug 2025	IGA Local Grocer	−$12.80
+18 Aug 2025	Internal	+$100.00
+18 Aug 2025	Internal	+$120.00
+18 Aug 2025	STRIPE_St2aCN825QS	+$139.03
+19 Aug 2025	Google Australia	−$10.99
+19 Aug 2025	Fees	−$1.05
+19 Aug 2025	Fees	−$0.77
+18 Aug 2025	Facebook	−$30.02
+18 Aug 2025	IGA Local Grocer	−$24.20
+18 Aug 2025	Facebook	−$21.93
+18 Aug 2025	IGA Local Grocer	−$3.50
+18 Aug 2025	Grant Linley	+$5.00
+18 Aug 2025	SML ATM	−$120.00
+18 Aug 2025	IGA Local Grocer	−$34.90
+18 Aug 2025	Squash Melbourne	−$22.50
+18 Aug 2025	Chicken Lads	−$9.07
+18 Aug 2025	IGA Local Grocer	−$7.49
+18 Aug 2025	Squash Melbourne	−$5.00
+18 Aug 2025	IGA Local Grocer	−$4.99
+18 Aug 2025	SML ATM Fee	−$3.00
+19 Aug 2025	Fees	−$0.90
+18 Aug 2025	Facebook	−$25.60
+18 Aug 2025	IGA Local Grocer	−$19.90
+18 Aug 2025	IGA Local Grocer	−$10.39
+18 Aug 2025	IGA Local Grocer	−$9.60
+15 Aug 2025	STRIPE_Srv2ZpuFGm2	+$124.67
+18 Aug 2025	Fees	−$1.05
+15 Aug 2025	Facebook	−$30.07
+15 Aug 2025	IGA Local Grocer	−$8.00
+15 Aug 2025	IGA Local Grocer	−$7.30
+14 Aug 2025	Internal	−$500.00
+14 Aug 2025	Internal	−$400.00
+14 Aug 2025	STRIPE_SrY2uSD9TsA	+$510.41
+15 Aug 2025	Fees	−$1.34
+14 Aug 2025	Facebook	−$38.24
+14 Aug 2025	IGA Local Grocer	−$25.51
+13 Aug 2025	STRIPE_SrAdEHhiZ5k	+$449.62
+14 Aug 2025	Fees	−$1.05
+13 Aug 2025	Facebook	−$29.89
+12 Aug 2025	STRIPE_SqnWr3WiJCk	+$127.55
+13 Aug 2025	Google Australia	−$14.99
+12 Aug 2025	IGA Local Grocer	−$35.54
+12 Aug 2025	IGA Local Grocer	−$11.00
+12 Aug 2025	Facebook	−$0.01
+11 Aug 2025	NIB	−$17.32
+11 Aug 2025	STRIPE_SqQ25Ea5koR	+$52.27
+11 Aug 2025	Internal	+$100.00
+11 Aug 2025	Internal	+$120.00
+11 Aug 2025	Internal	+$150.00
+13 Aug 2025	Fees	−$1.28
+12 Aug 2025	Facebook	−$36.56
+12 Aug 2025	Fees	−$1.08
+12 Aug 2025	Fees	−$0.77
+11 Aug 2025	IGA Local Grocer	−$110.00
+11 Aug 2025	IGA Local Grocer	−$34.40
+11 Aug 2025	Cursor	−$30.75
+11 Aug 2025	Facebook	−$21.95
+12 Aug 2025	Fees	−$1.06
+11 Aug 2025	Facebook	−$30.23
+11 Aug 2025	IGA Local Grocer	−$18.45
+11 Aug 2025	Spotify	−$13.99
+11 Aug 2025	IGA Local Grocer	−$11.40
+12 Aug 2025	Fees	−$3.50
+12 Aug 2025	Fees	−$1.65
+12 Aug 2025	Fees	−$1.14
+11 Aug 2025	MANYCHAT.COM	−$99.95
+11 Aug 2025	Facebook	−$47.19
+11 Aug 2025	Facebook	−$32.49
+11 Aug 2025	IGA Local Grocer	−$22.44
+08 Aug 2025	Internal	−$800.00
+08 Aug 2025	STRIPE_SpJRevkPcCq	+$65.72
+11 Aug 2025	Fees	−$1.76
+11 Aug 2025	Fees	−$1.08
+08 Aug 2025	Facebook	−$50.17
+08 Aug 2025	CURSOR	−$30.91
+08 Aug 2025	IGA Local Grocer	−$30.41
+08 Aug 2025	IGA Local Grocer	−$13.20
+07 Aug 2025	STRIPE_SovRRCwJPEM	+$317.03
+08 Aug 2025	Fees	−$2.15
+07 Aug 2025	Facebook	−$61.43
+07 Aug 2025	IGA Local Grocer	−$22.55
+07 Aug 2025	IGA Local Grocer	−$6.80
+07 Aug 2025	IGA Local Grocer	−$3.20
+06 Aug 2025	ARMSTRONG JEROME	+$300.00
+06 Aug 2025	STRIPE_SoYCDyEVxY2	+$396.00
+06 Aug 2025	IGA Local Grocer	−$12.49
+06 Aug 2025	Fees	−$1.75
+05 Aug 2025	Facebook	−$50.01
+05 Aug 2025	STRIPE_SoB4Awcnped	+$126.48
+06 Aug 2025	Fees	−$0.98
+05 Aug 2025	Facebook	−$28.10
+05 Aug 2025	IGA Local Grocer	−$27.39
+05 Aug 2025	IGA Local Grocer	−$11.00
+05 Aug 2025	IGA Local Grocer	−$5.00
+05 Aug 2025	Fees	−$1.36
+04 Aug 2025	Origin Energy	−$613.28
+04 Aug 2025	IGA Local Grocer	−$122.90
+04 Aug 2025	Facebook	−$38.98
+04 Aug 2025	Internal	+$100.00
+04 Aug 2025	Internal	+$150.00
+04 Aug 2025	Internal	+$800.00
+05 Aug 2025	Google Australia	−$17.99
+04 Aug 2025	Everyday Mobile	−$25.00
+04 Aug 2025	IGA Local Grocer	−$14.25
+04 Aug 2025	IGA Local Grocer	−$4.80
+05 Aug 2025	Uber Eats	−$75.23
+05 Aug 2025	Uber Eats	−$31.67
+05 Aug 2025	Fees	−$0.63
+05 Aug 2025	Fees	−$0.40
+04 Aug 2025	IGA Local Grocer	−$22.04
+04 Aug 2025	Facebook	−$18.03
+04 Aug 2025	Squash Melbourne	−$18.00
+04 Aug 2025	Squash Melbourne	−$11.50
+04 Aug 2025	Facebook	−$11.34
+04 Aug 2025	Netflix	−$25.99
+04 Aug 2025	Google Cloud	−$1.74
+01 Aug 2025	Internal	−$200.00
+01 Aug 2025	STRIPE_Smg1is7YjSj	+$119.52
+05 Aug 2025	Fees	−$1.88
+04 Aug 2025	Facebook	−$53.66
+04 Aug 2025	Fees	−$1.75
+04 Aug 2025	Fees	−$0.01
+01 Aug 2025	Woolworths	−$78.40
+01 Aug 2025	Facebook	−$50.10
+01 Aug 2025	IGA Local Grocer	−$15.79
+01 Aug 2025	IGA Local Grocer	−$14.40
+01 Aug 2025	IGA Local Grocer	−$4.99
+01 Aug 2025	Facebook	−$0.19
+31 Jul 2025	Internal	−$400.00
+31 Jul 2025	STRIPE_SmJeSDgqDCh	+$306.07
+31 Jul 2025	IGA Local Grocer	−$16.49
+31 Jul 2025	IGA Local Grocer	−$4.00
+30 Jul 2025	STRIPE_SmvfoXTN1FX	+$538.53
+04 Aug 2025	Fees	−$1.06
+01 Aug 2025	Facebook	−$30.21
+31 Jul 2025	Fees	−$1.41
+31 Jul 2025	Fees	−$1.04
+30 Jul 2025	TPG Telecom	−$84.99
+30 Jul 2025	Facebook	−$40.36
+30 Jul 2025	Facebook	−$29.61
+30 Jul 2025	IGA Local Grocer	−$23.04
+30 Jul 2025	IGA Local Grocer	−$12.80
+29 Jul 2025	STRIPE_SmYLEuP5ePB	+$79.11
+29 Jul 2025	Internal	+$150.00
+29 Jul 2025	IGA Local Grocer	−$29.90
+29 Jul 2025	IGA Local Grocer	−$3.20
+29 Jul 2025	Fees	−$0.36
+28 Jul 2025	NIB	−$17.32
+28 Jul 2025	Facebook	−$10.34
+28 Jul 2025	Internal	+$100.00
+28 Jul 2025	Internal	+$150.00
+29 Jul 2025	Fees	−$2.41
+29 Jul 2025	Fees	−$1.05
+29 Jul 2025	Fees	−$0.01
+28 Jul 2025	IGA Local Grocer	−$113.30
+28 Jul 2025	Wix.com	−$68.85
+28 Jul 2025	Facebook	−$30.00
+28 Jul 2025	Facebook	−$0.24
+29 Jul 2025	Fees	−$4.28
+29 Jul 2025	Fees	−$0.42
+28 Jul 2025	CURSOR	−$122.20
+28 Jul 2025	IGA Local Grocer	−$34.78
+28 Jul 2025	Facebook	−$12.13
+28 Jul 2025	Squash Melbourne	−$9.00
+28 Jul 2025	IGA Local Grocer	−$17.36
+28 Jul 2025	IGA Local Grocer	−$3.20
+25 Jul 2025	Internal	−$900.00
+25 Jul 2025	STRIPE_Sk3NkzpVuY8	+$117.25
+28 Jul 2025	Fees	−$0.66
+25 Jul 2025	IGA Local Grocer	−$42.14
+25 Jul 2025	Facebook	−$18.75
+25 Jul 2025	IGA Local Grocer	−$9.49
+25 Jul 2025	IGA Local Grocer	−$4.40
+25 Jul 2025	Fees	−$3.07
+24 Jul 2025	Facebook	−$87.61
+24 Jul 2025	STRIPE_Sjg6AGfnAK3	+$1,098.81
+24 Jul 2025	IGA Local Grocer	−$7.49
+24 Jul 2025	IGA Local Grocer	−$3.20
+23 Jul 2025	Internal	−$500.00
+23 Jul 2025	Internal	+$200.00
+23 Jul 2025	STRIPE_SjJmNK4ThMH	+$439.22
+23 Jul 2025	IGA Local Grocer	−$13.10
+23 Jul 2025	Fees	−$2.85
+23 Jul 2025	Fees	−$0.50
+22 Jul 2025	Facebook	−$81.47
+22 Jul 2025	IGA Local Grocer	−$50.00
+22 Jul 2025	Wix.com	−$14.22
+22 Jul 2025	Internal	+$250.00
+23 Jul 2025	Microsoft	−$16.00
+23 Jul 2025	Uber	−$11.85
+23 Jul 2025	Uber	−$11.06
+22 Jul 2025	IGA Local Grocer	−$33.14
+22 Jul 2025	IGA Local Grocer	−$9.50
+22 Jul 2025	IGA Local Grocer	−$3.20
+22 Jul 2025	Facebook	−$100.00
+22 Jul 2025	IGA Local Grocer	−$19.29
+22 Jul 2025	IGA Local Grocer	−$15.45
+22 Jul 2025	IGA Local Grocer	−$4.50
+22 Jul 2025	Fees	−$3.50
+22 Jul 2025	Facebook	−$100.00
+22 Jul 2025	Squash Melbourne	−$13.50
+22 Jul 2025	IGA Local Grocer	−$8.75
+22 Jul 2025	Fees	−$3.50
+22 Jul 2025	IGA Local Grocer	−$24.65
+22 Jul 2025	IGA Local Grocer	−$15.58
+22 Jul 2025	Google Australia	−$14.99
+22 Jul 2025	IGA Local Grocer	−$7.00
+18 Jul 2025	STRIPE_ShQeVFQwHjU	+$119.73
+22 Jul 2025	Google Australia	−$10.99
+22 Jul 2025	Fees	−$3.51
+18 Jul 2025	Facebook	−$100.24
+18 Jul 2025	IGA Local Grocer	−$33.85
+18 Jul 2025	IGA Local Grocer	−$9.60
+18 Jul 2025	IGA Local Grocer	−$6.10
+18 Jul 2025	Fees	−$4.15
+18 Jul 2025	IGA Local Grocer	−$1.20
+18 Jul 2025	Facebook	−$0.11
+17 Jul 2025	Internal	−$300.00
+17 Jul 2025	ABC Trainerize	−$118.59
+17 Jul 2025	Internal	+$150.00
+17 Jul 2025	STRIPE_Sh3WyivVzsB	+$230.88
+18 Jul 2025	Australia Post	−$3.00
+17 Jul 2025	IGA Local Grocer	−$5.35
+16 Jul 2025	IGA Local Grocer	−$60.99
+16 Jul 2025	STRIPE_SggPKBT9upn	+$390.08
+16 Jul 2025	IGA Local Grocer	−$14.39
+16 Jul 2025	IGA Local Grocer	−$2.50
+16 Jul 2025	Fees	−$0.37
+15 Jul 2025	Woolworths	−$18.00
+15 Jul 2025	Bayside Pharmacy	−$17.08
+15 Jul 2025	ABC Trainerize	−$10.47
+14 Jul 2025	NIB	−$17.32
+14 Jul 2025	Internal	+$100.00
+14 Jul 2025	Internal	+$150.00
+14 Jul 2025	IGA Local Grocer	−$47.23
+14 Jul 2025	IGA Local Grocer	−$38.18
+14 Jul 2025	Squash Melbourne	−$18.00
+14 Jul 2025	IGA Local Grocer	−$4.50
+14 Jul 2025	IGA Local Grocer	−$3.50
+14 Jul 2025	IGA Local Grocer	−$22.45
+14 Jul 2025	Google Australia	−$14.99
+14 Jul 2025	The Flour House	−$6.20
+11 Jul 2025	STRIPE_Seo48oYH1F6	+$66.11
+11 Jul 2025	Fees	−$1.08
+10 Jul 2025	Internal	−$1,000.00
+10 Jul 2025	Internal	−$70.00
+10 Jul 2025	Cursor	−$30.73
+10 Jul 2025	STRIPE_SeQr7irKWcV	+$25.48
+11 Jul 2025	Spotify	−$13.99
+10 Jul 2025	Woolworths	−$22.50
+09 Jul 2025	STRIPE_Se3sg4KbEJw	+$1,176.65
+10 Jul 2025	Fees	−$1.95
+09 Jul 2025	MANYCHAT.COM	−$55.58
+09 Jul 2025	IGA Local Grocer	−$29.47
+09 Jul 2025	IGA Local Grocer	−$18.30
+09 Jul 2025	IGA Local Grocer	−$3.25
+09 Jul 2025	Fees	−$2.43
+08 Jul 2025	Wix.com	−$69.56
+08 Jul 2025	STRIPE_SdgR7nTE48Y	+$99.41
+08 Jul 2025	IGA Local Grocer	−$13.29
+07 Jul 2025	STRIPE_SdJM7W45E4i	+$96.44
+07 Jul 2025	IGA Local Grocer	−$31.23
+07 Jul 2025	IGA Local Grocer	−$22.30
+07 Jul 2025	IGA Local Grocer	−$5.85
+08 Jul 2025	Fees	−$1.86
+07 Jul 2025	CURSOR	−$53.19
+07 Jul 2025	IGA Local Grocer	−$22.25
+07 Jul 2025	IGA Local Grocer	−$3.25
+07 Jul 2025	TPG Telecom	−$84.99
+07 Jul 2025	Uber Eats	−$53.79
+07 Jul 2025	Uber Eats	−$18.96
+07 Jul 2025	IGA Local Grocer	−$8.60
+07 Jul 2025	IGA Local Grocer	−$3.00
+04 Jul 2025	IGA Local Grocer	−$86.74
+04 Jul 2025	STRIPE_ScBVNEf1R6g	+$27.71
+04 Jul 2025	Internal	+$50.00
+04 Jul 2025	Internal	+$70.00
+04 Jul 2025	Internal	+$70.00
+07 Jul 2025	Google Australia	−$17.99
+04 Jul 2025	Everyday Mobile	−$25.00
+04 Jul 2025	IGA Local Grocer	−$7.00
+04 Jul 2025	IGA Local Grocer	−$1.90
+03 Jul 2025	Internal	−$500.00
+03 Jul 2025	STRIPE_SboDDsB19Gn	+$95.92
+03 Jul 2025	Netflix	−$25.99
+03 Jul 2025	IGA Local Grocer	−$8.15
+03 Jul 2025	IGA Local Grocer	−$6.70
+03 Jul 2025	IGA Local Grocer	−$5.27
+02 Jul 2025	Internal	−$70.00
+02 Jul 2025	Internal	−$30.00
+02 Jul 2025	STRIPE_SbR1CJhBn4z	+$569.95
+02 Jul 2025	IGA Local Grocer	−$19.66
+02 Jul 2025	IGA Local Grocer	−$9.50
+01 Jul 2025	STRIPE_Sb3vsNN45FE	+$128.20
+01 Jul 2025	IGA Local Grocer	−$30.90
+01 Jul 2025	IGA Local Grocer	−$20.30
+01 Jul 2025	IGA Local Grocer	−$10.40
+01 Jul 2025	IGA Local Grocer	−$8.79
+30 Sep 2025	INTEREST CHARGED	−$5.01
+05 Sep 2025	IQumulate Premium Funding	−$479.10
+28 Aug 2025	Internal	−$2,700.00
+28 Aug 2025	Internal	+$300.00
+26 Aug 2025	Internal	+$50.00
+25 Aug 2025	Internal	−$150.00
+22 Aug 2025	Internal	−$100.00
+22 Aug 2025	Internal	+$160.00
+21 Aug 2025	Internal	+$350.00
+21 Aug 2025	Internal	+$400.00
+19 Aug 2025	Internal	−$250.00
+18 Aug 2025	Internal	−$120.00
+18 Aug 2025	Internal	−$100.00
+14 Aug 2025	Grant Linely	−$240.00
+14 Aug 2025	Internal	+$400.00
+14 Aug 2025	Internal	+$500.00
+11 Aug 2025	Internal	−$150.00
+11 Aug 2025	Internal	−$120.00
+11 Aug 2025	Internal	−$100.00
+08 Aug 2025	Internal	+$800.00
+06 Aug 2025	IQumulate Premium Funding	−$958.20
+04 Aug 2025	Internal	−$800.00
+04 Aug 2025	Internal	−$150.00
+04 Aug 2025	Internal	−$100.00
+01 Aug 2025	Internal	+$200.00
+31 Jul 2025	Internal	+$200.00
+31 Jul 2025	Internal	+$400.00
+29 Jul 2025	Internal	−$150.00
+28 Jul 2025	Internal	−$150.00
+28 Jul 2025	Internal	−$100.00
+25 Jul 2025	Internal	+$900.00
+23 Jul 2025	Internal	−$200.00
+23 Jul 2025	Internal	+$500.00
+22 Jul 2025	Internal	−$250.00
+17 Jul 2025	DBRE PTY LTD	−$3,536.33
+17 Jul 2025	Internal	−$150.00
+17 Jul 2025	Internal	+$300.00
+14 Jul 2025	Internal	−$150.00
+14 Jul 2025	Internal	+$50.00
+14 Jul 2025	Internal	+$1,350.00
+10 Jul 2025	Internal	+$70.00
+10 Jul 2025	kk SELFWEALTH LTD	+$912.44
+10 Jul 2025	Internal	+$1,000.00
+04 Jul 2025	Internal	−$70.00

@@ -1,0 +1,34 @@
+﻿
+> function checkUserRole() {
+      // Determine Identity
+      let email = sessionStorage.getItem('userEmail') || "shannonrhysbirch@gmail.com";
+      
+      // Check for Coach Domain
+      if (email.includes('plantbased-balance.org')) {
+          console.log("Coach Identity Detected: " + email);
+          if(!isCoachMode) toggleCoachMode(true);
+      } else {
+          console.log("User Identity Detected: " + email);
+          if(isCoachMode) toggleCoachMode(false);
+      }
+      
+      // Check for Draft Persistence
+      restoreDraft();
+  }
+  
+  // Run on load
+  window.addEventListener('DOMContentLoaded', () => { 
+      setTimeout(checkUserRole, 500); 
+  });
+  
+  // 2. TOGGLE LOGIC
+  const originalToggleCoachMode = window.toggleCoachMode || function(){};
+  window.toggleCoachMode = function(show) {
+      isCoachMode = show;
+      // Call original logic if it exists (it toggles the UI)
+      if(typeof originalToggleCoachMode === 'function') originalToggleCoachMode(show);
+      
+      // UI Feedback or Reset
+      const dash = document.getElementById('view-coach-dashboard');
+
+

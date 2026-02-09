@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 const CACHE_NAME = 'pbb-app-v13'; // Added meal tracking with text/voice input and reminders
+=======
+const CACHE_NAME = 'pbb-app-v14'; // Improved 3D model caching for faster character loads
+const MODEL_CACHE_NAME = 'pbb-models-v1'; // Separate long-lived cache for 3D models
+>>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
 const ASSETS = [
   './dashboard.html',
   './assets/Logo_dots.jpg',
@@ -17,22 +22,37 @@ self.addEventListener('install', (e) => {
   );
 });
 
+<<<<<<< HEAD
 // Activate - clean old caches
+=======
+// Activate - clean old caches (but keep model cache)
+>>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
+<<<<<<< HEAD
         keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+=======
+        keys.filter(k => k !== CACHE_NAME && k !== MODEL_CACHE_NAME).map(k => caches.delete(k))
+>>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
       );
     })
   );
   return self.clients.claim(); // Take control immediately
 });
 
+<<<<<<< HEAD
 // Fetch - Network First for HTML/JS, Cache First for images
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   
+=======
+// Fetch - Network First for HTML/JS, Cache First for models & images
+self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
+
+>>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
   // Network first for HTML and JS files (always get latest)
   if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js')) {
     e.respondWith(
@@ -47,7 +67,30 @@ self.addEventListener('fetch', (e) => {
     );
     return;
   }
+<<<<<<< HEAD
   
+=======
+
+  // Cache first for 3D model files (.glb/.gltf) - stored in dedicated model cache
+  if (url.pathname.endsWith('.glb') || url.pathname.endsWith('.gltf')) {
+    e.respondWith(
+      caches.open(MODEL_CACHE_NAME).then(cache => {
+        return cache.match(e.request).then(cached => {
+          if (cached) return cached;
+          // Not cached yet - fetch, cache, and return
+          return fetch(e.request).then(response => {
+            if (response.ok) {
+              cache.put(e.request, response.clone());
+            }
+            return response;
+          });
+        });
+      })
+    );
+    return;
+  }
+
+>>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
   // Cache first for everything else (images, icons)
   e.respondWith(
     caches.match(e.request).then((response) => response || fetch(e.request))

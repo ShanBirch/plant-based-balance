@@ -1,0 +1,33 @@
+Shannon Birch
+0478 209 395
+shannon@plantbased-balance.org
+Queensland, Australia
+
+Hiring Manager
+Affinda Group
+Melbourne, VIC
+
+Dear Hiring Team,
+
+I am writing to express my strong interest in the AI Software Engineer, Agents & Automation role at Affinda Group. When I read your job description—specifically the call for someone who bridges experimentation and production and has been "all in" on AI—I knew I had to apply.
+
+Since the release of ChatGPT, I have religiously dedicated 8–12 hours a day to mastering Applied AI. I haven't just been using these tools; I have been building with them, completely transforming my career and my business in the process. I am currently based in Queensland, having recently moved here from Melbourne, but I am very happy to travel down to Melbourne as needed for this role.
+
+My experience runs deep in building practical, revenue-generating agents. In 2025, I architected a comprehensive automation system to run my online coaching business, effectively cloning myself to handle scale. This wasn't just a chatbot; it was an elaborate autonomous agent that:
+*   **Performed as a Full-Stack Coach:** capable of building custom workout programs, onboarding new clients, and handling every duty of a human coach autonomously.
+*   **Engineered Custom Memory:** I built a proprietary memory system to store and recall client history and conversations long before ChatGPT released native memory features, ensuring deep, context-aware interactions.
+*   **Automated Growth:** Browsed Instagram to identify prospects, initiated outreach via ManyChat, and managed the entire funnel from lead to sale.
+
+Currently, I am finalizing a proprietary PWA (Plant Based Balance) designed to support plant-based women through hormonal transitions. I built this full-stack application from scratch—frontend, backend, and an embedded AI coaching agent—using the exact "AI-native" workflows you describe. I use tools like Cursor and LLMs to move from concept to shipping code rapidly, closing the gap between "generate" and "production" daily.
+
+I am particularly excited about Affinda’s mission to build the "internal agent framework" because that is exactly how I think: building the tools that make complex AI workflows simple and repeatable.
+
+I bring the "real engineering chops" of someone who has had to maintain their own production software, combined with the relentless curiosity of a builder who has been living in this space 12 hours a day for the last year.
+
+I would love the opportunity to discuss how my hands-on experience with AI agents and automation can contribute to Affinda’s growth.
+
+Sincerely,
+
+Shannon Birch
+shannon@plantbased-balance.org
+0478 209 395
