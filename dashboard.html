@@ -13354,7 +13354,7 @@ function viewWorkoutHistoryDetail(date) {
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">1.</span>
-                            <span style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Choose your wager (min. <strong style="color: #fbbf24;">10,000 Coins</strong>). Everyone pays in.</span>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Choose your wager (min. <strong style="color: #fbbf24;">1,000 Coins</strong>). Everyone pays in.</span>
                         </div>
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">2.</span>
@@ -13409,12 +13409,12 @@ function viewWorkoutHistoryDetail(date) {
                         <span style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span class="coin-balance-sync">0</span></span>
                     </div>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
-                        <button type="button" onclick="window._setCreateChallengeBet(10000, this)" class="create-challenge-bet-btn active" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 10K</button>
-                        <button type="button" onclick="window._setCreateChallengeBet(25000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 25K</button>
-                        <button type="button" onclick="window._setCreateChallengeBet(50000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 50K</button>
-                        <button type="button" onclick="window._setCreateChallengeBet(100000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 100K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(1000, this)" class="create-challenge-bet-btn active" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 1K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(2500, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 2.5K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(5000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 5K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(10000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 10K</button>
                     </div>
-                    <input type="number" id="create-challenge-custom-bet" placeholder="Or enter custom amount..." min="10000" step="1000" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 0.85rem; box-sizing: border-box;" oninput="window._setCreateChallengeBet(parseInt(this.value) || 0)">
+                    <input type="number" id="create-challenge-custom-bet" placeholder="Or enter custom amount..." min="1000" step="500" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 0.85rem; box-sizing: border-box;" oninput="window._setCreateChallengeBet(parseInt(this.value) || 0)">
                 </div>
 
                 <!-- Entry Fee Info -->
@@ -13610,23 +13610,23 @@ function viewWorkoutHistoryDetail(date) {
                 <!-- Coin Bet Picker (hidden — accepter must match creator's fee) -->
                 <div class="challenge-bet-picker" style="padding: 10px 0 14px; display: none;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">WAGER COINS (min. 10,000)</span>
+                        <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">WAGER COINS (min. 1,000)</span>
                         <span style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span id="challenge-modal-coin-balance">0</span></span>
                     </div>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                        <button onclick="window._setChallengeBet(10000, this)" class="challenge-bet-btn active">🪙 10K</button>
-                        <button onclick="window._setChallengeBet(25000, this)" class="challenge-bet-btn">🪙 25K</button>
-                        <button onclick="window._setChallengeBet(50000, this)" class="challenge-bet-btn">🪙 50K</button>
-                        <button onclick="window._setChallengeBet(100000, this)" class="challenge-bet-btn">🪙 100K</button>
+                        <button onclick="window._setChallengeBet(1000, this)" class="challenge-bet-btn active">🪙 1K</button>
+                        <button onclick="window._setChallengeBet(2500, this)" class="challenge-bet-btn">🪙 2.5K</button>
+                        <button onclick="window._setChallengeBet(5000, this)" class="challenge-bet-btn">🪙 5K</button>
+                        <button onclick="window._setChallengeBet(10000, this)" class="challenge-bet-btn">🪙 10K</button>
                     </div>
                     <div style="margin-top: 8px;">
-                        <input type="number" id="challenge-custom-bet" placeholder="Or enter custom amount (min 10,000)..." min="10000" step="1000" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 0.85rem; box-sizing: border-box;" oninput="window._setChallengeBet(parseInt(this.value) || 0)">
+                        <input type="number" id="challenge-custom-bet" placeholder="Or enter custom amount (min 1,000)..." min="1000" step="500" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 0.85rem; box-sizing: border-box;" oninput="window._setChallengeBet(parseInt(this.value) || 0)">
                     </div>
                 </div>
             </div>
             <div class="challenge-buyin-footer">
                 <button id="buy-challenge-pass-btn" onclick="spendCoinsToJoinChallenge()" class="challenge-buyin-join-btn">
-                    Spend 🪙 10,000 Coins &amp; Join
+                    Spend 🪙 1,000 Coins &amp; Join
                 </button>
                 <button onclick="openCoinShop(); closeChallengePassModal();" class="challenge-buyin-secondary-btn">
                     Need more coins? Buy here
@@ -31566,7 +31566,7 @@ async function loadHomeChallenges() {
 
             html += pendingInvites.map(challenge => {
                 const detail = challengeDetails[challenge.challenge_id] || {};
-                const entryFee = detail.entry_fee || 10000;
+                const entryFee = detail.entry_fee || 1000;
                 const rareId = detail.rare_reward_id;
                 const rare = rareId && typeof RARE_COLLECTION !== 'undefined' ? RARE_COLLECTION.find(r => r.id === rareId) : null;
                 const tierData = rare ? (RARE_TIERS[rare.tier] || RARE_TIERS.COMMON) : null;
@@ -31759,7 +31759,7 @@ function openCreateChallengeModal(featuredRareId = null) {
         if (randomDropInfo) randomDropInfo.style.display = 'block';
         if (wagerSection) wagerSection.style.display = 'block';
         // Reset wager to default
-        createChallengeBetAmount = 10000;
+        createChallengeBetAmount = 1000;
         const feeDisplay = document.getElementById('create-challenge-fee-display');
         if (feeDisplay) feeDisplay.textContent = '10,000 Coins entry fee';
         // Reset header
@@ -31846,7 +31846,7 @@ function updateSelectedCount() {
 }
 
 // Create challenge bet amount (for the create modal)
-let createChallengeBetAmount = 10000;
+let createChallengeBetAmount = 1000;
 
 window._setCreateChallengeBet = function(amount, btnEl) {
     if (amount < CHALLENGE_MIN_BET && amount !== 0) {
@@ -32179,8 +32179,8 @@ function closeChallengePassModal() {
     pendingChallengeId = null;
 }
 
-// Spend coins to join a challenge (minimum 10,000 coins)
-const CHALLENGE_MIN_BET = 10000;
+// Spend coins to join a challenge (minimum 1,000 coins)
+const CHALLENGE_MIN_BET = 1000;
 let currentChallengeBet = CHALLENGE_MIN_BET;
 
 // Set challenge bet amount from join modal picker
@@ -45852,10 +45852,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     </script>
     <script>
     const RARE_TIERS = {
-        LEGENDARY: { label: 'LEGENDARY', color: '#fbbf24', glow: 'rgba(251,191,36,0.4)', gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)', buyIn: 100000, weight: 1 },
-        EPIC:      { label: 'EPIC',      color: '#a855f7', glow: 'rgba(168,85,247,0.4)', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)', buyIn: 50000,  weight: 3 },
-        RARE:      { label: 'RARE',      color: '#3b82f6', glow: 'rgba(59,130,246,0.4)', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)', buyIn: 25000,  weight: 5 },
-        COMMON:    { label: 'COMMON',    color: '#6b7280', glow: 'rgba(107,114,128,0.4)', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)', buyIn: 10000,  weight: 10 }
+        LEGENDARY: { label: 'LEGENDARY', color: '#fbbf24', glow: 'rgba(251,191,36,0.4)', gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)', buyIn: 10000, weight: 1 },
+        EPIC:      { label: 'EPIC',      color: '#a855f7', glow: 'rgba(168,85,247,0.4)', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)', buyIn: 5000,  weight: 3 },
+        RARE:      { label: 'RARE',      color: '#3b82f6', glow: 'rgba(59,130,246,0.4)', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)', buyIn: 2500,  weight: 5 },
+        COMMON:    { label: 'COMMON',    color: '#6b7280', glow: 'rgba(107,114,128,0.4)', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)', buyIn: 1000,  weight: 10 }
     };
 
     const RARE_COLLECTION = [
