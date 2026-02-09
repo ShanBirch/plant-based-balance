@@ -18419,7 +18419,7 @@ function switchView(id) {
 
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
-const totalWizardSteps = 15;
+const totalWizardSteps = 18;
 
 // Workout Calendar State
 let wizardTrainingFrequency = 0;
@@ -18569,13 +18569,26 @@ function updateWizardUI() {
         else d.classList.remove('active');
     });
 
-    // 3. Initialize character customization on slide 14
-    if(currentWizardStep === 14) {
+    // 2b. Update FitGotchi preview model based on gender
+    if(currentWizardStep === 7) {
+        const fitgotchiPreview = document.getElementById('wizard-fitgotchi-preview');
+        if (fitgotchiPreview && selectedGender === 'female') {
+            fitgotchiPreview.setAttribute('src', 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb');
+        }
+    }
+
+    // 3. Initialize character customization on slide 16
+    if(currentWizardStep === 16) {
         initializeCharacterCustomization();
     }
 
+    // 3b. Load referral code on slide 17
+    if(currentWizardStep === 17) {
+        loadWizardReferralCode();
+    }
+
     // 4. Update final slide with hormone profile goal
-    if(currentWizardStep === 15) {
+    if(currentWizardStep === 18) {
         const hormoneProfile = sessionStorage.getItem('userResult') || 'CORTISOL';
         const goalDiv = document.getElementById('wizard-hormone-goal');
         if(goalDiv) {
@@ -19304,16 +19317,18 @@ function initializeCharacterCustomization() {
 
     const colorOptions = window.CHARACTER_COLOR_OPTIONS;
 
-    // Render color buttons for each category
+    // Render color buttons for each category (hair, pants, skin only - shirt/shoes use defaults)
     renderColorButtons('hair', colorOptions.hair, 'wizard-hair-colors');
-    renderColorButtons('shirt', colorOptions.shirt, 'wizard-shirt-colors');
     renderColorButtons('pants', colorOptions.pants, 'wizard-pants-colors');
-    renderColorButtons('shoes', colorOptions.shoes, 'wizard-shoes-colors');
     renderColorButtons('skin', colorOptions.skin, 'wizard-skin-colors');
 
-    // Initialize the preview model with current colors
+    // Initialize the preview model with current colors and correct gender model
     const previewModel = document.getElementById('wizard-preview-model');
     if (previewModel) {
+        // Set correct model based on gender
+        if (selectedGender === 'female') {
+            previewModel.setAttribute('src', 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb');
+        }
         previewModel.addEventListener('load', function onLoad() {
             applyWizardCharacterColors();
             previewModel.removeEventListener('load', onLoad);
@@ -19383,7 +19398,7 @@ async function applyWizardCharacterColors() {
     const previewModel = document.getElementById('wizard-preview-model');
     if (!previewModel || !previewModel.model) return;
 
-    const modelName = 'level_1_good_final.glb';
+    const modelName = selectedGender === 'female' ? 'level_1_female_final.glb' : 'level_1_good_final.glb';
     const mapping = window.CHARACTER_MATERIAL_MAPPINGS?.[modelName];
 
     if (!mapping) {
@@ -19432,6 +19447,84 @@ function saveWizardCharacterColors() {
         window.saveCharacterColors(wizardCharacterColors);
         console.log('Character colors saved from wizard:', wizardCharacterColors);
     }
+}
+
+// ========== WIZARD REFERRAL FUNCTIONS ==========
+
+async function loadWizardReferralCode() {
+    const codeDisplay = document.getElementById('wizard-referral-code');
+    if (!codeDisplay) return;
+
+    if (currentReferralCode) {
+        codeDisplay.textContent = currentReferralCode;
+        return;
+    }
+
+    if (window.currentUser) {
+        try {
+            const stats = await window.dbHelpers.referrals.getStats(window.currentUser.id);
+            if (stats.referralCode) {
+                currentReferralCode = stats.referralCode;
+                codeDisplay.textContent = stats.referralCode;
+            } else {
+                codeDisplay.textContent = 'Sign up to get your code!';
+                codeDisplay.style.fontSize = '1rem';
+            }
+        } catch (e) {
+            codeDisplay.textContent = 'Available after setup!';
+            codeDisplay.style.fontSize = '1rem';
+        }
+    } else {
+        codeDisplay.textContent = 'Available after setup!';
+        codeDisplay.style.fontSize = '1rem';
+    }
+}
+
+function wizardShareWhatsApp() {
+    const code = currentReferralCode;
+    if (!code) {
+        showToast('Your referral code will be available after you finish setup!', 'info');
+        return;
+    }
+    const link = `${window.location.origin}/login.html?ref=${code}`;
+    const message = `Hey! Join me on Balance - it's a fitness app with workout tracking, meal logging, battles & more. We BOTH get 1 week double XP! Use my code ${code} or click here: ${link}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+}
+
+function wizardShareSMS() {
+    const code = currentReferralCode;
+    if (!code) {
+        showToast('Your referral code will be available after you finish setup!', 'info');
+        return;
+    }
+    const link = `${window.location.origin}/login.html?ref=${code}`;
+    const message = `Hey! Join me on Balance. We BOTH get 1 week double XP! Use code ${code} or click: ${link}`;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+        window.location.href = `sms:?&body=${encodeURIComponent(message)}`;
+    } else {
+        navigator.clipboard.writeText(message).then(() => {
+            showToast('Message copied! Paste it into your SMS app.', 'success');
+        });
+    }
+}
+
+function wizardCopyLink() {
+    const code = currentReferralCode;
+    if (!code) {
+        showToast('Your referral code will be available after you finish setup!', 'info');
+        return;
+    }
+    const link = `${window.location.origin}/login.html?ref=${code}`;
+    navigator.clipboard.writeText(link).then(() => {
+        showToast('Referral link copied!', 'success');
+        const btn = event.target.closest('button');
+        if (btn) {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span>Copied!</span>';
+            setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+        }
+    });
 }
 
 // ========== WORKOUT CALENDAR FUNCTIONS ==========
@@ -26969,7 +27062,7 @@ function openAsClient() {
         <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative; flex-shrink: 0;">
             <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
             <div class="wizard-progress" style="display:flex; justify-content:center; gap:6px; margin-bottom:15px;">
-                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
             <h2 id="wizard-title" style="margin:0; color:var(--primary);">Let's Align Your Body</h2>
         </div>
@@ -27231,183 +27324,282 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 7: NUTRITION LOGIC (was slide 4) -->
+            <!-- SLIDE 7: MEET YOUR FITGOTCHI -->
             <div class="wizard-slide" id="slide-7" style="display:none;">
-                <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🥑</div>
-                <h3 style="text-align:center; margin-bottom:10px;">Food as Medicine</h3>
-                <p style="color:#475569; line-height:1.6; text-align:center;">
-                    Log symptoms like <strong>Hot Flashes</strong> or <strong>Bloating</strong> in your daily check-in.
-                </p>
-                <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:12px; margin-top:20px;">
-                    <p style="margin:0; font-size:0.9rem; color:#166534;">
-                        <strong>✨ Smart Swap:</strong><br>
-                        If you report "Hot Flashes", we'll recommend cooling foods like <em>Overnight Soy Oats</em>.
-                    </p>
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🐣</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Meet Your FitGotchi</h3>
+                <p style="text-align:center; color:#666; margin-bottom:15px;">Your personal fitness companion that grows with you!</p>
+
+                <!-- FitGotchi 3D Preview -->
+                <div style="width: 100%; height: 160px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative;">
+                    <model-viewer
+                        id="wizard-fitgotchi-preview"
+                        src="https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb"
+                        camera-controls
+                        disable-zoom
+                        disable-pan
+                        auto-rotate
+                        rotation-intensity="0.5"
+                        shadow-intensity="1"
+                        exposure="0.9"
+                        camera-orbit="0deg 85deg 20m"
+                        field-of-view="30deg"
+                        style="width: 100%; height: 100%; --poster-color: transparent;"
+                        interaction-prompt="none">
+                    </model-viewer>
                 </div>
+
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
+                    <li style="display:flex; align-items:center; gap:12px; background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:12px; border:1px solid #bbf7d0; border-radius:10px;">
+                        <span style="font-size:1.3rem;">💪</span>
+                        <div><strong>Levels up with you</strong><br><span style="font-size:0.8rem; color:#166534;">Earn XP and watch your character evolve through 99 levels</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:12px; background:linear-gradient(135deg, #fef3c7, #fde68a); padding:12px; border:1px solid #fcd34d; border-radius:10px;">
+                        <span style="font-size:1.3rem;">🎨</span>
+                        <div><strong>Customize everything</strong><br><span style="font-size:0.8rem; color:#92400e;">Hair, outfit & skin tone - make it yours</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:12px; background:linear-gradient(135deg, #e0e7ff, #c7d2fe); padding:12px; border:1px solid #a5b4fc; border-radius:10px;">
+                        <span style="font-size:1.3rem;">✨</span>
+                        <div><strong>Unlock rare skins</strong><br><span style="font-size:0.8rem; color:#4338ca;">Win legendary characters like Arny in challenges</span></div>
+                    </li>
+                </ul>
             </div>
 
-            <!-- SLIDE 8: YOUR DASHBOARD (was slide 5) -->
+            <!-- SLIDE 8: EASY CALORIE TRACKING -->
             <div class="wizard-slide" id="slide-8" style="display:none;">
-                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🏠</div>
-                <h3 style="text-align:center; margin-bottom:15px;">Your Dashboard</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">Your home base for daily wellness.</p>
-                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">📊</span>
-                        <div><strong>Daily Progress</strong><br><span style="font-size:0.85rem; color:#666;">Track your journey at a glance.</span></div>
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">📸</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Easy Calorie Tracking</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">The easiest way to track your nutrition</p>
+
+                <!-- Hero Feature -->
+                <div style="background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:20px; border-radius:16px; border:1px solid #bbf7d0; text-align:center; margin-bottom:15px;">
+                    <div style="font-size:3rem; margin-bottom:10px;">🤳</div>
+                    <p style="margin:0; font-size:1rem; font-weight:700; color:#166534;">Snap a photo. AI does the rest.</p>
+                    <p style="margin:5px 0 0; font-size:0.85rem; color:#166534;">Our AI recognizes your food and logs calories, protein, carbs & fat instantly.</p>
+                </div>
+
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:10px 12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">📊</span>
+                        <div><strong>Track macros</strong><br><span style="font-size:0.8rem; color:#666;">Personalized calorie & macro targets based on your goals</span></div>
                     </li>
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">🔥</span>
-                        <div><strong>Points & Streaks</strong><br><span style="font-size:0.85rem; color:#666;">Earn points for workouts, meals & check-ins.</span></div>
-                    </li>
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">💡</span>
-                        <div><strong>Daily Tips</strong><br><span style="font-size:0.85rem; color:#666;">Science-backed coaching tips every day.</span></div>
-                    </li>
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">📖</span>
-                        <div><strong>Stories</strong><br><span style="font-size:0.85rem; color:#666;">See what your friends are sharing.</span></div>
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:10px 12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">🥗</span>
+                        <div><strong>Meal plans & recipes</strong><br><span style="font-size:0.8rem; color:#666;">Browse plant-based meals, smoothies & snacks</span></div>
                     </li>
                 </ul>
             </div>
 
-            <!-- SLIDE 9: FRIENDS & COMMUNITY (was slide 6) -->
+            <!-- SLIDE 9: TRACK YOUR WORKOUTS -->
             <div class="wizard-slide" id="slide-9" style="display:none;">
-                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">👯</div>
-                <h3 style="text-align:center; margin-bottom:15px;">Friends & Community</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">You're not alone on this journey!</p>
-                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">➕</span>
-                        <div><strong>Add Friends</strong><br><span style="font-size:0.85rem; color:#666;">Connect with others on the same journey.</span></div>
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🏋️</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Track Your Workouts</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Every rep counts. We track it all.</p>
+
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">📝</span>
+                        <div><strong>Log sets, reps & weight</strong><br><span style="font-size:0.8rem; color:#666;">Quick input during your workout with rest timers</span></div>
                     </li>
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">👀</span>
-                        <div><strong>See Activity</strong><br><span style="font-size:0.85rem; color:#666;">Check if friends did their workout today.</span></div>
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">📈</span>
+                        <div><strong>Volume & progress charts</strong><br><span style="font-size:0.8rem; color:#666;">See your total volume climb week over week</span></div>
                     </li>
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">💬</span>
-                        <div><strong>Send Messages</strong><br><span style="font-size:0.85rem; color:#666;">DM friends or chat with Coach Shannon.</span></div>
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">🏅</span>
+                        <div><strong>Personal bests</strong><br><span style="font-size:0.8rem; color:#666;">We automatically detect and celebrate your PBs</span></div>
                     </li>
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">📸</span>
-                        <div><strong>Share Stories</strong><br><span style="font-size:0.85rem; color:#666;">Post updates for your friends to see.</span></div>
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">📋</span>
+                        <div><strong>Workout history</strong><br><span style="font-size:0.8rem; color:#666;">Full log of every session with max weights tracked</span></div>
                     </li>
                 </ul>
-                <div style="display:flex; justify-content:center; margin-top:15px;">
-                    <span style="background:#f0fdf4; border:1px solid #bbf7d0; padding:8px 16px; border-radius:20px; font-size:0.85rem; color:#166534;">Tap the <strong>Friends</strong> tab to get started!</span>
-                </div>
             </div>
 
-            <!-- SLIDE 10: CHALLENGES (was slide 7) -->
+            <!-- SLIDE 10: BUILD & BROWSE WORKOUTS -->
             <div class="wizard-slide" id="slide-10" style="display:none;">
-                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🏆</div>
-                <h3 style="text-align:center; margin-bottom:15px;">Challenge Your Friends</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">A little competition makes it fun!</p>
-                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">🎯</span>
-                        <div><strong>Create Challenges</strong><br><span style="font-size:0.85rem; color:#666;">Set up a points competition with friends.</span></div>
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🔨</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Build & Browse Workouts</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Your gym, your rules.</p>
+
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
+                    <li style="display:flex; align-items:center; gap:12px; background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:12px; border:1px solid #bbf7d0; border-radius:10px;">
+                        <span style="font-size:1.3rem;">🏗️</span>
+                        <div><strong>Workout Builder</strong><br><span style="font-size:0.8rem; color:#166534;">Create custom workouts with any exercises you want</span></div>
                     </li>
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">📈</span>
-                        <div><strong>Leaderboards</strong><br><span style="font-size:0.85rem; color:#666;">See who's winning in real-time.</span></div>
+                    <li style="display:flex; align-items:center; gap:12px; background:linear-gradient(135deg, #e0e7ff, #c7d2fe); padding:12px; border:1px solid #a5b4fc; border-radius:10px;">
+                        <span style="font-size:1.3rem;">📚</span>
+                        <div><strong>Program Library</strong><br><span style="font-size:0.8rem; color:#4338ca;">Hundreds of prebuilt programs for every level & goal</span></div>
                     </li>
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">💪</span>
-                        <div><strong>Stay Accountable</strong><br><span style="font-size:0.85rem; color:#666;">Friendly pressure to show up daily.</span></div>
+                    <li style="display:flex; align-items:center; gap:12px; background:linear-gradient(135deg, #fef3c7, #fde68a); padding:12px; border:1px solid #fcd34d; border-radius:10px;">
+                        <span style="font-size:1.3rem;">🔄</span>
+                        <div><strong>48-week progressive programs</strong><br><span style="font-size:0.8rem; color:#92400e;">Workouts evolve over time - never do the same one twice</span></div>
                     </li>
                 </ul>
-                <div style="background:#fef3c7; border:1px solid #fcd34d; padding:12px; border-radius:12px; margin-top:15px;">
-                    <p style="margin:0; font-size:0.85rem; color:#92400e; text-align:center;">
-                        <strong>Earn Points:</strong> Workouts, meals logged, check-ins & more!
-                    </p>
-                </div>
             </div>
 
-            <!-- SLIDE 11: EARN FREE WEEKS (was slide 8) -->
+            <!-- SLIDE 11: LEARN & LEVEL UP -->
             <div class="wizard-slide" id="slide-11" style="display:none;">
-                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🎁</div>
-                <h3 style="text-align:center; margin-bottom:15px;">Earn Points & Level Up</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">Earn points to level up and unlock rewards!</p>
-                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:15px;">
-                    <li style="display:flex; align-items:flex-start; gap:15px; background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:15px; border:1px solid #bbf7d0; border-radius:12px;">
-                        <span style="font-size:2rem;">📸</span>
-                        <div>
-                            <strong style="color:#166534;">Log Photo Meals</strong><br>
-                            <span style="font-size:0.85rem; color:#166534;">Take a photo of your meal to earn <strong>1 point</strong></span>
-                        </div>
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🧠</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Learn & Level Up</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Duolingo-style fitness education</p>
+
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">📖</span>
+                        <div><strong>Bite-sized lessons</strong><br><span style="font-size:0.8rem; color:#666;">Learn nutrition, training & recovery in fun modules</span></div>
                     </li>
-                    <li style="display:flex; align-items:flex-start; gap:15px; background:linear-gradient(135deg, #fef3c7, #fde68a); padding:15px; border:1px solid #fcd34d; border-radius:12px;">
-                        <span style="font-size:2rem;">💪</span>
-                        <div>
-                            <strong style="color:#92400e;">Share Workouts</strong><br>
-                            <span style="font-size:0.85rem; color:#92400e;">Post to the feed or group chat for <strong>1 point each</strong></span>
-                        </div>
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">🧩</span>
+                        <div><strong>Interactive quizzes</strong><br><span style="font-size:0.8rem; color:#666;">Test your knowledge and earn XP for correct answers</span></div>
                     </li>
-                    <li style="display:flex; align-items:flex-start; gap:15px; background:linear-gradient(135deg, #e0e7ff, #c7d2fe); padding:15px; border:1px solid #a5b4fc; border-radius:12px;">
-                        <span style="font-size:2rem;">🤝</span>
-                        <div>
-                            <strong style="color:#4338ca;">Refer Friends</strong><br>
-                            <span style="font-size:0.85rem; color:#4338ca;">When a friend joins, you BOTH get <strong>1 week double XP!</strong></span>
-                        </div>
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">🏆</span>
+                        <div><strong>Master modules</strong><br><span style="font-size:0.8rem; color:#666;">Complete all lessons to become a fitness expert</span></div>
                     </li>
                 </ul>
-                <div style="display:flex; justify-content:center; margin-top:15px;">
-                    <span style="background:#f1f5f9; padding:8px 16px; border-radius:20px; font-size:0.85rem; color:#64748b;">Points = XP for leveling up!</span>
+
+                <div style="background:rgba(72,134,75,0.1); border-radius:10px; padding:10px; margin-top:12px; text-align:center;">
+                    <p style="margin:0; font-size:0.8rem; color:#1a4d2e;"><strong>Tip:</strong> Quiz your friends in Quiz Battles and wager coins!</p>
                 </div>
             </div>
 
-            <!-- SLIDE 12: TRACK YOUR PROGRESS (was slide 9) -->
+            <!-- SLIDE 12: YOUR FEED -->
             <div class="wizard-slide" id="slide-12" style="display:none;">
-                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">📈</div>
-                <h3 style="text-align:center; margin-bottom:15px;">Track Your Progress</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">Watch yourself transform over 28 days.</p>
-                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">🏋️</span>
-                        <div><strong>Workout History</strong><br><span style="font-size:0.85rem; color:#666;">Every workout logged and tracked.</span></div>
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">📱</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Your Feed</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Share your wins and cheer on your friends</p>
+
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
+                    <li style="display:flex; align-items:center; gap:12px; background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:12px; border:1px solid #bbf7d0; border-radius:10px;">
+                        <span style="font-size:1.3rem;">💪</span>
+                        <div><strong>Share workouts to the feed</strong><br><span style="font-size:0.8rem; color:#166534;">Post your workout card with a gym selfie and earn <strong>2 XP</strong></span></div>
                     </li>
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">🏅</span>
-                        <div><strong>Achievements</strong><br><span style="font-size:0.85rem; color:#666;">Unlock badges as you hit milestones.</span></div>
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">👀</span>
+                        <div><strong>See what friends are up to</strong><br><span style="font-size:0.8rem; color:#666;">React to posts, leave comments, stay motivated together</span></div>
                     </li>
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">📊</span>
-                        <div><strong>Visual Charts</strong><br><span style="font-size:0.85rem; color:#666;">See your progress over time.</span></div>
-                    </li>
-                    <li style="display:flex; align-items:center; gap:15px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
-                        <span style="font-size:1.5rem;">🔥</span>
-                        <div><strong>Streak Tracking</strong><br><span style="font-size:0.85rem; color:#666;">Build momentum with daily streaks.</span></div>
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">🔥</span>
+                        <div><strong>Workout cards</strong><br><span style="font-size:0.8rem; color:#666;">Auto-generated cards showing your exercises, volume & PBs</span></div>
                     </li>
                 </ul>
-                <div style="display:flex; justify-content:center; margin-top:15px;">
-                    <span style="background:#f1f5f9; padding:8px 16px; border-radius:20px; font-size:0.85rem; color:#64748b;">Tap <strong>Progress</strong> to see your stats!</span>
-                </div>
             </div>
-            
-            <!-- SLIDE 13: PROFILE EVOLUTION (was slide 10) -->
+
+            <!-- SLIDE 13: CHALLENGE YOUR FRIENDS -->
             <div class="wizard-slide" id="slide-13" style="display:none;">
-                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">⚙️</div>
-                <h3 style="text-align:center; margin-bottom:15px;">Protocol Evolves</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">
-                    Symptoms leaving or joined a gym? <br><br>
-                    <strong>Update your profile anytime.</strong><br>
-                    We'll instantly unlock harder workouts or adjust your nutrition plan.
-                </p>
-                <div style="display:flex; justify-content:center;">
-                    <span style="background:#f1f5f9; padding:8px 16px; border-radius:20px; font-size:0.85rem; color:#64748b;">Go to <strong>Settings > Edit Profile</strong></span>
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">⚔️</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Challenge Your Friends</h3>
+                <p style="text-align:center; color:#666; margin-bottom:15px;">Compete, battle & win rare rewards</p>
+
+                <!-- Arny 3D Preview -->
+                <div style="width: 100%; height: 120px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%); border-radius: 12px; overflow: hidden; margin-bottom: 12px; position: relative;">
+                    <model-viewer
+                        id="wizard-arny-preview"
+                        src="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb"
+                        camera-controls
+                        disable-zoom
+                        disable-pan
+                        auto-rotate
+                        rotation-intensity="0.8"
+                        shadow-intensity="1"
+                        exposure="0.9"
+                        camera-orbit="0deg 85deg 20m"
+                        field-of-view="30deg"
+                        style="width: 100%; height: 100%; --poster-color: transparent;"
+                        interaction-prompt="none">
+                    </model-viewer>
+                    <div style="position:absolute; bottom:6px; left:10px; background:rgba(0,0,0,0.6); color:#fbbf24; padding:3px 10px; border-radius:8px; font-size:0.75rem; font-weight:700;">LEGENDARY: Arny</div>
+                </div>
+
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:8px;">
+                    <li style="display:flex; align-items:center; gap:10px; background:white; padding:10px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.2rem;">🐲</span>
+                        <div><strong>FitGotchi Battles</strong><br><span style="font-size:0.8rem; color:#666;">Battle friends' characters & wager coins</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:10px; background:white; padding:10px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.2rem;">⚡</span>
+                        <div><strong>Quiz Battles</strong><br><span style="font-size:0.8rem; color:#666;">Live head-to-head fitness quizzes</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:10px; background:white; padding:10px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.2rem;">🎯</span>
+                        <div><strong>30-Day Challenges</strong><br><span style="font-size:0.8rem; color:#666;">Compete on leaderboards & win rare skins</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:10px; background:white; padding:10px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.2rem;">✨</span>
+                        <div><strong>Win rare characters</strong><br><span style="font-size:0.8rem; color:#666;">Arny, Goku, Optimus & more - 11 to collect!</span></div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- SLIDE 14: COINS -->
+            <div class="wizard-slide" id="slide-14" style="display:none;">
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🪙</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Coins</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Your in-app currency for battles, bets & rewards</p>
+
+                <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
+                    <li style="display:flex; align-items:center; gap:12px; background:linear-gradient(135deg, #fef3c7, #fde68a); padding:12px; border:1px solid #fcd34d; border-radius:10px;">
+                        <span style="font-size:1.3rem;">💰</span>
+                        <div><strong>Bet on battles</strong><br><span style="font-size:0.8rem; color:#92400e;">Wager coins on FitGotchi & Quiz Battles - winner takes all!</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">🎯</span>
+                        <div><strong>Enter challenges</strong><br><span style="font-size:0.8rem; color:#666;">Use coins to enter monthly challenges for rare rewards</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">🛒</span>
+                        <div><strong>Buy coin packs</strong><br><span style="font-size:0.8rem; color:#666;">Starter (500) to Ultimate (8,000) packs available</span></div>
+                    </li>
+                    <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
+                        <span style="font-size:1.3rem;">🎭</span>
+                        <div><strong>Unlock cosmetics</strong><br><span style="font-size:0.8rem; color:#666;">Spend coins on character customizations & backgrounds</span></div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- SLIDE 15: ALL WAYS TO EARN XP -->
+            <div class="wizard-slide" id="slide-15" style="display:none;">
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">⭐</div>
+                <h3 style="text-align:center; margin-bottom:10px;">All Ways to Earn XP</h3>
+                <p style="text-align:center; color:#666; margin-bottom:15px;">Every point levels up your FitGotchi!</p>
+
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:10px 14px; border-radius:10px; border:1px solid #bbf7d0;">
+                        <span style="display:flex; align-items:center; gap:8px;"><span style="font-size:1.1rem;">📸</span> <span style="font-size:0.85rem; font-weight:600; color:#166534;">Log a meal photo</span></span>
+                        <span style="font-weight:700; color:#166534; font-size:0.9rem;">+1 XP</span>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:10px 14px; border-radius:10px; border:1px solid #bbf7d0;">
+                        <span style="display:flex; align-items:center; gap:8px;"><span style="font-size:1.1rem;">💪</span> <span style="font-size:0.85rem; font-weight:600; color:#166534;">Complete a workout</span></span>
+                        <span style="font-weight:700; color:#166534; font-size:0.9rem;">+1 XP</span>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, #e0e7ff, #c7d2fe); padding:10px 14px; border-radius:10px; border:1px solid #a5b4fc;">
+                        <span style="display:flex; align-items:center; gap:8px;"><span style="font-size:1.1rem;">📱</span> <span style="font-size:0.85rem; font-weight:600; color:#4338ca;">Share to feed</span></span>
+                        <span style="font-weight:700; color:#4338ca; font-size:0.9rem;">+2 XP</span>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, #e0e7ff, #c7d2fe); padding:10px 14px; border-radius:10px; border:1px solid #a5b4fc;">
+                        <span style="display:flex; align-items:center; gap:8px;"><span style="font-size:1.1rem;">👥</span> <span style="font-size:0.85rem; font-weight:600; color:#4338ca;">Share to group chat</span></span>
+                        <span style="font-weight:700; color:#4338ca; font-size:0.9rem;">+1 XP</span>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, #fef3c7, #fde68a); padding:10px 14px; border-radius:10px; border:1px solid #fcd34d;">
+                        <span style="display:flex; align-items:center; gap:8px;"><span style="font-size:1.1rem;">🔥</span> <span style="font-size:0.85rem; font-weight:600; color:#92400e;">Streak bonuses</span></span>
+                        <span style="font-weight:700; color:#92400e; font-size:0.9rem;">+bonus</span>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, #fce7f3, #fbcfe8); padding:10px 14px; border-radius:10px; border:1px solid #f9a8d4;">
+                        <span style="display:flex; align-items:center; gap:8px;"><span style="font-size:1.1rem;">🤝</span> <span style="font-size:0.85rem; font-weight:600; color:#be185d;">Refer a friend</span></span>
+                        <span style="font-weight:700; color:#be185d; font-size:0.9rem;">2x XP (7 days!)</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- SLIDE 14: CHARACTER CUSTOMIZATION -->
-            <div class="wizard-slide" id="slide-14" style="display:none;">
-                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">✨</div>
-                <h3 style="text-align:center; margin-bottom:10px;">Customize Your Character</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">Make your character your own! Choose your favorite colors.</p>
+            <!-- SLIDE 16: DESIGN YOUR CHARACTER -->
+            <div class="wizard-slide" id="slide-16" style="display:none;">
+                <div style="text-align:center; margin-bottom:10px; font-size:3rem;">✨</div>
+                <h3 style="text-align:center; margin-bottom:8px;">Design Your Character</h3>
+                <p style="text-align:center; color:#666; margin-bottom:15px;">Make your FitGotchi your own!</p>
 
                 <!-- Character Preview -->
-                <div id="wizard-character-preview" style="width: 100%; height: 180px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 20px; position: relative;">
+                <div id="wizard-character-preview" style="width: 100%; height: 180px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative;">
                     <model-viewer
                         id="wizard-preview-model"
                         src="https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb"
@@ -27425,7 +27617,7 @@ function openAsClient() {
                     </model-viewer>
                 </div>
 
-                <!-- Color Options -->
+                <!-- Color Options (hair, pants, skin ONLY) -->
                 <div id="wizard-color-options" style="max-height: 250px; overflow-y: auto; padding-right: 5px;">
                     <!-- Hair Color -->
                     <div class="color-option-group" style="margin-bottom: 15px;">
@@ -27433,22 +27625,10 @@ function openAsClient() {
                         <div id="wizard-hair-colors" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
                     </div>
 
-                    <!-- Shirt Color -->
+                    <!-- Shorts/Pants Color -->
                     <div class="color-option-group" style="margin-bottom: 15px;">
-                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Shirt Color</label>
-                        <div id="wizard-shirt-colors" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
-                    </div>
-
-                    <!-- Pants Color -->
-                    <div class="color-option-group" style="margin-bottom: 15px;">
-                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Pants Color</label>
+                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Shorts Color</label>
                         <div id="wizard-pants-colors" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
-                    </div>
-
-                    <!-- Shoes Color -->
-                    <div class="color-option-group" style="margin-bottom: 15px;">
-                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Shoes Color</label>
-                        <div id="wizard-shoes-colors" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
                     </div>
 
                     <!-- Skin Tone -->
@@ -27459,14 +27639,51 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 15: READY (was slide 14) -->
-            <div class="wizard-slide" id="slide-15" style="display:none; text-align:center;">
-                 <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
-                <h3 style="margin-bottom:10px;">You're All Set!</h3>
-                <p style="color:#64748b; margin-bottom:25px;">Your custom plan is ready.</p>
+            <!-- SLIDE 17: INVITE YOUR FRIENDS -->
+            <div class="wizard-slide" id="slide-17" style="display:none;">
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🤝</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Invite Your Friends</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Everything's better with friends! You BOTH get <strong style="color:var(--primary);">1 week double XP</strong></p>
 
-                <div id="wizard-hormone-goal" style="background:var(--secondary); color:white; padding:15px; border-radius:12px; display:inline-block; font-weight:600;">
+                <!-- Referral Code Display -->
+                <div style="background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:20px; border-radius:16px; border:1px solid #bbf7d0; text-align:center; margin-bottom:15px;">
+                    <p style="margin:0 0 8px; font-size:0.85rem; color:#166534; font-weight:600;">Your Referral Code</p>
+                    <div id="wizard-referral-code" style="font-size:1.8rem; font-weight:800; letter-spacing:4px; color:#1a4d2e; font-family:monospace; padding:8px; background:white; border-radius:10px; border:2px dashed #48864B;">
+                        Loading...
+                    </div>
+                </div>
+
+                <!-- Share Buttons -->
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <button type="button" onclick="wizardShareWhatsApp()" style="flex:1; padding:12px; border-radius:12px; border:none; background:#25D366; color:white; font-weight:700; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <span>WhatsApp</span>
+                    </button>
+                    <button type="button" onclick="wizardShareSMS()" style="flex:1; padding:12px; border-radius:12px; border:none; background:#3b82f6; color:white; font-weight:700; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <span>SMS</span>
+                    </button>
+                    <button type="button" onclick="wizardCopyLink()" style="flex:1; padding:12px; border-radius:12px; border:none; background:#64748b; color:white; font-weight:700; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <span>Copy Link</span>
+                    </button>
+                </div>
+
+                <p style="text-align:center; color:#64748b; font-size:0.8rem;">You can always share your code later from the Friends tab</p>
+            </div>
+
+            <!-- SLIDE 18: YOU'RE ALL SET! -->
+            <div class="wizard-slide" id="slide-18" style="display:none; text-align:center;">
+                <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
+                <h3 style="margin-bottom:10px;">You're All Set!</h3>
+                <p style="color:#64748b; margin-bottom:20px;">Your personalized plan is ready.</p>
+
+                <div id="wizard-hormone-goal" style="background:var(--secondary); color:white; padding:15px; border-radius:12px; display:inline-block; font-weight:600; margin-bottom:20px;">
                     Goal: Reduce Cortisol & Detox Estrogen
+                </div>
+
+                <div style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-top:10px;">
+                    <p style="margin:0; font-size:0.9rem; color:#334155;">
+                        <strong>What's next?</strong><br>
+                        <span style="font-size:0.85rem; color:#64748b;">Start your first workout, snap a meal photo, and watch your FitGotchi grow!</span>
+                    </p>
                 </div>
             </div>
 
