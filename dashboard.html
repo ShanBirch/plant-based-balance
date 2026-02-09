@@ -5925,6 +5925,22 @@ async function applyAppTheme(themeKey) {
     // Make functions globally available
     window.submitDailyWeighIn = submitDailyWeighIn;
     window.checkAndShowWeighInCard = checkAndShowWeighInCard;
+
+    // PWA resume: re-check weigh-in when app comes back to foreground
+    // (e.g., user opens PWA the next day without a hard refresh)
+    let _lastWeighInCheckDate = new Date().toDateString();
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+            const today = new Date().toDateString();
+            if (today !== _lastWeighInCheckDate) {
+                // It's a new day since last check - refresh weigh-in card & modal
+                _lastWeighInCheckDate = today;
+                console.log('🔄 New day detected on PWA resume, refreshing weigh-in card');
+                if (typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
+                if (typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
+            }
+        }
+    });
     </script>
 
     <div style="padding: 0 25px;">
