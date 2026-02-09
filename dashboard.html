@@ -18830,6 +18830,14 @@ function updateWizardUI() {
         }
     }
 
+    // 2c. Ensure Arny model is loaded for slide 13 (Challenge Your Friends)
+    if(currentWizardStep === 13) {
+        const arnyPreview = document.getElementById('wizard-arny-preview');
+        if (arnyPreview && !arnyPreview.getAttribute('src')) {
+            arnyPreview.setAttribute('src', 'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb');
+        }
+    }
+
     // 3. Initialize character customization on slide 16
     if(currentWizardStep === 16) {
         initializeCharacterCustomization();
@@ -19016,6 +19024,10 @@ function selectGender(gender) {
         const el = document.getElementById(id);
         if (el) el.setAttribute('src', modelUrl);
     });
+
+    // Start loading arny model for slide 13 (gives 12 slides of buffer time)
+    const arnyEl = document.getElementById('wizard-arny-preview');
+    if (arnyEl) arnyEl.setAttribute('src', 'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb');
 
     // Auto-advance to next slide after selection
     setTimeout(() => {
@@ -27942,7 +27954,6 @@ function openAsClient() {
                 <div style="width: 100%; height: 240px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%); border-radius: 12px; overflow: hidden; margin-bottom: 12px; position: relative;">
                     <model-viewer
                         id="wizard-arny-preview"
-                        src="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -46870,31 +46881,55 @@ document.addEventListener('DOMContentLoaded', async function() {
     ];
 
     // ============================================================
-    // BACKGROUND MODEL PREFETCH - warm browser cache for 3D models
-    // Only prefetch the active skin + featured rare. Others load on demand.
+    // BACKGROUND MODEL PREFETCH - warm browser cache for ALL 3D models
+    // Loads sequentially (one at a time) to avoid flooding Backblaze B2
+    // Priority: active skin > featured rare > other rares > evolution skins
     // ============================================================
-    (function prefetchRareModels() {
+    (function prefetchAllModels() {
         const startPrefetch = () => {
-            // Only prefetch models the user is likely to see soon
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
             const featured = getFeaturedMonthlyRareId();
+            const gender = localStorage.getItem('userGender') || 'male';
 
-            const modelsToPrefetch = [];
+            // Build prioritized list: active skin first, then featured, then rest
+            const priorityModels = [];
+            const otherRareModels = [];
             RARE_COLLECTION.forEach(rare => {
-                if (rare.id === activeRareSkinId || rare.id === featured) {
-                    modelsToPrefetch.push(rare.model);
+                if (rare.id === activeRareSkinId) {
+                    priorityModels.unshift(rare.model); // active skin first
+                } else if (rare.id === featured) {
+                    priorityModels.push(rare.model);
+                } else {
+                    otherRareModels.push(rare.model);
                 }
             });
 
-            // Prefetch one at a time with 1s gaps to avoid flooding Backblaze
+            // Evolution model URLs for the user's gender (unique models only)
+            const base = 'https://f005.backblazeb2.com/file/shannonsvideos/';
+            const evolutionUrls = gender === 'female'
+                ? [base+'level_1_female_final.glb', base+'level_10_female_final.glb', base+'level_20_female_final.glb', base+'level_30_female_final.glb', base+'level_40_female_final.glb', base+'level_50_female_final.glb']
+                : [base+'level_1_good_final.glb', base+'level_10_real_final.glb', base+'level_20_real_final.glb', base+'level_30_real_final.glb', base+'level_40_real_final.glb', base+'level_50_real_final.glb'];
+
+            // Full queue: priority rares > other rares > evolution skins
+            const allModels = [...priorityModels, ...otherRareModels, ...evolutionUrls];
+
+            // Deduplicate (in case active skin model is also in evolutions etc.)
+            const seen = new Set();
+            const queue = allModels.filter(url => {
+                if (seen.has(url)) return false;
+                seen.add(url);
+                return true;
+            });
+
+            // Prefetch one at a time with 500ms gaps
             let i = 0;
             function prefetchNext() {
-                if (i >= modelsToPrefetch.length) return;
-                const url = modelsToPrefetch[i++];
+                if (i >= queue.length) return;
+                const url = queue[i++];
                 fetch(url, { mode: 'cors', credentials: 'omit' })
                     .then(() => console.log('Prefetched:', url.split('/').pop()))
                     .catch(() => {})
-                    .finally(() => setTimeout(prefetchNext, 1000));
+                    .finally(() => setTimeout(prefetchNext, 500));
             }
             prefetchNext();
         };
@@ -46906,9 +46941,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             return rare ? rare.id : null;
         }
 
-        // Wait 10 seconds after page load before prefetching rare models
-        // This ensures the main FitGotchi model has loaded first
-        setTimeout(startPrefetch, 10000);
+        // Wait 5 seconds after page load to let the main FitGotchi model load first
+        setTimeout(startPrefetch, 5000);
     })();
 
     // Helper: check if a rare skin is unlocked
