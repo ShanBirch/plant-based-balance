@@ -45951,7 +45951,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (pvpConnected) {
                     // PvP: coins settled by server RPC
                     if (typeof showToast === 'function') {
-                        const msg = battleBet > 0 ? 'Victory! +3 XP bonus + 🪙 ' + (battleBet * 2) + ' coins won!' : 'Victory! +3 XP bonus';
+                        const msg = battleBet > 0 ? 'Victory! 🪙 ' + (battleBet * 2) + ' coins won!' : 'Victory!';
                         setTimeout(() => showToast(msg, 'success'), 2000);
                     }
                 } else if (battleBet > 0 && window.supabaseClient && window.currentUser) {
@@ -45967,17 +45967,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                         });
                         if (typeof loadCoinBalance === 'function') loadCoinBalance();
                         if (typeof showToast === 'function') {
-                            setTimeout(() => showToast('Victory! +3 XP bonus + 🪙 ' + winnings + ' coins won!', 'success'), 2000);
+                            setTimeout(() => showToast('Victory! 🪙 ' + winnings + ' coins won!', 'success'), 2000);
                         }
                     } catch (e) {
                         console.warn('Could not settle battle bet:', e);
                         if (typeof showToast === 'function') {
-                            setTimeout(() => showToast('Victory! +3 XP bonus', 'success'), 2000);
+                            setTimeout(() => showToast('Victory!', 'success'), 2000);
                         }
                     }
                 } else {
                     if (typeof showToast === 'function') {
-                        setTimeout(() => showToast('Victory! +3 XP bonus', 'success'), 2000);
+                        setTimeout(() => showToast('Victory!', 'success'), 2000);
                     }
                 }
             } else {
