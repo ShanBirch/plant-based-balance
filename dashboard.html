@@ -43953,7 +43953,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 const currentSrc = modelViewer.getAttribute('src');
                 const activeRareCheck = localStorage.getItem('active_rare_skin');
-                if (!activeRareCheck && currentSrc !== currentEvolution.src) {
+                const activeEvoSkinCheck = localStorage.getItem('active_evolution_skin');
+
+                // Check for evolution skin override (user swapped to a different unlocked evolution)
+                if (!activeRareCheck && activeEvoSkinCheck) {
+                    if (currentSrc !== activeEvoSkinCheck) {
+                        modelViewer.setAttribute('src', activeEvoSkinCheck);
+                    }
+                } else if (!activeRareCheck && currentSrc !== currentEvolution.src) {
                     modelViewer.setAttribute('src', currentEvolution.src);
 
                     // Trigger "evolution" effect if it actually changed
@@ -44299,12 +44306,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <div class="animation-category-title">🎨 Character Skins</div>
                 <div class="skin-levels-grid">`;
 
+            const activeRareSkinForEvo = localStorage.getItem('active_rare_skin') || '';
+            const activeEvoSkin = localStorage.getItem('active_evolution_skin') || '';
             skinEvolutions.forEach(evo => {
                 const isUnlocked = level >= evo.level;
+                const isActiveEvo = !activeRareSkinForEvo && (activeEvoSkin === evo.src || (!activeEvoSkin && evo === skinEvolutions.filter(e => level >= e.level).pop()));
                 const skinClass = isUnlocked ? 'skin-level-item unlocked' : 'skin-level-item locked';
-                const checkOrLock = isUnlocked ? '✅' : '🔒';
+                const checkOrLock = isUnlocked ? (isActiveEvo ? '✨' : '✅') : '🔒';
+                const activeStyle = isActiveEvo ? 'border: 2px solid var(--primary); box-shadow: 0 0 10px rgba(123,168,131,0.4);' : '';
+                const clickHandler = isUnlocked ? `onclick="selectEvolutionSkin('${evo.src}', '${evo.title}')" style="cursor: pointer; ${activeStyle}"` : '';
                 html += `
-                    <div class="${skinClass}">
+                    <div class="${skinClass}" ${clickHandler}>
                         <span class="skin-level-badge">Lvl ${evo.level}</span>
                         <span class="skin-level-icon">${checkOrLock}</span>
                         <span class="skin-level-title">${evo.title}</span>
@@ -44340,13 +44352,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
 
-            // Add "Use Level Skin" reset option if a rare skin is active
-            if (activeRareSkin) {
+            // Add "Use Level Skin" reset option if a rare or evolution override is active
+            if (activeRareSkin || activeEvoSkin) {
                 html += `
                     <div class="skin-level-item unlocked" onclick="clearRareSkin()" style="cursor: pointer; border: 1px dashed rgba(255,255,255,0.3);">
                         <span class="skin-level-badge" style="background: rgba(255,255,255,0.2); color: white; font-size: 0.55rem;">RESET</span>
                         <span class="skin-level-icon">↩️</span>
-                        <span class="skin-level-title">Level Skin</span>
+                        <span class="skin-level-title">Current Level</span>
                     </div>`;
             }
 
@@ -46866,12 +46878,39 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Select a rare skin as active tamagotchi skin
+    // Select an evolution skin (swap to any unlocked evolution model)
+    window.selectEvolutionSkin = function(modelSrc, title) {
+        // Clear any active rare skin
+        localStorage.removeItem('active_rare_skin');
+        // Save the selected evolution skin override
+        localStorage.setItem('active_evolution_skin', modelSrc);
+        // Update the main model-viewer immediately
+        const modelViewer = document.getElementById('tamagotchi-model');
+        if (modelViewer) {
+            modelViewer.setAttribute('src', modelSrc);
+            // Apply character colors when model loads
+            modelViewer.addEventListener('load', function onLoad() {
+                if (window.applyCharacterColors) {
+                    window.applyCharacterColors(modelViewer, modelSrc);
+                }
+                modelViewer.removeEventListener('load', onLoad);
+            });
+        }
+        // Refresh the unlocks display if open
+        if (typeof populateTamagotchiAnimations === 'function') {
+            populateTamagotchiAnimations();
+        }
+        showToast('🎨 ' + title + ' skin equipped!', 'success');
+    };
+
     function selectRareSkin(id) {
         const rare = RARE_COLLECTION.find(r => r.id === id);
         if (!rare || !isRareUnlocked(id)) return;
         localStorage.setItem('active_rare_skin', id);
+        // Clear evolution skin override when equipping rare
+        localStorage.removeItem('active_evolution_skin');
         // Update the main model-viewer immediately
-        const modelViewer = document.getElementById('tamagotchi-viewer') || document.querySelector('model-viewer');
+        const modelViewer = document.getElementById('tamagotchi-model');
         if (modelViewer) {
             modelViewer.setAttribute('src', rare.model);
         }
@@ -46885,9 +46924,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Clear rare skin and revert to level-based evolution
     function clearRareSkin() {
         localStorage.removeItem('active_rare_skin');
+        localStorage.removeItem('active_evolution_skin');
         // Trigger level-based model update
         if (typeof updateTamagotchiDisplay === 'function') {
             updateTamagotchiDisplay();
+        } else if (typeof updateFitGotchi === 'function') {
+            updateFitGotchi();
         }
         // Refresh the tamagotchi modal skins display if open
         if (typeof populateTamagotchiAnimations === 'function') {
