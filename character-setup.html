@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Your Character | PlantBasedBalance</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #046A38 0%, #024b26 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .setup-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        .model-section {
+            background: #F5F5F5;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+        }
+
+        .controls-section {
+            padding: 4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--color-primary);
+        }
+
+        p.subtitle {
+            color: var(--color-text-light);
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+        }
+
+        .color-group {
+            margin-bottom: 2rem;
+        }
+
+        .color-group label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--color-text-main);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        .color-options {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .color-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 2px var(--color-primary);
+        }
+
+        .actions {
+            margin-top: auto;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--color-text-light);
+            font-weight: 600;
+            margin-top: 2rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .setup-card {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .model-section {
+                height: 400px;
+            }
+            .controls-section {
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="setup-card">
+        <div class="model-section">
+            <model-viewer 
+                id="character-viewer"
+                src="assets/characters/baby.glb"
+                loading="eager"
+                poster="assets/Logo_dots.jpg"
+                camera-controls 
+                disable-zoom
+                auto-rotate
+                shadow-intensity="1"
+                camera-orbit="0deg 90deg 10m"
+                min-camera-orbit="auto auto 5m"
+                max-camera-orbit="auto auto 15m"
+            ></model-viewer>
+        </div>
+        
+        <div class="controls-section">
+            <h1>Design Your Profile</h1>
+            <p class="subtitle">Customize your fitness companion to match your style.</p>
+
+            <!-- Hair Color -->
+            <div class="color-group">
+                <label>Hair Style & Color</label>
+                <div class="color-options" id="hair-colors">
+                    <button class="color-btn active" style="background: #FFD700;" data-color="#FFD700" data-type="hair"></button> <!-- Blonde -->
+                    <button class="color-btn" style="background: #4A3B2A;" data-color="#4A3B2A" data-type="hair"></button> <!-- Brunette -->
+                    <button class="color-btn" style="background: #000000;" data-color="#1A1A1A" data-type="hair"></button> <!-- Black -->
+                    <button class="color-btn" style="background: #A63429;" data-color="#A63429" data-type="hair"></button> <!-- Red -->
+                    <button class="color-btn" style="background: #C0C0C0;" data-color="#C0C0C0" data-type="hair"></button> <!-- Grey -->
+                </div>
+            </div>
+
+            <!-- Pants Color -->
+            <div class="color-group">
+                <label>Workout Gear (Pants)</label>
+                <div class="color-options" id="pants-colors">
+                    <button class="color-btn" style="background: #1F2937;" data-color="#1F2937" data-type="pants"></button>
+                    <button class="color-btn" style="background: #046A38;" data-color="#046A38" data-type="pants"></button>
+                    <button class="color-btn" style="background: #2563EB;" data-color="#2563EB" data-type="pants"></button>
+                    <button class="color-btn active" style="background: #DC2626;" data-color="#DC2626" data-type="pants"></button>
+                    <button class="color-btn" style="background: #7C3AED;" data-color="#7C3AED" data-type="pants"></button>
+                </div>
+            </div>
+
+            <!-- Shoes Color -->
+            <div class="color-group">
+                <label>Shoes</label>
+                <div class="color-options" id="shoes-colors">
+                    <button class="color-btn active" style="background: #FFFFFF;" data-color="#FFFFFF" data-type="shoes"></button>
+                    <button class="color-btn" style="background: #111827;" data-color="#111827" data-type="shoes"></button>
+                    <button class="color-btn" style="background: #F59E0B;" data-color="#F59E0B" data-type="shoes"></button>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="save-btn" class="btn btn-primary" style="width: 100%;">Complete Setup</button>
+            </div>
+
+            <a href="index.html" class="back-link">
+                <i data-lucide="arrow-left" size="16"></i> Back to Home
+            </a>
+        </div>
+    </div>
+
+    <script src="character-setup.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

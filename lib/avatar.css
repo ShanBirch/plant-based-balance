@@ -1,0 +1,628 @@
+/**
+ * Avatar System Styles
+ * Tamagotchi-style fitness companion animations and UI
+ */
+
+/* ============================================================
+   AVATAR ROOM & CHARACTER
+   ============================================================ */
+
+.avatar-room {
+  background: #0a1628;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.avatar-room:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+}
+
+.avatar-character {
+  transition: left 0.1s linear;
+}
+
+/* ============================================================
+   CHARACTER ANIMATIONS - Stylized Cartoon Character
+   ============================================================ */
+
+/* Base avatar SVG styling */
+.avatar-svg {
+  filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15));
+}
+
+/* Slow animation for low energy */
+.avatar-anim-slow {
+  animation: avatar-breathe-slow 4s ease-in-out infinite;
+}
+
+@keyframes avatar-breathe-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+/* Normal animation */
+.avatar-anim-normal {
+  animation: avatar-breathe 2.5s ease-in-out infinite;
+}
+
+@keyframes avatar-breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* Bouncy animation for happy mood */
+.avatar-anim-bouncy {
+  animation: avatar-bounce 1.2s ease-in-out infinite;
+}
+
+@keyframes avatar-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Energetic animation - more dynamic */
+.avatar-anim-energetic {
+  animation: avatar-energetic 0.8s ease-in-out infinite;
+}
+
+@keyframes avatar-energetic {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-6px) rotate(-3deg); }
+  50% { transform: translateY(-10px) rotate(0deg); }
+  75% { transform: translateY(-6px) rotate(3deg); }
+}
+
+/* Power animation for champion mood - triumphant */
+.avatar-anim-power {
+  animation: avatar-power 0.6s ease-in-out infinite;
+}
+
+@keyframes avatar-power {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-12px) scale(1.03); }
+}
+
+/* ===== LEG ANIMATIONS ===== */
+.avatar-svg .leg-left,
+.avatar-svg .leg-right {
+  transform-origin: 38px 98px; /* Hip joint */
+}
+
+.avatar-svg .shoe-left,
+.avatar-svg .shoe-right {
+  transform-origin: center top;
+}
+
+/* Walking animation for legs */
+.avatar-anim-normal .leg-left,
+.avatar-anim-bouncy .leg-left {
+  animation: walk-left 0.6s ease-in-out infinite;
+}
+
+.avatar-anim-normal .leg-right,
+.avatar-anim-bouncy .leg-right {
+  animation: walk-right 0.6s ease-in-out infinite;
+}
+
+.avatar-anim-energetic .leg-left,
+.avatar-anim-power .leg-left {
+  animation: run-left 0.3s ease-in-out infinite;
+}
+
+.avatar-anim-energetic .leg-right,
+.avatar-anim-power .leg-right {
+  animation: run-right 0.3s ease-in-out infinite;
+}
+
+@keyframes walk-left {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(8deg); }
+}
+
+@keyframes walk-right {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-8deg); }
+}
+
+@keyframes run-left {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(15deg); }
+}
+
+@keyframes run-right {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-15deg); }
+}
+
+/* ===== ARM ANIMATIONS ===== */
+.avatar-svg .arm-left,
+.avatar-svg .arm-right {
+  transform-origin: center 58px; /* Shoulder joint */
+}
+
+/* Normal arm sway */
+.avatar-anim-normal .arm-left,
+.avatar-anim-bouncy .arm-left {
+  animation: arm-sway-left 0.8s ease-in-out infinite;
+}
+
+.avatar-anim-normal .arm-right,
+.avatar-anim-bouncy .arm-right {
+  animation: arm-sway-right 0.8s ease-in-out infinite;
+}
+
+/* Energetic arm pumping */
+.avatar-anim-energetic .arm-left,
+.avatar-anim-power .arm-left {
+  animation: arm-pump-left 0.4s ease-in-out infinite;
+}
+
+.avatar-anim-energetic .arm-right,
+.avatar-anim-power .arm-right {
+  animation: arm-pump-right 0.4s ease-in-out infinite;
+}
+
+@keyframes arm-sway-left {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(5deg); }
+}
+
+@keyframes arm-sway-right {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-5deg); }
+}
+
+@keyframes arm-pump-left {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-20deg); }
+}
+
+@keyframes arm-pump-right {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(20deg); }
+}
+
+/* ===== HEAD ANIMATIONS ===== */
+.avatar-svg .head {
+  transform-origin: center 45px; /* Neck base */
+}
+
+.avatar-anim-energetic .head,
+.avatar-anim-power .head {
+  animation: head-bob 0.4s ease-in-out infinite;
+}
+
+@keyframes head-bob {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-2deg); }
+  75% { transform: rotate(2deg); }
+}
+
+/* ===== CHAMPION STAR EYES ANIMATION ===== */
+.champion-eyes polygon {
+  animation: star-sparkle 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes star-sparkle {
+  0% { fill: #FFD700; }
+  100% { fill: #FFF8DC; }
+}
+
+/* ===== FITNESS GLOW ANIMATION ===== */
+.fitness-glow {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.4; }
+}
+
+/* ===== HAIR ANIMATIONS ===== */
+.avatar-anim-energetic .hair-long path:nth-child(2),
+.avatar-anim-energetic .hair-long path:nth-child(3),
+.avatar-anim-power .hair-long path:nth-child(2),
+.avatar-anim-power .hair-long path:nth-child(3) {
+  animation: hair-flow 0.5s ease-in-out infinite alternate;
+}
+
+.avatar-anim-energetic .hair-ponytail path:last-child,
+.avatar-anim-power .hair-ponytail path:last-child {
+  animation: ponytail-swing 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes hair-flow {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(2px); }
+}
+
+@keyframes ponytail-swing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(5deg); }
+}
+
+/* ===== ROOM PROP ANIMATIONS ===== */
+@keyframes flutter {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(3px, -5px) rotate(5deg); }
+  50% { transform: translate(6px, 0) rotate(0deg); }
+  75% { transform: translate(3px, 5px) rotate(-5deg); }
+}
+
+@keyframes wave {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+
+@keyframes soar {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-15px, -5px); }
+  50% { transform: translate(-30px, 0); }
+  75% { transform: translate(-15px, 5px); }
+}
+
+/* ============================================================
+   MOOD BUBBLE
+   ============================================================ */
+
+.avatar-mood-bubble {
+  animation: bubble-float 3s ease-in-out infinite;
+}
+
+@keyframes bubble-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* ============================================================
+   STATS BAR
+   ============================================================ */
+
+.avatar-stats {
+  font-family: 'Inter', sans-serif;
+}
+
+.avatar-stats > div {
+  transition: transform 0.2s;
+}
+
+.avatar-stats > div:hover {
+  transform: scale(1.05);
+}
+
+/* ============================================================
+   CUSTOMIZER MODAL
+   ============================================================ */
+
+.avatar-customizer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.avatar-customizer-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.avatar-customizer-content {
+  position: relative;
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modal-appear 0.3s ease-out;
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.avatar-customizer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.avatar-customizer-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.avatar-close-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: background 0.2s, color 0.2s;
+}
+
+.avatar-close-btn:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.avatar-customizer-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.avatar-preview-section {
+  flex: 0 0 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #f9f9f7;
+  border-right: 1px solid #eee;
+}
+
+.avatar-options-section {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.avatar-option-group {
+  margin-bottom: 20px;
+}
+
+.avatar-option-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.avatar-option-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.avatar-opt-btn {
+  padding: 8px 16px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #4a5568;
+}
+
+.avatar-opt-btn:hover {
+  border-color: var(--primary, #7BA883);
+  color: var(--primary, #7BA883);
+}
+
+.avatar-opt-btn.active {
+  border-color: var(--primary, #7BA883);
+  background: var(--primary, #7BA883);
+  color: white;
+}
+
+/* Color buttons */
+.avatar-opt-btn.color-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.avatar-opt-btn.color-btn.active {
+  box-shadow: 0 0 0 3px white, 0 0 0 5px var(--primary, #7BA883);
+}
+
+.avatar-customizer-footer {
+  padding: 20px 24px;
+  border-top: 1px solid #eee;
+  background: #f9f9f7;
+}
+
+.avatar-save-btn {
+  width: 100%;
+  padding: 14px 24px;
+  border: none;
+  background: var(--primary, #7BA883);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.avatar-save-btn:hover {
+  background: var(--primary-light, #98C9A3);
+  transform: translateY(-1px);
+}
+
+.avatar-save-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============================================================
+   DASHBOARD WIDGET
+   ============================================================ */
+
+.avatar-widget {
+  background: var(--surface, white);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.avatar-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.avatar-widget-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main, #1a202c);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.avatar-customize-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--primary, #7BA883);
+  background: transparent;
+  color: var(--primary, #7BA883);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.avatar-customize-btn:hover {
+  background: var(--primary, #7BA883);
+  color: white;
+}
+
+.avatar-widget-content {
+  display: flex;
+  justify-content: center;
+}
+
+.avatar-message {
+  text-align: center;
+  margin-top: 12px;
+  padding: 10px;
+  background: var(--accent-green, #f2f7f4);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted, #718096);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 600px) {
+  .avatar-customizer-content {
+    max-height: 95vh;
+    border-radius: 16px 16px 0 0;
+    margin-top: auto;
+  }
+
+  .avatar-customizer-body {
+    flex-direction: column;
+  }
+
+  .avatar-preview-section {
+    flex: 0 0 auto;
+    border-right: none;
+    border-bottom: 1px solid #eee;
+    padding: 15px;
+  }
+
+  #avatar-customizer-preview {
+    transform: scale(0.8);
+  }
+
+  .avatar-options-section {
+    max-height: 40vh;
+  }
+
+  .avatar-opt-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  .avatar-opt-btn.color-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* ============================================================
+   CELEBRATION EFFECTS
+   ============================================================ */
+
+.avatar-celebration {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.avatar-confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  animation: confetti-fall 3s ease-out forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100%) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(300%) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Glow effect for level ups */
+.avatar-level-up {
+  animation: level-up-glow 1s ease-out;
+}
+
+@keyframes level-up-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(123, 168, 131, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 30px 20px rgba(123, 168, 131, 0.3);
+  }
+  100% {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  }
+}

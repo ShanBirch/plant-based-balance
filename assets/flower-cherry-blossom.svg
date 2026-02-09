@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Cherry blossom -->
+  <g transform="translate(50,50)">
+    <!-- Five petals with heart-shaped tips -->
+    <g transform="rotate(0)">
+      <path d="M0,-8 Q-12,-25 -8,-35 Q0,-42 8,-35 Q12,-25 0,-8" fill="#FFD1DC"/>
+    </g>
+    <g transform="rotate(72)">
+      <path d="M0,-8 Q-12,-25 -8,-35 Q0,-42 8,-35 Q12,-25 0,-8" fill="#FFD1DC"/>
+    </g>
+    <g transform="rotate(144)">
+      <path d="M0,-8 Q-12,-25 -8,-35 Q0,-42 8,-35 Q12,-25 0,-8" fill="#FFD1DC"/>
+    </g>
+    <g transform="rotate(216)">
+      <path d="M0,-8 Q-12,-25 -8,-35 Q0,-42 8,-35 Q12,-25 0,-8" fill="#FFBCD0"/>
+    </g>
+    <g transform="rotate(288)">
+      <path d="M0,-8 Q-12,-25 -8,-35 Q0,-42 8,-35 Q12,-25 0,-8" fill="#FFBCD0"/>
+    </g>
+    <!-- Center -->
+    <circle cx="0" cy="0" r="8" fill="#FFE4EC"/>
+    <!-- Stamens -->
+    <line x1="0" y1="0" x2="0" y2="-12" stroke="#D4AF37" stroke-width="1"/>
+    <line x1="0" y1="0" x2="8" y2="-8" stroke="#D4AF37" stroke-width="1"/>
+    <line x1="0" y1="0" x2="-8" y2="-8" stroke="#D4AF37" stroke-width="1"/>
+    <line x1="0" y1="0" x2="10" y2="4" stroke="#D4AF37" stroke-width="1"/>
+    <line x1="0" y1="0" x2="-10" y2="4" stroke="#D4AF37" stroke-width="1"/>
+    <circle cx="0" cy="-12" r="2" fill="#E8C84A"/>
+    <circle cx="8" cy="-8" r="2" fill="#E8C84A"/>
+    <circle cx="-8" cy="-8" r="2" fill="#E8C84A"/>
+    <circle cx="10" cy="4" r="2" fill="#E8C84A"/>
+    <circle cx="-10" cy="4" r="2" fill="#E8C84A"/>
+  </g>
+</svg>

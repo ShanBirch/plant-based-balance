@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="facebook-domain-verification" content="tlduivhcqj8ee0gvyaa71o8l4xb78p" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Success Stories - PlantBasedBalance</title>
+    <meta name="description" content="Read real success stories from women who have transformed their lives with PlantBasedBalance.">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Load Montserrat Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .success-hero {
+            padding: 160px 0 80px;
+            background: linear-gradient(rgba(244, 230, 176, 0.1), rgba(4, 106, 56, 0.05));
+            text-align: center;
+        }
+
+        .success-heading {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            margin-bottom: 20px;
+        }
+
+        .success-sub {
+            font-size: 1.25rem;
+            color: var(--color-text-light);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .featured-stories {
+            padding: 80px 0;
+        }
+
+        .story-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            margin-bottom: 100px;
+        }
+
+        .story-layout:nth-child(even) {
+            direction: rtl;
+        }
+
+        .story-layout:nth-child(even) .story-text-box {
+            direction: ltr;
+        }
+
+        .story-img-container {
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+        }
+
+        .story-img-container img {
+            width: 100%;
+            transition: transform 0.5s ease;
+        }
+
+        .story-img-container:hover img {
+            transform: scale(1.05);
+        }
+
+        .story-text-box {
+            padding: 20px;
+        }
+
+        .story-quote {
+            font-family: var(--font-accent);
+            font-style: italic;
+            font-size: 1.5rem;
+            color: var(--color-primary);
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .story-quote::before {
+            content: '"';
+            font-size: 4rem;
+            position: absolute;
+            top: -40px;
+            left: -10px;
+            opacity: 0.1;
+            color: var(--color-primary);
+        }
+
+        .story-details {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--color-text-main);
+            margin-bottom: 2rem;
+        }
+
+        .user-meta {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-tag {
+            background: var(--color-secondary-light);
+            color: var(--color-primary-dark);
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 850px) {
+            .story-layout {
+                grid-template-columns: 1fr;
+                gap: 30px;
+                margin-bottom: 60px;
+            }
+            .story-layout:nth-child(even) {
+                direction: ltr;
+            }
+        }
+
+        .cta-banner {
+            background: var(--color-primary);
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+            border-radius: 30px;
+            margin: 60px auto;
+            max-width: 1100px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+        <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <img src="assets/Logo_dots.jpg" alt="PBB Logo" style="height: 45px; mix-blend-mode: multiply;">
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="switch28.html">Switch 28</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">Fitness <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="challenge-yoga.html" class="dropdown-item">
+                            <span class="item-title">Somatic Yoga</span>
+                            <span class="item-desc">Reverse cortisol weight gain.</span>
+                        </a>
+                        <a href="challenge-bodyweight.html" class="dropdown-item">
+                            <span class="item-title">Bodyweight Sculpt</span>
+                            <span class="item-desc">No-equipment metabolic toning.</span>
+                        </a>
+                        <a href="challenge-strength.html" class="dropdown-item">
+                            <span class="item-title">Home Strength</span>
+                            <span class="item-desc">Dumbbells & Resistance Bands.</span>
+                        </a>
+                        <a href="challenge-gym.html" class="dropdown-item">
+                            <span class="item-title">Full Gym Protocol</span>
+                            <span class="item-desc">Maximum structural transformation.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="calculators.html">Calculators</a>
+                <a href="blog.html">Blog</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">About <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="research.html" class="dropdown-item">
+                            <span class="item-title">Research</span>
+                            <span class="item-desc">The science behind our protocol.</span>
+                        </a>
+                        <a href="success-stories.html" class="dropdown-item">
+                            <span class="item-title">Reviews</span>
+                            <span class="item-desc">Real transformations.</span>
+                        </a>
+                        <a href="contact.html" class="dropdown-item">
+                            <span class="item-title">Contact Us</span>
+                            <span class="item-desc">Get in touch with our team.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="login.html" class="nav-member">Member Login</a>
+                <a href="quiz.html" class="btn btn-primary">Start Your Reset</a>
+            </div>
+            <div class="nav-toggle" style="display: none;" onclick="toggleMenu()">
+                <i data-lucide="menu"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="success-hero">
+        <div class="container">
+            <img src="assets/Logo_dots.jpg" alt="PlantBased Balance" style="width: 300px; margin-bottom: 20px; mix-blend-mode: multiply;">
+            <h1 class="success-heading">Real <span class="text-gold">Transformations.</span></h1>
+            <p class="success-sub">Meet some of the thousands of women who have reclaimed their health, energy, and confidence by working with their biology.</p>
+        </div>
+    </section>
+
+    <!-- Stories -->
+    <section class="featured-stories">
+        <div class="container">
+            
+            <!-- Gen -->
+            <div class="story-layout">
+                <div class="story-img-container">
+                    <img src="assets/gen.jpg" alt="Gen's Success Story">
+                </div>
+                <div class="story-text-box">
+                    <div class="user-meta">
+                        <span class="user-tag">Lost 25kg</span>
+                        <strong>Gen, 42</strong>
+                    </div>
+                    <div style="color: #fbbf24; margin: 15px 0;">★★★★★</div>
+                    <p class="story-quote">"I'm feeling powerful and more confident than I did in my 30s."</p>
+                    <p class="story-details">
+                        The brain fog lifted in Week 2, giving me the actual fuel I needed to crush my strength workouts. I'm down 25kg, but the real win is feeling powerful and more confident than I did in my 30s. The protocol taught me how to eat for my cycle rather than just cutting calories.
+                    </p>
+                    <a href="quiz.html" class="btn btn-secondary">See My Profile</a>
+                </div>
+            </div>
+
+            <!-- Bec & Kirsty -->
+            <div class="story-layout">
+                <div class="story-img-container">
+                    <img src="assets/kristy and bec.png" alt="Bec and Kirsty Success Story">
+                </div>
+                <div class="story-text-box">
+                    <div class="user-meta">
+                        <span class="user-tag">Built Lean Muscle</span>
+                        <strong>Bec (48) & Kirsty (45)</strong>
+                    </div>
+                    <div style="color: #fbbf24; margin: 15px 0;">★★★★★</div>
+                    <p class="story-quote">"Doing this journey together was a total game-changer."</p>
+                    <p class="story-details">
+                        We’ve each lost 15kg, but the real transformation has been the lean muscle we’ve built. We’re finally living our most vibrant lives, side-by-side. Having the shared meals and workout protocols made the transition to plant-based living seamless.
+                    </p>
+                    <a href="quiz.html" class="btn btn-secondary">Our Combined Success</a>
+                </div>
+            </div>
+
+            <!-- Ally -->
+            <div class="story-layout">
+                <div class="story-img-container">
+                    <img src="assets/ally.png" alt="Ally Success Story">
+                </div>
+                <div class="story-text-box">
+                    <div class="user-meta">
+                        <span class="user-tag">Hormonal Balance</span>
+                        <strong>Ally, 50</strong>
+                    </div>
+                    <div style="color: #fbbf24; margin: 15px 0;">★★★★★</div>
+                    <p class="story-quote">"My night sweats have completely disappeared."</p>
+                    <p class="story-details">
+                        Since starting this protocol, my night sweats have completely disappeared. I finally wake up feeling rested. I’m leaner, stronger, and I’ve finally found a balance that works for my body at 50. I no longer feel like a slave to my symptoms.
+                    </p>
+                    <a href="quiz.html" class="btn btn-secondary">Start My Journey</a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <div class="container">
+        <section class="cta-banner">
+            <h2 style="color: white; font-size: 2.5rem; margin-bottom: 20px;">Ready for your <span class="text-gold">Transformation?</span></h2>
+            <p style="margin-bottom: 40px; opacity: 0.9; font-size: 1.1rem;">Take the 2-minute quiz to find your unique hormone profile.</p>
+            <a href="quiz.html" class="btn btn-secondary" style="padding: 20px 40px; font-size: 1.2rem;">Start The Quiz Now</a>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer style="background: #1a1a1a; color: #fff; padding: 80px 0 40px; text-align: center;">
+        <div class="container">
+            <h2 style="color: var(--color-primary); margin-bottom: 20px;">PlantBased<span>Balance</span></h2>
+            <p style="color: #888; max-width: 600px; margin: 0 auto 30px;">
+                Empowering women back into alignment through science-backed, plant-based nutrition and lifestyle medicine.
+            </p>
+            <div class="footer-links" style="display: flex; justify-content: center; gap: 30px; margin-bottom: 40px; flex-wrap: wrap;">
+                <a href="quiz.html">Quiz</a>
+                <a href="index.html#features">Features</a>
+                <a href="success-stories.html">Success Stories</a>
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+            </div>
+            <div style="font-size: 0.8rem; color: #555;">
+                &copy; 2026 PlantBasedBalance. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        function toggleMenu() {
+            const nav = document.getElementById('navLinks');
+            nav.classList.toggle('active');
+        }
+
+        function toggleDropdown(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                const dropdown = e.target.closest('.dropdown');
+                dropdown.classList.toggle('active');
+            }
+        }
+    </script>
+</body>
+</html>

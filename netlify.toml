@@ -1,0 +1,82 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Edge Function Mappings
+[[edge_functions]]
+  function = "stripe-webhook"
+  path = "/.netlify/functions/stripe-webhook"
+
+[[edge_functions]]
+  function = "create-subscription"
+  path = "/.netlify/functions/create-subscription"
+
+[[edge_functions]]
+  function = "sales-bot"
+  path = "/.netlify/functions/sales-bot"
+
+[[edge_functions]]
+  function = "track-lead"
+  path = "/.netlify/functions/track-lead"
+
+[[edge_functions]]
+  function = "create-checkout-session"
+  path = "/.netlify/functions/create-checkout-session"
+
+[[edge_functions]]
+  function = "track-purchase"
+  path = "/.netlify/functions/track-purchase"
+
+[[edge_functions]]
+  function = "ai_chat"
+  path = "/.netlify/functions/ai-chat"
+
+[[edge_functions]]
+  function = "analyze_food"
+  path = "/.netlify/functions/analyze-food"
+
+# Points System Edge Functions
+[[edge_functions]]
+  function = "award-points"
+  path = "/api/award-points"
+
+[[edge_functions]]
+  function = "redeem-points"
+  path = "/api/redeem-points"
+
+[[edge_functions]]
+  function = "verify-photo"
+  path = "/api/verify-photo"
+
+[[edge_functions]]
+  function = "analyze-workout"
+  path = "/api/analyze-workout"
+
+[[edge_functions]]
+  function = "analyze-story-points"
+  path = "/api/analyze-story-points"
+
+# Meal Tracking Edge Functions
+[[edge_functions]]
+  function = "analyze-meal-text"
+  path = "/.netlify/functions/analyze-meal-text"
+
+# Note: send-meal-reminders is a regular Node.js function (not edge)
+# because it requires the web-push npm package
+
+# Ensure we redirect legacy URLs
+[[redirects]]
+  from = "/quiz"
+  to = "/quiz.html"
+  status = 200
+
+[[redirects]]
+  from = "/plantbasedswitch"
+  to = "/plantbasedswitch.html"
+  status = 200
+  
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false # Only if not exists

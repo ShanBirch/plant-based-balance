@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us | PlantBasedBalance</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="assets/Logo_dots.jpg">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="analytics.js"></script>
+    <style>
+        .contact-hero {
+            padding: 140px 0 60px;
+            background: #fff;
+            text-align: center;
+        }
+        .contact-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 60px;
+            margin: 40px 0 100px;
+        }
+        .contact-info-card {
+            background: #f8fafc;
+            padding: 40px;
+            border-radius: 20px;
+        }
+        .info-item {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .info-item i { flex-shrink: 0; }
+        .contact-form {
+            display: grid;
+            gap: 20px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-family: inherit;
+        }
+        @media (max-width: 768px) {
+            .contact-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+        <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <img src="assets/Logo_dots.jpg" alt="PBB Logo" style="height: 45px; mix-blend-mode: multiply;">
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="switch28.html">Switch 28</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">Fitness <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="challenge-yoga.html" class="dropdown-item">
+                            <span class="item-title">Somatic Yoga</span>
+                            <span class="item-desc">Reverse cortisol weight gain.</span>
+                        </a>
+                        <a href="challenge-bodyweight.html" class="dropdown-item">
+                            <span class="item-title">Bodyweight Sculpt</span>
+                            <span class="item-desc">No-equipment metabolic toning.</span>
+                        </a>
+                        <a href="challenge-strength.html" class="dropdown-item">
+                            <span class="item-title">Home Strength</span>
+                            <span class="item-desc">Dumbbells & Resistance Bands.</span>
+                        </a>
+                        <a href="challenge-gym.html" class="dropdown-item">
+                            <span class="item-title">Full Gym Protocol</span>
+                            <span class="item-desc">Maximum structural transformation.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="calculators.html">Calculators</a>
+                <a href="blog.html">Blog</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">About <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="research.html" class="dropdown-item">
+                            <span class="item-title">Research</span>
+                            <span class="item-desc">The science behind our protocol.</span>
+                        </a>
+                        <a href="success-stories.html" class="dropdown-item">
+                            <span class="item-title">Reviews</span>
+                            <span class="item-desc">Real transformations.</span>
+                        </a>
+                        <a href="contact.html" class="dropdown-item">
+                            <span class="item-title">Contact Us</span>
+                            <span class="item-desc">Get in touch with our team.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="login.html" class="nav-member">Member Login</a>
+                <a href="quiz.html" class="btn btn-primary">Start Your Reset</a>
+            </div>
+            <div class="nav-toggle" style="display: none;" onclick="toggleMenu()">
+                <i data-lucide="menu"></i>
+            </div>
+        </div>
+    </nav>
+
+    <header class="contact-hero">
+        <div class="container">
+            <h1 style="font-size: 3rem; margin-bottom: 15px;">How can we <span class="text-green">help?</span></h1>
+            <p style="color: #64748b;">Our team is here to support your transformation.</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="contact-grid">
+            <div class="contact-info-card">
+                <h3 style="margin-bottom: 30px;">Get in Touch</h3>
+                
+                <div class="info-item">
+                    <i data-lucide="mail" color="#48864B"></i>
+                    <div>
+                        <strong>Email Support</strong>
+                        <p style="color: #64748b; font-size: 0.9rem;">shannon@plantbased-balance.org</p>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <i data-lucide="map-pin" color="#48864B"></i>
+                    <div>
+                        <strong>Address</strong>
+                        <p style="color: #64748b; font-size: 0.9rem;">123 Wellness Way, Gold Coast,<br>QLD 4217, Australia</p>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <i data-lucide="clock" color="#48864B"></i>
+                    <div>
+                        <strong>Business Hours</strong>
+                        <p style="color: #64748b; font-size: 0.9rem;">Mon-Fri: 9am - 5pm AEST</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-form-wrapper">
+                <form class="contact-form">
+                    <div class="form-group">
+                        <input type="text" placeholder="Your Name" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" placeholder="Email Address" required>
+                    </div>
+                    <div class="form-group">
+                        <textarea placeholder="How can we help?" rows="6" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 18px;">Send Message</button>
+                    <p style="font-size: 0.8rem; color: #94a3b8; text-align: center;">We typicaly respond within 24-48 business hours.</p>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer style="background: #1a1a1a; color: #fff; padding: 60px 0 40px; text-align: center;">
+        <div class="container">
+            <h2 style="color: var(--color-primary); margin-bottom: 20px;">PlantBased<span>Balance</span></h2>
+            <div style="margin-bottom: 30px;">
+                <a href="privacy.html" style="color: #666; margin: 0 15px;">Privacy Policy</a>
+                <a href="terms.html" style="color: #666; margin: 0 15px;">Terms of Service</a>
+                <a href="refund-policy.html" style="color: #666; margin: 0 15px;">Refund Policy</a>
+            </div>
+            <p style="color: #444; font-size: 0.8rem;">&copy; 2026 PlantBasedBalance.</p>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+        
+        function toggleMenu() {
+            const nav = document.getElementById('navLinks');
+            nav.classList.toggle('active');
+        }
+
+        function toggleDropdown(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                const dropdown = e.target.closest('.dropdown');
+                dropdown.classList.toggle('active');
+            }
+        }
+    </script>
+</body>
+</html>

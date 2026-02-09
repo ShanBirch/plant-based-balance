@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="facebook-domain-verification" content="tlduivhcqj8ee0gvyaa71o8l4xb78p" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hormone Analysis Quiz - Balance</title>
+    <meta name="description" content="Take our 2-minute quiz to discover your unique hormone profile and get your personalized reset plan.">
+    
+    <!-- Open Graph Tags (For Meta Ad Quality) -->
+    <meta property="og:title" content="Hormone Analysis Quiz | Balance">
+    <meta property="og:description" content="Take our 2-minute quiz to discover your unique hormone profile and get your personalized reset plan.">
+    <meta property="og:image" content="https://plantbased-balance.org/assets/Logo_dots.jpg">
+    <meta property="og:url" content="https://plantbased-balance.org/quiz.html">
+    <meta property="og:type" content="website">
+
+    <link rel="icon" type="image/png" href="assets/Logo_dots.jpg">
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1928402271406692');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1928402271406692&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Meta Pixel Code -->
+    <script src="https://unpkg.com/lucide@latest" defer></script>
+    <script src="analytics.js" defer></script>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100vh;
+            height: 100dvh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling on mobile */
+            font-family: 'Montserrat', 'Inter', sans-serif;
+            background-color: #f9f9f9;
+        }
+
+        .quiz-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: transparent;
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            height: 100vh; 
+            height: 100dvh; 
+            justify-content: space-between; /* Header at top, content centered, button bottom */
+            align-items: center; /* Ensure horizontal centering */
+            position: relative; /* For absolute positioning of elements */
+            box-sizing: border-box;
+        }
+        
+        /* Prevent browser menus on images during interaction */
+        img {
+            pointer-events: none;
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
+            user-select: none;
+        }
+
+        #quizContent {
+             flex-grow: 1;
+             display: flex;
+             flex-direction: column;
+             justify-content: center; /* Default back to center */
+             align-items: center;
+             width: 100%;
+             overflow-y: auto;
+             scrollbar-width: none;
+             -ms-overflow-style: none;
+             padding-bottom: 20px;
+             padding-top: 20px;
+        }
+        #quizContent::-webkit-scrollbar { display: none; } /* Chrome */
+
+        .back-btn {
+            background: #fff;
+            border: 1px solid #eee;
+            color: #48864B; 
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .back-btn:hover {
+            color: #48864B;
+            transform: translateX(-3px);
+        }
+        .hidden { display: none !important; }
+        
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: #48864B; /* Brand Green */
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(72,134,75,0.4);
+        }
+
+        .question-text {
+            font-size: 26px;
+            font-weight: 700;
+            color: #1a4d2e;
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 0 10px;
+            line-height: 1.1;
+        }
+
+        .question-subtext {
+            font-size: 16px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 35px;
+            padding: 0 20px;
+            line-height: 1.4;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 24px; /* Increased gap for better touch separation */
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .option-btn {
+            background-color: #48864B; /* Brand Green */
+            color: white;
+            border: none;
+            padding: 22px 24px;
+            font-size: 19px;
+            font-weight: 700; /* Bold */
+            border-radius: 18px; /* Match reference */
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Compact layout for long lists (e.g. training method) */
+        .options-grid.compact {
+            gap: 12px;
+        }
+        .options-grid.compact .option-btn {
+            padding: 11px 18px;
+            font-size: 15px;
+            border-radius: 14px;
+        }
+
+        .option-btn:hover {
+            background-color: #3a6346;
+            transform: translateY(-2px);
+        }
+
+        .option-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: transparent; 
+            border: none;
+            cursor: pointer;
+            position: relative;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+        .option-card-btn {
+            background-color: #48864B;
+            color: white;
+            padding: 24px 30px; /* Bigger for card layouts */
+            font-size: 19px;
+            font-weight: 700;
+            border-radius: 20px;
+            flex-grow: 1;
+            text-align: center;
+            z-index: 1;
+            margin-right: -40px; /* Overlap image slightly */
+            border: none;
+            min-height: 85px; /* Taller for presence */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .option-card img {
+            height: 120px;
+            width: auto;
+            border-radius: 10px;
+            z-index: 2;
+        }
+
+        .unit-btn {
+            padding: 8px 16px;
+            border: 1px solid #48864B;
+            background: white;
+            color: #48864B;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .unit-btn.active {
+            background: #48864B;
+            color: white;
+        }
+
+        /* ... */
+
+        /* Loading Spinner for Result Gen */
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #48864B;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+    <div class="quiz-container">
+        <!-- Centered Logo at Top -->
+        <div id="logoRow" class="hidden" style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 10px; padding: 0 10px; flex-shrink: 0;">
+            <img src="assets/Logo_dots.jpg" alt="Balance" style="height: 45px; mix-blend-mode: multiply;">
+        </div>
+
+        <div id="progressRow" class="hidden" style="padding: 0 20px; width: 100%; box-sizing: border-box; margin-bottom: 10px;">
+            <div class="progress-bar-container" style="border-radius: 6px; height: 8px; background-color: #f0f0f0; width: 100%; overflow: hidden; border: 1px solid #eee; margin-bottom: 0;">
+                <div class="progress-bar" id="progressBar" style="height: 100%; background-color: #48864B; width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+
+        <button id="backBtn" class="back-btn hidden" onclick="prevQuestion()" aria-label="Go back">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 18l-6-6 6-6"/>
+            </svg>
+        </button>
+        
+        <div id="quizContent" class="fade-in">
+            <!-- Dynamic Content Injected Here -->
+        </div>
+
+
+    </div>
+
+    <footer style="background: #1a1a1a; color: #fff; padding: 40px 0; text-align: center; border-top: 1px solid #333; margin-top: auto;">
+        <div class="container">
+            <div style="margin-bottom: 20px;">
+                <a href="research.html" style="color: #666; margin: 0 15px; font-size: 0.8rem; text-decoration: none;">Research</a>
+                <a href="success-stories.html" style="color: #666; margin: 0 15px; font-size: 0.8rem; text-decoration: none;">Reviews</a>
+                <a href="contact.html" style="color: #666; margin: 0 15px; font-size: 0.8rem; text-decoration: none;">Contact</a>
+                <a href="privacy.html" style="color: #666; margin: 0 15px; font-size: 0.8rem; text-decoration: none;">Privacy</a>
+                <a href="terms.html" style="color: #666; margin: 0 15px; font-size: 0.8rem; text-decoration: none;">Terms</a>
+            </div>
+            <div style="color: #444; font-size: 0.75rem;">
+                <p>Support: <a href="mailto:shannon@plantbased-balance.org" style="color: #444; text-decoration: none;">shannon@plantbased-balance.org</a></p>
+                <p>123 Wellness Way, Gold Coast, QLD 4217, Australia</p>
+                <p style="margin-top: 10px;">&copy; 2026 Balance. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MediaPipe for High-End Eye Scan -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous" defer></script>
+
+    <!-- MediaPipe Pose for 3D Body Analysis -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous" defer></script>
+
+    <script src="quiz.js?v=8"></script>
+    <script>
+        // Ensure Lucide icons are initialized
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Mobile Menu Toggle
+        function toggleMenu() {
+            const nav = document.getElementById('navLinks');
+            if (nav) {
+                nav.classList.toggle('active');
+            }
+        }
+
+        // Mobile Dropdown Toggle
+        function toggleDropdown(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                const dropdown = e.target.closest('.dropdown');
+                if (dropdown) {
+                    dropdown.classList.toggle('active');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

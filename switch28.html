@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="facebook-domain-verification" content="tlduivhcqj8ee0gvyaa71o8l4xb78p" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Balance Protocol | Balance</title>
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1928402271406692');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1928402271406692&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Meta Pixel Code -->
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .switch-hero {
+            padding: 100px 0 60px;
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            text-align: center;
+        }
+        .switch-hero h1 {
+            font-size: 3.5rem;
+            color: var(--color-primary);
+            margin-bottom: 20px;
+        }
+        .switch-hero p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto 30px;
+            color: var(--color-text-light);
+        }
+        .switch-image {
+            max-width: 1000px;
+            margin: 0 auto;
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+        .section-padding {
+            padding: 80px 0;
+        }
+        .stages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+        .stage-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+            transition: transform 0.3s ease;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+        .stage-card:hover {
+            transform: translateY(-10px);
+        }
+        .stage-tag {
+            display: inline-block;
+            padding: 5px 15px;
+            background: var(--color-secondary-light);
+            color: var(--color-primary);
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        .stage-card h3 {
+            margin-bottom: 15px;
+            color: var(--color-primary);
+        }
+        .stage-card p {
+            color: var(--color-text-light);
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+        .meal-highlights {
+            font-size: 0.85rem;
+            font-style: italic;
+            color: var(--color-secondary);
+        }
+        .science-section {
+            background: var(--color-primary);
+            color: white;
+            border-radius: 40px;
+            padding: 60px;
+            margin: 40px 0;
+        }
+        .science-section h2 {
+            color: var(--color-secondary);
+            margin-bottom: 25px;
+        }
+        .science-section p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            opacity: 0.9;
+        }
+        @media (max-width: 768px) {
+            .switch-hero h1 { font-size: 2.5rem; }
+            .science-section { padding: 30px; border-radius: 20px; }
+        }
+    </style>
+</head>
+<body>
+        <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <img src="assets/Logo_dots.jpg" alt="PBB Logo" style="height: 45px; mix-blend-mode: multiply;">
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="switch28.html">The Protocol</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">Fitness <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="challenge-yoga.html" class="dropdown-item">
+                            <span class="item-title">Somatic Yoga</span>
+                            <span class="item-desc">Reverse cortisol weight gain.</span>
+                        </a>
+                        <a href="challenge-bodyweight.html" class="dropdown-item">
+                            <span class="item-title">Bodyweight Sculpt</span>
+                            <span class="item-desc">No-equipment metabolic toning.</span>
+                        </a>
+                        <a href="challenge-strength.html" class="dropdown-item">
+                            <span class="item-title">Home Strength</span>
+                            <span class="item-desc">Dumbbells & Resistance Bands.</span>
+                        </a>
+                        <a href="challenge-gym.html" class="dropdown-item">
+                            <span class="item-title">Full Gym Protocol</span>
+                            <span class="item-desc">Maximum structural transformation.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="calculators.html">Calculators</a>
+                <a href="blog.html">Blog</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">About <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="research.html" class="dropdown-item">
+                            <span class="item-title">Research</span>
+                            <span class="item-desc">The science behind our protocol.</span>
+                        </a>
+                        <a href="success-stories.html" class="dropdown-item">
+                            <span class="item-title">Reviews</span>
+                            <span class="item-desc">Real transformations.</span>
+                        </a>
+                        <a href="contact.html" class="dropdown-item">
+                            <span class="item-title">Contact Us</span>
+                            <span class="item-desc">Get in touch with our team.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="login.html" class="nav-member">Member Login</a>
+                <a href="quiz.html" class="btn btn-primary">Start Your Reset</a>
+            </div>
+            <div class="nav-toggle" style="display: none;" onclick="toggleMenu()">
+                <i data-lucide="menu"></i>
+            </div>
+        </div>
+    </nav>
+
+    <header class="switch-hero">
+        <div class="container">
+            <div class="stage-tag">The Protocol</div>
+            <h1>The Balance Protocol</h1>
+            <p>A precision-engineered 4-stage metabolic reset designed to flip your internal "hormone switch" from chaos to calm.</p>
+            <div class="switch-image">
+                <img src="assets/hormone_switch_hero.png" alt="Hormone Switch Vitality">
+            </div>
+        </div>
+    </header>
+
+    <section class="section-padding">
+        <div class="container">
+            <div class="section-header">
+                <h2>Why the "Switch"?</h2>
+                <p>During perimenopause, your body's sensitivity to insulin, cortisol, and estrogen changes. A plant-based diet isn't just about "eating clean"—it's a clinical tool to modulate these signals.</p>
+            </div>
+
+            <div class="science-section">
+                <h2>Food as a Biological Signal</h2>
+                <p>
+                    By flooding your system with high-density phytoestrogens (to cushion the estrogen drop), massive fiber (to flush excess hormones through the liver), and zero-inflammatory plant proteins, we effectively "switch off" the triggers for hot flashes, brain fog, and weight gain. We use specific nutritional sequences to retrain your metabolism to burn fat for fuel while keeping your nervous system in "rest and digest" mode.
+                </p>
+            </div>
+
+            <div class="section-header" style="margin-top: 80px;">
+                <h2>The Four Weekly Stages</h2>
+                <p>Each week builds on the last, targeting a specific pillar of hormonal health.</p>
+            </div>
+
+            <div class="stages-grid">
+                <div class="stage-card">
+                    <div class="stage-tag">Week 1</div>
+                    <h3>Reset & Debloat</h3>
+                    <p>Flushing systemic inflammation and supporting liver detoxification to clear out "stale" hormones.</p>
+                    <div class="meal-highlights">Highlight: Ginger Pear Smoothie & Coconut Curry Red Lentil Soup</div>
+                </div>
+
+                <div class="stage-card">
+                    <div class="stage-tag">Week 2</div>
+                    <h3>Strength & Blood Sugar</h3>
+                    <p>Stabilizing insulin levels with high-fiber grains and plant proteins to kill cravings and stop energy crashes.</p>
+                    <div class="meal-highlights">Highlight: Warm Apple Pie Oat Bake & Walnut Crusted Tofu</div>
+                </div>
+
+                <div class="stage-card">
+                    <div class="stage-tag">Week 3</div>
+                    <h3>Metabolism Boost</h3>
+                    <p>Using thermogenic spices and thyroid-supportive nutrients to stoke your metabolic fire.</p>
+                    <div class="meal-highlights">Highlight: Fire Tonic & Turmeric Cauliflower Steaks</div>
+                </div>
+
+                <div class="stage-card">
+                    <div class="stage-tag">Week 4</div>
+                    <h3>Hormone Harmony</h3>
+                    <p>Prioritizing magnesium and mood-stabilizing complex carbs to support sleep and nervous system resilience.</p>
+                    <div class="meal-highlights">Highlight: Baked Raspberry Almond Oats & Smoky Tempeh Pot Pie</div>
+                </div>
+            </div>
+
+            <div class="text-center" style="margin-top: 60px;">
+                <a href="quiz.html" class="btn btn-primary" style="padding: 20px 40px; font-size: 1.1rem;">Learn about your hormone profile</a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="bottom-bar">
+                <p>&copy; 2026 Balance. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+        
+        function toggleMenu() {
+            const nav = document.getElementById('navLinks');
+            nav.classList.toggle('active');
+        }
+
+        function toggleDropdown(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                const dropdown = e.target.closest('.dropdown');
+                dropdown.classList.toggle('active');
+            }
+        }
+    </script>
+</body>
+</html>

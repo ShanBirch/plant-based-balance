@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Login - Balance</title>
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="Member Login | Balance">
+    <meta property="og:description" content="Sign in to your Balance member portal.">
+    <meta property="og:image" content="https://plantbased-balance.org/assets/Logo_dots.jpg">
+    <meta property="og:url" content="https://plantbased-balance.org/login.html">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+
+    <style>
+        body {
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid #f1f5f9;
+        }
+
+        .login-logo {
+            height: 60px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1a4d2e;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 2px solid #f1f5f9;
+            font-family: inherit;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #48864B;
+            background: #f0fdf4;
+        }
+
+        .login-btn, .signup-btn {
+            width: 100%;
+            background: #48864B;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .login-btn:hover, .signup-btn:hover {
+            background: #3a6346;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(72,134,75,0.2);
+        }
+
+        .login-btn:disabled, .signup-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .forgot-pass {
+            display: block;
+            margin-top: 20px;
+            color: #48864B;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .signup-prompt {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid #f1f5f9;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .signup-prompt a {
+            color: #48864B;
+            text-decoration: none;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .toggle-form {
+            color: #48864B;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .form-container {
+            display: none;
+        }
+
+        .form-container.active {
+            display: block;
+        }
+
+        /* Biometric Login Styles */
+        .biometric-section {
+            margin-bottom: 25px;
+            display: none;
+        }
+
+        .biometric-section.visible {
+            display: block;
+        }
+
+        .biometric-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #48864B 0%, #3a6346 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(72,134,75,0.3);
+        }
+
+        .biometric-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(72,134,75,0.4);
+        }
+
+        .biometric-btn:active {
+            transform: scale(0.98);
+        }
+
+        .biometric-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .biometric-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+
+        .biometric-divider::before,
+        .biometric-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .biometric-divider span {
+            padding: 0 15px;
+        }
+
+        .biometric-user {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        .biometric-user strong {
+            color: #1a4d2e;
+        }
+
+        .switch-account {
+            color: #48864B;
+            font-size: 0.75rem;
+            cursor: pointer;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        .switch-account:hover {
+            text-decoration: underline;
+        }
+
+        /* Biometric setup modal */
+        .biometric-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .biometric-modal.visible {
+            display: flex;
+        }
+
+        .biometric-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 360px;
+            width: 100%;
+            text-align: center;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .biometric-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .biometric-icon svg {
+            width: 40px;
+            height: 40px;
+            color: #48864B;
+        }
+
+        .biometric-modal h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.25rem;
+            color: #1a4d2e;
+            margin-bottom: 10px;
+        }
+
+        .biometric-modal p {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+        }
+
+        .biometric-modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .biometric-modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-enable {
+            background: #48864B;
+            color: white;
+            border: none;
+        }
+
+        .btn-enable:hover {
+            background: #3a6346;
+        }
+
+        .btn-skip {
+            background: white;
+            color: #64748b;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-skip:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+
+        /* Google Sign-In Button */
+        .google-btn {
+            width: 100%;
+            background: white;
+            color: #1f2937;
+            border: 2px solid #e2e8f0;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .google-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .google-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .google-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .oauth-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+
+        .oauth-divider::before,
+        .oauth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .oauth-divider span {
+            padding: 0 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <a href="index.html">
+            <img src="assets/Logo_dots.jpg" alt="PBB Logo" class="login-logo">
+        </a>
+
+        <div id="error-message" class="error-message"></div>
+        <div id="success-message" class="success-message"></div>
+
+        <!-- Login Form -->
+        <div id="login-form" class="form-container active">
+            <h1>Welcome Back</h1>
+            <p>Log in to access your personalized protocol and dashboard.</p>
+
+            <!-- Biometric Login Section -->
+            <div id="biometric-section" class="biometric-section">
+                <button type="button" class="biometric-btn" onclick="handleBiometricLogin()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/>
+                    </svg>
+                    <span>Sign in with Biometrics</span>
+                </button>
+                <div class="biometric-user">
+                    Signing in as <strong id="biometric-email"></strong>
+                </div>
+                <span class="switch-account" onclick="switchAccount()">Use different account</span>
+                <div class="biometric-divider"><span>or use password</span></div>
+            </div>
+
+            <!-- Google Sign-In -->
+            <button type="button" class="google-btn" id="google-login-btn" onclick="handleGoogleSignIn()">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Continue with Google
+            </button>
+            <div class="oauth-divider"><span>or sign in with email</span></div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="login-email" placeholder="name@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="login-btn" id="login-btn">LOG IN TO DASHBOARD</button>
+            </form>
+
+            <a class="forgot-pass" onclick="handleForgotPassword()">Forgot your password?</a>
+
+            <div class="signup-prompt">
+                Don't have an account? <span class="toggle-form" onclick="showSignup()" style="color: #48864B; text-decoration: none; font-weight: 700; cursor: pointer;">Join Balance</span>
+            </div>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signup-form" class="form-container">
+            <h1>Join Balance</h1>
+            <p>Create your free account to get started.</p>
+
+            <!-- Google Sign-Up -->
+            <button type="button" class="google-btn" id="google-signup-btn" onclick="handleGoogleSignIn()">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Continue with Google
+            </button>
+            <div class="oauth-divider"><span>or sign up with email</span></div>
+
+            <form id="signupForm" onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="signup-name" placeholder="Shannon Birch" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="signup-email" placeholder="name@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="signup-password" placeholder="••••••••" minlength="6" required>
+                </div>
+                <div class="form-group">
+                    <label>Referral Code (Optional)</label>
+                    <input type="text" id="signup-referral" placeholder="e.g. 046CF1D1" style="text-transform: uppercase;">
+                    <small style="color: #64748b; font-size: 0.75rem; margin-top: 4px; display: block;">You both get 2 weeks free when you join with a code!</small>
+                </div>
+
+                <button type="submit" class="signup-btn" id="signup-btn">CREATE ACCOUNT</button>
+            </form>
+
+            <div class="signup-prompt">
+                Already have an account? <span class="toggle-form" onclick="showLogin()">Log in here</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Supabase library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Initialize Supabase inline -->
+    <script>
+        // Store referral code if present in URL and show signup form
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const ref = urlParams.get('ref');
+            if (ref) {
+                sessionStorage.setItem('balance_referral_code', ref);
+                const field = document.getElementById('signup-referral');
+                if (field) field.value = ref;
+                showSignup(); // Land on signup form if referred
+            }
+        });
+
+        // Wait for Supabase library to load
+        window.addEventListener('load', function() {
+            // Initialize Supabase
+            const SUPABASE_URL = 'https://hzapaorxqboevxnumxkv.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6YXBhb3J4cWJvZXZ4bnVteGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NjA3MTYsImV4cCI6MjA4NDIzNjcxNn0.L8ZuxevbB1pNx2nXtIiiQ-6dZSeqfdGuiEvscljOxq0';
+
+            // Store as window.supabaseClient so it's accessible from other functions
+            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const supabase = window.supabaseClient;
+
+            // Initialize Stripe (for in-app purchases)
+            window.stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
+
+            // Create authHelpers
+            window.authHelpers = {
+                async signUp(email, password, userData = {}) {
+                    const { data, error } = await supabase.auth.signUp({
+                        email,
+                        password,
+                        options: {
+                            data: userData,
+                            emailRedirectTo: `${window.location.origin}/login.html`
+                        }
+                    });
+                    if (error) throw error;
+                    // User creation in public.users is now handled by a database trigger (see database/auth_trigger.sql)
+                    return data;
+                },
+
+                async signIn(email, password) {
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+                    if (error) throw error;
+                    return data;
+                },
+
+                async signOut() {
+                    const { error } = await supabase.auth.signOut();
+                    if (error) throw error;
+                },
+
+                async getSession() {
+                    const { data, error } = await supabase.auth.getSession();
+                    if (error) throw error;
+                    return data.session;
+                },
+
+                async getUser() {
+                    const { data, error } = await supabase.auth.getUser();
+                    if (error) throw error;
+                    return data.user;
+                },
+
+                async resetPassword(email) {
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: `${window.location.origin}/reset-password.html`
+                    });
+                    if (error) throw error;
+                },
+
+                async signInWithGoogle() {
+                    const { data, error } = await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                            redirectTo: `${window.location.origin}/login.html`
+                        }
+                    });
+                    if (error) throw error;
+                    return data;
+                }
+            };
+
+            // Initialize the page
+            initializePage();
+        });
+    </script>
+
+    <!-- Page code -->
+    <script>
+        async function initializePage() {
+            // Check if already logged in
+            const session = await authHelpers.getSession();
+            if (session) {
+                // Get user and check if admin
+                const user = await authHelpers.getUser();
+                const { data: adminCheck } = await window.supabaseClient
+                    .from('admin_users')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+
+                // Sync biometric credentials from database (in case localStorage was cleared)
+                await BiometricAuth.syncFromDatabase(user.id, user.email);
+
+                // Already logged in - redirect to appropriate dashboard
+                const urlParams = new URLSearchParams(window.location.search);
+                let redirect = urlParams.get('redirect');
+
+                if (!redirect) {
+                    redirect = adminCheck ? '/admin-dashboard.html' : '/dashboard.html';
+                }
+
+                window.location.href = redirect;
+                return;
+            }
+
+            // Check for signup action (from Stripe redirect)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('action') === 'signup') {
+                showSignup();
+            }
+        }
+
+        // Toggle between login and signup forms
+        function showSignup() {
+            document.getElementById('login-form').classList.remove('active');
+            document.getElementById('signup-form').classList.add('active');
+            clearMessages();
+        }
+
+        function showLogin() {
+            document.getElementById('signup-form').classList.remove('active');
+            document.getElementById('login-form').classList.add('active');
+            clearMessages();
+        }
+
+        // Display error message
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            document.getElementById('success-message').style.display = 'none';
+        }
+
+        // Display success message
+        function showSuccess(message) {
+            const successEl = document.getElementById('success-message');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+        }
+
+        // Clear messages
+        function clearMessages() {
+            document.getElementById('error-message').style.display = 'none';
+            document.getElementById('success-message').style.display = 'none';
+        }
+
+        // Handle login
+        async function handleLogin(event) {
+            event.preventDefault();
+            clearMessages();
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('login-btn');
+
+            btn.disabled = true;
+            btn.textContent = 'LOGGING IN...';
+
+            try {
+                const { user } = await authHelpers.signIn(email, password);
+
+                showSuccess('Login successful!');
+
+                // Check if user is an admin
+                const { data: adminCheck } = await window.supabaseClient
+                    .from('admin_users')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+
+                // Redirect to admin dashboard if user is admin, otherwise regular dashboard
+                const urlParams = new URLSearchParams(window.location.search);
+                let redirect = urlParams.get('redirect');
+
+                if (!redirect) {
+                    redirect = adminCheck ? '/admin-dashboard.html' : '/dashboard.html';
+                }
+
+                // Check if we should offer biometric setup
+                const biometricAvailable = await BiometricAuth.isAvailable();
+
+                // Try to sync biometric credentials from database (restores if localStorage was cleared)
+                const syncedFromDb = await BiometricAuth.syncFromDatabase(user.id, user.email);
+
+                const hasCredentials = BiometricAuth.hasCredentials();
+                const declinedBiometric = sessionStorage.getItem('pbb_biometric_declined');
+
+                if (biometricAvailable && !hasCredentials && !declinedBiometric) {
+                    // Offer biometric setup
+                    showBiometricSetup(user, redirect);
+                } else {
+                    // Just redirect (biometric was either synced from DB or user has it in localStorage)
+                    showSuccess('Login successful! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = redirect;
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError(error.message || 'Invalid email or password. Please try again.');
+                btn.disabled = false;
+                btn.textContent = 'LOG IN TO DASHBOARD';
+            }
+        }
+
+        // Handle signup
+        async function handleSignup(event) {
+            event.preventDefault();
+            clearMessages();
+
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const btn = document.getElementById('signup-btn');
+
+            if (password.length < 6) {
+                showError('Password must be at least 6 characters long.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'CREATING ACCOUNT...';
+
+            try {
+                // Check for referral code in manual field first, then URL, then sessionStorage
+                const manualRef = document.getElementById('signup-referral').value.trim();
+                const urlParams = new URLSearchParams(window.location.search);
+                const referralCode = manualRef || urlParams.get('ref') || sessionStorage.getItem('balance_referral_code');
+
+                // Create account
+                const signupResult = await authHelpers.signUp(email, password, { name });
+                const newUserId = signupResult.user?.id;
+
+                // If there's a referral code and signup was successful, process the referral
+                if (referralCode && newUserId) {
+                    try {
+                        // Find the referrer by their referral code
+                        const referrer = await dbHelpers.referrals.getUserByReferralCode(referralCode);
+
+                        if (referrer) {
+                            // Wait a moment for user to be created in public.users table
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+
+                            // Create referral record
+                            const referralRecord = await dbHelpers.referrals.create(
+                                referrer.id,
+                                newUserId,
+                                referralCode
+                            );
+
+                            // Grant double XP to BOTH referrer and new user (1 week each, no stacking)
+                            // Grant to referrer
+                            await fetch('/api/grant-referral-reward', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    userId: referrer.id,
+                                    referralId: referralRecord.id
+                                })
+                            });
+
+                            // Grant to new user
+                            await fetch('/api/grant-referral-reward', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    userId: newUserId
+                                })
+                            });
+
+                            // Update the new user's referred_by_user_id
+                            await dbHelpers.users.update(newUserId, {
+                                referred_by_user_id: referrer.id
+                            });
+
+                            // Automatically add them as friends!
+                            try {
+                                await window.supabaseClient
+                                    .from('friendships')
+                                    .insert([{
+                                        user_id: referrer.id,
+                                        friend_id: newUserId,
+                                        status: 'accepted' // Auto-accept since they used their code
+                                    }]);
+                                console.log('Auto-added referrer as friend!');
+                            } catch (friendError) {
+                                console.error('Could not auto-add friend:', friendError);
+                            }
+
+                            console.log('Referral processed successfully!');
+                        }
+                    } catch (referralError) {
+                        // Don't fail signup if referral processing fails
+                        console.error('Error processing referral:', referralError);
+                    }
+                }
+
+                showSuccess('Account created! Redirecting to dashboard...');
+
+                // Redirect to dashboard after successful signup
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 1500);
+
+            } catch (error) {
+                console.error('Signup error:', error);
+
+                if (error.message.includes('already registered')) {
+                    showError('This email is already registered. Please log in instead.');
+                } else {
+                    showError(error.message || 'Failed to create account. Please try again.');
+                }
+
+                btn.disabled = false;
+                btn.textContent = 'CREATE ACCOUNT';
+            }
+        }
+
+        // Handle forgot password
+        async function handleForgotPassword() {
+            const email = prompt('Enter your email address to reset your password:');
+
+            if (!email) return;
+
+            try {
+                await authHelpers.resetPassword(email);
+                showSuccess('Password reset email sent! Check your inbox.');
+            } catch (error) {
+                console.error('Reset password error:', error);
+                showError('Failed to send reset email. Please check your email address.');
+            }
+        }
+
+        // Handle Google Sign-In
+        async function handleGoogleSignIn() {
+            clearMessages();
+
+            const loginBtn = document.getElementById('google-login-btn');
+            const signupBtn = document.getElementById('google-signup-btn');
+
+            // Disable both buttons
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<span>Connecting...</span>';
+            }
+            if (signupBtn) {
+                signupBtn.disabled = true;
+                signupBtn.innerHTML = '<span>Connecting...</span>';
+            }
+
+            try {
+                await authHelpers.signInWithGoogle();
+                // OAuth will redirect, so we don't need to do anything here
+            } catch (error) {
+                console.error('Google sign-in error:', error);
+                showError('Google sign-in failed. Please try again.');
+
+                // Re-enable buttons
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = `
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                        Continue with Google
+                    `;
+                }
+                if (signupBtn) {
+                    signupBtn.disabled = false;
+                    signupBtn.innerHTML = `
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                        Continue with Google
+                    `;
+                }
+            }
+        }
+
+        lucide.createIcons();
+    </script>
+
+    <!-- Biometric Setup Modal -->
+    <div id="biometric-modal" class="biometric-modal">
+        <div class="biometric-modal-content">
+            <div class="biometric-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/>
+                </svg>
+            </div>
+            <h3>Enable Quick Login?</h3>
+            <p>Use your fingerprint or face to sign in instantly next time. Fast, secure, and convenient.</p>
+            <div class="biometric-modal-buttons">
+                <button class="btn-skip" onclick="skipBiometricSetup()">Not Now</button>
+                <button class="btn-enable" onclick="enableBiometric()">Enable</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biometric Auth Library -->
+    <script src="/lib/biometric-auth.js"></script>
+
+    <!-- Biometric Login Logic -->
+    <script>
+        // Store pending login data for biometric setup
+        let pendingLoginUser = null;
+        let pendingRedirect = null;
+
+        // Initialize biometric section on page load
+        async function initBiometric() {
+            // Check if biometrics are available and user has credentials
+            const available = await BiometricAuth.isAvailable();
+            const hasCredentials = BiometricAuth.hasCredentials();
+
+            if (available && hasCredentials) {
+                const email = BiometricAuth.getStoredEmail();
+                document.getElementById('biometric-email').textContent = email;
+                document.getElementById('biometric-section').classList.add('visible');
+
+                // Auto-trigger biometric prompt after a short delay
+                setTimeout(() => {
+                    handleBiometricLogin();
+                }, 500);
+            }
+        }
+
+        // Handle biometric login
+        async function handleBiometricLogin() {
+            clearMessages();
+
+            try {
+                // Authenticate with biometrics
+                const email = await BiometricAuth.authenticate();
+
+                showSuccess('Authenticated! Signing you in...');
+
+                // Get the stored password from secure storage (we'll use a session token approach)
+                // For now, we need to sign in with the stored session
+                // The biometric verification proves the user is who they say they are
+                // We'll refresh the session using Supabase's session management
+
+                const session = await authHelpers.getSession();
+
+                if (session) {
+                    // Session still valid, redirect
+                    redirectAfterLogin(session.user);
+                } else {
+                    // Session expired - need password login
+                    showError('Session expired. Please enter your password.');
+                    document.getElementById('login-email').value = email;
+                    document.getElementById('login-password').focus();
+                }
+            } catch (error) {
+                console.error('Biometric login error:', error);
+
+                if (error.name === 'NotAllowedError') {
+                    // User cancelled or biometric failed
+                    showError('Biometric verification cancelled or failed. Please use your password.');
+                } else {
+                    showError('Biometric login failed. Please use your password.');
+                }
+            }
+        }
+
+        // Switch to different account (clear biometric and show password form)
+        async function switchAccount() {
+            await BiometricAuth.clear();
+            document.getElementById('biometric-section').classList.remove('visible');
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-password').value = '';
+        }
+
+        // Show biometric setup modal
+        function showBiometricSetup(user, redirect) {
+            pendingLoginUser = user;
+            pendingRedirect = redirect;
+            document.getElementById('biometric-modal').classList.add('visible');
+        }
+
+        // Enable biometric after login
+        async function enableBiometric() {
+            const modal = document.getElementById('biometric-modal');
+            const enableBtn = modal.querySelector('.btn-enable');
+
+            enableBtn.textContent = 'Setting up...';
+            enableBtn.disabled = true;
+
+            try {
+                await BiometricAuth.register(pendingLoginUser.email, pendingLoginUser.id);
+                modal.classList.remove('visible');
+                showSuccess('Biometric login enabled! Redirecting...');
+
+                setTimeout(() => {
+                    window.location.href = pendingRedirect;
+                }, 1000);
+            } catch (error) {
+                console.error('Biometric setup error:', error);
+                modal.classList.remove('visible');
+
+                // Still redirect even if biometric setup fails
+                showSuccess('Login successful! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = pendingRedirect;
+                }, 1000);
+            }
+        }
+
+        // Skip biometric setup
+        function skipBiometricSetup() {
+            document.getElementById('biometric-modal').classList.remove('visible');
+
+            // Mark that user declined biometric setup (don't ask again this session)
+            sessionStorage.setItem('pbb_biometric_declined', 'true');
+
+            showSuccess('Login successful! Redirecting...');
+            setTimeout(() => {
+                window.location.href = pendingRedirect;
+            }, 1000);
+        }
+
+        // Redirect after successful login
+        async function redirectAfterLogin(user) {
+            // Check if user is an admin
+            const { data: adminCheck } = await window.supabaseClient
+                .from('admin_users')
+                .select('id')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            // Determine redirect URL
+            const urlParams = new URLSearchParams(window.location.search);
+            let redirect = urlParams.get('redirect');
+
+            if (!redirect) {
+                redirect = adminCheck ? '/admin-dashboard.html' : '/dashboard.html';
+            }
+
+            window.location.href = redirect;
+        }
+
+        // Initialize biometric on page load (after Supabase is ready)
+        const originalInitializePage = initializePage;
+        initializePage = async function() {
+            await originalInitializePage();
+
+            // Only init biometric if we're not already redirecting
+            const session = await authHelpers.getSession();
+            if (!session) {
+                initBiometric();
+            }
+        };
+    </script>
+</body>
+</html>

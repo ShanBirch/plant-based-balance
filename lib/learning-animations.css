@@ -1,0 +1,1318 @@
+/**
+ * Learning System Animations - Duolingo-style
+ * Bouncy, playful animations for an engaging learning experience
+ */
+
+/* =============================================================================
+   BASE ANIMATION VARIABLES
+   ============================================================================= */
+
+:root {
+  --bounce-easing: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --spring-easing: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --smooth-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --correct-color: #10b981;
+  --incorrect-color: #ef4444;
+  --streak-color: #f59e0b;
+}
+
+/* =============================================================================
+   LEARNING SPINNER
+   ============================================================================= */
+
+.learning-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e5e7eb;
+  border-top-color: var(--primary, #48864B);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* =============================================================================
+   CARD ANIMATIONS
+   ============================================================================= */
+
+@keyframes cardEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cardExit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.9);
+  }
+}
+
+@keyframes cardBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes cardPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes cardShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes cardWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-2deg); }
+  75% { transform: rotate(2deg); }
+}
+
+.card-enter {
+  animation: cardEnter 0.4s var(--spring-easing) forwards;
+}
+
+.card-exit {
+  animation: cardExit 0.3s var(--smooth-easing) forwards;
+}
+
+.card-bounce {
+  animation: cardBounce 0.4s var(--bounce-easing);
+}
+
+.card-pop {
+  animation: cardPop 0.3s var(--spring-easing);
+}
+
+.card-shake {
+  animation: cardShake 0.5s ease-in-out;
+}
+
+.card-wiggle {
+  animation: cardWiggle 0.3s ease-in-out;
+}
+
+/* =============================================================================
+   BUTTON ANIMATIONS
+   ============================================================================= */
+
+@keyframes buttonPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(72, 134, 75, 0.4);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 10px rgba(72, 134, 75, 0);
+  }
+}
+
+@keyframes buttonPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+@keyframes buttonSuccess {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.btn-pulse {
+  animation: buttonPulse 2s ease-in-out infinite;
+}
+
+.btn-pop {
+  animation: buttonPop 0.15s ease-out;
+}
+
+.btn-success {
+  animation: buttonSuccess 0.4s var(--spring-easing);
+}
+
+/* =============================================================================
+   FEEDBACK ANIMATIONS
+   ============================================================================= */
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes checkmarkDraw {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes correctPulse {
+  0%, 100% {
+    background-color: #dcfce7;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    background-color: #bbf7d0;
+    box-shadow: 0 0 0 15px rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes incorrectShake {
+  0%, 100% { transform: translateX(0); background-color: #fee2e2; }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+  20%, 40%, 60%, 80% { transform: translateX(8px); }
+}
+
+.feedback-slide-up {
+  animation: slideUp 0.4s var(--spring-easing) forwards;
+}
+
+.feedback-slide-down {
+  animation: slideDown 0.3s var(--smooth-easing) forwards;
+}
+
+.correct-pulse {
+  animation: correctPulse 0.6s ease-out;
+}
+
+.incorrect-shake {
+  animation: incorrectShake 0.5s ease-in-out;
+}
+
+/* =============================================================================
+   CONFETTI ANIMATIONS
+   ============================================================================= */
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confetti-sway {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(30px); }
+}
+
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  animation: confetti-fall 3s ease-out forwards, confetti-sway 1s ease-in-out infinite;
+}
+
+/* =============================================================================
+   STREAK/COMBO ANIMATIONS
+   ============================================================================= */
+
+@keyframes streakPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes streakGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.8);
+  }
+}
+
+@keyframes streakShine {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fireBurn {
+  0%, 100% {
+    transform: scale(1) rotate(-5deg);
+  }
+  25% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  50% {
+    transform: scale(1.05) rotate(-3deg);
+  }
+  75% {
+    transform: scale(1.15) rotate(3deg);
+  }
+}
+
+.streak-badge {
+  animation: streakPop 0.5s var(--spring-easing) forwards;
+}
+
+.streak-glow {
+  animation: streakGlow 1.5s ease-in-out infinite;
+}
+
+.streak-fire {
+  animation: fireBurn 0.6s ease-in-out infinite;
+  display: inline-block;
+}
+
+.streak-counter {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24, #f59e0b);
+  background-size: 200% 100%;
+  animation: streakShine 2s linear infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* =============================================================================
+   PROGRESS BAR ANIMATIONS
+   ============================================================================= */
+
+@keyframes progressFill {
+  from {
+    width: 0%;
+  }
+}
+
+@keyframes progressPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes progressComplete {
+  0% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(1.05);
+    background: linear-gradient(90deg, #10b981, #34d399);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+.progress-bar-animated {
+  transition: width 0.5s var(--spring-easing);
+}
+
+.progress-bar-pulse {
+  animation: progressPulse 1.5s ease-in-out infinite;
+}
+
+.progress-complete {
+  animation: progressComplete 0.6s var(--spring-easing);
+}
+
+/* =============================================================================
+   ICON ANIMATIONS
+   ============================================================================= */
+
+@keyframes iconBounce {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-15px); }
+  60% { transform: translateY(-7px); }
+}
+
+@keyframes iconSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes iconPop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes iconFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes starTwinkle {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+.icon-bounce {
+  animation: iconBounce 0.6s var(--bounce-easing);
+}
+
+.icon-spin {
+  animation: iconSpin 1s linear;
+}
+
+.icon-pop {
+  animation: iconPop 0.4s var(--spring-easing);
+}
+
+.icon-float {
+  animation: iconFloat 2s ease-in-out infinite;
+}
+
+.icon-twinkle {
+  animation: starTwinkle 1s ease-in-out infinite;
+}
+
+/* =============================================================================
+   GAME-SPECIFIC ANIMATIONS
+   ============================================================================= */
+
+/* True/False Swipe Card */
+@keyframes swipeLeft {
+  0% {
+    transform: translateX(0) rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-150%) rotate(-30deg);
+    opacity: 0;
+  }
+}
+
+@keyframes swipeRight {
+  0% {
+    transform: translateX(0) rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(150%) rotate(30deg);
+    opacity: 0;
+  }
+}
+
+.swipe-left {
+  animation: swipeLeft 0.4s ease-out forwards;
+}
+
+.swipe-right {
+  animation: swipeRight 0.4s ease-out forwards;
+}
+
+/* Match Pairs */
+@keyframes matchSuccess {
+  0% {
+    transform: scale(1);
+    background-color: white;
+  }
+  50% {
+    transform: scale(1.1);
+    background-color: #dcfce7;
+  }
+  100% {
+    transform: scale(1);
+    background-color: #dcfce7;
+  }
+}
+
+@keyframes matchFail {
+  0%, 100% {
+    transform: translateX(0);
+    background-color: #fee2e2;
+  }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.match-success {
+  animation: matchSuccess 0.5s var(--spring-easing) forwards;
+}
+
+.match-fail {
+  animation: matchFail 0.4s ease-out;
+}
+
+/* Order Sequence Drag */
+@keyframes dragHover {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+@keyframes dropSuccess {
+  0% { transform: scale(0.95); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.drag-hover {
+  animation: dragHover 0.5s ease-in-out infinite;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.drop-success {
+  animation: dropSuccess 0.3s var(--spring-easing);
+}
+
+/* Fill Blank */
+@keyframes blankHighlight {
+  0%, 100% {
+    border-color: currentColor;
+  }
+  50% {
+    border-color: var(--primary, #48864B);
+    box-shadow: 0 2px 8px rgba(72, 134, 75, 0.3);
+  }
+}
+
+.blank-highlight {
+  animation: blankHighlight 1s ease-in-out infinite;
+}
+
+/* Card Flip (for new game type) */
+@keyframes flipIn {
+  0% {
+    transform: perspective(400px) rotateY(90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: perspective(400px) rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes flipOut {
+  0% {
+    transform: perspective(400px) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: perspective(400px) rotateY(-90deg);
+    opacity: 0;
+  }
+}
+
+.flip-card {
+  perspective: 1000px;
+}
+
+.flip-card-inner {
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.flip-card.flipped .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+  backface-visibility: hidden;
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
+/* =============================================================================
+   COMPLETION CELEBRATION
+   ============================================================================= */
+
+@keyframes celebrationBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-30px) scale(1.1); }
+  50% { transform: translateY(-15px) scale(1.05); }
+  70% { transform: translateY(-8px) scale(1.02); }
+}
+
+@keyframes trophySpin {
+  0% { transform: rotateY(0deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+@keyframes textReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scoreCountUp {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes xpFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-30px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(1);
+  }
+}
+
+.celebration-bounce {
+  animation: celebrationBounce 0.8s var(--spring-easing);
+}
+
+.trophy-spin {
+  animation: trophySpin 1s ease-out;
+}
+
+.text-reveal {
+  animation: textReveal 0.5s var(--smooth-easing) forwards;
+  opacity: 0;
+}
+
+.text-reveal-delay-1 { animation-delay: 0.1s; }
+.text-reveal-delay-2 { animation-delay: 0.2s; }
+.text-reveal-delay-3 { animation-delay: 0.3s; }
+.text-reveal-delay-4 { animation-delay: 0.4s; }
+
+.score-pop {
+  animation: scoreCountUp 0.6s var(--spring-easing) forwards;
+}
+
+.xp-float {
+  animation: xpFloat 1.5s ease-out forwards;
+}
+
+/* =============================================================================
+   CHARACTER REACTION ANIMATIONS
+   ============================================================================= */
+
+@keyframes characterHappy {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-5deg); }
+  50% { transform: scale(1.15) rotate(5deg); }
+  75% { transform: scale(1.1) rotate(-3deg); }
+}
+
+@keyframes characterSad {
+  0%, 100% { transform: translateY(0); }
+  25%, 75% { transform: translateY(3px); }
+  50% { transform: translateY(5px); }
+}
+
+@keyframes characterThinking {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+@keyframes characterExcited {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-10px) scale(1.1); }
+}
+
+.character-happy {
+  animation: characterHappy 0.6s var(--spring-easing);
+}
+
+.character-sad {
+  animation: characterSad 0.8s ease-in-out;
+}
+
+.character-thinking {
+  animation: characterThinking 1s ease-in-out infinite;
+}
+
+.character-excited {
+  animation: characterExcited 0.4s var(--bounce-easing) infinite;
+}
+
+/* =============================================================================
+   UTILITY CLASSES
+   ============================================================================= */
+
+.animate-in {
+  animation: cardEnter 0.4s var(--spring-easing) forwards;
+}
+
+.animate-out {
+  animation: cardExit 0.3s var(--smooth-easing) forwards;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.scale-in {
+  animation: scaleIn 0.3s var(--spring-easing) forwards;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Hover states */
+.interactive-hover {
+  transition: transform 0.2s var(--smooth-easing), box-shadow 0.2s var(--smooth-easing);
+}
+
+.interactive-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.interactive-hover:active {
+  transform: translateY(0);
+}
+
+/* Disabled state */
+.disabled-fade {
+  opacity: 0.5;
+  pointer-events: none;
+  filter: grayscale(30%);
+}
+
+/* =============================================================================
+   SOUND WAVE ANIMATION (for audio games)
+   ============================================================================= */
+
+@keyframes soundWave {
+  0%, 100% { height: 5px; }
+  50% { height: 20px; }
+}
+
+.sound-wave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 25px;
+}
+
+.sound-wave-bar {
+  width: 4px;
+  background: currentColor;
+  border-radius: 2px;
+  animation: soundWave 0.5s ease-in-out infinite;
+}
+
+.sound-wave-bar:nth-child(2) { animation-delay: 0.1s; }
+.sound-wave-bar:nth-child(3) { animation-delay: 0.2s; }
+.sound-wave-bar:nth-child(4) { animation-delay: 0.3s; }
+.sound-wave-bar:nth-child(5) { animation-delay: 0.4s; }
+
+/* =============================================================================
+   PARTICLE BURST (for XP earned)
+   ============================================================================= */
+
+@keyframes particleBurst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx, 50px), var(--ty, -50px)) scale(0);
+    opacity: 0;
+  }
+}
+
+.particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: particleBurst 0.8s ease-out forwards;
+}
+
+/* =============================================================================
+   INTERACTIVE LESSON INTRO - Reading Modes
+   ============================================================================= */
+
+/* Reading Mode Toggle */
+.reading-mode-toggle {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.reading-mode-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--smooth-easing);
+  background: transparent;
+  color: #64748b;
+}
+
+.reading-mode-btn.active {
+  background: white;
+  color: var(--module-color, #48864B);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.reading-mode-btn:hover:not(.active) {
+  background: rgba(255,255,255,0.5);
+}
+
+/* =============================================================================
+   BIONIC READING MODE
+   ============================================================================= */
+
+.bionic-text .bionic-word {
+  display: inline;
+}
+
+.bionic-text .bionic-bold {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.bionic-text .bionic-light {
+  font-weight: 400;
+  color: #64748b;
+}
+
+/* =============================================================================
+   PROGRESSIVE REVEAL MODE (Focus Mode)
+   ============================================================================= */
+
+@keyframes paragraphReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes wordFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.focus-mode .lesson-paragraph {
+  opacity: 0;
+  animation: paragraphReveal 0.6s var(--spring-easing) forwards;
+}
+
+.focus-mode .lesson-paragraph:nth-child(1) { animation-delay: 0.2s; }
+.focus-mode .lesson-paragraph:nth-child(2) { animation-delay: 0.8s; }
+.focus-mode .lesson-paragraph:nth-child(3) { animation-delay: 1.4s; }
+.focus-mode .lesson-paragraph:nth-child(4) { animation-delay: 2.0s; }
+.focus-mode .lesson-paragraph:nth-child(5) { animation-delay: 2.6s; }
+.focus-mode .lesson-paragraph:nth-child(6) { animation-delay: 3.2s; }
+
+/* Word-by-word reveal within paragraph */
+.reveal-words .reveal-word {
+  display: inline-block;
+  opacity: 0;
+  animation: wordFadeIn 0.3s ease forwards;
+}
+
+/* =============================================================================
+   INTERACTIVE HIGHLIGHTS
+   ============================================================================= */
+
+.interactive-term {
+  position: relative;
+  background: linear-gradient(180deg, transparent 60%, var(--module-color, #48864B)30 100%);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.interactive-term:hover {
+  background: linear-gradient(180deg, transparent 40%, var(--module-color, #48864B)40 100%);
+}
+
+.interactive-term.expanded {
+  background: var(--module-color, #48864B)20;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  border-radius: 6px;
+}
+
+/* Term tooltip/expansion */
+@keyframes tooltipPop {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.term-tooltip {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 8px;
+  background: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  z-index: 100;
+  min-width: 200px;
+  max-width: 280px;
+  animation: tooltipPop 0.2s var(--spring-easing) forwards;
+}
+
+.term-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 20px;
+  width: 12px;
+  height: 12px;
+  background: white;
+  transform: rotate(45deg);
+  box-shadow: -2px -2px 4px rgba(0,0,0,0.05);
+}
+
+/* =============================================================================
+   THINK ABOUT IT PROMPT
+   ============================================================================= */
+
+@keyframes promptSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.think-prompt {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 12px;
+  margin: 20px 0;
+  animation: promptSlideIn 0.4s var(--spring-easing) forwards;
+}
+
+.think-prompt-icon {
+  width: 32px;
+  height: 32px;
+  background: #f59e0b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  animation: thinkPulse 2s ease-in-out infinite;
+}
+
+@keyframes thinkPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.think-prompt-content {
+  flex: 1;
+}
+
+.think-prompt-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.think-prompt-question {
+  font-size: 0.9rem;
+  color: #78350f;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.think-prompt-reveal {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #d97706;
+}
+
+.think-prompt-answer {
+  font-size: 0.85rem;
+  color: #78350f;
+  line-height: 1.5;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.think-prompt-answer.revealed {
+  opacity: 1;
+  max-height: 200px;
+}
+
+.think-reveal-btn {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.think-reveal-btn:hover {
+  background: #d97706;
+  transform: scale(1.02);
+}
+
+/* =============================================================================
+   ANIMATED ILLUSTRATION PLACEHOLDERS
+   ============================================================================= */
+
+@keyframes illustrationPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+}
+
+.lesson-illustration {
+  width: 100%;
+  height: 150px;
+  background: linear-gradient(135deg, var(--module-color, #48864B)10 0%, var(--module-color, #48864B)20 100%);
+  border-radius: 16px;
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.lesson-illustration svg {
+  width: 80%;
+  height: 80%;
+  animation: illustrationPulse 3s ease-in-out infinite;
+}
+
+/* Muscle Pair Animation */
+@keyframes muscleContract {
+  0%, 100% {
+    transform: scaleY(1);
+    fill-opacity: 0.7;
+  }
+  50% {
+    transform: scaleY(0.8);
+    fill-opacity: 1;
+  }
+}
+
+@keyframes muscleRelax {
+  0%, 100% {
+    transform: scaleY(0.8);
+    fill-opacity: 1;
+  }
+  50% {
+    transform: scaleY(1);
+    fill-opacity: 0.7;
+  }
+}
+
+.muscle-contract {
+  animation: muscleContract 2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.muscle-relax {
+  animation: muscleRelax 2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* =============================================================================
+   READING PROGRESS INDICATOR
+   ============================================================================= */
+
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--module-color, #48864B);
+  width: 0%;
+  transition: width 0.1s linear;
+  z-index: 1000;
+}
+
+/* =============================================================================
+   CONTENT SECTION ANIMATIONS
+   ============================================================================= */
+
+@keyframes sectionSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lesson-section {
+  opacity: 0;
+  animation: sectionSlideUp 0.5s var(--spring-easing) forwards;
+}
+
+.lesson-section:nth-child(1) { animation-delay: 0.1s; }
+.lesson-section:nth-child(2) { animation-delay: 0.2s; }
+.lesson-section:nth-child(3) { animation-delay: 0.3s; }
+.lesson-section:nth-child(4) { animation-delay: 0.4s; }
+
+/* =============================================================================
+   SPEED READ / RSVP MODE
+   ============================================================================= */
+
+.rsvp-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 40px 20px;
+}
+
+.rsvp-word {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-main);
+  text-align: center;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rsvp-word .rsvp-focus {
+  color: var(--module-color, #48864B);
+  font-weight: 800;
+}
+
+.rsvp-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.rsvp-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid var(--module-color, #48864B);
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.rsvp-btn:hover {
+  background: var(--module-color, #48864B)10;
+  transform: scale(1.05);
+}
+
+.rsvp-btn.active {
+  background: var(--module-color, #48864B);
+}
+
+.rsvp-btn.active svg {
+  fill: white;
+}
+
+.rsvp-speed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.rsvp-speed input[type="range"] {
+  width: 120px;
+  accent-color: var(--module-color, #48864B);
+}
+
+/* RSVP Progress bar */
+.rsvp-progress {
+  width: 100%;
+  max-width: 300px;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.rsvp-progress-bar {
+  height: 100%;
+  background: var(--module-color, #48864B);
+  transition: width 0.1s linear;
+}
+
+/* =============================================================================
+   TAP TO CONTINUE ANIMATION
+   ============================================================================= */
+
+@keyframes tapPrompt {
+  0%, 100% { opacity: 0.5; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-5px); }
+}
+
+.tap-to-continue {
+  text-align: center;
+  padding: 20px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  animation: tapPrompt 2s ease-in-out infinite;
+}
+
+/* =============================================================================
+   FLOATING ACTION HINTS
+   ============================================================================= */
+
+@keyframes floatHint {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+
+.action-hint {
+  position: absolute;
+  background: var(--module-color, #48864B);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  animation: floatHint 3s ease-in-out infinite;
+  box-shadow: 0 4px 12px var(--module-color, #48864B)40;
+}
+
+.action-hint::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--module-color, #48864B);
+}

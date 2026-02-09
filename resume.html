@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume - Shannon Birch</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #7f8c8d;
+            --accent-color: #48864B;
+            --text-color: #333;
+            --line-height: 1.6;
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            line-height: var(--line-height);
+            color: var(--text-color);
+            background-color: #ffffff;
+            font-size: 11pt; /* Print friendly size */
+            max-width: 800px; /* A4 width approx */
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header Section */
+        header {
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 28pt;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .contact-info {
+            display: flex;
+            gap: 20px;
+            font-size: 10pt;
+            color: var(--secondary-color);
+            flex-wrap: wrap;
+        }
+
+        .contact-info span {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Section Styling */
+        section {
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            font-size: 14pt;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        /* Experience Item */
+        .experience-item {
+            margin-bottom: 20px;
+        }
+
+        .job-main-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 2px;
+        }
+
+        .job-title {
+            font-weight: bold;
+            font-size: 12pt;
+            color: var(--primary-color);
+        }
+
+        .date-range {
+            font-style: italic;
+            font-size: 10pt;
+            color: var(--secondary-color);
+        }
+
+        .company-name {
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .location {
+            font-size: 0.9em;
+            color: #999;
+            margin-left: 10px;
+            font-weight: normal;
+        }
+
+        ul {
+            list-style-position: outside;
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        li {
+            margin-bottom: 2px;
+        }
+
+        /* Skills Grid */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            @page {
+                margin: 2.5cm;
+                size: A4;
+            }
+            section {
+                margin-bottom: 20px;
+            }
+            .experience-item {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            h2 {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+            ul {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Shannon Birch</h1>
+        <div class="contact-info">
+            <span>Email: shannon@plantbased-balance.org</span>
+            <span>Ph: 0478 209 395</span>
+            <span>Location: Gold Coast, QLD</span>
+        </div>
+    </header>
+
+    <section>
+        <h2>Professional Summary</h2>
+        <p>
+            Dedicated Exercise Scientist and experienced Personal Trainer with over a decade of experience in fitness, health coaching, and business management. Proven track record of building successful fitness businesses from the ground up, with strong expertise in sales, marketing, and client transformation. Background in both corporate wellness environments and boutique studio management.
+        </p>
+    </section>
+
+    <section>
+        <h2>Work Experience</h2>
+
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Founder & Head Coach</span>
+                <span class="date-range">2020 - Present</span>
+            </div>
+            <span class="company-name">Plant Based Balance / Coco's Personal Training <span class="location">Remote / Australia</span></span>
+            <ul>
+                <li><strong>Hybrid Business Model:</strong> Founded and operated a dynamic fitness business combining a boutique personal training studio with a robust online coaching platform.</li>
+                <li><strong>Current Operations (Plant Based Balance):</strong> Currently running a fully remote, tech-enabled health coaching business serving clients globally with custom protocols and meal plans.</li>
+                <li><strong>Online Coaching:</strong> Successfully delivered online fitness programming and nutritional support to clients alongside in-person training since 2020.</li>
+                <li><strong>Client Success:</strong> Delivered high-touch training to hundreds of clients, specializing in perimenopause support, plant-based nutrition, and sustainable lifestyle changes.</li>
+                <li><strong>Operations Management:</strong> Managed all aspects of daily business operations including sales, digital marketing, financial planning, and client retention strategies.</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Personal Trainer</span>
+                <span class="date-range">2019 - 2020</span>
+            </div>
+            <span class="company-name">TriFusion <span class="location">Melbourne, VIC</span></span>
+            <ul>
+                <li>Delivered personalized fitness training and group instruction.</li>
+                <li>Designed high-intensity and resistance training programs for diverse client needs.</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Personal Trainer & Group Fitness Instructor</span>
+                <span class="date-range">2017 - 2019</span>
+            </div>
+            <span class="company-name">Centre Health Management <span class="location">Melbourne City, VIC</span></span>
+            <ul>
+                <li>Worked in a corporate health environment delivering fitness solutions to professionals.</li>
+                <li>Instructed large group classes (up to 20 participants) including HIIT and small group resistance sessions.</li>
+                <li>Provided one-on-one personal training tailored to individual health goals.</li>
+            </ul>
+        </div>
+
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Retail Associate</span>
+                <span class="date-range">2015 - 2016</span>
+            </div>
+            <span class="company-name">ALDI Stores Australia</span>
+            <ul>
+                <li>Executed daily retail operations in a fast-paced environment.</li>
+                <li>Maintained high standards of customer service and efficiency.</li>
+            </ul>
+        </div>
+
+    </section>
+
+    <section>
+        <h2>Education</h2>
+        <div class="experience-item">
+            <div class="job-main-line">
+                <span class="job-title">Bachelor of Exercise Science</span>
+                <span class="date-range">2011 - 2014</span>
+            </div>
+            <span class="company-name">Griffith University <span class="location">Southport, QLD</span></span>
+        </div>
+    </section>
+
+    <section>
+        <h2>Core Competencies</h2>
+        <div class="skills-grid">
+            <ul>
+                <li>Personal Training & Group Fitness</li>
+                <li>Business Management & Operations</li>
+                <li>Sales & Marketing Strategy</li>
+            </ul>
+            <ul>
+                <li>Corporate Health & Wellness</li>
+                <li>Program Design (HIIT, Strength)</li>
+                <li>Client Relations & Retention</li>
+            </ul>
+        </div>
+    </section>
+
+</body>
+</html>

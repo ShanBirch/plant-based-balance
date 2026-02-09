@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="facebook-domain-verification" content="tlduivhcqj8ee0gvyaa71o8l4xb78p" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Intake Calculator - PlantBasedBalance</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .calc-header {
+            padding: 120px 0 60px;
+            background: var(--color-neutral);
+            text-align: center;
+        }
+        .tool-container {
+            max-width: 600px;
+            margin: -40px auto 4rem;
+            background: #fff;
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            z-index: 10;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--color-text-main);
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-family: var(--font-body);
+            font-size: 1rem;
+        }
+        .result-box {
+            background: #E3F2FD; /* Blue tint */
+            padding: 2rem;
+            border-radius: 12px;
+            margin-top: 2rem;
+            text-align: center;
+            display: none;
+        }
+        .result-box.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+        <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <img src="assets/Logo_dots.jpg" alt="PBB Logo" style="height: 45px; mix-blend-mode: multiply;">
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="switch28.html">Switch 28</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">Fitness <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="challenge-yoga.html" class="dropdown-item">
+                            <span class="item-title">Somatic Yoga</span>
+                            <span class="item-desc">Reverse cortisol weight gain.</span>
+                        </a>
+                        <a href="challenge-bodyweight.html" class="dropdown-item">
+                            <span class="item-title">Bodyweight Sculpt</span>
+                            <span class="item-desc">No-equipment metabolic toning.</span>
+                        </a>
+                        <a href="challenge-strength.html" class="dropdown-item">
+                            <span class="item-title">Home Strength</span>
+                            <span class="item-desc">Dumbbells & Resistance Bands.</span>
+                        </a>
+                        <a href="challenge-gym.html" class="dropdown-item">
+                            <span class="item-title">Full Gym Protocol</span>
+                            <span class="item-desc">Maximum structural transformation.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="calculators.html">Calculators</a>
+                <a href="blog.html">Blog</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">About <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="research.html" class="dropdown-item">
+                            <span class="item-title">Research</span>
+                            <span class="item-desc">The science behind our protocol.</span>
+                        </a>
+                        <a href="success-stories.html" class="dropdown-item">
+                            <span class="item-title">Reviews</span>
+                            <span class="item-desc">Real transformations.</span>
+                        </a>
+                        <a href="contact.html" class="dropdown-item">
+                            <span class="item-title">Contact Us</span>
+                            <span class="item-desc">Get in touch with our team.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="quiz.html" class="btn btn-primary">Start Your Reset</a>
+            </div>
+            <div class="nav-toggle" style="display: none;" onclick="toggleMenu()">
+                <i data-lucide="menu"></i>
+            </div>
+        </div>
+    </nav>
+
+    <header class="calc-header">
+        <div class="container">
+            <h1>Water <span class="text-gold">Intake</span></h1>
+            <p>Stay hydrated for optimal energy and skin health.</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="tool-container">
+            <div class="form-group">
+                <label>Weight (kg)</label>
+                <input type="number" id="weight" class="form-control" value="70">
+            </div>
+            <div class="form-group">
+                <label>Daily Exercise (minutes)</label>
+                <input type="number" id="exercise" class="form-control" value="30">
+            </div>
+            
+            <button onclick="calculateWater()" class="btn btn-primary" style="width: 100%;">Calculate</button>
+
+            <div id="result" class="result-box">
+                <h3 style="margin-bottom: 0.5rem;">Daily Goal</h3>
+                <div style="font-size: 2.5rem; font-weight: 800; color: #1976D2; margin-bottom: 1rem;">
+                    <span id="water-res">2.5</span> Liters
+                </div>
+                <p style="font-size: 0.85rem; color: #666; margin-bottom: 0;">Or approx <span id="cups-res">10</span> cups.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="bottom-bar">
+                <p>&copy; 2026 PlantBasedBalance. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        function calculateWater() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const exercise = parseFloat(document.getElementById('exercise').value);
+
+            // Base: 0.033 Liters per kg
+            let liters = weight * 0.033;
+            
+            // Add for exercise: 0.35 L for every 30 mins
+            if(exercise > 0) {
+                liters += (exercise / 30) * 0.35;
+            }
+
+            document.getElementById('water-res').innerText = liters.toFixed(1);
+            document.getElementById('cups-res').innerText = Math.round(liters * 4.2); // 1L = ~4.2 cups
+            document.getElementById('result').classList.add('active');
+        }
+    </script>
+    <script>
+        // Ensure Lucide icons are initialized
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Mobile Menu Toggle
+        function toggleMenu() {
+            const nav = document.getElementById('navLinks');
+            if (nav) {
+                nav.classList.toggle('active');
+            }
+        }
+
+        // Mobile Dropdown Toggle
+        function toggleDropdown(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                const dropdown = e.target.closest('.dropdown');
+                if (dropdown) {
+                    dropdown.classList.toggle('active');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

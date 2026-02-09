@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cover Letter - Shannon Birch</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #7f8c8d;
+            --accent-color: #2980b9;
+            --text-color: #333;
+            --line-height: 1.6;
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            line-height: var(--line-height);
+            color: var(--text-color);
+            background-color: #ffffff;
+            font-size: 11pt;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header Section */
+        header {
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 24pt;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .role-title {
+            font-size: 12pt;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .contact-info {
+            display: flex;
+            gap: 20px;
+            font-size: 10pt;
+            color: var(--secondary-color);
+            flex-wrap: wrap;
+        }
+
+        .contact-info span {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Cover Letter Specifics */
+        .recipient_block {
+            margin-bottom: 20px;
+            font-size: 11pt;
+            color: var(--text-color);
+        }
+
+        .date_block {
+            margin-bottom: 20px;
+            font-size: 11pt;
+            color: var(--text-color);
+            text-align: right;
+        }
+
+        .content_block p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        .content_block ul {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .content_block li {
+            margin-bottom: 8px;
+        }
+
+        .signature {
+            margin-top: 40px;
+        }
+
+        @media print {
+            body {
+                width: auto !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            /* @page removed to allow PDF generator to control margins */
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Shannon Birch</h1>
+        <div class="role-title">AI Implementation Specialist & Automation Developer</div>
+        <div class="contact-info">
+            <span>Email: shannon@plantbased-balance.org</span>
+            <span>Ph: 0478 209 395</span>
+            <span>Location: Australia</span>
+            <span>Portfolio: plantbased-balance.org</span>
+        </div>
+    </header>
+
+    <div class="date_block" id="current-date">October 26, 2025</div>
+
+    <div class="recipient_block">
+        <strong>Hiring Manager</strong><br>
+        Affinda Group<br>
+        Melbourne, VIC
+    </div>
+
+    <div class="content_block">
+        <p>Dear Hiring Team,</p>
+
+        <p>I am writing to express my strong interest in the AI Software Engineer, Agents & Automation role at Affinda Group. When I read your job description—specifically the call for someone who bridges experimentation and production and has been "all in" on AI—I knew I had to apply.</p>
+
+        <p>Since the release of ChatGPT, I have religiously dedicated 8–12 hours a day to mastering Applied AI. I haven't just been using these tools; I have been building with them, completely transforming my career and my business in the process. I am currently based in Queensland, having recently moved here from Melbourne, but I am very happy to travel down to Melbourne as needed for this role.</p>
+
+        <p>My experience runs deep in building practical, revenue-generating agents. In 2025, I architected a comprehensive automation system to run my online coaching business, effectively cloning myself to handle scale. This wasn't just a chatbot; it was an elaborate autonomous agent that:</p>
+        
+        <ul>
+            <li><strong>Performed as a Full-Stack Coach:</strong> capable of building custom workout programs, onboarding new clients, and handling every duty of a human coach autonomously.</li>
+            <li><strong>Engineered Custom Memory:</strong> I built a proprietary memory system to store and recall client history and conversations long before ChatGPT released native memory features, ensuring deep, context-aware interactions.</li>
+            <li><strong>Automated Growth:</strong> Browsed Instagram to identify prospects, initiated outreach via ManyChat, and managed the entire funnel from lead to sale.</li>
+        </ul>
+
+        <p>Currently, I am finalizing a proprietary PWA (Plant Based Balance) designed to support plant-based women through hormonal transitions. I built this full-stack application from scratch—frontend, backend, and an embedded AI coaching agent—using the exact "AI-native" workflows you describe. I use tools like Cursor and LLMs to move from concept to shipping code rapidly, closing the gap between "generate" and "production" daily.</p>
+
+        <p>I am particularly excited about Affinda’s mission to build the "internal agent framework" because that is exactly how I think: building the tools that make complex AI workflows simple and repeatable.</p>
+
+        <p>I bring the "real engineering chops" of someone who has had to maintain their own production software, combined with the relentless curiosity of a builder who has been living in this space 12 hours a day for the last 3 years.</p>
+
+        <p>I would love the opportunity to discuss how my hands-on experience with AI agents and automation can contribute to Affinda’s growth.</p>
+
+        <div class="signature">
+            Sincerely,<br><br>
+            <strong>Shannon Birch</strong><br>
+            shannon@plantbased-balance.org<br>
+            0478 209 395
+        </div>
+    </div>
+    
+    <script>
+        // Set formatted date
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-AU', options);
+    </script>
+</body>
+</html>

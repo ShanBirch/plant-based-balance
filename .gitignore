@@ -1,0 +1,17 @@
+*.csv
+.DS_Store
+node_modules
+.env
+
+backend/server_config.env
+
+# Junk & Personal
+*.py
+*.txt
+*.docx
+*.mp4
+Resume_*.pdf
+Cover_Letter_*.pdf
+Cover_Letter_*.html
+deploy_package/
+.env.development

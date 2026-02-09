@@ -1,0 +1,1868 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance - Meal Library</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #7BA883; 
+            --primary-light: #98C9A3;
+            --secondary: #E8D68E;
+            --accent-green: #f2f7f4;
+            --bg: #f9f9f7;
+            --surface: #ffffff;
+            --text-main: #1a202c;
+            --text-muted: #718096;
+            --border-radius: 16px;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary);
+        }
+
+        h1 { font-size: 2.5rem; text-align: center; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 50px; }
+
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 24px;
+            border-radius: 50px;
+            border: 1px solid transparent;
+            background: white;
+            color: var(--text-muted);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(123, 168, 131, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-img-container {
+            position: relative;
+            height: 220px;
+            background: #eee;
+            overflow: hidden;
+        }
+
+        .card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .card:hover .card-img {
+            transform: scale(1.05);
+        }
+
+        .card-content {
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .meal-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0 0 15px 0;
+            color: var(--primary);
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--secondary);
+            font-weight: 700;
+            margin: 20px 0 10px 0;
+            border-bottom: 2px solid var(--accent-green);
+            padding-bottom: 5px;
+            display: inline-block;
+        }
+
+        .ingredients-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .ingredients-list li {
+            margin-bottom: 6px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .ingredients-list li::before {
+            content: "•";
+            color: var(--primary-light);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .prep-text {
+            font-size: 0.95rem;
+            color: #666;
+            white-space: pre-line;
+            margin-top: 5px;
+        }
+
+        .meta-tag {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .archive-section {
+            margin-top: 80px;
+            border-top: 1px solid #ddd;
+            padding-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Meal Library</h1>
+    <p class="subtitle">A complete collection of Balance recipes and nutritional masterpieces.</p>
+
+    <div class="filters">
+        <button class="filter-btn active" onclick="filterMeals('all')">All Recipes</button>
+        <button class="filter-btn" onclick="filterMeals('breakfast')">Breakfast</button>
+        <button class="filter-btn" onclick="filterMeals('lunch')">Lunch</button>
+        <button class="filter-btn" onclick="filterMeals('dinner')">Dinner</button>
+        <button class="filter-btn" onclick="filterMeals('snack')">Snacks</button>
+        <button class="filter-btn" onclick="scrollToArchive()">Archive Gallery</button>
+    </div>
+
+    <div class="grid" id="recipe-grid">
+
+        <div class="card" data-category="breakfast">
+            <div class="card-img-container">
+                <img src="assets/ginger_pear_smoothie.png" alt="Ginger Pear Smoothie" class="card-img" loading="lazy">
+                <div class="meta-tag">Breakfast</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Ginger Pear Smoothie</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Pear 170g</li><li>Spinach 50g</li><li>Cucumber 80g</li><li>Pea protein powder 30g</li><li>Ground flaxseed 15g</li><li>Aloe vera juice 30ml</li><li>Almond butter 15g</li><li>Water 100ml</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Blend all ingredients until smooth. Almond butter adds healthy fats.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="breakfast">
+            <div class="card-img-container">
+                <img src="assets/cranberry_chia_pudding.png" alt="Cranberry Chia Pudding" class="card-img" loading="lazy">
+                <div class="meta-tag">Breakfast</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Cranberry Chia Pudding</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Chia seeds 15g</li><li>Pea protein 10g</li><li>Almond milk 100ml</li><li>Cranberries 10g</li><li>Berries 50g</li><li>Brazil nuts 5g</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Soak chia. Top with berries/nuts.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/stuffed_sweet_potato.jpg" alt="Stuffed Sweet Potato" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Stuffed Sweet Potato</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Sweet potato 200g</li><li>Quinoa 150g</li><li>Black beans 150g</li><li>Kale 50g</li><li>Tahini 15g</li><li>Lemon juice</li><li>Pumpkin seeds 10g</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Roast:Bake sweet potato (whole or cubed) until tender (approx 25-30 mins).2. Stuff/Assemble:Mix cooked quinoa, rinsed black beans, and massaged kale. Stuff into the split potato or arrange in a bowl.3. Serve:Drizzle with a dressing made of tahini and lemon juice. Top with pumpkin seeds.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/fennel_lime_tonic_nori.png" alt="Fennel Lime Tonic & Nori" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Fennel Lime Tonic & Nori</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Fennel bulb 100g</li><li>Lime juice 20ml</li><li>Nori 2g</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Juice fennel. Mix with lime water. Serve with toasted nori.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/miso_glazed_tempeh.png" alt="Miso Glazed Tempeh" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Miso Glazed Tempeh</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Tempeh 200g</li><li>Miso 15g</li><li>Tamari 10ml</li><li>Maple 10ml</li><li>Bok choy 150g</li><li>Cauliflower rice 150g</li><li>Sesame oil</li><li>Tahini 20g</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Marinate:Whisk miso, tamari, maple syrup, and sesame oil. Cube tempeh and toss in marinade. Let sit for 15-30 mins.2. Cook Tempeh:Pan-fry tempeh over medium-high heat until golden and caramelized (approx 5-8 mins).3. Sides:Steam bok choy (3-4 mins). Saut cauliflower rice with a splash of water or oil until tender.4. Serve:Assemble in a bowl and drizzle with any remaining fresh tahini.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/chamomile_maca_moon_milk.png" alt="Chamomile Maca Moon Milk" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Chamomile Maca Moon Milk</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Almond milk 200ml</li><li>Maca 5g</li><li>Cinnamon</li><li>Magnesium</li><li>Chamomile tea</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Steep tea in hot milk. Whisk powders.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/cucumber_mint_juice_tofu_scramble.png" alt="Cucumber Mint Green Juice + Tofu Scramble" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Cucumber Mint Green Juice + Tofu Scramble</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Cucumber 200g</li><li>Fresh mint 10g</li><li>Firm tofu 200g</li><li>Asparagus 100g</li><li>Dill 5g</li><li>Olive oil 10ml</li><li>Turmeric 2g</li><li>Black salt 1g</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Juice:Juice cucumber and mint (or blend and strain).2. Scramble:Crumble firm tofu. Saut in olive oil with turmeric and black salt for 5 mins.3. Veggies:Steam asparagus until tender-crisp. Chop and mix with tofu and fresh dill.4. Serve:Plate the scramble with the green juice on the side.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/rainbow_collard_wraps.png" alt="Rainbow Collard Wraps" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Rainbow Collard Wraps</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Collard greens 6 leaves</li><li>Carrot 100g</li><li>Red lentils 250g</li><li>Avocado 100g</li><li>Bean sprouts 50g</li><li>Tahini 20g</li><li>Garlic 2g</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Prepare Leaves:Blanch collard leaves in boiling water for 30 seconds, then plunge into ice water. Pat dry and trim the thick stem spine carefully.2. Make Paste:Mash red lentils (cooked) with tahini, minced garlic, and a squeeze of lemon until spreadable.3. Assemble:Spread lentil paste on each leaf. Top with shredded carrot, avocado slices, and bean sprouts.4. Roll:Fold sides in and roll tightly like a burrito.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/mineral_broth_edamame.png" alt="Mineral Broth & Edamame" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Mineral Broth & Edamame</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Edamame 150g</li><li>Miso 15g</li><li>Veg broth 250ml</li><li>Wakame 5g</li><li>Scallions</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Heat broth with miso/wakame. Add edamame.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/coconut_curry_red_lentil_soup.png" alt="Coconut Curry Red Lentil Soup" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Coconut Curry Red Lentil Soup</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Red lentils 250g</li><li>Light coconut milk 200ml</li><li>Curry paste 20g</li><li>Delicata squash 150g</li><li>Onion/Garlic/Ginger</li><li>Stock 300ml</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Roast Squash:Toss delicata squash cubes with oil and roast at 200C for 20-25 mins until tender.2. Base:Saut diced onion, garlic, and ginger until fragrant. Stir in curry paste for 1 minute.3. Simmer:Add red lentils, coconut milk, and stock. Simmer for 15-20 mins until lentils are soft.4. Serve:Ladle soup into bowls and top with roasted squash.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/lemon_balm_tea.png" alt="Lemon Balm Tea" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Lemon Balm Tea</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Lemon balm tea</li><li>Ground flax 5g</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Steep tea. Stir in flax.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/glow_bowl.png" alt="Glow Bowl" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Glow Bowl</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Baby greens 100g</li><li>Fennel bulb 150g</li><li>White beans 200g</li><li>Artichoke hearts 100g</li><li>Pesto 25g</li><li>Lemon/Oil</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Roast fennel. Arrange greens. Top with beans/artichokes/fennel. Drizzle with pesto.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/zucchini_noodle_pho.png" alt="Zucchini Noodle Pho" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Zucchini Noodle Pho</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Zoodles 250g</li><li>Veg broth 300ml</li><li>Star anise/Cinnamon</li><li>Tofu 200g</li><li>Edamame 50g</li><li>Shiitake 100g</li><li>Mung sprouts</li><li>Basil</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Infuse Broth:Simmer vegetable broth with star anise, cinnamon stick, ginger slices, and onion for 15 mins. Strain if desired.2. Add Veggies:Add sliced shiitake mushrooms and simmer for 5 mins.3. Finish:Add tofu cubes and zucchini noodles (zoodles) for just the last 1-2 minutes to warm through without overcooking.4. Serve:Top with fresh basil, sprouts, and lime.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/golden_milk.png" alt="Golden Milk" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Golden Milk</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Almond milk 200ml</li><li>Turmeric</li><li>Ginger</li><li>Coconut oil 3g</li><li>Triphala</li><li>Magnesium</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Whisk all ingredients in hot milk.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/lemony_quinoa_chickpea_bowl.png" alt="Lemony Quinoa & Chickpea Bowl" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Lemony Quinoa & Chickpea Bowl</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Chickpeas 100g</li><li>Quinoa 150g</li><li>Pumpkin seeds 20g</li><li>Mint & Parsley 10g</li><li>Lemon juice 15ml</li><li>Plant protein 20g</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Assemble bowl. Whisk lemon juice/oil dressing. Drizzle over.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="breakfast">
+            <div class="card-img-container">
+                <img src="assets/warm_apple_pie_oat_bake.png" alt="Warm Apple Pie Oat Bake" class="card-img" loading="lazy">
+                <div class="meta-tag">Breakfast</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Warm Apple Pie Oat Bake</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Oats 50g</li><li>Apple 120g</li><li>Cardamom</li><li>Hemp yogurt 80g</li><li>Pear 80g</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Mix:Combine rolled oats, chopped apple, cardamom, and a splash of almond milk/water in a baking dish.2. Bake:Bake at 180C for 20-25 minutes until oats are set and apples are soft.3. Serve:Top with a dollop of hemp yogurt and fresh pear slices.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/cinnamon_maca_latte.png" alt="Cinnamon Maca Latte" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Cinnamon Maca Latte</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Almond milk 200ml</li><li>Maca</li><li>Cinnamon</li><li>Edamame 50g (side)</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Heat milk/spices. Serve with edamame.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/farro_power_bowl.png" alt="Farro Power Bowl" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Farro Power Bowl</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Farro 80g</li><li>Tempeh 150g</li><li>Brussels sprouts 100g</li><li>Pomegranate</li><li>Tahini</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Prep Components:Cook farro according to package instructions. Roast halved Brussels sprouts at 200C for 20 mins.2. Tempeh:Pan-fry tempeh cubes with a splash of tamari until crispy.3. Dressing:Whisk tahini, lemon juice, 1 tbsp water, and a drop of maple syrup until smooth.4. Assemble:Combine farro, sprouts, and tempeh. Top with pomegranate seeds and dressing.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="breakfast">
+            <div class="card-img-container">
+                <img src="assets/cacao_chia_protein_pudding.png" alt="Cacao Chia Protein Pudding" class="card-img" loading="lazy">
+                <div class="meta-tag">Breakfast</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Cacao Chia Protein Pudding</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Chia 15g</li><li>Cacao</li><li>Protein powder</li><li>Raspberries</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Soak chia/powders. Top with raspberries.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/walnut_crusted_tofu.png" alt="Walnut Crusted Tofu" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Walnut Crusted Tofu</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Tofu 200g</li><li>Walnuts 20g</li><li>Sweet potato 200g</li><li>Green beans</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Crust Tofu:Mix crushed walnuts with spices. Dip pressed tofu slabs in almond milk, then press into walnut mix.2. Bake:Place tofu and sweet potato wedges on a baking sheet. Bake at 200C for 25-30 minutes until crispy.3. Veggies:Briefly steam or saut green beans with garlic.4. Serve:Plate tofu with fries and beans.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/reishi_hot_chocolate.png" alt="Reishi Hot Chocolate" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Reishi Hot Chocolate</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Almond milk</li><li>Cacao</li><li>Reishi</li><li>Monk fruit</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Whisk heated ingredients.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/savory_chickpea_scramble.png" alt="Savory Chickpea Scramble" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Savory Chickpea Scramble</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Chickpeas 100g</li><li>Tofu 200g</li><li>Spinach 100g</li><li>Pesto 10g</li><li>Tomatoes</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Scramble Base:Roughly mash chickpeas and tofu with a fork.2. Saut:Saut chopped onion and tomatoes in a pan until soft. Add chickpea/tofu mix.3. Season:Add turmeric, black salt (kala namak), and pepper. Cook 5-7 mins.4. Finish:Stir in fresh spinach until wilted. Remove from heat and fold in pesto.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/hearty_tempeh_chili.png" alt="Hearty Tempeh Chili" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Hearty Tempeh Chili</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Tempeh 200g</li><li>Kidney beans 100g</li><li>Cacao</li><li>Tomatoes 200g</li><li>Chili spices</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Saut:Cook onions, garlic, and peppers until soft. Add crumbled tempeh and brown lightly.2. Simmer:Add kidney beans, crushed tomatoes, chili powder, cumin, and vegetable broth. Simmer for 20-30 mins to thicken.3. Finish:Stir in raw cacao powder right before serving for depth.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/lime_spiced_pepitas_tea.png" alt="Lime Spiced Pepitas & Tea" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Lime Spiced Pepitas & Tea</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Pepitas 40g</li><li>Lime zest/juice</li><li>Chili</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Roast pepitas with spices. Serve with tea.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/sheet_pan_lemon_seitan.png" alt="Sheet Pan Lemon Seitan" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Sheet Pan Lemon Seitan</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Seitan 150g</li><li>Asparagus 150g</li><li>Fennel 100g</li><li>Orange</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Toss:Combine seitan chunks, asparagus spears, and fennel wedges on a sheet pan. Toss with olive oil, lemon juice, dried oregano, and garlic powder.2. Bake:Roast at 200C for 20 minutes until golden and veggies are tender.3. Serve:Garnish with fresh orange zest or slices.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/tulsi_tea.png" alt="Tulsi Tea" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Tulsi Tea</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Tulsi tea</li><li>Lemon</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Steep.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="breakfast">
+            <div class="card-img-container">
+                <img src="assets/blue_spirulina_smoothie_bowl.png" alt="Blue Spirulina Smoothie Bowl" class="card-img" loading="lazy">
+                <div class="meta-tag">Breakfast</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Blue Spirulina Smoothie Bowl</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Cauli rice 100g</li><li>Blueberries 150g</li><li>Pea protein</li><li>Spirulina</li><li>Tahini 20g</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Blend all. Decoration optional.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/mediterranean_lentil_salad.png" alt="Mediterranean Lentil Salad" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Mediterranean Lentil Salad</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Lentils 100g</li><li>Eggplant 200g</li><li>Tahini 15g</li><li>Parsley</li><li>Tomatoes</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Roast Eggplant:Cube eggplant, toss with oil and salt. Roast at 200C for 25 mins.2. Salad Base:Combine cooked lentils, roasted eggplant, diced tomatoes, chopped parsley, and cucumber.3. Dressing:Whisk tahini, lemon juice, garlic, and a splash of water.4. Serve:Toss salad with dressing while warm or cold.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/rainbow_sushi_bowl.png" alt="Rainbow Sushi Bowl" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Rainbow Sushi Bowl</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Black rice 150g</li><li>Smoked tofu 150g</li><li>Avocado</li><li>Cucumber</li><li>Nori</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Rice:Cook black rice according to package. Stir in a little rice vinegar when done.2. Prep:Cube smoked tofu. Slice avocado and cucumber. Cut nori into small strips.3. Assemble:Arrange everything in a bowl.4. Dress:Drizzle with tamari and sesame oil.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/sage_lavender_tea.png" alt="Sage & Lavender Tea" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Sage & Lavender Tea</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Sage</li><li>Lavender</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Steep.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="breakfast">
+            <div class="card-img-container">
+                <img src="assets/overnight_buckwheat_groats.png" alt="Overnight Buckwheat Groats" class="card-img" loading="lazy">
+                <div class="meta-tag">Breakfast</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Overnight Buckwheat Groats</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Buckwheat 60g</li><li>Almond milk 150ml</li><li>Cacao nibs</li><li>Cherries</li><li>Alhond yogurt</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Soak overnight. Top with cherries/yogurt.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="breakfast">
+            <div class="card-img-container">
+                <img src="assets/fire_tonic_lentil_waffles.png" alt="Fire Tonic & Lentil Waffles" class="card-img" loading="lazy">
+                <div class="meta-tag">Breakfast</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Fire Tonic & Lentil Waffles</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Tonic: ACV, Ginger, Cayenne</li><li>Lentils 150g</li><li>Chickpea flour 50g</li><li>Kimchi</li><li>Avocado</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Tonic:Mix warm water, apple cider vinegar, grated ginger, and a pinch of cayenne.2. Waffles:Blend soaked red lentils (or use flour), chickpea flour, water, baking powder, and salt. Cook in a greased waffle iron until crisp.3. Serve:Drink tonic first. Top waffles with kimchi and sliced avocado.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/grapefruit_pumpkin_seed_brittle.png" alt="Grapefruit & Pumpkin Seed Brittle" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Grapefruit & Pumpkin Seed Brittle</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Grapefruit</li><li>Pumpkin seeds 20g</li><li>Maple</li><li>Chili</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Bake seeds. Serve with grapefruit.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="dinner">
+            <div class="card-img-container">
+                <img src="assets/thai_basil_zucchini_noodles.png" alt="Thai Basil Zucchini Noodles" class="card-img" loading="lazy">
+                <div class="meta-tag">Dinner</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Thai Basil Zucchini Noodles</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Zoodles 300g</li><li>Tofu 200g</li><li>Almond butter</li><li>Coconut milk</li><li>Thai basil</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Tofu:Pan-fry tofu cubes with soy sauce until golden.2. Sauce:Whisk almond butter, coconut milk, lime juice, ginger, and garlic until creamy.3. Noodles:Spiralize zucchini. Toss zoodles in the sauce briefly to warm (don't cook too long).4. Serve:Top with tofu and fresh Thai basil leaves.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/rosemary_cacao_truffle.png" alt="Rosemary Cacao Truffle" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Rosemary Cacao Truffle</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Cacao</li><li>Protein</li><li>Coconut oil</li><li>Rosemary</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Mix and chill.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="dinner">
+            <div class="card-img-container">
+                <img src="assets/turmeric_cauliflower_steaks.png" alt="Turmeric Cauliflower Steaks" class="card-img" loading="lazy">
+                <div class="meta-tag">Dinner</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Turmeric Cauliflower Steaks</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Cauliflower 300g</li><li>Beluga lentils 150g</li><li>Kale</li><li>Tahini</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Steaks:Slice cauliflower into thick "steaks". Brush with oil, turmeric, cumin, and paprika.2. Roast:Bake at 200C for 25-30 minutes, flipping halfway, until tender and charred.3. Base:Warm the cooked beluga lentils and massage the kale with lemon.4. Serve:Place steaks over lentils/kale and drizzle with tahini.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/dandelion_root_latte.png" alt="Dandelion Root Latte" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Dandelion Root Latte</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Dandelion root</li><li>Almond milk</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Heat and whisk.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="breakfast">
+            <div class="card-img-container">
+                <img src="assets/carrot_cake_chia_parfait.png" alt="Carrot Cake Chia Parfait" class="card-img" loading="lazy">
+                <div class="meta-tag">Breakfast</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Carrot Cake Chia Parfait</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Chia 30g</li><li>Carrot 100g</li><li>Cashew butter</li><li>Coconut cream</li><li>Walnuts</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Layer chia pudding with grated carrot/cream.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="dinner">
+            <div class="card-img-container">
+                <img src="assets/moroccan_chickpea_stew.png" alt="Moroccan Chickpea Stew" class="card-img" loading="lazy">
+                <div class="meta-tag">Dinner</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Moroccan Chickpea Stew</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Chickpeas 200g</li><li>Millet 150g</li><li>Apricots</li><li>Tomatoes</li><li>Spinach</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Base:Saut onion, garlic, and ginger with cumin, cinnamon, and turmeric.2. Simmer:Add chickpeas, chopped tomatoes, dried apricots, and broth. Simmer for 20 mins.3. Greens:Stir in spinach at the end to wilt.4. Serve:Spoon stew over fluffy cooked millet.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/green_apple_almond_butter.png" alt="Green Apple & Almond Butter" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Green Apple & Almond Butter</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Apple</li><li>Almond butter</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Slice and dip.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/grilled_tofu_tikka.png" alt="Grilled Tofu Tikka" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Grilled Tofu Tikka</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Tofu 200g</li><li>Cauli rice 150g</li><li>Cucumber/Mint salad</li><li>Coconut yogurt</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Marinate:Coat tofu in coconut yogurt mixed with tikka spices, lime, and ginger. Let sit for 20+ mins.2. Grill/Bake:Grill skewers or bake tofu at 220C until edges are charred (approx 20 mins).3. Sides:Serve with heated cauliflower rice and a cooling cucumber/mint salad.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/tulsi_tea.png" alt="Holy Basil Tea" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Holy Basil Tea</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Fresh basil</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Steep.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="breakfast">
+            <div class="card-img-container">
+                <img src="assets/metabolic_mocha_smoothie.png" alt="Metabolic Mocha Smoothie" class="card-img" loading="lazy">
+                <div class="meta-tag">Breakfast</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Metabolic Mocha Smoothie</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Cold brew</li><li>Cacao</li><li>Chili</li><li>Pea protein</li><li>Banana</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Blend.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/charred_broccoli_bean_bowl.png" alt="Charred Broccoli & Bean Bowl" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Charred Broccoli & Bean Bowl</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Broccoli 200g</li><li>Cannellini beans 150g</li><li>Romesco sauce</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Char:Toss broccoli florets with oil and roast at high heat (220C) or pan-sear until charred/browned.2. Combine:Mix warm broccoli with cannellini beans.3. Serve:Toss generously with Romesco sauce (roasted red pepper & almond sauce).</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/fennel_tea.png" alt="Fennel Tea" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Fennel Tea</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Fennel seeds</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Steep.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/sweet_potato_nourish_bowl.png" alt="Sweet Potato Nourish Bowl" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Sweet Potato Nourish Bowl</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Sweet potato 200g</li><li>Kale</li><li>Quinoa</li><li>Maple Miso dressing</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Roast:Roast sweet potato wedges at 200C until tender.2. Kale:Remove kale stems and massage leaves with a little olive oil and salt to soften.3. Dressing:Whisk maple, miso, and apple cider vinegar.4. Serve:Assemble bowl with quinoa, potato, kale, and drizzle with dressing.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="breakfast">
+            <div class="card-img-container">
+                <img src="assets/baked_raspberry_almond_oats.png" alt="Baked Raspberry Almond Oats" class="card-img" loading="lazy">
+                <div class="meta-tag">Breakfast</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Baked Raspberry Almond Oats</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Oats 60g</li><li>Almonds</li><li>Raspberries</li><li>Coconut yogurt</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Mix:Combine oats, baking powder, cinnamon, and almonds.2. Wet:Mix mashed banana (if using in base) or maple syrup with milk and melted coconut oil. Fold into dry mix.3. Bake:Stir in raspberries. Pour into ramekin. Bake at 180C for 20-25 mins.4. Serve:Drizzle with coconut yogurt.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/spiced_cacao_pepitas.png" alt="Spiced Cacao & Pepitas" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Spiced Cacao & Pepitas</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Cacao drink</li><li>Pepitas</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Warm drink + seeds.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/creamy_white_bean_soup.png" alt="Creamy White Bean Soup" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Creamy White Bean Soup</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>White beans 200g</li><li>Rosemary</li><li>Sourdough side</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Saut:Saut onion, garlic, and celery until soft.2. Simmer:Add white beans (cannellini) and veggie stock. Add a sprig of rosemary. Simmer 15 mins.3. Blend:Remove rosemary. Blend soup until creamy (add almond milk if needed).4. Serve:Serve hot with a slice of sourdough.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/choc_dipped_orange.png" alt="Choc Dipped Orange" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Choc Dipped Orange</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Orange</li><li>Dark choc</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Dip slices.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/smoky_tempeh_pot_pie.png" alt="Smoky Tempeh Pot Pie" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Smoky Tempeh Pot Pie</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Tempeh</li><li>Root veg</li><li>Cassava crust</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Filling:Saut onion, carrots, celery. Add crumbled tempeh. Stir in flour or starch to coat, then pour in broth to create gravy.2. Crust:Make a simple cassava flour dough (flour, oil, water) or top with mashed potato.3. Bake:Place filling in dish, top with crust. Bake at 200C for 25-30 mins until bubbling and golden.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/tart_cherry_mocktail.png" alt="Tart Cherry Mocktail" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Tart Cherry Mocktail</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Tart cherry</li><li>Magnesium</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Mix.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/banana_buckwheat_muffins.png" alt="Banana Buckwheat Muffins" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Banana Buckwheat Muffins</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Buckwheat flour 60g</li><li>Banana</li><li>Walnuts</li><li>Almond milk</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Batter:Mash banana. Whisk with almond milk and a tsp of oil. Stir in buckwheat flour, baking powder, and cinnamon.2. Bake:Fold in walnuts. Spoon into muffin tin.3. Cook:Bake at 180C for 20-25 minutes. Let cool slightly.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="lunch">
+            <div class="card-img-container">
+                <img src="assets/cozy_miso_soba_bowl.png" alt="Cozy Miso Soba Bowl" class="card-img" loading="lazy">
+                <div class="meta-tag">Lunch</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Cozy Miso Soba Bowl</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Soba noodles</li><li>Miso</li><li>Shiitake</li><li>Tofu 200g</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Broth:Simmer ginger slices, garlic, and shiitake mushrooms in vegetable stock for 10 mins.2. Miso:Whisk miso with a little hot water separately. Turn off heat and stir into broth (don't boil miso).3. Noodles:Cook soba noodles, rinse cold. Place in bowl.4. Serve:Ladle soup over noodles. Top with tofu cubes and scallions.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/carrot_cake_energy_balls.png" alt="Carrot Cake Energy Balls" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Carrot Cake Energy Balls</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Dates</li><li>Carrot</li><li>Walnuts</li><li>Coconut flour</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Blend & roll. Serve with tea.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="dinner">
+            <div class="card-img-container">
+                <img src="assets/gnocchi_sage_butter.png" alt="Gnocchi Sage Butter" class="card-img" loading="lazy">
+                <div class="meta-tag">Dinner</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Gnocchi Sage Butter</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Gnocchi</li><li>White beans 150g</li><li>Sage</li><li>Walnuts</li><li>Rocket</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Cook Gnocchi:Boil gnocchi until they float. Drain.2. Sage Sauce:Heat olive oil or vegan butter in a pan. Fry fresh sage leaves until crisp. Add walnuts.3. Toss:Add gnocchi to the pan and saut for a few minutes to crisp the outside.4. Serve:Pile over a bed of fresh rocket.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/lemon_balm_valerian.png" alt="Lemon Balm Valerian" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Lemon Balm Valerian</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Tea</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Steep.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/berry_chia_jam_toast.png" alt="Berry Chia Jam Toast" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Berry Chia Jam Toast</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Seeded bread</li><li>Chia jam</li><li>Tofu scramble side</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Toast bread. Top with jam. Serve with tofu.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/lentil_bolognese_squash.png" alt="Lentil Bolognese Squash" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Lentil Bolognese Squash</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Lentils 200g</li><li>Tomato sauce</li><li>Spaghetti squash</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Squash:Cut squash in half lengthwise, remove seeds. Roast cut-side down at 200C for 40 mins. Scrape out strands.2. Sauce:Saut onion, carrot, celery. Add lentils, crushed tomatoes, and dried herbs. Simmer 20 mins.3. Serve:Top squash strands with heavy scoop of bolognese.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="other">
+            <div class="card-img-container">
+                <img src="assets/creamy_mushroom_stroganoff.png" alt="Creamy Mushroom Stroganoff" class="card-img" loading="lazy">
+                <div class="meta-tag">Other</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Creamy Mushroom Stroganoff</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Mushrooms</li><li>Smoked tofu 200g</li><li>Rice noodles</li><li>Cashew cream</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">1. Saut:Saut sliced mushrooms in olive oil until browned. Add garlic and thyme.2. Sauce:Stir in cashew cream (blended cashews + water), nutritional yeast, and mustard. Simmer to thicken.3. Noodles:Cook rice noodles. Toss immediately with the sauce.4. Serve:Top with parsley.</p>
+            </div>
+        </div>
+    
+        <div class="card" data-category="snack">
+            <div class="card-img-container">
+                <img src="assets/kava_tea.png" alt="Kava Tea" class="card-img" loading="lazy">
+                <div class="meta-tag">Snack</div>
+            </div>
+            <div class="card-content">
+                <h2 class="meal-title">Kava Tea</h2>
+                
+                <div class="section-title">Ingredients</div>
+                <ul class="ingredients-list">
+                    <li>Kava</li>
+                </ul>
+                
+                <div class="section-title">Preparation</div>
+                <p class="prep-text">Steep.</p>
+            </div>
+        </div>
+    
+    </div>
+
+    <div class="archive-section" id="archive">
+        <h1>Archive Gallery</h1>
+        <p class="subtitle">Generated meal visualizations not currently in the main plan.</p>
+        <div class="grid">
+
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/avocado_edamame_toast.png" alt="avocado_edamame_toast.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">avocado_edamame_toast.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/blog_smoothie.png" alt="blog_smoothie.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">blog_smoothie.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/blog_smoothie.webp" alt="blog_smoothie.webp" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">blog_smoothie.webp</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/golden_turmeric_oats.png" alt="golden_turmeric_oats.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">golden_turmeric_oats.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/mediterranean_chickpea_bowl.png" alt="mediterranean_chickpea_bowl.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">mediterranean_chickpea_bowl.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_apple_almonds.png" alt="nat_apple_almonds.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_apple_almonds.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_avo_bean_toast.png" alt="nat_avo_bean_toast.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_avo_bean_toast.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_banana_almonds.png" alt="nat_banana_almonds.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_banana_almonds.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_berry_avo_smoothie.png" alt="nat_berry_avo_smoothie.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_berry_avo_smoothie.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_carrot_hummus.png" alt="nat_carrot_hummus.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_carrot_hummus.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_carrot_tahini.png" alt="nat_carrot_tahini.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_carrot_tahini.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_chickpea_omelette.png" alt="nat_chickpea_omelette.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_chickpea_omelette.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_chickpea_spinach_curry.png" alt="nat_chickpea_spinach_curry.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_chickpea_spinach_curry.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_chilli_sin_carne.png" alt="nat_chilli_sin_carne.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_chilli_sin_carne.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_choc_protein_oats.png" alt="nat_choc_protein_oats.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_choc_protein_oats.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_coconut_lentil_dhal.png" alt="nat_coconut_lentil_dhal.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_coconut_lentil_dhal.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_edamame_snack.png" alt="nat_edamame_snack.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_edamame_snack.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_falafel_bowl.png" alt="nat_falafel_bowl.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_falafel_bowl.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_lentil_shepherds_pie.png" alt="nat_lentil_shepherds_pie.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_lentil_shepherds_pie.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_mediterranean_pasta_salad.png" alt="nat_mediterranean_pasta_salad.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_mediterranean_pasta_salad.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_protein_bar.png" alt="nat_protein_bar.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_protein_bar.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_protein_pancakes.png" alt="nat_protein_pancakes.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_protein_pancakes.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_quinoa_chickpea_salad.png" alt="nat_quinoa_chickpea_salad.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_quinoa_chickpea_salad.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_rice_cakes_hummus.png" alt="nat_rice_cakes_hummus.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_rice_cakes_hummus.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_rice_cakes_pb.png" alt="nat_rice_cakes_pb.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_rice_cakes_pb.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_shake.png" alt="nat_shake.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_shake.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_stuffed_sweet_potato.png" alt="nat_stuffed_sweet_potato.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_stuffed_sweet_potato.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_tempeh_blt_bowl.png" alt="nat_tempeh_blt_bowl.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_tempeh_blt_bowl.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_tofu_lettuce_wraps.png" alt="nat_tofu_lettuce_wraps.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_tofu_lettuce_wraps.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_tofu_quinoa_fried_rice.png" alt="nat_tofu_quinoa_fried_rice.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_tofu_quinoa_fried_rice.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_tofu_scramble_toast.png" alt="nat_tofu_scramble_toast.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_tofu_scramble_toast.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_trail_mix.png" alt="nat_trail_mix.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_trail_mix.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_vegan_pad_thai.png" alt="nat_vegan_pad_thai.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_vegan_pad_thai.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_apple_almond.png" alt="nat_w3_apple_almond.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_apple_almond.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_cashew_tofu.png" alt="nat_w3_cashew_tofu.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_cashew_tofu.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_edamame.png" alt="nat_w3_edamame.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_edamame.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_falafel_bowl.png" alt="nat_w3_falafel_bowl.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_falafel_bowl.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_green_smoothie.png" alt="nat_w3_green_smoothie.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_green_smoothie.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_lentil_bolognese.png" alt="nat_w3_lentil_bolognese.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_lentil_bolognese.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_mexican_bowl.png" alt="nat_w3_mexican_bowl.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_mexican_bowl.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_moussaka.png" alt="nat_w3_moussaka.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_moussaka.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_overnight_oats.png" alt="nat_w3_overnight_oats.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_overnight_oats.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_rice_crispy.png" alt="nat_w3_rice_crispy.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_rice_crispy.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_roasted_chickpeas.png" alt="nat_w3_roasted_chickpeas.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_roasted_chickpeas.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_tempeh_scramble.png" alt="nat_w3_tempeh_scramble.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_tempeh_scramble.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_thai_curry.png" alt="nat_w3_thai_curry.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_thai_curry.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_walnut_goji.png" alt="nat_w3_walnut_goji.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_walnut_goji.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_w3_yogurt_cup.png" alt="nat_w3_yogurt_cup.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_w3_yogurt_cup.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_yogurt_berries.png" alt="nat_yogurt_berries.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_yogurt_berries.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/nat_yogurt_seeds.png" alt="nat_yogurt_seeds.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">nat_yogurt_seeds.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/raw_carrot_salad_spotlight.png" alt="raw_carrot_salad_spotlight.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">raw_carrot_salad_spotlight.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/scrambled_tofu_toast.png" alt="scrambled_tofu_toast.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">scrambled_tofu_toast.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="assets/sweet_potato_black_bean_salad.png" alt="sweet_potato_black_bean_salad.png" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                         <h2 class="meal-title" style="font-size: 1rem; word-break: break-all;">sweet_potato_black_bean_salad.png</h2>
+                         <p style="font-size: 0.8rem; color: #999;">Restored from Archive</p>
+                    </div>
+                </div>
+                
+        </div>
+    </div>
+
+    <script>
+        function filterMeals(category) {
+            const cards = document.querySelectorAll('#recipe-grid .card');
+            const btns = document.querySelectorAll('.filter-btn');
+            
+            // Update active button
+            btns.forEach(btn => {
+                if (btn.innerText.toLowerCase().includes(category) || (category === 'all' && btn.innerText.includes('All'))) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            cards.forEach(card => {
+                if (category === 'all' || card.dataset.category === category) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        function scrollToArchive() {
+            document.getElementById('archive').scrollIntoView({behavior: 'smooth'});
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="facebook-domain-verification" content="tlduivhcqj8ee0gvyaa71o8l4xb78p" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculators - PlantBasedBalance</title>
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1928402271406692');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1928402271406692&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Meta Pixel Code -->
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .page-header {
+            background-color: var(--color-neutral);
+            padding: 160px 0 60px;
+            text-align: center;
+        }
+        .page-header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+            margin-bottom: 4rem;
+        }
+        .calc-card {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        .calc-card:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--color-secondary);
+            transform: translateY(-5px);
+        }
+        .calc-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--color-neutral);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Functional BMI Calculator Styles */
+        .featured-calc {
+            background: #fff;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: var(--shadow-lg);
+            max-width: 600px;
+            margin: -40px auto 4rem; /* Overlap with header */
+            position: relative;
+            z-index: 10;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--color-text-light);
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+        .result-box {
+            background: var(--color-neutral);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+            display: none;
+        }
+        .result-box.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation (Same as index) -->
+        <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <img src="assets/Logo_dots.jpg" alt="PBB Logo" style="height: 45px; mix-blend-mode: multiply;">
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="switch28.html">Switch 28</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">Fitness <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="challenge-yoga.html" class="dropdown-item">
+                            <span class="item-title">Somatic Yoga</span>
+                            <span class="item-desc">Reverse cortisol weight gain.</span>
+                        </a>
+                        <a href="challenge-bodyweight.html" class="dropdown-item">
+                            <span class="item-title">Bodyweight Sculpt</span>
+                            <span class="item-desc">No-equipment metabolic toning.</span>
+                        </a>
+                        <a href="challenge-strength.html" class="dropdown-item">
+                            <span class="item-title">Home Strength</span>
+                            <span class="item-desc">Dumbbells & Resistance Bands.</span>
+                        </a>
+                        <a href="challenge-gym.html" class="dropdown-item">
+                            <span class="item-title">Full Gym Protocol</span>
+                            <span class="item-desc">Maximum structural transformation.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="calculators.html">Calculators</a>
+                <a href="blog.html">Blog</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">About <i data-lucide="chevron-down" size="16"></i></a>
+                    <div class="dropdown-menu">
+                        <a href="research.html" class="dropdown-item">
+                            <span class="item-title">Research</span>
+                            <span class="item-desc">The science behind our protocol.</span>
+                        </a>
+                        <a href="success-stories.html" class="dropdown-item">
+                            <span class="item-title">Reviews</span>
+                            <span class="item-desc">Real transformations.</span>
+                        </a>
+                        <a href="contact.html" class="dropdown-item">
+                            <span class="item-title">Contact Us</span>
+                            <span class="item-desc">Get in touch with our team.</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="login.html" class="nav-member">Member Login</a>
+                <a href="quiz.html" class="btn btn-primary">Start Your Reset</a>
+            </div>
+            <div class="nav-toggle" style="display: none;" onclick="toggleMenu()">
+                <i data-lucide="menu"></i>
+            </div>
+        </div>
+    </nav>
+
+    <header class="page-header">
+        <div class="container">
+            <h1>Fitness <span class="text-gold">Calculators</span></h1>
+            <p style="max-width: 600px; margin: 0 auto; color: var(--color-text-light);">Tools to help you understand your body and reach your goals. Start with our BMI check below.</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Featured Functional Calculator -->
+        <div class="featured-calc">
+            <h3 style="text-align: center; margin-bottom: 2rem;">BMI Calculator</h3>
+            <div class="form-group">
+                <label>System</label>
+                <div style="display: flex; gap: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 5px; font-weight: 400; text-transform: none; cursor: pointer;">
+                        <input type="radio" name="system" value="metric" checked onchange="toggleSystem()"> Metric (kg/cm)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; font-weight: 400; text-transform: none; cursor: pointer;">
+                        <input type="radio" name="system" value="imperial" onchange="toggleSystem()"> Imperial (lb/ft)
+                    </label>
+                </div>
+            </div>
+
+            <div id="metric-inputs">
+                <div class="form-group">
+                    <label>Weight (kg)</label>
+                    <input type="number" id="weight-kg" class="form-control" placeholder="e.g., 65">
+                </div>
+                <div class="form-group">
+                    <label>Height (cm)</label>
+                    <input type="number" id="height-cm" class="form-control" placeholder="e.g., 170">
+                </div>
+            </div>
+
+            <div id="imperial-inputs" style="display: none;">
+                <div class="form-group">
+                    <label>Weight (lbs)</label>
+                    <input type="number" id="weight-lbs" class="form-control" placeholder="e.g., 145">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>Height (ft)</label>
+                        <input type="number" id="height-ft" class="form-control" placeholder="e.g., 5">
+                    </div>
+                    <div class="form-group">
+                        <label>Height (in)</label>
+                        <input type="number" id="height-in" class="form-control" placeholder="e.g., 7">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="calculateBMI()" class="btn btn-primary" style="width: 100%;">Calculate BMI</button>
+
+            <div id="result" class="result-box">
+                <h4 style="margin-bottom: 0.5rem;">Your BMI: <span id="bmi-value" class="text-green" style="font-size: 1.5rem;">22.5</span></h4>
+                <p id="bmi-status">Healthy Weight</p>
+            </div>
+        </div>
+
+        <!-- Calculator Grid -->
+        <h2 class="text-center" style="margin-top: 4rem;">More Tools</h2>
+        <div class="calc-grid">
+            <div class="calc-card">
+                <div class="calc-icon"><i data-lucide="flame"></i></div>
+                <h4>Calorie Deficit</h4>
+                <p style="font-size: 0.9rem; color: #666;">Find exactly how much to eat to lose weight.</p>
+                <a href="calc-calorie-deficit.html" class="btn btn-secondary" style="background: transparent; border: 1px solid #ddd; padding: 10px 20px; font-size: 0.8rem;">Use Tool</a>
+            </div>
+            <div class="calc-card">
+                <div class="calc-icon"><i data-lucide="scale"></i></div>
+                <h4>Ideal Weight</h4>
+                <p style="font-size: 0.9rem; color: #666;">Calculate your optimal weight based on frame.</p>
+                <a href="calc-ideal-weight.html" class="btn btn-secondary" style="background: transparent; border: 1px solid #ddd; padding: 10px 20px; font-size: 0.8rem;">Use Tool</a>
+            </div>
+            <div class="calc-card">
+                <div class="calc-icon"><i data-lucide="dumbbell"></i></div>
+                <h4>Macro Split</h4>
+                <p style="font-size: 0.9rem; color: #666;">Protein, carbs, and fat ratios for your goal.</p>
+                <a href="calc-macro-split.html" class="btn btn-secondary" style="background: transparent; border: 1px solid #ddd; padding: 10px 20px; font-size: 0.8rem;">Use Tool</a>
+            </div>
+            <div class="calc-card">
+                <div class="calc-icon"><i data-lucide="droplet"></i></div>
+                <h4>Water Intake</h4>
+                <p style="font-size: 0.9rem; color: #666;">Stay hydrated with a personalized goal.</p>
+                <a href="calc-water-intake.html" class="btn btn-secondary" style="background: transparent; border: 1px solid #ddd; padding: 10px 20px; font-size: 0.8rem;">Use Tool</a>
+            </div>
+            <!-- Removed Calories Burned, simplified scope -->
+            
+            <div class="calc-card">
+                <div class="calc-icon"><i data-lucide="timer"></i></div>
+                <h4>Fasting Timer</h4>
+                <p style="font-size: 0.9rem; color: #666;">Plan your intermittent fasting windows.</p>
+                <a href="calc-fasting-timer.html" class="btn btn-secondary" style="background: transparent; border: 1px solid #ddd; padding: 10px 20px; font-size: 0.8rem;">Use Tool</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer (Same as index) -->
+    <footer>
+        <div class="container">
+            <div class="bottom-bar">
+                <p>&copy; 2026 PlantBasedBalance. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        function toggleMenu() {
+            const nav = document.getElementById('navLinks');
+            nav.classList.toggle('active');
+        }
+
+        function toggleDropdown(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                const dropdown = e.target.closest('.dropdown');
+                dropdown.classList.toggle('active');
+            }
+        }
+
+        function toggleSystem() {
+            const system = document.querySelector('input[name="system"]:checked').value;
+            if (system === 'metric') {
+                document.getElementById('metric-inputs').style.display = 'block';
+                document.getElementById('imperial-inputs').style.display = 'none';
+            } else {
+                document.getElementById('metric-inputs').style.display = 'none';
+                document.getElementById('imperial-inputs').style.display = 'block';
+            }
+        }
+
+        function calculateBMI() {
+            const system = document.querySelector('input[name="system"]:checked').value;
+            let bmi = 0;
+
+            if (system === 'metric') {
+                const kg = parseFloat(document.getElementById('weight-kg').value);
+                const cm = parseFloat(document.getElementById('height-cm').value);
+                if (kg && cm) {
+                    bmi = kg / ((cm / 100) * (cm / 100));
+                }
+            } else {
+                const lbs = parseFloat(document.getElementById('weight-lbs').value);
+                const ft = parseFloat(document.getElementById('height-ft').value);
+                const val_in = parseFloat(document.getElementById('height-in').value);
+                if (lbs && (ft || val_in)) {
+                    const totalInches = (ft * 12) + (val_in || 0);
+                    bmi = 703 * (lbs / (totalInches * totalInches));
+                }
+            }
+
+            if (bmi > 0) {
+                const resultBox = document.getElementById('result');
+                const bmiValue = document.getElementById('bmi-value');
+                const bmiStatus = document.getElementById('bmi-status');
+                
+                bmiValue.innerText = bmi.toFixed(1);
+                
+                if (bmi < 18.5) bmiStatus.innerText = "Underweight";
+                else if (bmi < 25) bmiStatus.innerText = "Healthy Weight";
+                else if (bmi < 30) bmiStatus.innerText = "Overweight";
+                else bmiStatus.innerText = "Obese";
+
+                resultBox.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
