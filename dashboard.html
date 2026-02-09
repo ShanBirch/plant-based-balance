@@ -45389,9 +45389,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             const playerSTR = stats.str;
             const playerMana = stats.mana;
 
-            // Enemy stats: for bot mode use level-based formula, for PvP will be set after opponent joins
-            let enemyMaxHP = 80 + (level * 8);
-            let enemyBaseDmg = 15 + Math.floor(level * 1.5);
+            // Enemy stats: adaptive bot scales with user's FitGotchi level
+            // Curve ramps up gradually - bot should feel beatable but increasingly challenging
+            // Low levels (1-10): easy opponent to learn mechanics
+            // Mid levels (11-30): competitive, ~50/50 feel
+            // High levels (31-50+): tough, requires stat allocation and good moves
+            let enemyMaxHP = Math.floor(70 + (level * 5) + Math.pow(level, 1.4));
+            let enemyBaseDmg = Math.floor(12 + (level * 0.8) + Math.pow(level, 1.15));
 
             let playerHP = playerMaxHP;
             let enemyHP = enemyMaxHP;
@@ -45696,27 +45700,85 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }, 2500);
             }
 
+            // Incoming triple special fireball (3 blue fireballs from right side)
+            function spawnIncomingTripleFireball(container) {
+                return new Promise(resolve => {
+                    const offsets = [-60, 0, 60];
+                    let resolved = false;
+                    offsets.forEach((yOff, i) => {
+                        const fb = document.createElement('div');
+                        fb.innerHTML = `<img src="./assets/special.png" style="width:140px;height:140px;border-radius:50%;transform:scaleX(-1);filter:drop-shadow(0 0 30px cyan) brightness(1.3);">`;
+                        fb.style.cssText = `position:absolute; right:-150px; top:calc(50% + ${yOff}px); transform:translateY(-50%); z-index:100; pointer-events:none;`;
+                        container.appendChild(fb);
+                        let posX = container.clientWidth;
+                        const targetX = container.clientWidth / 2;
+                        const speed = 4 + i;
+                        function move() {
+                            posX -= speed;
+                            fb.style.left = posX + 'px';
+                            if (posX <= targetX) {
+                                fb.remove();
+                                if (!resolved) { resolved = true; resolve(); }
+                            }
+                            else requestAnimationFrame(move);
+                        }
+                        setTimeout(() => move(), i * 60);
+                    });
+                });
+            }
+
             // Bot enemy counter-attacks (only used in bot mode)
+            // Attack speed scales with level: 4.5s at level 1 down to 1.8s at level 50+
             let enemyAttackInterval = null;
+            let botAttackCount = 0;
             function startEnemyAttacks() {
-                const attackEvery = Math.max(2000, 5000 - (level * 100));
-                enemyAttackInterval = setInterval(async () => {
+                const baseInterval = Math.max(1800, 4500 - Math.floor(Math.pow(level, 1.1) * 50));
+                // Bot fires a super attack every 4th hit (scales with level - higher levels do it every 3rd)
+                const superEvery = level >= 30 ? 3 : 4;
+
+                function scheduleNextAttack() {
                     if (battleOver) return;
+                    // Add +/- 20% variance so bot doesn't feel like a metronome
+                    const variance = baseInterval * (0.8 + Math.random() * 0.4);
+                    enemyAttackInterval = setTimeout(async () => {
+                        if (battleOver) return;
 
-                    await spawnIncomingBattleFireball(widget);
-                    viewer.animationName = hitAnim;
-                    viewer.play();
-                    playSound('hit');
+                        botAttackCount++;
+                        const isSuper = (botAttackCount % superEvery === 0);
 
-                    const hitFlash = document.createElement('div');
-                    hitFlash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:red;opacity:0.3;z-index:998;pointer-events:none;';
-                    widget.appendChild(hitFlash);
-                    setTimeout(() => hitFlash.remove(), 150);
+                        if (isSuper) {
+                            await spawnIncomingTripleFireball(widget);
+                        } else {
+                            await spawnIncomingBattleFireball(widget);
+                        }
+                        viewer.animationName = hitAnim;
+                        viewer.play();
+                        playSound('hit');
 
-                    playerHP -= enemyBaseDmg;
-                    updateHPBars();
-                    if (playerHP <= 0) battleOver = true;
-                }, attackEvery);
+                        const hitFlash = document.createElement('div');
+                        hitFlash.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:${isSuper ? 'cyan' : 'red'};opacity:${isSuper ? '0.4' : '0.3'};z-index:998;pointer-events:none;`;
+                        widget.appendChild(hitFlash);
+                        setTimeout(() => hitFlash.remove(), isSuper ? 250 : 150);
+
+                        // Super attacks deal 1.5x damage
+                        const dmgVariance = 0.75 + Math.random() * 0.5;
+                        const dmgMultiplier = isSuper ? 1.5 : 1.0;
+                        playerHP -= Math.floor(enemyBaseDmg * dmgVariance * dmgMultiplier);
+                        updateHPBars();
+
+                        // Screen shake on super
+                        if (isSuper) {
+                            widget.style.animation = 'none';
+                            widget.offsetHeight;
+                            widget.style.animation = 'battleShake 0.4s ease';
+                        }
+
+                        if (playerHP <= 0) battleOver = true;
+
+                        scheduleNextAttack();
+                    }, variance);
+                }
+                scheduleNextAttack();
             }
 
             // PvP: listen for real opponent attacks via Realtime
@@ -45731,29 +45793,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                     // Show incoming fireball + hit effects
                     if (isSuper) {
-                        // Triple incoming fireball for super attacks
-                        const offsets = [-60, 0, 60];
-                        offsets.forEach((yOff, i) => {
-                            const fb = document.createElement('div');
-                            fb.innerHTML = `<img src="./assets/special.png" style="width:140px;height:140px;border-radius:50%;transform:scaleX(-1);filter:drop-shadow(0 0 30px red) brightness(1.2);">`;
-                            fb.style.cssText = `position:absolute; right:-150px; top:calc(50% + ${yOff}px); transform:translateY(-50%); z-index:100; pointer-events:none;`;
-                            widget.appendChild(fb);
-                            let posX = widget.clientWidth;
-                            const targetX = widget.clientWidth / 2;
-                            function move() {
-                                posX -= (5 + i);
-                                fb.style.left = posX + 'px';
-                                if (posX <= targetX) fb.remove();
-                                else requestAnimationFrame(move);
-                            }
-                            setTimeout(() => move(), i * 40);
-                        });
+                        // Triple incoming special fireball (blue/cyan)
+                        await spawnIncomingTripleFireball(widget);
 
                         // Screen shake from super hit
-                        widget.style.transform = 'translateX(-5px)';
-                        setTimeout(() => widget.style.transform = 'translateX(5px)', 50);
-                        setTimeout(() => widget.style.transform = 'translateX(-3px)', 100);
-                        setTimeout(() => widget.style.transform = '', 150);
+                        widget.style.animation = 'none';
+                        widget.offsetHeight;
+                        widget.style.animation = 'battleShake 0.4s ease';
                     } else {
                         await spawnIncomingBattleFireball(widget);
                     }
@@ -45762,11 +45808,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     viewer.play();
                     playSound('hit');
 
-                    // Red flash
+                    // Flash color matches attack type
                     const hitFlash = document.createElement('div');
-                    hitFlash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:red;opacity:0.3;z-index:998;pointer-events:none;';
+                    hitFlash.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:${isSuper ? 'cyan' : 'red'};opacity:${isSuper ? '0.4' : '0.3'};z-index:998;pointer-events:none;`;
                     widget.appendChild(hitFlash);
-                    setTimeout(() => hitFlash.remove(), 150);
+                    setTimeout(() => hitFlash.remove(), isSuper ? 250 : 150);
 
                     // Take real damage from opponent
                     playerHP -= damage;
@@ -45888,7 +45934,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // === END BATTLE ===
             if (autoAttackInterval) clearInterval(autoAttackInterval);
-            if (enemyAttackInterval) clearInterval(enemyAttackInterval);
+            if (enemyAttackInterval) clearTimeout(enemyAttackInterval);
             if (battleTimer) clearInterval(battleTimer);
             bashBtn.removeEventListener('click', onBash);
             bashBtn.replaceWith(bashBtn.cloneNode(true)); // Remove all listeners including touch
