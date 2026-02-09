@@ -44025,7 +44025,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
 
         // Animation unlock system - animations unlocked at specific levels
-        // Maps to actual available model animations:
+        // 55 real model animations (idle is always available, NlaTrack.055 is internal):
         // laugh, walk, warm_up, greet, pitch, arms_up_still, greet_1, laugh_1,
         // angry, karate, sad_stand, boxing, laugh_2, stretch, hit_to_1, dance,
         // hit_to_2, fold_arms, die, laugh_3, angry_1, idle, stand_hands_on_hips,
@@ -44034,10 +44034,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         // cartwheel, basketball, greet_2, depressed_walk, angry_2, hit_to_3,
         // bow, say_goodbye, block, die_1, volleyball, kick_2, dance_5, agree,
         // stand, angry_3, heart_pose
+        // NOTE: 'idle' is NOT in the unlock array - unmapped animations default to unlocked
         const ANIMATION_UNLOCKS = [
             // Level 1 starter animations (baby has full animations now)
             { name: 'walk', displayName: 'Walk', unlockLevel: 1, icon: '🚶', category: 'special' },
-            { name: 'greet', displayName: 'Wave', unlockLevel: 1, icon: '👋', category: 'greetings' },
+            { name: 'greet', displayName: 'Greet', unlockLevel: 1, icon: '👋', category: 'greetings' },
             { name: 'agree', displayName: 'Agree', unlockLevel: 1, icon: '👍', category: 'reactions' },
             { name: 'laugh', displayName: 'Laugh', unlockLevel: 1, icon: '😄', category: 'celebrations' },
             { name: 'boxing', displayName: 'Boxing', unlockLevel: 1, icon: '🥊', category: 'combat' },
@@ -44055,12 +44056,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Level 8 unlocks
             { name: 'angry', displayName: 'Angry', unlockLevel: 8, icon: '😠', category: 'reactions' },
             { name: 'laugh_1', displayName: 'Giggle', unlockLevel: 8, icon: '😂', category: 'celebrations' },
+            { name: 'angry_2', displayName: 'Furious', unlockLevel: 8, icon: '🤬', category: 'reactions' },
 
             // Level 10 unlocks (Rising evolution + Battle Mode)
             { name: 'greet_1', displayName: 'Hey!', unlockLevel: 10, icon: '🤙', category: 'greetings' },
+            { name: 'greet_2', displayName: 'Hi There', unlockLevel: 10, icon: '✌️', category: 'greetings' },
             { name: 'angry_1', displayName: 'Annoyed', unlockLevel: 10, icon: '😤', category: 'reactions' },
             { name: 'stretch', displayName: 'Stretch', unlockLevel: 10, icon: '🧘', category: 'exercise' },
             { name: 'kick', displayName: 'Kick', unlockLevel: 10, icon: '🦵', category: 'combat' },
+            { name: 'hit_to_2', displayName: 'Jab', unlockLevel: 10, icon: '🤜', category: 'combat' },
             { name: 'stand_hands_on_hips', displayName: 'Power Pose', unlockLevel: 10, icon: '💪', category: 'poses' },
             { name: 'strut', displayName: 'Strut', unlockLevel: 10, icon: '🚶', category: 'dance' },
 
@@ -44068,15 +44072,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             { name: 'lose', displayName: 'Lose', unlockLevel: 15, icon: '😞', category: 'reactions' },
             { name: 'pushup', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
             { name: 'karate', displayName: 'Karate', unlockLevel: 15, icon: '🥋', category: 'combat' },
+            { name: 'hit_to_head', displayName: 'Head Shot', unlockLevel: 15, icon: '🎯', category: 'combat' },
+            { name: 'hit_to_side', displayName: 'Side Strike', unlockLevel: 15, icon: '⚡', category: 'combat' },
             { name: 'dance_1', displayName: 'Groove', unlockLevel: 15, icon: '🎵', category: 'dance' },
             { name: 'arms_up_still', displayName: 'Arms Up', unlockLevel: 15, icon: '🙌', category: 'celebrations' },
+            { name: 'laugh_3', displayName: 'Cracking Up', unlockLevel: 15, icon: '😹', category: 'celebrations' },
 
             // Level 20 unlocks (Growing evolution)
             { name: 'say_goodbye', displayName: 'Goodbye', unlockLevel: 20, icon: '👋', category: 'greetings' },
             { name: 'depressed_walk', displayName: 'Sad Walk', unlockLevel: 20, icon: '🚶', category: 'reactions' },
+            { name: 'angry_3', displayName: 'Rage', unlockLevel: 20, icon: '💢', category: 'reactions' },
             { name: 'heart_pose', displayName: 'Heart Pose', unlockLevel: 20, icon: '❤️', category: 'celebrations' },
             { name: 'basketball', displayName: 'Basketball', unlockLevel: 20, icon: '🏀', category: 'exercise' },
             { name: 'boxing_1', displayName: 'Boxing Combo', unlockLevel: 20, icon: '🥊', category: 'combat' },
+            { name: 'hit_to_3', displayName: 'Uppercut', unlockLevel: 20, icon: '💥', category: 'combat' },
             { name: 'stand', displayName: 'Stand Tall', unlockLevel: 20, icon: '🧍', category: 'poses' },
             { name: 'dance_2', displayName: 'Moves', unlockLevel: 20, icon: '🎶', category: 'dance' },
 
