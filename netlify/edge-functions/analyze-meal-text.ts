@@ -1,16 +1,15 @@
 import { Context } from "@netlify/edge-functions";
 
-<<<<<<< HEAD
 // Helper to look up food in Open Food Facts
 async function lookupOpenFoodFacts(query: string) {
   try {
     const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=3`;
     const response = await fetch(url);
     if (!response.ok) return null;
-    
+
     const data = await response.json();
     const products = data.products || [];
-    
+
     // Find first product with calories
     for (const product of products) {
       const nutriments = product.nutriments;
@@ -33,8 +32,6 @@ async function lookupOpenFoodFacts(query: string) {
   }
 }
 
-=======
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
 export default async function (request: Request, context: Context) {
   // Only accept POST
   if (request.method !== "POST") {
@@ -63,22 +60,12 @@ export default async function (request: Request, context: Context) {
     // Prepare the Gemini API request (text-only, no image)
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
-<<<<<<< HEAD
-    const systemPrompt = `You are a nutrition analysis AI. Analyze the following meal description and provide detailed nutritional information.
-=======
     const systemPrompt = `You are a precise nutrition analysis AI. Analyze the following meal description and provide accurate nutritional information.
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
 MEAL DESCRIPTION: "${description}"
 MEAL TYPE: "${mealType || 'Not specified'}"
 
 INSTRUCTIONS:
 1. Break down the description into individual food items
-<<<<<<< HEAD
-2. Estimate portion sizes (in grams if possible, or common units)
-3. Calculate nutritional values (calories, macros, and key micronutrients)
-4. Provide your confidence level (high/medium/low)
-
-=======
 2. Estimate portion sizes in grams (use common serving sizes if not specified)
 3. Calculate nutritional values using standard USDA nutrition data per 100g, then scale to the estimated portion
 4. Provide your confidence level (high/medium/low)
@@ -99,7 +86,6 @@ CRITICAL RULES:
 - Use COOKED values for grains, rice, pasta, lentils — not raw/dry values (raw is roughly 3x higher)
 - A typical meal plate is 400-700 calories. If your total exceeds 1000 calories for a normal-looking meal, double-check your work.
 
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
 RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
 {
   "foodItems": [
@@ -135,12 +121,8 @@ IMPORTANT:
 - Return RAW JSON only - no markdown, no code blocks, no backticks
 - Keep food item names SHORT (max 30 chars)
 - Be realistic with portion sizes
-<<<<<<< HEAD
-- Round numbers to 1 decimal place`;
-=======
 - Round numbers to 1 decimal place
 - Calculate each item as: (calories_per_100g * portion_weight_g / 100)`;
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
 
     const payload = {
       contents: [
@@ -177,24 +159,23 @@ IMPORTANT:
     const cleanedText = aiText.replace(/\`\`\`json\n?/g, '').replace(/\`\`\`\n?/g, '').trim();
     const nutritionData = JSON.parse(cleanedText);
 
-<<<<<<< HEAD
     // HYBRID UPGRADE: Fact check each item against Open Food Facts
     console.log(`Fact checking ${nutritionData.foodItems.length} text items...`);
-    
+
     for (let item of nutritionData.foodItems) {
       const dbMatch = await lookupOpenFoodFacts(item.name);
-      
+
       if (dbMatch) {
         console.log(`✅ VERIFIED: ${item.name} matched with ${dbMatch.name} (${dbMatch.brand})`);
-        
+
         // Use portion weight to calculate new verified values
         const weightFactor = (item.portion_weight_g || 100) / 100;
-        
+
         item.verified = true;
         item.db_source = "Open Food Facts";
         item.db_name = dbMatch.name;
         item.db_brand = dbMatch.brand;
-        
+
         // Update values with database truths
         item.calories = Number((dbMatch.calories_100g * weightFactor).toFixed(1));
         item.protein_g = Number((dbMatch.protein_100g * weightFactor).toFixed(1));
@@ -214,8 +195,6 @@ IMPORTANT:
     nutritionData.totals.fat_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.fat_g, 0).toFixed(1));
     nutritionData.totals.fiber_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.fiber_g, 0).toFixed(1));
 
-=======
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
     return new Response(JSON.stringify({ success: true, data: nutritionData }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
