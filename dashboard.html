@@ -4764,6 +4764,38 @@ async function applyAppTheme(themeKey) {
         100% { opacity: 0; transform: scale(1); }
     }
 
+    /* Battle screen shake */
+    @keyframes battleShake {
+        0%, 100% { transform: translateX(0); }
+        10%, 50%, 70% { transform: translateX(-6px); }
+        30%, 60% { transform: translateX(6px); }
+        80% { transform: translateX(-3px); }
+        90% { transform: translateX(3px); }
+    }
+
+    /* Round transition overlay */
+    .battle-round-text {
+        font-size: 2.5rem;
+        font-weight: 900;
+        color: white;
+        text-shadow: 0 0 30px rgba(255,255,255,0.5);
+        animation: roundTextPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        text-align: center;
+        line-height: 1.3;
+    }
+    .battle-round-score {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: rgba(255,255,255,0.7);
+        margin-top: 8px;
+        letter-spacing: 3px;
+    }
+    @keyframes roundTextPop {
+        0% { transform: scale(0.3); opacity: 0; }
+        60% { transform: scale(1.15); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
     /* ============================================================
        MOVE PICKER (Pre-Battle)
        ============================================================ */
@@ -45423,7 +45455,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const hpContainer = document.getElementById('battle-hp-container');
             const manaContainer = document.getElementById('battle-mana-container');
             const actionContainer = document.getElementById('battle-action-container');
-            const bashBtn = document.getElementById('battle-btn-bash');
+            let bashBtn = document.getElementById('battle-btn-bash');
 
             if (!widget || !viewer) {
                 window._battleInProgress = false;
@@ -45608,6 +45640,99 @@ document.addEventListener('DOMContentLoaded', async function() {
             let battleOver = false;
             let battleTimer = null;
             const BATTLE_DURATION = 30000; // 30 seconds
+
+            // === ROUND SYSTEM ===
+            let playerRoundWins = 0;
+            let enemyRoundWins = 0;
+            let currentRound = 0;
+            const ROUNDS_TO_WIN = 2; // Best of 3: first to 2 wins
+
+            // Show round transition overlay (e.g. "ROUND 2" with score "1 - 0")
+            async function showRoundTransition(roundNum, pWins, eWins) {
+                if (overlayText && overlay) {
+                    // Show round number
+                    overlay.style.color = '#FFD700';
+                    overlay.style.textShadow = '0 0 30px rgba(255,215,0,0.8), 0 4px 20px rgba(0,0,0,0.7)';
+                    overlayText.innerHTML = `<div style="font-size:1.2em;animation:roundTextPop 0.5s ease-out;">ROUND ${roundNum}</div>` +
+                        (roundNum > 1 ? `<div style="font-size:0.6em;margin-top:8px;opacity:0.9;">${pWins} - ${eWins}</div>` : '');
+                    overlay.classList.add('active');
+                    playSound('bell');
+                    await new Promise(r => setTimeout(r, 2000));
+                    overlay.classList.remove('active');
+                    overlay.style.color = '';
+                    overlay.style.textShadow = '';
+                    await new Promise(r => setTimeout(r, 300));
+                }
+            }
+
+            // Show round result briefly (e.g. "ROUND 1 - YOU WIN!")
+            async function showRoundResult(roundNum, playerWonRound) {
+                if (overlayText && overlay) {
+                    const color = playerWonRound ? '#00ff00' : '#ff4444';
+                    const text = playerWonRound ? 'YOU WIN!' : 'DEFEATED!';
+                    overlay.style.color = color;
+                    overlay.style.textShadow = `0 0 20px ${color}`;
+                    overlayText.innerHTML = `<div style="font-size:0.8em;opacity:0.7;">ROUND ${roundNum}</div><div style="font-size:1.1em;margin-top:4px;">${text}</div>`;
+                    overlay.classList.add('active');
+                    playSound(playerWonRound ? 'victory' : 'hit');
+                    await new Promise(r => setTimeout(r, 2000));
+                    overlay.classList.remove('active');
+                    overlay.style.color = '';
+                    overlay.style.textShadow = '';
+                    await new Promise(r => setTimeout(r, 300));
+                }
+            }
+
+            // Reset state between rounds
+            function resetRoundState() {
+                battleOver = false;
+                superReady = false;
+                bashCount = 0;
+                botAttackCount = 0;
+                blockSuccess = false;
+                fireWindowOpen = false;
+                blockWindowOpen = false;
+
+                // Reset HP
+                playerHP = playerMaxHP;
+                enemyHP = enemyMaxHP;
+                updateHPBars();
+
+                // Reset bash UI (ring)
+                updateBashUI();
+
+                // Clear all timers
+                if (autoAttackInterval) { clearInterval(autoAttackInterval); autoAttackInterval = null; }
+                if (enemyAttackInterval) { clearTimeout(enemyAttackInterval); enemyAttackInterval = null; }
+                if (battleTimer) { clearInterval(battleTimer); battleTimer = null; }
+                if (fireTimeout) { clearTimeout(fireTimeout); fireTimeout = null; }
+                if (blockTimeout) { clearTimeout(blockTimeout); blockTimeout = null; }
+
+                // Hide fire/block buttons
+                if (fireBtn) fireBtn.style.display = 'none';
+                if (blockBtn) blockBtn.style.display = 'none';
+            }
+
+            // Re-attach event listeners to fresh button references after cloneNode
+            function reattachBattleListeners() {
+                bashBtn = document.getElementById('battle-btn-bash');
+                if (bashBtn) {
+                    bashBtn.addEventListener('click', onBash);
+                    bashBtn.addEventListener('touchstart', (e) => { e.preventDefault(); onBash(); }, { passive: false });
+                }
+                // Fire button - get fresh reference
+                const freshFireBtn = document.getElementById('battle-btn-fire');
+                if (freshFireBtn) {
+                    freshFireBtn.addEventListener('click', onFireTap);
+                    freshFireBtn.addEventListener('touchstart', (e) => { e.preventDefault(); onFireTap(); }, { passive: false });
+                }
+                // Block button - get fresh reference
+                const freshBlockBtn = document.getElementById('battle-btn-block');
+                if (freshBlockBtn) {
+                    freshBlockBtn.addEventListener('click', onBlockTap);
+                    freshBlockBtn.addEventListener('touchstart', (e) => { e.preventDefault(); onBlockTap(); }, { passive: false });
+                }
+            }
 
             // UI elements
             const bashRingFill = document.getElementById('bash-ring-fill');
@@ -45940,7 +46065,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Bash button handler — bashing charges the super attack
             // === FIRE BUTTON LOGIC ===
-            const fireBtn = document.getElementById('battle-btn-fire');
+            let fireBtn = document.getElementById('battle-btn-fire');
             let fireTimeout = null;
             let fireWindowOpen = false;
 
@@ -45991,7 +46116,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // === BLOCK BUTTON LOGIC ===
-            const blockBtn = document.getElementById('battle-btn-block');
+            let blockBtn = document.getElementById('battle-btn-block');
             let blockWindowOpen = false;
             let blockTimeout = null;
             let blockSuccess = false;
@@ -46111,64 +46236,111 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             await new Promise(r => setTimeout(r, 600));
 
-            // Start battle!
-            if (overlayText && overlay) {
-                overlayText.textContent = pvpConnected ? 'FIGHT!' : 'BASH!';
-                overlay.classList.add('active');
-                playSound('bell');
-                await new Promise(r => setTimeout(r, 1000));
-                overlay.classList.remove('active');
+            // === 3-ROUND BATTLE LOOP ===
+            for (let round = 1; round <= 3; round++) {
+                currentRound = round;
+
+                // Show round transition (with score for rounds 2+)
+                await showRoundTransition(round, playerRoundWins, enemyRoundWins);
+
+                // Reset state for new round (except round 1 which is already fresh)
+                if (round > 1) {
+                    resetRoundState();
+                    reattachBattleListeners();
+                    // Re-get fire/block button refs after cloneNode in previous round cleanup
+                    fireBtn = document.getElementById('battle-btn-fire');
+                    blockBtn = document.getElementById('battle-btn-block');
+                }
+
+                // "FIGHT!" / "BASH!" text
+                if (overlayText && overlay) {
+                    overlayText.textContent = pvpConnected ? 'FIGHT!' : 'BASH!';
+                    overlay.classList.add('active');
+                    playSound('bell');
+                    await new Promise(r => setTimeout(r, 1000));
+                    overlay.classList.remove('active');
+                }
+
+                // Add bash listener (round 1 only - subsequent rounds use reattachBattleListeners)
+                if (round === 1) {
+                    bashBtn.addEventListener('click', onBash);
+                    bashBtn.addEventListener('touchstart', (e) => { e.preventDefault(); onBash(); }, { passive: false });
+                }
+
+                // Start auto-attacks
+                startAutoAttacks();
+
+                // Start enemy attacks: PvP uses real opponent, bot uses simulated
+                if (pvpConnected) {
+                    listenForOpponentAttacks();
+                } else {
+                    startEnemyAttacks();
+                }
+
+                // Battle timer - 30 seconds per round
+                await new Promise(resolve => {
+                    battleTimer = setInterval(() => {
+                        if (battleOver) {
+                            clearInterval(battleTimer);
+                            resolve();
+                        }
+                    }, 100);
+
+                    setTimeout(() => {
+                        if (!battleOver) {
+                            battleOver = true;
+                        }
+                    }, BATTLE_DURATION);
+                });
+
+                // === END OF ROUND CLEANUP ===
+                if (autoAttackInterval) clearInterval(autoAttackInterval);
+                if (enemyAttackInterval) clearTimeout(enemyAttackInterval);
+                if (battleTimer) clearInterval(battleTimer);
+                if (fireTimeout) clearTimeout(fireTimeout);
+                if (blockTimeout) clearTimeout(blockTimeout);
+                bashBtn.removeEventListener('click', onBash);
+                bashBtn.replaceWith(bashBtn.cloneNode(true));
+                bashBtn = document.getElementById('battle-btn-bash');
+
+                // Hide fire and block buttons
+                const curFireBtn = document.getElementById('battle-btn-fire');
+                const curBlockBtn = document.getElementById('battle-btn-block');
+                if (curFireBtn) { curFireBtn.style.display = 'none'; curFireBtn.replaceWith(curFireBtn.cloneNode(true)); }
+                if (curBlockBtn) { curBlockBtn.style.display = 'none'; curBlockBtn.replaceWith(curBlockBtn.cloneNode(true)); }
+
+                // Determine round winner
+                const playerWonRound = pvpConnected ? (playerHP > 0) : (enemyHP <= 0 || playerHP > enemyHP);
+                if (playerWonRound) {
+                    playerRoundWins++;
+                } else {
+                    enemyRoundWins++;
+                }
+
+                // PvP: broadcast round result
+                if (pvpConnected && battleChannel) {
+                    battleChannel.send({
+                        type: 'broadcast',
+                        event: 'round_result',
+                        payload: { userId: window.currentUser?.id, round, playerWonRound, playerRoundWins, enemyRoundWins }
+                    });
+                }
+
+                // Show round result animation
+                await showRoundResult(round, playerWonRound);
+
+                // Check if match is decided (first to 2 wins)
+                if (playerRoundWins >= ROUNDS_TO_WIN || enemyRoundWins >= ROUNDS_TO_WIN) {
+                    break;
+                }
             }
 
-            // Add bash listener
-            bashBtn.addEventListener('click', onBash);
-            bashBtn.addEventListener('touchstart', (e) => { e.preventDefault(); onBash(); }, { passive: false });
-
-            // Start auto-attacks
-            startAutoAttacks();
-
-            // Start enemy attacks: PvP uses real opponent, bot uses simulated
-            if (pvpConnected) {
-                listenForOpponentAttacks();
-            } else {
-                startEnemyAttacks();
-            }
-
-            // Battle timer - 30 seconds
-            await new Promise(resolve => {
-                battleTimer = setInterval(() => {
-                    if (battleOver) {
-                        clearInterval(battleTimer);
-                        resolve();
-                    }
-                }, 100);
-
-                // Time limit
-                setTimeout(() => {
-                    if (!battleOver) {
-                        battleOver = true;
-                    }
-                }, BATTLE_DURATION);
-            });
-
-            // === END BATTLE ===
-            if (autoAttackInterval) clearInterval(autoAttackInterval);
-            if (enemyAttackInterval) clearTimeout(enemyAttackInterval);
-            if (battleTimer) clearInterval(battleTimer);
-            if (fireTimeout) clearTimeout(fireTimeout);
-            if (blockTimeout) clearTimeout(blockTimeout);
-            bashBtn.removeEventListener('click', onBash);
-            bashBtn.replaceWith(bashBtn.cloneNode(true)); // Remove all listeners including touch
-
-            // Hide fire and block buttons
-            if (fireBtn) { fireBtn.style.display = 'none'; fireBtn.replaceWith(fireBtn.cloneNode(true)); }
-            if (blockBtn) { blockBtn.style.display = 'none'; blockBtn.replaceWith(blockBtn.cloneNode(true)); }
+            // === MATCH RESULT ===
+            const playerWon = playerRoundWins >= ROUNDS_TO_WIN;
 
             // Restore hidden buttons
             if (battleTriggerBtn) battleTriggerBtn.style.display = '';
             if (animTriggerBtn) animTriggerBtn.style.display = '';
-
-            const playerWon = pvpConnected ? (playerHP > 0) : (enemyHP <= 0 || playerHP > 0);
 
             // Settle battle
             const battleBet = window._activeBattleBet || 0;
@@ -46179,21 +46351,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                 battleChannel.send({
                     type: 'broadcast',
                     event: 'finished',
-                    payload: { userId: window.currentUser?.id, hpRemaining: Math.max(0, Math.round(playerHP)) }
+                    payload: { userId: window.currentUser?.id, hpRemaining: playerWon ? 100 : 0 }
                 });
 
-                // Submit result to server
                 try {
                     if (window.supabaseClient && window.currentUser) {
                         const { data: result } = await window.supabaseClient
                             .rpc('finish_tamagotchi_battle', {
                                 p_battle_id: battleId,
                                 p_user_id: window.currentUser.id,
-                                p_hp_remaining: Math.max(0, Math.round(playerHP))
+                                p_hp_remaining: playerWon ? 100 : 0
                             });
                         console.log('Battle result submitted:', result);
 
-                        // Reload coin balance after settlement
                         if (result && result.finished) {
                             if (typeof loadCoinBalance === 'function') loadCoinBalance();
                         }
@@ -46202,10 +46372,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     console.warn('Could not submit battle result:', e);
                 }
 
-                // Cleanup channel
                 battleChannel.unsubscribe();
                 battleChannel = null;
             }
+
+            // Show match result with score
+            const scoreText = playerRoundWins + ' - ' + enemyRoundWins;
 
             if (playerWon) {
                 const victoryAnim = anims.find(a => /laugh|clap|arms_up/i.test(a)) || 'idle';
@@ -46213,20 +46385,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                 viewer.play();
                 playSound('victory');
                 if (overlayText && overlay) {
-                    overlayText.textContent = 'YOU WIN!';
+                    overlayText.innerHTML = `<div style="font-size:1.2em;">VICTORY!</div><div style="font-size:0.5em;margin-top:8px;opacity:0.8;">${scoreText}</div>`;
                     overlay.style.color = '#00ff00';
                     overlay.style.textShadow = '0 0 20px #00ff00';
                     overlay.classList.add('active');
                 }
 
                 if (pvpConnected) {
-                    // PvP: coins settled by server RPC
                     if (typeof showToast === 'function') {
                         const msg = battleBet > 0 ? 'Victory! 🪙 ' + (battleBet * 2) + ' coins won!' : 'Victory!';
                         setTimeout(() => showToast(msg, 'success'), 2000);
                     }
                 } else if (battleBet > 0 && window.supabaseClient && window.currentUser) {
-                    // Bot mode: settle coins client-side (as before)
                     try {
                         const winnings = battleBet * 2;
                         await window.supabaseClient.rpc('credit_coins', {
@@ -46255,7 +46425,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 viewer.animationName = loseAnim;
                 viewer.play();
                 if (overlayText && overlay) {
-                    overlayText.textContent = 'DEFEATED!';
+                    overlayText.innerHTML = `<div style="font-size:1.2em;">DEFEATED!</div><div style="font-size:0.5em;margin-top:8px;opacity:0.8;">${scoreText}</div>`;
                     overlay.style.color = '#ff4444';
                     overlay.style.textShadow = '0 0 20px #ff4444';
                     overlay.classList.add('active');
@@ -46291,7 +46461,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             savedBgClasses.forEach(c => widget.classList.add(c));
             const restoreStaticBg = document.getElementById('tamagotchi-static-bg');
             if (restoreStaticBg) {
-                // Look up the saved background's image from BACKGROUND_UNLOCKS
                 const savedBgName = localStorage.getItem('selectedBackground') || 'gym';
                 const savedBgObj = (window.BACKGROUND_UNLOCKS || []).find(b => b.name === savedBgName);
                 const restoreImage = savedBgObj && savedBgObj.image ? savedBgObj.image : './assets/gym_bg.jpeg';
