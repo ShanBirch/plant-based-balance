@@ -117,8 +117,6 @@ export default async (request, context) => {
                 }
             }
 
-<<<<<<< HEAD
-=======
             // Handle Challenge Buy-In payment
             if (session.metadata?.product_type === 'challenge_buyin' && session.metadata?.user_id && session.metadata?.challenge_id) {
                 const userId = session.metadata.user_id;
@@ -199,7 +197,6 @@ export default async (request, context) => {
                 }
             }
 
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
             // Store FB metadata on customer
             if (customerId && session.metadata?.fbc) {
                 await stripe.customers.update(customerId, {

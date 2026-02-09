@@ -517,11 +517,7 @@
                 <div class="form-group">
                     <label>Referral Code (Optional)</label>
                     <input type="text" id="signup-referral" placeholder="e.g. 046CF1D1" style="text-transform: uppercase;">
-<<<<<<< HEAD
-                    <small style="color: #64748b; font-size: 0.75rem; margin-top: 4px; display: block;">You both get 2 weeks free when you join with a code!</small>
-=======
                     <small style="color: #64748b; font-size: 0.75rem; margin-top: 4px; display: block;">You both get 1 week double XP when you join with a code!</small>
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
                 </div>
 
                 <button type="submit" class="signup-btn" id="signup-btn">CREATE ACCOUNT</button>
@@ -616,57 +612,14 @@
                     const { data, error } = await supabase.auth.signInWithOAuth({
                         provider: 'google',
                         options: {
-<<<<<<< HEAD
                             redirectTo: `${window.location.origin}/login.html`
                         }
                     });
                     if (error) throw error;
-=======
-                            redirectTo: `${window.location.origin}/login.html`,
-                            skipBrowserRedirect: true
-                        }
-                    });
-                    if (error) throw error;
-
-                    if (data?.url) {
-                        // Pre-check: verify the provider is enabled before redirecting
-                        // This prevents users from seeing a raw JSON error page
-                        try {
-                            const checkResponse = await fetch(data.url, { redirect: 'manual' });
-
-                            // opaqueredirect means server sent a 3xx redirect (provider is working)
-                            if (checkResponse.type === 'opaqueredirect') {
-                                window.location.href = data.url;
-                                return data;
-                            }
-
-                            // Non-redirect response - likely a provider configuration error
-                            if (checkResponse.status >= 400) {
-                                const errorBody = await checkResponse.json();
-                                throw new Error(errorBody.msg || 'Google sign-in is not available right now. Please use email instead.');
-                            }
-                        } catch (fetchError) {
-                            // Re-throw provider/config errors so the UI can display them
-                            if (fetchError.message && (
-                                fetchError.message.includes('provider') ||
-                                fetchError.message.includes('not available') ||
-                                fetchError.message.includes('not enabled')
-                            )) {
-                                throw fetchError;
-                            }
-                            // Network/CORS error - try redirecting anyway (best effort)
-                        }
-
-                        window.location.href = data.url;
-                    }
-
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
                     return data;
                 }
             };
 
-<<<<<<< HEAD
-=======
             // Minimal dbHelpers for referral processing during signup
             window.dbHelpers = {
                 referrals: {
@@ -706,7 +659,6 @@
                 }
             };
 
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
             // Initialize the page
             initializePage();
         });
@@ -715,24 +667,6 @@
     <!-- Page code -->
     <script>
         async function initializePage() {
-<<<<<<< HEAD
-=======
-            // Check for OAuth error in URL hash or query params (e.g. failed Google sign-in redirect)
-            const hashParams = new URLSearchParams(window.location.hash.substring(1));
-            const queryParams = new URLSearchParams(window.location.search);
-            const oauthError = hashParams.get('error') || queryParams.get('error');
-            const oauthErrorDesc = hashParams.get('error_description') || queryParams.get('error_description');
-
-            if (oauthError) {
-                const message = oauthErrorDesc
-                    ? decodeURIComponent(oauthErrorDesc.replace(/\+/g, ' '))
-                    : 'Sign-in failed. Please try again or use email instead.';
-                showError(message);
-                // Clean up URL so the error doesn't persist on refresh
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
-
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
             // Check if already logged in
             const session = await authHelpers.getSession();
             if (session) {
@@ -747,8 +681,6 @@
                 // Sync biometric credentials from database (in case localStorage was cleared)
                 await BiometricAuth.syncFromDatabase(user.id, user.email);
 
-<<<<<<< HEAD
-=======
                 // Process pending referral code (e.g. Google OAuth returning with a session)
                 const pendingReferral = sessionStorage.getItem('balance_referral_code');
                 if (pendingReferral && user.id) {
@@ -798,7 +730,6 @@
                     }
                 }
 
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
                 // Already logged in - redirect to appropriate dashboard
                 const urlParams = new URLSearchParams(window.location.search);
                 let redirect = urlParams.get('redirect');
@@ -934,11 +865,7 @@
                 // Check for referral code in manual field first, then URL, then sessionStorage
                 const manualRef = document.getElementById('signup-referral').value.trim();
                 const urlParams = new URLSearchParams(window.location.search);
-<<<<<<< HEAD
-                const referralCode = manualRef || urlParams.get('ref') || sessionStorage.getItem('balance_referral_code');
-=======
                 const referralCode = (manualRef || urlParams.get('ref') || sessionStorage.getItem('balance_referral_code') || '').toUpperCase().trim();
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
 
                 // Create account
                 const signupResult = await authHelpers.signUp(email, password, { name });
@@ -1048,15 +975,6 @@
         async function handleGoogleSignIn() {
             clearMessages();
 
-<<<<<<< HEAD
-=======
-            // Save any referral code before redirecting to Google OAuth
-            const referralField = document.getElementById('signup-referral');
-            if (referralField && referralField.value.trim()) {
-                sessionStorage.setItem('balance_referral_code', referralField.value.trim().toUpperCase());
-            }
-
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
             const loginBtn = document.getElementById('google-login-btn');
             const signupBtn = document.getElementById('google-signup-btn');
 

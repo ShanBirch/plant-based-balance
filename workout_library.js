@@ -6110,8 +6110,6 @@ const WORKOUT_LIBRARY = {
         ]
       }
     }
-<<<<<<< HEAD
-=======
   },
 
   // ====================
@@ -6797,7 +6795,6 @@ const WORKOUT_LIBRARY = {
         ]
       }
     }
->>>>>>> ac66ca259cf9a37038ebf6ad2a9c697b546a0ee7
   }
 };
 
