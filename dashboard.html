@@ -5575,8 +5575,24 @@ async function applyAppTheme(themeKey) {
                 style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; --poster-color: transparent; touch-action: none; background: transparent;"
                 interaction-prompt="none">
             </model-viewer>
-
-            <!-- Level Up Celebration Overlay (appears inside Tamagotchi widget) -->
+            <script>
+            // Set tamagotchi model src immediately from localStorage
+            // so it starts downloading before the async tamagotchi init runs
+            (function() {
+                const base = 'https://f005.backblazeb2.com/file/shannonsvideos/';
+                const activeRare = localStorage.getItem('active_rare_skin');
+                const mv = document.getElementById('tamagotchi-model');
+                if (!mv) return;
+                if (activeRare) {
+                    // Rare skin is active - set src from ID (all follow {id}.glb pattern)
+                    mv.setAttribute('src', base + activeRare + '.glb');
+                } else if (window._earlyGenderModel) {
+                    // No rare skin - use the gender-correct level 1 model as placeholder
+                    // (tamagotchi init will swap to correct evolution level later)
+                    mv.setAttribute('src', window._earlyGenderModel);
+                }
+            })();
+            </script>
             <div id="tamagotchi-levelup-overlay" class="tamagotchi-levelup-overlay">
                 <!-- Burst effect, sparkles, and stars will be dynamically injected here -->
             </div>
@@ -27793,6 +27809,7 @@ function openAsClient() {
                 <div style="width: 100%; height: 320px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative;">
                     <model-viewer
                         id="wizard-fitgotchi-preview"
+                        loading="eager"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -27954,6 +27971,7 @@ function openAsClient() {
                 <div style="width: 100%; height: 240px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%); border-radius: 12px; overflow: hidden; margin-bottom: 12px; position: relative;">
                     <model-viewer
                         id="wizard-arny-preview"
+                        loading="eager"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -28059,6 +28077,7 @@ function openAsClient() {
                 <div id="wizard-character-preview" style="width: 100%; height: 360px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative;">
                     <model-viewer
                         id="wizard-preview-model"
+                        loading="eager"
                         camera-controls
                         disable-zoom
                         disable-pan
