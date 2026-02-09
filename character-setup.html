@@ -199,9 +199,69 @@
         </div>
     </div>
 
+    <!-- App Download Prompt Overlay (shown after setup completes) -->
+    <div id="download-app-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:white; border-radius:24px; max-width:420px; width:100%; padding:40px 30px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.4s ease;">
+            <div style="width:72px; height:72px; background:linear-gradient(135deg, #046A38, #06a94d); border-radius:18px; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; box-shadow:0 8px 24px rgba(4,106,56,0.3);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </div>
+            <h2 style="margin:0 0 8px; font-size:1.5rem; color:#1a1a1a;">Get the App!</h2>
+            <p style="margin:0 0 24px; color:#6b7280; font-size:0.95rem; line-height:1.5;">Install Balance on your device for the best experience — quick access, notifications, and offline support.</p>
+            <button id="onboarding-install-btn" onclick="onboardingInstallPWA()" style="width:100%; padding:16px; border-radius:14px; border:none; background:linear-gradient(135deg, #046A38, #06a94d); color:white; font-weight:700; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 4px 15px rgba(4,106,56,0.3); transition:transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 20px rgba(4,106,56,0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(4,106,56,0.3)'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Install Now
+            </button>
+            <button onclick="skipDownloadPrompt()" style="width:100%; padding:14px; border-radius:14px; border:none; background:transparent; color:#6b7280; font-weight:600; font-size:0.9rem; cursor:pointer; margin-top:10px; transition:color 0.2s;" onmouseover="this.style.color='#374151'" onmouseout="this.style.color='#6b7280'">
+                Maybe Later
+            </button>
+        </div>
+    </div>
+
+    <style>
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+
     <script src="character-setup.js"></script>
     <script>
         lucide.createIcons();
+
+        // PWA install prompt capture for onboarding
+        let onboardingDeferredPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            onboardingDeferredPrompt = e;
+        });
+
+        // Check if already installed as PWA
+        const isAlreadyInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+        function onboardingInstallPWA() {
+            if (onboardingDeferredPrompt) {
+                onboardingDeferredPrompt.prompt();
+                onboardingDeferredPrompt.userChoice.then((result) => {
+                    onboardingDeferredPrompt = null;
+                    // Proceed to next page regardless of choice
+                    window.location.href = 'plantbasedswitch.html';
+                });
+            } else {
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                if (isIOS) {
+                    alert("On iOS: Tap the Share button at the bottom of Safari, then tap 'Add to Home Screen' to install the app.");
+                } else {
+                    alert("App installation is getting ready. Please try again in a moment, or install from the banner on your dashboard.");
+                }
+                // Still redirect after alert
+                window.location.href = 'plantbasedswitch.html';
+            }
+        }
+
+        function skipDownloadPrompt() {
+            window.location.href = 'plantbasedswitch.html';
+        }
     </script>
 </body>
 </html>

@@ -94,7 +94,15 @@ document.querySelectorAll('.color-btn').forEach(btn => {
 saveBtn.addEventListener('click', () => {
     // Save to LocalStorage
     localStorage.setItem('pbb_character_config', JSON.stringify(currentState));
-    
-    // Redirect to the Challenge/Offer Page
-    window.location.href = 'plantbasedswitch.html';
+
+    // Show app download prompt if not already installed as PWA
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    const overlay = document.getElementById('download-app-overlay');
+
+    if (!isInstalled && overlay) {
+        overlay.style.display = 'flex';
+    } else {
+        // Already installed or overlay missing — go straight to next page
+        window.location.href = 'plantbasedswitch.html';
+    }
 });
