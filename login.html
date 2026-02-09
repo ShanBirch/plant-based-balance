@@ -612,10 +612,44 @@
                     const { data, error } = await supabase.auth.signInWithOAuth({
                         provider: 'google',
                         options: {
-                            redirectTo: `${window.location.origin}/login.html`
+                            redirectTo: `${window.location.origin}/login.html`,
+                            skipBrowserRedirect: true
                         }
                     });
                     if (error) throw error;
+
+                    if (data?.url) {
+                        // Pre-check: verify the provider is enabled before redirecting
+                        // This prevents users from seeing a raw JSON error page
+                        try {
+                            const checkResponse = await fetch(data.url, { redirect: 'manual' });
+
+                            // opaqueredirect means server sent a 3xx redirect (provider is working)
+                            if (checkResponse.type === 'opaqueredirect') {
+                                window.location.href = data.url;
+                                return data;
+                            }
+
+                            // Non-redirect response - likely a provider configuration error
+                            if (checkResponse.status >= 400) {
+                                const errorBody = await checkResponse.json();
+                                throw new Error(errorBody.msg || 'Google sign-in is not available right now. Please use email instead.');
+                            }
+                        } catch (fetchError) {
+                            // Re-throw provider/config errors so the UI can display them
+                            if (fetchError.message && (
+                                fetchError.message.includes('provider') ||
+                                fetchError.message.includes('not available') ||
+                                fetchError.message.includes('not enabled')
+                            )) {
+                                throw fetchError;
+                            }
+                            // Network/CORS error - try redirecting anyway (best effort)
+                        }
+
+                        window.location.href = data.url;
+                    }
+
                     return data;
                 }
             };
@@ -667,6 +701,21 @@
     <!-- Page code -->
     <script>
         async function initializePage() {
+            // Check for OAuth error in URL hash or query params (e.g. failed Google sign-in redirect)
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const queryParams = new URLSearchParams(window.location.search);
+            const oauthError = hashParams.get('error') || queryParams.get('error');
+            const oauthErrorDesc = hashParams.get('error_description') || queryParams.get('error_description');
+
+            if (oauthError) {
+                const message = oauthErrorDesc
+                    ? decodeURIComponent(oauthErrorDesc.replace(/\+/g, ' '))
+                    : 'Sign-in failed. Please try again or use email instead.';
+                showError(message);
+                // Clean up URL so the error doesn't persist on refresh
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
             // Check if already logged in
             const session = await authHelpers.getSession();
             if (session) {
