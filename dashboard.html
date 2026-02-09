@@ -45831,7 +45831,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         // Show BLOCK button before the attack lands
                         showBlockButton();
                         // Brief delay for the block window before fireball spawns
-                        await new Promise(r => setTimeout(r, Math.min(blockWindowMs, 400)));
+                        await new Promise(r => setTimeout(r, Math.min(blockWindowMs, 200)));
 
                         if (battleOver) { scheduleNextAttack(); return; }
 
@@ -45891,7 +45891,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                     // Show BLOCK button before incoming attack
                     showBlockButton();
-                    await new Promise(r => setTimeout(r, Math.min(blockWindowMs, 400)));
+                    await new Promise(r => setTimeout(r, Math.min(blockWindowMs, 200)));
 
                     // Show incoming fireball + hit effects
                     if (isSuper) {
@@ -45995,8 +45995,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             let blockWindowOpen = false;
             let blockTimeout = null;
             let blockSuccess = false;
-            // Block window duration scales with level: 1s at L1, 0.5s at L50+
-            const blockWindowMs = Math.max(500, 1000 - Math.floor(level * 10));
+            // Block window duration scales with level: 0.5s at L1, 0.25s at L50+
+            // Tight timing - block button appears right before impact
+            const blockWindowMs = Math.max(250, 500 - Math.floor(level * 5));
 
             function showBlockButton() {
                 if (battleOver || blockWindowOpen || fireWindowOpen) return;
