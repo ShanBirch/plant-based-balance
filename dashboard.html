@@ -63,6 +63,16 @@
 })();
 </script>
 
+<!-- CRITICAL: Set correct FitGotchi model based on saved gender -->
+<script>
+(function() {
+    const savedGender = localStorage.getItem('userGender');
+    window._earlyGenderModel = savedGender === 'female'
+        ? 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb'
+        : 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb';
+})();
+</script>
+
 <!-- Supabase & Auth Guard -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.stripe.com/v3/"></script>
@@ -5486,7 +5496,6 @@ async function applyAppTheme(themeKey) {
     <div class="learn-mascot-avatar" id="learnMascotAvatar" onclick="window.LearningMascot?.tapped()">
         <model-viewer
             id="mascot-model"
-            src="https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb"
             camera-orbit="0deg 85deg 2.5m"
             field-of-view="30deg"
             disable-zoom
@@ -5498,6 +5507,12 @@ async function applyAppTheme(themeKey) {
             style="width: 100%; height: 100%; pointer-events: none; --poster-color: transparent;"
             interaction-prompt="none">
         </model-viewer>
+        <script>
+        // Set mascot model src immediately using pre-computed gender URL
+        if (window._earlyGenderModel) {
+            document.getElementById('mascot-model').setAttribute('src', window._earlyGenderModel);
+        }
+        </script>
     </div>
 </div>
 
@@ -18815,6 +18830,14 @@ function updateWizardUI() {
         }
     }
 
+    // 2c. Ensure Arny model is loaded for slide 13 (Challenge Your Friends)
+    if(currentWizardStep === 13) {
+        const arnyPreview = document.getElementById('wizard-arny-preview');
+        if (arnyPreview && !arnyPreview.getAttribute('src')) {
+            arnyPreview.setAttribute('src', 'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb');
+        }
+    }
+
     // 3. Initialize character customization on slide 16
     if(currentWizardStep === 16) {
         initializeCharacterCustomization();
@@ -18993,14 +19016,18 @@ function selectGender(gender) {
         femaleBtn.style.background = 'white';
     }
 
-    // Preload the correct FitGotchi model now so it's cached by the time we show it
+    // Set the correct FitGotchi model on all model-viewers (starts download)
     const modelUrl = gender === 'female'
         ? 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb'
         : 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb';
-    const fitgotchiPreview = document.getElementById('wizard-fitgotchi-preview');
-    if (fitgotchiPreview) {
-        fitgotchiPreview.setAttribute('src', modelUrl);
-    }
+    ['wizard-fitgotchi-preview', 'wizard-preview-model', 'mascot-model'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute('src', modelUrl);
+    });
+
+    // Start loading arny model for slide 13 (gives 12 slides of buffer time)
+    const arnyEl = document.getElementById('wizard-arny-preview');
+    if (arnyEl) arnyEl.setAttribute('src', 'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb');
 
     // Auto-advance to next slide after selection
     setTimeout(() => {
@@ -19579,9 +19606,10 @@ function initializeCharacterCustomization() {
     const previewModel = document.getElementById('wizard-preview-model');
     if (previewModel) {
         // Set correct model based on gender
-        if (selectedGender === 'female') {
-            previewModel.setAttribute('src', 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb');
-        }
+        const previewSrc = selectedGender === 'female'
+            ? 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb'
+            : 'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb';
+        previewModel.setAttribute('src', previewSrc);
         previewModel.addEventListener('load', function onLoad() {
             applyWizardCharacterColors();
             previewModel.removeEventListener('load', onLoad);
@@ -27765,7 +27793,6 @@ function openAsClient() {
                 <div style="width: 100%; height: 320px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative;">
                     <model-viewer
                         id="wizard-fitgotchi-preview"
-                        src="https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -27927,7 +27954,6 @@ function openAsClient() {
                 <div style="width: 100%; height: 240px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%); border-radius: 12px; overflow: hidden; margin-bottom: 12px; position: relative;">
                     <model-viewer
                         id="wizard-arny-preview"
-                        src="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -28033,7 +28059,6 @@ function openAsClient() {
                 <div id="wizard-character-preview" style="width: 100%; height: 360px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative;">
                     <model-viewer
                         id="wizard-preview-model"
-                        src="https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -46856,52 +46881,59 @@ document.addEventListener('DOMContentLoaded', async function() {
     ];
 
     // ============================================================
-    // BACKGROUND MODEL PREFETCH - warm browser cache for 3D models
+    // BACKGROUND MODEL PREFETCH - warm browser cache for ALL 3D models
+    // Loads sequentially (one at a time) to avoid flooding Backblaze B2
+    // Priority: active skin > featured rare > other rares > evolution skins
     // ============================================================
-    (function prefetchRareModels() {
-        // Wait for page to finish loading critical content first
+    (function prefetchAllModels() {
         const startPrefetch = () => {
-            // Prioritize: 1) active skin, 2) featured monthly rare, 3) first in collection, 4) rest
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
             const featured = getFeaturedMonthlyRareId();
-            const priorityIds = new Set();
-            if (activeRareSkinId) priorityIds.add(activeRareSkinId);
-            if (featured) priorityIds.add(featured);
-            priorityIds.add(RARE_COLLECTION[0].id); // First in list (shown when opening Rare Drops)
+            const gender = localStorage.getItem('userGender') || 'male';
 
+            // Build prioritized list: active skin first, then featured, then rest
             const priorityModels = [];
-            const remainingModels = [];
+            const otherRareModels = [];
             RARE_COLLECTION.forEach(rare => {
-                if (priorityIds.has(rare.id)) {
+                if (rare.id === activeRareSkinId) {
+                    priorityModels.unshift(rare.model); // active skin first
+                } else if (rare.id === featured) {
                     priorityModels.push(rare.model);
                 } else {
-                    remainingModels.push(rare.model);
+                    otherRareModels.push(rare.model);
                 }
             });
 
-            // Prefetch priority models immediately (low-priority fetch to not block UI)
-            prefetchBatch(priorityModels).then(() => {
-                // Then prefetch remaining models with staggered delays
-                prefetchBatch(remainingModels);
+            // Evolution model URLs for the user's gender (unique models only)
+            const base = 'https://f005.backblazeb2.com/file/shannonsvideos/';
+            const evolutionUrls = gender === 'female'
+                ? [base+'level_1_female_final.glb', base+'level_10_female_final.glb', base+'level_20_female_final.glb', base+'level_30_female_final.glb', base+'level_40_female_final.glb', base+'level_50_female_final.glb']
+                : [base+'level_1_good_final.glb', base+'level_10_real_final.glb', base+'level_20_real_final.glb', base+'level_30_real_final.glb', base+'level_40_real_final.glb', base+'level_50_real_final.glb'];
+
+            // Full queue: priority rares > other rares > evolution skins
+            const allModels = [...priorityModels, ...otherRareModels, ...evolutionUrls];
+
+            // Deduplicate (in case active skin model is also in evolutions etc.)
+            const seen = new Set();
+            const queue = allModels.filter(url => {
+                if (seen.has(url)) return false;
+                seen.add(url);
+                return true;
             });
+
+            // Prefetch one at a time with 500ms gaps
+            let i = 0;
+            function prefetchNext() {
+                if (i >= queue.length) return;
+                const url = queue[i++];
+                fetch(url, { mode: 'cors', credentials: 'omit' })
+                    .then(() => console.log('Prefetched:', url.split('/').pop()))
+                    .catch(() => {})
+                    .finally(() => setTimeout(prefetchNext, 500));
+            }
+            prefetchNext();
         };
 
-        function prefetchBatch(urls) {
-            const fetches = urls.map((url, i) => {
-                return new Promise(resolve => {
-                    // Stagger by 200ms each to avoid flooding the network
-                    setTimeout(() => {
-                        fetch(url, { mode: 'cors', credentials: 'omit' })
-                            .then(() => console.log('Prefetched:', url.split('/').pop()))
-                            .catch(() => {}) // Silently ignore prefetch failures
-                            .finally(resolve);
-                    }, i * 200);
-                });
-            });
-            return Promise.all(fetches);
-        }
-
-        // Helper to get featured rare ID without creating the full object
         function getFeaturedMonthlyRareId() {
             const now = new Date();
             const monthIndex = now.getFullYear() * 12 + now.getMonth();
@@ -46909,12 +46941,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             return rare ? rare.id : null;
         }
 
-        // Start prefetching after page is idle (use requestIdleCallback if available)
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => startPrefetch(), { timeout: 5000 });
-        } else {
-            setTimeout(startPrefetch, 3000);
-        }
+        // Wait 5 seconds after page load to let the main FitGotchi model load first
+        setTimeout(startPrefetch, 5000);
     })();
 
     // Helper: check if a rare skin is unlocked
