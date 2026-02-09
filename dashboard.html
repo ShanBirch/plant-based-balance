@@ -4597,6 +4597,8 @@ async function applyAppTheme(themeKey) {
 
     .battle-action-container.active {
         display: flex;
+        align-items: center;
+        gap: 12px;
         pointer-events: auto;
     }
 
@@ -4691,6 +4693,75 @@ async function applyAppTheme(themeKey) {
 
     .battle-bash-btn.bash-rumble {
         animation: bashRumble 0.35s ease-out;
+    }
+
+    /* FIRE and BLOCK action buttons */
+    .battle-action-btn {
+        width: 64px;
+        height: 64px;
+        border: none;
+        border-radius: 50%;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        position: relative;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        touch-action: manipulation;
+        animation: actionBtnAppear 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .battle-action-btn .action-btn-icon { font-size: 1.3rem; line-height: 1; }
+    .battle-action-btn .action-btn-label { font-size: 0.5rem; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+    .battle-action-btn:active { transform: scale(0.85); }
+
+    .battle-fire-btn {
+        background: radial-gradient(circle at 30% 30%, #FFD700, #ff6b00);
+        box-shadow: 0 0 20px rgba(255,215,0,0.7), 0 0 40px rgba(255,107,0,0.4);
+        animation: actionBtnAppear 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), firePulse 0.5s ease-in-out infinite alternate;
+    }
+    @keyframes firePulse {
+        0% { box-shadow: 0 0 15px rgba(255,215,0,0.6), 0 0 30px rgba(255,107,0,0.3); transform: scale(1); }
+        100% { box-shadow: 0 0 25px rgba(255,215,0,0.9), 0 0 50px rgba(255,107,0,0.5); transform: scale(1.08); }
+    }
+
+    .battle-block-btn {
+        background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb);
+        box-shadow: 0 0 20px rgba(96,165,250,0.7), 0 0 40px rgba(37,99,235,0.4);
+        animation: actionBtnAppear 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), blockPulse 0.4s ease-in-out infinite alternate;
+    }
+    @keyframes blockPulse {
+        0% { box-shadow: 0 0 15px rgba(96,165,250,0.6), 0 0 30px rgba(37,99,235,0.3); transform: scale(1); }
+        100% { box-shadow: 0 0 25px rgba(96,165,250,0.9), 0 0 50px rgba(37,99,235,0.5); transform: scale(1.08); }
+    }
+
+    @keyframes actionBtnAppear {
+        0% { transform: scale(0); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes actionBtnDisappear {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(0); opacity: 0; }
+    }
+
+    /* Shield overlay when block succeeds */
+    .battle-shield-overlay {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at center, rgba(96,165,250,0.3) 0%, transparent 70%);
+        border: 3px solid rgba(96,165,250,0.6);
+        border-radius: 12px;
+        z-index: 997;
+        pointer-events: none;
+        animation: shieldFlash 0.5s ease-out forwards;
+    }
+    @keyframes shieldFlash {
+        0% { opacity: 1; transform: scale(0.95); }
+        50% { opacity: 0.8; transform: scale(1.02); }
+        100% { opacity: 0; transform: scale(1); }
     }
 
     /* ============================================================
@@ -5523,8 +5594,19 @@ async function applyAppTheme(themeKey) {
                 </div>
             </div>
 
-            <!-- Battle Action Button (single bash button - Digimon style) -->
+            <!-- Battle Action Buttons -->
             <div id="battle-action-container" class="battle-action-container">
+                <!-- Block button (appears before incoming attacks) -->
+                <button id="battle-btn-block" class="battle-action-btn battle-block-btn" style="display:none;">
+                    <span class="action-btn-icon">🛡️</span>
+                    <span class="action-btn-label">BLOCK</span>
+                </button>
+                <!-- Fire button (appears when super is charged) -->
+                <button id="battle-btn-fire" class="battle-action-btn battle-fire-btn" style="display:none;">
+                    <span class="action-btn-icon">🔥</span>
+                    <span class="action-btn-label">FIRE!</span>
+                </button>
+                <!-- Bash button (always visible during battle) -->
                 <button id="battle-btn-bash" class="battle-bash-btn">
                     <span class="bash-icon">👊</span>
                     <span class="bash-label">BASH!</span>
@@ -45687,14 +45769,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
 
-            // Auto-attack timer: character attacks every 2.5s, super replaces normal when ready
+            // Auto-attack timer: character fires normal attacks every 2.5s
+            // Super attacks are now player-triggered via the FIRE button
             let autoAttackInterval = null;
             function startAutoAttacks() {
                 autoAttackInterval = setInterval(() => {
                     if (battleOver) return;
-                    if (superReady) {
-                        fireSuperAttack();
-                    } else {
+                    // Only fire normal attacks - super is manual via FIRE button
+                    if (!superReady) {
                         fireNormalAttack();
                     }
                 }, 2500);
@@ -45746,6 +45828,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                         botAttackCount++;
                         const isSuper = (botAttackCount % superEvery === 0);
 
+                        // Show BLOCK button before the attack lands
+                        showBlockButton();
+                        // Brief delay for the block window before fireball spawns
+                        await new Promise(r => setTimeout(r, Math.min(blockWindowMs, 400)));
+
+                        if (battleOver) { scheduleNextAttack(); return; }
+
                         if (isSuper) {
                             await spawnIncomingTripleFireball(widget);
                         } else {
@@ -45755,19 +45844,28 @@ document.addEventListener('DOMContentLoaded', async function() {
                         viewer.play();
                         playSound('hit');
 
+                        // Check if player blocked
+                        const blocked = consumeBlock();
+
                         const hitFlash = document.createElement('div');
-                        hitFlash.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:${isSuper ? 'cyan' : 'red'};opacity:${isSuper ? '0.4' : '0.3'};z-index:998;pointer-events:none;`;
+                        if (blocked) {
+                            hitFlash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(96,165,250,0.3);z-index:998;pointer-events:none;';
+                        } else {
+                            hitFlash.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:${isSuper ? 'cyan' : 'red'};opacity:${isSuper ? '0.4' : '0.3'};z-index:998;pointer-events:none;`;
+                        }
                         widget.appendChild(hitFlash);
                         setTimeout(() => hitFlash.remove(), isSuper ? 250 : 150);
 
-                        // Super attacks deal 1.5x damage
+                        // Calculate damage (50% reduction if blocked)
                         const dmgVariance = 0.75 + Math.random() * 0.5;
                         const dmgMultiplier = isSuper ? 1.5 : 1.0;
-                        playerHP -= Math.floor(enemyBaseDmg * dmgVariance * dmgMultiplier);
+                        const blockMultiplier = blocked ? 0.5 : 1.0;
+                        const finalDmg = Math.floor(enemyBaseDmg * dmgVariance * dmgMultiplier * blockMultiplier);
+                        playerHP -= finalDmg;
                         updateHPBars();
 
-                        // Screen shake on super
-                        if (isSuper) {
+                        // Screen shake on super (less if blocked)
+                        if (isSuper && !blocked) {
                             widget.style.animation = 'none';
                             widget.offsetHeight;
                             widget.style.animation = 'battleShake 0.4s ease';
@@ -45791,15 +45889,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const damage = payload.payload.damage || 0;
                     const isSuper = payload.payload.isSuper;
 
+                    // Show BLOCK button before incoming attack
+                    showBlockButton();
+                    await new Promise(r => setTimeout(r, Math.min(blockWindowMs, 400)));
+
                     // Show incoming fireball + hit effects
                     if (isSuper) {
-                        // Triple incoming special fireball (blue/cyan)
                         await spawnIncomingTripleFireball(widget);
-
-                        // Screen shake from super hit
-                        widget.style.animation = 'none';
-                        widget.offsetHeight;
-                        widget.style.animation = 'battleShake 0.4s ease';
                     } else {
                         await spawnIncomingBattleFireball(widget);
                     }
@@ -45808,14 +45904,27 @@ document.addEventListener('DOMContentLoaded', async function() {
                     viewer.play();
                     playSound('hit');
 
-                    // Flash color matches attack type
+                    // Check if player blocked
+                    const blocked = consumeBlock();
+
                     const hitFlash = document.createElement('div');
-                    hitFlash.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:${isSuper ? 'cyan' : 'red'};opacity:${isSuper ? '0.4' : '0.3'};z-index:998;pointer-events:none;`;
+                    if (blocked) {
+                        hitFlash.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(96,165,250,0.3);z-index:998;pointer-events:none;';
+                    } else {
+                        hitFlash.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:${isSuper ? 'cyan' : 'red'};opacity:${isSuper ? '0.4' : '0.3'};z-index:998;pointer-events:none;`;
+                        // Screen shake on unblocked super
+                        if (isSuper) {
+                            widget.style.animation = 'none';
+                            widget.offsetHeight;
+                            widget.style.animation = 'battleShake 0.4s ease';
+                        }
+                    }
                     widget.appendChild(hitFlash);
                     setTimeout(() => hitFlash.remove(), isSuper ? 250 : 150);
 
-                    // Take real damage from opponent
-                    playerHP -= damage;
+                    // Take damage (50% reduction if blocked)
+                    const blockMult = blocked ? 0.5 : 1.0;
+                    playerHP -= Math.floor(damage * blockMult);
                     updateHPBars();
                     if (playerHP <= 0) battleOver = true;
                 });
@@ -45830,6 +45939,116 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // Bash button handler — bashing charges the super attack
+            // === FIRE BUTTON LOGIC ===
+            const fireBtn = document.getElementById('battle-btn-fire');
+            let fireTimeout = null;
+            let fireWindowOpen = false;
+
+            function showFireButton() {
+                if (battleOver || fireWindowOpen) return;
+                fireWindowOpen = true;
+                if (fireBtn) {
+                    fireBtn.style.display = 'flex';
+                    fireBtn.style.animation = 'actionBtnAppear 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), firePulse 0.5s ease-in-out infinite alternate';
+                }
+                if (bashBtn) bashBtn.classList.add('attack-ready');
+                if (navigator.vibrate) navigator.vibrate([50, 30, 100]);
+
+                // 1.5s window to tap FIRE - miss it and charge resets
+                fireTimeout = setTimeout(() => {
+                    if (fireWindowOpen) {
+                        hideFireButton(true); // missed - reset charge
+                    }
+                }, 1500);
+            }
+
+            function hideFireButton(missed) {
+                fireWindowOpen = false;
+                if (fireTimeout) { clearTimeout(fireTimeout); fireTimeout = null; }
+                if (fireBtn) {
+                    fireBtn.style.animation = 'actionBtnDisappear 0.15s ease-out forwards';
+                    setTimeout(() => { fireBtn.style.display = 'none'; }, 150);
+                }
+                if (bashBtn) bashBtn.classList.remove('attack-ready');
+                if (missed) {
+                    // Charge lost - reset bash count
+                    superReady = false;
+                    bashCount = 0;
+                    updateBashUI();
+                    if (typeof showToast === 'function') showToast('Special missed! Charge again...', 'info');
+                }
+            }
+
+            function onFireTap() {
+                if (!fireWindowOpen || battleOver) return;
+                hideFireButton(false);
+                fireSuperAttack();
+            }
+
+            if (fireBtn) {
+                fireBtn.addEventListener('click', onFireTap);
+                fireBtn.addEventListener('touchstart', (e) => { e.preventDefault(); onFireTap(); }, { passive: false });
+            }
+
+            // === BLOCK BUTTON LOGIC ===
+            const blockBtn = document.getElementById('battle-btn-block');
+            let blockWindowOpen = false;
+            let blockTimeout = null;
+            let blockSuccess = false;
+            // Block window duration scales with level: 1s at L1, 0.5s at L50+
+            const blockWindowMs = Math.max(500, 1000 - Math.floor(level * 10));
+
+            function showBlockButton() {
+                if (battleOver || blockWindowOpen || fireWindowOpen) return;
+                blockWindowOpen = true;
+                blockSuccess = false;
+                if (blockBtn) {
+                    blockBtn.style.display = 'flex';
+                    blockBtn.style.animation = 'actionBtnAppear 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), blockPulse 0.4s ease-in-out infinite alternate';
+                }
+
+                blockTimeout = setTimeout(() => {
+                    hideBlockButton();
+                }, blockWindowMs);
+            }
+
+            function hideBlockButton() {
+                blockWindowOpen = false;
+                if (blockTimeout) { clearTimeout(blockTimeout); blockTimeout = null; }
+                if (blockBtn) {
+                    blockBtn.style.animation = 'actionBtnDisappear 0.15s ease-out forwards';
+                    setTimeout(() => { blockBtn.style.display = 'none'; }, 150);
+                }
+            }
+
+            function onBlockTap() {
+                if (!blockWindowOpen || battleOver) return;
+                blockSuccess = true;
+                hideBlockButton();
+
+                // Show shield visual
+                const shield = document.createElement('div');
+                shield.className = 'battle-shield-overlay';
+                widget.appendChild(shield);
+                setTimeout(() => shield.remove(), 500);
+
+                if (navigator.vibrate) navigator.vibrate([30, 20, 30]);
+            }
+
+            if (blockBtn) {
+                blockBtn.addEventListener('click', onBlockTap);
+                blockBtn.addEventListener('touchstart', (e) => { e.preventDefault(); onBlockTap(); }, { passive: false });
+            }
+
+            // Returns true if block is active (damage should be halved)
+            function consumeBlock() {
+                if (blockSuccess) {
+                    blockSuccess = false;
+                    return true;
+                }
+                return false;
+            }
+
             function onBash() {
                 if (battleOver) return;
                 bashCount++;
@@ -45845,11 +46064,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     bashBtn.classList.add('bash-rumble');
                 }
 
-                // When bash threshold reached, mark super as ready (next auto-attack becomes super)
-                if (bashCount >= tapsNeeded && !superReady) {
+                // When bash threshold reached, show FIRE button instead of auto-firing
+                if (bashCount >= tapsNeeded && !superReady && !fireWindowOpen) {
                     superReady = true;
-                    if (bashBtn) bashBtn.classList.add('attack-ready');
-                    if (navigator.vibrate) navigator.vibrate([50, 30, 100]); // strong burst for super ready
+                    showFireButton();
                 }
             }
 
@@ -45936,8 +46154,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (autoAttackInterval) clearInterval(autoAttackInterval);
             if (enemyAttackInterval) clearTimeout(enemyAttackInterval);
             if (battleTimer) clearInterval(battleTimer);
+            if (fireTimeout) clearTimeout(fireTimeout);
+            if (blockTimeout) clearTimeout(blockTimeout);
             bashBtn.removeEventListener('click', onBash);
             bashBtn.replaceWith(bashBtn.cloneNode(true)); // Remove all listeners including touch
+
+            // Hide fire and block buttons
+            if (fireBtn) { fireBtn.style.display = 'none'; fireBtn.replaceWith(fireBtn.cloneNode(true)); }
+            if (blockBtn) { blockBtn.style.display = 'none'; blockBtn.replaceWith(blockBtn.cloneNode(true)); }
 
             // Restore hidden buttons
             if (battleTriggerBtn) battleTriggerBtn.style.display = '';
