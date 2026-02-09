@@ -14454,13 +14454,13 @@ function viewWorkoutHistoryDetail(date) {
                 </h3>
             </div>
             <div style="padding: 0;">
-                <!-- Hormone Type / Energy Level (gender-specific) - Read Only -->
+                <!-- Energy Level - Read Only -->
                 <div class="setting-row" style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <div id="profile-type-label" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Hormone Type</div>
+                        <div id="profile-type-label" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Energy Level</div>
                         <div id="profile-type-desc" style="font-size: 0.8rem; color: var(--text-muted);">From your onboarding quiz</div>
                     </div>
-                    <div id="profile-type-display" style="font-weight: 700; color: var(--primary);">Cortisol</div>
+                    <div id="profile-type-display" style="font-weight: 700; color: var(--primary);"></div>
                 </div>
 
                 <!-- Equipment - Read Only, updated via daily check-in -->
@@ -18257,11 +18257,8 @@ function checkMealPlanAccess() {
     let purchasedPlans = [];
     try { purchasedPlans = JSON.parse(localStorage.getItem('purchased_meal_plans') || '[]'); } catch(e) {}
 
-    // Quiz onboarders get hormone plan
-    if (hormoneProfile && programStartDate) {
-        const planSlug = hormoneProfile === 'ESTROGEN' ? 'hormone-estrogen' : 'hormone-cortisol';
-        return { hasAccess: true, source: 'quiz', planSlug: planSlug };
-    }
+    // Quiz onboarders no longer auto-get hormone plan - they see calorie tracker + browse plans
+    // Meal plan access is now only via subscription or purchase
 
     // Subscribers get all plans
     if (subscriptionStatus === 'active') {
@@ -18832,18 +18829,11 @@ function updateWizardUI() {
         loadWizardReferralCode();
     }
 
-    // 4. Update final slide with hormone profile goal
+    // 4. Update final slide goal text
     if(currentWizardStep === 19) {
-        const hormoneProfile = sessionStorage.getItem('userResult') || 'CORTISOL';
         const goalDiv = document.getElementById('wizard-hormone-goal');
         if(goalDiv) {
-            if(hormoneProfile === 'ESTROGEN') {
-                goalDiv.innerHTML = 'Goal: Balance Estrogen & Support Hormones';
-            } else if (selectedGender === 'male') {
-                goalDiv.innerHTML = 'Goal: Optimize Performance & Build Strength';
-            } else {
-                goalDiv.innerHTML = 'Goal: Reduce Cortisol & Restore Balance';
-            }
+            goalDiv.innerHTML = 'Goal: Get Stronger & Level Up Your FitGotchi 💪';
         }
     }
 
@@ -20352,6 +20342,24 @@ async function finishOnboarding() {
     localStorage.setItem('lastWeighInPromptDate', new Date().toDateString());
     const weighInCard = document.getElementById('daily-weigh-in-card');
     if (weighInCard) weighInCard.style.display = 'none';
+
+    // Grant 1200 starting coins to new accounts
+    if (window.currentUser) {
+        try {
+            const userId = window.currentUser.id || window.currentUser.user_id;
+            await supabase.rpc('credit_coins', {
+                p_user_id: userId,
+                p_amount: 1200,
+                p_reason: 'Welcome bonus - starting coins'
+            });
+            console.log('✅ Granted 1200 starting coins');
+            if (typeof showToast === 'function') {
+                showToast('Welcome! You received 1,200 coins! 🪙', 'success');
+            }
+        } catch (e) {
+            console.error('Failed to grant starting coins:', e);
+        }
+    }
 
     // Save character customization colors
     if (typeof saveWizardCharacterColors === 'function') {
@@ -27987,7 +27995,7 @@ function openAsClient() {
                 <p style="color:#64748b; margin-bottom:20px;">Your personalized plan is ready.</p>
 
                 <div id="wizard-hormone-goal" style="background:var(--secondary); color:white; padding:15px; border-radius:12px; display:inline-block; font-weight:600; margin-bottom:20px;">
-                    Goal: Reduce Cortisol & Detox Estrogen
+                    Goal: Get Stronger & Level Up Your FitGotchi 💪
                 </div>
 
                 <div style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-top:10px;">
@@ -37974,6 +37982,21 @@ function checkNewAnimationUnlocks(previousLevel, newLevel) {
     const mv = document.getElementById('tamagotchi-model');
     if (!mv || !mv.availableAnimations) return;
 
+    // Check for milestone unlocks (character skin, battle mode, backgrounds)
+    const MILESTONE_UNLOCKS = [
+        { level: 5, displayName: 'Newcomer Skin', icon: '🧑', category: 'milestone' },
+        { level: 5, displayName: 'Gym Background', icon: '🏋️', category: 'milestone' },
+        { level: 10, displayName: 'Battle Mode', icon: '🥊', category: 'milestone' },
+        { level: 10, displayName: 'Rising Skin', icon: '💪', category: 'milestone' },
+    ];
+
+    const newMilestones = MILESTONE_UNLOCKS.filter(m => previousLevel < m.level && newLevel >= m.level);
+    newMilestones.forEach((milestone, index) => {
+        setTimeout(() => {
+            showAnimationUnlockToast(milestone);
+        }, 1500 + (index * 3000));
+    });
+
     // Find animations that were just unlocked
     const newlyUnlocked = ANIMATION_UNLOCKS.filter(unlock => {
         // Was locked before, unlocked now
@@ -37988,11 +38011,12 @@ function checkNewAnimationUnlocks(previousLevel, newLevel) {
         return wasLocked && isUnlockedNow && existsInModel;
     });
 
-    // Show unlock toasts with delay between each
+    // Show unlock toasts with delay between each (after milestones)
+    const milestoneDelay = newMilestones.length * 3000 + 1500;
     newlyUnlocked.forEach((unlock, index) => {
         setTimeout(() => {
             showAnimationUnlockToast(unlock);
-        }, 2000 + (index * 3500)); // Start after level-up toast, stagger each
+        }, milestoneDelay + (index * 3500));
     });
 }
 
@@ -44004,40 +44028,44 @@ document.addEventListener('DOMContentLoaded', async function() {
         // bow, say_goodbye, block, die_1, volleyball, kick_2, dance_5, agree,
         // stand, angry_3, heart_pose
         const ANIMATION_UNLOCKS = [
-            { name: 'greet', displayName: 'Wave', unlockLevel: 1, icon: '👋', category: 'greetings' },
-            { name: 'bow', displayName: 'Bow', unlockLevel: 5, icon: '🙇', category: 'greetings' },
-            { name: 'greet_1', displayName: 'Hey!', unlockLevel: 10, icon: '🤙', category: 'greetings' },
+            // Baby (lvl 1-4) can only walk - everything else unlocks at lvl 5+
+            { name: 'walk', displayName: 'Walk', unlockLevel: 1, icon: '🚶', category: 'special' },
+
+            // Greetings - unlock from lvl 5
+            { name: 'greet', displayName: 'Wave', unlockLevel: 5, icon: '👋', category: 'greetings' },
+            { name: 'bow', displayName: 'Bow', unlockLevel: 8, icon: '🙇', category: 'greetings' },
+            { name: 'greet_1', displayName: 'Hey!', unlockLevel: 12, icon: '🤙', category: 'greetings' },
             { name: 'say_goodbye', displayName: 'Goodbye', unlockLevel: 20, icon: '👋', category: 'greetings' },
 
-            // Reactions - early unlocks
-            { name: 'agree', displayName: 'Agree', unlockLevel: 1, icon: '👍', category: 'reactions' },
-            { name: 'fold_arms', displayName: 'Fold Arms', unlockLevel: 3, icon: '🤔', category: 'reactions' },
-            { name: 'sad_stand', displayName: 'Sad', unlockLevel: 5, icon: '😔', category: 'reactions' },
-            { name: 'angry', displayName: 'Angry', unlockLevel: 7, icon: '😠', category: 'reactions' },
-            { name: 'angry_1', displayName: 'Annoyed', unlockLevel: 10, icon: '😤', category: 'reactions' },
-            { name: 'lose', displayName: 'Lose', unlockLevel: 15, icon: '😞', category: 'reactions' },
-            { name: 'depressed_walk', displayName: 'Sad Walk', unlockLevel: 20, icon: '🚶', category: 'reactions' },
-            { name: 'angry_walk', displayName: 'Angry Walk', unlockLevel: 25, icon: '😡', category: 'reactions' },
+            // Reactions - unlock from lvl 5
+            { name: 'agree', displayName: 'Agree', unlockLevel: 5, icon: '👍', category: 'reactions' },
+            { name: 'fold_arms', displayName: 'Fold Arms', unlockLevel: 7, icon: '🤔', category: 'reactions' },
+            { name: 'sad_stand', displayName: 'Sad', unlockLevel: 9, icon: '😔', category: 'reactions' },
+            { name: 'angry', displayName: 'Angry', unlockLevel: 12, icon: '😠', category: 'reactions' },
+            { name: 'angry_1', displayName: 'Annoyed', unlockLevel: 15, icon: '😤', category: 'reactions' },
+            { name: 'lose', displayName: 'Lose', unlockLevel: 18, icon: '😞', category: 'reactions' },
+            { name: 'depressed_walk', displayName: 'Sad Walk', unlockLevel: 22, icon: '🚶', category: 'reactions' },
+            { name: 'angry_walk', displayName: 'Angry Walk', unlockLevel: 28, icon: '😡', category: 'reactions' },
 
-            // Celebration animations
-            { name: 'laugh', displayName: 'Laugh', unlockLevel: 1, icon: '😄', category: 'celebrations' },
-            { name: 'clap', displayName: 'Clap', unlockLevel: 5, icon: '👏', category: 'celebrations' },
-            { name: 'laugh_1', displayName: 'Giggle', unlockLevel: 8, icon: '😂', category: 'celebrations' },
-            { name: 'arms_up_still', displayName: 'Arms Up', unlockLevel: 12, icon: '🙌', category: 'celebrations' },
-            { name: 'heart_pose', displayName: 'Heart Pose', unlockLevel: 18, icon: '❤️', category: 'celebrations' },
+            // Celebration animations - unlock from lvl 5
+            { name: 'laugh', displayName: 'Laugh', unlockLevel: 5, icon: '😄', category: 'celebrations' },
+            { name: 'clap', displayName: 'Clap', unlockLevel: 8, icon: '👏', category: 'celebrations' },
+            { name: 'laugh_1', displayName: 'Giggle', unlockLevel: 12, icon: '😂', category: 'celebrations' },
+            { name: 'arms_up_still', displayName: 'Arms Up', unlockLevel: 16, icon: '🙌', category: 'celebrations' },
+            { name: 'heart_pose', displayName: 'Heart Pose', unlockLevel: 20, icon: '❤️', category: 'celebrations' },
             { name: 'laugh_2', displayName: 'LOL', unlockLevel: 25, icon: '🤣', category: 'celebrations' },
 
-            // Exercise animations
+            // Exercise animations - unlock from lvl 5
             { name: 'warm_up', displayName: 'Warm Up', unlockLevel: 5, icon: '🔥', category: 'exercise' },
             { name: 'stretch', displayName: 'Stretch', unlockLevel: 10, icon: '🧘', category: 'exercise' },
             { name: 'pushup', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
             { name: 'basketball', displayName: 'Basketball', unlockLevel: 20, icon: '🏀', category: 'exercise' },
             { name: 'volleyball', displayName: 'Volleyball', unlockLevel: 25, icon: '🏐', category: 'exercise' },
 
-            // Combat/Fighting animations
-            { name: 'boxing', displayName: 'Boxing', unlockLevel: 1, icon: '🥊', category: 'combat' },
-            { name: 'kick', displayName: 'Kick', unlockLevel: 10, icon: '🦵', category: 'combat' },
-            { name: 'karate', displayName: 'Karate', unlockLevel: 15, icon: '🥋', category: 'combat' },
+            // Combat/Fighting animations - unlock from lvl 10
+            { name: 'boxing', displayName: 'Boxing', unlockLevel: 10, icon: '🥊', category: 'combat' },
+            { name: 'kick', displayName: 'Kick', unlockLevel: 15, icon: '🦵', category: 'combat' },
+            { name: 'karate', displayName: 'Karate', unlockLevel: 18, icon: '🥋', category: 'combat' },
             { name: 'boxing_1', displayName: 'Boxing Combo', unlockLevel: 22, icon: '🥊', category: 'combat' },
             { name: 'hit_to_1', displayName: 'Punch', unlockLevel: 28, icon: '👊', category: 'combat' },
             { name: 'boxing_2', displayName: 'Boxing Pro', unlockLevel: 35, icon: '💥', category: 'combat' },
@@ -44049,7 +44077,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             { name: 'stand', displayName: 'Stand Tall', unlockLevel: 20, icon: '🧍', category: 'poses' },
             { name: 'pitch', displayName: 'Pitch', unlockLevel: 30, icon: '⚾', category: 'poses' },
 
-            // Dance animations
+            // Dance animations - unlock from lvl 5
             { name: 'dance', displayName: 'Dance', unlockLevel: 5, icon: '💃', category: 'dance' },
             { name: 'strut', displayName: 'Strut', unlockLevel: 10, icon: '🚶', category: 'dance' },
             { name: 'dance_1', displayName: 'Groove', unlockLevel: 15, icon: '🎵', category: 'dance' },
@@ -44063,12 +44091,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             { name: 'sit', displayName: 'Sit Down', unlockLevel: 40, icon: '🪑', category: 'special' },
             { name: 'die', displayName: 'Drama Fall', unlockLevel: 50, icon: '🎭', category: 'special' },
             { name: 'die_1', displayName: 'Play Dead', unlockLevel: 60, icon: '😵', category: 'special' },
-            { name: 'walk', displayName: 'Walk', unlockLevel: 1, icon: '🚶', category: 'special' },
         ];
 
         // Background unlock system - backgrounds unlocked at specific levels
         const BACKGROUND_UNLOCKS = [
-            { name: 'gym', displayName: 'Gym', unlockLevel: 1, icon: '🏋️', theme: 'tamagotchi-bg-gym', image: './assets/gym_bg.jpeg' },
+            { name: 'none', displayName: 'Default', unlockLevel: 1, icon: '🌑', theme: 'tamagotchi-bg-none', image: null },
+            { name: 'gym', displayName: 'Gym', unlockLevel: 5, icon: '🏋️', theme: 'tamagotchi-bg-gym', image: './assets/gym_bg.jpeg' },
             { name: 'park', displayName: 'Park', unlockLevel: 10, icon: '🌳', theme: 'tamagotchi-bg-park', image: './assets/park.jpeg' },
             { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏠', theme: 'tamagotchi-bg-home', image: './assets/home.jpeg' },
             { name: 'beach', displayName: 'Beach', unlockLevel: 30, icon: '🏖️', theme: 'tamagotchi-bg-beach', image: './assets/beach.jpeg' },
@@ -44656,26 +44684,21 @@ document.addEventListener('DOMContentLoaded', async function() {
     <script>
     (function() {
         function initBackground() {
-            const savedBg = localStorage.getItem('selectedBackground') || 'gym';
+            const savedBg = localStorage.getItem('selectedBackground') || 'none';
             if (window.selectBackground) {
                 window.selectBackground(savedBg);
                 return;
             }
-            // Fallback if selectBackground not yet available
+            // Fallback if selectBackground not yet available - default to plain dark background
             const container = document.getElementById('tamagotchi-widget-container');
             if (!container) return;
-            const ALL_BG = ['tamagotchi-bg-gym','tamagotchi-bg-park','tamagotchi-bg-home','tamagotchi-bg-beach','tamagotchi-bg-mountain','tamagotchi-bg-dojo','tamagotchi-bg-arena'];
+            const ALL_BG = ['tamagotchi-bg-none','tamagotchi-bg-gym','tamagotchi-bg-park','tamagotchi-bg-home','tamagotchi-bg-beach','tamagotchi-bg-mountain','tamagotchi-bg-dojo','tamagotchi-bg-arena'];
             ALL_BG.forEach(t => container.classList.remove(t));
-            container.classList.add('tamagotchi-bg-gym');
+            container.classList.add('tamagotchi-bg-none');
             const staticBg = document.getElementById('tamagotchi-static-bg');
             const bgModel = document.getElementById('tamagotchi-bg-model');
             const floor = document.getElementById('tamagotchi-floor');
-            if (staticBg) {
-                staticBg.style.display = 'block';
-                staticBg.style.backgroundImage = "url('./assets/gym_bg.jpeg')";
-                staticBg.style.backgroundSize = 'cover';
-                staticBg.style.backgroundPosition = 'center center';
-            }
+            if (staticBg) staticBg.style.display = 'none';
             if (bgModel) bgModel.style.display = 'none';
             if (floor) floor.style.display = 'none';
         }
@@ -46654,7 +46677,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             savedBgClasses.forEach(c => widget.classList.add(c));
             const restoreStaticBg = document.getElementById('tamagotchi-static-bg');
             if (restoreStaticBg) {
-                const savedBgName = localStorage.getItem('selectedBackground') || 'gym';
+                const savedBgName = localStorage.getItem('selectedBackground') || 'none';
                 const savedBgObj = (window.BACKGROUND_UNLOCKS || []).find(b => b.name === savedBgName);
                 const restoreImage = savedBgObj && savedBgObj.image ? savedBgObj.image : './assets/gym_bg.jpeg';
                 restoreStaticBg.style.display = 'block';
