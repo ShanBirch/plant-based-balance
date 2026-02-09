@@ -5861,7 +5861,7 @@ async function applyAppTheme(themeKey) {
                     .from('user_points')
                     .select('lifetime_points')
                     .eq('user_id', window.currentUser.id)
-                    .single();
+                    .maybeSingle();
 
                 if (currentPoints) {
                     await supabaseClient
@@ -6420,7 +6420,9 @@ async function applyAppTheme(themeKey) {
 
             // Expose function globally for re-triggering
             window.applyMealBadges = function(symptomList) {
-                const symptoms = symptomList || JSON.parse(sessionStorage.getItem('userProfile') || '{}').symptoms || [];
+                let _parsedProfile = {};
+                try { _parsedProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
+                const symptoms = symptomList || _parsedProfile.symptoms || [];
 
                 // Map symptoms to keywords/meal types
                 const mappings = {
@@ -6665,15 +6667,19 @@ async function applyAppTheme(themeKey) {
     }
 
     window.saveDayReflection = function(id) {
-        const val = document.getElementById('ref-' + id).value;
+        const el = document.getElementById('ref-' + id);
+        if (!el) return;
+        const val = el.value;
         if (!val.trim()) return;
-        
+
         // Save locally
         localStorage.setItem('reflection_' + id, val);
-        
+
         const status = document.getElementById('status-' + id);
-        status.textContent = "Saved to your journal.";
-        setTimeout(() => { status.textContent = ""; }, 3000);
+        if (status) {
+            status.textContent = "Saved to your journal.";
+            setTimeout(() => { status.textContent = ""; }, 3000);
+        }
 
         // Re-render journal history
         loadJournalHistory();
@@ -6708,7 +6714,8 @@ async function applyAppTheme(themeKey) {
     }
 
     window.closeCompletionModal = function() {
-        document.getElementById('day-completion-modal').style.display = 'none';
+        const modal = document.getElementById('day-completion-modal');
+        if (modal) modal.style.display = 'none';
     }
 
     window.triggerConfetti = function() {
@@ -6748,7 +6755,8 @@ async function applyAppTheme(themeKey) {
         { id: 'push_01', name: 'Kneeling Push Up', thumb: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=150', video: 'WPHG8tJ9bO0', sets: 3 }
     ];
 
-    let myWorkout = JSON.parse(localStorage.getItem('myCurrentWorkout')) || DEFAULT_WORKOUT;
+    let myWorkout = DEFAULT_WORKOUT;
+    try { myWorkout = JSON.parse(localStorage.getItem('myCurrentWorkout')) || DEFAULT_WORKOUT; } catch(e) {}
     let rapidApiKey = localStorage.getItem('rapidApiKey') || ''; // User needs to set this
 
     // 2. Initialize
@@ -6802,7 +6810,9 @@ async function applyAppTheme(themeKey) {
 
     // 4. ExerciseDB Integration (RapidAPI)
     window.searchRapidAPI = async function() {
-        const query = document.getElementById('db-search-input').value.trim();
+        const searchEl = document.getElementById('db-search-input');
+        if (!searchEl) return;
+        const query = searchEl.value.trim();
         const grid = document.getElementById('library-results');
         
         if(!rapidApiKey) {
@@ -7036,13 +7046,15 @@ async function applyAppTheme(themeKey) {
     }
 
     function saveChatToStorage(text, sender) {
-        const chat = JSON.parse(localStorage.getItem('myChatStats') || '[]');
+        let chat = [];
+        try { chat = JSON.parse(localStorage.getItem('myChatStats') || '[]'); } catch(e) {}
         chat.push({ text, sender, time: new Date().toISOString() });
         localStorage.setItem('myChatStats', JSON.stringify(chat));
     }
 
     function loadChat() {
-        const chat = JSON.parse(localStorage.getItem('myChatStats') || '[]');
+        let chat = [];
+        try { chat = JSON.parse(localStorage.getItem('myChatStats') || '[]'); } catch(e) {}
         chat.forEach(msg => addMessage(msg.text, msg.sender));
     }
 
@@ -7114,7 +7126,9 @@ async function applyAppTheme(themeKey) {
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             if (key.startsWith('standalone_reflection_')) {
-                const data = JSON.parse(localStorage.getItem(key));
+                let data;
+                try { data = JSON.parse(localStorage.getItem(key)); } catch(e) { continue; }
+                if (!data) continue;
                 reflections.push({
                     type: 'standalone',
                     id: key,
@@ -14833,40 +14847,66 @@ function viewWorkoutHistoryDetail(date) {
         }
 
         // Also check localStorage for backup data
-        const localProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-        const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        let localProfile = {};
+        try { localProfile = JSON.parse(localStorage.getItem('userProfile') || '{}'); } catch(e) {}
+        let sessionProfile = {};
+        try { sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         profileData = { ...localProfile, ...sessionProfile, ...profileData };
 
         try {
-            // Pre-fill form fields with current data
+            // Pre-fill form fields with current data (using optional chaining to avoid null crashes)
             if (profileData.sex) {
-                document.getElementById('recalc-wizard-gender').value = profileData.sex;
+                const genderEl = document.getElementById('recalc-wizard-gender');
+                if (genderEl) genderEl.value = profileData.sex;
                 selectRecalcGender(profileData.sex, true); // true = don't auto-advance
             }
-            if (profileData.age) document.getElementById('recalc-wizard-age').value = profileData.age;
-            if (profileData.height) document.getElementById('recalc-wizard-height').value = profileData.height;
-            if (profileData.weight) document.getElementById('recalc-wizard-weight').value = profileData.weight;
-            if (profileData.goal_weight) document.getElementById('recalc-wizard-goal-weight').value = profileData.goal_weight;
-            if (profileData.activity_level) document.getElementById('recalc-wizard-activity-level').value = profileData.activity_level;
+            if (profileData.age) {
+                const ageEl = document.getElementById('recalc-wizard-age');
+                if (ageEl) ageEl.value = profileData.age;
+            }
+            if (profileData.height) {
+                const heightEl = document.getElementById('recalc-wizard-height');
+                if (heightEl) heightEl.value = profileData.height;
+            }
+            if (profileData.weight) {
+                const weightEl = document.getElementById('recalc-wizard-weight');
+                if (weightEl) weightEl.value = profileData.weight;
+            }
+            if (profileData.goal_weight) {
+                const goalWeightEl = document.getElementById('recalc-wizard-goal-weight');
+                if (goalWeightEl) goalWeightEl.value = profileData.goal_weight;
+            }
+            if (profileData.activity_level) {
+                const activityEl = document.getElementById('recalc-wizard-activity-level');
+                if (activityEl) activityEl.value = profileData.activity_level;
+            }
 
             // Handle goal body type
             const goalType = profileData.goalBodyType || profileData.goal_body_type || '';
-            if (goalType) document.getElementById('recalc-wizard-goal-type').value = goalType;
+            if (goalType) {
+                const goalTypeEl = document.getElementById('recalc-wizard-goal-type');
+                if (goalTypeEl) goalTypeEl.value = goalType;
+            }
 
             // Reset slides to initial state
             document.querySelectorAll('.recalc-wizard-slide').forEach(slide => {
                 slide.style.display = 'none';
                 slide.classList.remove('active');
             });
-            document.getElementById('recalc-slide-1').style.display = 'block';
-            document.getElementById('recalc-slide-1').classList.add('active');
+            const slide1 = document.getElementById('recalc-slide-1');
+            if (slide1) {
+                slide1.style.display = 'block';
+                slide1.classList.add('active');
+            }
 
             // Update progress dots
             updateRecalcProgress(1);
 
             // Update buttons
-            document.getElementById('recalc-btn-back').style.display = 'none';
-            document.getElementById('recalc-btn-next').textContent = 'Next';
+            const btnBack = document.getElementById('recalc-btn-back');
+            if (btnBack) btnBack.style.display = 'none';
+            const btnNext = document.getElementById('recalc-btn-next');
+            if (btnNext) btnNext.textContent = 'Next';
 
             // Show the wizard
             console.log('Showing recalculate wizard modal');
@@ -15111,11 +15151,13 @@ function viewWorkoutHistoryDetail(date) {
                 fat_goal_g: nutritionGoals.fat_goal_g
             };
 
-            const storedLocal = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            let storedLocal = {};
+            try { storedLocal = JSON.parse(localStorage.getItem('userProfile') || '{}'); } catch(e) {}
             Object.assign(storedLocal, updatedData);
             localStorage.setItem('userProfile', JSON.stringify(storedLocal));
 
-            const storedSession = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            let storedSession = {};
+            try { storedSession = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
             Object.assign(storedSession, updatedData);
             sessionStorage.setItem('userProfile', JSON.stringify(storedSession));
 
@@ -15707,7 +15749,8 @@ async function _loadProfileDataRealImpl() {
     // CRITICAL FIX: Restore sex field to sessionStorage for nutrition calculations
     // This fixes the bug where gender resets to female on page refresh
     if (profile?.sex) {
-        const currentProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        let currentProfile = {};
+        try { currentProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         currentProfile.sex = profile.sex;
         sessionStorage.setItem('userProfile', JSON.stringify(currentProfile));
         console.log("Restored sex from DB to sessionStorage:", profile.sex);
@@ -16416,11 +16459,13 @@ function renderWeeklyCalendar() {
     const isHighCortisol = !isMale && (profileType.includes('CORTISOL') || profileType.includes('ADRENAL'));
 
     // Load userProfile from localStorage, fallback to sessionStorage if needed
-    let userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    let userProfile = {};
+    try { userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}'); } catch(e) {}
 
     // BUGFIX: If equipment_access is missing in localStorage, check sessionStorage (from quiz)
     if (!userProfile.equipment_access) {
-        const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        let sessionProfile = {};
+        try { sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         if (sessionProfile.equipment_access) {
             userProfile.equipment_access = sessionProfile.equipment_access;
             // Save to localStorage for future use
@@ -16997,9 +17042,11 @@ function renderMonthlyCalendar() {
 // Helper to get workout label for monthly calendar view
 function getMonthlyWorkoutLabel(dayIndex, isMale) {
     // Load user profile to determine schedule type
-    let userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    let userProfile = {};
+    try { userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}'); } catch(e) {}
     if (!userProfile.equipment_access) {
-        const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        let sessionProfile = {};
+        try { sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         if (sessionProfile.equipment_access) {
             userProfile.equipment_access = sessionProfile.equipment_access;
         }
@@ -17200,11 +17247,13 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
 
     // Load userProfile from localStorage, fallback to sessionStorage if needed
-    let userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    let userProfile = {};
+    try { userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}'); } catch(e) {}
 
     // BUGFIX: If equipment_access is missing in localStorage, check sessionStorage (from quiz)
     if (!userProfile.equipment_access) {
-        const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        let sessionProfile = {};
+        try { sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         if (sessionProfile.equipment_access) {
             userProfile.equipment_access = sessionProfile.equipment_access;
             // Save to localStorage for future use
@@ -17504,11 +17553,13 @@ function getTodaysWorkout() {
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
 
     // Load userProfile from localStorage, fallback to sessionStorage if needed
-    let userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    let userProfile = {};
+    try { userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}'); } catch(e) {}
 
     // BUGFIX: If equipment_access is missing in localStorage, check sessionStorage (from quiz)
     if (!userProfile.equipment_access) {
-        const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        let sessionProfile = {};
+        try { sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         if (sessionProfile.equipment_access) {
             userProfile.equipment_access = sessionProfile.equipment_access;
             // Save to localStorage for future use
@@ -18129,7 +18180,8 @@ function checkMealPlanAccess() {
     const subscriptionStatus = localStorage.getItem('subscription_status');
 
     // Check for purchased meal plans (would be set after Stripe purchase)
-    const purchasedPlans = JSON.parse(localStorage.getItem('purchased_meal_plans') || '[]');
+    let purchasedPlans = [];
+    try { purchasedPlans = JSON.parse(localStorage.getItem('purchased_meal_plans') || '[]'); } catch(e) {}
 
     // Quiz onboarders get hormone plan
     if (hormoneProfile && programStartDate) {
@@ -19182,7 +19234,8 @@ async function wizardNext() {
         // If male, skip cycle tracking (step 3) and go directly to step 4
         if (selectedGender === 'male') {
             // Set default values for males (no cycle tracking, no hormone profile)
-            const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            let existingData = {};
+            try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
             existingData.menopause_status = 'not_applicable';
             existingData.last_period = null;
             existingData.profile = null; // Males don't have hormone profiles
@@ -19275,7 +19328,8 @@ async function wizardNext() {
         }
 
         // Add menopause status to quizData
-        const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        let existingData = {};
+        try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         const age = existingData.age || 0;
 
         // Determine menopause status based on wellness toggle and age
@@ -19327,7 +19381,8 @@ async function wizardNext() {
         }
 
         // Save to sessionStorage
-        const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        let existingData = {};
+        try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         existingData.training_frequency = wizardTrainingFrequency;
         existingData.training_days = Array.from(wizardSelectedDays).join(',');
         existingData.recovery_on_rest_days = document.getElementById('wizard-recovery-days')?.checked;
@@ -19352,7 +19407,8 @@ async function wizardNext() {
         }
 
         // Save to sessionStorage
-        const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        let existingData = {};
+        try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         existingData.split_preference = wizardSplitPreference;
         sessionStorage.setItem('userProfile', JSON.stringify(existingData));
 
@@ -19363,7 +19419,8 @@ async function wizardNext() {
     // Step 6: Calendar Preview - render the preview
     if(currentWizardStep === 6) {
         // Save workout calendar to sessionStorage
-        const existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        let existingData = {};
+        try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         existingData.workout_calendar = JSON.stringify(wizardWorkoutCalendar);
         sessionStorage.setItem('userProfile', JSON.stringify(existingData));
         localStorage.setItem('workoutCalendar', JSON.stringify(wizardWorkoutCalendar));
@@ -19388,7 +19445,8 @@ function wizardPrev() {
             currentWizardStep = 2;
         } else if (currentWizardStep === 6) {
             // Check if we should skip split preference (non-gym users)
-            const userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            let userData = {};
+            try { userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
             if (userData.equipment_access !== 'gym') {
                 currentWizardStep = 4; // Skip back to frequency/days
             } else {
@@ -19779,7 +19837,8 @@ function selectSplitPreference(split) {
 }
 
 function generateWizardCalendar() {
-    const userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+    let userData = {};
+    try { userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
     const trainingDays = Array.from(wizardSelectedDays);
     const equipment = userData.equipment_access || 'none';
     const split = wizardSplitPreference || 'full_body';
@@ -21211,11 +21270,13 @@ async function renderMovementView() {
 
     // BUGFIX: Load profile from localStorage (same as calendar), fallback to sessionStorage
     // This ensures consistency with renderWeeklyCalendar which correctly shows gym split workouts
-    let profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    let profile = {};
+    try { profile = JSON.parse(localStorage.getItem('userProfile') || '{}'); } catch(e) {}
 
     // If equipment_access is missing in localStorage, check sessionStorage (from quiz)
     if (!profile.equipment_access) {
-        const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        let sessionProfile = {};
+        try { sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         if (sessionProfile.equipment_access) {
             profile.equipment_access = sessionProfile.equipment_access;
             // Save to localStorage for future use
@@ -23101,8 +23162,10 @@ async function finishWorkout() {
     clearAllYogaTimers(); // Clear any running yoga timers
     stopWorkoutAutoSave(); // Stop auto-save interval
 
-    const duration = document.getElementById('workout-timer').innerText;
-    document.getElementById('success-duration').innerText = duration;
+    const timerEl = document.getElementById('workout-timer');
+    const duration = timerEl ? timerEl.innerText : '0:00';
+    const successDurationEl = document.getElementById('success-duration');
+    if (successDurationEl) successDurationEl.innerText = duration;
 
     // Backup workout data before attempting save (in case of failure)
     backupWorkoutData();
@@ -23395,7 +23458,8 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
     shareSelection = { mode: 'best', selectedExercise: null, selectedSetIndices: [] }; // Reset flexible selection
 
     // Update duration
-    document.getElementById('success-duration').innerText = duration;
+    const successDurEl = document.getElementById('success-duration');
+    if (successDurEl) successDurEl.innerText = duration;
 
     // Show milestones if any - compact display
     const milestonesContainer = document.getElementById('success-milestones');
@@ -26275,7 +26339,8 @@ function scrollToBottomOfChat() {
 // --- COMMUNITY CHAT LOGIC (HUMAN REFERRAL NETWORK ONLY) ---
 
 function loadCommunityFeed() {
-    let messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    let messages = [];
+    try { messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]'); } catch(e) {}
     if(messages.length === 0) {
         const sysMsg = {
             id: 'sys_' + Date.now(),
@@ -29133,7 +29198,8 @@ function removeCommunityTypingIndicators(personaName = null) {
 
 // Helper: Add emoji reaction to a message
 function addEmojiReaction(messageIndex, emoji, reactorId) {
-    const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    let messages = [];
+    try { messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]'); } catch(e) {}
     if (messageIndex >= 0 && messageIndex < messages.length) {
         if (!messages[messageIndex].reactions) {
             messages[messageIndex].reactions = [];
@@ -29146,7 +29212,8 @@ function addEmojiReaction(messageIndex, emoji, reactorId) {
 
 // Helper: Mark message as read by member
 function markMessageAsRead(messageIndex, memberId) {
-    const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    let messages = [];
+    try { messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]'); } catch(e) {}
     if (messageIndex >= 0 && messageIndex < messages.length) {
         if (!messages[messageIndex].readBy) {
             messages[messageIndex].readBy = [];
@@ -29219,7 +29286,8 @@ function shouldRespondToMessage() {
 
 async function triggerAICommunityResponse(userMsg, chainCount = 0) {
     const lowMsg = userMsg.toLowerCase();
-    const fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    let fullHistory = [];
+    try { fullHistory = JSON.parse(localStorage.getItem('community_chat_history') || '[]'); } catch(e) {}
 
     // Check if there's been recent activity (conversation flow)
     const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
@@ -29997,7 +30065,8 @@ window.getAutonomousStatus = function() {
 };
 
 window.viewCheckInStories = function(memberId) {
-    const checkInHistory = JSON.parse(localStorage.getItem('saturday_checkin_stories') || '{}');
+    let checkInHistory = {};
+    try { checkInHistory = JSON.parse(localStorage.getItem('saturday_checkin_stories') || '{}'); } catch(e) {}
 
     if (memberId) {
         // Show specific member's stories
@@ -30243,7 +30312,8 @@ async function saveCommunityMessage(persona, text) {
     }
 
     // 2. Update Local Cache (for immediate UI and autonomous logic)
-    let msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    let msgs = [];
+    try { msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]'); } catch(e) {}
     
     // SAFETY LIMIT: Only keep last 50 messages to prevent crash
     if (msgs.length > 50) {
@@ -30332,10 +30402,11 @@ async function sendCommunityMessage() {
         timestamp: Date.now() 
     };
     
-    const messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+    let messages = [];
+    try { messages = JSON.parse(localStorage.getItem('community_chat_history') || '[]'); } catch(e) {}
     messages.push(tempMsg);
     renderChat(messages); // Render immediately
-    
+
     // Save to DB
     await dbHelpers.conversations.create(user.id, 'community', 'user', text, userName);
 
@@ -32344,7 +32415,7 @@ async function createChallenge() {
             .from('user_points')
             .select('current_points')
             .eq('user_id', window.currentUser.id)
-            .single();
+            .maybeSingle();
 
         const currentPoints = userPoints?.current_points || 0;
 
@@ -35512,7 +35583,7 @@ async function submitWeighInModal() {
                 .from('user_points')
                 .select('lifetime_points')
                 .eq('user_id', window.currentUser.id)
-                .single();
+                .maybeSingle();
 
             if (currentPoints) {
                 await supabaseClient
@@ -36997,7 +37068,8 @@ window._submitDailyCycleSyncImpl = async function() {
     // 6.5. Handle cycle-based workout recommendations (for women who opted in)
     if (!isMale) {
         // Get user profile to check cycle preferences
-        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        let userProfile = {};
+        try { userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}'); } catch(e) {}
         const cycleSyncEnabled = userProfile.cycle_sync_preference === 'yes';
         const periodEnergyLow = userProfile.period_energy_response === 'low';
 
@@ -40711,7 +40783,7 @@ async function recalculateDailyNutrition() {
             .select('calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g')
             .eq('user_id', userId)
             .eq('nutrition_date', today)
-            .single();
+            .maybeSingle();
 
         console.log('Existing goals:', existingData);
 
@@ -42056,7 +42128,8 @@ async function initiateMealPlanCheckout(planSlug, preferences) {
         // For development/demo: Allow fallback to demo mode
         if (confirm(`Checkout error: ${error.message}\n\nWould you like to continue in demo mode? (This will simulate a purchase)`)) {
             // Demo mode - mark as purchased locally
-            const purchased = JSON.parse(localStorage.getItem('purchased_meal_plans') || '[]');
+            let purchased = [];
+            try { purchased = JSON.parse(localStorage.getItem('purchased_meal_plans') || '[]'); } catch(e) {}
             if (!purchased.includes(planSlug)) {
                 purchased.push(planSlug);
                 localStorage.setItem('purchased_meal_plans', JSON.stringify(purchased));
@@ -46614,13 +46687,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Helper: check if a rare skin is unlocked
     function isRareUnlocked(id) {
-        const unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]');
+        let unlocked = [];
+        try { unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]'); } catch(e) {}
         return unlocked.includes(id);
     }
 
     // Helper: unlock a rare skin
     function unlockRare(id) {
-        const unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]');
+        let unlocked = [];
+        try { unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]'); } catch(e) {}
         if (!unlocked.includes(id)) {
             unlocked.push(id);
             localStorage.setItem('user_rares_unlocked', JSON.stringify(unlocked));
@@ -46910,7 +46985,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function renderRaresGrid() {
         const grid = document.getElementById('rares-grid');
-        const userProgress = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]');
+        let userProgress = [];
+        try { userProgress = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]'); } catch(e) {}
         grid.innerHTML = RARE_COLLECTION.map(rare => {
             const isUnlocked = userProgress.includes(rare.id);
             const tierData = RARE_TIERS[rare.tier] || RARE_TIERS.COMMON;
@@ -46974,7 +47050,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const BADGE_CATEGORIES = ['Workouts', 'Streaks', 'Nutrition', 'PBs', 'Collection', 'Challenges', 'Level'];
 
     function getEarnedBadges() {
-        return JSON.parse(localStorage.getItem('user_badges_earned') || '[]');
+        try { return JSON.parse(localStorage.getItem('user_badges_earned') || '[]'); } catch(e) { return []; }
     }
 
     function isBadgeEarned(id) {
@@ -47062,7 +47138,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 .from('user_points')
                 .select('total_meals_logged')
                 .eq('user_id', window.currentUser.id)
-                .single();
+                .maybeSingle();
             if (data?.total_meals_logged) checkBadgesForType('meals', data.total_meals_logged);
         } catch(e) { console.error('Badge check meals error:', e); }
     }
@@ -47079,7 +47155,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function checkRareBadges() {
-        const rares = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]');
+        let rares = [];
+        try { rares = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]'); } catch(e) {}
         checkBadgesForType('rares', rares.length);
     }
 
@@ -47242,7 +47319,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         info.style.display = 'block';
         if (nameEl) nameEl.textContent = rare.name;
         if (descEl) descEl.textContent = `${tierData.label} • ${rare.desc} • ${tierData.buyIn.toLocaleString()} Coins`;
-        const unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]').includes(id);
+        let unlocked = false;
+        try { unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]').includes(id); } catch(e) {}
         if (statusEl) {
             statusEl.textContent = unlocked ? '🎉 UNLOCKED' : '🏆 CHALLENGE DROPS ONLY';
             statusEl.style.background = unlocked ? '#f0fdf4' : '#fef3c7';
