@@ -22569,6 +22569,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
     }
 
     document.getElementById('workout-player-title').innerText = workout.title;
+    window.currentWorkoutName = workout.title;
     const exerciseCount = exercises.length;
     document.getElementById('workout-player-goal').innerText = `${program.description} · ${exerciseCount} Exercise${exerciseCount !== 1 ? 's' : ''}`;
 
@@ -23929,6 +23930,35 @@ async function finishWorkout() {
                      } catch (pbPointsError) {
                          console.error("Error awarding PB points:", pbPointsError);
                      }
+                 }
+
+                 // Check for total workout volume PR and award XP
+                 try {
+                     const lastTotalVolume = window._lastWorkoutTotalVolume || 0;
+                     if (lastTotalVolume > 0) {
+                         // Calculate current total workout volume from saved sets
+                         let currentTotalVolume = 0;
+                         setsToSave.forEach(s => {
+                             const kg = parseFloat(s.weight_kg) || 0;
+                             const reps = parseFloat(s.reps) || 0;
+                             currentTotalVolume += kg * reps;
+                         });
+
+                         if (currentTotalVolume > lastTotalVolume) {
+                             const volumeImprovement = currentTotalVolume - lastTotalVolume;
+                             const workoutName = window.currentWorkoutName || 'Workout';
+                             const volRefId = `pb_volume_${workoutName.replace(/\s+/g, '_')}_${Date.now()}`;
+                             await awardPointsForPersonalBest(volRefId, {
+                                 exercise: workoutName,
+                                 type: 'volume',
+                                 value: Math.round(currentTotalVolume),
+                                 improvement: Math.round(volumeImprovement)
+                             });
+                             console.log(`🏆 Volume PR! ${Math.round(currentTotalVolume)} kg (was ${Math.round(lastTotalVolume)} kg, +${Math.round(volumeImprovement)} kg)`);
+                         }
+                     }
+                 } catch (volPbError) {
+                     console.error("Error checking volume PR:", volPbError);
                  }
 
                  // Additional points can be earned by sharing workout (story or group chat)
@@ -25883,6 +25913,7 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
 
     // Set workout title and goal
     document.getElementById('workout-player-title').textContent = workout.name;
+    window.currentWorkoutName = workout.name;
     const exerciseCount = exercises.length;
     document.getElementById('workout-player-goal').textContent = `${workout.difficulty} · ${workout.duration} · ${exerciseCount} Exercise${exerciseCount !== 1 ? 's' : ''}`;
 
@@ -39335,8 +39366,11 @@ async function awardPointsForPersonalBest(pbRefId, pbData) {
 
         if (result?.success) {
             // Show PB points toast
-            const pbTypeText = pbData.type === 'weight' ? 'weight' : 'reps';
-            showToast(`+1 point for ${pbData.exercise} PB! (${pbTypeText})`, 'success');
+            const pbTypeText = pbData.type === 'weight' ? 'weight' : pbData.type === 'volume' ? 'volume' : 'reps';
+            const toastMsg = pbData.type === 'volume'
+                ? `+1 XP — Volume PR! ${pbData.value.toLocaleString()} kg total (+${pbData.improvement.toLocaleString()} kg)`
+                : `+1 point for ${pbData.exercise} PB! (${pbTypeText})`;
+            showToast(toastMsg, 'success');
 
             // Check for level-up
             const newLifetimePoints = result.newLifetimePoints || (pointsBefore?.lifetime_points || 0) + 1;
