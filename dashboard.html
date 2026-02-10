@@ -44863,7 +44863,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             { name: 'angry_1', displayName: 'Annoyed', unlockLevel: 10, icon: '😤', category: 'reactions' },
             { name: 'stretch', displayName: 'Stretch', unlockLevel: 10, icon: '🧘', category: 'exercise' },
             { name: 'kick', displayName: 'Kick', unlockLevel: 10, icon: '🦵', category: 'combat' },
-            { name: 'hit_to_2', displayName: 'Jab', unlockLevel: 10, icon: '🤜', category: 'combat' },
+            { name: 'hit_to_2', displayName: 'Hit To 2', unlockLevel: 10, icon: '🤜', category: 'reactions' },
             { name: 'stand_hands_on_hips', displayName: 'Power Pose', unlockLevel: 10, icon: '💪', category: 'poses' },
             { name: 'strut', displayName: 'Strut', unlockLevel: 10, icon: '🚶', category: 'dance' },
 
@@ -44871,8 +44871,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             { name: 'lose', displayName: 'Lose', unlockLevel: 15, icon: '😞', category: 'reactions' },
             { name: 'pushup', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
             { name: 'karate', displayName: 'Karate', unlockLevel: 15, icon: '🥋', category: 'combat' },
-            { name: 'hit_to_head', displayName: 'Head Shot', unlockLevel: 15, icon: '🎯', category: 'combat' },
-            { name: 'hit_to_side', displayName: 'Side Strike', unlockLevel: 15, icon: '⚡', category: 'combat' },
+            { name: 'hit_to_head', displayName: 'Hit To Head', unlockLevel: 15, icon: '🎯', category: 'reactions' },
+            { name: 'hit_to_side', displayName: 'Hit To Side', unlockLevel: 15, icon: '⚡', category: 'reactions' },
             { name: 'dance_1', displayName: 'Groove', unlockLevel: 15, icon: '🎵', category: 'dance' },
             { name: 'arms_up_still', displayName: 'Arms Up', unlockLevel: 15, icon: '🙌', category: 'celebrations' },
             { name: 'laugh_3', displayName: 'Cracking Up', unlockLevel: 15, icon: '😹', category: 'celebrations' },
@@ -44884,7 +44884,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             { name: 'heart_pose', displayName: 'Heart Pose', unlockLevel: 20, icon: '❤️', category: 'celebrations' },
             { name: 'basketball', displayName: 'Basketball', unlockLevel: 20, icon: '🏀', category: 'exercise' },
             { name: 'boxing_1', displayName: 'Boxing Combo', unlockLevel: 20, icon: '🥊', category: 'combat' },
-            { name: 'hit_to_3', displayName: 'Uppercut', unlockLevel: 20, icon: '💥', category: 'combat' },
+            { name: 'hit_to_3', displayName: 'Hit To 3', unlockLevel: 20, icon: '💥', category: 'reactions' },
             { name: 'stand', displayName: 'Stand Tall', unlockLevel: 20, icon: '🧍', category: 'poses' },
             { name: 'dance_2', displayName: 'Moves', unlockLevel: 20, icon: '🎶', category: 'dance' },
 
@@ -44892,7 +44892,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             { name: 'angry_walk', displayName: 'Angry Walk', unlockLevel: 25, icon: '😡', category: 'reactions' },
             { name: 'laugh_2', displayName: 'LOL', unlockLevel: 25, icon: '🤣', category: 'celebrations' },
             { name: 'volleyball', displayName: 'Volleyball', unlockLevel: 25, icon: '🏐', category: 'exercise' },
-            { name: 'hit_to_1', displayName: 'Punch', unlockLevel: 25, icon: '👊', category: 'combat' },
+            { name: 'hit_to_1', displayName: 'Hit To 1', unlockLevel: 25, icon: '👊', category: 'reactions' },
             { name: 'dance_3', displayName: 'Boogie', unlockLevel: 25, icon: '🕺', category: 'dance' },
 
             // Level 30 unlocks (Consistent evolution)
@@ -45917,7 +45917,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // Power rankings for combat moves
                 const powerMap = {
                     'boxing': 1, 'kick': 1.5, 'karate': 2, 'boxing_1': 2.5,
-                    'hit_to_1': 3, 'boxing_2': 3.5, 'kick_2': 4, 'block': 0
+                    'boxing_2': 3.5, 'kick_2': 4, 'block': 0
                 };
 
                 const container = document.getElementById('tamagotchi-widget-container');
@@ -46671,8 +46671,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 || anims.find(a => a.toLowerCase().includes(chosenMove.name.toLowerCase()))
                 || anims.find(a => /^boxing$/i.test(a))
                 || anims[0];
-            const hitAnim = anims.find(a => /^hit_to_1$|^hit_to_2$|^hit_to_head$/i.test(a)) || anims[0];
-            const loseAnim = anims.find(a => /^lose$|^die$/i.test(a)) || anims[0];
+            const hitAnim = anims.find(a => /^hit_to_1$|^hit_to_2$|^hit_to_3$|^hit_to_head$|^hit_to_side$/i.test(a)) || anims[0];
+            const loseAnim = anims.find(a => /^lose$|^die$|^die_1$/i.test(a)) || anims[0];
 
             // Bash system: mana reduces taps needed (30 base, min 10)
             const baseTapsNeeded = 30;
