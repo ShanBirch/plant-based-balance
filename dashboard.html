@@ -6247,6 +6247,34 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
 
+                <!-- Log Your Day Button -->
+                <div id="daily-log-bonus-section" style="margin: 25px 0; text-align: center;">
+                    <button id="daily-log-btn" onclick="claimDailyNutritionBonus()" style="
+                        width: 100%;
+                        padding: 16px 24px;
+                        background: linear-gradient(135deg, var(--primary) 0%, #065f3a 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 10px;
+                        box-shadow: 0 4px 12px rgba(4, 106, 56, 0.3);
+                        transition: transform 0.15s ease, box-shadow 0.15s ease;
+                    ">
+                        <span style="font-size: 1.3rem;">&#x2705;</span>
+                        <span>Log Your Meals for the Day</span>
+                        <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
+                    </button>
+                    <p id="daily-log-hint" style="margin: 8px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
+                        Hit within 10% of your calorie &amp; macro goals to earn 2 bonus points
+                    </p>
+                </div>
+
                 <!-- Weekly Metrics Section -->
                 <div class="weekly-metrics-card" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; border: 1px solid #dee2e6;">
                     <h3 style="margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
@@ -38752,6 +38780,196 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
     }
 }
 
+// Claim daily nutrition bonus (2 points for hitting within 10% of cal/macro goals)
+async function claimDailyNutritionBonus() {
+    const btn = document.getElementById('daily-log-btn');
+    const hint = document.getElementById('daily-log-hint');
+    if (!btn) return;
+
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) {
+            if (hint) hint.textContent = 'Please log in to claim your daily bonus.';
+            return;
+        }
+
+        // Disable button while processing
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.querySelector('span:nth-child(2)').textContent = 'Checking...';
+
+        const today = getLocalDateString();
+
+        // Get current points to track level before awarding
+        let pointsBefore = null;
+        try {
+            pointsBefore = await window.db?.points?.getPoints(session.user.id);
+        } catch (e) {
+            console.log('Could not get previous points');
+        }
+        const previousLevelData = calculateLevel(pointsBefore?.lifetime_points || 0);
+        const previousLevel = previousLevelData.level;
+        const previousProgress = previousLevelData.progress || 0;
+
+        // Call the award-points endpoint with daily_log type
+        const response = await fetch('/api/award-points', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: session.user.id,
+                type: 'daily_log',
+                referenceId: `daily_${today}`,
+                nutritionDate: today
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Show success state
+            btn.style.background = 'linear-gradient(135deg, #28a745 0%, #1e7e34 100%)';
+            btn.innerHTML = `
+                <span style="font-size: 1.3rem;">&#x1F389;</span>
+                <span>Daily Bonus Claimed!</span>
+                <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+${result.pointsAwarded} pts</span>
+            `;
+            btn.style.opacity = '1';
+            if (hint) hint.textContent = 'Great job hitting your nutrition goals today!';
+
+            // Show points toast
+            showPointsEarnedToast(result.pointsAwarded, result.bonusPoints || 0, result.currentStreak || 0);
+
+            // Check for level-up
+            const newLifetimePoints = result.newLifetimePoints || (pointsBefore?.lifetime_points || 0) + (result.pointsAwarded || 0) + (result.bonusPoints || 0);
+            const newLevelData = calculateLevel(newLifetimePoints);
+            if (newLevelData.level > previousLevel) {
+                setTimeout(() => {
+                    triggerLevelUpCelebration(
+                        newLevelData.level,
+                        getLevelTitle(newLevelData.level),
+                        previousLevel,
+                        newLifetimePoints,
+                        result.currentStreak || 0,
+                        previousProgress
+                    );
+                }, 1500);
+            }
+
+            // Refresh points widget
+            await loadPointsWidget();
+            if (typeof loadHomeChallenges === 'function') {
+                loadHomeChallenges();
+            }
+        } else {
+            // Handle specific errors
+            btn.style.opacity = '1';
+            if (result.error === 'Already claimed') {
+                setDailyLogButtonClaimed();
+            } else if (result.error === 'Goals not met') {
+                btn.style.background = 'linear-gradient(135deg, #6c757d 0%, #495057 100%)';
+                btn.style.boxShadow = '0 4px 12px rgba(108, 117, 125, 0.3)';
+                btn.innerHTML = `
+                    <span style="font-size: 1.3rem;">&#x274C;</span>
+                    <span>Goals Not Met Yet</span>
+                `;
+                if (hint) hint.textContent = result.reason || 'Get closer to your calorie & macro goals and try again.';
+                // Re-enable after 3 seconds so they can try again
+                setTimeout(() => {
+                    resetDailyLogButton();
+                }, 3000);
+            } else if (result.error === 'No meals logged') {
+                btn.style.background = 'linear-gradient(135deg, #6c757d 0%, #495057 100%)';
+                btn.innerHTML = `
+                    <span style="font-size: 1.3rem;">&#x1F37D;</span>
+                    <span>Log Meals First</span>
+                `;
+                if (hint) hint.textContent = result.reason || 'Log at least one meal before claiming your bonus.';
+                setTimeout(() => {
+                    resetDailyLogButton();
+                }, 3000);
+            } else {
+                btn.innerHTML = `
+                    <span style="font-size: 1.3rem;">&#x26A0;</span>
+                    <span>Something went wrong</span>
+                `;
+                if (hint) hint.textContent = result.reason || 'Please try again.';
+                setTimeout(() => {
+                    resetDailyLogButton();
+                }, 3000);
+            }
+        }
+    } catch (error) {
+        console.error('Error claiming daily nutrition bonus:', error);
+        btn.style.opacity = '1';
+        btn.innerHTML = `
+            <span style="font-size: 1.3rem;">&#x26A0;</span>
+            <span>Error - Try Again</span>
+        `;
+        setTimeout(() => {
+            resetDailyLogButton();
+        }, 3000);
+    }
+}
+
+function setDailyLogButtonClaimed() {
+    const btn = document.getElementById('daily-log-btn');
+    const hint = document.getElementById('daily-log-hint');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.style.background = 'linear-gradient(135deg, #28a745 0%, #1e7e34 100%)';
+    btn.style.opacity = '0.7';
+    btn.style.boxShadow = 'none';
+    btn.style.cursor = 'default';
+    btn.innerHTML = `
+        <span style="font-size: 1.3rem;">&#x2705;</span>
+        <span>Daily Bonus Claimed</span>
+    `;
+    if (hint) hint.textContent = 'Come back tomorrow for another chance!';
+}
+
+function resetDailyLogButton() {
+    const btn = document.getElementById('daily-log-btn');
+    const hint = document.getElementById('daily-log-hint');
+    if (!btn) return;
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.background = 'linear-gradient(135deg, var(--primary) 0%, #065f3a 100%)';
+    btn.style.boxShadow = '0 4px 12px rgba(4, 106, 56, 0.3)';
+    btn.style.cursor = 'pointer';
+    btn.innerHTML = `
+        <span style="font-size: 1.3rem;">&#x2705;</span>
+        <span>Log Your Meals for the Day</span>
+        <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
+    `;
+    if (hint) hint.textContent = 'Hit within 10% of your calorie & macro goals to earn 2 bonus points';
+}
+
+// Check if daily log bonus has already been claimed today (called from loadTodayNutrition)
+async function checkDailyLogBonusStatus() {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+
+        const today = getLocalDateString();
+
+        const { data: existingClaim } = await window.supabaseClient
+            .from('point_transactions')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .eq('transaction_type', 'earn_daily_log')
+            .gte('created_at', today + 'T00:00:00')
+            .lte('created_at', today + 'T23:59:59')
+            .limit(1)
+            .maybeSingle();
+
+        if (existingClaim) {
+            setDailyLogButtonClaimed();
+        }
+    } catch (error) {
+        console.error('Error checking daily log bonus status:', error);
+    }
+}
+
 // Award points for a workout (called after successful workout logging)
 async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfidence = null, photoHash = null) {
     try {
@@ -41965,6 +42183,9 @@ async function loadTodayNutrition() {
 
         // Update UI with personalized goals
         updateNutritionUI(nutritionDataWithGoals, mealsData);
+
+        // Check if daily log bonus already claimed today
+        checkDailyLogBonusStatus();
 
     } catch (error) {
         console.error('Error in loadTodayNutrition:', error);
