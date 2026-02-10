@@ -1,37 +1,5 @@
 import { Context } from "@netlify/edge-functions";
 
-// Helper to look up food in Open Food Facts
-async function lookupOpenFoodFacts(query: string) {
-  try {
-    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=3`;
-    const response = await fetch(url);
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    const products = data.products || [];
-
-    // Find first product with calories
-    for (const product of products) {
-      const nutriments = product.nutriments;
-      if (nutriments && (nutriments['energy-kcal_100g'] || nutriments['energy-kcal'])) {
-        return {
-          name: product.product_name,
-          calories_100g: nutriments['energy-kcal_100g'] || nutriments['energy-kcal'],
-          protein_100g: nutriments.proteins_100g || 0,
-          carbs_100g: nutriments.carbohydrates_100g || 0,
-          fat_100g: nutriments.fat_100g || 0,
-          fiber_100g: nutriments.fiber_100g || 0,
-          brand: product.brands || "Generic"
-        };
-      }
-    }
-    return null;
-  } catch (e) {
-    console.error(`OFF Lookup failed for ${query}:`, e);
-    return null;
-  }
-}
-
 export default async function (request: Request, context: Context) {
   // Only accept POST
   if (request.method !== "POST") {
@@ -158,42 +126,6 @@ IMPORTANT:
 
     const cleanedText = aiText.replace(/\`\`\`json\n?/g, '').replace(/\`\`\`\n?/g, '').trim();
     const nutritionData = JSON.parse(cleanedText);
-
-    // HYBRID UPGRADE: Fact check each item against Open Food Facts
-    console.log(`Fact checking ${nutritionData.foodItems.length} text items...`);
-
-    for (let item of nutritionData.foodItems) {
-      const dbMatch = await lookupOpenFoodFacts(item.name);
-
-      if (dbMatch) {
-        console.log(`✅ VERIFIED: ${item.name} matched with ${dbMatch.name} (${dbMatch.brand})`);
-
-        // Use portion weight to calculate new verified values
-        const weightFactor = (item.portion_weight_g || 100) / 100;
-
-        item.verified = true;
-        item.db_source = "Open Food Facts";
-        item.db_name = dbMatch.name;
-        item.db_brand = dbMatch.brand;
-
-        // Update values with database truths
-        item.calories = Number((dbMatch.calories_100g * weightFactor).toFixed(1));
-        item.protein_g = Number((dbMatch.protein_100g * weightFactor).toFixed(1));
-        item.carbs_g = Number((dbMatch.carbs_100g * weightFactor).toFixed(1));
-        item.fat_g = Number((dbMatch.fat_100g * weightFactor).toFixed(1));
-        item.fiber_g = Number((dbMatch.fiber_100g * weightFactor).toFixed(1));
-      } else {
-        item.verified = false;
-        item.db_source = "Gemini AI Estimate";
-      }
-    }
-
-    // Recalculate totals based on verified numbers
-    nutritionData.totals.calories = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.calories, 0).toFixed(1));
-    nutritionData.totals.protein_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.protein_g, 0).toFixed(1));
-    nutritionData.totals.carbs_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.carbs_g, 0).toFixed(1));
-    nutritionData.totals.fat_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.fat_g, 0).toFixed(1));
-    nutritionData.totals.fiber_g = Number(nutritionData.foodItems.reduce((sum: number, i: any) => sum + i.fiber_g, 0).toFixed(1));
 
     return new Response(JSON.stringify({ success: true, data: nutritionData }), {
       status: 200,

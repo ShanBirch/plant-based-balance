@@ -40366,19 +40366,24 @@ async function submitSimpleMealText() {
     closeMealTextModal();
     showToast('📝 Analysing your meal in the background...', 'info');
 
+    // Capture meal type before it can be reset
+    const capturedMealType = selectedMealType;
+
     // Run analysis in background — user can keep using the app
     analyzeMealInBackground({
         description: description,
-        mealType: selectedMealType,
+        mealType: capturedMealType,
         inputMethod: 'text',
         saveFn: async (nutritionData) => {
-            await saveMealLog({
-                photoUrl: 'text-input',
+            await saveMealLogWithType({
                 foodItems: nutritionData.foodItems,
                 totals: nutritionData.totals,
                 micronutrients: nutritionData.micronutrients,
                 confidence: nutritionData.confidence,
-                notes: nutritionData.notes || description
+                notes: nutritionData.notes || description,
+                mealType: capturedMealType,
+                inputMethod: 'text',
+                mealDescription: description
             });
         }
     });
@@ -41633,6 +41638,7 @@ async function saveMealLog(mealData) {
             user_id: userId,
             meal_date: mealDate,
             meal_time: mealTime,
+            meal_type: mealData.mealType || selectedMealType,
             photo_url: mealData.photoUrl,
             storage_path: mealData.photoUrl,
             food_items: mealData.foodItems,
