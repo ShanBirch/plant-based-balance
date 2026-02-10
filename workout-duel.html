@@ -926,6 +926,7 @@
 
 <!-- Header -->
 <div class="duel-header">
+  <button onclick="handleBack()" style="background:none;border:none;color:var(--duel-text);font-size:1.3rem;cursor:pointer;padding:4px 8px;display:flex;align-items:center;">&#x2190;</button>
   <h1 id="headerTitle">Workout Duels</h1>
   <div class="coin-display">
     <span class="coin-icon">&#x1FA99;</span>
@@ -1129,7 +1130,7 @@ function handleBack() {
   } else if (currentView === 'create') {
     showView('list');
   } else {
-    window.location.href = '/dashboard.html';
+    window.location.href = '/dashboard.html?tab=movement-tab';
   }
 }
 
@@ -1262,7 +1263,13 @@ async function loadDuelList() {
     }).join('');
   } catch (err) {
     console.error('Load duels error:', err);
-    container.innerHTML = '<p style="color:var(--duel-danger);text-align:center;">Failed to load duels</p>';
+    // Show empty state instead of error when duels can't be loaded
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&#x1F94A;</div>
+        <h3>No duels yet</h3>
+        <p>Challenge a friend to see who's stronger</p>
+      </div>`;
   }
 }
 
@@ -1345,26 +1352,38 @@ function selectFriend(id, name) {
 // ============================================================
 // CREATE DUEL - WORKOUT PICKER
 // ============================================================
-function loadWorkoutPicker() {
-  if (typeof WORKOUT_LIBRARY === 'undefined') {
-    document.getElementById('workoutList').innerHTML = '<p style="color:var(--duel-danger);">Workout library not loaded</p>';
-    return;
-  }
+let cachedCustomWorkouts = null;
 
-  const categories = Object.keys(WORKOUT_LIBRARY);
+function loadWorkoutPicker() {
   const tabsContainer = document.getElementById('categoryTabs');
 
-  tabsContainer.innerHTML = categories.map((cat, i) => `
-    <button class="category-tab ${i === 0 ? 'active' : ''}" data-cat="${cat}" onclick="selectCategory('${cat}')">
-      ${WORKOUT_LIBRARY[cat].icon || ''} ${WORKOUT_LIBRARY[cat].name}
-    </button>
-  `).join('');
+  // Build "Your Workouts" tab first, then library categories
+  let tabsHtml = `<button class="category-tab active" data-cat="__your_workouts" onclick="selectCategory('__your_workouts')">&#x1F4AA; Your Workouts</button>`;
 
-  selectCategory(categories[0]);
+  if (typeof WORKOUT_LIBRARY !== 'undefined') {
+    // Only show gym and home workout categories for duels
+    const duelCategories = ['gym', 'home_weights'];
+    tabsHtml += duelCategories
+      .filter(cat => WORKOUT_LIBRARY[cat])
+      .map(cat => `
+        <button class="category-tab" data-cat="${cat}" onclick="selectCategory('${cat}')">
+          ${WORKOUT_LIBRARY[cat].icon || ''} ${WORKOUT_LIBRARY[cat].name}
+        </button>
+      `).join('');
+  }
+
+  tabsContainer.innerHTML = tabsHtml;
+  selectCategory('__your_workouts');
 }
 
-function selectCategory(cat) {
+async function selectCategory(cat) {
   document.querySelectorAll('.category-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+
+  if (cat === '__your_workouts') {
+    document.getElementById('subcategoryTabs').innerHTML = '';
+    await loadCustomWorkoutsForDuel();
+    return;
+  }
 
   const subcats = WORKOUT_LIBRARY[cat]?.subcategories;
   if (!subcats) return;
@@ -1377,6 +1396,96 @@ function selectCategory(cat) {
   `).join('');
 
   selectSubcategory(cat, subkeys[0]);
+}
+
+async function loadCustomWorkoutsForDuel() {
+  const container = document.getElementById('workoutList');
+  container.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    if (!cachedCustomWorkouts) {
+      cachedCustomWorkouts = await db.workouts.getCustomWorkouts(currentUser.id);
+    }
+    const workouts = cachedCustomWorkouts || [];
+
+    let html = `
+      <div class="workout-picker-item" onclick="goToBuildWorkout()" style="border:2px dashed var(--duel-accent);text-align:center;cursor:pointer;">
+        <div class="workout-info" style="width:100%;text-align:center;">
+          <h4 style="color:var(--duel-accent);">+ Build Your Own Workout</h4>
+          <span>Create a custom workout to challenge with</span>
+        </div>
+      </div>`;
+
+    if (workouts.length > 0) {
+      html += workouts.map(w => {
+        const name = w.template_name || 'Untitled Workout';
+        const exercises = w.template_data?.exercises || [];
+        const date = new Date(w.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `
+          <div class="workout-picker-item" data-wid="${w.id}" onclick="selectCustomWorkout('${w.id}')">
+            <div class="workout-info">
+              <h4>${name}</h4>
+              <span>${exercises.length} exercises &middot; ${date}</span>
+            </div>
+            <div class="workout-meta">
+              <div>Custom</div>
+            </div>
+          </div>`;
+      }).join('');
+    } else {
+      html += `
+        <div style="text-align:center;padding:20px;color:var(--duel-text-muted);">
+          <p>No saved workouts yet</p>
+          <p style="font-size:0.8rem;">Build a workout above or pick from the library</p>
+        </div>`;
+    }
+
+    container.innerHTML = html;
+  } catch (err) {
+    console.error('Load custom workouts error:', err);
+    container.innerHTML = `
+      <div class="workout-picker-item" onclick="goToBuildWorkout()" style="border:2px dashed var(--duel-accent);text-align:center;cursor:pointer;">
+        <div class="workout-info" style="width:100%;text-align:center;">
+          <h4 style="color:var(--duel-accent);">+ Build Your Own Workout</h4>
+          <span>Create a custom workout to challenge with</span>
+        </div>
+      </div>
+      <div style="text-align:center;padding:20px;color:var(--duel-text-muted);">
+        <p>No saved workouts yet</p>
+        <p style="font-size:0.8rem;">Build a workout above or pick from the library</p>
+      </div>`;
+  }
+}
+
+function selectCustomWorkout(workoutId) {
+  const workout = cachedCustomWorkouts?.find(w => w.id === workoutId);
+  if (!workout) return;
+
+  const exercises = (workout.template_data?.exercises || []).map((name, i) => ({
+    name: typeof name === 'string' ? name : name.name || `Exercise ${i + 1}`,
+    sets: 3
+  }));
+
+  selectedWorkout = {
+    id: workoutId,
+    name: workout.template_name || 'Custom Workout',
+    category: 'custom',
+    subcategory: 'saved',
+    exercises: exercises,
+    duration: `${exercises.length * 8} min`,
+    difficulty: 'Custom',
+    equipment: []
+  };
+
+  document.querySelectorAll('.workout-picker-item').forEach(el => {
+    el.classList.toggle('selected', el.dataset.wid === workoutId);
+  });
+  document.getElementById('btnStep2Next').disabled = false;
+}
+
+function goToBuildWorkout() {
+  // Navigate to the dashboard workout builder
+  window.location.href = '/dashboard.html?tab=movement-tab';
 }
 
 function selectSubcategory(cat, sub) {
