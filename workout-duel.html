@@ -2386,7 +2386,13 @@ function getDuelExerciseHistoryHtml(exerciseName) {
     const dates = Object.keys(dateGroups).sort((a, b) => new Date(b) - new Date(a));
     if (dates.length > 0) {
       const lastDate = dates[0];
-      const sets = dateGroups[lastDate].sort((a, b) => (a.set || 0) - (b.set || 0));
+      // Deduplicate by set number (cache can contain both DB rows and locally-pushed data)
+      const setMap = {};
+      dateGroups[lastDate].forEach(h => {
+        const setNum = h.set || h.set_number || 0;
+        if (!setMap[setNum]) setMap[setNum] = h;
+      });
+      const sets = Object.values(setMap).sort((a, b) => (a.set || 0) - (b.set || 0));
       let totalVol = 0;
       sets.forEach(s => { totalVol += (parseFloat(s.kg) || 0) * (parseFloat(s.reps) || 0); });
       lastSession = { date: lastDate, sets, totalVolume: totalVol, setCount: sets.length };

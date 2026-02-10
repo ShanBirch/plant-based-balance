@@ -22721,7 +22721,16 @@ function getPreviousWorkoutSummary(exerciseName) {
     if (dates.length === 0) return null;
 
     const lastDate = dates[0];
-    const lastWorkoutSets = dateGroups[lastDate].sort((a, b) => (a.set || 0) - (b.set || 0));
+
+    // Deduplicate by set number (cache can contain both DB rows and locally-pushed data)
+    const setMap = {};
+    dateGroups[lastDate].forEach(h => {
+        const setNum = h.set || h.set_number || 0;
+        if (!setMap[setNum]) {
+            setMap[setNum] = h;
+        }
+    });
+    const lastWorkoutSets = Object.values(setMap).sort((a, b) => (a.set || 0) - (b.set || 0));
 
     // Calculate total volume from last workout
     let totalVolume = 0;
