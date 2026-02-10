@@ -95,6 +95,9 @@ saveBtn.addEventListener('click', () => {
     // Save to LocalStorage
     localStorage.setItem('pbb_character_config', JSON.stringify(currentState));
 
+    // Suppress weigh-in popup on dashboard — user already entered weight during quiz
+    localStorage.setItem('lastWeighInPromptDate', new Date().toDateString());
+
     // Show app download prompt if not already installed as PWA
     const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     const overlay = document.getElementById('download-app-overlay');
