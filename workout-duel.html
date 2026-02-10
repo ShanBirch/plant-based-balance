@@ -926,7 +926,7 @@
 
 <!-- Header -->
 <div class="duel-header">
-  <button onclick="handleBack()" style="background:none;border:none;color:var(--duel-text);font-size:1.3rem;cursor:pointer;padding:4px 8px;display:flex;align-items:center;">&#x2190;</button>
+  <div style="width:40px;"></div>
   <h1 id="headerTitle">Workout Duels</h1>
   <div class="coin-display">
     <span class="coin-icon">&#x1FA99;</span>
@@ -1099,7 +1099,7 @@ async function init() {
 // ============================================================
 // VIEW MANAGEMENT
 // ============================================================
-function showView(view) {
+function showView(view, fromPopstate) {
   currentView = view;
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
 
@@ -1122,6 +1122,11 @@ function showView(view) {
     document.getElementById('viewDetail').classList.add('active');
     loadDuelDetail();
   }
+
+  // Push history state for Android back button support (skip if triggered by popstate)
+  if (!fromPopstate && view !== 'list') {
+    history.pushState({ duelView: view }, '', window.location.href);
+  }
 }
 
 function handleBack() {
@@ -1133,6 +1138,13 @@ function handleBack() {
     window.location.href = '/dashboard.html?tab=movement-tab';
   }
 }
+
+// Android system back gesture / hardware back button support
+window.addEventListener('popstate', (event) => {
+  if (currentView === 'detail' || currentView === 'create') {
+    showView('list', true);
+  }
+});
 
 // ============================================================
 // SWIPE-TO-GO-BACK (matches dashboard pattern)
