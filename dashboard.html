@@ -45884,8 +45884,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 // Power rankings for combat moves
                 const powerMap = {
-                    'boxing': 1, 'kick': 1.5, 'karate': 2, 'boxing_1': 2.5,
-                    'hit_to_1': 3, 'boxing_2': 3.5, 'kick_2': 4, 'block': 0
+                    'boxing': 1, 'kick': 1.5, 'hit_to_2': 1.5, 'karate': 2,
+                    'hit_to_head': 2, 'hit_to_side': 2, 'boxing_1': 2.5,
+                    'hit_to_1': 3, 'hit_to_3': 3, 'boxing_2': 3.5, 'kick_2': 4, 'block': 0
                 };
 
                 const container = document.getElementById('tamagotchi-widget-container');
@@ -46639,8 +46640,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 || anims.find(a => a.toLowerCase().includes(chosenMove.name.toLowerCase()))
                 || anims.find(a => /^boxing$/i.test(a))
                 || anims[0];
-            const hitAnim = anims.find(a => /^hit_to_1$|^hit_to_2$|^hit_to_head$/i.test(a)) || anims[0];
-            const loseAnim = anims.find(a => /^lose$|^die$/i.test(a)) || anims[0];
+            const hitAnim = anims.find(a => /^hit_to_1$|^hit_to_2$|^hit_to_3$|^hit_to_head$|^hit_to_side$/i.test(a)) || anims[0];
+            const loseAnim = anims.find(a => /^lose$|^die$|^die_1$/i.test(a)) || anims[0];
 
             // Bash system: mana reduces taps needed (30 base, min 10)
             const baseTapsNeeded = 30;
