@@ -2369,57 +2369,49 @@ async function startDuel() {
 // ============================================================
 // Get exercise history HTML for duel exercise cards
 function getDuelExerciseHistoryHtml(exerciseName) {
-  const history = window.duelHistoryCache || [];
   const pbCache = window.duelPBCache || {};
   const pb = pbCache[exerciseName];
 
-  // Find last session for this exercise
-  const exerciseHistory = history.filter(h => h.exercise === exerciseName);
-  let lastSession = null;
-  if (exerciseHistory.length > 0) {
-    const dateGroups = {};
-    exerciseHistory.forEach(h => {
-      const date = h.date || h.workout_date;
-      if (!dateGroups[date]) dateGroups[date] = [];
-      dateGroups[date].push(h);
-    });
-    const dates = Object.keys(dateGroups).sort((a, b) => new Date(b) - new Date(a));
-    if (dates.length > 0) {
-      const lastDate = dates[0];
-      const sets = dateGroups[lastDate].sort((a, b) => (a.set || 0) - (b.set || 0));
-      let totalVol = 0;
-      sets.forEach(s => { totalVol += (parseFloat(s.kg) || 0) * (parseFloat(s.reps) || 0); });
-      lastSession = { date: lastDate, sets, totalVolume: totalVol, setCount: sets.length };
-    }
+  if (!pb || !(parseFloat(pb.best_weight_kg) > 0)) return '';
+
+  const prDateStr = pb.best_weight_date ? new Date(pb.best_weight_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+
+  let html = '<div style="padding:8px 12px;">';
+  // Full-width Personal Best banner
+  html += `<div style="width:100%;background:rgba(251,191,36,0.15);border-radius:8px;padding:8px 12px;border:1px solid rgba(251,191,36,0.3);display:flex;align-items:center;gap:8px;">`;
+  // Crown icon
+  html += `<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:var(--duel-warning);flex-shrink:0;"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>`;
+  // PR text
+  html += `<div style="flex:1;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;">`;
+  html += `<span style="font-size:0.6rem;font-weight:800;color:var(--duel-warning);text-transform:uppercase;letter-spacing:0.5px;">Personal Best</span>`;
+  html += `<span style="font-size:0.85rem;font-weight:900;color:var(--duel-text);">${pb.best_weight_kg} kg x ${pb.best_weight_reps || '?'} reps</span>`;
+  html += `</div>`;
+  if (prDateStr) {
+    html += `<span style="font-size:0.6rem;color:var(--duel-text-muted);font-weight:600;flex-shrink:0;">${prDateStr}</span>`;
   }
-
-  if (!lastSession && !pb) return '';
-
-  let html = '<div style="display:flex;gap:6px;padding:8px 12px;flex-wrap:wrap;">';
-
-  // Last session pill
-  if (lastSession) {
-    const dateStr = new Date(lastSession.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-    const bestKg = Math.max(...lastSession.sets.map(s => parseFloat(s.kg) || 0));
-    html += `<div style="flex:1;min-width:100px;background:rgba(96,165,250,0.15);border-radius:8px;padding:6px 10px;border:1px solid rgba(96,165,250,0.3);">`;
-    html += `<div style="font-size:0.6rem;font-weight:700;color:var(--duel-secondary);text-transform:uppercase;margin-bottom:3px;">Last: ${dateStr}</div>`;
-    html += `<div style="font-size:0.75rem;color:var(--duel-text);font-weight:600;">${lastSession.setCount} sets`;
-    if (lastSession.totalVolume > 0) html += ` &middot; ${lastSession.totalVolume.toLocaleString()}kg vol`;
-    if (bestKg > 0) html += ` &middot; ${bestKg}kg top`;
-    html += `</div></div>`;
-  }
-
-  // Personal best pill
-  if (pb && parseFloat(pb.best_weight_kg) > 0) {
-    html += `<div style="flex:0 0 auto;background:rgba(251,191,36,0.15);border-radius:8px;padding:6px 10px;border:1px solid rgba(251,191,36,0.3);text-align:center;">`;
-    html += `<div style="font-size:0.6rem;font-weight:700;color:var(--duel-warning);text-transform:uppercase;margin-bottom:3px;">PR</div>`;
-    html += `<div style="font-size:0.85rem;color:var(--duel-text);font-weight:800;">${pb.best_weight_kg}kg</div>`;
-    html += `<div style="font-size:0.65rem;color:var(--duel-text-muted);">x ${pb.best_weight_reps || '?'}</div>`;
-    html += `</div>`;
-  }
-
+  html += `</div>`;
   html += '</div>';
   return html;
+}
+
+// Get last session data for duel exercise (used for prefilling sets)
+function getDuelLastSession(exerciseName) {
+  const history = window.duelHistoryCache || [];
+  const exerciseHistory = history.filter(h => h.exercise === exerciseName);
+  if (exerciseHistory.length === 0) return null;
+
+  const dateGroups = {};
+  exerciseHistory.forEach(h => {
+    const date = h.date || h.workout_date;
+    if (!dateGroups[date]) dateGroups[date] = [];
+    dateGroups[date].push(h);
+  });
+  const dates = Object.keys(dateGroups).sort((a, b) => new Date(b) - new Date(a));
+  if (dates.length === 0) return null;
+
+  const lastDate = dates[0];
+  const sets = dateGroups[lastDate].sort((a, b) => (a.set || 0) - (b.set || 0));
+  return { sets, setCount: sets.length };
 }
 
 function renderActiveDuel(data, isChallenger) {
@@ -2471,9 +2463,11 @@ function renderActiveDuel(data, isChallenger) {
 
   // Exercise blocks
   exercises.forEach((ex, exIdx) => {
-    const setCount = ex.sets || 4;
+    const prescribedSets = ex.sets || 4;
     const targetReps = ex.reps || '8-10';
     const historyHtml = getDuelExerciseHistoryHtml(ex.name);
+    const lastSession = getDuelLastSession(ex.name);
+    const setCount = lastSession && lastSession.setCount > 0 ? lastSession.setCount : prescribedSets;
 
     html += `
       <div class="exercise-block">
@@ -2489,14 +2483,20 @@ function renderActiveDuel(data, isChallenger) {
       const key = `${ex.name}_${setNum}`;
       const logged = loggedSets[key];
       const isLogged = !!logged;
+      // Prefill from last session if not already logged
+      const prevSet = lastSession && lastSession.sets[setNum - 1] ? lastSession.sets[setNum - 1] : null;
+      const prefillKg = prevSet && prevSet.kg && prevSet.kg !== '0' && prevSet.kg !== '' ? prevSet.kg : '';
+      const prefillReps = prevSet && prevSet.reps ? prevSet.reps : '';
+      const weightVal = isLogged ? logged.weight_kg : prefillKg;
+      const repsVal = isLogged ? logged.reps : prefillReps;
 
       html += `
         <div class="set-row" id="setRow_${exIdx}_${setNum}">
           <div class="set-number ${isLogged ? 'logged' : ''}">${setNum}</div>
           <input type="number" class="set-input ${isLogged ? 'logged' : ''}" id="weight_${exIdx}_${setNum}"
-            placeholder="kg" value="${isLogged ? logged.weight_kg : ''}" ${isLogged || myFinished ? 'disabled' : ''} min="0" step="0.5">
+            placeholder="kg" value="${weightVal}" ${isLogged || myFinished ? 'disabled' : ''} min="0" step="0.5">
           <input type="number" class="set-input ${isLogged ? 'logged' : ''}" id="reps_${exIdx}_${setNum}"
-            placeholder="reps" value="${isLogged ? logged.reps : ''}" ${isLogged || myFinished ? 'disabled' : ''} min="0">
+            placeholder="reps" value="${repsVal}" ${isLogged || myFinished ? 'disabled' : ''} min="0">
           <button class="log-set-btn ${isLogged ? 'logged' : ''}" id="logBtn_${exIdx}_${setNum}"
             ${isLogged || myFinished ? 'disabled' : ''}
             onclick="logSet(${exIdx}, ${setNum}, '${ex.name.replace(/'/g, "\\'")}')">${isLogged ? '&#10003;' : '&#x25B6;'}</button>
