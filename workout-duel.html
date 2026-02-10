@@ -13,6 +13,7 @@
 <script src="lib/supabase.js?v=3"></script>
 <script src="lib/auth-guard.js?v=3"></script>
 <script src="workout_library.js"></script>
+<script src="exercise_videos.js"></script>
 
 <style>
   :root {
@@ -920,6 +921,273 @@
   .toast.show {
     transform: translateX(-50%) translateY(0);
   }
+
+  /* ==========================================
+     WORKOUT BUILDER MODAL
+     ========================================== */
+  .builder-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 500;
+    backdrop-filter: blur(4px);
+  }
+
+  .builder-modal-overlay.active {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .builder-modal {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background: var(--duel-bg);
+    overflow: hidden;
+  }
+
+  .builder-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: rgba(26, 26, 46, 0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--duel-border);
+    flex-shrink: 0;
+  }
+
+  .builder-modal-header h2 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--duel-accent);
+  }
+
+  .builder-modal-close {
+    background: none;
+    border: none;
+    color: var(--duel-text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+
+  .builder-modal-close:hover {
+    color: var(--duel-text);
+    background: var(--duel-surface-light);
+  }
+
+  .builder-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    padding-bottom: 100px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .builder-search-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--duel-border);
+    background: var(--duel-surface-light);
+    color: var(--duel-text);
+    font-size: 0.9rem;
+    font-weight: 500;
+    outline: none;
+    margin-bottom: 12px;
+    transition: border-color 0.3s;
+  }
+
+  .builder-search-input:focus {
+    border-color: var(--duel-accent);
+  }
+
+  .builder-search-input::placeholder {
+    color: var(--duel-text-muted);
+  }
+
+  .builder-filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .builder-filter-chip {
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--duel-border);
+    background: transparent;
+    color: var(--duel-text-muted);
+    transition: all 0.2s;
+  }
+
+  .builder-filter-chip.active {
+    background: var(--duel-accent);
+    color: var(--duel-bg);
+    border-color: var(--duel-accent);
+  }
+
+  .builder-exercise-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    background: var(--duel-surface-light);
+    border: 1px solid var(--duel-border);
+    transition: all 0.2s;
+    min-height: 52px;
+  }
+
+  .builder-exercise-item.selected {
+    border-color: var(--duel-accent);
+    background: rgba(167, 139, 250, 0.1);
+  }
+
+  .builder-exercise-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex: 1;
+    padding-right: 10px;
+  }
+
+  .builder-exercise-toggle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    background: var(--duel-surface);
+    color: var(--duel-text-muted);
+  }
+
+  .builder-exercise-toggle.selected {
+    background: var(--duel-accent);
+    color: white;
+  }
+
+  .builder-floating-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px;
+    background: rgba(26, 26, 46, 0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--duel-border);
+    display: none;
+    gap: 10px;
+    z-index: 510;
+  }
+
+  .builder-floating-bar.active {
+    display: flex;
+  }
+
+  .builder-floating-bar .builder-save-btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: white;
+    box-shadow: 0 4px 20px var(--duel-accent-glow);
+    transition: all 0.3s;
+  }
+
+  .builder-floating-bar .builder-save-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .builder-load-more-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    background: var(--duel-surface-light);
+    color: var(--duel-text-muted);
+    font-weight: 600;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+
+  .builder-load-more-btn:hover {
+    background: var(--duel-surface);
+    color: var(--duel-text);
+  }
+
+  .builder-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--duel-text-muted);
+  }
+
+  .builder-selected-preview {
+    margin-bottom: 14px;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(167, 139, 250, 0.08);
+    border: 1px solid rgba(167, 139, 250, 0.2);
+  }
+
+  .builder-selected-preview h4 {
+    font-size: 0.8rem;
+    color: var(--duel-accent);
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+
+  .builder-selected-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .builder-selected-tag {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: var(--duel-surface-light);
+    color: var(--duel-text);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .builder-selected-tag .remove-tag {
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 0.8rem;
+  }
+
+  .builder-selected-tag .remove-tag:hover {
+    opacity: 1;
+  }
 </style>
 </head>
 <body>
@@ -1042,6 +1310,42 @@
     <div id="duelDetailContent"><div class="spinner"></div></div>
   </div>
 
+</div>
+
+<!-- Workout Builder Modal -->
+<div class="builder-modal-overlay" id="builderModalOverlay">
+  <div class="builder-modal">
+    <div class="builder-modal-header">
+      <h2>Build Workout</h2>
+      <button class="builder-modal-close" onclick="closeDuelBuilder()">Cancel</button>
+    </div>
+    <div class="builder-modal-body">
+      <input type="text" class="builder-search-input" id="duelBuilderSearch" placeholder="Search 1800+ exercises..." oninput="filterDuelBuilderExercises()">
+
+      <div class="builder-filters" id="duelBuilderFilters">
+        <button class="builder-filter-chip" data-filter="muscle" data-value="chest" onclick="toggleDuelBuilderFilter(this)">Chest</button>
+        <button class="builder-filter-chip" data-filter="muscle" data-value="back" onclick="toggleDuelBuilderFilter(this)">Back</button>
+        <button class="builder-filter-chip" data-filter="muscle" data-value="shoulders" onclick="toggleDuelBuilderFilter(this)">Shoulders</button>
+        <button class="builder-filter-chip" data-filter="muscle" data-value="arms" onclick="toggleDuelBuilderFilter(this)">Arms</button>
+        <button class="builder-filter-chip" data-filter="muscle" data-value="core" onclick="toggleDuelBuilderFilter(this)">Core</button>
+        <button class="builder-filter-chip" data-filter="muscle" data-value="legs" onclick="toggleDuelBuilderFilter(this)">Legs</button>
+        <button class="builder-filter-chip" data-filter="muscle" data-value="glutes" onclick="toggleDuelBuilderFilter(this)">Glutes</button>
+      </div>
+
+      <div id="duelBuilderSelectedPreview" class="builder-selected-preview" style="display:none;">
+        <h4>Selected (<span id="duelBuilderSelectedCount">0</span>)</h4>
+        <div class="builder-selected-tags" id="duelBuilderSelectedTags"></div>
+      </div>
+
+      <div id="duelBuilderExerciseList"></div>
+    </div>
+
+    <div class="builder-floating-bar" id="duelBuilderFloatingBar">
+      <button class="builder-save-btn" onclick="saveDuelBuilderWorkout()">
+        Save &amp; Select (<span id="duelBuilderCount">0</span>)
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Toast -->
@@ -1495,9 +1799,273 @@ function selectCustomWorkout(workoutId) {
   document.getElementById('btnStep2Next').disabled = false;
 }
 
+// ============================================================
+// DUEL WORKOUT BUILDER MODAL
+// ============================================================
+let duelBuilderSelection = [];
+let duelBuilderLimit = 50;
+let duelBuilderActiveFilters = [];
+
+const DUEL_POPULAR_EXERCISES = new Set([
+  'Barbell Bench Press', 'Barbell Squat', 'Barbell Deadlift', 'Barbell Row',
+  'Barbell Overhead Press', 'Barbell Romanian Deadlift', 'Barbell Hip Thrust',
+  'Dumbbell Bench Press', 'Dumbbell Row', 'Dumbbell Curl', 'Dumbbell Shoulder Press',
+  'Dumbbell Lateral Raise', 'Dumbbell Fly', 'Dumbbell Lunge',
+  'Push Up', 'Pull Up', 'Chin Up', 'Dip', 'Plank', 'Squat', 'Lunge',
+  'Burpee', 'Mountain Climber', 'Crunch', 'Leg Raise',
+  'Cable Row', 'Cable Fly', 'Cable Tricep Pushdown', 'Cable Face Pull',
+  'Leg Press', 'Lat Pulldown', 'Leg Curl', 'Leg Extension'
+]);
+
 function goToBuildWorkout() {
-  // Navigate to the dashboard workout builder
-  window.location.href = '/dashboard.html?tab=movement-tab';
+  openDuelBuilder();
+}
+
+function openDuelBuilder() {
+  duelBuilderSelection = [];
+  duelBuilderLimit = 50;
+  duelBuilderActiveFilters = [];
+
+  // Reset UI
+  document.getElementById('duelBuilderSearch').value = '';
+  document.querySelectorAll('.builder-filter-chip').forEach(c => c.classList.remove('active'));
+  updateDuelBuilderSelectedPreview();
+  filterDuelBuilderExercises();
+
+  document.getElementById('builderModalOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDuelBuilder() {
+  document.getElementById('builderModalOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function toggleDuelBuilderFilter(btn) {
+  const value = btn.dataset.value;
+  const idx = duelBuilderActiveFilters.indexOf(value);
+  if (idx > -1) {
+    duelBuilderActiveFilters.splice(idx, 1);
+    btn.classList.remove('active');
+  } else {
+    duelBuilderActiveFilters.push(value);
+    btn.classList.add('active');
+  }
+  duelBuilderLimit = 50;
+  filterDuelBuilderExercises();
+}
+
+function matchesDuelBuilderFilter(exerciseName) {
+  if (duelBuilderActiveFilters.length === 0) return true;
+  const n = exerciseName.toLowerCase();
+  return duelBuilderActiveFilters.some(muscle => {
+    if (muscle === 'chest') return n.includes('chest') || n.includes('pec') || (n.includes('press') && (n.includes('bench') || n.includes('floor')));
+    if (muscle === 'back') return n.includes('back') || n.includes('lat') || n.includes('row') || n.includes('pull up') || n.includes('pullup');
+    if (muscle === 'shoulders') return n.includes('shoulder') || n.includes('delt') || n.includes('raise') || n.includes('overhead press');
+    if (muscle === 'arms') return n.includes('bicep') || n.includes('tricep') || n.includes('curl') || (n.includes('extension') && !n.includes('leg') && !n.includes('back'));
+    if (muscle === 'core') return n.includes('ab') || n.includes('core') || n.includes('crunch') || n.includes('plank') || n.includes('oblique');
+    if (muscle === 'legs') return n.includes('squat') || n.includes('lunge') || n.includes('leg') || n.includes('quad') || n.includes('hamstring') || n.includes('calf');
+    if (muscle === 'glutes') return n.includes('glute') || n.includes('hip') || n.includes('kickback');
+    return false;
+  });
+}
+
+function filterDuelBuilderExercises() {
+  const list = document.getElementById('duelBuilderExerciseList');
+  list.innerHTML = '';
+
+  if (typeof EXERCISE_VIDEOS === 'undefined') {
+    list.innerHTML = '<div class="builder-empty">Exercise library not loaded.</div>';
+    return;
+  }
+
+  const query = (document.getElementById('duelBuilderSearch').value || '').toLowerCase();
+  const terms = query.split(' ').filter(t => t);
+  const allKeys = Object.keys(EXERCISE_VIDEOS);
+  const matchedKeys = [];
+
+  for (const key of allKeys) {
+    const keyLower = key.toLowerCase();
+    let matchesQuery = true;
+    if (terms.length > 0) {
+      for (const term of terms) {
+        if (!keyLower.includes(term)) { matchesQuery = false; break; }
+      }
+    }
+    if (matchesQuery && matchesDuelBuilderFilter(key)) {
+      matchedKeys.push(key);
+    }
+  }
+
+  // Sort by relevance
+  if (terms.length > 0) {
+    matchedKeys.sort((a, b) => {
+      return scoreDuelBuilderMatch(b, terms, query) - scoreDuelBuilderMatch(a, terms, query);
+    });
+  }
+
+  const keysToRender = matchedKeys.slice(0, duelBuilderLimit);
+
+  keysToRender.forEach(key => {
+    const isSelected = duelBuilderSelection.includes(key);
+    const div = document.createElement('div');
+    div.className = 'builder-exercise-item' + (isSelected ? ' selected' : '');
+    div.innerHTML = `
+      <div class="builder-exercise-name">${key}</div>
+      <button class="builder-exercise-toggle ${isSelected ? 'selected' : ''}" onclick="toggleDuelBuilderItem(this, '${key.replace(/'/g, "\\'")}')">
+        ${isSelected ? '&#x2713;' : '+'}
+      </button>`;
+    list.appendChild(div);
+  });
+
+  if (matchedKeys.length > duelBuilderLimit) {
+    const moreDiv = document.createElement('div');
+    moreDiv.innerHTML = `<button class="builder-load-more-btn" onclick="duelBuilderLimit += 50; filterDuelBuilderExercises()">Load More (${matchedKeys.length - duelBuilderLimit} remaining)</button>`;
+    list.appendChild(moreDiv);
+  }
+
+  if (matchedKeys.length === 0) {
+    list.innerHTML = '<div class="builder-empty">No exercises found</div>';
+  }
+
+  updateDuelBuilderFloatingBar();
+}
+
+function scoreDuelBuilderMatch(name, terms, fullQuery) {
+  const n = name.toLowerCase();
+  const q = fullQuery.toLowerCase().trim();
+  let score = 0;
+  if (n === q) score += 1000;
+  else if (n.startsWith(q)) score += 500;
+  else if (terms.length > 0 && n.startsWith(terms[0])) score += 200;
+  if (DUEL_POPULAR_EXERCISES.has(name)) score += 100;
+  const words = n.split(/\s+/);
+  for (const term of terms) {
+    if (words.some(w => w === term)) score += 50;
+    else if (words.some(w => w.startsWith(term))) score += 25;
+  }
+  score += Math.max(0, 20 - name.length);
+  return score;
+}
+
+function toggleDuelBuilderItem(btn, key) {
+  const idx = duelBuilderSelection.indexOf(key);
+  const parent = btn.parentElement;
+  if (idx > -1) {
+    duelBuilderSelection.splice(idx, 1);
+    parent.classList.remove('selected');
+    btn.classList.remove('selected');
+    btn.innerHTML = '+';
+  } else {
+    duelBuilderSelection.push(key);
+    parent.classList.add('selected');
+    btn.classList.add('selected');
+    btn.innerHTML = '&#x2713;';
+  }
+  updateDuelBuilderFloatingBar();
+  updateDuelBuilderSelectedPreview();
+}
+
+function updateDuelBuilderFloatingBar() {
+  const bar = document.getElementById('duelBuilderFloatingBar');
+  const count = document.getElementById('duelBuilderCount');
+  if (duelBuilderSelection.length > 0) {
+    bar.classList.add('active');
+    count.textContent = duelBuilderSelection.length;
+  } else {
+    bar.classList.remove('active');
+  }
+}
+
+function updateDuelBuilderSelectedPreview() {
+  const preview = document.getElementById('duelBuilderSelectedPreview');
+  const tags = document.getElementById('duelBuilderSelectedTags');
+  const countEl = document.getElementById('duelBuilderSelectedCount');
+
+  if (duelBuilderSelection.length === 0) {
+    preview.style.display = 'none';
+    return;
+  }
+
+  preview.style.display = 'block';
+  countEl.textContent = duelBuilderSelection.length;
+  tags.innerHTML = duelBuilderSelection.map(name =>
+    `<span class="builder-selected-tag">${name} <span class="remove-tag" onclick="removeDuelBuilderItem('${name.replace(/'/g, "\\'")}')">&times;</span></span>`
+  ).join('');
+}
+
+function removeDuelBuilderItem(key) {
+  const idx = duelBuilderSelection.indexOf(key);
+  if (idx > -1) {
+    duelBuilderSelection.splice(idx, 1);
+    updateDuelBuilderSelectedPreview();
+    updateDuelBuilderFloatingBar();
+    filterDuelBuilderExercises();
+  }
+}
+
+async function saveDuelBuilderWorkout() {
+  if (duelBuilderSelection.length === 0) return;
+
+  const name = prompt('Name your workout:');
+  if (!name) return;
+
+  try {
+    // Save to database
+    const { data, error } = await window.supabaseClient
+      .from('workouts')
+      .insert([{
+        user_id: currentUser.id,
+        workout_type: 'custom_template',
+        template_name: name,
+        template_data: {
+          exercises: duelBuilderSelection,
+          date: new Date().toISOString()
+        }
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Clear cache so the new workout shows up
+    cachedCustomWorkouts = null;
+
+    // Build exercises array for the duel
+    const exercises = duelBuilderSelection.map((exName, i) => ({
+      name: exName,
+      sets: 3
+    }));
+
+    // Auto-select this workout for the duel
+    selectedWorkout = {
+      id: data.id,
+      name: name,
+      category: 'custom',
+      subcategory: 'saved',
+      exercises: exercises,
+      duration: `${exercises.length * 8} min`,
+      difficulty: 'Custom',
+      equipment: []
+    };
+
+    // Close modal
+    closeDuelBuilder();
+
+    // Reload the custom workouts list and highlight the new one
+    await loadCustomWorkoutsForDuel();
+
+    // Highlight the new workout and enable Next button
+    document.querySelectorAll('.workout-picker-item').forEach(el => {
+      el.classList.toggle('selected', el.dataset.wid === data.id);
+    });
+    document.getElementById('btnStep2Next').disabled = false;
+
+    showToast(`"${name}" created & selected!`);
+  } catch (err) {
+    console.error('Failed to save workout:', err);
+    showToast('Failed to save workout. Please try again.');
+  }
 }
 
 function selectSubcategory(cat, sub) {
