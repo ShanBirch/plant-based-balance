@@ -39148,12 +39148,15 @@ async function handleWorkoutCardPhotoCapture(event) {
     }
 
     try {
-        // Convert photo to base64
+        // Compress photo first to avoid payload size issues
+        const compressedFile = await compressMealImage(file);
+
+        // Convert compressed photo to base64
         const base64Data = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (e) => resolve(e.target.result);
             reader.onerror = reject;
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(compressedFile);
         });
 
         // Build workout card data from completedWorkoutDataForShare
@@ -39897,35 +39900,58 @@ async function uploadStory() {
             throw new Error('Please sign in to share stories');
         }
 
-        // Upload file to storage
-        const fileName = `stories/${userId}/${Date.now()}_${window.pendingStoryFile.name}`;
-        const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
-            .from('user-uploads')
-            .upload(fileName, window.pendingStoryFile);
+        // Compress image if needed
+        let fileToUpload = window.pendingStoryFile;
+        if (window.pendingStoryType === 'image') {
+            fileToUpload = await compressMealImage(window.pendingStoryFile);
+        }
 
-        if (uploadError) throw uploadError;
+        // Check file size - if > 5MB, use Backblaze B2, otherwise use Base64
+        const fileSizeMB = fileToUpload.size / (1024 * 1024);
+        let mediaUrl;
 
-        // Get public URL
-        const { data: urlData } = window.supabaseClient.storage
-            .from('user-uploads')
-            .getPublicUrl(fileName);
+        if (fileSizeMB > 5) {
+            // Upload to Backblaze B2 for larger files
+            if (uploadBtn) {
+                uploadBtn.textContent = `Uploading ${Math.round(fileSizeMB)}MB...`;
+            }
 
-        const mediaUrl = urlData?.publicUrl;
+            const tempStoryId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+            const formData = new FormData();
+            formData.append('file', fileToUpload);
+            formData.append('userId', userId);
+            formData.append('storyId', tempStoryId);
+
+            const uploadResponse = await fetch('/api/upload-story-media', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!uploadResponse.ok) {
+                const errorData = await uploadResponse.json();
+                throw new Error(errorData.error || 'Upload failed');
+            }
+
+            const uploadData = await uploadResponse.json();
+            mediaUrl = uploadData.url;
+        } else {
+            // Use Base64 for smaller files (< 5MB)
+            mediaUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(fileToUpload);
+            });
+        }
 
         // Save story to database
-        const { data: storyData, error: storyError } = await window.supabaseClient
-            .from('stories')
-            .insert({
-                user_id: userId,
-                media_url: mediaUrl,
-                media_type: window.pendingStoryType,
-                caption: caption,
-                expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
-            })
-            .select()
-            .single();
-
-        if (storyError) throw storyError;
+        const storyData = await dbHelpers.stories.create(userId, {
+            media_type: window.pendingStoryType || 'image',
+            media_url: mediaUrl,
+            thumbnail_url: null,
+            caption: caption,
+            duration: 5
+        });
 
         // Check if this is a verified workout share (from the workout success screen)
         if (window.pendingWorkoutPhotoData?.forPoints) {
@@ -39939,7 +39965,7 @@ async function uploadStory() {
 
         // Close modal and show success
         closeStoryUploadModal();
-        showToast('Post shared! 🎉', 'success');
+        showToast('Post shared!', 'success');
 
         // Refresh feed and stories
         if (typeof loadPhotoFeed === 'function') {
