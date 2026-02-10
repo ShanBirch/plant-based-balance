@@ -5561,11 +5561,11 @@ async function applyAppTheme(themeKey) {
                 shadow-softness="0.8"
                 exposure="0.9"
                 environment-image="neutral"
-                camera-orbit="0deg 85deg 22m"
+                camera-orbit="0deg 85deg 29.3m"
                 field-of-view="55deg"
                 min-field-of-view="20deg"
                 max-field-of-view="120deg"
-                style="width: 133.33%; height: 133.33%; position: absolute; top: -16.67%; left: -16.67%; z-index: 3; --poster-color: transparent; touch-action: none; background: transparent;"
+                style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; --poster-color: transparent; touch-action: none; background: transparent;"
                 interaction-prompt="none">
             </model-viewer>
 
@@ -45036,10 +45036,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
 
                 // Camera distance logic based on level (larger values = smaller character in room)
-                let cameraDist = 22.0;
-                if (level >= 99) cameraDist = 12.0;
-                else if (level >= 40) cameraDist = 18.0 - ((level - 40) / 59 * 6.0);
-                else cameraDist = 22.0 - (level / 40 * 4.0);
+                // Distances are scaled by 1/0.75 to compensate for the removed CSS scale(0.75)
+                // so the character appears the same size but the canvas fills the full container,
+                // preventing the visible clipping box that was caused by the shrunken canvas.
+                let cameraDist = 29.3;
+                if (level >= 99) cameraDist = 16.0;
+                else if (level >= 40) cameraDist = 24.0 - ((level - 40) / 59 * 8.0);
+                else cameraDist = 29.3 - (level / 40 * 5.3);
 
                 // Use consistent field-of-view for both male and female characters
                 let fov = 30;
@@ -45050,11 +45053,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     modelViewer.setAttribute('field-of-view', `${fov}deg`);
                 }
 
-                // Scale(0.75) keeps character at correct size. The model-viewer element
-                // is sized at 133.33% (1/0.75) so after scaling, the visible canvas
-                // fills the full container — clipping happens at screen edges, not an inner box.
-                modelViewer.style.transform = 'scale(0.75)';
-                modelViewer.style.transformOrigin = 'center center';
+                // Character fills full container - no CSS scale transform needed
+                // (clipping now happens at container edges = screen edges, not a smaller box)
+                modelViewer.style.transform = '';
+                modelViewer.style.transformOrigin = '';
             }
         };
 
@@ -45555,8 +45557,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Base background camera distance - scales proportionally with character zoom
             // Higher BG_BASE_DISTANCE = gym appears larger/closer
-            const BG_BASE_DISTANCE = 8.0; // meters at default character distance
-            const CHAR_BASE_DISTANCE = 22; // default character orbit distance
+            const BG_BASE_DISTANCE = 10.65; // meters at default character distance (8.0 * 29.3/22)
+            const CHAR_BASE_DISTANCE = 29.3; // default character orbit distance
             const BG_SCALE = BG_BASE_DISTANCE / CHAR_BASE_DISTANCE;
 
             charViewer.addEventListener('camera-change', () => {
@@ -46766,8 +46768,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 viewer.resetTurntableRotation();
             }
 
-            const orbitParts = (savedOrbit || '0deg 85deg 22m').split(/\s+/);
-            const currentDist = orbitParts[2] || '22m';
+            const orbitParts = (savedOrbit || '0deg 85deg 29.3m').split(/\s+/);
+            const currentDist = orbitParts[2] || '29.3m';
             viewer.setAttribute('camera-orbit', `0deg 85deg ${currentDist}`);
 
             viewer.style.left = '-30%';
