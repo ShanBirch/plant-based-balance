@@ -18839,7 +18839,7 @@ function switchView(id) {
 
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
-const totalWizardSteps = 19;
+const totalWizardSteps = 20;
 
 // Workout Calendar State
 let wizardTrainingFrequency = 0;
@@ -19011,7 +19011,7 @@ function updateWizardUI() {
     }
 
     // 4. Update final slide goal text
-    if(currentWizardStep === 19) {
+    if(currentWizardStep === 20) {
         const goalDiv = document.getElementById('wizard-hormone-goal');
         if(goalDiv) {
             goalDiv.innerHTML = 'Goal: Get Stronger & Level Up Your FitGotchi 💪';
@@ -20621,6 +20621,45 @@ async function finishOnboarding() {
             console.log("Onboarding marked complete in database");
         } catch (e) {
             console.warn("Failed to mark onboarding complete in database:", e);
+        }
+    }
+
+    // Auto-add Coach Shannon as a friend for all new users
+    if (window.currentUser) {
+        const coachEmails = ['shannon@plantbased-balance.org', 'shannonbirch@cocospersonaltraining.com'];
+        const userId = window.currentUser.id || window.currentUser.user_id;
+
+        for (const coachEmail of coachEmails) {
+            try {
+                // Look up coach user by email
+                const { data: coachUser } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('email', coachEmail)
+                    .maybeSingle();
+
+                if (coachUser && coachUser.id !== userId) {
+                    // Check if already friends (avoid duplicate insert)
+                    const { data: existing } = await supabase
+                        .from('friendships')
+                        .select('id')
+                        .or(`and(user_id.eq.${coachUser.id},friend_id.eq.${userId}),and(user_id.eq.${userId},friend_id.eq.${coachUser.id})`)
+                        .maybeSingle();
+
+                    if (!existing) {
+                        await supabase
+                            .from('friendships')
+                            .insert([{
+                                user_id: coachUser.id,
+                                friend_id: userId,
+                                status: 'accepted'
+                            }]);
+                        console.log('Auto-added Coach Shannon (' + coachEmail + ') as friend!');
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not auto-add coach (' + coachEmail + ') as friend:', e);
+            }
         }
     }
 
@@ -27574,7 +27613,7 @@ function openAsClient() {
         <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative; flex-shrink: 0;">
             <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
             <div class="wizard-progress" style="display:flex; justify-content:center; gap:6px; margin-bottom:15px;">
-                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
             <h2 id="wizard-title" style="margin:0; color:var(--primary);">Let's Align Your Body</h2>
         </div>
@@ -28206,8 +28245,33 @@ function openAsClient() {
                 <p style="text-align:center; color:#64748b; font-size:0.8rem;">You can always share your code later from the Friends tab</p>
             </div>
 
-            <!-- SLIDE 19: YOU'RE ALL SET! -->
-            <div class="wizard-slide" id="slide-19" style="display:none; text-align:center;">
+            <!-- SLIDE 19: BUILT BY SHANNON -->
+            <div class="wizard-slide" id="slide-19" style="display:none;">
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">💚</div>
+                <h3 style="text-align:center; margin-bottom:10px;">Built by Shannon</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">This app was designed and built by your coach, Shannon. If you have any suggestions, feedback, or ideas to make it even better — I'd love to hear from you!</p>
+
+                <div style="background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:20px; border-radius:16px; border:1px solid #bbf7d0; margin-bottom:20px;">
+                    <p style="margin:0 0 12px; font-weight:700; color:#166534; font-size:1rem;">How to message your coach:</p>
+                    <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:12px;">
+                        <div style="width:28px; height:28px; min-width:28px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:0.85rem;">1</div>
+                        <p style="margin:0; color:#334155; font-size:0.9rem; line-height:1.5;">Tap the <strong>Friends</strong> tab at the bottom of your screen</p>
+                    </div>
+                    <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:12px;">
+                        <div style="width:28px; height:28px; min-width:28px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:0.85rem;">2</div>
+                        <p style="margin:0; color:#334155; font-size:0.9rem; line-height:1.5;">Tap <strong>Coach Shannon</strong> at the top of your friends list</p>
+                    </div>
+                    <div style="display:flex; align-items:flex-start; gap:12px;">
+                        <div style="width:28px; height:28px; min-width:28px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:0.85rem;">3</div>
+                        <p style="margin:0; color:#334155; font-size:0.9rem; line-height:1.5;">Send me a message — I'll get back to you with guidance!</p>
+                    </div>
+                </div>
+
+                <p style="text-align:center; color:#64748b; font-size:0.85rem;">Your feedback helps make this app better for everyone. Don't be shy!</p>
+            </div>
+
+            <!-- SLIDE 20: YOU'RE ALL SET! -->
+            <div class="wizard-slide" id="slide-20" style="display:none; text-align:center;">
                 <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
                 <h3 style="margin-bottom:10px;">You're All Set!</h3>
                 <p style="color:#64748b; margin-bottom:20px;">Your personalized plan is ready.</p>
