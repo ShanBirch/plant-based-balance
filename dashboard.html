@@ -22731,9 +22731,18 @@ function getPreviousWorkoutSummary(exerciseName) {
     const lastDate = dates[0];
     const lastWorkoutSets = dateGroups[lastDate].sort((a, b) => (a.set || 0) - (b.set || 0));
 
+    // Deduplicate by set number - keep only one entry per set
+    const seenSets = {};
+    const uniqueSets = lastWorkoutSets.filter(s => {
+        const setNum = s.set || 0;
+        if (seenSets[setNum]) return false;
+        seenSets[setNum] = true;
+        return true;
+    });
+
     // Calculate total volume from last workout
     let totalVolume = 0;
-    const sets = lastWorkoutSets.map(s => {
+    const sets = uniqueSets.map(s => {
         const weight = parseFloat(s.kg) || 0;
         const reps = parseFloat(s.reps) || 0;
         const setVolume = weight * reps;
