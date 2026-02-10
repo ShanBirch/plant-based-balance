@@ -73,6 +73,7 @@
 <script src="lib/stories.js"></script>
 <script src="lib/games.js"></script>
 <script src="lib/nutrition-calculator.js"></script>
+<script src="lib/analytics.js"></script>
 <!-- Suppress Avatar system for now -->
 <!-- <script src="lib/avatar.js"></script> -->
 <!-- <link rel="stylesheet" href="lib/avatar.css"> -->
@@ -16202,6 +16203,11 @@ function connectApp(appName) {
 
 // Real switchAppTab implementation - replaces the early stub
 function _switchAppTabReal(tabName, btn) {
+    // Track tab switch in analytics
+    if (window.FitGotchiAnalytics) {
+        window.FitGotchiAnalytics.trackTabSwitch(tabName);
+    }
+
     // Track current active tab for level-up animation visibility
     if (typeof currentActiveTab !== 'undefined') {
         currentActiveTab = tabName;
@@ -23140,6 +23146,14 @@ let workoutStartTime = null; // Store actual start timestamp for accurate timing
 
 function startWorkoutTimer() {
     workoutStartTime = Date.now(); // Record when workout actually started
+
+    // Track workout start in analytics
+    if (window.FitGotchiAnalytics) {
+        window.FitGotchiAnalytics.trackWorkoutStart(
+            window.currentWorkoutName || 'custom',
+            window.currentCustomWorkoutId ? 'custom' : 'library'
+        );
+    }
     const display = document.getElementById('workout-timer');
     clearInterval(workoutTimerInterval);
 
@@ -23645,6 +23659,19 @@ async function finishWorkout() {
              // Save workout data with retry logic to handle network issues
              await saveWorkoutWithRetry(setsToSave, user.id);
              console.log("✅ Workout saved to DB");
+
+             // Track workout completion in analytics
+             if (window.FitGotchiAnalytics) {
+                 const exerciseCount = new Set(setsToSave.map(s => s.exercise)).size;
+                 const durationParts = duration.split(':');
+                 const durationSec = durationParts.length === 2
+                     ? parseInt(durationParts[0]) * 60 + parseInt(durationParts[1])
+                     : 0;
+                 window.FitGotchiAnalytics.trackWorkoutComplete(
+                     durationSec, exerciseCount, setsToSave.length,
+                     window.currentWorkoutName || 'custom'
+                 );
+             }
 
              // Clear backup after successful save
              clearWorkoutBackup();
@@ -28754,7 +28781,12 @@ window.submitCoachMessage = async function() {
     if(!input) return;
     const text = input.value.trim();
     if (!text) return;
-    
+
+    // Track chat message in analytics
+    if (window.FitGotchiAnalytics) {
+        window.FitGotchiAnalytics.trackChatMessage(text.length);
+    }
+
     // 1. Render User Message Immediately
     const container = document.getElementById('chat-messages-container');
     if(container) {
@@ -32943,6 +32975,11 @@ let pendingChallengeId = null;
 
 // Accept challenge invitation - always requires payment
 async function acceptChallengeInvite(challengeId) {
+    // Track challenge join in analytics
+    if (window.FitGotchiAnalytics) {
+        window.FitGotchiAnalytics.trackChallengeJoined('invite', 0);
+    }
+
     pendingChallengeId = challengeId;
 
     // Fetch the challenge to get the entry_fee and rare_reward_id
@@ -33603,6 +33640,11 @@ function closeDirectMessageModal() {
 
 // Open coach chat modal
 function openCoachChatModal() {
+    // Track chat session start
+    if (window.FitGotchiAnalytics) {
+        window.FitGotchiAnalytics.trackChatSessionStart();
+    }
+
     const modal = document.getElementById('coach-chat-modal');
     if (modal) {
         modal.style.display = 'flex';
@@ -34927,6 +34969,11 @@ function playVideo() {
 }
 
 function openExerciseVideo(url, title, autoplay = false) {
+    // Track video play in analytics
+    if (window.FitGotchiAnalytics) {
+        window.FitGotchiAnalytics.trackVideoPlayed(title);
+    }
+
     console.log("Opening video for:", title);
 
     // 1. Resolve URL if missing
@@ -35605,6 +35652,18 @@ async function submitDailyCycleSync() {
                     }
                 });
                 console.log('✅ Check-in saved to Supabase');
+
+                // Track check-in in analytics
+                if (window.FitGotchiAnalytics) {
+                    const fields = [];
+                    if (window.checkInProgress.energy) fields.push('energy');
+                    if (window.checkInProgress.mood) fields.push('mood');
+                    if (window.checkInProgress.flow) fields.push('flow');
+                    if (window.checkInProgress.fluid) fields.push('fluid');
+                    if (window.checkInProgress.recovery) fields.push('recovery');
+                    if ((window.checkInProgress.symptoms || []).length > 0) fields.push('symptoms');
+                    window.FitGotchiAnalytics.trackCheckIn(fields);
+                }
             } catch (e) {
                 console.error('Failed to save check-in to DB:', e);
             }
@@ -36033,6 +36092,11 @@ async function submitWeighInModal() {
     try {
         // Log the weigh-in
         await db.weighIns.log(window.currentUser.id, weightValue);
+
+        // Track weigh-in in analytics
+        if (window.FitGotchiAnalytics) {
+            window.FitGotchiAnalytics.trackWeighIn();
+        }
 
         // Award 1 XP
         try {
@@ -38177,6 +38241,10 @@ function showMilestoneToast(milestone) {
 
 // Show points earned toast
 function showPointsEarnedToast(points, bonusPoints = 0, streak = 0) {
+    // Track points earned in analytics
+    if (window.FitGotchiAnalytics) {
+        window.FitGotchiAnalytics.trackPointsEarned(points + bonusPoints, 'activity');
+    }
     const toast = document.createElement('div');
     toast.className = 'points-earned-toast';
     toast.innerHTML = `
@@ -38606,6 +38674,10 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
 
 // Show level up toast with celebration (legacy - kept as fallback)
 function showLevelUpToast(newLevel, title, previousLevel = null, lifetimePoints = 0, currentStreak = 0) {
+    // Track level up in analytics
+    if (window.FitGotchiAnalytics) {
+        window.FitGotchiAnalytics.trackLevelUp(newLevel);
+    }
     // Get the previous title if we have previous level
     const previousTitle = previousLevel ? getLevelTitle(previousLevel) : null;
     const showTitleTransition = previousTitle && previousTitle !== title;
@@ -39595,6 +39667,11 @@ let activityFormState = {
 let savedActivityData = null;
 
 function openLogActivityForm() {
+    // Track activity log form opened
+    if (window.FitGotchiAnalytics) {
+        window.FitGotchiAnalytics.track('activity_log_opened', {});
+    }
+
     hideAllAppViews();
     document.getElementById('view-log-activity').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
@@ -40979,6 +41056,16 @@ async function saveMealLogWithType(mealData) {
 
     if (!userId) {
         throw new Error('User not authenticated');
+    }
+
+    // Track meal log in analytics
+    if (window.FitGotchiAnalytics) {
+        const method = mealData.inputMethod || 'photo';
+        const itemCount = (mealData.foodItems || []).length;
+        window.FitGotchiAnalytics.trackMealLogged(method, itemCount);
+        if (mealData.photoUrl) {
+            window.FitGotchiAnalytics.trackMealPhotoUploaded();
+        }
     }
 
     const now = new Date();

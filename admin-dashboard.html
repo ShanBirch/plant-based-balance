@@ -545,8 +545,38 @@
             <!-- Analytics Section -->
             <div id="analytics" class="section">
                 <div class="content-card">
-                    <h2>Analytics Dashboard</h2>
-                    <p style="color: #64748b;">Detailed analytics coming soon...</p>
+                    <h2>User Behavior Analytics</h2>
+                    <p style="color: #64748b; margin-bottom: 20px;">Feature usage, session data, and engagement metrics from the last 30 days.</p>
+
+                    <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
+                        <button onclick="loadAnalyticsData(7)" class="analytics-period-btn" data-days="7" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-weight: 500;">7 Days</button>
+                        <button onclick="loadAnalyticsData(14)" class="analytics-period-btn" data-days="14" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-weight: 500;">14 Days</button>
+                        <button onclick="loadAnalyticsData(30)" class="analytics-period-btn active" data-days="30" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #48864B; background: #48864B; color: white; cursor: pointer; font-weight: 500;">30 Days</button>
+                    </div>
+
+                    <!-- Feature Usage Breakdown -->
+                    <h3 style="margin-bottom: 16px; color: #1e293b;">Feature Usage (Event Counts)</h3>
+                    <div id="analytics-feature-usage" style="margin-bottom: 32px;">
+                        <p style="color: #94a3b8;">Loading...</p>
+                    </div>
+
+                    <!-- Engagement Metrics -->
+                    <h3 style="margin-bottom: 16px; color: #1e293b;">Engagement Summary</h3>
+                    <div id="analytics-engagement" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px;">
+                        <p style="color: #94a3b8;">Loading...</p>
+                    </div>
+
+                    <!-- Top Users by Activity -->
+                    <h3 style="margin-bottom: 16px; color: #1e293b;">Most Active Users</h3>
+                    <div id="analytics-top-users" style="margin-bottom: 32px;">
+                        <p style="color: #94a3b8;">Loading...</p>
+                    </div>
+
+                    <!-- Session Duration Stats -->
+                    <h3 style="margin-bottom: 16px; color: #1e293b;">Average Time Per Feature (seconds)</h3>
+                    <div id="analytics-feature-time" style="margin-bottom: 32px;">
+                        <p style="color: #94a3b8;">Loading...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -849,10 +879,234 @@
 
             currentView = sectionName;
 
+            // Load analytics data when switching to analytics section
+            if (sectionName === 'analytics') {
+                loadAnalyticsData(30);
+            }
+
             // Close sidebar on mobile
             if (window.innerWidth <= 768) {
                 closeSidebar();
             }
+        }
+
+        // --- Analytics Dashboard ---
+        async function loadAnalyticsData(days = 30) {
+            // Update period button styles
+            document.querySelectorAll('.analytics-period-btn').forEach(btn => {
+                if (parseInt(btn.dataset.days) === days) {
+                    btn.style.background = '#48864B';
+                    btn.style.color = 'white';
+                    btn.style.borderColor = '#48864B';
+                } else {
+                    btn.style.background = 'white';
+                    btn.style.color = '#1e293b';
+                    btn.style.borderColor = '#e2e8f0';
+                }
+            });
+
+            try {
+                const since = new Date(Date.now() - days * 86400000).toISOString();
+
+                // Fetch all activity events in the period
+                const { data: events, error } = await window.supabaseClient
+                    .from('user_activity')
+                    .select('activity_type, activity_data, user_id, occurred_at')
+                    .gte('occurred_at', since)
+                    .order('occurred_at', { ascending: false })
+                    .limit(5000);
+
+                if (error) throw error;
+
+                renderFeatureUsage(events || []);
+                renderEngagement(events || [], days);
+                renderTopUsers(events || []);
+                renderFeatureTime(events || []);
+
+            } catch (err) {
+                console.error('Analytics load error:', err);
+                document.getElementById('analytics-feature-usage').innerHTML =
+                    '<p style="color: #ef4444;">Failed to load analytics data. Make sure user_activity table has data.</p>';
+            }
+        }
+
+        function renderFeatureUsage(events) {
+            const container = document.getElementById('analytics-feature-usage');
+            if (events.length === 0) {
+                container.innerHTML = '<p style="color: #94a3b8;">No events recorded yet. Analytics will populate as users interact with the app.</p>';
+                return;
+            }
+
+            // Count events by type
+            const counts = {};
+            events.forEach(e => {
+                counts[e.activity_type] = (counts[e.activity_type] || 0) + 1;
+            });
+
+            // Sort by count descending
+            const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+            const maxCount = sorted[0]?.[1] || 1;
+
+            // Friendly labels
+            const labels = {
+                'tab_view': 'Tab Navigation',
+                'workout_start': 'Workouts Started',
+                'workout_complete': 'Workouts Completed',
+                'workout_abandoned': 'Workouts Abandoned',
+                'daily_checkin': 'Daily Check-ins',
+                'chat_message_sent': 'Chat Messages',
+                'chat_session_start': 'Chat Sessions',
+                'meal_logged': 'Meals Logged',
+                'meal_photo_uploaded': 'Meal Photos',
+                'meal_plan_viewed': 'Meal Plans Viewed',
+                'session_start': 'App Sessions',
+                'session_end': 'Sessions Ended',
+                'feature_time': 'Feature Time Events',
+                'pet_viewed': 'Pet Views',
+                'pet_evolved': 'Pet Evolutions',
+                'challenge_joined': 'Challenges Joined',
+                'challenge_activity': 'Challenge Activities',
+                'weigh_in_logged': 'Weigh-ins',
+                'points_earned': 'Points Earned',
+                'level_up': 'Level Ups',
+                'exercise_video_played': 'Exercise Videos',
+                'referral_shared': 'Referrals Shared',
+                'activity_log_opened': 'Activity Form Opens',
+                'blog_read': 'Blog Reads',
+                'learning_started': 'Learning Started',
+                'learning_completed': 'Learning Completed',
+                'calculator_used': 'Calculator Used'
+            };
+
+            let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+            sorted.forEach(([type, count]) => {
+                const pct = Math.round((count / maxCount) * 100);
+                const label = labels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                html += `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 180px; font-size: 0.85rem; color: #475569; font-weight: 500; flex-shrink: 0;">${label}</div>
+                        <div style="flex: 1; background: #f1f5f9; border-radius: 4px; height: 24px; overflow: hidden;">
+                            <div style="width: ${pct}%; background: linear-gradient(90deg, #48864B, #6ab04c); height: 100%; border-radius: 4px; min-width: 2px;"></div>
+                        </div>
+                        <div style="width: 50px; text-align: right; font-weight: 600; color: #1e293b; font-size: 0.9rem;">${count}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderEngagement(events, days) {
+            const container = document.getElementById('analytics-engagement');
+
+            // Unique users
+            const uniqueUsers = new Set(events.map(e => e.user_id)).size;
+
+            // Sessions
+            const sessions = events.filter(e => e.activity_type === 'session_start').length;
+
+            // Workouts completed
+            const workouts = events.filter(e => e.activity_type === 'workout_complete').length;
+
+            // Check-ins
+            const checkins = events.filter(e => e.activity_type === 'daily_checkin').length;
+
+            // Chat messages
+            const chats = events.filter(e => e.activity_type === 'chat_message_sent').length;
+
+            // Meals logged
+            const meals = events.filter(e => e.activity_type === 'meal_logged').length;
+
+            const metrics = [
+                { label: 'Active Users', value: uniqueUsers, color: '#3b82f6' },
+                { label: 'App Sessions', value: sessions, color: '#8b5cf6' },
+                { label: 'Workouts Done', value: workouts, color: '#ef4444' },
+                { label: 'Check-ins', value: checkins, color: '#f59e0b' },
+                { label: 'Chat Messages', value: chats, color: '#10b981' },
+                { label: 'Meals Logged', value: meals, color: '#ec4899' },
+                { label: 'Avg Events/User', value: uniqueUsers > 0 ? Math.round(events.length / uniqueUsers) : 0, color: '#6366f1' },
+                { label: 'Events/Day', value: Math.round(events.length / days), color: '#14b8a6' }
+            ];
+
+            container.innerHTML = metrics.map(m => `
+                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: 800; color: ${m.color};">${m.value.toLocaleString()}</div>
+                    <div style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">${m.label}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderTopUsers(events) {
+            const container = document.getElementById('analytics-top-users');
+            if (events.length === 0) {
+                container.innerHTML = '<p style="color: #94a3b8;">No data yet.</p>';
+                return;
+            }
+
+            // Count events per user
+            const userCounts = {};
+            events.forEach(e => {
+                userCounts[e.user_id] = (userCounts[e.user_id] || 0) + 1;
+            });
+
+            const sorted = Object.entries(userCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+            // Look up names from allUsers
+            let html = '<table class="users-table"><thead><tr><th>#</th><th>User</th><th>Events</th></tr></thead><tbody>';
+            sorted.forEach(([userId, count], i) => {
+                const user = allUsers.find(u => u.id === userId);
+                const name = user ? (user.name || user.email) : userId.slice(0, 8) + '...';
+                html += `<tr><td>${i + 1}</td><td>${name}</td><td><strong>${count}</strong></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderFeatureTime(events) {
+            const container = document.getElementById('analytics-feature-time');
+            const timeEvents = events.filter(e => e.activity_type === 'feature_time' && e.activity_data?.feature);
+
+            if (timeEvents.length === 0) {
+                container.innerHTML = '<p style="color: #94a3b8;">No feature time data yet. This populates as users navigate between tabs.</p>';
+                return;
+            }
+
+            // Aggregate average duration per feature
+            const featureTimes = {};
+            const featureCounts = {};
+            timeEvents.forEach(e => {
+                const f = e.activity_data.feature;
+                const d = e.activity_data.duration_seconds || 0;
+                featureTimes[f] = (featureTimes[f] || 0) + d;
+                featureCounts[f] = (featureCounts[f] || 0) + 1;
+            });
+
+            const features = Object.keys(featureTimes).map(f => ({
+                name: f.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                avgSeconds: Math.round(featureTimes[f] / featureCounts[f]),
+                totalSessions: featureCounts[f]
+            })).sort((a, b) => b.avgSeconds - a.avgSeconds);
+
+            const maxTime = features[0]?.avgSeconds || 1;
+
+            let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+            features.forEach(f => {
+                const pct = Math.round((f.avgSeconds / maxTime) * 100);
+                html += `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 150px; font-size: 0.85rem; color: #475569; font-weight: 500; flex-shrink: 0;">${f.name}</div>
+                        <div style="flex: 1; background: #f1f5f9; border-radius: 4px; height: 24px; overflow: hidden;">
+                            <div style="width: ${pct}%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); height: 100%; border-radius: 4px; min-width: 2px;"></div>
+                        </div>
+                        <div style="width: 80px; text-align: right; font-size: 0.85rem; color: #1e293b;">
+                            <strong>${f.avgSeconds}s</strong>
+                            <span style="color: #94a3b8; font-size: 0.75rem;"> (${f.totalSessions}x)</span>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
         }
 
         // Initialize icons

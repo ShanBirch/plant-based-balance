@@ -64,6 +64,11 @@
   function = "analyze-story-points"
   path = "/api/analyze-story-points"
 
+# Analytics Edge Function
+[[edge_functions]]
+  function = "track-analytics"
+  path = "/.netlify/functions/track-analytics"
+
 # Meal Tracking Edge Functions
 [[edge_functions]]
   function = "analyze-meal-text"
