@@ -12,6 +12,8 @@ const POINTS_CONFIG = {
   POINTS_PER_MEAL: 1,
   POINTS_PER_WORKOUT: 1,
   POINTS_PER_PERSONAL_BEST: 1,
+  POINTS_PER_DAILY_LOG: 2,
+  DAILY_LOG_TOLERANCE: 0.10,  // 10% tolerance for hitting macro/calorie goals
   MAX_PHOTO_AGE_MINUTES: 5,
   STREAK_BONUSES: [
     { days: 7, points: 5, label: '7-day streak!' },
@@ -38,7 +40,7 @@ const POINTS_CONFIG = {
 
 interface AwardPointsRequest {
   userId: string;
-  type: 'meal' | 'workout' | 'personal_best';
+  type: 'meal' | 'workout' | 'personal_best' | 'daily_log';
   referenceId: string;
   photoTimestamp?: string;  // ISO timestamp from EXIF or file
   aiConfidence?: string;    // 'high', 'medium', 'low'
@@ -47,6 +49,7 @@ interface AwardPointsRequest {
   pbType?: string;          // For personal_best: 'weight' or 'reps'
   value?: number;           // For personal_best: the new PB value
   improvement?: number;     // For personal_best: improvement amount
+  nutritionDate?: string;   // For daily_log: the date being logged (YYYY-MM-DD)
 }
 
 interface PointsResult {
@@ -101,18 +104,18 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
-    if (type !== 'meal' && type !== 'workout' && type !== 'personal_best') {
+    if (type !== 'meal' && type !== 'workout' && type !== 'personal_best' && type !== 'daily_log') {
       return new Response(JSON.stringify({
         error: 'Invalid type',
-        message: 'Type must be "meal", "workout", or "personal_best"'
+        message: 'Type must be "meal", "workout", "personal_best", or "daily_log"'
       }), {
         status: 400,
         headers
       });
     }
 
-    // Personal bests don't require photo verification (they're verified by the data itself)
-    const skipPhotoValidation = type === 'personal_best';
+    // Personal bests and daily logs don't require photo verification
+    const skipPhotoValidation = type === 'personal_best' || type === 'daily_log';
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -205,6 +208,86 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
+    // === DAILY LOG VALIDATION ===
+    if (type === 'daily_log') {
+      const nutritionDate = body.nutritionDate || new Date().toISOString().split('T')[0];
+
+      // Check if already claimed today
+      const { data: existingClaim } = await supabase
+        .from('point_transactions')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('transaction_type', 'earn_daily_log')
+        .gte('created_at', nutritionDate + 'T00:00:00')
+        .lte('created_at', nutritionDate + 'T23:59:59')
+        .limit(1)
+        .maybeSingle();
+
+      if (existingClaim) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Already claimed',
+          reason: 'You already earned your daily nutrition bonus today!',
+          pointsAwarded: 0
+        }), {
+          status: 200,
+          headers
+        });
+      }
+
+      // Verify nutrition data from daily_nutrition table
+      const { data: dailyNutrition } = await supabase
+        .from('daily_nutrition')
+        .select('total_calories, total_protein_g, total_carbs_g, total_fat_g, calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g, meal_count')
+        .eq('user_id', userId)
+        .eq('nutrition_date', nutritionDate)
+        .single();
+
+      if (!dailyNutrition || !dailyNutrition.meal_count || dailyNutrition.meal_count < 1) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'No meals logged',
+          reason: 'Log at least one meal before claiming your daily nutrition bonus.',
+          pointsAwarded: 0
+        }), {
+          status: 200,
+          headers
+        });
+      }
+
+      // Check if within 10% tolerance for calories and macros
+      const tolerance = POINTS_CONFIG.DAILY_LOG_TOLERANCE;
+      const checks = [
+        { name: 'Calories', actual: dailyNutrition.total_calories || 0, goal: dailyNutrition.calorie_goal || 0 },
+        { name: 'Protein', actual: dailyNutrition.total_protein_g || 0, goal: dailyNutrition.protein_goal_g || 0 },
+        { name: 'Carbs', actual: dailyNutrition.total_carbs_g || 0, goal: dailyNutrition.carbs_goal_g || 0 },
+        { name: 'Fat', actual: dailyNutrition.total_fat_g || 0, goal: dailyNutrition.fat_goal_g || 0 },
+      ];
+
+      const failedChecks: string[] = [];
+      for (const check of checks) {
+        if (check.goal <= 0) continue; // Skip if no goal set
+        const lower = check.goal * (1 - tolerance);
+        const upper = check.goal * (1 + tolerance);
+        if (check.actual < lower || check.actual > upper) {
+          failedChecks.push(check.name);
+        }
+      }
+
+      if (failedChecks.length > 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Goals not met',
+          reason: `Not within 10% of your goals for: ${failedChecks.join(', ')}. Keep going!`,
+          failedChecks,
+          pointsAwarded: 0
+        }), {
+          status: 200,
+          headers
+        });
+      }
+    }
+
     // === CHECK FOR DOUBLE XP ===
     // Fetch user's double XP status
     const { data: userData } = await supabase
@@ -223,6 +306,8 @@ export default async (request: Request, context: Context): Promise<Response> => 
       basePoints = POINTS_CONFIG.POINTS_PER_MEAL;
     } else if (type === 'workout') {
       basePoints = POINTS_CONFIG.POINTS_PER_WORKOUT;
+    } else if (type === 'daily_log') {
+      basePoints = POINTS_CONFIG.POINTS_PER_DAILY_LOG;
     } else {
       basePoints = POINTS_CONFIG.POINTS_PER_PERSONAL_BEST;
     }
@@ -319,7 +404,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
         updateData.workout_streak as number
       );
     }
-    // personal_best type doesn't update specific counters - just awards points
+    // personal_best and daily_log types don't update specific counters - just award points
 
     // Upsert points record
     const { error: updateError } = await supabase
@@ -337,11 +422,25 @@ export default async (request: Request, context: Context): Promise<Response> => 
     }
 
     // Log main transaction
-    const transactionType = type === 'meal' ? 'earn_meal' : (type === 'workout' ? 'earn_workout' : 'earn_personal_best');
-    const referenceType = type === 'meal' ? 'meal_log' : (type === 'workout' ? 'workout' : 'personal_best');
-    const description = type === 'personal_best'
-      ? `Earned ${pointsToAward} point for personal best`
-      : `Earned ${pointsToAward} point for ${type}`;
+    const transactionTypeMap: Record<string, string> = {
+      meal: 'earn_meal',
+      workout: 'earn_workout',
+      personal_best: 'earn_personal_best',
+      daily_log: 'earn_daily_log',
+    };
+    const referenceTypeMap: Record<string, string> = {
+      meal: 'meal_log',
+      workout: 'workout',
+      personal_best: 'personal_best',
+      daily_log: 'daily_nutrition',
+    };
+    const transactionType = transactionTypeMap[type];
+    const referenceType = referenceTypeMap[type];
+    const description = type === 'daily_log'
+      ? `Earned ${pointsToAward} points for hitting daily nutrition goals`
+      : type === 'personal_best'
+        ? `Earned ${pointsToAward} point for personal best`
+        : `Earned ${pointsToAward} point for ${type}`;
 
     await supabase.from('point_transactions').insert({
       user_id: userId,
@@ -349,9 +448,9 @@ export default async (request: Request, context: Context): Promise<Response> => 
       points_amount: pointsToAward,
       reference_id: referenceId,
       reference_type: referenceType,
-      photo_verified: type !== 'personal_best',
+      photo_verified: type === 'meal' || type === 'workout',
       photo_timestamp: photoTimestamp || null,
-      verification_method: type === 'personal_best' ? 'data_verified' : (photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none')),
+      verification_method: (type === 'personal_best' || type === 'daily_log') ? 'data_verified' : (photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none')),
       ai_confidence: aiConfidence || null,
       description: description
     });
