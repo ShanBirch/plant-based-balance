@@ -1297,11 +1297,7 @@ async function loadFriends() {
   container.innerHTML = '<div class="spinner"></div>';
 
   try {
-    const { data, error } = await window.supabaseClient.rpc('get_friends_with_status', {
-      user_uuid: currentUser.id
-    });
-
-    if (error) throw error;
+    const data = await db.friends.getFriendsWithFallback(currentUser.id);
 
     if (!data || data.length === 0) {
       container.innerHTML = `

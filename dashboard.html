@@ -31519,11 +31519,8 @@ async function loadFriendsCards() {
     if (!container || !window.currentUser) return;
 
     try {
-        // Use get_friends_with_status for detailed info
-        const { data: friends, error } = await window.supabaseClient
-            .rpc('get_friends_with_status', { user_uuid: window.currentUser.id });
-
-        if (error) throw error;
+        // Use get_friends_with_status with fallback for resilience
+        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
 
         // Update count label
         if (countLabel) {
@@ -31966,10 +31963,7 @@ async function openCreateGroupChatModal() {
     container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">Loading friends...</div>`;
 
     try {
-        const { data: friends, error } = await window.supabaseClient
-            .rpc('get_friends_with_status', { user_uuid: window.currentUser.id });
-
-        if (error) throw error;
+        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
 
         if (!friends || friends.length === 0) {
             container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">No friends yet. Add friends first!</div>`;
@@ -32637,10 +32631,7 @@ async function loadFriendsForChallenge() {
     if (!container || !window.currentUser) return;
 
     try {
-        const { data: friends, error } = await window.supabaseClient
-            .rpc('get_friends_with_status', { user_uuid: window.currentUser.id });
-
-        if (error) throw error;
+        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
 
         if (!friends || friends.length === 0) {
             container.innerHTML = '<div style="padding: 20px; text-align: center; color: rgba(255,255,255,0.5);">No friends yet. Add friends first!</div>';
