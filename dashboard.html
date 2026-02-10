@@ -12229,6 +12229,9 @@ async function startCustomBuilderWorkout() {
 
     // Push navigation state for Android back button
     pushNavigationState('view-active-workout', () => quitWorkout());
+
+    // Show total volume popup and tracker
+    showLastVolumePopup();
 }
 </script>
 
@@ -12713,6 +12716,37 @@ function viewWorkoutHistoryDetail(date) {
             <div id="workout-timer" style="font-family: monospace; font-size: 1.2rem; font-weight: 700; color: white;">00:00</div>
         </div>
         <div onclick="finishWorkout()" style="font-weight: 600; cursor: pointer; color: #44FF44; padding: 10px; touch-action: manipulation; user-select: none;">Save</div>
+    </div>
+
+    <!-- Total Workout Volume Bar -->
+    <div id="total-volume-bar" style="display:none; padding:10px 20px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom:1px solid #334155;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:#facc15;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <span style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Total Volume</span>
+            </div>
+            <span id="total-volume-value" style="font-size:1.1rem; font-weight:900; color:white;">0 kg</span>
+        </div>
+        <div id="total-volume-progress-wrap" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                <span id="total-volume-target-label" style="font-size:0.6rem; font-weight:600; color:#64748b;">Target: 0 kg</span>
+                <span id="total-volume-diff" style="font-size:0.65rem; font-weight:700; color:#94a3b8;"></span>
+            </div>
+            <div style="height:5px; background:#334155; border-radius:3px; overflow:hidden;">
+                <div id="total-volume-progress-bar" style="height:100%; width:0%; background:#facc15; border-radius:3px; transition:width 0.3s ease, background 0.3s ease;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Last Volume Popup Overlay -->
+    <div id="last-volume-popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:600; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;" onclick="dismissVolumePopup()">
+        <div style="background:white; border-radius:20px; padding:30px 25px; max-width:320px; width:85%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation:slideInUp 0.3s ease;" onclick="event.stopPropagation()">
+            <div style="font-size:2.5rem; margin-bottom:10px;">&#x1F4AA;</div>
+            <h3 style="margin:0 0 8px 0; font-size:1.1rem; font-weight:800; color:#1e293b;">Last Workout Volume</h3>
+            <div id="popup-last-volume" style="font-size:2rem; font-weight:900; color:var(--primary); margin:10px 0;"></div>
+            <p style="font-size:0.85rem; color:#64748b; margin:0 0 20px 0; line-height:1.4;">Can you beat it today? Every rep counts!</p>
+            <button onclick="dismissVolumePopup()" style="background:var(--primary); color:white; border:none; padding:12px 30px; border-radius:12px; font-weight:700; font-size:0.9rem; cursor:pointer; width:100%;">Let's Go!</button>
+        </div>
     </div>
 
     <div style="padding: 15px; padding-bottom: 120px;">
@@ -22641,6 +22675,9 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
 
     // Push navigation state for Android back button
     pushNavigationState('view-active-workout', () => quitWorkout());
+
+    // Show total volume popup and tracker
+    showLastVolumePopup();
 }
 
 // Normalize history records from DB format to local format
@@ -22907,8 +22944,127 @@ function setupVolumeTracking(card) {
 
     const inputs = card.querySelectorAll('.input-kg, .input-reps, .drop-kg, .drop-reps');
     inputs.forEach(input => {
-        input.addEventListener('input', () => updateVolumeDisplay(card));
+        input.addEventListener('input', () => {
+            updateVolumeDisplay(card);
+            updateTotalWorkoutVolume();
+        });
     });
+
+    // Trigger initial calculation for prefilled values
+    updateVolumeDisplay(card);
+}
+
+// Calculate total workout volume across ALL exercises
+function calculateTotalWorkoutVolume() {
+    let total = 0;
+    const cards = document.querySelectorAll('#workout-exercises-list .exercise-logger-card');
+    cards.forEach(card => {
+        total += calculateExerciseVolume(card);
+    });
+    return total;
+}
+
+// Calculate total previous workout volume across all exercises
+function calculateLastWorkoutTotalVolume() {
+    let total = 0;
+    const cards = document.querySelectorAll('#workout-exercises-list .exercise-logger-card');
+    cards.forEach(card => {
+        const name = card.getAttribute('data-exercise-name');
+        if (name) {
+            const prev = getPreviousWorkoutSummary(name);
+            if (prev && prev.totalVolume > 0) {
+                total += prev.totalVolume;
+            }
+        }
+    });
+    return total;
+}
+
+// Update the total workout volume bar display
+function updateTotalWorkoutVolume() {
+    const bar = document.getElementById('total-volume-bar');
+    if (!bar) return;
+
+    const currentTotal = calculateTotalWorkoutVolume();
+    const lastTotal = window._lastWorkoutTotalVolume || 0;
+
+    // Show the bar
+    bar.style.display = 'block';
+
+    // Update current volume value
+    const valueEl = document.getElementById('total-volume-value');
+    if (valueEl) valueEl.textContent = currentTotal.toLocaleString() + ' kg';
+
+    // Update progress if we have a target
+    const progressWrap = document.getElementById('total-volume-progress-wrap');
+    const progressBar = document.getElementById('total-volume-progress-bar');
+    const targetLabel = document.getElementById('total-volume-target-label');
+    const diffEl = document.getElementById('total-volume-diff');
+
+    if (lastTotal > 0) {
+        if (progressWrap) progressWrap.style.display = 'block';
+        if (targetLabel) targetLabel.textContent = 'Last: ' + lastTotal.toLocaleString() + ' kg';
+
+        const pct = currentTotal > 0 ? ((currentTotal / lastTotal) * 100).toFixed(0) : 0;
+        const barWidth = Math.min(pct, 100);
+
+        if (progressBar) {
+            progressBar.style.width = barWidth + '%';
+            progressBar.style.background = currentTotal >= lastTotal ? '#22c55e' : '#facc15';
+        }
+
+        if (diffEl) {
+            const diff = currentTotal - lastTotal;
+            if (currentTotal === 0) {
+                diffEl.textContent = '';
+            } else if (diff > 0) {
+                diffEl.textContent = '+' + diff.toLocaleString() + ' kg';
+                diffEl.style.color = '#22c55e';
+            } else if (diff < 0) {
+                diffEl.textContent = Math.abs(diff).toLocaleString() + ' kg to go';
+                diffEl.style.color = '#fbbf24';
+            } else {
+                diffEl.textContent = 'Matched!';
+                diffEl.style.color = '#22c55e';
+            }
+        }
+    } else {
+        if (progressWrap) progressWrap.style.display = 'none';
+    }
+}
+
+// Show the "last workout volume" popup
+function showLastVolumePopup() {
+    // Small delay to let DOM render first
+    setTimeout(() => {
+        const lastTotal = calculateLastWorkoutTotalVolume();
+        window._lastWorkoutTotalVolume = lastTotal;
+
+        // Always show the total volume bar
+        updateTotalWorkoutVolume();
+
+        // Only show popup if there was a previous workout with volume
+        if (lastTotal > 0) {
+            const popup = document.getElementById('last-volume-popup');
+            const volumeEl = document.getElementById('popup-last-volume');
+            if (popup && volumeEl) {
+                volumeEl.textContent = lastTotal.toLocaleString() + ' kg';
+                popup.style.display = 'flex';
+                // Auto-dismiss after 4 seconds
+                window._volumePopupTimer = setTimeout(dismissVolumePopup, 4000);
+            }
+        }
+    }, 300);
+}
+
+// Dismiss the popup
+function dismissVolumePopup() {
+    const popup = document.getElementById('last-volume-popup');
+    if (popup) popup.style.display = 'none';
+    if (window._volumePopupTimer) {
+        clearTimeout(window._volumePopupTimer);
+        window._volumePopupTimer = null;
+    }
 }
 
 // Format previous workout summary as HTML - Personal Best banner only
@@ -23041,7 +23197,7 @@ function addWorkoutSet(btn, exName, isTimeBased) {
     // Add volume tracking for the new inputs
     const inputs = newRow.querySelectorAll('.input-kg, .input-reps, .drop-kg, .drop-reps');
     inputs.forEach(input => {
-        input.addEventListener('input', () => updateVolumeDisplay(card));
+        input.addEventListener('input', () => { updateVolumeDisplay(card); updateTotalWorkoutVolume(); });
     });
 
     // Trigger reflow for animation
@@ -23087,6 +23243,7 @@ function deleteSetRow(btn) {
         // Recalculate volume after set deletion
         if (card) {
             updateVolumeDisplay(card);
+            updateTotalWorkoutVolume();
         }
     }, 200);
 }
@@ -23110,7 +23267,7 @@ function toggleDropSet(btn) {
         dropInputs.forEach(input => {
             if (!input.hasAttribute('data-volume-tracked')) {
                 input.setAttribute('data-volume-tracked', 'true');
-                input.addEventListener('input', () => updateVolumeDisplay(card));
+                input.addEventListener('input', () => { updateVolumeDisplay(card); updateTotalWorkoutVolume(); });
             }
         });
     }
@@ -23151,7 +23308,7 @@ function addDropRow(btn) {
     const dropInputs = newRow.querySelectorAll('.drop-kg, .drop-reps');
     dropInputs.forEach(input => {
         input.setAttribute('data-volume-tracked', 'true');
-        input.addEventListener('input', () => updateVolumeDisplay(card));
+        input.addEventListener('input', () => { updateVolumeDisplay(card); updateTotalWorkoutVolume(); });
     });
 
     // Animate in
@@ -25754,6 +25911,9 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
 
     // Push navigation state for Android back button
     pushNavigationState('view-active-workout', () => quitWorkout());
+
+    // Show total volume popup and tracker
+    showLastVolumePopup();
 }
 
 // Render workout exercises with delete buttons, history summary, and volume tracking
@@ -35545,6 +35705,9 @@ updateCoachUI();
 
         // Push navigation state for Android back button
         pushNavigationState('view-active-workout', () => quitWorkout());
+
+        // Show total volume popup and tracker
+        showLastVolumePopup();
     }
 
     async function showWorkoutHistoryDetail(dateStr) {
