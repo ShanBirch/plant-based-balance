@@ -12720,7 +12720,7 @@ function viewWorkoutHistoryDetail(date) {
     </div>
 
     <!-- Total Workout Volume Bar -->
-    <div id="total-volume-bar" style="display:none; position:sticky; top:52px; z-index:99; padding:10px 20px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom:1px solid #334155;">
+    <div id="total-volume-bar" style="display:none; position:sticky; top:0; z-index:99; padding:10px 20px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom:1px solid #334155;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <div style="display:flex; align-items:center; gap:6px;">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:#facc15;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
@@ -22998,8 +22998,15 @@ function updateTotalWorkoutVolume() {
     const currentTotal = calculateTotalWorkoutVolume();
     const lastTotal = window._lastWorkoutTotalVolume || 0;
 
-    // Show the bar
+    // Show the bar and dynamically position below header
     bar.style.display = 'block';
+    const workoutView = document.getElementById('view-active-workout');
+    if (workoutView) {
+        const header = workoutView.firstElementChild;
+        if (header && header.style.position === 'sticky') {
+            bar.style.top = header.offsetHeight + 'px';
+        }
+    }
 
     // Update current volume value
     const valueEl = document.getElementById('total-volume-value');
