@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="facebook-domain-verification" content="tlduivhcqj8ee0gvyaa71o8l4xb78p" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balance - Holistic Hormone Health</title>
-    <meta name="description" content="The world's first protocol designed specifically for women over 40. Balance your hormones and reset your metabolism naturally.">
-    
-    <!-- Open Graph Tags (For Meta Ad Quality) -->
-    <meta property="og:title" content="Balance | Holistic Hormone Health">
-    <meta property="og:description" content="Master your hormones and find your balance with science-backed protocols.">
+    <title>FitGotchi - Your Fitness Pet Adventure</title>
+    <meta name="description" content="FitGotchi turns fitness into a game. Raise your virtual pet, track workouts & calories, battle friends, and level up — all free.">
+
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="FitGotchi - Your Fitness Pet Adventure">
+    <meta property="og:description" content="Raise a virtual pet that grows as you get fit. Track workouts, count calories, battle friends. Free to use.">
     <meta property="og:image" content="https://plantbased-balance.org/assets/Logo_dots.jpg">
     <meta property="og:url" content="https://plantbased-balance.org">
     <meta property="og:type" content="website">
@@ -17,83 +16,28 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="assets/Logo_dots.jpg">
     <link rel="icon" type="image/png" href="assets/Logo_dots.jpg">
-    <link rel="preload" href="assets/cover page - main screen.webp" as="image">
     <link rel="stylesheet" href="styles.css">
-    <!-- Inline SVG Icons for performance -->
-    <script src="https://unpkg.com/lucide@latest" defer></script>
-    <!-- Meta Pixel Code -->
-    <script>
-    !function(f,b,e,v,n,t,s)
-    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)}(window, document,'script',
-    'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '1928402271406692');
-    fbq('track', 'PageView');
-    </script>
-    <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=1928402271406692&ev=PageView&noscript=1"
-    /></noscript>
-    <!-- End Meta Pixel Code -->
-    <script src="analytics.js"></script>
+
+    <!-- 3D Model Viewer for character showcase -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 </head>
 <body>
 
     <!-- Navigation -->
-        <nav class="navbar">
+    <nav class="navbar">
         <div class="container nav-container">
             <a href="index.html" class="logo">
-                <img src="assets/Logo_dots.jpg" alt="Balance Logo" style="height: 45px; mix-blend-mode: multiply;">
+                <span class="logo-icon">🎮</span>
+                <span class="logo-text">FitGotchi</span>
             </a>
             <div class="nav-links" id="navLinks">
-                <a href="switch28.html">The Protocol</a>
-                <div class="dropdown">
-                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">Fitness <i data-lucide="chevron-down" size="16"></i></a>
-                    <div class="dropdown-menu">
-                        <a href="challenge-yoga.html" class="dropdown-item">
-                            <span class="item-title">Somatic Yoga</span>
-                            <span class="item-desc">Reverse cortisol weight gain.</span>
-                        </a>
-                        <a href="challenge-bodyweight.html" class="dropdown-item">
-                            <span class="item-title">Bodyweight Sculpt</span>
-                            <span class="item-desc">No-equipment metabolic toning.</span>
-                        </a>
-                        <a href="challenge-strength.html" class="dropdown-item">
-                            <span class="item-title">Home Strength</span>
-                            <span class="item-desc">Dumbbells & Resistance Bands.</span>
-                        </a>
-                        <a href="challenge-gym.html" class="dropdown-item">
-                            <span class="item-title">Full Gym Protocol</span>
-                            <span class="item-desc">Maximum structural transformation.</span>
-                        </a>
-                    </div>
-                </div>
-                <a href="calculators.html">Calculators</a>
-                <a href="blog.html">Blog</a>
-                <div class="dropdown">
-                    <a href="#" class="dropdown-toggle" onclick="toggleDropdown(event)">About <i data-lucide="chevron-down" size="16"></i></a>
-                    <div class="dropdown-menu">
-                        <a href="research.html" class="dropdown-item">
-                            <span class="item-title">Research</span>
-                            <span class="item-desc">The science behind our protocol.</span>
-                        </a>
-                        <a href="success-stories.html" class="dropdown-item">
-                            <span class="item-title">Reviews</span>
-                            <span class="item-desc">Real transformations.</span>
-                        </a>
-                        <a href="contact.html" class="dropdown-item">
-                            <span class="item-title">Contact Us</span>
-                            <span class="item-desc">Get in touch with our team.</span>
-                        </a>
-                    </div>
-                </div>
-                <a href="login.html" class="nav-member">Member Login</a>
-                <a href="quiz.html" class="btn btn-primary">Start Your Reset</a>
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="#characters">Characters</a>
+                <a href="login.html" class="nav-member">Log In</a>
+                <a href="login.html#signup" class="btn btn-primary">Sign Up Free</a>
             </div>
-            <div class="nav-toggle" onclick="toggleMenu()" style="color: #1a202c; cursor: pointer; z-index: 9999;">
+            <div class="nav-toggle" onclick="toggleMenu()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
             </div>
         </div>
@@ -103,283 +47,225 @@
     <section class="hero">
         <div class="container hero-content">
             <div class="hero-text">
-                <h1>Finally. <br><span class="text-green">Plant-Based</span> wellness that <span class="text-gold">purely works.</span></h1>
-                <p>Designed specifically for women over 40. No calorie counting, just holistic balance and delicious metabolic-boosting recipes.</p>
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                    <a href="quiz.html" class="btn btn-primary">Get My Plan</a>
-                    <a href="#features" class="btn btn-secondary" style="background: transparent; border: 2px solid var(--color-secondary);">Learn More</a>
-                </div>
-                <div style="margin-top: 2rem; display: flex; align-items: center; gap: 1rem;">
-                    <div style="display: flex;">
-                        <!-- Avatars -->
-                        <img src="assets/success_hiking.webp" style="width:35px; height:35px; border-radius:50%; border:2px solid white; object-fit: cover;">
-                        <img src="assets/success_kitchen.webp" style="width:35px; height:35px; border-radius:50%; border:2px solid white; object-fit: cover; margin-left:-12px;">
-                        <img src="assets/success_yoga.webp" style="width:35px; height:35px; border-radius:50%; border:2px solid white; object-fit: cover; margin-left:-12px;">
-                    </div>
-                    <span style="font-size: 0.9rem; color: var(--color-text-light);">Join 5,400+ happy members</span>
+                <div class="free-badge">100% Free</div>
+                <h1>Get Fit. <br><span class="text-accent">Raise Your Pet.</span> <br>Level Up.</h1>
+                <p>FitGotchi turns your fitness journey into a game. Your virtual pet grows stronger as you work out, track calories, and stay consistent. Battle friends, unlock evolutions, and actually enjoy getting fit.</p>
+                <div class="hero-buttons">
+                    <a href="login.html#signup" class="btn btn-primary btn-lg">Start Playing — It's Free</a>
+                    <a href="#features" class="btn btn-ghost">Learn More ↓</a>
                 </div>
             </div>
-            <div class="hero-image-wrapper">
-                <img src="assets/cover page - main screen.webp" alt="Plant-Based Wellness">
+            <div class="hero-visual">
+                <div class="hero-model-wrapper">
+                    <model-viewer
+                        src="https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb"
+                        alt="FitGotchi Character"
+                        auto-rotate
+                        rotation-per-second="15deg"
+                        camera-orbit="0deg 80deg 2.5m"
+                        field-of-view="30deg"
+                        interaction-prompt="none"
+                        style="width: 100%; height: 400px; --poster-color: transparent;"
+                        autoplay
+                        animation-name="dance"
+                    ></model-viewer>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="features" style="background: var(--color-neutral); padding: 80px 0;">
-        <div class="container text-center">
-            <div class="section-header" style="max-width: 800px; margin: 0 auto 40px;">
-                <h2 style="font-size: 2.5rem; margin-bottom: 20px;">Stop Guessing. <span class="text-green">Start Healing.</span></h2>
-                <p style="font-size: 1.1rem; line-height: 1.6;">Are your symptoms driven by Cortisol, Estrogen, or Insulin? The key to a successful reset is knowing your unique hormone profile.</p>
-            </div>
-            <div style="margin-top: 30px;">
-                <a href="quiz.html" class="btn btn-primary" style="padding: 20px 50px; font-size: 1.2rem; box-shadow: 0 10px 25px rgba(4, 106, 56, 0.2);">Learn About Your Hormone Profile</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- App Showcase -->
-    <section id="showcase" class="showcase">
-        <div class="container showcase-content">
-            <div class="showcase-image">
-                <img src="assets/app_mockup_pro.webp" alt="PlantBasedBalance App Interface" loading="lazy">
-            </div>
-            <div class="showcase-text">
-                <h2>Your Pocket Nutritionist</h2>
-                <p>Everything you need to succeed is right at your fingertips. From shopping lists to meditation guides, the Balance app is your daily companion for a healthier life.</p>
-                
-                <ul style="list-style: none; margin-bottom: 2rem;">
-                    <li style="margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
-                        <i data-lucide="check-circle" color="#D4AF37"></i> 1000+ Plant-Based Recipes
-                    </li>
-                    <li style="margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
-                        <i data-lucide="check-circle" color="#D4AF37"></i> Daily Mindset Coaching
-                    </li>
-                    <li style="margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
-                        <i data-lucide="check-circle" color="#D4AF37"></i> Simple Workouts for Home
-                    </li>
-                </ul>
-
-                <a href="quiz.html" class="btn btn-secondary">Start Your Reset</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Targeted Training Tracks -->
-    <section class="training-tracks" style="padding: 100px 0; background-color: #f8fafc;">
-        <div class="container">
-            <div class="section-header" style="text-align: center; margin-bottom: 50px;">
-                <h2 style="font-size: 2.5rem; margin-bottom: 20px;">Choose Your <span class="text-green">Training Track</span></h2>
-                <p style="max-width: 600px; margin: 0 auto; color: #64748b; line-height: 1.6;">
-                    Whether you train at home or in the gym, our specialized tracks are designed to work 
-                    with your hormones, not against them. Focus on what you love.
-                </p>
-            </div>
-
-            <style>
-                .track-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                    gap: 30px;
-                }
-                .track-card {
-                    background: white;
-                    border-radius: 20px;
-                    padding: 30px;
-                    text-align: left;
-                    transition: all 0.3s ease;
-                    border: 1px solid #e2e8f0;
-                    position: relative;
-                    overflow: hidden;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
-                }
-                .track-card:hover {
-                    transform: translateY(-10px);
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
-                    border-color: var(--color-primary);
-                }
-                .track-card i {
-                    margin-bottom: 20px;
-                    display: inline-block;
-                }
-                .track-card h3 {
-                    font-size: 1.25rem;
-                    margin-bottom: 12px;
-                    color: #1e293b;
-                }
-                .track-card p {
-                    font-size: 0.9rem;
-                    color: #64748b;
-                    margin-bottom: 20px;
-                    line-height: 1.5;
-                }
-                .track-badge {
-                    background: #f1f5f9;
-                    color: #475569;
-                    padding: 4px 12px;
-                    border-radius: 50px;
-                    font-size: 0.75rem;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
-                }
-            </style>
-
-            <div class="track-grid">
-                <div class="track-card">
-                    <img src="assets/somatic_yoga_hero.webp" alt="Somatic Yoga" style="width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 20px;" loading="lazy">
-                    <div>
-                        <i data-lucide="flower-2" size="24" color="#48864B"></i>
-                        <h3>Somatic Yoga Challenge</h3>
-                        <p>Reverse cortisol-driven weight gain and release deep-seated tension through therapeutic, metabolic movement.</p>
-                    </div>
-                    <span class="track-badge">Cortisol Weight Reset</span>
-                    <a href="challenge-yoga.html?track=yoga" class="btn btn-secondary" style="margin-top: 20px; width: 100%; text-align: center; font-size: 0.8rem; padding: 10px;">View Program</a>
-                </div>
-
-                <div class="track-card">
-                    <img src="assets/bodyweight_sculpt_hero.webp" alt="Bodyweight Sculpt" style="width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 20px;" loading="lazy">
-                    <div>
-                        <i data-lucide="layout-template" size="24" color="#48864B"></i>
-                        <h3>Bodyweight Sculpt Challenge</h3>
-                        <p>Unlock metabolic toning with zero equipment. High-repetition patterns designed to firm every muscle group.</p>
-                    </div>
-                    <span class="track-badge">Metabolic Tone</span>
-                    <a href="challenge-bodyweight.html?track=bodyweight" class="btn btn-secondary" style="margin-top: 20px; width: 100%; text-align: center; font-size: 0.8rem; padding: 10px;">View Program</a>
-                </div>
-
-                <div class="track-card">
-                    <img src="assets/dumbbell_strength_hero.webp" alt="Dumbbell Strength" style="width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 20px;" loading="lazy">
-                    <div>
-                        <i data-lucide="dumbbell" size="24" color="#48864B"></i>
-                        <h3>Dumbbell Strength Challenge</h3>
-                        <p>High-metabolic strength sequences designed to build lean muscle and force your body to burn fat for fuel 24/7.</p>
-                    </div>
-                    <span class="track-badge">Metabolic Sculpt</span>
-                    <a href="challenge-strength.html?track=strength" class="btn btn-secondary" style="margin-top: 20px; width: 100%; text-align: center; font-size: 0.8rem; padding: 10px;">View Program</a>
-                </div>
-
-
-
-                <div class="track-card">
-                    <img src="assets/full_gym_hero.webp" alt="Full Gym Protocol" style="width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 20px;" loading="lazy">
-                    <div>
-                        <i data-lucide="building-2" size="24" color="#48864B"></i>
-                        <h3>Full Gym Protocol</h3>
-                        <p>For those ready for a complete physical overhaul. The fastest track to a total structural transformation.</p>
-                    </div>
-                    <span class="track-badge">Max Transformation</span>
-                    <a href="challenge-gym.html?track=gym" class="btn btn-secondary" style="margin-top: 20px; width: 100%; text-align: center; font-size: 0.8rem; padding: 10px;">View Program</a>
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin-top: 60px;">
-                <a href="quiz.html" class="btn btn-secondary">Find My Perfect Track</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Testimonials -->
-    <section id="stories" class="testimonials">
+    <section id="features" class="features-section">
         <div class="container">
             <div class="section-header">
-                <h2>Real Women, <span class="text-green">Real Results</span></h2>
+                <h2>Everything You Need to <span class="text-accent">Get Fit</span></h2>
+                <p>No subscriptions. No paywalls. Just a genuinely fun way to build healthy habits.</p>
             </div>
-            <div class="testimonial-grid">
-                <div class="testimonial-card">
-                    <div class="stars">
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🐣</div>
+                    <h3>Raise Your FitGotchi</h3>
+                    <p>Start with a baby pet that evolves as you level up. From Hatchling to Legend — 12 unique evolutions to unlock through real workouts.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏋️</div>
+                    <h3>Workout Tracker</h3>
+                    <p>Log gym sessions with sets, reps, and weights. Track personal bests, follow structured programs, or build your own custom workouts.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📸</div>
+                    <h3>AI Calorie Scanner</h3>
+                    <p>Snap a photo of your meal and our AI instantly estimates calories, protein, carbs, and fat. No more manual food logging.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚔️</div>
+                    <h3>Battle Friends</h3>
+                    <p>Challenge your mates to quiz battles and fitness duels. Wager coins, test your nutrition knowledge, and prove who's the fittest.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Social Feed</h3>
+                    <p>Share workout cards, progress photos, and personal bests with your fitness network. Like Instagram, but for gains.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3>Learn & Level Up</h3>
+                    <p>Interactive lessons on nutrition, exercise science, and healthy habits. Earn XP while getting smarter about fitness.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="how-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>How <span class="text-accent">FitGotchi</span> Works</h2>
+            </div>
+
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h3>Create Your Character</h3>
+                    <p>Pick your avatar, customise colours, and hatch your baby FitGotchi. It starts small — just like your fitness journey.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h3>Work Out & Track</h3>
+                    <p>Complete real workouts, log activities, and scan your meals. Every action earns XP that levels up your pet.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h3>Watch It Evolve</h3>
+                    <p>As you stay consistent, your FitGotchi evolves through 12 stages. Unlock new animations, skins, and battle abilities.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <h3>Compete & Share</h3>
+                    <p>Battle friends, share your progress on the feed, and climb the leaderboard. Fitness is better with mates.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Character Showcase -->
+    <section id="characters" class="characters-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Meet the <span class="text-accent">FitGotchis</span></h2>
+                <p>Your pet evolves as you level up. Here are just a few of the evolutions waiting for you.</p>
+            </div>
+
+            <div class="character-showcase">
+                <div class="character-card">
+                    <div class="character-model">
+                        <model-viewer
+                            src="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb"
+                            alt="Baby FitGotchi"
+                            auto-rotate
+                            rotation-per-second="20deg"
+                            camera-orbit="0deg 80deg 2m"
+                            field-of-view="30deg"
+                            interaction-prompt="none"
+                            style="width: 100%; height: 280px; --poster-color: transparent;"
+                            autoplay
+                            animation-name="walk"
+                        ></model-viewer>
                     </div>
-                    <p>"I never thought I could feel this energetic again. The recipes are actually delicious and I don't feel deprived."</p>
-                    <div class="author">
-                        <img src="assets/success_hiking.webp" alt="Sarah J." loading="lazy">
-                        <div class="author-info" style="text-align: left;">
-                            <strong>Sarah J.</strong>
-                            <span style="font-size: 0.8rem; color: #777;">Lost 15 lbs in 2 months</span>
-                        </div>
+                    <div class="character-info">
+                        <span class="character-badge">Level 1-4</span>
+                        <h3>Hatchling</h3>
+                        <p>Every legend starts somewhere. Your baby FitGotchi is eager to grow!</p>
                     </div>
                 </div>
-                <div class="testimonial-card">
-                    <div class="stars">
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
+
+                <div class="character-card featured">
+                    <div class="character-model">
+                        <model-viewer
+                            src="https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb"
+                            alt="Newcomer FitGotchi"
+                            auto-rotate
+                            rotation-per-second="15deg"
+                            camera-orbit="0deg 80deg 2.5m"
+                            field-of-view="30deg"
+                            interaction-prompt="none"
+                            style="width: 100%; height: 280px; --poster-color: transparent;"
+                            autoplay
+                            animation-name="boxing"
+                        ></model-viewer>
                     </div>
-                    <p>"The app is so beautiful and easy to use. It finally helped me stick to a plant-based diet properly."</p>
-                    <div class="author">
-                        <img src="assets/success_kitchen.webp" alt="Michelle K." loading="lazy">
-                        <div class="author-info" style="text-align: left;">
-                            <strong>Michelle K.</strong>
-                            <span style="font-size: 0.8rem; color: #777;">Member since 2023</span>
-                        </div>
+                    <div class="character-info">
+                        <span class="character-badge accent">Level 5-9</span>
+                        <h3>Newcomer</h3>
+                        <p>First evolution unlocked. The gym background, new moves, and battle mode await.</p>
                     </div>
                 </div>
-                <div class="testimonial-card">
-                    <div class="stars">
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
-                        <i data-lucide="star" fill="#D4AF37" color="#D4AF37"></i>
+
+                <div class="character-card">
+                    <div class="character-model">
+                        <model-viewer
+                            src="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb"
+                            alt="Arny Rare Skin"
+                            auto-rotate
+                            rotation-per-second="12deg"
+                            camera-orbit="0deg 80deg 3m"
+                            field-of-view="30deg"
+                            interaction-prompt="none"
+                            style="width: 100%; height: 280px; --poster-color: transparent;"
+                            autoplay
+                            animation-name="strut"
+                        ></model-viewer>
                     </div>
-                    <p>"More than just a diet, it's a total lifestyle upgrade. My sleep has improved and my skin is glowing."</p>
-                    <div class="author">
-                        <img src="assets/success_yoga.webp" alt="Elena R." loading="lazy">
-                        <div class="author-info" style="text-align: left;">
-                            <strong>Elena R.</strong>
-                            <span style="font-size: 0.8rem; color: #777;">Lost 8 lbs in 3 weeks</span>
-                        </div>
+                    <div class="character-info">
+                        <span class="character-badge rare">Rare Skin</span>
+                        <h3>Arny</h3>
+                        <p>Legendary collectible skin. Win rare skins through challenges and special events.</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <div class="cta-badge">Free Forever</div>
+                <h2>Ready to Start Your <span class="text-accent">Fitness Adventure?</span></h2>
+                <p>Join thousands of players who are getting fit while having fun. No credit card required. No hidden fees. Just you, your FitGotchi, and the gains.</p>
+                <div class="cta-buttons">
+                    <a href="login.html#signup" class="btn btn-primary btn-lg">Create Free Account</a>
+                    <a href="login.html" class="btn btn-ghost">Already a member? Log In</a>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer style="background: #1a1a1a; color: #fff; padding: 60px 0 40px; text-align: center;">
+    <footer>
         <div class="container">
-            <h2 style="color: var(--color-primary); margin-bottom: 20px;">Balance</h2>
-            <p style="color: #888; max-width: 600px; margin: 0 auto 30px;">
-                Empowering women to master their hormones through science-backed protocols.
-            </p>
-            <div style="margin-bottom: 30px;">
-                <a href="privacy.html" style="color: #666; margin: 0 15px; font-size: 0.9rem;">Privacy Policy</a>
-                <a href="terms.html" style="color: #666; margin: 0 15px; font-size: 0.9rem;">Terms of Service</a>
-                <a href="refund-policy.html" style="color: #666; margin: 0 15px; font-size: 0.9rem;">Refund Policy</a>
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo-icon">🎮</span>
+                    <span class="logo-text" style="color: white;">FitGotchi</span>
+                </div>
+                <p class="footer-tagline">Turn your fitness journey into a game.</p>
+                <div class="footer-links">
+                    <a href="privacy.html">Privacy Policy</a>
+                    <a href="terms.html">Terms of Service</a>
+                    <a href="mailto:shannon@plantbased-balance.org">Contact</a>
+                </div>
+                <p class="footer-copy">&copy; 2026 FitGotchi. All rights reserved.</p>
             </div>
-            <div style="color: #444; font-size: 0.85rem; margin-bottom: 20px;">
-                <p>Support: <a href="mailto:shannon@plantbased-balance.org" style="color: #555; text-decoration: none;">shannon@plantbased-balance.org</a></p>
-                <p>123 Wellness Way, Gold Coast, QLD 4217, Australia</p>
-            </div>
-            <p style="color: #444; font-size: 0.8rem;">
-                &copy; 2026 Balance. All rights reserved.
-            </p>
         </div>
     </footer>
 
-    <!-- Initialize Lucide Icons & Menu -->
+    <!-- Menu Toggle Script -->
     <script>
-        lucide.createIcons();
-
         function toggleMenu() {
             const nav = document.getElementById('navLinks');
             nav.classList.toggle('active');
-        }
-
-        function toggleDropdown(e) {
-            if (window.innerWidth <= 768) {
-                e.preventDefault();
-                const dropdown = e.target.closest('.dropdown');
-                dropdown.classList.toggle('active');
-            }
         }
     </script>
 </body>
