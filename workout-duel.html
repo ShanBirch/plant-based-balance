@@ -16,18 +16,18 @@
 
 <style>
   :root {
-    --duel-bg: #0a0a0f;
-    --duel-surface: #12121a;
-    --duel-surface-light: #1a1a2e;
-    --duel-accent: #10b981;
-    --duel-accent-dark: #059669;
-    --duel-accent-glow: rgba(16, 185, 129, 0.3);
-    --duel-secondary: #8b5cf6;
+    --duel-bg: #0f1628;
+    --duel-surface: rgba(255, 255, 255, 0.06);
+    --duel-surface-light: rgba(255, 255, 255, 0.08);
+    --duel-accent: #a78bfa;
+    --duel-accent-dark: #7c3aed;
+    --duel-accent-glow: rgba(167, 139, 250, 0.3);
+    --duel-secondary: #60a5fa;
     --duel-danger: #ef4444;
-    --duel-warning: #f59e0b;
+    --duel-warning: #fbbf24;
     --duel-text: #f1f5f9;
-    --duel-text-muted: #94a3b8;
-    --duel-border: rgba(255, 255, 255, 0.08);
+    --duel-text-muted: rgba(255, 255, 255, 0.5);
+    --duel-border: rgba(255, 255, 255, 0.1);
     --duel-radius: 16px;
   }
 
@@ -35,7 +35,8 @@
 
   body {
     font-family: 'Inter', sans-serif;
-    background: var(--duel-bg);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    background-attachment: fixed;
     color: var(--duel-text);
     min-height: 100vh;
   }
@@ -45,7 +46,7 @@
     position: fixed;
     top: 0;
     width: 100%;
-    background: rgba(10, 10, 15, 0.95);
+    background: rgba(26, 26, 46, 0.95);
     backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--duel-border);
     padding: 12px 16px;
@@ -55,25 +56,19 @@
     justify-content: space-between;
   }
 
-  .duel-header .back-btn {
-    background: none;
-    border: none;
-    color: var(--duel-text-muted);
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 4px 8px;
-  }
-
   .duel-header h1 {
     font-size: 1.1rem;
-    font-weight: 700;
+    font-weight: 800;
+    color: var(--duel-accent);
+    text-shadow: 0 0 20px rgba(167, 139, 250, 0.3);
   }
 
   .duel-header .coin-display {
     display: flex;
     align-items: center;
     gap: 4px;
-    background: var(--duel-surface-light);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
     padding: 6px 12px;
     border-radius: 20px;
     font-size: 0.85rem;
@@ -136,13 +131,13 @@
   }
 
   .btn-duel-primary {
-    background: var(--duel-accent);
-    color: var(--duel-bg);
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: white;
     box-shadow: 0 4px 20px var(--duel-accent-glow);
   }
 
   .btn-duel-primary:hover {
-    background: var(--duel-accent-dark);
+    background: linear-gradient(135deg, #6d28d9, #4f46e5);
     transform: translateY(-2px);
   }
 
@@ -197,12 +192,12 @@
   }
 
   .mode-option:hover {
-    border-color: rgba(16, 185, 129, 0.3);
+    border-color: rgba(167, 139, 250, 0.3);
   }
 
   .mode-option.selected {
     border-color: var(--duel-accent);
-    background: rgba(16, 185, 129, 0.1);
+    background: rgba(167, 139, 250, 0.1);
   }
 
   .mode-option .mode-icon {
@@ -267,7 +262,7 @@
 
   .friend-item.selected {
     border-color: var(--duel-accent);
-    background: rgba(16, 185, 129, 0.08);
+    background: rgba(167, 139, 250, 0.08);
   }
 
   .friend-avatar {
@@ -303,12 +298,12 @@
   }
 
   .workout-picker-item:hover {
-    border-color: rgba(16, 185, 129, 0.3);
+    border-color: rgba(167, 139, 250, 0.3);
   }
 
   .workout-picker-item.selected {
     border-color: var(--duel-accent);
-    background: rgba(16, 185, 129, 0.08);
+    background: rgba(167, 139, 250, 0.08);
   }
 
   .workout-picker-item .workout-info h4 {
@@ -586,8 +581,8 @@
   }
 
   .set-input.logged {
-    background: rgba(16, 185, 129, 0.08);
-    border-color: rgba(16, 185, 129, 0.2);
+    background: rgba(167, 139, 250, 0.08);
+    border-color: rgba(167, 139, 250, 0.2);
   }
 
   .log-set-btn {
@@ -727,7 +722,7 @@
 
   .proof-status-badge.requested { background: rgba(245, 158, 11, 0.15); color: var(--duel-warning); }
   .proof-status-badge.uploaded { background: rgba(139, 92, 246, 0.15); color: var(--duel-secondary); }
-  .proof-status-badge.approved { background: rgba(16, 185, 129, 0.15); color: var(--duel-accent); }
+  .proof-status-badge.approved { background: rgba(167, 139, 250, 0.15); color: var(--duel-accent); }
   .proof-status-badge.rejected { background: rgba(239, 68, 68, 0.15); color: var(--duel-danger); }
   .proof-status-badge.voided { background: rgba(239, 68, 68, 0.15); color: var(--duel-danger); text-decoration: line-through; }
 
@@ -742,8 +737,8 @@
   }
 
   .winner-banner.won {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(139, 92, 246, 0.2));
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(139, 92, 246, 0.2));
+    border: 1px solid rgba(167, 139, 250, 0.3);
   }
 
   .winner-banner.lost {
@@ -802,7 +797,7 @@
   }
 
   .duel-list-item:hover {
-    border-color: rgba(16, 185, 129, 0.3);
+    border-color: rgba(167, 139, 250, 0.3);
     transform: translateY(-2px);
   }
 
@@ -829,9 +824,9 @@
   .duel-status-badge.pending { background: rgba(245, 158, 11, 0.15); color: var(--duel-warning); }
   .duel-status-badge.accepted { background: rgba(139, 92, 246, 0.15); color: var(--duel-secondary); }
   .duel-status-badge.live { background: rgba(239, 68, 68, 0.15); color: var(--duel-danger); }
-  .duel-status-badge.in_progress { background: rgba(16, 185, 129, 0.15); color: var(--duel-accent); }
+  .duel-status-badge.in_progress { background: rgba(167, 139, 250, 0.15); color: var(--duel-accent); }
   .duel-status-badge.proof_phase { background: rgba(245, 158, 11, 0.15); color: var(--duel-warning); }
-  .duel-status-badge.settled { background: rgba(16, 185, 129, 0.15); color: var(--duel-accent); }
+  .duel-status-badge.settled { background: rgba(167, 139, 250, 0.15); color: var(--duel-accent); }
   .duel-status-badge.declined { background: rgba(239, 68, 68, 0.15); color: var(--duel-danger); }
 
   /* Empty state */
@@ -857,7 +852,7 @@
 
   .video-upload-zone:hover {
     border-color: var(--duel-accent);
-    background: rgba(16, 185, 129, 0.05);
+    background: rgba(167, 139, 250, 0.05);
   }
 
   .video-upload-zone .upload-icon { font-size: 2rem; margin-bottom: 8px; }
@@ -931,7 +926,6 @@
 
 <!-- Header -->
 <div class="duel-header">
-  <button class="back-btn" onclick="handleBack()">&#8592;</button>
   <h1 id="headerTitle">Workout Duels</h1>
   <div class="coin-display">
     <span class="coin-icon">&#x1FA99;</span>
@@ -1082,6 +1076,9 @@ async function init() {
     const userData = await db.users.get(currentUser.id);
     document.getElementById('coinBalance').textContent = userData?.coin_balance || 0;
 
+    // Enable swipe-to-go-back
+    enableSwipeBack();
+
     // Check URL params for direct duel access
     const params = new URLSearchParams(window.location.search);
     const duelId = params.get('duel');
@@ -1132,6 +1129,88 @@ function handleBack() {
   } else {
     window.location.href = '/dashboard.html';
   }
+}
+
+// ============================================================
+// SWIPE-TO-GO-BACK (matches dashboard pattern)
+// ============================================================
+function enableSwipeBack() {
+  const body = document.body;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let isDragging = false;
+  let overlayEl = null;
+
+  const screenWidth = window.innerWidth;
+  const isAndroid = /android/i.test(navigator.userAgent);
+  const edgeThreshold = 50;
+
+  body.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+    isDragging = false;
+  }, { passive: true });
+
+  body.addEventListener('touchmove', (e) => {
+    const touchEndX = e.changedTouches[0].screenX;
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = Math.abs(e.changedTouches[0].screenY - touchStartY);
+
+    const isFromCorrectEdge = isAndroid
+      ? (touchStartX > screenWidth - edgeThreshold && deltaX < -30)
+      : (touchStartX < edgeThreshold && deltaX > 30);
+
+    if (isFromCorrectEdge && deltaY < 100) {
+      isDragging = true;
+      const absDeltaX = Math.abs(deltaX);
+      const progress = Math.min(absDeltaX / 200, 1);
+
+      if (!overlayEl) {
+        overlayEl = document.createElement('div');
+        overlayEl.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.1);pointer-events:none;z-index:9998;opacity:0;transition:opacity 0.1s;';
+        document.body.appendChild(overlayEl);
+      }
+
+      document.querySelector('.main-content').style.transform = `translateX(${deltaX}px)`;
+      document.querySelector('.main-content').style.transition = 'none';
+      overlayEl.style.opacity = progress * 0.3;
+    }
+  }, { passive: true });
+
+  body.addEventListener('touchend', (e) => {
+    const touchEndX = e.changedTouches[0].screenX;
+    const touchEndY = e.changedTouches[0].screenY;
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = Math.abs(touchEndY - touchStartY);
+
+    const isValidSwipe = isAndroid
+      ? (touchStartX > screenWidth - edgeThreshold && deltaX < -100)
+      : (touchStartX < edgeThreshold && deltaX > 100);
+
+    const mainContent = document.querySelector('.main-content');
+
+    if (isValidSwipe && deltaY < 100 && isDragging) {
+      const exitDirection = isAndroid ? '-100%' : '100%';
+      mainContent.style.transition = 'transform 0.3s ease-out';
+      mainContent.style.transform = `translateX(${exitDirection})`;
+
+      setTimeout(() => {
+        handleBack();
+        mainContent.style.transform = '';
+        mainContent.style.transition = '';
+        if (overlayEl) { overlayEl.remove(); overlayEl = null; }
+      }, 300);
+    } else if (isDragging) {
+      mainContent.style.transition = 'transform 0.3s ease-out';
+      mainContent.style.transform = '';
+      setTimeout(() => {
+        mainContent.style.transition = '';
+        if (overlayEl) { overlayEl.remove(); overlayEl = null; }
+      }, 300);
+    }
+
+    isDragging = false;
+  }, { passive: true });
 }
 
 // ============================================================
@@ -1218,11 +1297,9 @@ async function loadFriends() {
   container.innerHTML = '<div class="spinner"></div>';
 
   try {
-    const { data, error } = await supabaseClient
-      .from('friendships')
-      .select('user_id, friend_id, users!friendships_friend_id_fkey(id, name, profile_photo)')
-      .or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`)
-      .eq('status', 'accepted');
+    const { data, error } = await supabaseClient.rpc('get_friends_with_status', {
+      user_uuid: currentUser.id
+    });
 
     if (error) throw error;
 
@@ -1236,27 +1313,21 @@ async function loadFriends() {
       return;
     }
 
-    // Get unique friends (handle bidirectional relationship)
-    const friends = [];
-    const seen = new Set();
-    for (const f of data) {
-      const friendId = f.user_id === currentUser.id ? f.friend_id : f.user_id;
-      if (seen.has(friendId)) continue;
-      seen.add(friendId);
+    container.innerHTML = data.map(f => {
+      const initials = (f.friend_name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      const photoHtml = f.friend_photo
+        ? `<img src="${f.friend_photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">`
+        : `<div class="friend-avatar">${initials}</div>`;
+      const streakText = f.current_streak > 0 ? `<span style="font-size:0.7rem;color:var(--duel-warning);">🔥 ${f.current_streak} day streak</span>` : '';
+      const workoutDot = f.has_workout_today ? '<span style="width:8px;height:8px;border-radius:50%;background:#a78bfa;display:inline-block;margin-left:6px;" title="Worked out today"></span>' : '';
 
-      // We need to fetch friend details since the join might not always work
-      const friendData = await db.users.get(friendId);
-      if (friendData) {
-        friends.push(friendData);
-      }
-    }
-
-    container.innerHTML = friends.map(f => {
-      const initials = (f.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
       return `
-        <div class="friend-item" data-id="${f.id}" onclick="selectFriend('${f.id}', '${(f.name || '').replace(/'/g, "\\'")}')">
-          <div class="friend-avatar">${initials}</div>
-          <div class="friend-name">${f.name || 'Unknown'}</div>
+        <div class="friend-item" data-id="${f.friend_id}" onclick="selectFriend('${f.friend_id}', '${(f.friend_name || '').replace(/'/g, "\\'")}')">
+          ${photoHtml}
+          <div style="flex:1;">
+            <div class="friend-name">${f.friend_name || 'Unknown'}${workoutDot}</div>
+            ${streakText}
+          </div>
         </div>`;
     }).join('');
   } catch (err) {
