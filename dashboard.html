@@ -12177,36 +12177,40 @@ async function startCustomBuilderWorkout() {
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
-                ${Array.from({length: ex.sets}, (_, setIdx) => {
-                    const prevStats = getPreviousStats(ex.name, setIdx + 1) || '-';
-                    return `
-                    <div class="set-wrapper">
-                        <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
-                            <div class="set-number" style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
-                            <input type="text" class="input-time" placeholder="-" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                            <input type="text" class="input-reps" placeholder="Reps" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                            <input type="text" class="input-kg" placeholder="Kg" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                            <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prevStats}</div>
-                            <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
-                            <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
-                        </div>
-                        <div class="drop-set-container">
-                            <div class="drop-set-inputs">
-                                <div class="drop-set-row">
-                                    <div class="drop-indicator">↓1</div>
-                                    <input type="text" class="drop-reps" placeholder="Reps">
-                                    <input type="text" class="drop-kg" placeholder="Kg">
-                                    <button class="drop-add-btn" onclick="addDropRow(this)">+</button>
+                ${(() => {
+                    const numSets = previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : ex.sets;
+                    return Array.from({length: numSets}, (_, setIdx) => {
+                        const prevSet = previousSummary && previousSummary.sets[setIdx] ? previousSummary.sets[setIdx] : null;
+                        const prefillKg = prevSet && prevSet.kg && prevSet.kg !== '0' && prevSet.kg !== '' ? prevSet.kg : '';
+                        const prefillReps = prevSet && prevSet.reps ? prevSet.reps : '';
+                        return `
+                        <div class="set-wrapper">
+                            <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr 32px 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
+                                <div class="set-number" style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
+                                <input type="text" class="input-time" placeholder="-" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                                <input type="text" class="input-reps" placeholder="Reps" value="${prefillReps}" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                                <input type="text" class="input-kg" placeholder="Kg" value="${prefillKg}" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                                <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
+                                <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+                            </div>
+                            <div class="drop-set-container">
+                                <div class="drop-set-inputs">
+                                    <div class="drop-set-row">
+                                        <div class="drop-indicator">↓1</div>
+                                        <input type="text" class="drop-reps" placeholder="Reps">
+                                        <input type="text" class="drop-kg" placeholder="Kg">
+                                        <button class="drop-add-btn" onclick="addDropRow(this)">+</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                `}).join('')}
+                    `}).join('');
+                })()}
             </div>
 
             <div style="padding:15px; border-top:1px solid #f8fafc;">
@@ -22545,15 +22549,19 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
         card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
 
         const isTimeBased = ex.reps && (ex.reps.toLowerCase().includes('min') || ex.reps.toLowerCase().includes('s'));
+        const previousSummary = getPreviousWorkoutSummary(ex.name);
+        // Use previous session's set count if available, otherwise use prescribed sets
+        const prescribedSets = ex.sets || 3;
+        const numSets = previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : prescribedSets;
         let setsHtml = '';
-        const numSets = ex.sets || 3;
         for(let s=1; s<=numSets; s++) {
-            setsHtml += getSetRowHtml(ex.name, s, isTimeBased);
+            // Get prefill data from previous session for this set number
+            const prevSet = previousSummary && previousSummary.sets[s - 1] ? previousSummary.sets[s - 1] : null;
+            setsHtml += getSetRowHtml(ex.name, s, isTimeBased, prevSet);
         }
 
         const videoUrl = findVideoMatch(ex.name);
         const previousSummaryHtml = formatPreviousWorkoutSummary(ex.name);
-        const previousSummary = getPreviousWorkoutSummary(ex.name);
         const isUserAdded = ex.isUserAdded || false;
         const escapedName = ex.name.replace(/'/g, "\\'");
 
@@ -22609,8 +22617,8 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -22894,85 +22902,31 @@ function setupVolumeTracking(card) {
     });
 }
 
-// Format previous workout summary as HTML - enhanced with Last Session + Personal Best
+// Format previous workout summary as HTML - Personal Best banner only
 function formatPreviousWorkoutSummary(exerciseName) {
-    const summary = getPreviousWorkoutSummary(exerciseName);
     const maxWeight = getExerciseMaxWeight(exerciseName);
 
-    if (!summary && !maxWeight) return '';
+    if (!maxWeight) return '';
 
-    let html = '<div class="exercise-history-panel" style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">';
+    const prDateStr = maxWeight.date ? new Date(maxWeight.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
 
-    // LAST SESSION card
-    if (summary) {
-        const dateStr = new Date(summary.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-
-        // Build set-by-set breakdown as compact pills
-        const setPills = summary.sets.map((s, i) => {
-            const kg = s.kg && s.kg !== '0' && s.kg !== '' ? s.kg + 'kg' : '';
-            const reps = s.reps || s.time || '-';
-            const display = kg ? kg + ' x ' + reps : reps;
-            return '<span style="display: inline-block; background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 2px 7px; font-size: 0.7rem; font-weight: 600; color: var(--text-main); white-space: nowrap;">S' + (i + 1) + ': ' + display + '</span>';
-        }).join(' ');
-
-        html += '<div style="flex: 1; min-width: 140px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; padding: 10px 12px; border: 1px solid #bfdbfe;">';
-        // Header row
-        html += '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">';
-        html += '<div style="display: flex; align-items: center; gap: 5px;">';
-        html += '<svg viewBox="0 0 24 24" style="width: 13px; height: 13px; fill: #2563eb;"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>';
-        html += '<span style="font-size: 0.65rem; font-weight: 800; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.5px;">Last Session</span>';
-        html += '</div>';
-        html += '<span style="font-size: 0.65rem; font-weight: 600; color: #60a5fa;">' + dateStr + '</span>';
-        html += '</div>';
-        // Set breakdown
-        html += '<div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;">' + setPills + '</div>';
-        // Stats row
-        html += '<div style="display: flex; gap: 12px; padding-top: 6px; border-top: 1px solid #bfdbfe;">';
-        html += '<div style="text-align: center; flex: 1;">';
-        html += '<div style="font-size: 0.6rem; font-weight: 700; color: #60a5fa; text-transform: uppercase;">Sets</div>';
-        html += '<div style="font-size: 0.9rem; font-weight: 800; color: #1e40af;">' + summary.setCount + '</div>';
-        html += '</div>';
-        if (summary.totalVolume > 0) {
-            html += '<div style="text-align: center; flex: 1;">';
-            html += '<div style="font-size: 0.6rem; font-weight: 700; color: #60a5fa; text-transform: uppercase;">Volume</div>';
-            html += '<div style="font-size: 0.9rem; font-weight: 800; color: #1e40af;">' + summary.totalVolume.toLocaleString() + '<span style="font-size: 0.65rem; font-weight: 600;"> kg</span></div>';
-            html += '</div>';
-        }
-        // Find best set weight from last session
-        const bestSetKg = Math.max(...summary.sets.map(s => parseFloat(s.kg) || 0));
-        if (bestSetKg > 0) {
-            html += '<div style="text-align: center; flex: 1;">';
-            html += '<div style="font-size: 0.6rem; font-weight: 700; color: #60a5fa; text-transform: uppercase;">Top Set</div>';
-            html += '<div style="font-size: 0.9rem; font-weight: 800; color: #1e40af;">' + bestSetKg + '<span style="font-size: 0.65rem; font-weight: 600;"> kg</span></div>';
-            html += '</div>';
-        }
-        html += '</div>';
-        html += '</div>';
+    let html = '<div class="exercise-history-panel" style="margin-top: 10px;">';
+    // Full-width Personal Best banner
+    html += '<div style="width: 100%; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 10px 14px; border: 1px solid #fbbf24; display: flex; align-items: center; gap: 10px;">';
+    // Crown icon
+    html += '<svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #d97706; flex-shrink: 0;"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>';
+    // PR text
+    html += '<div style="flex: 1; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">';
+    html += '<span style="font-size: 0.7rem; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">Personal Best</span>';
+    html += '<span style="font-size: 1rem; font-weight: 900; color: #78350f;">' + maxWeight.weight + ' kg x ' + maxWeight.reps + ' reps</span>';
+    if (maxWeight.bestReps && maxWeight.bestReps > maxWeight.reps) {
+        html += '<span style="font-size: 0.7rem; color: #a16207; font-weight: 600;">(Most reps: ' + maxWeight.bestReps + ' @ ' + maxWeight.bestRepsWeight + 'kg)</span>';
     }
-
-    // PERSONAL BEST card
-    if (maxWeight) {
-        const prDateStr = maxWeight.date ? new Date(maxWeight.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
-
-        html += '<div style="flex: 0 0 auto; min-width: 110px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 10px 12px; border: 1px solid #fbbf24; text-align: center;">';
-        // Header
-        html += '<div style="display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 8px;">';
-        html += '<svg viewBox="0 0 24 24" style="width: 13px; height: 13px; fill: #d97706;"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>';
-        html += '<span style="font-size: 0.65rem; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">Best</span>';
-        html += '</div>';
-        // Main PR stat
-        html += '<div style="font-size: 1.3rem; font-weight: 900; color: #78350f; line-height: 1;">' + maxWeight.weight + '<span style="font-size: 0.7rem; font-weight: 600;"> kg</span></div>';
-        html += '<div style="font-size: 0.75rem; font-weight: 700; color: #92400e; margin-top: 2px;">' + maxWeight.reps + ' reps</div>';
-        // Best reps line (if different from best weight)
-        if (maxWeight.bestReps && maxWeight.bestReps > maxWeight.reps) {
-            html += '<div style="font-size: 0.6rem; color: #a16207; margin-top: 4px; padding-top: 4px; border-top: 1px solid #f59e0b;">Most reps: ' + maxWeight.bestReps + ' @ ' + maxWeight.bestRepsWeight + 'kg</div>';
-        }
-        if (prDateStr) {
-            html += '<div style="font-size: 0.6rem; color: #b45309; margin-top: 3px;">' + prDateStr + '</div>';
-        }
-        html += '</div>';
+    html += '</div>';
+    if (prDateStr) {
+        html += '<span style="font-size: 0.65rem; color: #b45309; font-weight: 600; flex-shrink: 0;">' + prDateStr + '</span>';
     }
-
+    html += '</div>';
     html += '</div>';
     return html;
 }
@@ -23009,19 +22963,21 @@ function getVolumeDisplayHtml(exerciseName) {
     return html;
 }
 
-function getSetRowHtml(exName, setNum, isTimeBased) {
-    const prev = getPreviousStats(exName, setNum) || '-';
+function getSetRowHtml(exName, setNum, isTimeBased, prefillData) {
+    // prefillData: optional {kg, reps, time} from previous session
+    const prefillKg = prefillData && prefillData.kg && prefillData.kg !== '0' && prefillData.kg !== '' ? prefillData.kg : '';
+    const prefillReps = prefillData && prefillData.reps ? prefillData.reps : '';
+    const prefillTime = prefillData && prefillData.time ? prefillData.time : '';
     return `
         <div class="set-wrapper">
-            <div class="workout-set-row" style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; align-items:center; padding:10px 15px; border-top:1px solid #f8fafc;">
+            <div class="workout-set-row" style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; align-items:center; padding:10px 15px; border-top:1px solid #f8fafc;">
                 <div class="set-number" style="font-weight:800; color:#94a3b8; font-size:0.85rem; text-align:center;">${setNum}</div>
                 <div style="position:relative;">
-                    <input type="text" class="input-time" placeholder="-" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
+                    <input type="text" class="input-time" placeholder="-" value="${prefillTime}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
                     ${isTimeBased ? '<svg viewBox="0 0 24 24" style="position:absolute; left:4px; top:50%; transform:translateY(-50%); width:12px; height:12px; fill:#94a3b8;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>' : ''}
                 </div>
-                <input type="text" class="input-reps" placeholder="Reps" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
-                <input type="text" class="input-kg" placeholder="Kg" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
-                <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prev}</div>
+                <input type="text" class="input-reps" placeholder="Reps" value="${prefillReps}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
+                <input type="text" class="input-kg" placeholder="Kg" value="${prefillKg}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
                 <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
                 <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;">
                     <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -25805,12 +25761,15 @@ function renderWorkoutExercises(exercises) {
 
         const videoUrl = findVideoMatch(ex.name);
         const previousSummaryHtml = formatPreviousWorkoutSummary(ex.name);
+        const previousSummary = getPreviousWorkoutSummary(ex.name);
         const isUserAdded = ex.isUserAdded || false;
         const escapedName = ex.name.replace(/'/g, "\\'");
 
-        const setsHtml = Array.from({length: ex.sets || 3}, (_, setIdx) => {
-            const prevStats = getPreviousStats(ex.name, setIdx + 1) || '-';
-            return getSetRowHtml(ex.name, setIdx + 1, false);
+        const prescribedSets = ex.sets || 3;
+        const numSets = previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : prescribedSets;
+        const setsHtml = Array.from({length: numSets}, (_, setIdx) => {
+            const prevSet = previousSummary && previousSummary.sets[setIdx] ? previousSummary.sets[setIdx] : null;
+            return getSetRowHtml(ex.name, setIdx + 1, false, prevSet);
         }).join('');
 
         card.innerHTML = `
@@ -25846,8 +25805,8 @@ function renderWorkoutExercises(exercises) {
 
             ${getVolumeDisplayHtml(ex.name)}
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -26253,16 +26212,15 @@ function addExerciseWithSets(exerciseName, sets) {
     const escapedName = exerciseName.replace(/'/g, "\\'");
 
     const setsHtml = sets.map((set, idx) => {
-        const prevStats = getPreviousStats(exerciseName, idx + 1) || '-';
         return `
             <div class="set-wrapper">
-                <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(50px, auto) 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
+                <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr 32px 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
                     <div style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${idx + 1}</div>
                     <input type="text" class="input-time" placeholder="-" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                     <input type="text" class="input-reps" placeholder="Reps" value="${set.reps || ''}" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                     <input type="text" class="input-kg" placeholder="Kg" value="${set.kg || ''}" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                    <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prevStats}</div>
                     <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
+                    <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                 </div>
                 <div class="drop-set-container">
                     <div class="drop-set-inputs">
@@ -26331,8 +26289,8 @@ function addExerciseWithSets(exerciseName, sets) {
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -26607,36 +26565,40 @@ function addExerciseToUI(exercise) {
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
-                ${Array.from({length: exercise.sets || 3}, (_, setIdx) => {
-                    const prevStats = getPreviousStats(exercise.name, setIdx + 1) || '-';
-                    return `
-                    <div class="set-wrapper">
-                        <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
-                            <div class="set-number" style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
-                            <input type="text" class="input-time" placeholder="-" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                            <input type="text" class="input-reps" placeholder="Reps" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                            <input type="text" class="input-kg" placeholder="Kg" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                            <div style="font-size:0.75rem; color:var(--primary); font-weight:600; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prevStats}</div>
-                            <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
-                            <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
-                        </div>
-                        <div class="drop-set-container">
-                            <div class="drop-set-inputs">
-                                <div class="drop-set-row">
-                                    <div class="drop-indicator">↓1</div>
-                                    <input type="text" class="drop-reps" placeholder="Reps">
-                                    <input type="text" class="drop-kg" placeholder="Kg">
-                                    <button class="drop-add-btn" onclick="addDropRow(this)">+</button>
+                ${(() => {
+                    const numSets = previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : (exercise.sets || 3);
+                    return Array.from({length: numSets}, (_, setIdx) => {
+                        const prevSet = previousSummary && previousSummary.sets[setIdx] ? previousSummary.sets[setIdx] : null;
+                        const prefillKg = prevSet && prevSet.kg && prevSet.kg !== '0' && prevSet.kg !== '' ? prevSet.kg : '';
+                        const prefillReps = prevSet && prevSet.reps ? prevSet.reps : '';
+                        return `
+                        <div class="set-wrapper">
+                            <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr 32px 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
+                                <div class="set-number" style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
+                                <input type="text" class="input-time" placeholder="-" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                                <input type="text" class="input-reps" placeholder="Reps" value="${prefillReps}" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                                <input type="text" class="input-kg" placeholder="Kg" value="${prefillKg}" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                                <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
+                                <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+                            </div>
+                            <div class="drop-set-container">
+                                <div class="drop-set-inputs">
+                                    <div class="drop-set-row">
+                                        <div class="drop-indicator">↓1</div>
+                                        <input type="text" class="drop-reps" placeholder="Reps">
+                                        <input type="text" class="drop-kg" placeholder="Kg">
+                                        <button class="drop-add-btn" onclick="addDropRow(this)">+</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                `}).join('')}
+                    `}).join('');
+                })()}
             </div>
 
             <div style="padding:15px; border-top:1px solid #f8fafc;">
@@ -35519,12 +35481,18 @@ updateCoachUI();
             card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
             const videoUrl = findVideoMatch(ex.name);
             const previousSummaryHtml = formatPreviousWorkoutSummary(ex.name);
+            const previousSummary = getPreviousWorkoutSummary(ex.name);
             const escapedName = ex.name.replace(/'/g, "\\'");
+            const numSets = previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : 3;
+            const setsHtml = Array.from({length: numSets}, (_, i) => {
+                const prevSet = previousSummary && previousSummary.sets[i] ? previousSummary.sets[i] : null;
+                return getSetRowHtml(ex.name, i + 1, false, prevSet);
+            }).join('');
 
             card.innerHTML = `
             <div style="padding:15px; background:#f8fafc; border-bottom:1px solid #e2e8f0;">
                 <h3 style="margin:0 0 5px 0; font-size:1.05rem; font-weight:700; color:var(--text-main);">${ex.name}</h3>
-                <div style="font-size:0.8rem; color:var(--text-muted);">Target: 3 Sets x 12 Reps</div>
+                <div style="font-size:0.8rem; color:var(--text-muted);">Target: ${numSets} Sets x 12 Reps</div>
                 ${previousSummaryHtml}
             </div>
 
@@ -35542,12 +35510,12 @@ updateCoachUI();
 
             ${getVolumeDisplayHtml(ex.name)}
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr minmax(50px, auto) 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div>Last</div><div></div><div></div>
+            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
-                ${ [1,2,3].map(s => getSetRowHtml(ex.name, s, false)).join('') }
+                ${setsHtml}
             </div>
 
             <div style="padding:15px; border-top:1px solid #f8fafc;">
