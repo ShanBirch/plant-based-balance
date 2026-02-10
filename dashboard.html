@@ -12089,11 +12089,19 @@ async function startCustomBuilderWorkout() {
             const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
             window.savedWorkoutsCache = savedWorkouts;
             // Preload workout history for previous stats and volume tracking
-            window.workoutHistoryCache = await dbHelpers.workouts.getHistory(user.id);
+            const rawHistory1 = await dbHelpers.workouts.getHistory(user.id);
+            window.workoutHistoryCache = normalizeHistoryCache(rawHistory1);
         } catch(e) {
             console.error("Failed to auto-save workout:", e);
             window.currentCustomWorkoutId = null;
         }
+    }
+
+    // Preload personal bests for all exercises in this workout
+    if (user) {
+        try {
+            window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, customWorkoutSelection);
+        } catch(e) { console.error("Failed to load personal bests", e); window.personalBestsCache = {}; }
     }
 
     // Construct a dynamic workout object
@@ -12109,7 +12117,7 @@ async function startCustomBuilderWorkout() {
             desc: ''
         }))
     };
-    
+
     // Hijack the player
     document.getElementById('workout-player-title').innerText = customWorkout.title;
     document.getElementById('workout-player-goal').innerText = customWorkout.description;
@@ -22469,7 +22477,8 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
     } else if (user) {
         // Preload history
         try {
-            window.workoutHistoryCache = await dbHelpers.workouts.getHistory(user.id);
+            const rawHistory = await dbHelpers.workouts.getHistory(user.id);
+            window.workoutHistoryCache = normalizeHistoryCache(rawHistory);
         } catch(e) { console.error("Failed to load history", e); }
 
         const profile = await window.getUserProfile();
@@ -22511,6 +22520,14 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
             ...ex,
             isUserAdded: true
         })));
+    }
+
+    // Preload personal bests for all exercises in this workout
+    if (user) {
+        try {
+            const exerciseNames = exercises.map(ex => ex.name);
+            window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, exerciseNames);
+        } catch(e) { console.error("Failed to load personal bests", e); window.personalBestsCache = {}; }
     }
 
     document.getElementById('workout-player-title').innerText = workout.title;
@@ -22618,6 +22635,35 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
     pushNavigationState('view-active-workout', () => quitWorkout());
 }
 
+// Normalize history records from DB format to local format
+// DB returns: exercise_name, workout_date, weight_kg, set_number, time_duration
+// Local code expects: exercise, date, kg, set, time, reps
+function normalizeHistoryCache(historyData) {
+    if (!historyData || !Array.isArray(historyData)) return [];
+    return historyData.map(h => {
+        // If already in local format, return as-is
+        if (h.exercise) return h;
+        // Map DB column names to local format
+        return {
+            exercise: h.exercise_name || '',
+            date: h.workout_date || '',
+            kg: h.weight_kg || '',
+            set: h.set_number || 0,
+            time: h.time_duration || '',
+            reps: h.reps || '',
+            isDropSet: h.is_drop_set || false,
+            dropSetWeights: h.drop_set_weights || '',
+            dropSetReps: h.drop_set_reps || '',
+            // Keep original fields too for compatibility
+            exercise_name: h.exercise_name,
+            workout_date: h.workout_date,
+            weight_kg: h.weight_kg,
+            set_number: h.set_number,
+            time_duration: h.time_duration
+        };
+    });
+}
+
 function getPreviousStats(name, set) {
     // Use cached history from DB
     const history = window.workoutHistoryCache || [];
@@ -22701,8 +22747,24 @@ function getPreviousWorkoutSummary(exerciseName) {
     };
 }
 
-// Get all-time max weight for an exercise from history cache
+// Get all-time max weight for an exercise
+// Prefers personal_bests table (via cache), falls back to history cache
 function getExerciseMaxWeight(exerciseName) {
+    // Check personal bests cache first (authoritative source)
+    const pbCache = window.personalBestsCache || {};
+    const pb = pbCache[exerciseName];
+    if (pb && pb.best_weight_kg > 0) {
+        return {
+            weight: parseFloat(pb.best_weight_kg),
+            reps: parseInt(pb.best_weight_reps) || 0,
+            date: pb.best_weight_date,
+            bestReps: parseInt(pb.best_reps) || 0,
+            bestRepsWeight: parseFloat(pb.best_reps_weight_kg) || 0,
+            bestRepsDate: pb.best_reps_date
+        };
+    }
+
+    // Fallback to history cache
     const history = window.workoutHistoryCache || [];
     const exerciseHistory = history.filter(h => h.exercise === exerciseName);
 
@@ -22832,40 +22894,82 @@ function setupVolumeTracking(card) {
     });
 }
 
-// Format previous workout summary as HTML
+// Format previous workout summary as HTML - enhanced with Last Session + Personal Best
 function formatPreviousWorkoutSummary(exerciseName) {
     const summary = getPreviousWorkoutSummary(exerciseName);
     const maxWeight = getExerciseMaxWeight(exerciseName);
 
     if (!summary && !maxWeight) return '';
 
-    let html = '<div style="margin-top: 8px;">';
+    let html = '<div class="exercise-history-panel" style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">';
 
-    // Max weight PR badge
-    if (maxWeight) {
-        html += '<div style="display: inline-flex; align-items: center; gap: 4px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 6px; padding: 3px 8px; margin-bottom: 6px;">';
-        html += '<svg viewBox="0 0 24 24" style="width: 12px; height: 12px; fill: #d97706;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.27 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-        html += '<span style="font-size: 0.7rem; font-weight: 700; color: #92400e;">PR: ' + maxWeight.weight + 'kg x ' + maxWeight.reps + '</span>';
+    // LAST SESSION card
+    if (summary) {
+        const dateStr = new Date(summary.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+        // Build set-by-set breakdown as compact pills
+        const setPills = summary.sets.map((s, i) => {
+            const kg = s.kg && s.kg !== '0' && s.kg !== '' ? s.kg + 'kg' : '';
+            const reps = s.reps || s.time || '-';
+            const display = kg ? kg + ' x ' + reps : reps;
+            return '<span style="display: inline-block; background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 2px 7px; font-size: 0.7rem; font-weight: 600; color: var(--text-main); white-space: nowrap;">S' + (i + 1) + ': ' + display + '</span>';
+        }).join(' ');
+
+        html += '<div style="flex: 1; min-width: 140px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; padding: 10px 12px; border: 1px solid #bfdbfe;">';
+        // Header row
+        html += '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">';
+        html += '<div style="display: flex; align-items: center; gap: 5px;">';
+        html += '<svg viewBox="0 0 24 24" style="width: 13px; height: 13px; fill: #2563eb;"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>';
+        html += '<span style="font-size: 0.65rem; font-weight: 800; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.5px;">Last Session</span>';
+        html += '</div>';
+        html += '<span style="font-size: 0.65rem; font-weight: 600; color: #60a5fa;">' + dateStr + '</span>';
+        html += '</div>';
+        // Set breakdown
+        html += '<div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;">' + setPills + '</div>';
+        // Stats row
+        html += '<div style="display: flex; gap: 12px; padding-top: 6px; border-top: 1px solid #bfdbfe;">';
+        html += '<div style="text-align: center; flex: 1;">';
+        html += '<div style="font-size: 0.6rem; font-weight: 700; color: #60a5fa; text-transform: uppercase;">Sets</div>';
+        html += '<div style="font-size: 0.9rem; font-weight: 800; color: #1e40af;">' + summary.setCount + '</div>';
+        html += '</div>';
+        if (summary.totalVolume > 0) {
+            html += '<div style="text-align: center; flex: 1;">';
+            html += '<div style="font-size: 0.6rem; font-weight: 700; color: #60a5fa; text-transform: uppercase;">Volume</div>';
+            html += '<div style="font-size: 0.9rem; font-weight: 800; color: #1e40af;">' + summary.totalVolume.toLocaleString() + '<span style="font-size: 0.65rem; font-weight: 600;"> kg</span></div>';
+            html += '</div>';
+        }
+        // Find best set weight from last session
+        const bestSetKg = Math.max(...summary.sets.map(s => parseFloat(s.kg) || 0));
+        if (bestSetKg > 0) {
+            html += '<div style="text-align: center; flex: 1;">';
+            html += '<div style="font-size: 0.6rem; font-weight: 700; color: #60a5fa; text-transform: uppercase;">Top Set</div>';
+            html += '<div style="font-size: 0.9rem; font-weight: 800; color: #1e40af;">' + bestSetKg + '<span style="font-size: 0.65rem; font-weight: 600;"> kg</span></div>';
+            html += '</div>';
+        }
+        html += '</div>';
         html += '</div>';
     }
 
-    // Previous workout breakdown
-    if (summary) {
-        const dateStr = new Date(summary.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-        const setsStr = summary.sets.map(s => {
-            if (s.kg && s.kg !== '0' && s.kg !== '') {
-                return s.kg + 'kg x ' + (s.reps || s.time);
-            }
-            return s.reps || s.time || '-';
-        }).join(', ');
+    // PERSONAL BEST card
+    if (maxWeight) {
+        const prDateStr = maxWeight.date ? new Date(maxWeight.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
 
-        html += '<div class="previous-workout-summary" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 10px; padding: 10px 12px; border-left: 3px solid var(--primary);">';
-        html += '<div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">';
-        html += '<svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: var(--primary);"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>';
-        html += '<span style="font-size: 0.7rem; font-weight: 700; color: var(--primary); text-transform: uppercase;">Last: ' + dateStr + '</span>';
+        html += '<div style="flex: 0 0 auto; min-width: 110px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 10px 12px; border: 1px solid #fbbf24; text-align: center;">';
+        // Header
+        html += '<div style="display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 8px;">';
+        html += '<svg viewBox="0 0 24 24" style="width: 13px; height: 13px; fill: #d97706;"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>';
+        html += '<span style="font-size: 0.65rem; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">Best</span>';
         html += '</div>';
-        html += '<div style="font-size: 0.8rem; color: var(--text-main); font-weight: 600;">' + setsStr + '</div>';
-        html += '<div style="font-size: 0.7rem; color: #64748b; margin-top: 3px;">Volume: ' + summary.totalVolume.toLocaleString() + ' kg</div>';
+        // Main PR stat
+        html += '<div style="font-size: 1.3rem; font-weight: 900; color: #78350f; line-height: 1;">' + maxWeight.weight + '<span style="font-size: 0.7rem; font-weight: 600;"> kg</span></div>';
+        html += '<div style="font-size: 0.75rem; font-weight: 700; color: #92400e; margin-top: 2px;">' + maxWeight.reps + ' reps</div>';
+        // Best reps line (if different from best weight)
+        if (maxWeight.bestReps && maxWeight.bestReps > maxWeight.reps) {
+            html += '<div style="font-size: 0.6rem; color: #a16207; margin-top: 4px; padding-top: 4px; border-top: 1px solid #f59e0b;">Most reps: ' + maxWeight.bestReps + ' @ ' + maxWeight.bestRepsWeight + 'kg</div>';
+        }
+        if (prDateStr) {
+            html += '<div style="font-size: 0.6rem; color: #b45309; margin-top: 3px;">' + prDateStr + '</div>';
+        }
         html += '</div>';
     }
 
@@ -25620,7 +25724,8 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
     let customizations = null;
     if (user) {
         try {
-            window.workoutHistoryCache = await dbHelpers.workouts.getHistory(user.id);
+            const rawHistory2 = await dbHelpers.workouts.getHistory(user.id);
+            window.workoutHistoryCache = normalizeHistoryCache(rawHistory2);
             // Load workout customizations
             customizations = await dbHelpers.workoutCustomizations.get(user.id, window.currentWorkoutKey);
             window.currentWorkoutCustomizations = customizations;
@@ -25644,6 +25749,14 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
             ...ex,
             isUserAdded: true
         })));
+    }
+
+    // Preload personal bests for all exercises in this workout
+    if (user) {
+        try {
+            const exerciseNames = exercises.map(ex => ex.name);
+            window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, exerciseNames);
+        } catch(e) { console.error("Failed to load personal bests", e); window.personalBestsCache = {}; }
     }
 
     // Set workout title and goal
@@ -35360,15 +35473,23 @@ updateCoachUI();
         const user = window.currentUser;
         if (user) {
             try {
-                window.workoutHistoryCache = await dbHelpers.workouts.getHistory(user.id);
+                const rawHistory3 = await dbHelpers.workouts.getHistory(user.id);
+                window.workoutHistoryCache = normalizeHistoryCache(rawHistory3);
             } catch(e) {
                 console.error("Failed to load workout history", e);
             }
         }
 
+        // Preload personal bests
+        const exerciseNames = workout.template_data?.exercises || [];
+        if (user) {
+            try {
+                window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, exerciseNames);
+            } catch(e) { console.error("Failed to load personal bests", e); window.personalBestsCache = {}; }
+        }
+
         // Map DB format to Player format
         // workout.template_data.exercises is array of strings (names)
-        const exerciseNames = workout.template_data?.exercises || [];
 
         const customWorkout = {
             title: workout.template_name || 'Custom Workout',

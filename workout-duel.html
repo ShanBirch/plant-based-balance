@@ -2192,6 +2192,28 @@ async function loadDuelDetail() {
     const duel = data.duel;
     const isChallenger = duel.challenger_id === currentUser.id;
 
+    // Preload workout history and personal bests for active duels
+    if (duel.status === 'live' || duel.status === 'in_progress') {
+      try {
+        const exercises = duel.exercises || [];
+        const exerciseNames = exercises.map(e => e.name);
+        const [rawHistory, pbMap] = await Promise.all([
+          dbHelpers.workouts.getHistory(currentUser.id),
+          dbHelpers.personalBests.getForExercises(currentUser.id, exerciseNames)
+        ]);
+        // Normalize history (map DB column names to local format)
+        window.duelHistoryCache = (rawHistory || []).map(h => {
+          if (h.exercise) return h;
+          return { exercise: h.exercise_name || '', date: h.workout_date || '', kg: h.weight_kg || '', set: h.set_number || 0, time: h.time_duration || '', reps: h.reps || '' };
+        });
+        window.duelPBCache = pbMap || {};
+      } catch(e) {
+        console.error("Failed to load history/PBs for duel", e);
+        window.duelHistoryCache = [];
+        window.duelPBCache = {};
+      }
+    }
+
     // Render based on status
     switch (duel.status) {
       case 'pending':
@@ -2345,6 +2367,61 @@ async function startDuel() {
 // ============================================================
 // RENDER: ACTIVE WORKOUT (live or in_progress)
 // ============================================================
+// Get exercise history HTML for duel exercise cards
+function getDuelExerciseHistoryHtml(exerciseName) {
+  const history = window.duelHistoryCache || [];
+  const pbCache = window.duelPBCache || {};
+  const pb = pbCache[exerciseName];
+
+  // Find last session for this exercise
+  const exerciseHistory = history.filter(h => h.exercise === exerciseName);
+  let lastSession = null;
+  if (exerciseHistory.length > 0) {
+    const dateGroups = {};
+    exerciseHistory.forEach(h => {
+      const date = h.date || h.workout_date;
+      if (!dateGroups[date]) dateGroups[date] = [];
+      dateGroups[date].push(h);
+    });
+    const dates = Object.keys(dateGroups).sort((a, b) => new Date(b) - new Date(a));
+    if (dates.length > 0) {
+      const lastDate = dates[0];
+      const sets = dateGroups[lastDate].sort((a, b) => (a.set || 0) - (b.set || 0));
+      let totalVol = 0;
+      sets.forEach(s => { totalVol += (parseFloat(s.kg) || 0) * (parseFloat(s.reps) || 0); });
+      lastSession = { date: lastDate, sets, totalVolume: totalVol, setCount: sets.length };
+    }
+  }
+
+  if (!lastSession && !pb) return '';
+
+  let html = '<div style="display:flex;gap:6px;padding:8px 12px;flex-wrap:wrap;">';
+
+  // Last session pill
+  if (lastSession) {
+    const dateStr = new Date(lastSession.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const bestKg = Math.max(...lastSession.sets.map(s => parseFloat(s.kg) || 0));
+    html += `<div style="flex:1;min-width:100px;background:rgba(96,165,250,0.15);border-radius:8px;padding:6px 10px;border:1px solid rgba(96,165,250,0.3);">`;
+    html += `<div style="font-size:0.6rem;font-weight:700;color:var(--duel-secondary);text-transform:uppercase;margin-bottom:3px;">Last: ${dateStr}</div>`;
+    html += `<div style="font-size:0.75rem;color:var(--duel-text);font-weight:600;">${lastSession.setCount} sets`;
+    if (lastSession.totalVolume > 0) html += ` &middot; ${lastSession.totalVolume.toLocaleString()}kg vol`;
+    if (bestKg > 0) html += ` &middot; ${bestKg}kg top`;
+    html += `</div></div>`;
+  }
+
+  // Personal best pill
+  if (pb && parseFloat(pb.best_weight_kg) > 0) {
+    html += `<div style="flex:0 0 auto;background:rgba(251,191,36,0.15);border-radius:8px;padding:6px 10px;border:1px solid rgba(251,191,36,0.3);text-align:center;">`;
+    html += `<div style="font-size:0.6rem;font-weight:700;color:var(--duel-warning);text-transform:uppercase;margin-bottom:3px;">PR</div>`;
+    html += `<div style="font-size:0.85rem;color:var(--duel-text);font-weight:800;">${pb.best_weight_kg}kg</div>`;
+    html += `<div style="font-size:0.65rem;color:var(--duel-text-muted);">x ${pb.best_weight_reps || '?'}</div>`;
+    html += `</div>`;
+  }
+
+  html += '</div>';
+  return html;
+}
+
 function renderActiveDuel(data, isChallenger) {
   const container = document.getElementById('duelDetailContent');
   const duel = data.duel;
@@ -2396,6 +2473,7 @@ function renderActiveDuel(data, isChallenger) {
   exercises.forEach((ex, exIdx) => {
     const setCount = ex.sets || 4;
     const targetReps = ex.reps || '8-10';
+    const historyHtml = getDuelExerciseHistoryHtml(ex.name);
 
     html += `
       <div class="exercise-block">
@@ -2403,7 +2481,8 @@ function renderActiveDuel(data, isChallenger) {
           <div class="exercise-header">
             <span class="exercise-name">${ex.name}</span>
             <span class="exercise-target">${setCount} x ${targetReps}</span>
-          </div>`;
+          </div>
+          ${historyHtml}`;
 
     // Set rows
     for (let setNum = 1; setNum <= setCount; setNum++) {
