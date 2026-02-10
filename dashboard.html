@@ -12188,8 +12188,9 @@ async function startCustomBuilderWorkout() {
                         const prevSet = previousSummary && previousSummary.sets[setIdx] ? previousSummary.sets[setIdx] : null;
                         const prefillKg = prevSet && prevSet.kg && prevSet.kg !== '0' && prevSet.kg !== '' ? prevSet.kg : '';
                         const prefillReps = prevSet && prevSet.reps ? prevSet.reps : '';
+                        const hasPrefill = prefillKg || prefillReps;
                         return `
-                        <div class="set-wrapper">
+                        <div class="set-wrapper"${hasPrefill ? ' data-prefilled="true"' : ''}>
                             <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr 32px 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
                                 <div class="set-number" style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
                                 <input type="text" class="input-time" placeholder="-" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
@@ -12719,7 +12720,7 @@ function viewWorkoutHistoryDetail(date) {
     </div>
 
     <!-- Total Workout Volume Bar -->
-    <div id="total-volume-bar" style="display:none; padding:10px 20px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom:1px solid #334155;">
+    <div id="total-volume-bar" style="display:none; position:sticky; top:52px; z-index:99; padding:10px 20px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom:1px solid #334155;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <div style="display:flex; align-items:center; gap:6px;">
                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:#facc15;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
@@ -22855,6 +22856,9 @@ function calculateExerciseVolume(card) {
     let totalVolume = 0;
 
     setWrappers.forEach(wrapper => {
+        // Skip prefilled rows the user hasn't touched yet
+        if (wrapper.getAttribute('data-prefilled') === 'true') return;
+
         const kgInput = wrapper.querySelector('.input-kg');
         const repsInput = wrapper.querySelector('.input-reps');
 
@@ -22946,12 +22950,17 @@ function setupVolumeTracking(card) {
     const inputs = card.querySelectorAll('.input-kg, .input-reps, .drop-kg, .drop-reps');
     inputs.forEach(input => {
         input.addEventListener('input', () => {
+            // Mark this set row as user-touched (no longer prefilled)
+            const wrapper = input.closest('.set-wrapper');
+            if (wrapper && wrapper.getAttribute('data-prefilled') === 'true') {
+                wrapper.removeAttribute('data-prefilled');
+            }
             updateVolumeDisplay(card);
             updateTotalWorkoutVolume();
         });
     });
 
-    // Trigger initial calculation for prefilled values
+    // Initial display update (will show 0 for prefilled rows)
     updateVolumeDisplay(card);
 }
 
@@ -23134,8 +23143,9 @@ function getSetRowHtml(exName, setNum, isTimeBased, prefillData) {
     const prefillKg = prefillData && prefillData.kg && prefillData.kg !== '0' && prefillData.kg !== '' ? prefillData.kg : '';
     const prefillReps = prefillData && prefillData.reps ? prefillData.reps : '';
     const prefillTime = prefillData && prefillData.time ? prefillData.time : '';
+    const hasPrefill = prefillKg || prefillReps || prefillTime;
     return `
-        <div class="set-wrapper">
+        <div class="set-wrapper"${hasPrefill ? ' data-prefilled="true"' : ''}>
             <div class="workout-set-row" style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; align-items:center; padding:10px 15px; border-top:1px solid #f8fafc;">
                 <div class="set-number" style="font-weight:800; color:#94a3b8; font-size:0.85rem; text-align:center;">${setNum}</div>
                 <div style="position:relative;">
@@ -23198,7 +23208,7 @@ function addWorkoutSet(btn, exName, isTimeBased) {
     // Add volume tracking for the new inputs
     const inputs = newRow.querySelectorAll('.input-kg, .input-reps, .drop-kg, .drop-reps');
     inputs.forEach(input => {
-        input.addEventListener('input', () => { updateVolumeDisplay(card); updateTotalWorkoutVolume(); });
+        input.addEventListener('input', () => { const w = input.closest('.set-wrapper'); if (w) w.removeAttribute('data-prefilled'); updateVolumeDisplay(card); updateTotalWorkoutVolume(); });
     });
 
     // Trigger reflow for animation
@@ -23268,7 +23278,7 @@ function toggleDropSet(btn) {
         dropInputs.forEach(input => {
             if (!input.hasAttribute('data-volume-tracked')) {
                 input.setAttribute('data-volume-tracked', 'true');
-                input.addEventListener('input', () => { updateVolumeDisplay(card); updateTotalWorkoutVolume(); });
+                input.addEventListener('input', () => { const w = input.closest('.set-wrapper'); if (w) w.removeAttribute('data-prefilled'); updateVolumeDisplay(card); updateTotalWorkoutVolume(); });
             }
         });
     }
@@ -23309,7 +23319,7 @@ function addDropRow(btn) {
     const dropInputs = newRow.querySelectorAll('.drop-kg, .drop-reps');
     dropInputs.forEach(input => {
         input.setAttribute('data-volume-tracked', 'true');
-        input.addEventListener('input', () => { updateVolumeDisplay(card); updateTotalWorkoutVolume(); });
+        input.addEventListener('input', () => { const w = input.closest('.set-wrapper'); if (w) w.removeAttribute('data-prefilled'); updateVolumeDisplay(card); updateTotalWorkoutVolume(); });
     });
 
     // Animate in
@@ -26776,8 +26786,9 @@ function addExerciseToUI(exercise) {
                         const prevSet = previousSummary && previousSummary.sets[setIdx] ? previousSummary.sets[setIdx] : null;
                         const prefillKg = prevSet && prevSet.kg && prevSet.kg !== '0' && prevSet.kg !== '' ? prevSet.kg : '';
                         const prefillReps = prevSet && prevSet.reps ? prevSet.reps : '';
+                        const hasPrefill2 = prefillKg || prefillReps;
                         return `
-                        <div class="set-wrapper">
+                        <div class="set-wrapper"${hasPrefill2 ? ' data-prefilled="true"' : ''}>
                             <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr 32px 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
                                 <div class="set-number" style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
                                 <input type="text" class="input-time" placeholder="-" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
