@@ -1361,12 +1361,15 @@ function loadWorkoutPicker() {
   let tabsHtml = `<button class="category-tab active" data-cat="__your_workouts" onclick="selectCategory('__your_workouts')">&#x1F4AA; Your Workouts</button>`;
 
   if (typeof WORKOUT_LIBRARY !== 'undefined') {
-    const categories = Object.keys(WORKOUT_LIBRARY);
-    tabsHtml += categories.map(cat => `
-      <button class="category-tab" data-cat="${cat}" onclick="selectCategory('${cat}')">
-        ${WORKOUT_LIBRARY[cat].icon || ''} ${WORKOUT_LIBRARY[cat].name}
-      </button>
-    `).join('');
+    // Only show gym and home workout categories for duels
+    const duelCategories = ['gym', 'home_weights'];
+    tabsHtml += duelCategories
+      .filter(cat => WORKOUT_LIBRARY[cat])
+      .map(cat => `
+        <button class="category-tab" data-cat="${cat}" onclick="selectCategory('${cat}')">
+          ${WORKOUT_LIBRARY[cat].icon || ''} ${WORKOUT_LIBRARY[cat].name}
+        </button>
+      `).join('');
   }
 
   tabsContainer.innerHTML = tabsHtml;
