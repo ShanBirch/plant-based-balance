@@ -2410,7 +2410,15 @@ function getDuelLastSession(exerciseName) {
   if (dates.length === 0) return null;
 
   const lastDate = dates[0];
-  const sets = dateGroups[lastDate].sort((a, b) => (a.set || 0) - (b.set || 0));
+  const allSets = dateGroups[lastDate].sort((a, b) => (a.set || 0) - (b.set || 0));
+  // Deduplicate by set number - keep only one entry per set
+  const seenSets = {};
+  const sets = allSets.filter(s => {
+    const setNum = s.set || 0;
+    if (seenSets[setNum]) return false;
+    seenSets[setNum] = true;
+    return true;
+  });
   return { sets, setCount: sets.length };
 }
 
