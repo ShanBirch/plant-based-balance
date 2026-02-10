@@ -35,24 +35,8 @@ MEAL TYPE: "${mealType || 'Not specified'}"
 INSTRUCTIONS:
 1. Break down the description into individual food items
 2. Estimate portion sizes in grams (use common serving sizes if not specified)
-3. Calculate nutritional values using standard USDA nutrition data per 100g, then scale to the estimated portion
+3. Calculate nutritional values per item based on the estimated portion
 4. Provide your confidence level (high/medium/low)
-
-CALORIE REFERENCE (per 100g unless stated):
-Fruits: berries ~57, banana ~89, apple ~52, mango ~60
-Vegetables: broccoli ~34, spinach ~23, sweet potato ~86, carrot ~41
-Grains (COOKED): white rice ~130, brown rice ~112, pasta ~131, oats/porridge ~71
-Protein: chicken breast (cooked) ~165, tofu ~76, eggs ~155, salmon ~208, lentils (cooked) ~116
-Dairy & drinks: whole milk ~61, semi-skimmed milk ~47, soy milk ~33, oat milk ~48
-Drinks: black coffee ~2, latte (whole milk) ~56 per 100ml (~135 for small 240ml), soy latte ~45 per 100ml (~108 for small 240ml), cappuccino ~40 per 100ml
-Bread & baked: bread ~250, bagel ~270, muffin ~340
-Nuts & fats: almonds ~579, peanut butter ~588, olive oil ~884, butter ~717
-Snacks: dark chocolate ~546, crisps/chips ~536
-
-CRITICAL RULES:
-- A "small latte" is about 240ml and ~130-150 calories. A "large latte" is about 480ml and ~250-300 calories. Do NOT confuse drinks with their raw ingredient calories.
-- Use COOKED values for grains, rice, pasta, lentils — not raw/dry values (raw is roughly 3x higher)
-- A typical meal plate is 400-700 calories. If your total exceeds 1000 calories for a normal-looking meal, double-check your work.
 
 RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
 {
@@ -89,8 +73,7 @@ IMPORTANT:
 - Return RAW JSON only - no markdown, no code blocks, no backticks
 - Keep food item names SHORT (max 30 chars)
 - Be realistic with portion sizes
-- Round numbers to 1 decimal place
-- Calculate each item as: (calories_per_100g * portion_weight_g / 100)`;
+- Round numbers to 1 decimal place`;
 
     const payload = {
       contents: [
