@@ -25003,6 +25003,11 @@ function initializeMovementSwipeNavigation() {
         closeSuccessScreen();
     });
 
+    // Log activity view
+    enableSwipeBackNavigation('view-log-activity', () => {
+        closeLogActivity();
+    });
+
     // Challenge views
     enableSwipeBackNavigation('challenge-leaderboard-modal', () => {
         closeChallengeLeaderboard();
@@ -39279,6 +39284,9 @@ function openLogActivityForm() {
     hideAllAppViews();
     document.getElementById('view-log-activity').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
+
+    // Push navigation state for Android back button
+    pushNavigationState('view-log-activity', () => closeLogActivity());
 
     // Reset form state
     activityFormState = {
