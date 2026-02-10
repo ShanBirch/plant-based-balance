@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS public.referrals (
   -- Reward tracking
   reward_granted BOOLEAN DEFAULT FALSE,
   reward_granted_at TIMESTAMPTZ,
-  reward_days INTEGER DEFAULT 14, -- 2 weeks = 14 days
+  reward_days INTEGER DEFAULT 7, -- 1 week = 7 days double XP
 
   -- Status tracking
   status TEXT DEFAULT 'pending', -- 'pending', 'completed', 'expired'
@@ -180,8 +180,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- COMMENTS
 -- ============================================================
 
-COMMENT ON TABLE public.referrals IS 'Tracks user referrals and rewards (2 weeks free per referral)';
+COMMENT ON TABLE public.referrals IS 'Tracks user referrals and rewards (1 week double XP per referral)';
 COMMENT ON COLUMN public.users.referral_code IS 'Unique code for user to share with friends';
 COMMENT ON COLUMN public.users.referred_by_user_id IS 'User who invited this person (NULL if direct signup)';
 COMMENT ON COLUMN public.users.referrals_count IS 'Number of successful referrals this user has made';
-COMMENT ON COLUMN public.users.free_days_earned IS 'Total free days earned from referrals (14 days per referral)';
+COMMENT ON COLUMN public.users.free_days_earned IS 'Total double XP days earned from referrals (7 days per referral)';

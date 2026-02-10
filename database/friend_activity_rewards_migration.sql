@@ -134,14 +134,14 @@ BEGIN
 
     UNION ALL
 
-    -- Referral rewards (14 days free for inviting a friend)
+    -- Referral rewards (1 week double XP for inviting a friend)
     SELECT
       'referral_' || r.id::TEXT as activity_id,
       'referral_reward'::TEXT as activity_type,
       u.id as user_id,
       u.name as user_name,
       u.profile_photo as user_photo,
-      'Got 2 weeks free!'::TEXT as activity_title,
+      'Got 1 week double XP!'::TEXT as activity_title,
       'Friend joined via referral'::TEXT as activity_details,
       r.reward_days as activity_value,
       r.created_at as activity_time
