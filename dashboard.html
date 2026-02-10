@@ -71,6 +71,7 @@
 <script src="lib/auth-guard.js?v=3"></script>
 <script src="lib/migrate-localstorage.js"></script>
 <script src="lib/stories.js"></script>
+<script src="lib/games.js"></script>
 <script src="lib/nutrition-calculator.js"></script>
 <!-- Suppress Avatar system for now -->
 <!-- <script src="lib/avatar.js"></script> -->
@@ -692,9 +693,13 @@ async function applyAppTheme(themeKey) {
     }
     .view-section.active { display: block; }
     
-    @keyframes fadeIn { 
-        from { opacity: 0; transform: translateY(10px); } 
-        to { opacity: 1; transform: translateY(0); } 
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
     }
 
     /* Hero Section (Cover) */
@@ -13348,6 +13353,19 @@ function viewWorkoutHistoryDetail(date) {
             <span style="font-size: 1.2rem;">+1</span>
             <span style="font-size: 0.8rem; color: #92400e; font-weight: 600; padding-right: 16px;">Post a workout photo to earn 1 XP!</span>
         </div>
+
+        <!-- Challenge a Friend Banner -->
+        <div style="margin: 0 15px 12px; padding: 14px 16px; background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 50%, #6D28D9 100%); border-radius: 14px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25); cursor: pointer; display: flex; align-items: center; gap: 12px;" onclick="openGameChallengeModal()">
+            <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">🎮</div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 700; font-size: 0.95rem; color: white; margin-bottom: 2px;">Challenge a Friend</div>
+                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8);">Chess, Checkers, Connect 4 & more - bet coins!</div>
+            </div>
+            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: rgba(255,255,255,0.7); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+        </div>
+
+        <!-- Active Games Container (populated dynamically) -->
+        <div id="active-games-container" style="display: none;"></div>
 
         <!-- Friends Feed - Full photo feed grid -->
         <div id="friends-feed-section" style="padding: 0;">
@@ -31393,6 +31411,10 @@ async function initFriendsView() {
     if (localStorage.getItem('feed_incentive_dismissed') === 'true') {
         const incentive = document.getElementById('feed-post-incentive');
         if (incentive) incentive.style.display = 'none';
+    }
+    // Load active games
+    if (typeof loadActiveGames === 'function') {
+        loadActiveGames();
     }
     // Load photo feed on feed page
     if (typeof loadPhotoFeed === 'function') {
