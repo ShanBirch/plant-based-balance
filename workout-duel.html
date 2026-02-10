@@ -1065,12 +1065,14 @@ let realtimeChannel = null;
 // ============================================================
 async function init() {
   try {
-    const session = await auth.getSession();
-    if (!session) {
+    // auth-guard.js already verifies auth and sets window.currentUser
+    // Use authHelpers (window.auth is not exported) and fall back to window.currentUser
+    const session = await authHelpers.getSession();
+    if (!session && !window.currentUser) {
       window.location.href = '/login.html?redirect=/workout-duel.html';
       return;
     }
-    currentUser = session.user;
+    currentUser = session ? session.user : window.currentUser;
 
     // Load coin balance
     const userData = await db.users.get(currentUser.id);
