@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Workout Duel - FitGotchi</title>
+<meta name="description" content="Challenge a friend to a workout duel">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="manifest.json" rel="manifest"/>
+
+<!-- Supabase & Auth -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="lib/supabase.js?v=3"></script>
+<script src="lib/auth-guard.js?v=3"></script>
+<script src="workout_library.js"></script>
+
+<style>
+  :root {
+    --duel-bg: #0a0a0f;
+    --duel-surface: #12121a;
+    --duel-surface-light: #1a1a2e;
+    --duel-accent: #10b981;
+    --duel-accent-dark: #059669;
+    --duel-accent-glow: rgba(16, 185, 129, 0.3);
+    --duel-secondary: #8b5cf6;
+    --duel-danger: #ef4444;
+    --duel-warning: #f59e0b;
+    --duel-text: #f1f5f9;
+    --duel-text-muted: #94a3b8;
+    --duel-border: rgba(255, 255, 255, 0.08);
+    --duel-radius: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--duel-bg);
+    color: var(--duel-text);
+    min-height: 100vh;
+  }
+
+  /* Top bar */
+  .duel-header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background: rgba(10, 10, 15, 0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--duel-border);
+    padding: 12px 16px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .duel-header .back-btn {
+    background: none;
+    border: none;
+    color: var(--duel-text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+
+  .duel-header h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .duel-header .coin-display {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--duel-surface-light);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .main-content {
+    padding-top: 70px;
+    padding-bottom: 100px;
+    max-width: 600px;
+    margin: 0 auto;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* View containers */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Cards */
+  .duel-card {
+    background: var(--duel-surface);
+    border: 1px solid var(--duel-border);
+    border-radius: var(--duel-radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .duel-card h2 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+
+  .duel-card h3 {
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    color: var(--duel-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.75rem;
+  }
+
+  /* Buttons */
+  .btn-duel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    width: 100%;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-duel-primary {
+    background: var(--duel-accent);
+    color: var(--duel-bg);
+    box-shadow: 0 4px 20px var(--duel-accent-glow);
+  }
+
+  .btn-duel-primary:hover {
+    background: var(--duel-accent-dark);
+    transform: translateY(-2px);
+  }
+
+  .btn-duel-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-duel-secondary {
+    background: var(--duel-secondary);
+    color: white;
+  }
+
+  .btn-duel-danger {
+    background: var(--duel-danger);
+    color: white;
+  }
+
+  .btn-duel-ghost {
+    background: transparent;
+    color: var(--duel-text-muted);
+    border: 1px solid var(--duel-border);
+  }
+
+  .btn-duel-ghost:hover {
+    color: var(--duel-text);
+    border-color: var(--duel-accent);
+  }
+
+  .btn-sm {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    width: auto;
+  }
+
+  /* Scoring mode selector */
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .mode-option {
+    background: var(--duel-surface-light);
+    border: 2px solid var(--duel-border);
+    border-radius: 12px;
+    padding: 16px 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+  }
+
+  .mode-option:hover {
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+
+  .mode-option.selected {
+    border-color: var(--duel-accent);
+    background: rgba(16, 185, 129, 0.1);
+  }
+
+  .mode-option .mode-icon {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+  }
+
+  .mode-option .mode-name {
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+  }
+
+  .mode-option .mode-desc {
+    font-size: 0.7rem;
+    color: var(--duel-text-muted);
+    line-height: 1.3;
+  }
+
+  /* Format toggle */
+  .format-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    background: var(--duel-surface-light);
+    border-radius: 12px;
+    padding: 4px;
+  }
+
+  .format-btn {
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: transparent;
+    color: var(--duel-text-muted);
+  }
+
+  .format-btn.active {
+    background: var(--duel-accent);
+    color: var(--duel-bg);
+  }
+
+  /* Friend list */
+  .friend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+  }
+
+  .friend-item:hover {
+    background: var(--duel-surface-light);
+  }
+
+  .friend-item.selected {
+    border-color: var(--duel-accent);
+    background: rgba(16, 185, 129, 0.08);
+  }
+
+  .friend-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--duel-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .friend-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  /* Workout picker */
+  .workout-picker-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    margin-bottom: 6px;
+    background: var(--duel-surface-light);
+  }
+
+  .workout-picker-item:hover {
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+
+  .workout-picker-item.selected {
+    border-color: var(--duel-accent);
+    background: rgba(16, 185, 129, 0.08);
+  }
+
+  .workout-picker-item .workout-info h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .workout-picker-item .workout-info span {
+    font-size: 0.75rem;
+    color: var(--duel-text-muted);
+  }
+
+  .workout-picker-item .workout-meta {
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--duel-text-muted);
+  }
+
+  /* Category tabs */
+  .category-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .category-tabs::-webkit-scrollbar { display: none; }
+
+  .category-tab {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1px solid var(--duel-border);
+    background: transparent;
+    color: var(--duel-text-muted);
+    transition: all 0.3s ease;
+  }
+
+  .category-tab.active {
+    background: var(--duel-accent);
+    color: var(--duel-bg);
+    border-color: var(--duel-accent);
+  }
+
+  /* Subcategory tabs */
+  .subcategory-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .subcategory-tab {
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--duel-border);
+    background: transparent;
+    color: var(--duel-text-muted);
+    transition: all 0.3s ease;
+  }
+
+  .subcategory-tab.active {
+    background: var(--duel-secondary);
+    color: white;
+    border-color: var(--duel-secondary);
+  }
+
+  /* Coin bet input */
+  .coin-bet-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--duel-surface-light);
+    border-radius: 12px;
+    padding: 12px 16px;
+  }
+
+  .coin-bet-wrapper input {
+    background: transparent;
+    border: none;
+    color: var(--duel-text);
+    font-size: 1.2rem;
+    font-weight: 700;
+    width: 100%;
+    outline: none;
+  }
+
+  .coin-bet-wrapper input::placeholder {
+    color: var(--duel-text-muted);
+  }
+
+  .coin-bet-wrapper .coin-icon {
+    font-size: 1.5rem;
+  }
+
+  /* Bodyweight input */
+  .input-field {
+    background: var(--duel-surface-light);
+    border: 1px solid var(--duel-border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: var(--duel-text);
+    font-size: 1rem;
+    font-weight: 600;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.3s ease;
+  }
+
+  .input-field:focus {
+    border-color: var(--duel-accent);
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .input-label {
+    font-size: 0.8rem;
+    color: var(--duel-text-muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  /* ==========================================
+     LIVE WORKOUT VIEW
+     ========================================== */
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--duel-danger);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .live-badge::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--duel-danger);
+    animation: livePulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes livePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Score comparison bar */
+  .score-comparison {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 16px;
+    background: var(--duel-surface-light);
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+
+  .score-player {
+    text-align: center;
+  }
+
+  .score-player .player-label {
+    font-size: 0.7rem;
+    color: var(--duel-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .score-player .player-score {
+    font-size: 1.8rem;
+    font-weight: 900;
+  }
+
+  .score-player.leading .player-score {
+    color: var(--duel-accent);
+  }
+
+  .score-vs {
+    font-size: 0.8rem;
+    color: var(--duel-text-muted);
+    font-weight: 700;
+  }
+
+  /* Exercise logging */
+  .exercise-block {
+    margin-bottom: 20px;
+  }
+
+  .exercise-block .exercise-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .exercise-block .exercise-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .exercise-block .exercise-target {
+    font-size: 0.75rem;
+    color: var(--duel-text-muted);
+  }
+
+  /* Set row */
+  .set-row {
+    display: grid;
+    grid-template-columns: 36px 1fr 1fr auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .set-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--duel-surface-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  .set-number.logged {
+    background: var(--duel-accent);
+    color: var(--duel-bg);
+  }
+
+  .set-input {
+    background: var(--duel-surface-light);
+    border: 1px solid var(--duel-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--duel-text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.3s ease;
+  }
+
+  .set-input:focus {
+    border-color: var(--duel-accent);
+  }
+
+  .set-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .set-input.logged {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.2);
+  }
+
+  .log-set-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--duel-accent);
+    color: var(--duel-bg);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+
+  .log-set-btn:hover {
+    transform: scale(1.1);
+  }
+
+  .log-set-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .log-set-btn.logged {
+    background: var(--duel-surface-light);
+    color: var(--duel-accent);
+  }
+
+  /* Opponent's live sets */
+  .opponent-sets {
+    background: var(--duel-surface-light);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 8px;
+  }
+
+  .opponent-set-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--duel-secondary);
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin: 2px;
+  }
+
+  /* ==========================================
+     PROOF REQUEST VIEW
+     ========================================== */
+  .proof-tokens {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .proof-token {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--duel-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+  }
+
+  .proof-token.available {
+    border-color: var(--duel-warning);
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  .proof-token.used {
+    border-color: var(--duel-text-muted);
+    opacity: 0.3;
+  }
+
+  /* Proof-requestable set */
+  .proof-set-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    background: var(--duel-surface-light);
+    transition: all 0.2s ease;
+  }
+
+  .proof-set-row .set-detail {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .proof-set-row .set-volume {
+    font-size: 0.75rem;
+    color: var(--duel-text-muted);
+  }
+
+  .prove-it-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--duel-warning);
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--duel-warning);
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .prove-it-btn:hover {
+    background: var(--duel-warning);
+    color: var(--duel-bg);
+  }
+
+  .prove-it-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .proof-status-badge {
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .proof-status-badge.requested { background: rgba(245, 158, 11, 0.15); color: var(--duel-warning); }
+  .proof-status-badge.uploaded { background: rgba(139, 92, 246, 0.15); color: var(--duel-secondary); }
+  .proof-status-badge.approved { background: rgba(16, 185, 129, 0.15); color: var(--duel-accent); }
+  .proof-status-badge.rejected { background: rgba(239, 68, 68, 0.15); color: var(--duel-danger); }
+  .proof-status-badge.voided { background: rgba(239, 68, 68, 0.15); color: var(--duel-danger); text-decoration: line-through; }
+
+  /* ==========================================
+     RESULTS VIEW
+     ========================================== */
+  .winner-banner {
+    text-align: center;
+    padding: 32px 20px;
+    border-radius: var(--duel-radius);
+    margin-bottom: 16px;
+  }
+
+  .winner-banner.won {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(139, 92, 246, 0.2));
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .winner-banner.lost {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(139, 92, 246, 0.1));
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+
+  .winner-banner .trophy { font-size: 3rem; margin-bottom: 8px; }
+  .winner-banner h2 { font-size: 1.5rem; margin-bottom: 4px; }
+  .winner-banner p { color: var(--duel-text-muted); font-size: 0.9rem; }
+
+  .result-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .result-stat {
+    background: var(--duel-surface);
+    border: 1px solid var(--duel-border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .result-stat .stat-label {
+    font-size: 0.7rem;
+    color: var(--duel-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .result-stat .stat-value {
+    font-size: 1.4rem;
+    font-weight: 900;
+  }
+
+  .result-stat .stat-value.winner { color: var(--duel-accent); }
+
+  /* ==========================================
+     DUEL LIST VIEW
+     ========================================== */
+  .duel-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: var(--duel-surface);
+    border: 1px solid var(--duel-border);
+    border-radius: var(--duel-radius);
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .duel-list-item:hover {
+    border-color: rgba(16, 185, 129, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .duel-list-item .duel-info h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .duel-list-item .duel-info span {
+    font-size: 0.75rem;
+    color: var(--duel-text-muted);
+  }
+
+  .duel-status-badge {
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .duel-status-badge.pending { background: rgba(245, 158, 11, 0.15); color: var(--duel-warning); }
+  .duel-status-badge.accepted { background: rgba(139, 92, 246, 0.15); color: var(--duel-secondary); }
+  .duel-status-badge.live { background: rgba(239, 68, 68, 0.15); color: var(--duel-danger); }
+  .duel-status-badge.in_progress { background: rgba(16, 185, 129, 0.15); color: var(--duel-accent); }
+  .duel-status-badge.proof_phase { background: rgba(245, 158, 11, 0.15); color: var(--duel-warning); }
+  .duel-status-badge.settled { background: rgba(16, 185, 129, 0.15); color: var(--duel-accent); }
+  .duel-status-badge.declined { background: rgba(239, 68, 68, 0.15); color: var(--duel-danger); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--duel-text-muted);
+  }
+
+  .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state h3 { font-size: 1.1rem; margin-bottom: 4px; color: var(--duel-text); }
+  .empty-state p { font-size: 0.85rem; }
+
+  /* Video upload */
+  .video-upload-zone {
+    border: 2px dashed var(--duel-border);
+    border-radius: 12px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .video-upload-zone:hover {
+    border-color: var(--duel-accent);
+    background: rgba(16, 185, 129, 0.05);
+  }
+
+  .video-upload-zone .upload-icon { font-size: 2rem; margin-bottom: 8px; }
+
+  /* Video player */
+  .proof-video {
+    width: 100%;
+    border-radius: 12px;
+    margin: 12px 0;
+  }
+
+  /* Score mode label */
+  .scoring-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--duel-secondary);
+  }
+
+  /* Loading spinner */
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--duel-border);
+    border-top-color: var(--duel-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 20px auto;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .score-player .player-score { font-size: 1.4rem; }
+    .mode-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--duel-surface-light);
+    border: 1px solid var(--duel-border);
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    z-index: 200;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="duel-header">
+  <button class="back-btn" onclick="handleBack()">&#8592;</button>
+  <h1 id="headerTitle">Workout Duels</h1>
+  <div class="coin-display">
+    <span class="coin-icon">&#x1FA99;</span>
+    <span id="coinBalance">0</span>
+  </div>
+</div>
+
+<div class="main-content">
+
+  <!-- ==========================================
+       VIEW 1: DUEL LIST (My Duels)
+       ========================================== -->
+  <div id="viewList" class="view active">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h2 style="font-size:1.3rem;font-weight:800;">My Duels</h2>
+      <button class="btn-duel btn-duel-primary btn-sm" onclick="showView('create')">+ New Duel</button>
+    </div>
+    <div id="duelList"></div>
+  </div>
+
+  <!-- ==========================================
+       VIEW 2: CREATE DUEL
+       ========================================== -->
+  <div id="viewCreate" class="view">
+    <!-- Step 1: Pick Friend -->
+    <div id="createStep1" class="create-step">
+      <div class="duel-card">
+        <h2>Challenge a Friend</h2>
+        <h3>Pick Your Opponent</h3>
+        <div id="friendList"><div class="spinner"></div></div>
+      </div>
+      <button class="btn-duel btn-duel-primary" id="btnStep1Next" disabled onclick="createStep(2)">Next: Pick Workout</button>
+    </div>
+
+    <!-- Step 2: Pick Workout -->
+    <div id="createStep2" class="create-step" style="display:none;">
+      <div class="duel-card">
+        <h2>Choose Workout</h2>
+        <div id="categoryTabs" class="category-tabs"></div>
+        <div id="subcategoryTabs" class="subcategory-tabs"></div>
+        <div id="workoutList"></div>
+      </div>
+      <button class="btn-duel btn-duel-primary" id="btnStep2Next" disabled onclick="createStep(3)">Next: Settings</button>
+      <button class="btn-duel btn-duel-ghost" style="margin-top:8px;" onclick="createStep(1)">Back</button>
+    </div>
+
+    <!-- Step 3: Settings (mode, format, bet, bodyweight) -->
+    <div id="createStep3" class="create-step" style="display:none;">
+      <div class="duel-card">
+        <h2>Scoring Mode</h2>
+        <div class="mode-grid">
+          <div class="mode-option selected" data-mode="raw_strength" onclick="selectMode(this)">
+            <div class="mode-icon">&#x1F4AA;</div>
+            <div class="mode-name">Raw Strength</div>
+            <div class="mode-desc">Total weight x reps. Strongest wins.</div>
+          </div>
+          <div class="mode-option" data-mode="bodyweight_battle" onclick="selectMode(this)">
+            <div class="mode-icon">&#x2696;</div>
+            <div class="mode-name">Bodyweight</div>
+            <div class="mode-desc">Volume / bodyweight. Fairest matchup.</div>
+          </div>
+          <div class="mode-option" data-mode="pb_crusher" onclick="selectMode(this)">
+            <div class="mode-icon">&#x1F4C8;</div>
+            <div class="mode-name">PB Crusher</div>
+            <div class="mode-desc">% improvement vs your personal best.</div>
+          </div>
+          <div class="mode-option" data-mode="total_workload" onclick="selectMode(this)">
+            <div class="mode-icon">&#x1F3CB;</div>
+            <div class="mode-name">Total Workload</div>
+            <div class="mode-desc">Sum across all exercises. Endurance wins.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="duel-card">
+        <h2>Format</h2>
+        <div class="format-toggle">
+          <button class="format-btn active" data-format="live" onclick="selectFormat(this)">Live Workout</button>
+          <button class="format-btn" data-format="async" onclick="selectFormat(this)">Async (48h)</button>
+        </div>
+        <p style="font-size:0.75rem;color:var(--duel-text-muted);margin-top:8px;text-align:center;">
+          <span id="formatDesc">Both work out at the same time. See each other's sets live.</span>
+        </p>
+      </div>
+
+      <!-- Bodyweight input (shown for bodyweight_battle mode) -->
+      <div class="duel-card" id="bodyweightCard" style="display:none;">
+        <h2>Your Bodyweight</h2>
+        <div class="input-row">
+          <input type="number" class="input-field" id="bodyweightInput" placeholder="e.g. 75" step="0.1" min="30" max="300">
+          <span style="font-weight:600;">kg</span>
+        </div>
+      </div>
+
+      <div class="duel-card">
+        <h2>Coin Wager <span style="font-size:0.75rem;color:var(--duel-text-muted);font-weight:400;">(optional)</span></h2>
+        <div class="coin-bet-wrapper">
+          <span class="coin-icon">&#x1FA99;</span>
+          <input type="number" id="coinBetInput" placeholder="0" min="0" step="50">
+        </div>
+        <p style="font-size:0.7rem;color:var(--duel-text-muted);margin-top:6px;">Winner takes 2x. Both players must have enough coins.</p>
+      </div>
+
+      <button class="btn-duel btn-duel-primary" onclick="sendChallenge()">Send Challenge</button>
+      <button class="btn-duel btn-duel-ghost" style="margin-top:8px;" onclick="createStep(2)">Back</button>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       VIEW 3: DUEL DETAIL (Live/Async Workout + Proof + Results)
+       ========================================== -->
+  <div id="viewDetail" class="view">
+    <div id="duelDetailContent"><div class="spinner"></div></div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let currentUser = null;
+let currentView = 'list';
+let selectedFriend = null;
+let selectedWorkout = null;
+let selectedMode = 'raw_strength';
+let selectedFormat = 'live';
+let activeDuelId = null;
+let activeDuelData = null;
+let realtimeChannel = null;
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  try {
+    const session = await auth.getSession();
+    if (!session) {
+      window.location.href = '/login.html?redirect=/workout-duel.html';
+      return;
+    }
+    currentUser = session.user;
+
+    // Load coin balance
+    const userData = await db.users.get(currentUser.id);
+    document.getElementById('coinBalance').textContent = userData?.coin_balance || 0;
+
+    // Check URL params for direct duel access
+    const params = new URLSearchParams(window.location.search);
+    const duelId = params.get('duel');
+    if (duelId) {
+      activeDuelId = duelId;
+      showView('detail');
+    } else {
+      loadDuelList();
+    }
+  } catch (err) {
+    console.error('Init error:', err);
+  }
+}
+
+// ============================================================
+// VIEW MANAGEMENT
+// ============================================================
+function showView(view) {
+  currentView = view;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+
+  const titles = {
+    list: 'Workout Duels',
+    create: 'New Duel',
+    detail: 'Duel'
+  };
+  document.getElementById('headerTitle').textContent = titles[view] || 'Workout Duels';
+
+  if (view === 'list') {
+    document.getElementById('viewList').classList.add('active');
+    loadDuelList();
+    cleanupRealtime();
+  } else if (view === 'create') {
+    document.getElementById('viewCreate').classList.add('active');
+    resetCreateForm();
+    loadFriends();
+  } else if (view === 'detail') {
+    document.getElementById('viewDetail').classList.add('active');
+    loadDuelDetail();
+  }
+}
+
+function handleBack() {
+  if (currentView === 'detail') {
+    showView('list');
+  } else if (currentView === 'create') {
+    showView('list');
+  } else {
+    window.location.href = '/dashboard.html';
+  }
+}
+
+// ============================================================
+// DUEL LIST
+// ============================================================
+async function loadDuelList() {
+  const container = document.getElementById('duelList');
+  container.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const { data, error } = await supabaseClient.rpc('get_user_workout_duels', {
+      p_user_id: currentUser.id
+    });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">&#x1F94A;</div>
+          <h3>No duels yet</h3>
+          <p>Challenge a friend to see who's stronger</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = data.map(d => {
+      const opponentName = d.is_challenger ? d.opponent_name : d.challenger_name;
+      const statusLabels = {
+        pending: 'Pending', accepted: 'Scheduled', live: 'LIVE', in_progress: 'In Progress',
+        proof_phase: 'Proof Phase', settled: 'Settled', completed: 'Completed',
+        declined: 'Declined', expired: 'Expired', cancelled: 'Cancelled'
+      };
+      const modeLabels = {
+        raw_strength: 'Raw Strength', bodyweight_battle: 'Bodyweight', pb_crusher: 'PB Crusher', total_workload: 'Workload'
+      };
+      const coinDisplay = d.coin_bet > 0 ? `<span>&#x1FA99; ${d.coin_bet}</span>` : '';
+
+      return `
+        <div class="duel-list-item" onclick="openDuel('${d.duel_id}')">
+          <div class="duel-info">
+            <h4>${d.workout_name} vs ${opponentName || 'Unknown'}</h4>
+            <span>${modeLabels[d.scoring_mode] || d.scoring_mode} ${coinDisplay}</span>
+          </div>
+          <span class="duel-status-badge ${d.status}">${statusLabels[d.status] || d.status}</span>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    console.error('Load duels error:', err);
+    container.innerHTML = '<p style="color:var(--duel-danger);text-align:center;">Failed to load duels</p>';
+  }
+}
+
+function openDuel(duelId) {
+  activeDuelId = duelId;
+  showView('detail');
+}
+
+// ============================================================
+// CREATE DUEL - STEP MANAGEMENT
+// ============================================================
+function resetCreateForm() {
+  selectedFriend = null;
+  selectedWorkout = null;
+  selectedMode = 'raw_strength';
+  selectedFormat = 'live';
+  document.getElementById('btnStep1Next').disabled = true;
+  document.getElementById('btnStep2Next').disabled = true;
+  createStep(1);
+}
+
+function createStep(step) {
+  document.querySelectorAll('.create-step').forEach(s => s.style.display = 'none');
+  document.getElementById(`createStep${step}`).style.display = 'block';
+
+  if (step === 2) loadWorkoutPicker();
+}
+
+// ============================================================
+// CREATE DUEL - FRIEND SELECTION
+// ============================================================
+async function loadFriends() {
+  const container = document.getElementById('friendList');
+  container.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('friendships')
+      .select('user_id, friend_id, users!friendships_friend_id_fkey(id, name, profile_photo)')
+      .or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`)
+      .eq('status', 'accepted');
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">&#x1F465;</div>
+          <h3>No friends yet</h3>
+          <p>Add friends from the dashboard to start dueling</p>
+        </div>`;
+      return;
+    }
+
+    // Get unique friends (handle bidirectional relationship)
+    const friends = [];
+    const seen = new Set();
+    for (const f of data) {
+      const friendId = f.user_id === currentUser.id ? f.friend_id : f.user_id;
+      if (seen.has(friendId)) continue;
+      seen.add(friendId);
+
+      // We need to fetch friend details since the join might not always work
+      const friendData = await db.users.get(friendId);
+      if (friendData) {
+        friends.push(friendData);
+      }
+    }
+
+    container.innerHTML = friends.map(f => {
+      const initials = (f.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      return `
+        <div class="friend-item" data-id="${f.id}" onclick="selectFriend('${f.id}', '${(f.name || '').replace(/'/g, "\\'")}')">
+          <div class="friend-avatar">${initials}</div>
+          <div class="friend-name">${f.name || 'Unknown'}</div>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    console.error('Load friends error:', err);
+    container.innerHTML = '<p style="color:var(--duel-danger);">Failed to load friends</p>';
+  }
+}
+
+function selectFriend(id, name) {
+  selectedFriend = { id, name };
+  document.querySelectorAll('.friend-item').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === id);
+  });
+  document.getElementById('btnStep1Next').disabled = false;
+}
+
+// ============================================================
+// CREATE DUEL - WORKOUT PICKER
+// ============================================================
+function loadWorkoutPicker() {
+  if (typeof WORKOUT_LIBRARY === 'undefined') {
+    document.getElementById('workoutList').innerHTML = '<p style="color:var(--duel-danger);">Workout library not loaded</p>';
+    return;
+  }
+
+  const categories = Object.keys(WORKOUT_LIBRARY);
+  const tabsContainer = document.getElementById('categoryTabs');
+
+  tabsContainer.innerHTML = categories.map((cat, i) => `
+    <button class="category-tab ${i === 0 ? 'active' : ''}" data-cat="${cat}" onclick="selectCategory('${cat}')">
+      ${WORKOUT_LIBRARY[cat].icon || ''} ${WORKOUT_LIBRARY[cat].name}
+    </button>
+  `).join('');
+
+  selectCategory(categories[0]);
+}
+
+function selectCategory(cat) {
+  document.querySelectorAll('.category-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+
+  const subcats = WORKOUT_LIBRARY[cat]?.subcategories;
+  if (!subcats) return;
+
+  const subkeys = Object.keys(subcats);
+  document.getElementById('subcategoryTabs').innerHTML = subkeys.map((sub, i) => `
+    <button class="subcategory-tab ${i === 0 ? 'active' : ''}" data-sub="${sub}" onclick="selectSubcategory('${cat}', '${sub}')">
+      ${subcats[sub].name}
+    </button>
+  `).join('');
+
+  selectSubcategory(cat, subkeys[0]);
+}
+
+function selectSubcategory(cat, sub) {
+  document.querySelectorAll('.subcategory-tab').forEach(t => t.classList.toggle('active', t.dataset.sub === sub));
+
+  const workouts = WORKOUT_LIBRARY[cat]?.subcategories?.[sub]?.workouts || [];
+  const container = document.getElementById('workoutList');
+
+  container.innerHTML = workouts.map(w => `
+    <div class="workout-picker-item" data-wid="${w.id}" onclick="selectWorkoutItem('${cat}', '${sub}', '${w.id}')">
+      <div class="workout-info">
+        <h4>${w.name}</h4>
+        <span>${w.exercises.length} exercises - ${w.duration}</span>
+      </div>
+      <div class="workout-meta">
+        <div>${w.difficulty}</div>
+        <div>${w.equipment?.join(', ') || ''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectWorkoutItem(cat, sub, wid) {
+  const workouts = WORKOUT_LIBRARY[cat]?.subcategories?.[sub]?.workouts || [];
+  const workout = workouts.find(w => w.id === wid);
+  if (!workout) return;
+
+  selectedWorkout = { ...workout, category: cat, subcategory: sub };
+  document.querySelectorAll('.workout-picker-item').forEach(el => {
+    el.classList.toggle('selected', el.dataset.wid === wid);
+  });
+  document.getElementById('btnStep2Next').disabled = false;
+}
+
+// ============================================================
+// CREATE DUEL - SETTINGS
+// ============================================================
+function selectMode(el) {
+  selectedMode = el.dataset.mode;
+  document.querySelectorAll('.mode-option').forEach(m => m.classList.remove('selected'));
+  el.classList.add('selected');
+
+  // Show/hide bodyweight input
+  document.getElementById('bodyweightCard').style.display =
+    selectedMode === 'bodyweight_battle' ? 'block' : 'none';
+}
+
+function selectFormat(el) {
+  selectedFormat = el.dataset.format;
+  document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+
+  const descs = {
+    live: 'Both work out at the same time. See each other\'s sets live.',
+    async: 'Complete within 48 hours. Results hidden until both finish.'
+  };
+  document.getElementById('formatDesc').textContent = descs[selectedFormat];
+}
+
+// ============================================================
+// CREATE DUEL - SEND
+// ============================================================
+async function sendChallenge() {
+  if (!selectedFriend || !selectedWorkout) {
+    showToast('Select a friend and workout first');
+    return;
+  }
+
+  const coinBet = parseInt(document.getElementById('coinBetInput').value) || 0;
+  const bodyweight = parseFloat(document.getElementById('bodyweightInput').value) || null;
+
+  if (selectedMode === 'bodyweight_battle' && !bodyweight) {
+    showToast('Enter your bodyweight for this mode');
+    return;
+  }
+
+  // Schedule 48 hours from now
+  const scheduledAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+
+  try {
+    const { data, error } = await supabaseClient.rpc('create_workout_duel', {
+      p_challenger_id: currentUser.id,
+      p_opponent_id: selectedFriend.id,
+      p_workout_id: selectedWorkout.id,
+      p_workout_name: selectedWorkout.name,
+      p_workout_category: selectedWorkout.category,
+      p_workout_subcategory: selectedWorkout.subcategory,
+      p_exercises: selectedWorkout.exercises,
+      p_scoring_mode: selectedMode,
+      p_duel_format: selectedFormat,
+      p_scheduled_at: scheduledAt,
+      p_coin_bet: coinBet,
+      p_challenger_bodyweight: bodyweight
+    });
+
+    if (error) throw error;
+
+    showToast('Challenge sent!');
+    activeDuelId = data;
+    showView('detail');
+  } catch (err) {
+    console.error('Create duel error:', err);
+    showToast(err.message || 'Failed to create duel');
+  }
+}
+
+// ============================================================
+// DUEL DETAIL
+// ============================================================
+async function loadDuelDetail() {
+  const container = document.getElementById('duelDetailContent');
+  container.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const { data, error } = await supabaseClient.rpc('get_workout_duel_detail', {
+      p_duel_id: activeDuelId,
+      p_user_id: currentUser.id
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    activeDuelData = data;
+    const duel = data.duel;
+    const isChallenger = duel.challenger_id === currentUser.id;
+
+    // Render based on status
+    switch (duel.status) {
+      case 'pending':
+        renderPendingDuel(duel, isChallenger);
+        break;
+      case 'accepted':
+        renderAcceptedDuel(duel, isChallenger);
+        break;
+      case 'live':
+      case 'in_progress':
+        renderActiveDuel(data, isChallenger);
+        setupRealtime(duel);
+        break;
+      case 'proof_phase':
+        renderProofPhase(data, isChallenger);
+        break;
+      case 'settled':
+      case 'completed':
+        renderResults(data, isChallenger);
+        break;
+      default:
+        renderTerminalState(duel);
+    }
+  } catch (err) {
+    console.error('Load detail error:', err);
+    container.innerHTML = `<p style="color:var(--duel-danger);text-align:center;">Failed to load duel: ${err.message}</p>`;
+  }
+}
+
+// ============================================================
+// RENDER: PENDING (waiting for opponent)
+// ============================================================
+function renderPendingDuel(duel, isChallenger) {
+  const container = document.getElementById('duelDetailContent');
+  const modeLabels = {
+    raw_strength: 'Raw Strength', bodyweight_battle: 'Bodyweight Battle',
+    pb_crusher: 'PB Crusher', total_workload: 'Total Workload'
+  };
+
+  let actionButtons = '';
+  if (!isChallenger) {
+    actionButtons = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;">
+        ${duel.scoring_mode === 'bodyweight_battle' ? `
+          <div style="grid-column:1/-1;margin-bottom:8px;">
+            <label class="input-label">Your Bodyweight (kg)</label>
+            <input type="number" class="input-field" id="acceptBodyweight" placeholder="e.g. 75" step="0.1">
+          </div>
+        ` : ''}
+        <button class="btn-duel btn-duel-primary" onclick="acceptDuel()">Accept</button>
+        <button class="btn-duel btn-duel-danger" onclick="declineDuel()">Decline</button>
+      </div>`;
+  } else {
+    actionButtons = `
+      <p style="text-align:center;color:var(--duel-text-muted);margin-top:16px;font-size:0.85rem;">
+        Waiting for opponent to accept...
+      </p>`;
+  }
+
+  const exercises = duel.exercises || [];
+  container.innerHTML = `
+    <div class="duel-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2>${duel.workout_name}</h2>
+        <span class="scoring-label">${modeLabels[duel.scoring_mode]}</span>
+      </div>
+      ${duel.coin_bet > 0 ? `<p style="font-size:0.85rem;margin-bottom:12px;">&#x1FA99; ${duel.coin_bet} coins at stake (winner takes ${duel.coin_bet * 2})</p>` : ''}
+      <p style="font-size:0.8rem;color:var(--duel-text-muted);margin-bottom:12px;">
+        Format: ${duel.duel_format === 'live' ? 'Live (same time)' : 'Async (48h window)'}
+      </p>
+      <h3>Exercises</h3>
+      ${exercises.map(e => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--duel-border);">
+          <span style="font-size:0.85rem;font-weight:600;">${e.name}</span>
+          <span style="font-size:0.8rem;color:var(--duel-text-muted);">${e.sets} x ${e.reps}</span>
+        </div>
+      `).join('')}
+      ${actionButtons}
+    </div>`;
+}
+
+async function acceptDuel() {
+  try {
+    const bodyweight = document.getElementById('acceptBodyweight')?.value;
+    const { data, error } = await supabaseClient.rpc('accept_workout_duel', {
+      p_duel_id: activeDuelId,
+      p_user_id: currentUser.id,
+      p_bodyweight: bodyweight ? parseFloat(bodyweight) : null
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    showToast('Duel accepted!');
+    loadDuelDetail();
+  } catch (err) {
+    showToast(err.message || 'Failed to accept');
+  }
+}
+
+async function declineDuel() {
+  try {
+    const { data, error } = await supabaseClient.rpc('decline_workout_duel', {
+      p_duel_id: activeDuelId,
+      p_user_id: currentUser.id
+    });
+    if (error) throw error;
+    showToast('Duel declined');
+    showView('list');
+  } catch (err) {
+    showToast(err.message || 'Failed to decline');
+  }
+}
+
+// ============================================================
+// RENDER: ACCEPTED (scheduled, waiting to start)
+// ============================================================
+function renderAcceptedDuel(duel, isChallenger) {
+  const container = document.getElementById('duelDetailContent');
+  const scheduled = duel.scheduled_at ? new Date(duel.scheduled_at) : null;
+  const timeStr = scheduled ? scheduled.toLocaleString() : 'TBD';
+
+  container.innerHTML = `
+    <div class="duel-card" style="text-align:center;">
+      <div style="font-size:3rem;margin-bottom:12px;">&#x23F0;</div>
+      <h2>Duel Scheduled</h2>
+      <p style="color:var(--duel-text-muted);margin-bottom:16px;">${duel.workout_name}</p>
+      <div style="font-size:1.5rem;font-weight:900;color:var(--duel-accent);margin-bottom:16px;">${timeStr}</div>
+      <button class="btn-duel btn-duel-primary" onclick="startDuel()">Start Workout Now</button>
+      <p style="font-size:0.7rem;color:var(--duel-text-muted);margin-top:8px;">
+        ${duel.duel_format === 'live' ? 'Both players should be ready to work out simultaneously.' : 'You can start anytime within the 48h window.'}
+      </p>
+    </div>`;
+}
+
+async function startDuel() {
+  try {
+    const { data, error } = await supabaseClient.rpc('start_workout_duel', {
+      p_duel_id: activeDuelId,
+      p_user_id: currentUser.id
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    showToast('Workout started!');
+    loadDuelDetail();
+  } catch (err) {
+    showToast(err.message || 'Failed to start');
+  }
+}
+
+// ============================================================
+// RENDER: ACTIVE WORKOUT (live or in_progress)
+// ============================================================
+function renderActiveDuel(data, isChallenger) {
+  const container = document.getElementById('duelDetailContent');
+  const duel = data.duel;
+  const exercises = duel.exercises || [];
+  const mySets = isChallenger ? data.challenger_sets : data.opponent_sets;
+  const opponentSets = isChallenger ? data.opponent_sets : data.challenger_sets;
+  const myVolume = isChallenger ? duel.challenger_total_volume : duel.opponent_total_volume;
+  const oppVolume = isChallenger ? duel.opponent_total_volume : duel.challenger_total_volume;
+  const myLabel = 'You';
+  const oppLabel = isChallenger ? 'Opponent' : 'Challenger';
+  const isLive = duel.status === 'live';
+  const myFinished = isChallenger ? duel.challenger_finished_at : duel.opponent_finished_at;
+
+  // Build logged sets lookup
+  const loggedSets = {};
+  (mySets || []).forEach(s => {
+    const key = `${s.exercise_name}_${s.set_number}`;
+    loggedSets[key] = s;
+  });
+
+  // Build opponent sets lookup by exercise
+  const oppSetsByExercise = {};
+  (opponentSets || []).forEach(s => {
+    if (!oppSetsByExercise[s.exercise_name]) oppSetsByExercise[s.exercise_name] = [];
+    oppSetsByExercise[s.exercise_name].push(s);
+  });
+
+  let html = '';
+
+  // Live badge + score comparison
+  if (isLive) {
+    html += `<div style="text-align:center;margin-bottom:12px;"><span class="live-badge">LIVE</span></div>`;
+  }
+
+  html += `
+    <div class="score-comparison">
+      <div class="score-player ${myVolume >= oppVolume ? 'leading' : ''}">
+        <div class="player-label">${myLabel}</div>
+        <div class="player-score">${Math.round(myVolume || 0)}</div>
+      </div>
+      <div class="score-vs">VS</div>
+      <div class="score-player ${oppVolume > myVolume ? 'leading' : ''}">
+        <div class="player-label">${oppLabel}</div>
+        <div class="player-score">${isLive ? Math.round(oppVolume || 0) : '???'}</div>
+      </div>
+    </div>`;
+
+  // Exercise blocks
+  exercises.forEach((ex, exIdx) => {
+    const setCount = ex.sets || 4;
+    const targetReps = ex.reps || '8-10';
+
+    html += `
+      <div class="exercise-block">
+        <div class="duel-card">
+          <div class="exercise-header">
+            <span class="exercise-name">${ex.name}</span>
+            <span class="exercise-target">${setCount} x ${targetReps}</span>
+          </div>`;
+
+    // Set rows
+    for (let setNum = 1; setNum <= setCount; setNum++) {
+      const key = `${ex.name}_${setNum}`;
+      const logged = loggedSets[key];
+      const isLogged = !!logged;
+
+      html += `
+        <div class="set-row" id="setRow_${exIdx}_${setNum}">
+          <div class="set-number ${isLogged ? 'logged' : ''}">${setNum}</div>
+          <input type="number" class="set-input ${isLogged ? 'logged' : ''}" id="weight_${exIdx}_${setNum}"
+            placeholder="kg" value="${isLogged ? logged.weight_kg : ''}" ${isLogged || myFinished ? 'disabled' : ''} min="0" step="0.5">
+          <input type="number" class="set-input ${isLogged ? 'logged' : ''}" id="reps_${exIdx}_${setNum}"
+            placeholder="reps" value="${isLogged ? logged.reps : ''}" ${isLogged || myFinished ? 'disabled' : ''} min="0">
+          <button class="log-set-btn ${isLogged ? 'logged' : ''}" id="logBtn_${exIdx}_${setNum}"
+            ${isLogged || myFinished ? 'disabled' : ''}
+            onclick="logSet(${exIdx}, ${setNum}, '${ex.name.replace(/'/g, "\\'")}')">${isLogged ? '&#10003;' : '&#x25B6;'}</button>
+        </div>`;
+    }
+
+    // Show opponent's sets for this exercise (live mode only)
+    if (isLive && oppSetsByExercise[ex.name]?.length) {
+      html += `
+        <div class="opponent-sets">
+          <div style="font-size:0.7rem;color:var(--duel-text-muted);margin-bottom:4px;">${oppLabel}'s sets:</div>
+          ${oppSetsByExercise[ex.name].map(s =>
+            `<span class="opponent-set-pill">Set ${s.set_number}: ${s.weight_kg}kg x ${s.reps}</span>`
+          ).join('')}
+        </div>`;
+    }
+
+    html += '</div></div>';
+  });
+
+  // Finish button
+  if (!myFinished) {
+    html += `<button class="btn-duel btn-duel-primary" style="margin-top:16px;" onclick="finishWorkout()">Finish Workout</button>`;
+  } else {
+    html += `
+      <div class="duel-card" style="text-align:center;">
+        <div style="font-size:2rem;margin-bottom:8px;">&#x23F3;</div>
+        <p style="font-weight:600;">You've finished! Waiting for opponent...</p>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+async function logSet(exIdx, setNum, exerciseName) {
+  const weightInput = document.getElementById(`weight_${exIdx}_${setNum}`);
+  const repsInput = document.getElementById(`reps_${exIdx}_${setNum}`);
+  const weight = parseFloat(weightInput.value);
+  const reps = parseInt(repsInput.value);
+
+  if (!weight || weight <= 0 || !reps || reps <= 0) {
+    showToast('Enter weight and reps');
+    return;
+  }
+
+  const btn = document.getElementById(`logBtn_${exIdx}_${setNum}`);
+  btn.disabled = true;
+
+  try {
+    const { data, error } = await supabaseClient.rpc('log_duel_set', {
+      p_duel_id: activeDuelId,
+      p_user_id: currentUser.id,
+      p_exercise_name: exerciseName,
+      p_exercise_index: exIdx,
+      p_set_number: setNum,
+      p_weight_kg: weight,
+      p_reps: reps
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    // Mark as logged
+    btn.innerHTML = '&#10003;';
+    btn.classList.add('logged');
+    weightInput.disabled = true;
+    weightInput.classList.add('logged');
+    repsInput.disabled = true;
+    repsInput.classList.add('logged');
+    document.getElementById(`setRow_${exIdx}_${setNum}`).querySelector('.set-number').classList.add('logged');
+
+    showToast(`Logged: ${weight}kg x ${reps} (${Math.round(data.running_total)}kg total)`);
+  } catch (err) {
+    btn.disabled = false;
+    showToast(err.message || 'Failed to log set');
+  }
+}
+
+async function finishWorkout() {
+  try {
+    const { data, error } = await supabaseClient.rpc('finish_duel_workout', {
+      p_duel_id: activeDuelId,
+      p_user_id: currentUser.id
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    if (data.both_finished) {
+      showToast('Both finished! Moving to proof phase...');
+    } else {
+      showToast('Workout finished! Waiting for opponent...');
+    }
+    loadDuelDetail();
+  } catch (err) {
+    showToast(err.message || 'Failed to finish');
+  }
+}
+
+// ============================================================
+// REALTIME SUBSCRIPTIONS (Live Mode)
+// ============================================================
+function setupRealtime(duel) {
+  cleanupRealtime();
+
+  if (duel.duel_format !== 'live' && duel.status !== 'live') return;
+
+  realtimeChannel = supabaseClient
+    .channel(`duel-${duel.id}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'workout_duel_sets',
+      filter: `duel_id=eq.${duel.id}`
+    }, (payload) => {
+      // Opponent logged a new set — refresh the view
+      if (payload.new.user_id !== currentUser.id) {
+        loadDuelDetail();
+      }
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'workout_duels',
+      filter: `id=eq.${duel.id}`
+    }, (payload) => {
+      // Duel status changed — refresh
+      loadDuelDetail();
+    })
+    .subscribe();
+}
+
+function cleanupRealtime() {
+  if (realtimeChannel) {
+    supabaseClient.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+}
+
+// ============================================================
+// RENDER: PROOF PHASE
+// ============================================================
+function renderProofPhase(data, isChallenger) {
+  const container = document.getElementById('duelDetailContent');
+  const duel = data.duel;
+  const opponentSets = isChallenger ? data.opponent_sets : data.challenger_sets;
+  const mySets = isChallenger ? data.challenger_sets : data.opponent_sets;
+  const proofRequests = data.proof_requests || [];
+  const proofsUsed = data.user_proof_requests_used || 0;
+  const proofsRemaining = data.user_proof_requests_remaining;
+
+  // Find proof requests targeting me
+  const myPendingProofs = proofRequests.filter(p =>
+    p.target_user_id === currentUser.id && (p.status === 'pending' || p.status === 'uploaded')
+  );
+
+  // Find proof requests I made that have videos to review
+  const reviewableProofs = proofRequests.filter(p =>
+    p.requester_id === currentUser.id && p.status === 'uploaded'
+  );
+
+  let html = '';
+
+  // Proof tokens
+  html += `
+    <div class="duel-card">
+      <h2>Proof Phase</h2>
+      <p style="font-size:0.8rem;color:var(--duel-text-muted);margin-bottom:12px;">
+        Review your opponent's sets. Use your proof requests on suspicious ones.
+      </p>
+      <div class="proof-tokens">
+        ${[0, 1, 2].map(i => `
+          <div class="proof-token ${i < proofsRemaining ? 'available' : 'used'}">
+            ${i < proofsRemaining ? '&#x1F3A5;' : '&#x2715;'}
+          </div>
+        `).join('')}
+        <span style="font-size:0.8rem;color:var(--duel-text-muted);align-self:center;margin-left:8px;">
+          ${proofsRemaining} proof requests left
+        </span>
+      </div>
+    </div>`;
+
+  // My pending proof uploads
+  if (myPendingProofs.length > 0) {
+    html += `<div class="duel-card"><h2>Proof Requested From You</h2>`;
+    for (const proof of myPendingProofs) {
+      const targetSet = [...(data.challenger_sets || []), ...(data.opponent_sets || [])]
+        .find(s => s.id === proof.target_set_id);
+
+      if (proof.status === 'pending') {
+        html += `
+          <div class="proof-set-row" style="flex-direction:column;align-items:stretch;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span class="set-detail">${targetSet?.exercise_name || 'Exercise'}: ${targetSet?.weight_kg}kg x ${targetSet?.reps}</span>
+              <span class="proof-status-badge requested">Requested</span>
+            </div>
+            <div class="video-upload-zone" onclick="document.getElementById('videoInput_${proof.id}').click()">
+              <div class="upload-icon">&#x1F3A5;</div>
+              <p style="font-size:0.8rem;font-weight:600;">Upload Proof Video</p>
+              <p style="font-size:0.7rem;color:var(--duel-text-muted);">Film yourself doing ${targetSet?.weight_kg}kg x ${targetSet?.reps} reps</p>
+            </div>
+            <input type="file" id="videoInput_${proof.id}" accept="video/*" capture="environment" style="display:none"
+              onchange="uploadProofVideo('${proof.id}', this)">
+          </div>`;
+      } else if (proof.status === 'uploaded') {
+        html += `
+          <div class="proof-set-row">
+            <span class="set-detail">${targetSet?.exercise_name}: ${targetSet?.weight_kg}kg x ${targetSet?.reps}</span>
+            <span class="proof-status-badge uploaded">Under Review</span>
+          </div>`;
+      }
+    }
+    html += `</div>`;
+  }
+
+  // Proofs I need to review
+  if (reviewableProofs.length > 0) {
+    html += `<div class="duel-card"><h2>Review Proof Videos</h2>`;
+    for (const proof of reviewableProofs) {
+      const targetSet = [...(data.challenger_sets || []), ...(data.opponent_sets || [])]
+        .find(s => s.id === proof.target_set_id);
+
+      html += `
+        <div class="proof-set-row" style="flex-direction:column;align-items:stretch;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span class="set-detail">${targetSet?.exercise_name}: ${targetSet?.weight_kg}kg x ${targetSet?.reps}</span>
+          </div>
+          ${proof.video_url ? `<video class="proof-video" src="${proof.video_url}" controls playsinline></video>` : ''}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+            <button class="btn-duel btn-duel-primary btn-sm" onclick="reviewProof('${proof.id}', true)">&#x2713; Approve</button>
+            <button class="btn-duel btn-duel-danger btn-sm" onclick="reviewProof('${proof.id}', false)">&#x2715; Reject</button>
+          </div>
+        </div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Opponent's sets with proof request buttons
+  html += `<div class="duel-card"><h2>Opponent's Sets</h2>`;
+  const exercises = duel.exercises || [];
+  for (const ex of exercises) {
+    const exSets = (opponentSets || []).filter(s => s.exercise_name === ex.name);
+    if (exSets.length === 0) continue;
+
+    html += `<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:0.85rem;margin-bottom:6px;">${ex.name}</div>`;
+    for (const s of exSets) {
+      const existingProof = proofRequests.find(p => p.target_set_id === s.id);
+      let actionHtml = '';
+
+      if (s.is_voided) {
+        actionHtml = '<span class="proof-status-badge voided">Voided</span>';
+      } else if (existingProof) {
+        actionHtml = `<span class="proof-status-badge ${existingProof.status}">${existingProof.status}</span>`;
+      } else if (proofsRemaining > 0) {
+        actionHtml = `<button class="prove-it-btn" onclick="requestProof('${s.id}')">&#x1F3A5; Prove It</button>`;
+      }
+
+      html += `
+        <div class="proof-set-row">
+          <div>
+            <span class="set-detail">Set ${s.set_number}: ${s.weight_kg}kg x ${s.reps}</span>
+            <span class="set-volume">${Math.round(s.volume || 0)}kg vol</span>
+          </div>
+          ${actionHtml}
+        </div>`;
+    }
+    html += `</div>`;
+  }
+  html += `</div>`;
+
+  // Settle button (when all proofs are resolved)
+  const unresolved = proofRequests.filter(p => p.status === 'pending' || p.status === 'uploaded');
+  if (unresolved.length === 0) {
+    html += `<button class="btn-duel btn-duel-primary" onclick="settleDuel()">Settle Duel &amp; See Results</button>`;
+  } else {
+    html += `<p style="text-align:center;color:var(--duel-text-muted);font-size:0.8rem;">
+      ${unresolved.length} proof request(s) still pending. Resolve all to settle.
+    </p>`;
+  }
+
+  container.innerHTML = html;
+}
+
+async function requestProof(setId) {
+  try {
+    const { data, error } = await supabaseClient.rpc('request_duel_proof', {
+      p_duel_id: activeDuelId,
+      p_requester_id: currentUser.id,
+      p_target_set_id: setId
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    showToast(`Proof requested! ${data.requests_remaining} left`);
+    loadDuelDetail();
+  } catch (err) {
+    showToast(err.message || 'Failed to request proof');
+  }
+}
+
+async function uploadProofVideo(proofRequestId, inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+
+  showToast('Uploading video...');
+
+  try {
+    // Upload to Supabase storage (simpler than B2 for video)
+    const fileName = `duel-proofs/${activeDuelId}/${currentUser.id}/${Date.now()}_${file.name}`;
+    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+      .from('workout-videos')
+      .upload(fileName, file, { contentType: file.type });
+
+    if (uploadError) {
+      // Fallback: use B2 upload via edge function
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', currentUser.id);
+      formData.append('type', 'duel-proof');
+
+      const resp = await fetch('/api/upload-workout-photo', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!resp.ok) throw new Error('Upload failed');
+      const result = await resp.json();
+
+      await supabaseClient.rpc('submit_duel_proof', {
+        p_proof_request_id: proofRequestId,
+        p_user_id: currentUser.id,
+        p_video_url: result.url
+      });
+    } else {
+      const { data: urlData } = supabaseClient.storage.from('workout-videos').getPublicUrl(fileName);
+      await supabaseClient.rpc('submit_duel_proof', {
+        p_proof_request_id: proofRequestId,
+        p_user_id: currentUser.id,
+        p_video_url: urlData.publicUrl
+      });
+    }
+
+    showToast('Proof uploaded!');
+    loadDuelDetail();
+  } catch (err) {
+    showToast(err.message || 'Upload failed');
+  }
+}
+
+async function reviewProof(proofRequestId, approved) {
+  try {
+    const { data, error } = await supabaseClient.rpc('review_duel_proof', {
+      p_proof_request_id: proofRequestId,
+      p_reviewer_id: currentUser.id,
+      p_approved: approved
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    showToast(approved ? 'Proof approved' : 'Proof rejected — set voided');
+    loadDuelDetail();
+  } catch (err) {
+    showToast(err.message || 'Failed to review');
+  }
+}
+
+async function settleDuel() {
+  try {
+    const { data, error } = await supabaseClient.rpc('settle_workout_duel', {
+      p_duel_id: activeDuelId
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    showToast('Duel settled!');
+    loadDuelDetail();
+  } catch (err) {
+    showToast(err.message || 'Failed to settle');
+  }
+}
+
+// ============================================================
+// RENDER: RESULTS
+// ============================================================
+function renderResults(data, isChallenger) {
+  const container = document.getElementById('duelDetailContent');
+  const duel = data.duel;
+  const iWon = duel.winner_id === currentUser.id;
+  const myScore = isChallenger ? duel.challenger_score : duel.opponent_score;
+  const oppScore = isChallenger ? duel.opponent_score : duel.challenger_score;
+  const myVol = isChallenger ? duel.challenger_total_volume : duel.opponent_total_volume;
+  const oppVol = isChallenger ? duel.opponent_total_volume : duel.challenger_total_volume;
+  const modeLabels = {
+    raw_strength: 'Raw Strength', bodyweight_battle: 'Bodyweight Battle',
+    pb_crusher: 'PB Crusher', total_workload: 'Total Workload'
+  };
+  const scoreUnit = duel.scoring_mode === 'pb_crusher' ? '%' :
+    duel.scoring_mode === 'bodyweight_battle' ? 'ratio' : 'kg';
+
+  container.innerHTML = `
+    <div class="winner-banner ${iWon ? 'won' : 'lost'}">
+      <div class="trophy">${iWon ? '&#x1F3C6;' : '&#x1F494;'}</div>
+      <h2>${iWon ? 'You Won!' : 'You Lost'}</h2>
+      <p>${duel.workout_name} - ${modeLabels[duel.scoring_mode]}</p>
+      ${duel.coin_bet > 0 ? `<p style="margin-top:8px;font-weight:700;">${iWon ? '+' : '-'}${duel.coin_bet} &#x1FA99;</p>` : ''}
+    </div>
+
+    <div class="result-stats">
+      <div class="result-stat">
+        <div class="stat-label">Your Score</div>
+        <div class="stat-value ${iWon ? 'winner' : ''}">${formatScore(myScore, scoreUnit)}</div>
+      </div>
+      <div class="result-stat">
+        <div class="stat-label">Opponent Score</div>
+        <div class="stat-value ${!iWon ? 'winner' : ''}">${formatScore(oppScore, scoreUnit)}</div>
+      </div>
+      <div class="result-stat">
+        <div class="stat-label">Your Volume</div>
+        <div class="stat-value">${Math.round(myVol || 0)}kg</div>
+      </div>
+      <div class="result-stat">
+        <div class="stat-label">Opp Volume</div>
+        <div class="stat-value">${Math.round(oppVol || 0)}kg</div>
+      </div>
+    </div>
+
+    <button class="btn-duel btn-duel-ghost" onclick="showView('list')">Back to Duels</button>
+    <button class="btn-duel btn-duel-primary" style="margin-top:8px;" onclick="showView('create')">Rematch</button>`;
+}
+
+function formatScore(score, unit) {
+  if (!score) return '0';
+  if (unit === '%') return Math.round(score) + '%';
+  if (unit === 'ratio') return score.toFixed(2);
+  return Math.round(score) + 'kg';
+}
+
+// ============================================================
+// RENDER: TERMINAL STATES (declined, expired, cancelled)
+// ============================================================
+function renderTerminalState(duel) {
+  const container = document.getElementById('duelDetailContent');
+  const messages = {
+    declined: { icon: '&#x1F645;', title: 'Duel Declined', desc: 'Your opponent declined the challenge.' },
+    expired: { icon: '&#x23F0;', title: 'Duel Expired', desc: 'The challenge was not accepted in time.' },
+    cancelled: { icon: '&#x274C;', title: 'Duel Cancelled', desc: 'This challenge was cancelled.' }
+  };
+  const msg = messages[duel.status] || { icon: '&#x2753;', title: duel.status, desc: '' };
+
+  container.innerHTML = `
+    <div class="duel-card" style="text-align:center;">
+      <div style="font-size:3rem;margin-bottom:12px;">${msg.icon}</div>
+      <h2>${msg.title}</h2>
+      <p style="color:var(--duel-text-muted);">${msg.desc}</p>
+      <button class="btn-duel btn-duel-ghost" style="margin-top:16px;" onclick="showView('list')">Back to Duels</button>
+    </div>`;
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// Cleanup on page leave
+window.addEventListener('beforeunload', cleanupRealtime);
+
+// Init
+init();
+</script>
+</body>
+</html>

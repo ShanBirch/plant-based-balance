@@ -22281,6 +22281,21 @@ async function renderMovementView() {
     `;
     gridContainer.appendChild(progressDiv);
 
+    // Add 'Workout Duel' Card - challenge a friend
+    const duelDiv = document.createElement('div');
+    duelDiv.onclick = () => { window.location.href = '/workout-duel.html'; };
+    duelDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); grid-column: span 2;";
+    duelDiv.innerHTML = `
+        <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.1), transparent);"></div>
+        <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
+            <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Challenge Friends</div>
+            <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">Workout Duel</div>
+            <div style="font-size: 0.75rem; opacity: 0.9;">Same workout, head-to-head, with video proof</div>
+        </div>
+        <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">⚔️</div>
+    `;
+    gridContainer.appendChild(duelDiv);
+
     // Removed other workout cards - users now browse via Workout Library
     // Object.keys(WORKOUT_DB).forEach(key => {
     //     if (key === suggestedProgram) return;
