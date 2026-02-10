@@ -15427,6 +15427,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 500);
     }
 
+    // Handle tab deep-link (e.g., returning from workout-duel page)
+    const deepLinkTab = urlParams.get('tab');
+    if (deepLinkTab) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setTimeout(() => {
+            if (typeof switchAppTab === 'function') {
+                switchAppTab(deepLinkTab);
+            }
+        }, 300);
+    }
+
     // Handle legacy challenge pass/buyin returns
     if (urlParams.get('challenge_pass') === 'success' || urlParams.get('challenge_buyin') === 'success') {
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -25062,6 +25073,16 @@ function initializeMovementSwipeNavigation() {
     // Log activity view
     enableSwipeBackNavigation('view-log-activity', () => {
         closeLogActivity();
+    });
+
+    // Your Workouts view
+    enableSwipeBackNavigation('view-your-workouts', () => {
+        closeYourWorkouts();
+    });
+
+    // Progress view
+    enableSwipeBackNavigation('view-progress', () => {
+        closeProgressView();
     });
 
     // Challenge views
