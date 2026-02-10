@@ -1221,7 +1221,7 @@ async function loadDuelList() {
   container.innerHTML = '<div class="spinner"></div>';
 
   try {
-    const { data, error } = await supabaseClient.rpc('get_user_workout_duels', {
+    const { data, error } = await window.supabaseClient.rpc('get_user_workout_duels', {
       p_user_id: currentUser.id
     });
 
@@ -1297,7 +1297,7 @@ async function loadFriends() {
   container.innerHTML = '<div class="spinner"></div>';
 
   try {
-    const { data, error } = await supabaseClient.rpc('get_friends_with_status', {
+    const { data, error } = await window.supabaseClient.rpc('get_friends_with_status', {
       user_uuid: currentUser.id
     });
 
@@ -1459,7 +1459,7 @@ async function sendChallenge() {
   const scheduledAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
   try {
-    const { data, error } = await supabaseClient.rpc('create_workout_duel', {
+    const { data, error } = await window.supabaseClient.rpc('create_workout_duel', {
       p_challenger_id: currentUser.id,
       p_opponent_id: selectedFriend.id,
       p_workout_id: selectedWorkout.id,
@@ -1493,7 +1493,7 @@ async function loadDuelDetail() {
   container.innerHTML = '<div class="spinner"></div>';
 
   try {
-    const { data, error } = await supabaseClient.rpc('get_workout_duel_detail', {
+    const { data, error } = await window.supabaseClient.rpc('get_workout_duel_detail', {
       p_duel_id: activeDuelId,
       p_user_id: currentUser.id
     });
@@ -1589,7 +1589,7 @@ function renderPendingDuel(duel, isChallenger) {
 async function acceptDuel() {
   try {
     const bodyweight = document.getElementById('acceptBodyweight')?.value;
-    const { data, error } = await supabaseClient.rpc('accept_workout_duel', {
+    const { data, error } = await window.supabaseClient.rpc('accept_workout_duel', {
       p_duel_id: activeDuelId,
       p_user_id: currentUser.id,
       p_bodyweight: bodyweight ? parseFloat(bodyweight) : null
@@ -1606,7 +1606,7 @@ async function acceptDuel() {
 
 async function declineDuel() {
   try {
-    const { data, error } = await supabaseClient.rpc('decline_workout_duel', {
+    const { data, error } = await window.supabaseClient.rpc('decline_workout_duel', {
       p_duel_id: activeDuelId,
       p_user_id: currentUser.id
     });
@@ -1641,7 +1641,7 @@ function renderAcceptedDuel(duel, isChallenger) {
 
 async function startDuel() {
   try {
-    const { data, error } = await supabaseClient.rpc('start_workout_duel', {
+    const { data, error } = await window.supabaseClient.rpc('start_workout_duel', {
       p_duel_id: activeDuelId,
       p_user_id: currentUser.id
     });
@@ -1780,7 +1780,7 @@ async function logSet(exIdx, setNum, exerciseName) {
   btn.disabled = true;
 
   try {
-    const { data, error } = await supabaseClient.rpc('log_duel_set', {
+    const { data, error } = await window.supabaseClient.rpc('log_duel_set', {
       p_duel_id: activeDuelId,
       p_user_id: currentUser.id,
       p_exercise_name: exerciseName,
@@ -1811,7 +1811,7 @@ async function logSet(exIdx, setNum, exerciseName) {
 
 async function finishWorkout() {
   try {
-    const { data, error } = await supabaseClient.rpc('finish_duel_workout', {
+    const { data, error } = await window.supabaseClient.rpc('finish_duel_workout', {
       p_duel_id: activeDuelId,
       p_user_id: currentUser.id
     });
@@ -1837,7 +1837,7 @@ function setupRealtime(duel) {
 
   if (duel.duel_format !== 'live' && duel.status !== 'live') return;
 
-  realtimeChannel = supabaseClient
+  realtimeChannel = window.supabaseClient
     .channel(`duel-${duel.id}`)
     .on('postgres_changes', {
       event: 'INSERT',
@@ -1864,7 +1864,7 @@ function setupRealtime(duel) {
 
 function cleanupRealtime() {
   if (realtimeChannel) {
-    supabaseClient.removeChannel(realtimeChannel);
+    window.supabaseClient.removeChannel(realtimeChannel);
     realtimeChannel = null;
   }
 }
@@ -2015,7 +2015,7 @@ function renderProofPhase(data, isChallenger) {
 
 async function requestProof(setId) {
   try {
-    const { data, error } = await supabaseClient.rpc('request_duel_proof', {
+    const { data, error } = await window.supabaseClient.rpc('request_duel_proof', {
       p_duel_id: activeDuelId,
       p_requester_id: currentUser.id,
       p_target_set_id: setId
@@ -2039,7 +2039,7 @@ async function uploadProofVideo(proofRequestId, inputEl) {
   try {
     // Upload to Supabase storage (simpler than B2 for video)
     const fileName = `duel-proofs/${activeDuelId}/${currentUser.id}/${Date.now()}_${file.name}`;
-    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+    const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
       .from('workout-videos')
       .upload(fileName, file, { contentType: file.type });
 
@@ -2058,14 +2058,14 @@ async function uploadProofVideo(proofRequestId, inputEl) {
       if (!resp.ok) throw new Error('Upload failed');
       const result = await resp.json();
 
-      await supabaseClient.rpc('submit_duel_proof', {
+      await window.supabaseClient.rpc('submit_duel_proof', {
         p_proof_request_id: proofRequestId,
         p_user_id: currentUser.id,
         p_video_url: result.url
       });
     } else {
-      const { data: urlData } = supabaseClient.storage.from('workout-videos').getPublicUrl(fileName);
-      await supabaseClient.rpc('submit_duel_proof', {
+      const { data: urlData } = window.supabaseClient.storage.from('workout-videos').getPublicUrl(fileName);
+      await window.supabaseClient.rpc('submit_duel_proof', {
         p_proof_request_id: proofRequestId,
         p_user_id: currentUser.id,
         p_video_url: urlData.publicUrl
@@ -2081,7 +2081,7 @@ async function uploadProofVideo(proofRequestId, inputEl) {
 
 async function reviewProof(proofRequestId, approved) {
   try {
-    const { data, error } = await supabaseClient.rpc('review_duel_proof', {
+    const { data, error } = await window.supabaseClient.rpc('review_duel_proof', {
       p_proof_request_id: proofRequestId,
       p_reviewer_id: currentUser.id,
       p_approved: approved
@@ -2098,7 +2098,7 @@ async function reviewProof(proofRequestId, approved) {
 
 async function settleDuel() {
   try {
-    const { data, error } = await supabaseClient.rpc('settle_workout_duel', {
+    const { data, error } = await window.supabaseClient.rpc('settle_workout_duel', {
       p_duel_id: activeDuelId
     });
     if (error) throw error;
