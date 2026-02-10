@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.meal_logs (
 
   -- AI metadata
   ai_confidence TEXT, -- 'high', 'medium', 'low'
-  ai_model TEXT DEFAULT 'gemini-flash-latest',
+  ai_model TEXT DEFAULT 'gemini-2.0-flash',
   analysis_timestamp TIMESTAMPTZ,
 
   -- Timestamps

@@ -42,10 +42,10 @@ exports.handler = async (event) => {
     try {
         const { mealType } = JSON.parse(event.body || '{}');
 
-        if (!mealType || !['breakfast', 'lunch', 'dinner'].includes(mealType)) {
+        if (!mealType || !['breakfast', 'lunch', 'dinner', 'snack'].includes(mealType)) {
             return {
                 statusCode: 400,
-                body: JSON.stringify({ error: 'Invalid meal type. Must be breakfast, lunch, or dinner.' })
+                body: JSON.stringify({ error: 'Invalid meal type. Must be breakfast, lunch, dinner, or snack.' })
             };
         }
 

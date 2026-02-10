@@ -40763,6 +40763,12 @@ async function saveMealLogWithType(mealData) {
         throw new Error('User not authenticated');
     }
 
+    const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
+    const mealType = mealData.mealType || selectedMealType;
+    if (!validMealTypes.includes(mealType)) {
+        throw new Error('Invalid meal type. Must be breakfast, lunch, dinner, or snack.');
+    }
+
     const now = new Date();
     const mealDate = getLocalDateString(now);
     const mealTime = now.toTimeString().split(' ')[0];
@@ -40773,7 +40779,7 @@ async function saveMealLogWithType(mealData) {
             user_id: userId,
             meal_date: mealDate,
             meal_time: mealTime,
-            meal_type: mealData.mealType || selectedMealType,
+            meal_type: mealType,
             photo_url: mealData.photoUrl || null,
             storage_path: mealData.photoUrl || null,
             food_items: mealData.foodItems,
@@ -41640,6 +41646,12 @@ async function saveMealLog(mealData) {
         throw new Error('User not authenticated');
     }
 
+    const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
+    const mealType = mealData.mealType || selectedMealType;
+    if (!validMealTypes.includes(mealType)) {
+        throw new Error('Invalid meal type. Must be breakfast, lunch, dinner, or snack.');
+    }
+
     const now = new Date();
     const mealDate = getLocalDateString(now);
     const mealTime = now.toTimeString().split(' ')[0];
@@ -41650,7 +41662,7 @@ async function saveMealLog(mealData) {
             user_id: userId,
             meal_date: mealDate,
             meal_time: mealTime,
-            meal_type: mealData.mealType || selectedMealType,
+            meal_type: mealType,
             photo_url: mealData.photoUrl,
             storage_path: mealData.photoUrl,
             food_items: mealData.foodItems,
