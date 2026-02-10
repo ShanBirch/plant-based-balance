@@ -36380,12 +36380,9 @@ window.submitWeighInModal = submitWeighInModal;
         &times;
     </button>
 
-    <!-- Add Food Items Button -->
+    <!-- Food Description Input -->
     <div style="position:absolute; bottom:110px; left:20px; right:20px; z-index:13;">
-        <button onclick="openAddItemsModal()" id="add-items-btn" style="width:100%; max-width:500px; margin:0 auto; display:flex; align-items:center; justify-content:center; gap:8px; background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.3); border-radius:15px; color:white; padding:14px 20px; font-size:1rem; cursor:pointer; backdrop-filter:blur(10px); font-family:inherit; transition:all 0.2s;">
-            <span>➕</span>
-            <span id="add-items-btn-text">Add Food Items (optional)</span>
-        </button>
+        <input type="text" id="meal-photo-description" placeholder="What did you have? e.g. 200g oats, 100ml milk" style="width:100%; max-width:500px; margin:0 auto; display:block; background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.3); border-radius:15px; color:white; padding:14px 20px; font-size:1rem; backdrop-filter:blur(10px); font-family:inherit; outline:none; box-sizing:border-box;" />
     </div>
 
     <!-- Analyze Button -->
@@ -41457,9 +41454,9 @@ function closeMealPreviewModal() {
         previewModal.style.display = 'none';
     }
 
-    // Reset added food items for photo
-    addedFoodItemsForPhoto = [];
-    updateAddItemsButton();
+    // Clear the food description input
+    const descInput = document.getElementById('meal-photo-description');
+    if (descInput) descInput.value = '';
 
     capturedMealFile = null;
 }
@@ -41483,18 +41480,11 @@ async function useMealPhoto() {
     // Store file reference before closing modal (modal clears capturedMealFile)
     const fileToAnalyze = capturedMealFile;
 
-    // Build meal description from added food items
-    let mealDescription = '';
-    if (addedFoodItemsForPhoto.length > 0) {
-        const itemDescriptions = addedFoodItemsForPhoto.map(item => {
-            const name = item.name.trim();
-            const portion = item.portion ? item.portion.trim() : '';
-            return portion ? `${portion} ${name}` : name;
-        });
-        mealDescription = itemDescriptions.join(', ');
-    }
+    // Get meal description from the text input
+    const descInput = document.getElementById('meal-photo-description');
+    let mealDescription = descInput ? descInput.value.trim() : '';
 
-    // Close preview modal (this also resets addedFoodItemsForPhoto)
+    // Close preview modal
     closeMealPreviewModal();
 
     // Show loading state
