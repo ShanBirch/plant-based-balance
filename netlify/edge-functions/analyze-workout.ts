@@ -1,6 +1,7 @@
 /**
  * Netlify Edge Function: Analyze Workout Photo
  * Uses Gemini AI to verify workout photos for points eligibility
+ * Also classifies venue verifiability for activity XP gating
  */
 
 import type { Context } from "https://edge.netlify.com";
@@ -9,6 +10,7 @@ interface AnalyzeWorkoutRequest {
   imageBase64: string;
   mimeType?: string;
   workoutType?: string;  // Optional hint about expected workout type
+  activityType?: string; // Optional hint for activity logging (boxing, tennis, walking, etc.)
 }
 
 interface WorkoutAnalysisResult {
@@ -18,6 +20,8 @@ interface WorkoutAnalysisResult {
   detectedElements: string[];
   suspiciousIndicators: string[];
   notes: string;
+  venueType: string;
+  venueVerifiable: boolean;
 }
 
 export default async (request: Request, context: Context): Promise<Response> => {
@@ -43,7 +47,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
   try {
     const body: AnalyzeWorkoutRequest = await request.json();
-    const { imageBase64, mimeType, workoutType } = body;
+    const { imageBase64, mimeType, workoutType, activityType } = body;
 
     const apiKey = Deno.env.get('GEMINI_API_KEY');
 
@@ -84,11 +88,13 @@ IMPORTANT - VALID WORKOUT TYPES INCLUDE:
 - Meditation and breathwork (if showing yoga mat, meditation cushion, or relaxed poses)
 - Dance fitness and movement practices
 - Recovery activities (foam rolling, stretching, mobility work)
+- Fitness classes (group exercise, bootcamp, spin class, boxing class)
+- Sports activities (tennis, basketball, swimming, martial arts, boxing)
 
 A person on a yoga mat in a calm pose IS a valid workout. Meditation and breathwork count as wellness activities.
 
 INSTRUCTIONS:
-1. Determine if the image shows workout-related content (gym, exercise, fitness activity, home workout, outdoor exercise, yoga, meditation, stretching)
+1. Determine if the image shows workout-related content (gym, exercise, fitness activity, home workout, outdoor exercise, yoga, meditation, stretching, sports, fitness class)
 2. Check for signs this is a real photo taken by the user:
    - Natural lighting/environment
    - Personal items visible
@@ -97,7 +103,7 @@ INSTRUCTIONS:
    - Exercise equipment (weights, machines, mats, bands, yoga blocks, meditation cushions)
    - Workout clothing or comfortable clothing suitable for yoga/meditation
    - Exercise poses, yoga poses, meditation poses, or stretching positions
-   - Gym, fitness studio, or home fitness environment
+   - Gym, fitness studio, sports court, pool, or home fitness environment
    - Sweat or signs of physical activity (not required for yoga/meditation)
 4. Check for suspicious indicators:
    - Stock photo watermarks
@@ -105,15 +111,37 @@ INSTRUCTIONS:
    - Screenshot artifacts
    - Text overlays
    - AI generation artifacts
+5. CRITICALLY: Classify the VENUE VERIFIABILITY - does this photo prove the user was at a recognizable fitness venue?
+
+VENUE VERIFIABILITY RULES:
+- VERIFIABLE venues (venueVerifiable = true): Photos showing identifiable fitness infrastructure:
+  * Indoor gym with visible equipment (treadmills, weights, machines)
+  * Fitness studio or class environment (mirrors, group class setup)
+  * Boxing ring or boxing gym
+  * Tennis/basketball/squash court
+  * Swimming pool
+  * Treadmill or indoor cycling bike (even at home)
+  * Running track or athletics track
+  * Yoga/pilates studio with props
+  * Sports facility (climbing wall, martial arts dojo)
+  * Spin/cycling studio
+- NON-VERIFIABLE venues (venueVerifiable = false): Photos that don't prove exercise happened:
+  * Outdoor park, trail, or nature scenery (could be just standing there)
+  * Generic street or sidewalk
+  * Selfie with no identifiable fitness context
+  * Living room with no visible exercise equipment
+  * Generic outdoor photo
 
 RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
 {
   "isWorkoutPhoto": true/false,
   "confidence": "high/medium/low",
-  "workoutType": "gym/home/outdoor/yoga/meditation/cardio/strength/stretching/sports/unknown",
+  "workoutType": "gym/home/outdoor/yoga/meditation/cardio/strength/stretching/sports/fitness_class/unknown",
   "detectedElements": ["list", "of", "detected", "workout", "elements"],
   "suspiciousIndicators": ["list", "of", "any", "suspicious", "elements"],
-  "notes": "Brief explanation of your assessment"
+  "notes": "Brief explanation of your assessment",
+  "venueType": "indoor_gym/studio/court/pool/track/treadmill/outdoor_park/street/home/unknown",
+  "venueVerifiable": true/false
 }
 
 CONFIDENCE LEVELS:
@@ -122,6 +150,7 @@ CONFIDENCE LEVELS:
 - "low": Cannot verify as workout photo, or suspicious indicators present
 
 ${workoutType ? `\nUSER INDICATED WORKOUT TYPE: ${workoutType}` : ''}
+${activityType ? `\nUSER IS LOGGING ACTIVITY TYPE: ${activityType}` : ''}
 
 Be fair and inclusive - yoga selfies, meditation sessions, and stretching routines should pass. Reject obvious fakes.`;
 
@@ -203,9 +232,13 @@ Be fair and inclusive - yoga selfies, meditation sessions, and stretching routin
           workoutType: 'unknown',
           detectedElements: [],
           suspiciousIndicators: ['Failed to parse AI analysis'],
-          notes: 'Could not verify workout photo'
+          notes: 'Could not verify workout photo',
+          venueType: 'unknown',
+          venueVerifiable: false
         },
-        pointsEligible: false
+        pointsEligible: false,
+        venueVerifiable: false,
+        venueType: 'unknown'
       }), {
         status: 200,
         headers
@@ -214,13 +247,17 @@ Be fair and inclusive - yoga selfies, meditation sessions, and stretching routin
 
     // Determine points eligibility
     const pointsEligible = analysisData.isWorkoutPhoto && analysisData.confidence !== 'low';
+    const venueVerifiable = analysisData.venueVerifiable || false;
+    const venueType = analysisData.venueType || 'unknown';
 
-    console.log(`Workout analysis complete: isWorkout=${analysisData.isWorkoutPhoto}, confidence=${analysisData.confidence}, eligible=${pointsEligible}`);
+    console.log(`Workout analysis complete: isWorkout=${analysisData.isWorkoutPhoto}, confidence=${analysisData.confidence}, eligible=${pointsEligible}, venueType=${venueType}, venueVerifiable=${venueVerifiable}`);
 
     return new Response(JSON.stringify({
       success: true,
       data: analysisData,
-      pointsEligible
+      pointsEligible,
+      venueVerifiable,
+      venueType
     }), {
       status: 200,
       headers

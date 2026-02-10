@@ -12859,6 +12859,150 @@ function viewWorkoutHistoryDetail(date) {
     </div>
 </div>
 
+<!-- LOG ACTIVITY VIEW -->
+<div id="view-log-activity" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: var(--bg); color: var(--text-main); overflow-y: auto;">
+    <div style="padding: 0 20px 120px 20px; max-width: 500px; margin: 0 auto;">
+
+        <!-- Header -->
+        <div style="display: flex; align-items: center; padding: 16px 0; gap: 12px; position: sticky; top: 0; background: var(--bg); z-index: 10;">
+            <button onclick="closeLogActivity()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 5px; color: var(--text-main);">←</button>
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; flex: 1;">Log Activity</h2>
+        </div>
+
+        <!-- Activity Type Grid -->
+        <div style="margin-bottom: 24px;">
+            <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Activity Type</div>
+            <div id="activity-type-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
+        </div>
+
+        <!-- Custom Label -->
+        <div style="margin-bottom: 24px;">
+            <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px;">Session Name <span style="font-weight:400; text-transform:none;">(optional)</span></div>
+            <input id="activity-label-input" type="text" placeholder="e.g. Morning Boxing, Barry's Bootcamp" style="width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1rem; box-sizing: border-box; outline: none;" onfocus="this.style.borderColor='#0ea5e9'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+
+        <!-- Duration -->
+        <div style="margin-bottom: 24px;">
+            <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Duration</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px; background: var(--card-bg); border-radius: 16px; padding: 16px; border: 2px solid var(--border);">
+                <button onclick="adjustActivityDuration(-5)" style="width: 44px; height: 44px; border-radius: 50%; background: var(--border); border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-main); font-weight: 700;">−</button>
+                <div style="text-align: center; min-width: 80px;">
+                    <div id="activity-duration-display" style="font-size: 2rem; font-weight: 800; font-family: monospace;">30</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">minutes</div>
+                </div>
+                <button onclick="adjustActivityDuration(5)" style="width: 44px; height: 44px; border-radius: 50%; background: var(--border); border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-main); font-weight: 700;">+</button>
+            </div>
+        </div>
+
+        <!-- Intensity -->
+        <div style="margin-bottom: 24px;">
+            <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Intensity</div>
+            <div id="activity-intensity-row" style="display: flex; gap: 8px;">
+                <button onclick="selectActivityIntensity('light')" class="intensity-btn" data-intensity="light" style="flex: 1; padding: 14px 8px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); cursor: pointer; text-align: center; transition: all 0.2s;">
+                    <div style="font-size: 1.2rem;">🚶</div>
+                    <div style="font-weight: 700; font-size: 0.85rem; margin-top: 4px; color: var(--text-main);">Light</div>
+                </button>
+                <button onclick="selectActivityIntensity('moderate')" class="intensity-btn" data-intensity="moderate" style="flex: 1; padding: 14px 8px; border-radius: 14px; border: 2px solid #0ea5e9; background: rgba(14,165,233,0.1); cursor: pointer; text-align: center; transition: all 0.2s;">
+                    <div style="font-size: 1.2rem;">🏃</div>
+                    <div style="font-weight: 700; font-size: 0.85rem; margin-top: 4px; color: var(--text-main);">Moderate</div>
+                </button>
+                <button onclick="selectActivityIntensity('vigorous')" class="intensity-btn" data-intensity="vigorous" style="flex: 1; padding: 14px 8px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); cursor: pointer; text-align: center; transition: all 0.2s;">
+                    <div style="font-size: 1.2rem;">🔥</div>
+                    <div style="font-weight: 700; font-size: 0.85rem; margin-top: 4px; color: var(--text-main);">Vigorous</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Estimated Calories -->
+        <div style="margin-bottom: 24px; background: linear-gradient(135deg, #0c4a6e, #0284c7); border-radius: 16px; padding: 20px; color: white; text-align: center;">
+            <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Estimated Burn</div>
+            <div style="display: flex; align-items: baseline; justify-content: center; gap: 4px; margin-top: 6px;">
+                <span id="activity-calories-display" style="font-size: 2.2rem; font-weight: 800;">0</span>
+                <span style="font-size: 1rem; opacity: 0.8;">kcal</span>
+            </div>
+        </div>
+
+        <!-- Photo Section -->
+        <div style="margin-bottom: 24px;">
+            <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Venue Photo</div>
+            <div id="activity-photo-preview" style="display: none; margin-bottom: 12px; border-radius: 16px; overflow: hidden; position: relative;">
+                <img id="activity-photo-img" src="" style="width: 100%; max-height: 250px; object-fit: cover;">
+                <button onclick="removeActivityPhoto()" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;">×</button>
+            </div>
+            <button id="activity-photo-btn" onclick="captureActivityPhoto()" style="width: 100%; padding: 16px; border-radius: 14px; border: 2px dashed var(--border); background: var(--card-bg); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--text-main);">
+                <span style="font-size: 1.3rem;">📸</span>
+                <span style="font-weight: 600;">Add venue photo for XP</span>
+            </button>
+            <input id="activity-photo-input" type="file" accept="image/*" capture="environment" style="display: none;" onchange="handleActivityPhotoCapture(this)">
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; text-align: center;">Photos of gyms, courts, pools, treadmills = XP. Outdoor scenery = no XP.</div>
+        </div>
+
+        <!-- Notes -->
+        <div style="margin-bottom: 24px;">
+            <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px;">Notes <span style="font-weight:400; text-transform:none;">(optional)</span></div>
+            <textarea id="activity-notes-input" placeholder="How was your session?" rows="3" style="width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1rem; box-sizing: border-box; resize: none; outline: none; font-family: inherit;" onfocus="this.style.borderColor='#0ea5e9'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        </div>
+
+        <!-- Save Button -->
+        <button id="activity-save-btn" onclick="saveActivity()" style="width: 100%; padding: 18px; border-radius: 16px; background: linear-gradient(135deg, #0ea5e9, #06b6d4); color: white; border: none; font-size: 1.1rem; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px rgba(14,165,233,0.3);">
+            Log Activity
+        </button>
+    </div>
+</div>
+
+<!-- ACTIVITY SUCCESS VIEW -->
+<div id="view-activity-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: linear-gradient(135deg, #0c4a6e, #0284c7, #0ea5e9); color: white; overflow-y: auto;">
+    <div style="padding: 20px; text-align: center; max-width: 500px; margin: 0 auto; display: flex; flex-direction: column;">
+
+        <!-- Header -->
+        <div style="padding: 30px 15px 20px;">
+            <div id="activity-success-emoji" style="font-size: 3.5rem; margin-bottom: 10px;">🏃</div>
+            <h1 style="font-family: 'Playfair Display', serif; font-size: 2rem; margin: 0; color: white;">Activity Logged!</h1>
+            <p id="activity-success-label" style="font-size: 1rem; opacity: 0.9; margin-top: 5px;">Great work</p>
+        </div>
+
+        <!-- Stats -->
+        <div style="display: flex; gap: 10px; margin: 15px 0;">
+            <div style="flex: 1; background: rgba(255,255,255,0.15); padding: 15px; border-radius: 14px;">
+                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Duration</div>
+                <div id="activity-success-duration" style="font-size: 1.6rem; font-weight: 700; margin-top: 5px;">30 min</div>
+            </div>
+            <div style="flex: 1; background: rgba(255,255,255,0.15); padding: 15px; border-radius: 14px;">
+                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Calories</div>
+                <div id="activity-success-calories" style="font-size: 1.6rem; font-weight: 700; margin-top: 5px;">0 kcal</div>
+            </div>
+            <div style="flex: 1; background: rgba(255,255,255,0.15); padding: 15px; border-radius: 14px;">
+                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Intensity</div>
+                <div id="activity-success-intensity" style="font-size: 1.6rem; font-weight: 700; margin-top: 5px;">🏃</div>
+            </div>
+        </div>
+
+        <!-- Share Section -->
+        <div id="activity-share-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin: 15px 0;">
+            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 10px;">Share to Feed</div>
+            <button id="activity-share-btn" onclick="shareActivityCardToFeed()" style="width: 100%; background: white; color: #0284c7; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem;">
+                <span style="font-size: 1.2rem;">📤</span>
+                <span id="activity-share-btn-text">Share Activity Card</span>
+            </button>
+        </div>
+
+        <!-- XP Status -->
+        <div id="activity-xp-status" style="display: none; padding: 12px 20px; border-radius: 14px; margin: 10px 0;"></div>
+
+        <!-- No XP hint -->
+        <div id="activity-no-xp-hint" style="display: none; background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 14px; margin: 10px 0;">
+            <div style="font-size: 0.85rem; opacity: 0.85;">💡 Take a photo of your venue next time to earn XP!</div>
+        </div>
+
+        <!-- Done Button -->
+        <div style="padding: 15px 0 100px 0; margin-top: 10px;">
+            <button onclick="closeActivitySuccess()" style="background: white; color: #0284c7; border: none; padding: 16px 60px; border-radius: 50px; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.2); width: 100%; max-width: 280px;">
+                DONE
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- QUICK SHARE TO GROUP CHAT MODAL -->
 <div id="quick-share-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); z-index: 2000; overflow-y: auto; padding: 20px 10px;">
     <div style="background: white; width: 100%; max-width: 480px; margin: 0 auto; border-radius: 28px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.3); position: relative;">
@@ -22026,6 +22170,21 @@ async function renderMovementView() {
     `;
     gridContainer.appendChild(todayDiv);
 
+    // Add 'Log Activity' Card (cardio, classes, sports)
+    const logActivityDiv = document.createElement('div');
+    logActivityDiv.onclick = () => openLogActivityForm();
+    logActivityDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);";
+    logActivityDiv.innerHTML = `
+        <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.1), transparent);"></div>
+        <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
+            <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Track</div>
+            <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">Log Activity</div>
+            <div style="font-size: 0.75rem; opacity: 0.9;">Classes, sports & cardio</div>
+        </div>
+        <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">🏃</div>
+    `;
+    gridContainer.appendChild(logActivityDiv);
+
     // Add 'Build Custom' Card
     const buildDiv = document.createElement('div');
     buildDiv.onclick = () => openWorkoutBuilder();
@@ -22156,7 +22315,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning', 'view-log-activity', 'view-activity-success'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
@@ -38995,6 +39154,476 @@ async function sharePBCardToFeed(pbData) {
         showToast('Failed to share PB. Please try again.', 'error');
     }
 }
+
+// ============================================
+// ACTIVITY LOGGING SYSTEM
+// Supports fitness classes, boxing, tennis, swimming, running, cycling, walking, yoga, dance, etc.
+// ============================================
+
+const ACTIVITY_TYPES = [
+    { key: 'fitness_class', label: 'Fitness Class', emoji: '🏋️', color: '#dc2626' },
+    { key: 'boxing',        label: 'Boxing',        emoji: '🥊', color: '#b91c1c' },
+    { key: 'tennis',        label: 'Tennis',        emoji: '🎾', color: '#65a30d' },
+    { key: 'swimming',      label: 'Swimming',      emoji: '🏊', color: '#0284c7' },
+    { key: 'running',       label: 'Running',       emoji: '🏃', color: '#ea580c' },
+    { key: 'cycling',       label: 'Cycling',       emoji: '🚴', color: '#7c3aed' },
+    { key: 'walking',       label: 'Walking',       emoji: '🚶', color: '#059669' },
+    { key: 'yoga',          label: 'Yoga',          emoji: '🧘', color: '#c026d3' },
+    { key: 'dance',         label: 'Dance',         emoji: '💃', color: '#e11d48' },
+    { key: 'hiking',        label: 'Hiking',        emoji: '🥾', color: '#854d0e' },
+    { key: 'pilates',       label: 'Pilates',       emoji: '🤸', color: '#0d9488' },
+    { key: 'martial_arts',  label: 'Martial Arts',  emoji: '🥋', color: '#1e293b' },
+    { key: 'other',         label: 'Other',         emoji: '⚡', color: '#64748b' }
+];
+
+// MET values for calorie estimation (Metabolic Equivalent of Task)
+// Source: Compendium of Physical Activities
+const ACTIVITY_MET_VALUES = {
+    walking:        { light: 2.5, moderate: 3.5, vigorous: 5.0 },
+    running:        { light: 6.0, moderate: 8.0, vigorous: 11.0 },
+    cycling:        { light: 4.0, moderate: 6.8, vigorous: 10.0 },
+    swimming:       { light: 4.5, moderate: 6.0, vigorous: 9.8 },
+    boxing:         { light: 5.5, moderate: 7.8, vigorous: 12.0 },
+    tennis:         { light: 5.0, moderate: 7.3, vigorous: 10.0 },
+    yoga:           { light: 2.5, moderate: 3.0, vigorous: 4.0 },
+    dance:          { light: 3.5, moderate: 5.5, vigorous: 7.8 },
+    pilates:        { light: 3.0, moderate: 4.0, vigorous: 5.0 },
+    fitness_class:  { light: 4.5, moderate: 6.5, vigorous: 9.0 },
+    hiking:         { light: 4.5, moderate: 6.0, vigorous: 8.0 },
+    martial_arts:   { light: 5.0, moderate: 7.0, vigorous: 10.3 },
+    other:          { light: 3.5, moderate: 5.0, vigorous: 7.0 }
+};
+
+function estimateCaloriesBurned(activityType, intensityLevel, durationMinutes, userWeightKg) {
+    const mets = ACTIVITY_MET_VALUES[activityType] || ACTIVITY_MET_VALUES.other;
+    const met = mets[intensityLevel] || mets.moderate;
+    const hours = durationMinutes / 60;
+    return Math.round(met * userWeightKg * hours);
+}
+
+// XP eligibility check for activities
+function isActivityXPEligible(activityType, hasPhoto, venueVerifiable) {
+    if (!hasPhoto) return false;
+    // Walks/runs/hikes only get XP with a verifiable venue (treadmill, track, etc.)
+    const outdoorOnlyTypes = ['walking', 'running', 'hiking'];
+    if (outdoorOnlyTypes.includes(activityType)) {
+        return venueVerifiable === true;
+    }
+    // All other activities with a verifiable venue photo get XP
+    return venueVerifiable === true;
+}
+
+// Activity form state
+let activityFormState = {
+    selectedType: null,
+    duration: 30,
+    intensity: 'moderate',
+    photoBase64: null,
+    photoMimeType: null,
+    userWeightKg: 70 // default, will be loaded from quiz_results
+};
+
+// Saved activity data for sharing after save
+let savedActivityData = null;
+
+function openLogActivityForm() {
+    hideAllAppViews();
+    document.getElementById('view-log-activity').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
+
+    // Reset form state
+    activityFormState = {
+        selectedType: null,
+        duration: 30,
+        intensity: 'moderate',
+        photoBase64: null,
+        photoMimeType: null,
+        userWeightKg: 70
+    };
+    savedActivityData = null;
+
+    // Reset form UI
+    document.getElementById('activity-label-input').value = '';
+    document.getElementById('activity-notes-input').value = '';
+    document.getElementById('activity-duration-display').textContent = '30';
+    document.getElementById('activity-photo-preview').style.display = 'none';
+    document.getElementById('activity-photo-btn').style.display = 'flex';
+    document.getElementById('activity-calories-display').textContent = '0';
+    document.getElementById('activity-save-btn').disabled = false;
+    document.getElementById('activity-save-btn').textContent = 'Log Activity';
+
+    // Reset intensity to moderate
+    selectActivityIntensity('moderate');
+
+    // Build activity type grid
+    const grid = document.getElementById('activity-type-grid');
+    grid.innerHTML = ACTIVITY_TYPES.map(t => `
+        <button onclick="selectActivityType('${t.key}')" id="activity-type-btn-${t.key}" style="padding: 14px 8px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); cursor: pointer; text-align: center; transition: all 0.2s;">
+            <div style="font-size: 1.5rem;">${t.emoji}</div>
+            <div style="font-weight: 700; font-size: 0.75rem; margin-top: 4px; color: var(--text-main);">${t.label}</div>
+        </button>
+    `).join('');
+
+    // Load user weight for calorie estimation
+    loadUserWeightForActivity();
+
+    // Push navigation state
+    window.history.pushState({ view: 'log-activity' }, '', '#log-activity');
+}
+window.openLogActivityForm = openLogActivityForm;
+
+async function loadUserWeightForActivity() {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+        const quiz = await window.dbHelpers?.quizResults?.getLatest(session.user.id);
+        if (quiz?.weight) {
+            activityFormState.userWeightKg = parseFloat(quiz.weight) || 70;
+            updateActivityCalories();
+        }
+    } catch (e) {
+        console.error('Failed to load user weight for activity:', e);
+    }
+}
+
+function selectActivityType(typeKey) {
+    activityFormState.selectedType = typeKey;
+    // Update UI - highlight selected
+    ACTIVITY_TYPES.forEach(t => {
+        const btn = document.getElementById(`activity-type-btn-${t.key}`);
+        if (btn) {
+            if (t.key === typeKey) {
+                btn.style.border = `2px solid ${t.color}`;
+                btn.style.background = `${t.color}15`;
+                btn.style.transform = 'scale(1.05)';
+            } else {
+                btn.style.border = '2px solid var(--border)';
+                btn.style.background = 'var(--card-bg)';
+                btn.style.transform = 'scale(1)';
+            }
+        }
+    });
+    updateActivityCalories();
+}
+window.selectActivityType = selectActivityType;
+
+function adjustActivityDuration(delta) {
+    activityFormState.duration = Math.max(5, Math.min(300, activityFormState.duration + delta));
+    document.getElementById('activity-duration-display').textContent = activityFormState.duration;
+    updateActivityCalories();
+}
+window.adjustActivityDuration = adjustActivityDuration;
+
+function selectActivityIntensity(level) {
+    activityFormState.intensity = level;
+    document.querySelectorAll('#activity-intensity-row .intensity-btn').forEach(btn => {
+        const isSelected = btn.getAttribute('data-intensity') === level;
+        btn.style.border = isSelected ? '2px solid #0ea5e9' : '2px solid var(--border)';
+        btn.style.background = isSelected ? 'rgba(14,165,233,0.1)' : 'var(--card-bg)';
+    });
+    updateActivityCalories();
+}
+window.selectActivityIntensity = selectActivityIntensity;
+
+function updateActivityCalories() {
+    const type = activityFormState.selectedType || 'other';
+    const cal = estimateCaloriesBurned(type, activityFormState.intensity, activityFormState.duration, activityFormState.userWeightKg);
+    document.getElementById('activity-calories-display').textContent = cal;
+}
+
+function captureActivityPhoto() {
+    document.getElementById('activity-photo-input').click();
+}
+window.captureActivityPhoto = captureActivityPhoto;
+
+function handleActivityPhotoCapture(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const base64Full = e.target.result;
+        const base64Data = base64Full.split(',')[1];
+        activityFormState.photoBase64 = base64Data;
+        activityFormState.photoMimeType = file.type || 'image/jpeg';
+
+        // Show preview
+        document.getElementById('activity-photo-img').src = base64Full;
+        document.getElementById('activity-photo-preview').style.display = 'block';
+        document.getElementById('activity-photo-btn').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+    // Reset input so same file can be re-selected
+    input.value = '';
+}
+window.handleActivityPhotoCapture = handleActivityPhotoCapture;
+
+function removeActivityPhoto() {
+    activityFormState.photoBase64 = null;
+    activityFormState.photoMimeType = null;
+    document.getElementById('activity-photo-preview').style.display = 'none';
+    document.getElementById('activity-photo-btn').style.display = 'flex';
+}
+window.removeActivityPhoto = removeActivityPhoto;
+
+async function saveActivity() {
+    if (!activityFormState.selectedType) {
+        showToast('Please select an activity type', 'error');
+        return;
+    }
+
+    const saveBtn = document.getElementById('activity-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) {
+            showToast('Please log in to save activities', 'error');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Log Activity';
+            return;
+        }
+
+        const activityType = activityFormState.selectedType;
+        const duration = activityFormState.duration;
+        const intensity = activityFormState.intensity;
+        const label = document.getElementById('activity-label-input').value.trim();
+        const notes = document.getElementById('activity-notes-input').value.trim();
+        const calories = estimateCaloriesBurned(activityType, intensity, duration, activityFormState.userWeightKg);
+        const metValues = ACTIVITY_MET_VALUES[activityType] || ACTIVITY_MET_VALUES.other;
+        const metValue = metValues[intensity] || metValues.moderate;
+
+        // Photo verification
+        let venueVerifiable = false;
+        let venueType = null;
+        let aiConfidence = null;
+        let detectedElements = [];
+        let photoVerified = false;
+        let xpEligible = false;
+
+        if (activityFormState.photoBase64) {
+            saveBtn.textContent = 'Verifying photo...';
+            try {
+                const verifyResponse = await fetch('/api/analyze-workout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        imageBase64: activityFormState.photoBase64,
+                        mimeType: activityFormState.photoMimeType,
+                        activityType: activityType
+                    })
+                });
+
+                if (verifyResponse.ok) {
+                    const verifyData = await verifyResponse.json();
+                    if (verifyData.success) {
+                        venueVerifiable = verifyData.venueVerifiable || false;
+                        venueType = verifyData.venueType || 'unknown';
+                        aiConfidence = verifyData.data?.confidence || 'low';
+                        detectedElements = verifyData.data?.detectedElements || [];
+                        photoVerified = verifyData.data?.isWorkoutPhoto || false;
+                    }
+                }
+            } catch (verifyError) {
+                console.error('Photo verification failed:', verifyError);
+                // Continue without verification — no XP but still save
+            }
+
+            xpEligible = isActivityXPEligible(activityType, true, venueVerifiable);
+        }
+
+        saveBtn.textContent = 'Saving...';
+
+        // Save to database
+        const activityRecord = await window.dbHelpers?.activityLogs?.create(session.user.id, {
+            activity_type: activityType,
+            activity_label: label || null,
+            duration_minutes: duration,
+            intensity: intensity,
+            estimated_calories: calories,
+            met_value: metValue,
+            photo_url: activityFormState.photoBase64 ? 'photo_captured' : null,
+            photo_verified: photoVerified,
+            venue_type: venueType,
+            venue_verifiable: venueVerifiable,
+            ai_confidence: aiConfidence,
+            detected_elements: detectedElements,
+            xp_eligible: xpEligible,
+            notes: notes || null
+        });
+
+        // Store for sharing
+        const typeInfo = ACTIVITY_TYPES.find(t => t.key === activityType) || ACTIVITY_TYPES[ACTIVITY_TYPES.length - 1];
+        savedActivityData = {
+            id: activityRecord?.id,
+            activity_type: activityType,
+            activity_label: label || typeInfo.label,
+            duration: duration,
+            intensity: intensity,
+            calories: calories,
+            emoji: typeInfo.emoji,
+            color: typeInfo.color,
+            xpEligible: xpEligible,
+            venueVerifiable: venueVerifiable,
+            venueType: venueType,
+            photoBase64: activityFormState.photoBase64,
+            photoMimeType: activityFormState.photoMimeType
+        };
+
+        // Show success screen
+        showActivitySuccess(savedActivityData);
+
+    } catch (error) {
+        console.error('Error saving activity:', error);
+        showToast('Failed to save activity. Please try again.', 'error');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Log Activity';
+    }
+}
+window.saveActivity = saveActivity;
+
+function showActivitySuccess(data) {
+    hideAllAppViews();
+    document.getElementById('view-activity-success').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
+
+    // Update success screen
+    document.getElementById('activity-success-emoji').textContent = data.emoji;
+    document.getElementById('activity-success-label').textContent = data.activity_label;
+    document.getElementById('activity-success-duration').textContent = data.duration + ' min';
+    document.getElementById('activity-success-calories').textContent = data.calories + ' kcal';
+
+    const intensityEmojis = { light: '🚶', moderate: '🏃', vigorous: '🔥' };
+    document.getElementById('activity-success-intensity').textContent = intensityEmojis[data.intensity] || '🏃';
+
+    // XP status
+    const xpStatus = document.getElementById('activity-xp-status');
+    const noXpHint = document.getElementById('activity-no-xp-hint');
+
+    if (data.xpEligible) {
+        xpStatus.style.display = 'block';
+        xpStatus.style.background = 'rgba(68, 255, 68, 0.2)';
+        xpStatus.style.border = '2px solid rgba(68, 255, 68, 0.5)';
+        xpStatus.innerHTML = '<div style="font-weight:700;">📸 Venue verified! Share to earn XP</div>';
+        noXpHint.style.display = 'none';
+    } else if (data.photoBase64) {
+        xpStatus.style.display = 'block';
+        xpStatus.style.background = 'rgba(255, 200, 50, 0.2)';
+        xpStatus.style.border = '2px solid rgba(255, 200, 50, 0.5)';
+        xpStatus.innerHTML = '<div style="font-weight:700;">📸 Photo taken but venue not verified for XP</div><div style="font-size:0.8rem; margin-top:4px; opacity:0.85;">Try a clearer photo showing gym equipment, court, or studio next time</div>';
+        noXpHint.style.display = 'none';
+    } else {
+        xpStatus.style.display = 'none';
+        noXpHint.style.display = 'block';
+    }
+
+    // Reset share button
+    const shareBtn = document.getElementById('activity-share-btn');
+    shareBtn.disabled = false;
+    document.getElementById('activity-share-btn-text').textContent = data.xpEligible ? 'Share Activity Card (+1 XP)' : 'Share Activity Card';
+
+    window.history.pushState({ view: 'activity-success' }, '', '#activity-success');
+}
+
+async function shareActivityCardToFeed() {
+    if (!savedActivityData) {
+        showToast('No activity data to share', 'error');
+        return;
+    }
+
+    const shareBtn = document.getElementById('activity-share-btn');
+    shareBtn.disabled = true;
+    document.getElementById('activity-share-btn-text').textContent = 'Sharing...';
+
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) {
+            showToast('Please log in to share', 'error');
+            shareBtn.disabled = false;
+            document.getElementById('activity-share-btn-text').textContent = 'Share Activity Card';
+            return;
+        }
+
+        // Build card payload for feed rendering
+        const cardPayload = {
+            card_type: 'activity',
+            activity_type: savedActivityData.activity_type,
+            activity_label: savedActivityData.activity_label,
+            duration: savedActivityData.duration + ' min',
+            intensity: savedActivityData.intensity,
+            calories: savedActivityData.calories,
+            emoji: savedActivityData.emoji,
+            venue_type: savedActivityData.venueType
+        };
+
+        // Create story in feed
+        const storyData = {
+            media_type: 'workout_card',
+            media_url: savedActivityData.photoBase64 ? `data:${savedActivityData.photoMimeType || 'image/jpeg'};base64,${savedActivityData.photoBase64}` : '',
+            caption: JSON.stringify(cardPayload),
+            duration: 5
+        };
+
+        await window.dbHelpers?.stories?.create(session.user.id, storyData);
+
+        // Award XP if eligible
+        if (savedActivityData.xpEligible) {
+            await awardWorkoutSharePoint('story', Date.now(), null);
+
+            const xpStatus = document.getElementById('activity-xp-status');
+            xpStatus.style.display = 'block';
+            xpStatus.style.background = 'rgba(68, 255, 68, 0.2)';
+            xpStatus.style.border = '2px solid rgba(68, 255, 68, 0.5)';
+            xpStatus.innerHTML = '<div style="font-weight:700; font-size:1.1rem;">+1 XP Earned! 🎉</div>';
+        }
+
+        // Update activity log record
+        if (savedActivityData.id) {
+            try {
+                await window.dbHelpers?.activityLogs?.update(savedActivityData.id, {
+                    shared_to_feed: true,
+                    xp_awarded: savedActivityData.xpEligible
+                });
+            } catch (e) {
+                console.error('Failed to update activity log:', e);
+            }
+        }
+
+        document.getElementById('activity-share-btn-text').textContent = '✅ Shared!';
+        showToast('Activity shared to feed!', 'success');
+
+        // Refresh feed in background
+        if (typeof window.loadPhotoFeed === 'function') {
+            window.loadPhotoFeed();
+        }
+
+    } catch (error) {
+        console.error('Error sharing activity:', error);
+        showToast('Failed to share. Please try again.', 'error');
+        shareBtn.disabled = false;
+        document.getElementById('activity-share-btn-text').textContent = 'Share Activity Card';
+    }
+}
+window.shareActivityCardToFeed = shareActivityCardToFeed;
+
+function closeLogActivity() {
+    document.getElementById('view-log-activity').style.display = 'none';
+    document.querySelector('.bottom-nav').style.display = 'flex';
+    showView('movement-tab');
+}
+window.closeLogActivity = closeLogActivity;
+
+function closeActivitySuccess() {
+    document.getElementById('view-activity-success').style.display = 'none';
+    document.querySelector('.bottom-nav').style.display = 'flex';
+    showView('movement-tab');
+}
+window.closeActivitySuccess = closeActivitySuccess;
+
+// ============================================
+// END ACTIVITY LOGGING SYSTEM
+// ============================================
 
 // Open story upload modal with a pre-loaded image
 function openStoryUploadWithImage(file, base64Data, defaultCaption = '') {
