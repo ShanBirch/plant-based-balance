@@ -14775,6 +14775,17 @@ function viewWorkoutHistoryDetail(date) {
                          Share
                      </button>
                  </div>
+                <!-- Download App (hidden if already installed as PWA) -->
+                <div id="settings-download-app" style="padding:15px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div>Download App</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">Install for the best experience</div>
+                    </div>
+                    <button onclick="installPWA()" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:16px; height:16px; fill:none; stroke:white; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Install
+                    </button>
+                </div>
                 <!-- Admin Notifications (only visible to admins) -->
                 <div id="admin-notifications-setting" style="padding:15px; border-top:1px solid #f1f5f9; display:none;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -14790,8 +14801,16 @@ function viewWorkoutHistoryDetail(date) {
             </div>
         </div>
 
+        <!-- Download App Button (above logout) -->
+        <div id="profile-download-app-btn" style="padding: 0 25px; margin-top: 30px;">
+            <button onclick="installPWA()" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:linear-gradient(135deg, #046A38, #06a94d); color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition: transform 0.2s, box-shadow 0.2s; box-shadow:0 4px 15px rgba(4,106,56,0.25);" onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 6px 20px rgba(4,106,56,0.35)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(4,106,56,0.25)'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                DOWNLOAD APP
+            </button>
+        </div>
+
         <!-- Logout Button -->
-        <div style="padding: 0 25px; margin-top: 30px; margin-bottom: 40px;">
+        <div style="padding: 0 25px; margin-top: 12px; margin-bottom: 40px;">
             <button onclick="handleLogout()" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:#ef4444; color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition: background 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 LOG OUT
@@ -28712,13 +28731,21 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 window.addEventListener('load', () => {
     // Only show if not installed and not dismissed and NOT iOS (since iOS can't "one-click" install)
-    // Actually user wants "Click -> Download". If iOS, we can't do that. 
+    // Actually user wants "Click -> Download". If iOS, we can't do that.
     // We will show transparency.
-    
+
     if (!isInstalledPWA && !installBannerDismissed) {
         showPwaBanner();
     }
-    
+
+    // Hide download app buttons in settings/profile if already installed as PWA
+    if (isInstalledPWA) {
+        const settingsDownload = document.getElementById('settings-download-app');
+        const profileDownload = document.getElementById('profile-download-app-btn');
+        if (settingsDownload) settingsDownload.style.display = 'none';
+        if (profileDownload) profileDownload.style.display = 'none';
+    }
+
     // Make Coach Bubble Draggable
     initDraggableBubble();
 });
