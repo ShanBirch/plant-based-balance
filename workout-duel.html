@@ -1579,12 +1579,12 @@ async function loadDuelList() {
     }).join('');
   } catch (err) {
     console.error('Load duels error:', err);
-    // Show empty state instead of error when duels can't be loaded
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">&#x1F94A;</div>
         <h3>No duels yet</h3>
         <p>Challenge a friend to see who's stronger</p>
+        <p style="font-size:0.7rem;color:var(--duel-text-muted);margin-top:8px;">If you expected duels here, try refreshing the page.</p>
       </div>`;
   }
 }
@@ -1641,9 +1641,10 @@ async function loadFriends() {
         : `<div class="friend-avatar">${initials}</div>`;
       const streakText = f.current_streak > 0 ? `<span style="font-size:0.7rem;color:var(--duel-warning);">🔥 ${f.current_streak} day streak</span>` : '';
       const workoutDot = f.has_workout_today ? '<span style="width:8px;height:8px;border-radius:50%;background:#a78bfa;display:inline-block;margin-left:6px;" title="Worked out today"></span>' : '';
+      const safeName = (f.friend_name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
       return `
-        <div class="friend-item" data-id="${f.friend_id}" onclick="selectFriend('${f.friend_id}', '${(f.friend_name || '').replace(/'/g, "\\'")}')">
+        <div class="friend-item" data-id="${f.friend_id}" onclick="selectFriend('${f.friend_id}', '${safeName}')">
           ${photoHtml}
           <div style="flex:1;">
             <div class="friend-name">${f.friend_name || 'Unknown'}${workoutDot}</div>
@@ -1779,7 +1780,8 @@ function selectCustomWorkout(workoutId) {
 
   const exercises = (workout.template_data?.exercises || []).map((name, i) => ({
     name: typeof name === 'string' ? name : name.name || `Exercise ${i + 1}`,
-    sets: 3
+    sets: typeof name === 'object' && name.sets ? name.sets : 3,
+    reps: typeof name === 'object' && name.reps ? name.reps : '8-12'
   }));
 
   selectedWorkout = {
@@ -2034,7 +2036,8 @@ async function saveDuelBuilderWorkout() {
     // Build exercises array for the duel
     const exercises = duelBuilderSelection.map((exName, i) => ({
       name: exName,
-      sets: 3
+      sets: 3,
+      reps: '8-12'
     }));
 
     // Auto-select this workout for the duel
@@ -2162,13 +2165,23 @@ async function sendChallenge() {
     });
 
     if (error) throw error;
+    if (!data) throw new Error('No duel ID returned');
 
     showToast('Challenge sent!');
     activeDuelId = data;
     showView('detail');
   } catch (err) {
     console.error('Create duel error:', err);
-    showToast(err.message || 'Failed to create duel');
+    const msg = err.message || '';
+    if (msg.includes('must be friends')) {
+      showToast('You must be friends with this person first');
+    } else if (msg.includes('Insufficient coins')) {
+      showToast('Not enough coins for this bet');
+    } else if (msg.includes('permission') || msg.includes('denied') || msg.includes('RLS')) {
+      showToast('Permission error — please log in again');
+    } else {
+      showToast(msg || 'Failed to create duel. Try again.');
+    }
   }
 }
 
@@ -2288,7 +2301,7 @@ function renderPendingDuel(duel, isChallenger) {
       ${exercises.map(e => `
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--duel-border);">
           <span style="font-size:0.85rem;font-weight:600;">${e.name}</span>
-          <span style="font-size:0.8rem;color:var(--duel-text-muted);">${e.sets} x ${e.reps}</span>
+          <span style="font-size:0.8rem;color:var(--duel-text-muted);">${e.sets || 3} x ${e.reps || '8-12'}</span>
         </div>
       `).join('')}
       ${actionButtons}
