@@ -1188,6 +1188,243 @@
   .builder-selected-tag .remove-tag:hover {
     opacity: 1;
   }
+
+  /* ==========================================
+     HOW IT WORKS MODAL
+     ========================================== */
+  .how-it-works-link {
+    background: none;
+    border: none;
+    color: var(--duel-text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+  }
+
+  .how-it-works-link:hover {
+    color: var(--duel-accent);
+  }
+
+  .how-it-works-link svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
+
+  .rules-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 300;
+    backdrop-filter: blur(4px);
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .rules-overlay.active {
+    display: flex;
+  }
+
+  .rules-sheet {
+    width: 100%;
+    max-width: 600px;
+    max-height: 85vh;
+    background: linear-gradient(180deg, #1e1e3a 0%, #16213e 100%);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    border: 1px solid var(--duel-border);
+    border-bottom: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .rules-sheet-header {
+    position: sticky;
+    top: 0;
+    background: rgba(30, 30, 58, 0.95);
+    backdrop-filter: blur(20px);
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--duel-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1;
+  }
+
+  .rules-sheet-header h2 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--duel-accent);
+    margin: 0;
+  }
+
+  .rules-close-btn {
+    background: var(--duel-surface-light);
+    border: none;
+    color: var(--duel-text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .rules-close-btn:hover {
+    color: var(--duel-text);
+    background: var(--duel-surface);
+  }
+
+  .rules-body {
+    padding: 20px;
+    padding-bottom: 40px;
+  }
+
+  .rules-section {
+    margin-bottom: 24px;
+  }
+
+  .rules-section-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--duel-accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .rules-step {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+    align-items: flex-start;
+  }
+
+  .rules-step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--duel-accent);
+    color: var(--duel-bg);
+    font-size: 0.7rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .rules-step-text {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--duel-text);
+  }
+
+  .rules-step-text strong {
+    color: var(--duel-accent);
+    font-weight: 700;
+  }
+
+  .rules-mode-card {
+    background: var(--duel-surface-light);
+    border: 1px solid var(--duel-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .rules-mode-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .rules-mode-info h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .rules-mode-info p {
+    font-size: 0.75rem;
+    color: var(--duel-text-muted);
+    line-height: 1.4;
+  }
+
+  .rules-bullet {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    align-items: flex-start;
+  }
+
+  .rules-bullet-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--duel-accent);
+    flex-shrink: 0;
+    margin-top: 7px;
+  }
+
+  .rules-bullet-text {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--duel-text);
+  }
+
+  .rules-format-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .rules-format-card {
+    background: var(--duel-surface-light);
+    border: 1px solid var(--duel-border);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .rules-format-card .format-icon {
+    font-size: 1.5rem;
+    margin-bottom: 6px;
+  }
+
+  .rules-format-card h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .rules-format-card p {
+    font-size: 0.7rem;
+    color: var(--duel-text-muted);
+    line-height: 1.4;
+  }
 </style>
 </head>
 <body>
@@ -1208,9 +1445,15 @@
        VIEW 1: DUEL LIST (My Duels)
        ========================================== -->
   <div id="viewList" class="view active">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
       <h2 style="font-size:1.3rem;font-weight:800;">My Duels</h2>
       <button class="btn-duel btn-duel-primary btn-sm" onclick="showView('create')">+ New Duel</button>
+    </div>
+    <div style="margin-bottom:16px;">
+      <button class="how-it-works-link" onclick="openRules()">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+        How it works
+      </button>
     </div>
     <div id="duelList"></div>
   </div>
@@ -1344,6 +1587,140 @@
       <button class="builder-save-btn" onclick="saveDuelBuilderWorkout()">
         Save &amp; Select (<span id="duelBuilderCount">0</span>)
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- How It Works Rules Sheet -->
+<div class="rules-overlay" id="rulesOverlay" onclick="if(event.target===this)closeRules()">
+  <div class="rules-sheet">
+    <div class="rules-sheet-header">
+      <h2>How Duels Work</h2>
+      <button class="rules-close-btn" onclick="closeRules()">&times;</button>
+    </div>
+    <div class="rules-body">
+
+      <!-- THE FLOW -->
+      <div class="rules-section">
+        <div class="rules-section-title">The Flow</div>
+        <div class="rules-step">
+          <div class="rules-step-num">1</div>
+          <div class="rules-step-text"><strong>Create a duel</strong> &mdash; pick a friend, choose a workout, and set your scoring mode</div>
+        </div>
+        <div class="rules-step">
+          <div class="rules-step-num">2</div>
+          <div class="rules-step-text">Your friend gets the invite and can <strong>accept or decline</strong></div>
+        </div>
+        <div class="rules-step">
+          <div class="rules-step-num">3</div>
+          <div class="rules-step-text">Both of you do the <strong>same workout</strong> and log each set as you go</div>
+        </div>
+        <div class="rules-step">
+          <div class="rules-step-num">4</div>
+          <div class="rules-step-text">After both finish, enter the <strong>Proof Phase</strong> &mdash; challenge any suspicious sets</div>
+        </div>
+        <div class="rules-step">
+          <div class="rules-step-num">5</div>
+          <div class="rules-step-text"><strong>Settle the duel</strong> to see who won and claim your coins</div>
+        </div>
+      </div>
+
+      <!-- FORMATS -->
+      <div class="rules-section">
+        <div class="rules-section-title">Formats</div>
+        <div class="rules-format-row">
+          <div class="rules-format-card">
+            <div class="format-icon">&#x26A1;</div>
+            <h4>Live</h4>
+            <p>Both work out at the same time. See each other's sets update in real-time.</p>
+          </div>
+          <div class="rules-format-card">
+            <div class="format-icon">&#x23F0;</div>
+            <h4>Async (48h)</h4>
+            <p>Complete within 48 hours. Scores are hidden until both players finish.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCORING MODES -->
+      <div class="rules-section">
+        <div class="rules-section-title">Scoring Modes</div>
+        <div class="rules-mode-card">
+          <div class="rules-mode-icon">&#x1F4AA;</div>
+          <div class="rules-mode-info">
+            <h4>Raw Strength</h4>
+            <p>Total weight &times; reps across all exercises. Biggest number wins.</p>
+          </div>
+        </div>
+        <div class="rules-mode-card">
+          <div class="rules-mode-icon">&#x2696;</div>
+          <div class="rules-mode-info">
+            <h4>Bodyweight Battle</h4>
+            <p>Total volume &divide; your bodyweight. Levels the playing field between different body sizes.</p>
+          </div>
+        </div>
+        <div class="rules-mode-card">
+          <div class="rules-mode-icon">&#x1F4C8;</div>
+          <div class="rules-mode-info">
+            <h4>PB Crusher</h4>
+            <p>% improvement over your personal best. Rewards personal growth, not just raw numbers.</p>
+          </div>
+        </div>
+        <div class="rules-mode-card">
+          <div class="rules-mode-icon">&#x1F3CB;</div>
+          <div class="rules-mode-info">
+            <h4>Total Workload</h4>
+            <p>Sum of volume across all exercises. Endurance and consistency wins.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- THE RULES -->
+      <div class="rules-section">
+        <div class="rules-section-title">The Rules</div>
+        <div class="rules-bullet">
+          <div class="rules-bullet-dot"></div>
+          <div class="rules-bullet-text">Sets are <strong>locked once logged</strong> &mdash; no editing after you submit</div>
+        </div>
+        <div class="rules-bullet">
+          <div class="rules-bullet-dot"></div>
+          <div class="rules-bullet-text">Each player gets <strong>3 &ldquo;Prove It&rdquo; tokens</strong> per duel to challenge suspicious sets</div>
+        </div>
+        <div class="rules-bullet">
+          <div class="rules-bullet-dot"></div>
+          <div class="rules-bullet-text">If challenged, you must <strong>upload video proof</strong> within 24 hours or the set is voided</div>
+        </div>
+        <div class="rules-bullet">
+          <div class="rules-bullet-dot"></div>
+          <div class="rules-bullet-text">If the challenger <strong>rejects your proof</strong>, the set is voided and doesn't count toward your score</div>
+        </div>
+        <div class="rules-bullet">
+          <div class="rules-bullet-dot"></div>
+          <div class="rules-bullet-text">Coin wagers are <strong>escrowed</strong> when the duel is created &mdash; winner takes 2&times; the bet</div>
+        </div>
+        <div class="rules-bullet">
+          <div class="rules-bullet-dot"></div>
+          <div class="rules-bullet-text">You can only duel people on your <strong>friends list</strong></div>
+        </div>
+      </div>
+
+      <!-- LIVE MODE TIP -->
+      <div class="rules-section" style="margin-bottom:0;">
+        <div class="rules-section-title">Live Mode Tips</div>
+        <div class="rules-bullet">
+          <div class="rules-bullet-dot"></div>
+          <div class="rules-bullet-text">In live mode, the screen <strong>updates automatically</strong> every time your opponent logs a set</div>
+        </div>
+        <div class="rules-bullet">
+          <div class="rules-bullet-dot"></div>
+          <div class="rules-bullet-text">You'll see their <strong>weight and reps for each set</strong> appear under the exercise in real-time</div>
+        </div>
+        <div class="rules-bullet">
+          <div class="rules-bullet-dot"></div>
+          <div class="rules-bullet-text">The <strong>scoreboard at the top</strong> tracks total volume for both players as you go</div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1579,12 +1956,12 @@ async function loadDuelList() {
     }).join('');
   } catch (err) {
     console.error('Load duels error:', err);
-    // Show empty state instead of error when duels can't be loaded
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">&#x1F94A;</div>
         <h3>No duels yet</h3>
         <p>Challenge a friend to see who's stronger</p>
+        <p style="font-size:0.7rem;color:var(--duel-text-muted);margin-top:8px;">If you expected duels here, try refreshing the page.</p>
       </div>`;
   }
 }
@@ -1641,9 +2018,10 @@ async function loadFriends() {
         : `<div class="friend-avatar">${initials}</div>`;
       const streakText = f.current_streak > 0 ? `<span style="font-size:0.7rem;color:var(--duel-warning);">🔥 ${f.current_streak} day streak</span>` : '';
       const workoutDot = f.has_workout_today ? '<span style="width:8px;height:8px;border-radius:50%;background:#a78bfa;display:inline-block;margin-left:6px;" title="Worked out today"></span>' : '';
+      const safeName = (f.friend_name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
       return `
-        <div class="friend-item" data-id="${f.friend_id}" onclick="selectFriend('${f.friend_id}', '${(f.friend_name || '').replace(/'/g, "\\'")}')">
+        <div class="friend-item" data-id="${f.friend_id}" onclick="selectFriend('${f.friend_id}', '${safeName}')">
           ${photoHtml}
           <div style="flex:1;">
             <div class="friend-name">${f.friend_name || 'Unknown'}${workoutDot}</div>
@@ -1779,7 +2157,8 @@ function selectCustomWorkout(workoutId) {
 
   const exercises = (workout.template_data?.exercises || []).map((name, i) => ({
     name: typeof name === 'string' ? name : name.name || `Exercise ${i + 1}`,
-    sets: 3
+    sets: typeof name === 'object' && name.sets ? name.sets : 3,
+    reps: typeof name === 'object' && name.reps ? name.reps : '8-12'
   }));
 
   selectedWorkout = {
@@ -2034,7 +2413,8 @@ async function saveDuelBuilderWorkout() {
     // Build exercises array for the duel
     const exercises = duelBuilderSelection.map((exName, i) => ({
       name: exName,
-      sets: 3
+      sets: 3,
+      reps: '8-12'
     }));
 
     // Auto-select this workout for the duel
@@ -2162,13 +2542,23 @@ async function sendChallenge() {
     });
 
     if (error) throw error;
+    if (!data) throw new Error('No duel ID returned');
 
     showToast('Challenge sent!');
     activeDuelId = data;
     showView('detail');
   } catch (err) {
     console.error('Create duel error:', err);
-    showToast(err.message || 'Failed to create duel');
+    const msg = err.message || '';
+    if (msg.includes('must be friends')) {
+      showToast('You must be friends with this person first');
+    } else if (msg.includes('Insufficient coins')) {
+      showToast('Not enough coins for this bet');
+    } else if (msg.includes('permission') || msg.includes('denied') || msg.includes('RLS')) {
+      showToast('Permission error — please log in again');
+    } else {
+      showToast(msg || 'Failed to create duel. Try again.');
+    }
   }
 }
 
@@ -2288,7 +2678,7 @@ function renderPendingDuel(duel, isChallenger) {
       ${exercises.map(e => `
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--duel-border);">
           <span style="font-size:0.85rem;font-weight:600;">${e.name}</span>
-          <span style="font-size:0.8rem;color:var(--duel-text-muted);">${e.sets} x ${e.reps}</span>
+          <span style="font-size:0.8rem;color:var(--duel-text-muted);">${e.sets || 3} x ${e.reps || '8-12'}</span>
         </div>
       `).join('')}
       ${actionButtons}
@@ -2965,6 +3355,16 @@ function renderTerminalState(duel) {
 // ============================================================
 // UTILITIES
 // ============================================================
+function openRules() {
+  document.getElementById('rulesOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeRules() {
+  document.getElementById('rulesOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
 function showToast(message) {
   const toast = document.getElementById('toast');
   toast.textContent = message;

@@ -22453,8 +22453,28 @@ async function renderMovementView() {
             <div style="font-size: 0.75rem; opacity: 0.9;">Same workout, head-to-head, with video proof</div>
         </div>
         <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">⚔️</div>
+        <div id="duel-badge" style="display:none; position:absolute; top:12px; left:12px; background:#ef4444; color:white; font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:12px; z-index:2;"></div>
     `;
     gridContainer.appendChild(duelDiv);
+
+    // Load pending duel count badge asynchronously
+    (async () => {
+        try {
+            const { data, error } = await window.supabaseClient.rpc('get_user_workout_duels', { p_user_id: user.id });
+            if (!error && data) {
+                const activeDuels = data.filter(d => ['pending', 'accepted', 'live', 'in_progress', 'proof_phase'].includes(d.status));
+                const pendingInvites = data.filter(d => d.status === 'pending' && !d.is_challenger);
+                const badge = document.getElementById('duel-badge');
+                if (badge && activeDuels.length > 0) {
+                    badge.textContent = pendingInvites.length > 0 ? `${pendingInvites.length} invite${pendingInvites.length > 1 ? 's' : ''}` : `${activeDuels.length} active`;
+                    badge.style.display = 'block';
+                    if (pendingInvites.length > 0) {
+                        badge.style.animation = 'pulse 2s infinite';
+                    }
+                }
+            }
+        } catch(e) { /* silent - badge is enhancement only */ }
+    })();
 
     // Add 'Today's Workout' Card as first item (red background)
     const todayDiv = document.createElement('div');
