@@ -7070,6 +7070,22 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
 
+                <!-- Macro Split (inside daily tracker) -->
+                <div class="macro-pie-card" id="macro-pie-section" style="margin-top: 20px;">
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Macro Split</h3>
+                    <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Today's protein / carbs / fat ratio</p>
+                    <div class="macro-pie-container" id="macro-pie-container">
+                        <svg class="macro-pie-svg" viewBox="0 0 120 120" id="macro-pie-svg">
+                            <circle cx="60" cy="60" r="50" fill="#f3f4f6" stroke="none"/>
+                        </svg>
+                        <div class="macro-pie-legend" id="macro-pie-legend">
+                            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #3b82f6;"></span><span class="macro-legend-label">Protein</span><span class="macro-legend-value">--</span></div>
+                            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #f59e0b;"></span><span class="macro-legend-label">Carbs</span><span class="macro-legend-value">--</span></div>
+                            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #ef4444;"></span><span class="macro-legend-label">Fat</span><span class="macro-legend-value">--</span></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Micronutrient Insights (inside daily tracker) -->
                 <div class="micro-insights-card" id="micro-insights-section" style="margin-top: 20px;">
                     <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Micronutrient Insights</h3>
@@ -7236,21 +7252,6 @@ async function applyAppTheme(themeKey) {
                 </div>
 
                 <!-- Macro Ratio Pie Chart -->
-                <div class="macro-pie-card" id="macro-pie-section">
-                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Macro Split</h3>
-                    <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Today's protein / carbs / fat ratio</p>
-                    <div class="macro-pie-container" id="macro-pie-container">
-                        <svg class="macro-pie-svg" viewBox="0 0 120 120" id="macro-pie-svg">
-                            <circle cx="60" cy="60" r="50" fill="#f3f4f6" stroke="none"/>
-                        </svg>
-                        <div class="macro-pie-legend" id="macro-pie-legend">
-                            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #3b82f6;"></span><span class="macro-legend-label">Protein</span><span class="macro-legend-value">--</span></div>
-                            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #f59e0b;"></span><span class="macro-legend-label">Carbs</span><span class="macro-legend-value">--</span></div>
-                            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #ef4444;"></span><span class="macro-legend-label">Fat</span><span class="macro-legend-value">--</span></div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Smart Meal Suggestions -->
                 <div class="smart-suggestions-card" id="smart-suggestions-section" style="display: none;">
                     <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: #1e40af;">Smart Suggestions</h3>
