@@ -436,6 +436,190 @@
         .back-btn:hover {
             background: #475569;
         }
+
+        /* Bar chart styles */
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bar-label {
+            min-width: 120px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #475569;
+            text-transform: capitalize;
+        }
+
+        .bar-track {
+            flex: 1;
+            height: 32px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #48864B, #5fa862);
+            transition: width 0.6s ease;
+            min-width: 2px;
+        }
+
+        .bar-fill.alt {
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        }
+
+        .bar-fill.warn {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+
+        .bar-value {
+            min-width: 60px;
+            text-align: right;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        /* Summary table */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .summary-table th {
+            text-align: left;
+            padding: 12px;
+            background: #f8fafc;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .summary-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.9rem;
+        }
+
+        .summary-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .summary-table .feat-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .summary-table .feat-metric {
+            font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
+            color: #48864B;
+        }
+
+        .feat-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        .feat-icon.green { background: #dcfce7; color: #166534; }
+        .feat-icon.blue { background: #dbeafe; color: #1e40af; }
+        .feat-icon.purple { background: #ede9fe; color: #5b21b6; }
+        .feat-icon.orange { background: #ffedd5; color: #9a3412; }
+        .feat-icon.red { background: #fee2e2; color: #991b1b; }
+        .feat-icon.teal { background: #ccfbf1; color: #115e59; }
+
+        /* Weekly signups chart */
+        .weekly-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 200px;
+            padding: 16px 0;
+        }
+
+        .week-bar-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+        }
+
+        .week-bar {
+            width: 100%;
+            max-width: 48px;
+            background: linear-gradient(180deg, #48864B, #5fa862);
+            border-radius: 6px 6px 0 0;
+            transition: height 0.6s ease;
+            min-height: 4px;
+        }
+
+        .week-label {
+            font-size: 0.65rem;
+            color: #64748b;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .week-count {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        /* Refresh button */
+        .refresh-btn {
+            background: #48864B;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #3a6d3c;
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinning {
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
 <body>
@@ -471,6 +655,45 @@
                 <span>Analytics</span>
             </div>
 
+            <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:1px; color:#64748b; padding:20px 16px 8px; font-weight:600;">Feature Engagement</div>
+
+            <div class="nav-item" onclick="showSection('feat-calories', this)">
+                <i data-lucide="utensils"></i>
+                <span>Calorie Tracking</span>
+            </div>
+            <div class="nav-item" onclick="showSection('feat-workouts', this)">
+                <i data-lucide="dumbbell"></i>
+                <span>Workouts</span>
+            </div>
+            <div class="nav-item" onclick="showSection('feat-battles', this)">
+                <i data-lucide="swords"></i>
+                <span>Battles &amp; Duels</span>
+            </div>
+            <div class="nav-item" onclick="showSection('feat-challenges', this)">
+                <i data-lucide="trophy"></i>
+                <span>Challenges</span>
+            </div>
+            <div class="nav-item" onclick="showSection('feat-social', this)">
+                <i data-lucide="share-2"></i>
+                <span>Feed &amp; Social</span>
+            </div>
+            <div class="nav-item" onclick="showSection('feat-chat', this)">
+                <i data-lucide="messages-square"></i>
+                <span>Chat &amp; Messaging</span>
+            </div>
+            <div class="nav-item" onclick="showSection('feat-learning', this)">
+                <i data-lucide="graduation-cap"></i>
+                <span>Quizzes &amp; Learning</span>
+            </div>
+            <div class="nav-item" onclick="showSection('feat-checkins', this)">
+                <i data-lucide="clipboard-check"></i>
+                <span>Check-ins &amp; Wellness</span>
+            </div>
+            <div class="nav-item" onclick="showSection('feat-growth', this)">
+                <i data-lucide="trending-up"></i>
+                <span>Growth &amp; Retention</span>
+            </div>
+
             <!-- Logout at bottom -->
             <div class="sidebar-footer">
                 <button class="dashboard-btn" onclick="switchToDashboard()">
@@ -486,6 +709,9 @@
         <div class="main-content">
             <div class="header">
                 <h1>Admin Dashboard</h1>
+                <button class="refresh-btn" id="refresh-analytics-btn" onclick="refreshAllAnalytics()">
+                    <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i> Refresh Data
+                </button>
             </div>
 
             <!-- Overview Section -->
@@ -542,11 +768,360 @@
                 </div>
             </div>
 
-            <!-- Analytics Section -->
+            <!-- Analytics Overview Section -->
             <div id="analytics" class="section">
+                <div class="stats-grid" id="analytics-overview-stats">
+                    <div class="stat-card green">
+                        <h3>Workouts Logged (30d)</h3>
+                        <div class="value" id="stat-workouts-30d">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Meals Logged (30d)</h3>
+                        <div class="value" id="stat-meals-30d">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Active Challenges</h3>
+                        <div class="value" id="stat-active-challenges">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Battles (30d)</h3>
+                        <div class="value" id="stat-battles-30d">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Feed Posts (30d)</h3>
+                        <div class="value" id="stat-feed-posts-30d">-</div>
+                    </div>
+                    <div class="stat-card green">
+                        <h3>Chat Messages (30d)</h3>
+                        <div class="value" id="stat-chat-30d">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Check-ins (7d)</h3>
+                        <div class="value" id="stat-checkins-7d">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Lessons Completed (30d)</h3>
+                        <div class="value" id="stat-lessons-30d">-</div>
+                    </div>
+                </div>
                 <div class="content-card">
-                    <h2>Analytics Dashboard</h2>
-                    <p style="color: #64748b;">Detailed analytics coming soon...</p>
+                    <h2>Feature Engagement Summary</h2>
+                    <p style="color:#64748b; margin-bottom:20px;">Click any feature in the sidebar to see detailed analytics.</p>
+                    <div id="analytics-summary-table" class="loading">Loading analytics...</div>
+                </div>
+            </div>
+
+            <!-- Calorie Tracking Section -->
+            <div id="feat-calories" class="section">
+                <div class="stats-grid" id="calories-stats-grid">
+                    <div class="stat-card green">
+                        <h3>Total Meals Logged</h3>
+                        <div class="value" id="cal-total-meals">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Meals This Week</h3>
+                        <div class="value" id="cal-recent-meals">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Unique Loggers (30d)</h3>
+                        <div class="value" id="cal-unique-loggers">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Daily Summaries (30d)</h3>
+                        <div class="value" id="cal-daily-summaries">-</div>
+                    </div>
+                    <div class="stat-card green">
+                        <h3>End-of-Day Loggers</h3>
+                        <div class="value" id="cal-eod-loggers">-</div>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <h2>Meal Type Breakdown (Last 30 Days)</h2>
+                    <div id="cal-meal-type-chart" style="margin-top:16px;"></div>
+                </div>
+            </div>
+
+            <!-- Workouts Section -->
+            <div id="feat-workouts" class="section">
+                <div class="stats-grid">
+                    <div class="stat-card green">
+                        <h3>Total Workouts</h3>
+                        <div class="value" id="wo-total">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Workouts This Week</h3>
+                        <div class="value" id="wo-recent">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Active Users (30d)</h3>
+                        <div class="value" id="wo-unique-users">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Custom Programs</h3>
+                        <div class="value" id="wo-custom-programs">-</div>
+                    </div>
+                    <div class="stat-card green">
+                        <h3>Active Programs</h3>
+                        <div class="value" id="wo-active-programs">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Personal Bests (30d)</h3>
+                        <div class="value" id="wo-pbs">-</div>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <h2>Workout Insights</h2>
+                    <p style="color:#64748b;">People completing workouts, building custom programs, and hitting personal bests.</p>
+                    <div id="wo-insights" style="margin-top:16px;"></div>
+                </div>
+            </div>
+
+            <!-- Battles & Duels Section -->
+            <div id="feat-battles" class="section">
+                <div class="content-card" style="margin-bottom:24px;">
+                    <h2>Tamagotchi Battles</h2>
+                    <div class="stats-grid" style="margin-bottom:0;">
+                        <div class="stat-card green">
+                            <h3>Total Battles</h3>
+                            <div class="value" id="bat-tam-total">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Last 30 Days</h3>
+                            <div class="value" id="bat-tam-recent">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Completed</h3>
+                            <div class="value" id="bat-tam-completed">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Unique Players (30d)</h3>
+                            <div class="value" id="bat-tam-players">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-card" style="margin-bottom:24px;">
+                    <h2>Quiz Battles</h2>
+                    <div class="stats-grid" style="margin-bottom:0;">
+                        <div class="stat-card green">
+                            <h3>Total Battles</h3>
+                            <div class="value" id="bat-quiz-total">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Last 30 Days</h3>
+                            <div class="value" id="bat-quiz-recent">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Completed</h3>
+                            <div class="value" id="bat-quiz-completed">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Unique Players (30d)</h3>
+                            <div class="value" id="bat-quiz-players">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <h2>Workout Duels</h2>
+                    <div class="stats-grid" style="margin-bottom:0;">
+                        <div class="stat-card green">
+                            <h3>Total Duels</h3>
+                            <div class="value" id="bat-duel-total">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Last 30 Days</h3>
+                            <div class="value" id="bat-duel-recent">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Completed</h3>
+                            <div class="value" id="bat-duel-completed">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Challenges Section -->
+            <div id="feat-challenges" class="section">
+                <div class="stats-grid">
+                    <div class="stat-card green">
+                        <h3>Total Challenges</h3>
+                        <div class="value" id="ch-total">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Active Now</h3>
+                        <div class="value" id="ch-active">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Completed</h3>
+                        <div class="value" id="ch-completed">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Participants</h3>
+                        <div class="value" id="ch-participants">-</div>
+                    </div>
+                    <div class="stat-card green">
+                        <h3>Unique Challengers</h3>
+                        <div class="value" id="ch-unique">-</div>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <h2>Recent Challenges</h2>
+                    <div id="ch-recent-table" class="loading">Loading challenges...</div>
+                </div>
+            </div>
+
+            <!-- Feed & Social Section -->
+            <div id="feat-social" class="section">
+                <div class="stats-grid">
+                    <div class="stat-card green">
+                        <h3>Total Feed Posts</h3>
+                        <div class="value" id="soc-total-posts">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Posts (30d)</h3>
+                        <div class="value" id="soc-recent-posts">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Unique Posters (30d)</h3>
+                        <div class="value" id="soc-unique-posters">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Reactions (30d)</h3>
+                        <div class="value" id="soc-reactions">-</div>
+                    </div>
+                    <div class="stat-card green">
+                        <h3>Comments (30d)</h3>
+                        <div class="value" id="soc-comments">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Story Views (30d)</h3>
+                        <div class="value" id="soc-views">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Friendships</h3>
+                        <div class="value" id="soc-friendships">-</div>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <h2>Post Type Breakdown (Last 30 Days)</h2>
+                    <p style="color:#64748b; margin-bottom:12px;">What are people sharing — photos or videos?</p>
+                    <div id="soc-media-breakdown" style="margin-top:16px;"></div>
+                </div>
+            </div>
+
+            <!-- Chat & Messaging Section -->
+            <div id="feat-chat" class="section">
+                <div class="content-card" style="margin-bottom:24px;">
+                    <h2>Group Chat</h2>
+                    <div class="stats-grid" style="margin-bottom:0;">
+                        <div class="stat-card green">
+                            <h3>Messages (30d)</h3>
+                            <div class="value" id="chat-group-30d">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Messages (7d)</h3>
+                            <div class="value" id="chat-group-7d">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Unique Chatters (30d)</h3>
+                            <div class="value" id="chat-group-users">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Win Shares (30d)</h3>
+                            <div class="value" id="chat-win-shares">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-card" style="margin-bottom:24px;">
+                    <h2>Private Messages (DMs)</h2>
+                    <div class="stats-grid" style="margin-bottom:0;">
+                        <div class="stat-card green">
+                            <h3>Messages (30d)</h3>
+                            <div class="value" id="chat-dm-30d">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Unique DM Users (30d)</h3>
+                            <div class="value" id="chat-dm-users">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <h2>Shannon AI Chat</h2>
+                    <div class="stats-grid" style="margin-bottom:0;">
+                        <div class="stat-card green">
+                            <h3>User Messages (30d)</h3>
+                            <div class="value" id="chat-community-30d">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quizzes & Learning Section -->
+            <div id="feat-learning" class="section">
+                <div class="stats-grid">
+                    <div class="stat-card green">
+                        <h3>Total Learners</h3>
+                        <div class="value" id="learn-total">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Active Learners (30d)</h3>
+                        <div class="value" id="learn-active">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Lessons Completed (30d)</h3>
+                        <div class="value" id="learn-lessons">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Milestones Achieved</h3>
+                        <div class="value" id="learn-milestones">-</div>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <h2>Active Learner Streaks</h2>
+                    <div id="learn-streaks-table" class="loading">Loading learner data...</div>
+                </div>
+            </div>
+
+            <!-- Check-ins & Wellness Section -->
+            <div id="feat-checkins" class="section">
+                <div class="stats-grid">
+                    <div class="stat-card green">
+                        <h3>Total Check-ins</h3>
+                        <div class="value" id="ci-total">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Check-ins (7d)</h3>
+                        <div class="value" id="ci-recent">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Unique Users (30d)</h3>
+                        <div class="value" id="ci-unique-users">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Weigh-ins (30d)</h3>
+                        <div class="value" id="ci-weighins">-</div>
+                    </div>
+                    <div class="stat-card green">
+                        <h3>Reflections (30d)</h3>
+                        <div class="value" id="ci-reflections">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Growth & Retention Section -->
+            <div id="feat-growth" class="section">
+                <div class="stats-grid">
+                    <div class="stat-card green">
+                        <h3>Total Referrals</h3>
+                        <div class="value" id="gr-referrals">-</div>
+                    </div>
+                </div>
+                <div class="content-card" style="margin-bottom:24px;">
+                    <h2>Weekly Signups (Last 12 Weeks)</h2>
+                    <div id="gr-weekly-signups" style="margin-top:16px;"></div>
+                </div>
+                <div class="content-card">
+                    <h2>Subscription Breakdown</h2>
+                    <div id="gr-subscription-breakdown" style="margin-top:16px;"></div>
                 </div>
             </div>
         </div>
@@ -557,6 +1132,9 @@
         let allUsers = [];
         let currentView = 'overview';
 
+        // Cache for analytics data
+        let analyticsCache = {};
+
         // Check admin authorization
         (async function checkAdminAuth() {
             const session = await authHelpers.getSession();
@@ -564,9 +1142,6 @@
                 window.location.href = '/login.html?redirect=/admin-dashboard.html';
                 return;
             }
-
-            // TODO: Check if user has admin role in admin_users table
-            // For now, we'll allow any logged-in user to access (you should restrict this in production)
 
             loadDashboardData();
         })();
@@ -586,9 +1161,436 @@
 
                 renderUsersList();
                 renderRecentUsers();
+
+                // Load feature analytics in background
+                loadAllFeatureAnalytics();
             } catch (error) {
                 console.error('Failed to load dashboard data:', error);
                 alert('Failed to load dashboard data. Please refresh the page.');
+            }
+        }
+
+        // Load all feature analytics
+        async function loadAllFeatureAnalytics() {
+            const btn = document.getElementById('refresh-analytics-btn');
+            if (btn) {
+                btn.disabled = true;
+                const icon = btn.querySelector('i');
+                if (icon) icon.classList.add('spinning');
+            }
+
+            try {
+                // Run all analytics queries in parallel
+                const [
+                    calorieStats,
+                    workoutStats,
+                    battleStats,
+                    challengeStats,
+                    socialStats,
+                    chatStats,
+                    learningStats,
+                    checkinStats,
+                    growthStats
+                ] = await Promise.all([
+                    dbHelpers.admin.getCalorieTrackingStats().catch(e => { console.error('Calorie stats error:', e); return null; }),
+                    dbHelpers.admin.getWorkoutStats().catch(e => { console.error('Workout stats error:', e); return null; }),
+                    dbHelpers.admin.getBattleStats().catch(e => { console.error('Battle stats error:', e); return null; }),
+                    dbHelpers.admin.getChallengeStats().catch(e => { console.error('Challenge stats error:', e); return null; }),
+                    dbHelpers.admin.getSocialStats().catch(e => { console.error('Social stats error:', e); return null; }),
+                    dbHelpers.admin.getChatStats().catch(e => { console.error('Chat stats error:', e); return null; }),
+                    dbHelpers.admin.getLearningStats().catch(e => { console.error('Learning stats error:', e); return null; }),
+                    dbHelpers.admin.getCheckinStats().catch(e => { console.error('Checkin stats error:', e); return null; }),
+                    dbHelpers.admin.getGrowthStats().catch(e => { console.error('Growth stats error:', e); return null; })
+                ]);
+
+                analyticsCache = { calorieStats, workoutStats, battleStats, challengeStats, socialStats, chatStats, learningStats, checkinStats, growthStats };
+
+                // Render analytics overview
+                renderAnalyticsOverview(analyticsCache);
+
+                // Render each section
+                if (calorieStats) renderCalorieSection(calorieStats);
+                if (workoutStats) renderWorkoutSection(workoutStats);
+                if (battleStats) renderBattleSection(battleStats);
+                if (challengeStats) renderChallengeSection(challengeStats);
+                if (socialStats) renderSocialSection(socialStats);
+                if (chatStats) renderChatSection(chatStats);
+                if (learningStats) renderLearningSection(learningStats);
+                if (checkinStats) renderCheckinSection(checkinStats);
+                if (growthStats) renderGrowthSection(growthStats);
+
+            } catch (error) {
+                console.error('Failed to load feature analytics:', error);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    const icon = btn.querySelector('i');
+                    if (icon) icon.classList.remove('spinning');
+                }
+            }
+        }
+
+        function refreshAllAnalytics() {
+            loadAllFeatureAnalytics();
+        }
+
+        // ── Render helpers ──────────────────────────────────────
+
+        function renderBarChart(containerId, data, colorClass) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const max = Math.max(...Object.values(data), 1);
+            let html = '<div class="bar-chart">';
+            for (const [label, value] of Object.entries(data)) {
+                const pct = Math.round((value / max) * 100);
+                html += `
+                    <div class="bar-row">
+                        <div class="bar-label">${label}</div>
+                        <div class="bar-track">
+                            <div class="bar-fill ${colorClass || ''}" style="width:${pct}%"></div>
+                        </div>
+                        <div class="bar-value">${value.toLocaleString()}</div>
+                    </div>`;
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderWeeklyChart(containerId, weeklyData) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const entries = Object.entries(weeklyData).sort((a, b) => a[0].localeCompare(b[0]));
+            if (entries.length === 0) {
+                container.innerHTML = '<p style="color:#64748b;">No signup data available.</p>';
+                return;
+            }
+            const max = Math.max(...entries.map(e => e[1]), 1);
+            let html = '<div class="weekly-chart">';
+            entries.forEach(([week, count]) => {
+                const pct = Math.round((count / max) * 100);
+                const d = new Date(week);
+                const label = `${d.getDate()}/${d.getMonth() + 1}`;
+                html += `
+                    <div class="week-bar-container">
+                        <div class="week-count">${count}</div>
+                        <div class="week-bar" style="height:${Math.max(pct, 3)}%"></div>
+                        <div class="week-label">${label}</div>
+                    </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // ── Analytics Overview ──────────────────────────────────
+
+        function renderAnalyticsOverview(cache) {
+            const { calorieStats, workoutStats, battleStats, challengeStats, socialStats, chatStats, checkinStats, learningStats } = cache;
+
+            // Top stat cards
+            setText('stat-workouts-30d', workoutStats?.recentWorkouts);
+            setText('stat-meals-30d', calorieStats?.recentMealLogs);
+            setText('stat-active-challenges', challengeStats?.activeChallenges);
+            const totalBattles30d = (battleStats?.tamagotchi?.recent || 0) + (battleStats?.quiz?.recent || 0) + (battleStats?.workoutDuels?.recent || 0);
+            setText('stat-battles-30d', totalBattles30d);
+            setText('stat-feed-posts-30d', socialStats?.recentStories);
+            const totalChat30d = (chatStats?.groupChat?.messages30d || 0) + (chatStats?.privateMessages?.messages30d || 0) + (chatStats?.communityChat?.messages30d || 0);
+            setText('stat-chat-30d', totalChat30d);
+            setText('stat-checkins-7d', checkinStats?.recentCheckins);
+            setText('stat-lessons-30d', learningStats?.recentLessons);
+
+            // Summary table
+            const summaryContainer = document.getElementById('analytics-summary-table');
+            if (!summaryContainer) return;
+
+            let html = `
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Total (All Time)</th>
+                            <th>Last 30 Days</th>
+                            <th>Active Users (30d)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="feat-name"><span class="feat-icon green"><i data-lucide="utensils" style="width:16px;height:16px;"></i></span>Calorie Tracking</td>
+                            <td class="feat-metric">${(calorieStats?.totalMealLogs || 0).toLocaleString()}</td>
+                            <td>${(calorieStats?.recentMealLogs || 0).toLocaleString()}</td>
+                            <td>${calorieStats?.uniqueMealLoggers || 0}</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name"><span class="feat-icon blue"><i data-lucide="dumbbell" style="width:16px;height:16px;"></i></span>Workouts</td>
+                            <td class="feat-metric">${(workoutStats?.totalWorkouts || 0).toLocaleString()}</td>
+                            <td>${(workoutStats?.recentWorkouts || 0).toLocaleString()}</td>
+                            <td>${workoutStats?.uniqueWorkoutUsers || 0}</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name"><span class="feat-icon red"><i data-lucide="swords" style="width:16px;height:16px;"></i></span>Tamagotchi Battles</td>
+                            <td class="feat-metric">${(battleStats?.tamagotchi?.total || 0).toLocaleString()}</td>
+                            <td>${(battleStats?.tamagotchi?.recent || 0).toLocaleString()}</td>
+                            <td>${battleStats?.tamagotchi?.uniquePlayers || 0}</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name"><span class="feat-icon purple"><i data-lucide="brain" style="width:16px;height:16px;"></i></span>Quiz Battles</td>
+                            <td class="feat-metric">${(battleStats?.quiz?.total || 0).toLocaleString()}</td>
+                            <td>${(battleStats?.quiz?.recent || 0).toLocaleString()}</td>
+                            <td>${battleStats?.quiz?.uniquePlayers || 0}</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name"><span class="feat-icon orange"><i data-lucide="trophy" style="width:16px;height:16px;"></i></span>Challenges</td>
+                            <td class="feat-metric">${(challengeStats?.totalChallenges || 0).toLocaleString()}</td>
+                            <td>${challengeStats?.activeChallenges || 0} active</td>
+                            <td>${challengeStats?.uniqueChallengers || 0}</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name"><span class="feat-icon teal"><i data-lucide="share-2" style="width:16px;height:16px;"></i></span>Feed / Stories</td>
+                            <td class="feat-metric">${(socialStats?.totalStories || 0).toLocaleString()}</td>
+                            <td>${(socialStats?.recentStories || 0).toLocaleString()}</td>
+                            <td>${socialStats?.uniquePosters || 0}</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name"><span class="feat-icon blue"><i data-lucide="messages-square" style="width:16px;height:16px;"></i></span>Group Chat</td>
+                            <td class="feat-metric">-</td>
+                            <td>${(chatStats?.groupChat?.messages30d || 0).toLocaleString()}</td>
+                            <td>${chatStats?.groupChat?.uniqueChatters || 0}</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name"><span class="feat-icon purple"><i data-lucide="mail" style="width:16px;height:16px;"></i></span>Private Messages</td>
+                            <td class="feat-metric">-</td>
+                            <td>${(chatStats?.privateMessages?.messages30d || 0).toLocaleString()}</td>
+                            <td>${chatStats?.privateMessages?.uniqueUsers || 0}</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name"><span class="feat-icon green"><i data-lucide="graduation-cap" style="width:16px;height:16px;"></i></span>Learning / Quizzes</td>
+                            <td class="feat-metric">${(learningStats?.totalLearners || 0).toLocaleString()}</td>
+                            <td>${(learningStats?.recentLessons || 0).toLocaleString()} lessons</td>
+                            <td>${learningStats?.activeLearners || 0}</td>
+                        </tr>
+                        <tr>
+                            <td class="feat-name"><span class="feat-icon orange"><i data-lucide="clipboard-check" style="width:16px;height:16px;"></i></span>Daily Check-ins</td>
+                            <td class="feat-metric">${(checkinStats?.totalCheckins || 0).toLocaleString()}</td>
+                            <td>${(checkinStats?.recentCheckins || 0).toLocaleString()} (7d)</td>
+                            <td>${checkinStats?.uniqueCheckinUsers || 0}</td>
+                        </tr>
+                    </tbody>
+                </table>`;
+
+            summaryContainer.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function setText(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = (val != null ? val : 0).toLocaleString();
+        }
+
+        // ── Calorie Section ─────────────────────────────────────
+
+        function renderCalorieSection(stats) {
+            setText('cal-total-meals', stats.totalMealLogs);
+            setText('cal-recent-meals', stats.recentMealLogs);
+            setText('cal-unique-loggers', stats.uniqueMealLoggers);
+            setText('cal-daily-summaries', stats.dailyNutritionEntries);
+            setText('cal-eod-loggers', stats.uniqueDailyLoggers);
+
+            if (Object.keys(stats.mealTypeBreakdown).length > 0) {
+                renderBarChart('cal-meal-type-chart', stats.mealTypeBreakdown);
+            } else {
+                const el = document.getElementById('cal-meal-type-chart');
+                if (el) el.innerHTML = '<p style="color:#64748b;">No meal data in the last 30 days.</p>';
+            }
+        }
+
+        // ── Workout Section ─────────────────────────────────────
+
+        function renderWorkoutSection(stats) {
+            setText('wo-total', stats.totalWorkouts);
+            setText('wo-recent', stats.recentWorkouts);
+            setText('wo-unique-users', stats.uniqueWorkoutUsers);
+            setText('wo-custom-programs', stats.customPrograms);
+            setText('wo-active-programs', stats.activePrograms);
+            setText('wo-pbs', stats.recentPBs);
+
+            const insightsEl = document.getElementById('wo-insights');
+            if (insightsEl) {
+                const data = {
+                    'Workouts completed': stats.totalWorkouts,
+                    'Custom programs created': stats.customPrograms,
+                    'Active programs': stats.activePrograms,
+                    'Personal bests (30d)': stats.recentPBs
+                };
+                renderBarChart('wo-insights', data, 'alt');
+            }
+        }
+
+        // ── Battle Section ──────────────────────────────────────
+
+        function renderBattleSection(stats) {
+            setText('bat-tam-total', stats.tamagotchi.total);
+            setText('bat-tam-recent', stats.tamagotchi.recent);
+            setText('bat-tam-completed', stats.tamagotchi.completed);
+            setText('bat-tam-players', stats.tamagotchi.uniquePlayers);
+
+            setText('bat-quiz-total', stats.quiz.total);
+            setText('bat-quiz-recent', stats.quiz.recent);
+            setText('bat-quiz-completed', stats.quiz.completed);
+            setText('bat-quiz-players', stats.quiz.uniquePlayers);
+
+            setText('bat-duel-total', stats.workoutDuels.total);
+            setText('bat-duel-recent', stats.workoutDuels.recent);
+            setText('bat-duel-completed', stats.workoutDuels.completed);
+        }
+
+        // ── Challenge Section ───────────────────────────────────
+
+        function renderChallengeSection(stats) {
+            setText('ch-total', stats.totalChallenges);
+            setText('ch-active', stats.activeChallenges);
+            setText('ch-completed', stats.completedChallenges);
+            setText('ch-participants', stats.totalParticipants);
+            setText('ch-unique', stats.uniqueChallengers);
+
+            const tableEl = document.getElementById('ch-recent-table');
+            if (!tableEl) return;
+
+            if (stats.recentChallenges.length === 0) {
+                tableEl.innerHTML = '<p style="color:#64748b;">No challenges found.</p>';
+                return;
+            }
+
+            let html = `
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Challenge</th>
+                            <th>Status</th>
+                            <th>Participants</th>
+                            <th>Start</th>
+                            <th>End</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            stats.recentChallenges.forEach(ch => {
+                const statusClass = ch.status === 'active' ? 'active' : (ch.status === 'completed' ? 'active' : 'inactive');
+                html += `
+                    <tr>
+                        <td class="user-email">${ch.name}</td>
+                        <td><span class="badge ${statusClass}">${ch.status}</span></td>
+                        <td style="font-weight:700;">${ch.participantCount}</td>
+                        <td>${ch.start_date ? new Date(ch.start_date).toLocaleDateString() : '-'}</td>
+                        <td>${ch.end_date ? new Date(ch.end_date).toLocaleDateString() : '-'}</td>
+                    </tr>`;
+            });
+
+            html += '</tbody></table>';
+            tableEl.innerHTML = html;
+        }
+
+        // ── Social Section ──────────────────────────────────────
+
+        function renderSocialSection(stats) {
+            setText('soc-total-posts', stats.totalStories);
+            setText('soc-recent-posts', stats.recentStories);
+            setText('soc-unique-posters', stats.uniquePosters);
+            setText('soc-reactions', stats.totalReactions);
+            setText('soc-comments', stats.totalComments);
+            setText('soc-views', stats.totalStoryViews);
+            setText('soc-friendships', stats.totalFriendships);
+
+            if (Object.keys(stats.mediaBreakdown).length > 0) {
+                renderBarChart('soc-media-breakdown', stats.mediaBreakdown, 'alt');
+            } else {
+                const el = document.getElementById('soc-media-breakdown');
+                if (el) el.innerHTML = '<p style="color:#64748b;">No feed posts in the last 30 days.</p>';
+            }
+        }
+
+        // ── Chat Section ────────────────────────────────────────
+
+        function renderChatSection(stats) {
+            setText('chat-group-30d', stats.groupChat.messages30d);
+            setText('chat-group-7d', stats.groupChat.messages7d);
+            setText('chat-group-users', stats.groupChat.uniqueChatters);
+            setText('chat-win-shares', stats.groupChat.winShares);
+            setText('chat-dm-30d', stats.privateMessages.messages30d);
+            setText('chat-dm-users', stats.privateMessages.uniqueUsers);
+            setText('chat-community-30d', stats.communityChat.messages30d);
+        }
+
+        // ── Learning Section ────────────────────────────────────
+
+        function renderLearningSection(stats) {
+            setText('learn-total', stats.totalLearners);
+            setText('learn-active', stats.activeLearners);
+            setText('learn-lessons', stats.recentLessons);
+            setText('learn-milestones', stats.totalMilestones);
+
+            const tableEl = document.getElementById('learn-streaks-table');
+            if (!tableEl) return;
+
+            if (stats.learnerDetails.length === 0) {
+                tableEl.innerHTML = '<p style="color:#64748b;">No active learners in the last 30 days.</p>';
+                return;
+            }
+
+            // Find user names from allUsers cache
+            const userMap = {};
+            allUsers.forEach(u => { userMap[u.id] = u.name || u.email; });
+
+            let html = `
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Lessons Done</th>
+                            <th>Current Streak</th>
+                            <th>Best Streak</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            stats.learnerDetails
+                .sort((a, b) => (b.current_learning_streak || 0) - (a.current_learning_streak || 0))
+                .forEach(l => {
+                    html += `
+                        <tr>
+                            <td class="user-email">${userMap[l.user_id] || l.user_id.slice(0,8)}</td>
+                            <td style="font-weight:700;">${l.total_lessons_completed || 0}</td>
+                            <td>${l.current_learning_streak || 0} days</td>
+                            <td>${l.longest_learning_streak || 0} days</td>
+                        </tr>`;
+                });
+
+            html += '</tbody></table>';
+            tableEl.innerHTML = html;
+        }
+
+        // ── Check-in Section ────────────────────────────────────
+
+        function renderCheckinSection(stats) {
+            setText('ci-total', stats.totalCheckins);
+            setText('ci-recent', stats.recentCheckins);
+            setText('ci-unique-users', stats.uniqueCheckinUsers);
+            setText('ci-weighins', stats.recentWeighIns);
+            setText('ci-reflections', stats.recentReflections);
+        }
+
+        // ── Growth Section ──────────────────────────────────────
+
+        function renderGrowthSection(stats) {
+            setText('gr-referrals', stats.totalReferrals);
+
+            // Weekly signups chart
+            renderWeeklyChart('gr-weekly-signups', stats.weeklySignups);
+
+            // Subscription breakdown
+            const subEl = document.getElementById('gr-subscription-breakdown');
+            if (subEl && Object.keys(stats.subscriptionBreakdown).length > 0) {
+                renderBarChart('gr-subscription-breakdown', stats.subscriptionBreakdown, 'warn');
+            } else if (subEl) {
+                subEl.innerHTML = '<p style="color:#64748b;">No subscription data available.</p>';
             }
         }
 
