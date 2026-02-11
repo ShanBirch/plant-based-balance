@@ -45763,6 +45763,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                     modelViewer.addEventListener('load', function onModelLoad() {
                         console.log('Model loaded:', currentEvolution.src);
                         console.log('Available animations:', modelViewer.availableAnimations);
+
+                        // Telemetry: log tamagotchi load to Supabase so we can verify it worked
+                        try {
+                            const db = window.dbHelpers || window.db;
+                            if (db?.users?.update && window.currentUser?.id) {
+                                db.users.update(window.currentUser.id, {
+                                    last_login: new Date().toISOString()
+                                }).catch(e => console.warn('Telemetry write failed:', e));
+                            }
+                        } catch(e) { /* telemetry is non-critical */ }
                         
                         // Force opaque materials for all parts
                         if (modelViewer.model) {
