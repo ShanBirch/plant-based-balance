@@ -268,6 +268,23 @@ async function applyAppTheme(themeKey) {
         box-shadow: 0 2px 10px rgba(0,0,0,0.03);
     }
     .app-logo { font-family: 'Playfair Display'; font-weight: 700; font-size: 1.25rem; color: var(--primary); }
+    .streak-header-widget {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: linear-gradient(135deg, #ff6400, #e85500);
+        border-radius: 20px;
+        padding: 5px 10px 5px 8px;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(255,100,0,0.25);
+    }
+    .streak-header-count {
+        font-weight: 800;
+        color: white;
+        font-size: 0.85rem;
+        font-family: 'Outfit', sans-serif;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
     .coin-header-widget {
         display: flex;
         align-items: center;
@@ -6608,6 +6625,10 @@ async function applyAppTheme(themeKey) {
     <div class="app-header">
         <div class="app-logo">Home</div>
         <div style="display:flex; align-items:center; gap:10px;">
+            <div id="tamagotchi-streak-container" class="streak-header-widget">
+                <span style="font-size: 0.85rem;">🔥</span>
+                <span id="tamagotchi-streak" class="streak-header-count">0</span>
+            </div>
             <div class="coin-header-widget" onclick="openCoinShop()">
                 <span class="coin-emoji">🪙</span>
                 <span class="coin-amount coin-balance-sync">0</span>
@@ -6771,12 +6792,8 @@ async function applyAppTheme(themeKey) {
                 </div>
             </div>
 
-            <!-- Streak & Rank Section -->
+            <!-- Rank Section -->
             <div style="display: flex; align-items: center; gap: 10px;">
-                <div id="tamagotchi-streak-container" style="background: rgba(255,100,0,0.15); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,100,0,0.25); display: flex; align-items: center; gap: 6px;">
-                    <span style="font-size: 0.95rem;">🔥</span>
-                    <span id="tamagotchi-streak" style="color: #ff6400; font-size: 0.9rem; font-weight: 800; font-family: 'Outfit', sans-serif;">0</span>
-                </div>
                 <div id="tamagotchi-rank" style="color: var(--secondary); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">NEWCOMER</div>
             </div>
         </div>
