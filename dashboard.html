@@ -7578,6 +7578,7 @@ async function applyAppTheme(themeKey) {
         await waitForAuth();
 
         if(window.currentUser) {
+            try {
             updateLoginProgress(25, 'Loading your profile...');
 
             loadChat();
@@ -7633,6 +7634,9 @@ async function applyAppTheme(themeKey) {
             if(typeof switchAppTab === 'function') {
                 const homeNav = document.querySelector('.nav-item');
                 switchAppTab('dashboard', homeNav);
+            }
+            } catch(initError) {
+                console.error('Initialization error (dismissing overlay anyway):', initError);
             }
 
             // --- Dismiss Login Loading Overlay ---
@@ -17074,7 +17078,7 @@ async function _loadProfileDataRealImpl() {
     }
 
     // Display dietary preference
-    const dietPref = data.dietary_preference || localStorage.getItem('dietaryPreference') || '';
+    const dietPref = profile?.dietary_preference || localStorage.getItem('dietaryPreference') || '';
     const dietDisplay = document.getElementById('profile-diet-display');
     if (dietDisplay) {
         const dietLabels = { omnivore: 'Omnivore', pescatarian: 'Pescatarian', vegetarian: 'Vegetarian', vegan: 'Vegan', flexitarian: 'Flexitarian' };
