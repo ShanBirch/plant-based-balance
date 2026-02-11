@@ -20734,16 +20734,23 @@ async function finishOnboarding() {
     const weighInCard = document.getElementById('daily-weigh-in-card');
     if (weighInCard) weighInCard.style.display = 'none';
 
-    // Grant 1200 starting coins to new accounts
+    // Grant 1200 starting coins to new accounts (if not already granted by trigger)
     if (window.currentUser) {
         try {
             const userId = window.currentUser.id || window.currentUser.user_id;
-            await supabase.rpc('credit_coins', {
-                p_user_id: userId,
-                p_amount: 1200,
-                p_reason: 'Welcome bonus - starting coins'
-            });
-            console.log('✅ Granted 1200 starting coins');
+            // Check current balance first to avoid double-granting
+            const { data: balance } = await supabase.rpc('get_coin_balance', { user_uuid: userId });
+            if (!balance || balance === 0) {
+                await supabase.rpc('credit_coins', {
+                    user_uuid: userId,
+                    coin_amount: 1200,
+                    txn_type: 'admin_grant',
+                    txn_description: 'Welcome bonus - starting coins'
+                });
+                console.log('✅ Granted 1200 starting coins');
+            } else {
+                console.log('✅ User already has coins (' + balance + '), skipping welcome grant');
+            }
             if (typeof showToast === 'function') {
                 showToast('Welcome! You received 1,200 coins! 🪙', 'success');
             }
@@ -20834,6 +20841,14 @@ async function finishOnboarding() {
         }
     }
 
+    // Refresh the FitGotchi character now that onboarding is complete and gender is set
+    if (typeof window.loadCharacterColorsFromDb === 'function') {
+        await window.loadCharacterColorsFromDb();
+    }
+    if (typeof loadPointsWidget === 'function') {
+        await loadPointsWidget();
+    }
+
     // Auto-add Coach Shannon as a friend for all new users
     if (window.currentUser) {
         const coachEmails = ['shannon@plantbased-balance.org', 'shannonbirch@cocospersonaltraining.com'];
@@ -20890,6 +20905,13 @@ async function closeWizardManually() {
          applyGenderSpecificUI();
      }
 
+     // Refresh the FitGotchi character
+     if (typeof window.loadCharacterColorsFromDb === 'function') {
+         await window.loadCharacterColorsFromDb();
+     }
+     if (typeof loadPointsWidget === 'function') {
+         await loadPointsWidget();
+     }
 }
 
 function toggleWizardPeriodInput() {
@@ -38710,25 +38732,30 @@ async function loadPointsWidget() {
         widget.style.display = 'block';
     }
 
+    // Default points data — ensures baby model always loads even if DB/auth fail
+    const defaultPointsData = { current_points: 0, lifetime_points: 0, current_streak: 0 };
+
     try {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) {
             console.log('No user session, showing default points widget');
-            updatePointsDisplay({ current_points: 0, current_streak: 0 });
+            updatePointsDisplay(defaultPointsData);
             return;
         }
 
         const userId = session.user.id;
 
         // Try to get points data, fall back to defaults if table doesn't exist
-        let pointsData = { current_points: 0, current_streak: 0 };
+        let pointsData = defaultPointsData;
         try {
-            const data = await window.db?.points?.getPoints(userId);
+            // Use window.dbHelpers (primary) or window.db (alias) — both set by supabase.js
+            const db = window.dbHelpers || window.db;
+            const data = await db?.points?.getPoints(userId);
             if (data) {
                 pointsData = data;
             }
         } catch (dbError) {
-            console.log('Points table not set up yet, using defaults');
+            console.log('Points table not set up yet, using defaults:', dbError.message || dbError);
         }
 
         // Update points display
@@ -38736,8 +38763,8 @@ async function loadPointsWidget() {
 
     } catch (error) {
         console.error('Error loading points widget:', error);
-        // Still show with defaults
-        updatePointsDisplay({ current_points: 0, current_streak: 0 });
+        // Still show with defaults — this guarantees the tamagotchi baby model appears
+        updatePointsDisplay(defaultPointsData);
     }
 }
 
@@ -41246,6 +41273,20 @@ async function uploadWorkoutPhoto(file) {
 document.addEventListener('DOMContentLoaded', function() {
     // Load points widget after a short delay to ensure auth is ready
     setTimeout(loadPointsWidget, 1000);
+
+    // Safety net: if the tamagotchi model still has no src after 5 seconds, force-load it
+    setTimeout(function() {
+        const modelViewer = document.getElementById('tamagotchi-model');
+        if (modelViewer && !modelViewer.getAttribute('src')) {
+            console.warn('Tamagotchi model still has no src after 5s — force-loading baby model');
+            const babySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+            modelViewer.setAttribute('src', babySrc);
+            // Also retry loading the full character data
+            if (typeof loadPointsWidget === 'function') {
+                loadPointsWidget();
+            }
+        }
+    }, 5000);
 });
 </script>
 
@@ -45722,6 +45763,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                     modelViewer.addEventListener('load', function onModelLoad() {
                         console.log('Model loaded:', currentEvolution.src);
                         console.log('Available animations:', modelViewer.availableAnimations);
+
+                        // Telemetry: log tamagotchi load to Supabase so we can verify it worked
+                        try {
+                            const db = window.dbHelpers || window.db;
+                            if (db?.users?.update && window.currentUser?.id) {
+                                db.users.update(window.currentUser.id, {
+                                    last_login: new Date().toISOString()
+                                }).catch(e => console.warn('Telemetry write failed:', e));
+                            }
+                        } catch(e) { /* telemetry is non-critical */ }
                         
                         // Force opaque materials for all parts
                         if (modelViewer.model) {
@@ -45744,6 +45795,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                         }, 500);
 
                         modelViewer.removeEventListener('load', onModelLoad);
+                    }, { once: true });
+
+                    // Retry on model load error (network failure, 404, etc.)
+                    modelViewer.addEventListener('error', function onModelError(e) {
+                        console.warn('Model failed to load, retrying in 3s:', e);
+                        modelViewer.removeEventListener('error', onModelError);
+                        setTimeout(() => {
+                            modelViewer.setAttribute('src', '');
+                            modelViewer.setAttribute('src', currentEvolution.src);
+                        }, 3000);
                     }, { once: true });
                 } else {
                     // Model already loaded, just apply colors if not already done
@@ -45872,6 +45933,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏠', theme: 'tamagotchi-bg-home', image: './assets/home.jpeg' },
             { name: 'beach', displayName: 'Beach', unlockLevel: 30, icon: '🏖️', theme: 'tamagotchi-bg-beach', image: './assets/beach.jpeg' },
             { name: 'mountain', displayName: 'Mountain', unlockLevel: 40, icon: '⛰️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
+            { name: 'dojo', displayName: 'Battle Dojo', unlockLevel: 50, icon: '🥋', theme: 'tamagotchi-bg-dojo', image: './assets/battle_dojo_bg.jpeg' },
         ];
         // Expose globally so battle restore can look up the saved background image
         window.BACKGROUND_UNLOCKS = BACKGROUND_UNLOCKS;
@@ -46240,6 +46302,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             const selectedEl = document.querySelector(`.bg-selector-item[data-bg="${bgName}"]`);
             if (selectedEl) selectedEl.classList.add('bg-selected');
+
+            // Easter egg: Play DBZ video when dojo background is selected for the first time
+            if (bgName === 'dojo') {
+                const dojoEggKey = 'dojo_bg_easter_egg_seen';
+                if (!localStorage.getItem(dojoEggKey)) {
+                    localStorage.setItem(dojoEggKey, 'true');
+                    setTimeout(() => {
+                        if (typeof openExerciseVideo === 'function') {
+                            openExerciseVideo(
+                                'https://f005.backblazeb2.com/file/shannonsvideos/download_20260120_225718_0000.mp4',
+                                'Battle Dojo Unlocked!',
+                                true
+                            );
+                        }
+                    }, 300);
+                }
+            }
         };
 
         // Listen for initial model load to log available animations and apply colors
