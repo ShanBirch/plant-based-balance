@@ -20841,6 +20841,14 @@ async function finishOnboarding() {
         }
     }
 
+    // Refresh the FitGotchi character now that onboarding is complete and gender is set
+    if (typeof window.loadCharacterColorsFromDb === 'function') {
+        await window.loadCharacterColorsFromDb();
+    }
+    if (typeof loadPointsWidget === 'function') {
+        await loadPointsWidget();
+    }
+
     // Auto-add Coach Shannon as a friend for all new users
     if (window.currentUser) {
         const coachEmails = ['shannon@plantbased-balance.org', 'shannonbirch@cocospersonaltraining.com'];
@@ -20897,6 +20905,13 @@ async function closeWizardManually() {
          applyGenderSpecificUI();
      }
 
+     // Refresh the FitGotchi character
+     if (typeof window.loadCharacterColorsFromDb === 'function') {
+         await window.loadCharacterColorsFromDb();
+     }
+     if (typeof loadPointsWidget === 'function') {
+         await loadPointsWidget();
+     }
 }
 
 function toggleWizardPeriodInput() {
@@ -45751,6 +45766,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                         }, 500);
 
                         modelViewer.removeEventListener('load', onModelLoad);
+                    }, { once: true });
+
+                    // Retry on model load error (network failure, 404, etc.)
+                    modelViewer.addEventListener('error', function onModelError(e) {
+                        console.warn('Model failed to load, retrying in 3s:', e);
+                        modelViewer.removeEventListener('error', onModelError);
+                        setTimeout(() => {
+                            modelViewer.setAttribute('src', '');
+                            modelViewer.setAttribute('src', currentEvolution.src);
+                        }, 3000);
                     }, { once: true });
                 } else {
                     // Model already loaded, just apply colors if not already done
