@@ -5485,9 +5485,73 @@ async function applyAppTheme(themeKey) {
         box-shadow: 0 0 8px rgba(74, 222, 128, 0.3);
     }
 
+    /* ===== Login Loading Overlay ===== */
+    .login-loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg, #f9f9f7);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    .login-loading-overlay.fade-out {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+    .login-loading-logo {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 32px;
+        border-radius: 20px;
+        animation: loadingPulse 2s ease-in-out infinite;
+    }
+    @keyframes loadingPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.85; }
+    }
+    .login-loading-text {
+        font-family: 'Inter', sans-serif;
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--text-muted, #718096);
+        margin-bottom: 20px;
+        min-height: 22px;
+        transition: opacity 0.3s ease;
+    }
+    .login-loading-bar-track {
+        width: 220px;
+        height: 6px;
+        background: rgba(0,0,0,0.08);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .login-loading-bar-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--primary, #7BA883), var(--primary-light, #98C9A3));
+        border-radius: 3px;
+        transition: width 0.6s ease;
+    }
+
     </style>
 </head>
 <body>
+<!-- Login Loading Overlay -->
+<div id="login-loading-overlay" class="login-loading-overlay">
+    <img src="assets/Logo_dots.jpg" alt="FitGotchi" class="login-loading-logo">
+    <div id="login-loading-text" class="login-loading-text">Loading your dashboard...</div>
+    <div class="login-loading-bar-track">
+        <div id="login-loading-bar" class="login-loading-bar-fill"></div>
+    </div>
+</div>
+
 <!-- Learning Mascot Character (Mini Tamagotchi) -->
 <div class="learn-mascot" id="learnMascot">
     <div class="learn-mascot-speech" id="learnMascotSpeech">You got this!</div>
@@ -6535,6 +6599,16 @@ async function applyAppTheme(themeKey) {
         // NOTE: Do NOT call applyGenderTheme() here - it must run AFTER loadProfileData()
         // restores gender from the database, otherwise it defaults to female
 
+        // --- Login Loading Bar Progress Helper ---
+        function updateLoginProgress(percent, message) {
+            const bar = document.getElementById('login-loading-bar');
+            const text = document.getElementById('login-loading-text');
+            if (bar) bar.style.width = percent + '%';
+            if (text) text.textContent = message;
+        }
+
+        updateLoginProgress(10, 'Authenticating...');
+
         // Wait for Auth before loading user-specific data
         const waitForAuth = () => new Promise(resolve => {
             if(window.currentUser) return resolve(window.currentUser);
@@ -6551,6 +6625,8 @@ async function applyAppTheme(themeKey) {
         await waitForAuth();
 
         if(window.currentUser) {
+            updateLoginProgress(25, 'Loading your profile...');
+
             loadChat();
             loadJournalHistory();
             await syncQuizDataToDb(); // Sync quiz data first
@@ -6565,6 +6641,8 @@ async function applyAppTheme(themeKey) {
             await loadProfileData(); // Ensure profile is loaded (includes gender restore)
             initProgramDate(); // Ensure program date is synced
 
+            updateLoginProgress(50, 'Setting up your experience...');
+
             // Apply saved theme AFTER gender is loaded from database
             const savedTheme = localStorage.getItem('userThemePreference') || 'default';
             if (typeof applyAppTheme === 'function') {
@@ -6577,10 +6655,14 @@ async function applyAppTheme(themeKey) {
             // Check if essential quiz data is missing and trigger onboarding wizard
             await checkAndTriggerOnboarding();
 
+            updateLoginProgress(65, 'Preparing your FitGotchi...');
+
             // Load character colors and gender from database (must await to set correct evolution path)
             if (typeof window.loadCharacterColorsFromDb === 'function') {
                 await window.loadCharacterColorsFromDb();
             }
+
+            updateLoginProgress(80, 'Almost there...');
 
             // Update dashboard workout card to show today's recommended workout
             if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
@@ -6599,6 +6681,52 @@ async function applyAppTheme(themeKey) {
                 const homeNav = document.querySelector('.nav-item');
                 switchAppTab('dashboard', homeNav);
             }
+
+            // --- Dismiss Login Loading Overlay ---
+            // Wait for the character model to finish loading, then fade out
+            (function dismissLoginOverlay() {
+                const overlay = document.getElementById('login-loading-overlay');
+                if (!overlay) return;
+
+                let dismissed = false;
+                function fadeOut() {
+                    if (dismissed) return;
+                    dismissed = true;
+                    updateLoginProgress(100, 'Ready!');
+                    setTimeout(() => {
+                        overlay.classList.add('fade-out');
+                        // Remove from DOM after transition
+                        overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+                    }, 300);
+                }
+
+                const modelViewer = document.getElementById('tamagotchi-model');
+                if (modelViewer && !modelViewer.getAttribute('src')) {
+                    // Model src not set yet — wait for it to load
+                    const onSrcSet = new MutationObserver(() => {
+                        if (modelViewer.getAttribute('src')) {
+                            onSrcSet.disconnect();
+                            modelViewer.addEventListener('load', fadeOut, { once: true });
+                            // Safety timeout if model load takes too long
+                            setTimeout(fadeOut, 8000);
+                        }
+                    });
+                    onSrcSet.observe(modelViewer, { attributes: true, attributeFilter: ['src'] });
+                    // Absolute safety timeout
+                    setTimeout(fadeOut, 12000);
+                } else if (modelViewer && modelViewer.getAttribute('src')) {
+                    // src already set — wait for load or dismiss if already loaded
+                    if (modelViewer.loaded) {
+                        fadeOut();
+                    } else {
+                        modelViewer.addEventListener('load', fadeOut, { once: true });
+                        setTimeout(fadeOut, 8000);
+                    }
+                } else {
+                    // No model viewer found — just dismiss after a short delay
+                    setTimeout(fadeOut, 2000);
+                }
+            })();
 
             // --- TEST DATA SEEDING ---
             async function seedTestAccount() {
@@ -6682,6 +6810,10 @@ async function applyAppTheme(themeKey) {
             // Auto-show Daily Wellness check-in (once per day)
             // NOTE: Moved to after onboarding completes - handled by finishOnboarding()
             // This ensures check-in only shows AFTER user selects gender in onboarding
+        } else {
+            // Auth failed — dismiss overlay (auth guard will redirect to login)
+            const overlay = document.getElementById('login-loading-overlay');
+            if (overlay) overlay.remove();
         }
     });
 
