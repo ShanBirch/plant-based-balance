@@ -13188,6 +13188,11 @@ function openWorkoutBuilder() {
     hideAllAppViews();
     document.getElementById('view-workout-builder').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
+
+    // Push navigation state for Android back button
+    if (typeof pushNavigationState === 'function') {
+        pushNavigationState('view-workout-builder', () => switchAppTab('movement-tab'));
+    }
 }
 
 // Initialize filter state
@@ -26852,6 +26857,16 @@ function initializeMovementSwipeNavigation() {
     // Activity success view
     enableSwipeBackNavigation('view-activity-success', () => {
         closeActivitySuccess();
+    });
+
+    // Workout builder view
+    enableSwipeBackNavigation('view-workout-builder', () => {
+        switchAppTab('movement-tab');
+    });
+
+    // Program builder view
+    enableSwipeBackNavigation('view-program-builder', () => {
+        closeProgramBuilder();
     });
 
     // Challenge views
@@ -42013,15 +42028,13 @@ window.shareActivityCardToFeed = shareActivityCardToFeed;
 
 function closeLogActivity() {
     document.getElementById('view-log-activity').style.display = 'none';
-    document.querySelector('.bottom-nav').style.display = 'flex';
-    showView('movement-tab');
+    switchAppTab('movement-tab');
 }
 window.closeLogActivity = closeLogActivity;
 
 function closeActivitySuccess() {
     document.getElementById('view-activity-success').style.display = 'none';
-    document.querySelector('.bottom-nav').style.display = 'flex';
-    showView('movement-tab');
+    switchAppTab('movement-tab');
 }
 window.closeActivitySuccess = closeActivitySuccess;
 
