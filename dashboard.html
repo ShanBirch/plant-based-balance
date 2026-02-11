@@ -13736,14 +13736,14 @@ function viewWorkoutHistoryDetail(date) {
                 <!-- Intro Message -->
                 <div style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 15px; max-width: 85%;">
                     <div style="background: white; padding: 12px 16px; border-radius: 0 16px 16px 16px; border: 1px solid #e2e8f0; color: var(--text-main);">
-                        <p style="margin: 0; font-size: 0.9rem; line-height: 1.5;">Hey there! I'm Shannon, your reset coach. Leave a message here about your progress or any questions. I'll review it and get back to you with guidance!</p>
+                        <p style="margin: 0; font-size: 0.9rem; line-height: 1.5;">Hey! I'm Shannon. Send me a message any time - I'll get a notification and reply as soon as I can!</p>
                     </div>
                     <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px; margin-left: 2px;">Shannon</div>
                 </div>
             </div>
             <!-- Input -->
             <div style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
-                <input type="text" id="coach-chat-input" placeholder="Ask your coach..." style="flex: 1; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; outline: none;" onkeypress="if(event.key==='Enter') submitCoachMessage()">
+                <input type="text" id="coach-chat-input" placeholder="Message Shannon..." style="flex: 1; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; outline: none;" onkeypress="if(event.key==='Enter') submitCoachMessage()">
                 <button onclick="submitCoachMessage()" style="width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
@@ -20870,6 +20870,23 @@ async function finishOnboarding() {
             } catch (e) {
                 console.warn('Could not auto-add coach (' + coachEmail + ') as friend:', e);
             }
+        }
+
+        // Send welcome message from coach to new user
+        try {
+            const profile = await window.getUserProfile();
+            const userName = profile?.name || '';
+            await fetch('/.netlify/functions/send-welcome-message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    newUserId: userId,
+                    userName: userName
+                })
+            });
+            console.log('Welcome message sent to new user');
+        } catch (e) {
+            console.warn('Could not send welcome message:', e);
         }
     }
 
@@ -29190,77 +29207,120 @@ body.dbz-theme-active .profile-icon {
 </style>
 
 <script>
-// --- COACH CHAT DEBOUNCE LOGIC ---
-let coachMessageBuffer = [];
-let coachDebounceTimer = null;
+// --- COACH CHAT - DIRECT MESSAGING ---
+const COACH_EMAILS = ['shannon@plantbased-balance.org', 'shannonbirch@cocospersonaltraining.com'];
+window._coachUserId = null;
+
+// Look up coach user ID by email
+async function getCoachUserId() {
+    if (window._coachUserId) return window._coachUserId;
+
+    for (const email of COACH_EMAILS) {
+        try {
+            const { data } = await window.supabaseClient
+                .from('users')
+                .select('id')
+                .eq('email', email)
+                .maybeSingle();
+
+            if (data && data.id) {
+                window._coachUserId = data.id;
+                return window._coachUserId;
+            }
+        } catch (e) {
+            console.warn('Could not look up coach by email:', email, e);
+        }
+    }
+
+    // Fallback: get first admin user
+    try {
+        const { data } = await window.supabaseClient
+            .from('admin_users')
+            .select('user_id')
+            .limit(1)
+            .maybeSingle();
+
+        if (data && data.user_id) {
+            window._coachUserId = data.user_id;
+            return window._coachUserId;
+        }
+    } catch (e) {
+        console.warn('Could not look up admin user:', e);
+    }
+
+    return null;
+}
+
+// Send a push notification to a user when they receive a DM
+async function sendDMNotification(recipientId, messageText) {
+    try {
+        const profile = await window.getUserProfile();
+        const senderName = profile?.name || 'Someone';
+
+        await fetch('/.netlify/functions/send-dm-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                recipientId: recipientId,
+                senderName: senderName,
+                messageText: messageText
+            })
+        });
+    } catch (error) {
+        console.error('Error sending DM notification:', error);
+    }
+}
 
 window.submitCoachMessage = async function() {
     const input = document.getElementById('coach-chat-input');
-    if(!input) return;
+    if (!input) return;
     const text = input.value.trim();
     if (!text) return;
-    
-    // 1. Render User Message Immediately
+
+    input.value = '';
+
+    // Render user message immediately
     const container = document.getElementById('chat-messages-container');
-    if(container) {
-        // ... (Rendering logic identical) ...
+    if (container) {
         const rowDiv = document.createElement('div');
         rowDiv.style.cssText = "display: flex; justify-content: flex-end; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;";
         rowDiv.innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: flex-end; max-width: 80%;">
                 <div style="background: var(--chat-bg-user); color: var(--chat-text-user); padding: 12px 18px; border-radius: 18px 18px 0 18px; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">${text}</div>
-                <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-right: 5px;">You Just now</span>
+                <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-right: 5px;">You  Just now</span>
             </div>
             <img src="https://ui-avatars.com/api/?name=You&background=cbd5e1&color=fff" style="width: 36px; height: 36px; border-radius: 50%; margin-left: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
         `;
         container.appendChild(rowDiv);
         scrollToBottomOfChat();
-
-        // Save to DB immediately
-        try {
-            await saveToHistory('user', text);
-        } catch (dbError) {
-            console.error("❌ Failed to save user message to DB:", dbError);
-            alert("Warning: Message may not have been saved. Check console.");
-        }
     }
-    
-    input.value = '';
 
-    // 2. Buffer the Message
-    coachMessageBuffer.push(text);
+    // Send as a direct message (nudge) to the coach
+    const coachId = await getCoachUserId();
+    if (!coachId) {
+        console.error('Could not find coach user ID');
+        return;
+    }
 
-    // 3. Clear existing timer
-    if (coachDebounceTimer) clearTimeout(coachDebounceTimer);
+    try {
+        const { error } = await window.supabaseClient
+            .from('nudges')
+            .insert({
+                sender_id: window.currentUser.id,
+                receiver_id: coachId,
+                message: text
+            });
 
-    // 4. Set Logic to Fire
-    coachDebounceTimer = setTimeout(() => {
-        const combinedText = coachMessageBuffer.join('\n');
-        // Track how many messages are in this buffer before clearing
-        window._lastBufferedCount = coachMessageBuffer.length;
-        coachMessageBuffer = []; // Clear buffer
-        triggerCoachResponse(combinedText);
-    }, 15000); // 15s wait
+        if (error) throw error;
+
+        // Send push notification to the coach
+        sendDMNotification(coachId, text);
+    } catch (error) {
+        console.error('Error sending message to coach:', error);
+    }
 };
 </script>
 
-<script>
-    // ... (Onboarding script skipped in replacement context, assuming only replacing target lines) ...
-    // Wait, I can't skip lines if I target a range.
-    // I need to target specifically submitCoachMessage to triggerCoachResponse.
-    // But they are far apart (8922 vs 9245).
-    // I should do two separate replacements.
-    
-    // Replacement 1: submitCoachMessage
-    // Replacement 2: triggerCoachResponse
-    
-    // I will return logic for just Replacement 1 for now.
-    
-    // Wait, the tool validates TargetContent.
-    // I will just Refactor submitCoachMessage first.
-    
-
-</script>
 
 <script>
     // Initialize Onboarding
@@ -29676,135 +29736,7 @@ async function gatherContext() {
     };
 }
 
-window.triggerCoachResponse = async function(userMsg) {
-    const container = document.getElementById('chat-messages-container');
-    const typingDiv = document.createElement('div');
-    typingDiv.id = 'coach-typing';
-    typingDiv.style.cssText = "display: flex; align-items: center; margin-bottom: 20px; margin-left:10px;";
-    typingDiv.innerHTML = `
-        <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both;"></div>
-        <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; margin: 0 4px; animation: bounce 1.4s infinite ease-in-out both 0.16s;"></div>
-        <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both 0.32s;"></div>
-    `;
-    if(container) {
-        container.appendChild(typingDiv);
-        scrollToBottomOfChat();
-    }
-
-    const removeTypingIndicator = () => {
-        const el = document.getElementById('coach-typing');
-        if(el) el.remove();
-    };
-
-    let context = await gatherContext();
-    const history = await getChatHistory();
-
-    // Determine Conversation Status (New vs Continuing)
-    // Simplified: check if there's been a recent coach message
-    let conversationStatus = 'new';
-
-    if (history.length > 0) {
-        // Find the most recent coach/model message
-        const lastCoachMsg = [...history].reverse().find(m => m.role === 'model' || m.role === 'assistant');
-        if (lastCoachMsg) {
-            const gap = Date.now() - lastCoachMsg.timestamp;
-            if (gap < (60 * 60 * 1000)) { // 1 hour threshold
-                conversationStatus = 'continuing';
-            }
-        }
-    }
-
-    // Determine how many messages are in the current buffer to avoid sending them twice
-    // (since they were already pushed to history in submitCoachMessage)
-    const messagesToSlice = (typeof window._lastBufferedCount === 'number') ? window._lastBufferedCount : 0;
-    const historyContext = history.slice(0, history.length - messagesToSlice);
-
-    // Enhanced timestamp context with Brisbane time for each message
-    const now = new Date();
-    const payloadHistory = historyContext.map(m => {
-        const msgDate = new Date(m.timestamp);
-        const msgBneTime = msgDate.toLocaleString("en-US", {
-            timeZone: "Australia/Brisbane",
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
-        return {
-            role: m.role === 'user' ? 'user' : 'model',
-            text: m.text,
-            timestamp: m.timestamp,
-            brisbaneTime: msgBneTime
-        };
-    });
-
-    // Get current Brisbane time
-    const currentBneTime = now.toLocaleString("en-US", {
-        timeZone: "Australia/Brisbane",
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-    });
-
-    try {
-        const response = await fetch('/.netlify/functions/ai-chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                mode: 'coach',
-                message: userMsg,
-                contextData: context,
-                chatHistory: payloadHistory,
-                conversationStatus: conversationStatus,
-                currentDateTime: currentBneTime,
-                brisbaneTime: currentBneTime
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            removeTypingIndicator();
-            throw new Error(data.error?.message || "Connection Issue");
-        }
-
-        if (data.reply) {
-            removeTypingIndicator();
-
-            // APPROVAL FLOW: Save response as pending instead of displaying immediately
-            const fullResponse = data.reply;
-
-            // Get current user ID for the pending response
-            const user = await window.supabaseClient.auth.getUser();
-            const currentUserId = user?.data?.user?.id;
-
-            if (currentUserId) {
-                // Save to pending_coach_responses table
-                await db.pendingResponses.create(
-                    currentUserId,
-                    fullResponse,
-                    userMsg,
-                    { context: context, conversationStatus: conversationStatus }
-                );
-
-                // Notify admin about pending response
-                await notifyAdminOfPendingResponse(currentUserId, fullResponse);
-            }
-        } else {
-            removeTypingIndicator();
-        }
-    } catch (err) {
-        console.error("Coach Error", err);
-        removeTypingIndicator();
-        // Silent fail or very subtle hint - but never "AI Error"
-    }
-};
+// triggerCoachResponse removed - coach chat now uses direct messaging via nudges table
 
 // ==========================================
 // APPROVAL SYSTEM FUNCTIONS
@@ -31139,116 +31071,116 @@ window.openAsClient = function() {
 
 // Old submitCoachMessage removed as it is now defined earlier in the file.
 
-async function getChatHistory() {
-    if(!window.currentUser) return [];
-    // Get both 'coach' and legacy 'shannon' messages and merge them
-    const [coachHistory, shannonHistory] = await Promise.all([
-        dbHelpers.conversations.getHistory(window.currentUser.id, 'coach'),
-        dbHelpers.conversations.getHistory(window.currentUser.id, 'shannon')
-    ]);
-    // Combine and sort by timestamp
-    const combined = [...coachHistory, ...shannonHistory];
-    combined.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    return combined;
-}
-
-async function saveToHistory(role, text) {
-    if(!window.currentUser) return;
-    await dbHelpers.conversations.create(window.currentUser.id, 'coach', role, text);
-}
-
+// Load coach chat history from nudges table
 window.loadChatHistory = async function() {
     const container = document.getElementById('chat-messages-container');
-    if (!container) return;
-    
-    // Clear waiting for load
-    container.innerHTML = ''; 
+    if (!container || !window.currentUser) return;
 
-    const history = await getChatHistory();
+    container.innerHTML = '';
 
-    // Only show default welcome message if there's no chat history
-    if (history.length === 0) {
-        const profile = await window.getUserProfile();
-        const userName = profile?.name || '';
-        const greeting = userName ? `Hey ${userName}!` : 'Hey!';
-        container.innerHTML = `
-            <div style="display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;">
-                 <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
-                 <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
-                     <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
-                         <p style="margin: 0; white-space: pre-wrap;">${greeting} Shannon here. Thanks so much for joining the app! If you need anything or have ideas for new features, just let me know and I'll see what I can do.</p>
-                     </div>
-                     <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon  Always here</span>
-                 </div>
-            </div>`;
+    const coachId = await getCoachUserId();
+    if (!coachId) {
+        container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted);">Could not load messages.</div>`;
+        return;
     }
 
-    history.forEach(msg => {
-        const isUser = msg.role === 'user';
-        const rowDiv = document.createElement('div');
-        rowDiv.style.cssText = `display: flex; justify-content: ${isUser ? 'flex-end' : 'flex-start'}; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;`;
-        
-        const timestamp = msg.timestamp || msg.created_at || Date.now();
-        const timeStr = new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        const msgText = msg.message_text || msg.text || '';
+    try {
+        const { data: messages, error } = await window.supabaseClient
+            .from('nudges')
+            .select('*')
+            .or(`and(sender_id.eq.${window.currentUser.id},receiver_id.eq.${coachId}),and(sender_id.eq.${coachId},receiver_id.eq.${window.currentUser.id})`)
+            .order('created_at', { ascending: true })
+            .limit(100);
 
-        if (isUser) {
-             rowDiv.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: flex-end; max-width: 80%;">
-                    <div style="background: var(--chat-bg-user); color: var(--chat-text-user); padding: 12px 18px; border-radius: 18px 18px 0 18px; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">${msgText}</div>
-                    <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-right: 5px;">You ${timeStr}</span>
-                </div>
-                <img src="https://ui-avatars.com/api/?name=You&background=cbd5e1&color=fff" style="width: 36px; height: 36px; border-radius: 50%; margin-left: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-            `;
-        } else {
-             rowDiv.innerHTML = `
-                <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
-                <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
-                    <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
-                        <p style="margin: 0; white-space: pre-wrap;">${msgText.replace(/\*\*/g, '').replace(/\*/g, '')}</p>
-                    </div>
-                    <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon ${timeStr}</span>
-                </div>
-            `;
+        if (error) throw error;
+
+        if (!messages || messages.length === 0) {
+            const profile = await window.getUserProfile();
+            const userName = profile?.name || '';
+            const greeting = userName ? `Hey ${userName}!` : 'Hey!';
+            container.innerHTML = `
+                <div style="display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;">
+                     <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
+                     <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
+                         <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
+                             <p style="margin: 0; white-space: pre-wrap;">${greeting} Shannon here. Send me a message any time!</p>
+                         </div>
+                         <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon</span>
+                     </div>
+                </div>`;
+            return;
         }
-        container.appendChild(rowDiv);
-    });
-    scrollToBottomOfChat();
+
+        messages.forEach(msg => {
+            const isUser = msg.sender_id === window.currentUser.id;
+            const rowDiv = document.createElement('div');
+            rowDiv.style.cssText = `display: flex; justify-content: ${isUser ? 'flex-end' : 'flex-start'}; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;`;
+
+            const timeStr = new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const msgText = msg.message || '';
+
+            if (isUser) {
+                rowDiv.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; max-width: 80%;">
+                        <div style="background: var(--chat-bg-user); color: var(--chat-text-user); padding: 12px 18px; border-radius: 18px 18px 0 18px; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">${msgText}</div>
+                        <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-right: 5px;">You  ${timeStr}</span>
+                    </div>
+                    <img src="https://ui-avatars.com/api/?name=You&background=cbd5e1&color=fff" style="width: 36px; height: 36px; border-radius: 50%; margin-left: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                `;
+            } else {
+                rowDiv.innerHTML = `
+                    <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
+                    <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
+                        <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
+                            <p style="margin: 0; white-space: pre-wrap;">${msgText}</p>
+                        </div>
+                        <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon  ${timeStr}</span>
+                    </div>
+                `;
+            }
+            container.appendChild(rowDiv);
+        });
+        scrollToBottomOfChat();
+
+        // Mark coach messages as read
+        await window.supabaseClient
+            .from('nudges')
+            .update({ read_at: new Date().toISOString() })
+            .eq('receiver_id', window.currentUser.id)
+            .eq('sender_id', coachId)
+            .is('read_at', null);
+
+    } catch (error) {
+        console.error('Error loading coach chat history:', error);
+        container.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444;">Failed to load messages</div>`;
+    }
 };
 
-window.appendCoachMessage = async function(text) {
+// Append a new incoming message to the coach chat UI
+window.appendCoachMessage = function(text) {
     const container = document.getElementById('chat-messages-container');
     if (!container) return;
-    
+
     const rowDiv = document.createElement('div');
     rowDiv.style.cssText = "display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 20px; animation: fadeIn 0.3s ease;";
-    
+
     const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    
+
     rowDiv.innerHTML = `
         <img src="assets/coach_shannon.jpg" style="width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); object-fit: cover;">
         <div style="display: flex; flex-direction: column; align-items: flex-start; max-width: 80%;">
             <div style="background: var(--chat-bg-coach); color: var(--chat-text-coach); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--chat-border-coach); font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;">
-                <p style="margin: 0; white-space: pre-wrap;">${text.replace(/\*\*/g, '').replace(/\*/g, '')}</p>
+                <p style="margin: 0; white-space: pre-wrap;">${text}</p>
             </div>
-            <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon ${timeStr}</span>
+            <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; margin-left: 5px;">Shannon  ${timeStr}</span>
         </div>
     `;
 
     container.appendChild(rowDiv);
     scrollToBottomOfChat();
 
-    // Save to DB (skip if already saved - e.g., from realtime subscription)
-    if (!window._skipCoachMessageSave) {
-        await saveToHistory('model', text);
-    }
-    window._skipCoachMessageSave = false;
-
-    // Mark as unread (this will trigger the glow effect on the Support tab)
+    // Mark as unread
     localStorage.setItem('coach_unread_messages', 'true');
-
-    // Send push notification
-    if(typeof sendCoachNotification === 'function') sendCoachNotification(text);
 
     // Notification Badge on App Icon
     if ('setAppBadge' in navigator && document.visibilityState === 'hidden') {
@@ -31257,8 +31189,8 @@ window.appendCoachMessage = async function(text) {
 };
 
 /**
- * Subscribe to Supabase Realtime for new coach messages
- * This allows messages to appear instantly when approved by admin
+ * Subscribe to Supabase Realtime for new DMs (nudges) to this user
+ * Messages appear instantly when coach (or anyone) sends a nudge
  */
 window.subscribeToCoachMessages = function(userId) {
     if (!userId || !window.supabaseClient) return;
@@ -31267,36 +31199,48 @@ window.subscribeToCoachMessages = function(userId) {
     window._shownMessageIds = window._shownMessageIds || new Set();
 
     const channel = window.supabaseClient
-        .channel('coach-messages-' + userId)
+        .channel('dm-messages-' + userId)
         .on(
             'postgres_changes',
             {
                 event: 'INSERT',
                 schema: 'public',
-                table: 'conversations',
-                filter: `user_id=eq.${userId}`
+                table: 'nudges',
+                filter: `receiver_id=eq.${userId}`
             },
-            (payload) => {
+            async (payload) => {
                 const newMessage = payload.new;
 
-                // Only show assistant/coach messages, not user messages
-                if (newMessage.role === 'assistant' || newMessage.role === 'model') {
-                    // Avoid duplicates
-                    if (window._shownMessageIds.has(newMessage.id)) return;
-                    window._shownMessageIds.add(newMessage.id);
+                // Avoid duplicates
+                if (window._shownMessageIds.has(newMessage.id)) return;
+                window._shownMessageIds.add(newMessage.id);
 
-                    // Skip the save since it's already in the DB
-                    window._skipCoachMessageSave = true;
+                // Check if the coach chat modal is open and message is from coach
+                const coachId = await getCoachUserId();
+                const modal = document.getElementById('coach-chat-modal');
+                const isCoachChatOpen = modal && modal.style.display === 'flex';
 
-                    // Display the message
-                    appendCoachMessage(newMessage.message_text);
-
-                    console.log('Realtime: New coach message received!');
+                if (coachId && newMessage.sender_id === coachId && isCoachChatOpen) {
+                    // Display the message in the coach chat
+                    appendCoachMessage(newMessage.message);
+                } else if (coachId && newMessage.sender_id === coachId) {
+                    // Coach message but chat not open - mark as unread
+                    localStorage.setItem('coach_unread_messages', 'true');
+                    if ('setAppBadge' in navigator && document.visibilityState === 'hidden') {
+                        navigator.setAppBadge(1).catch(e => console.error(e));
+                    }
                 }
+
+                // Reload DM if the DM modal is open for this sender
+                if (typeof currentDMRecipient !== 'undefined' && currentDMRecipient && currentDMRecipient.id === newMessage.sender_id) {
+                    loadDirectMessages(currentDMRecipient.id);
+                }
+
+                console.log('Realtime: New DM received from', newMessage.sender_id);
             }
         )
         .subscribe((status) => {
-            console.log('Realtime subscription status:', status);
+            console.log('Realtime DM subscription status:', status);
         });
 
     // Store channel reference for cleanup
@@ -31304,7 +31248,6 @@ window.subscribeToCoachMessages = function(userId) {
 };
 
 window.openCoachChat = function() {
-    // Open the coach chat modal
     openCoachChatModal();
 
     // Clear unread flag
@@ -34266,6 +34209,11 @@ async function sendDirectMessage() {
         // Reload messages
         loadDirectMessages(currentDMRecipient.id);
 
+        // Send push notification to recipient
+        if (typeof sendDMNotification === 'function') {
+            sendDMNotification(currentDMRecipient.id, message);
+        }
+
     } catch (error) {
         console.error('Error sending message:', error);
         showToast('Failed to send message', 'error');
@@ -35631,34 +35579,7 @@ function updateCoachUI() {
     }
 }
 
-// 2. Override Trigger for Offline Logic
-const _originalTriggerCoach = window.triggerCoachResponse;
-
-window.triggerCoachResponse = async function(userMsg) {
-    const { isOnline } = getCoachState();
-    
-    if (!isOnline) {
-        // Coach is Offline
-        const container = document.getElementById('chat-messages-container');
-        if(container) {
-            const typing = document.createElement('div');
-            typing.id = 'coach-typing-indicator';
-            typing.style.cssText = "display: flex; align-items: center; margin-bottom: 20px; margin-left:10px;";
-            typing.innerHTML = `<div style="font-size:0.8rem; color:#94a3b8; font-style:italic;">Coach is offline...</div>`;
-            container.appendChild(typing);
-            scrollToBottomOfChat();
-            
-            await new Promise(r => setTimeout(r, 1200));
-            typing.remove();
-        }
-        
-        appendCoachMessage("I've officially clocked off for the night! 🌙 \n\nI'll be back online at 7am Brisbane time to review your message properly. Get some rest and chat soon!");
-        return;
-    }
-    
-    // Online: Pass through
-    if(_originalTriggerCoach) await _originalTriggerCoach(userMsg);
-};
+// Coach chat now uses direct messaging - no AI trigger needed
 
 // 3. Daily Greeting
 // Daily greeting removed - coach now responds only when user messages
@@ -35672,15 +35593,17 @@ function openCoachChat() {
     openCoachChatModal();
 }
 
-// 5. Push Notifications
+// 5. Push Notifications - Subscribe ALL users to server push
 async function requestNotificationPermission() {
-    if (!('Notification' in window)) {
-        console.log('This browser does not support notifications');
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+        console.log('Push notifications not supported');
         return;
     }
 
     // Check if permission already granted
     if (Notification.permission === 'granted') {
+        // Auto-subscribe to push if permission already granted
+        await subscribeUserToPush();
         return;
     }
 
@@ -35689,7 +35612,44 @@ async function requestNotificationPermission() {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             console.log('Notification permission granted');
+            await subscribeUserToPush();
         }
+    }
+}
+
+// Subscribe user to server push notifications (for receiving DMs, etc.)
+async function subscribeUserToPush() {
+    try {
+        if (!window.currentUser) return;
+
+        const registration = await navigator.serviceWorker.ready;
+
+        // Check if already subscribed
+        let subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+            // Subscribe to push
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+        }
+
+        // Save subscription to database
+        const subscriptionJson = subscription.toJSON();
+        const isAdmin = await db.pushSubscriptions.isAdmin();
+
+        await db.pushSubscriptions.subscribe({
+            endpoint: subscriptionJson.endpoint,
+            keys: {
+                p256dh: subscriptionJson.keys.p256dh,
+                auth: subscriptionJson.keys.auth
+            }
+        }, isAdmin);
+
+        console.log('User subscribed to push notifications');
+    } catch (error) {
+        console.error('Failed to subscribe to push notifications:', error);
     }
 }
 

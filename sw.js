@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v14'; // Improved 3D model caching for faster character loads
+const CACHE_NAME = 'pbb-app-v15'; // Updated for DM push notification support
 const MODEL_CACHE_NAME = 'pbb-models-v1'; // Separate long-lived cache for 3D models
 const ASSETS = [
   './dashboard.html',
@@ -76,7 +76,7 @@ self.addEventListener('fetch', (e) => {
 
 // Handle push notifications from server
 self.addEventListener('push', (e) => {
-  let data = { title: 'Coach Shannon', body: 'New message from your coach!' };
+  let data = { title: 'New Message', body: 'You have a new message!' };
 
   if (e.data) {
     try {
@@ -89,15 +89,15 @@ self.addEventListener('push', (e) => {
   // Build notification options from server payload
   const options = {
     body: data.body,
-    icon: data.icon || './assets/coach_shannon.jpg',
+    icon: data.icon || './assets/Logo_dots.jpg',
     badge: data.badge || './assets/Logo_dots.jpg',
     vibrate: data.vibrate || [200, 100, 200],
-    tag: data.tag || 'coach-message',
+    tag: data.tag || 'dm-message',
     requireInteraction: data.requireInteraction || false,
     data: data.data || { url: './dashboard.html' }
   };
 
-  // Add actions if provided (for approval notifications)
+  // Add actions if provided
   if (data.actions) {
     options.actions = data.actions;
   }
@@ -116,13 +116,26 @@ self.addEventListener('notificationclick', (e) => {
 
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUnmatched: true }).then(clientList => {
+      // Handle DM message notifications
+      if (notificationData.type === 'dm_message') {
+        // Try to focus existing window
+        for (let client of clientList) {
+          if (client.url.includes('dashboard.html') && 'focus' in client) {
+            return client.focus();
+          }
+        }
+
+        // If no window exists, open dashboard
+        if (clients.openWindow) {
+          return clients.openWindow('./dashboard.html');
+        }
+      }
       // Check if notification is for pending approval
-      if (notificationData.type === 'pending_approval') {
+      else if (notificationData.type === 'pending_approval') {
         // Try to focus existing window
         for (let client of clientList) {
           if (client.url.includes('dashboard.html') && 'focus' in client) {
             return client.focus().then(client => {
-              // Send message to open approval modal
               client.postMessage({
                 type: 'open_approval_modal',
                 action: action,
@@ -133,7 +146,6 @@ self.addEventListener('notificationclick', (e) => {
           }
         }
 
-        // If no window exists, open new one with approval modal trigger
         if (clients.openWindow) {
           return clients.openWindow('./dashboard.html?openApproval=true');
         }
