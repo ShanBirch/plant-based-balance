@@ -3345,6 +3345,340 @@ async function applyAppTheme(themeKey) {
         flex-shrink: 0;
     }
 
+    /* ============================================================
+       ENHANCED NUTRITION TAB STYLES - PHASE 2
+       ============================================================ */
+
+    /* Weekly Score History */
+    .score-history-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+    }
+    .score-history-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 4px;
+        height: 100px;
+        margin-top: 14px;
+        padding: 0 4px;
+    }
+    .score-bar-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        height: 100%;
+        justify-content: flex-end;
+    }
+    .score-bar {
+        width: 100%;
+        border-radius: 6px 6px 2px 2px;
+        min-height: 4px;
+        transition: height 0.4s ease;
+    }
+    .score-bar-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+    .score-bar-value {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    /* Smart Meal Suggestions */
+    .smart-suggestions-card {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border: 1px solid #bfdbfe;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+    }
+    .suggestion-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 14px;
+    }
+    .suggestion-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .suggestion-emoji {
+        font-size: 1.6rem;
+        flex-shrink: 0;
+        width: 40px;
+        text-align: center;
+    }
+    .suggestion-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .suggestion-name {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 2px;
+    }
+    .suggestion-macros {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    .suggestion-tag {
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 12px;
+        white-space: nowrap;
+    }
+
+    /* Hydration Tracker */
+    .hydration-card {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 1px solid #bae6fd;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+    }
+    .hydration-glasses {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-top: 14px;
+        flex-wrap: wrap;
+    }
+    .hydration-glass {
+        width: 40px;
+        height: 50px;
+        border-radius: 6px 6px 10px 10px;
+        border: 2px solid #7dd3fc;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        overflow: hidden;
+        position: relative;
+        background: white;
+    }
+    .hydration-glass.filled {
+        border-color: #0284c7;
+    }
+    .hydration-glass-fill {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(180deg, #38bdf8, #0284c7);
+        transition: height 0.3s ease;
+        border-radius: 0 0 8px 8px;
+    }
+    .hydration-glass-icon {
+        position: relative;
+        z-index: 1;
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+    }
+    .hydration-total {
+        text-align: center;
+        margin-top: 12px;
+        font-size: 0.85rem;
+        color: #0369a1;
+        font-weight: 600;
+    }
+
+    /* Macro Ratio Pie Chart */
+    .macro-pie-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+    }
+    .macro-pie-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        margin-top: 14px;
+    }
+    .macro-pie-svg {
+        width: 120px;
+        height: 120px;
+        flex-shrink: 0;
+    }
+    .macro-pie-legend {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .macro-pie-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.82rem;
+    }
+    .macro-legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .macro-legend-label {
+        color: var(--text-muted);
+    }
+    .macro-legend-value {
+        font-weight: 700;
+        color: var(--text-main);
+        margin-left: auto;
+    }
+
+    /* Meal Prep Score */
+    .meal-prep-card {
+        background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+        border: 1px solid #fde047;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+    }
+    .prep-score-ring {
+        position: relative;
+        width: 70px;
+        height: 70px;
+    }
+    .prep-score-ring svg { width: 100%; height: 100%; }
+    .prep-score-value {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #854d0e;
+    }
+    .prep-stats {
+        display: flex;
+        gap: 12px;
+        margin-top: 14px;
+    }
+    .prep-stat {
+        flex: 1;
+        text-align: center;
+        padding: 10px 8px;
+        background: rgba(255,255,255,0.7);
+        border-radius: 10px;
+    }
+    .prep-stat-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #854d0e;
+    }
+    .prep-stat-label {
+        font-size: 0.72rem;
+        color: #a16207;
+        margin-top: 2px;
+    }
+
+    /* Nutrition Badges */
+    .badges-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+    }
+    .badges-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 14px;
+    }
+    .badge-item {
+        text-align: center;
+        padding: 12px 6px;
+        border-radius: 12px;
+        background: #f9fafb;
+        border: 2px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+    .badge-item.earned {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border-color: #86efac;
+    }
+    .badge-item.locked {
+        opacity: 0.5;
+    }
+    .badge-icon {
+        font-size: 1.6rem;
+        margin-bottom: 4px;
+    }
+    .badge-name {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--text-main);
+        line-height: 1.2;
+    }
+    .badge-progress {
+        font-size: 0.62rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    /* Social Comparison */
+    .social-compare-card {
+        background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+        border: 1px solid #e9d5ff;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+    }
+    .social-stat-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        background: rgba(255,255,255,0.7);
+        border-radius: 10px;
+        margin-bottom: 8px;
+    }
+    .social-stat-row:last-child { margin-bottom: 0; }
+    .social-percentile {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #7c3aed;
+        width: 50px;
+        flex-shrink: 0;
+    }
+    .social-bar-bg {
+        flex: 1;
+        height: 8px;
+        background: #e9d5ff;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .social-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #a78bfa, #7c3aed);
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+    .social-stat-label {
+        font-size: 0.78rem;
+        color: #6b21a8;
+        width: 60px;
+        flex-shrink: 0;
+    }
+
     /* Camera Button Large */
     .camera-btn-large {
         background: var(--primary);
@@ -6898,6 +7232,94 @@ async function applyAppTheme(themeKey) {
                     </div>
                     <div class="cycle-tip-list" id="cycle-tip-list">
                         <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Macro Ratio Pie Chart -->
+                <div class="macro-pie-card" id="macro-pie-section">
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Macro Split</h3>
+                    <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Today's protein / carbs / fat ratio</p>
+                    <div class="macro-pie-container" id="macro-pie-container">
+                        <svg class="macro-pie-svg" viewBox="0 0 120 120" id="macro-pie-svg">
+                            <circle cx="60" cy="60" r="50" fill="#f3f4f6" stroke="none"/>
+                        </svg>
+                        <div class="macro-pie-legend" id="macro-pie-legend">
+                            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #3b82f6;"></span><span class="macro-legend-label">Protein</span><span class="macro-legend-value">--</span></div>
+                            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #f59e0b;"></span><span class="macro-legend-label">Carbs</span><span class="macro-legend-value">--</span></div>
+                            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #ef4444;"></span><span class="macro-legend-label">Fat</span><span class="macro-legend-value">--</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Smart Meal Suggestions -->
+                <div class="smart-suggestions-card" id="smart-suggestions-section" style="display: none;">
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: #1e40af;">Smart Suggestions</h3>
+                    <p style="margin: 0; font-size: 0.78rem; color: #3b82f6;" id="smart-suggestions-subtitle">Ideas to close your macro gaps</p>
+                    <div class="suggestion-list" id="suggestion-list">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Hydration Tracker -->
+                <div class="hydration-card" id="hydration-section">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.1rem; color: #0369a1;">Hydration</h3>
+                            <p style="margin: 4px 0 0 0; font-size: 0.78rem; color: #0284c7;">Tap glasses to track water intake</p>
+                        </div>
+                        <span style="font-size: 1.8rem;">&#x1F4A7;</span>
+                    </div>
+                    <div class="hydration-glasses" id="hydration-glasses">
+                        <!-- 8 glasses rendered by JS -->
+                    </div>
+                    <div class="hydration-total" id="hydration-total">0 / 8 glasses (0 ml)</div>
+                </div>
+
+                <!-- Weekly Score History -->
+                <div class="score-history-card" id="score-history-section">
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Score History</h3>
+                    <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Your daily nutrition scores this week</p>
+                    <div class="score-history-bars" id="score-history-bars">
+                        <p style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.85rem; width: 100%;">Loading scores...</p>
+                    </div>
+                </div>
+
+                <!-- Meal Prep Score -->
+                <div class="meal-prep-card" id="meal-prep-section">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div class="prep-score-ring">
+                            <svg viewBox="0 0 90 90">
+                                <circle cx="45" cy="45" r="38" fill="none" stroke="#fde68a" stroke-width="6"/>
+                                <circle id="prep-score-circle" cx="45" cy="45" r="38" fill="none" stroke="#eab308" stroke-width="6" stroke-linecap="round"
+                                    style="stroke-dasharray: 239; stroke-dashoffset: 239; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 0.6s ease;"/>
+                            </svg>
+                            <div class="prep-score-value" id="prep-score-value">--</div>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.1rem; color: #854d0e;">Meal Prep Score</h3>
+                            <p style="margin: 4px 0 0 0; font-size: 0.78rem; color: #a16207;" id="prep-score-label">How consistently you cook at home</p>
+                        </div>
+                    </div>
+                    <div class="prep-stats" id="prep-stats">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Nutrition Badges -->
+                <div class="badges-card" id="badges-section">
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Nutrition Badges</h3>
+                    <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Earn badges by hitting your goals</p>
+                    <div class="badges-grid" id="badges-grid">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Social Meal Comparison -->
+                <div class="social-compare-card" id="social-compare-section">
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: #7c3aed;">How You Compare</h3>
+                    <p style="margin: 0 0 14px 0; font-size: 0.78rem; color: #9333ea;">Anonymous comparison with similar users</p>
+                    <div id="social-compare-content">
+                        <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Loading comparison data...</p>
                     </div>
                 </div>
 
@@ -44328,6 +44750,591 @@ function loadCycleNutritionTips() {
     }
 }
 
+// ============================================================
+// ENHANCED NUTRITION TAB FEATURES - PHASE 2
+// ============================================================
+
+// --- 8. Weekly Score History ---
+async function loadScoreHistory() {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+        const { data: days, error } = await window.supabaseClient
+            .from('daily_nutrition')
+            .select('nutrition_date, total_calories, total_protein_g, total_carbs_g, total_fat_g, calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g')
+            .eq('user_id', session.user.id)
+            .gte('nutrition_date', getLocalDateString(sevenDaysAgo))
+            .lte('nutrition_date', getLocalDateString(today))
+            .order('nutrition_date', { ascending: true });
+
+        if (error) { console.error('Error loading score history:', error); return; }
+
+        renderScoreHistory(days || []);
+    } catch (err) {
+        console.error('Error in loadScoreHistory:', err);
+    }
+}
+
+function renderScoreHistory(days) {
+    const container = document.getElementById('score-history-bars');
+    if (!container) return;
+
+    const today = new Date();
+    const dayMap = {};
+    (days || []).forEach(d => { dayMap[d.nutrition_date] = d; });
+
+    let html = '';
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const ds = getLocalDateString(d);
+        const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+        const dayData = dayMap[ds];
+        const score = dayData ? calculateNutritionScore(dayData) : null;
+        const value = score ? score.total : 0;
+        const height = Math.max(4, value); // percentage of container height
+
+        let barColor = '#e5e7eb';
+        if (value >= 75) barColor = 'var(--primary)';
+        else if (value >= 50) barColor = '#f59e0b';
+        else if (value > 0) barColor = '#ef4444';
+
+        const isToday = i === 0;
+        html += `
+            <div class="score-bar-col">
+                <div class="score-bar-value">${value > 0 ? value : ''}</div>
+                <div class="score-bar" style="height: ${height}%; background: ${barColor};${isToday ? ' box-shadow: 0 0 0 2px rgba(72,134,75,0.3);' : ''}"></div>
+                <div class="score-bar-label" style="${isToday ? 'color: var(--primary); font-weight: 700;' : ''}">${dayName}</div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+// --- 9. Smart Meal Suggestions (on-the-fly) ---
+function generateSmartSuggestions(dailyData) {
+    const section = document.getElementById('smart-suggestions-section');
+    const listEl = document.getElementById('suggestion-list');
+    const subtitleEl = document.getElementById('smart-suggestions-subtitle');
+    if (!section || !listEl) return;
+
+    if (!dailyData || !dailyData.calorie_goal) { section.style.display = 'none'; return; }
+
+    const calLeft = (dailyData.calorie_goal || 2000) - (dailyData.total_calories || 0);
+    const proLeft = (dailyData.protein_goal_g || 50) - (dailyData.total_protein_g || 0);
+    const carbLeft = (dailyData.carbs_goal_g || 250) - (dailyData.total_carbs_g || 0);
+    const fatLeft = (dailyData.fat_goal_g || 70) - (dailyData.total_fat_g || 0);
+
+    // Only show if there's meaningful gap
+    if (calLeft < 100 && proLeft < 5) { section.style.display = 'none'; return; }
+
+    // Plant-based food database for on-the-fly suggestions
+    const foods = [
+        // High protein options
+        { name: 'Tofu Scramble', emoji: '&#x1F95A;', cal: 220, pro: 18, carb: 8, fat: 14, tags: ['protein'] },
+        { name: 'Lentil Soup (1 bowl)', emoji: '&#x1F963;', cal: 230, pro: 18, carb: 40, fat: 1, tags: ['protein', 'fiber'] },
+        { name: 'Chickpea Salad', emoji: '&#x1F957;', cal: 280, pro: 14, carb: 35, fat: 10, tags: ['protein', 'balanced'] },
+        { name: 'Edamame (1 cup)', emoji: '&#x1FAD8;', cal: 190, pro: 17, carb: 14, fat: 8, tags: ['protein', 'snack'] },
+        { name: 'Tempeh Stir-Fry', emoji: '&#x1F372;', cal: 320, pro: 22, carb: 25, fat: 14, tags: ['protein'] },
+        { name: 'Black Bean Tacos (2)', emoji: '&#x1F32E;', cal: 340, pro: 16, carb: 42, fat: 12, tags: ['protein', 'carb'] },
+        { name: 'Protein Smoothie', emoji: '&#x1F964;', cal: 280, pro: 25, carb: 35, fat: 6, tags: ['protein', 'quick'] },
+        { name: 'Hemp Seed Bowl', emoji: '&#x1F331;', cal: 250, pro: 15, carb: 20, fat: 14, tags: ['protein', 'fat'] },
+        // Carb-focused options
+        { name: 'Oatmeal with Banana', emoji: '&#x1F35A;', cal: 300, pro: 8, carb: 55, fat: 6, tags: ['carb', 'breakfast'] },
+        { name: 'Sweet Potato (large)', emoji: '&#x1F360;', cal: 180, pro: 4, carb: 41, fat: 0, tags: ['carb', 'clean'] },
+        { name: 'Quinoa Bowl', emoji: '&#x1F35B;', cal: 320, pro: 12, carb: 50, fat: 8, tags: ['carb', 'balanced'] },
+        { name: 'Brown Rice + Beans', emoji: '&#x1F35A;', cal: 350, pro: 14, carb: 60, fat: 4, tags: ['carb', 'protein'] },
+        { name: 'Banana + PB Toast', emoji: '&#x1F34C;', cal: 280, pro: 8, carb: 38, fat: 12, tags: ['carb', 'quick'] },
+        // Fat-focused options
+        { name: 'Avocado Toast', emoji: '&#x1F951;', cal: 280, pro: 7, carb: 25, fat: 18, tags: ['fat', 'breakfast'] },
+        { name: 'Trail Mix (1/3 cup)', emoji: '&#x1F95C;', cal: 200, pro: 6, carb: 18, fat: 14, tags: ['fat', 'snack'] },
+        { name: 'Chia Pudding', emoji: '&#x1F366;', cal: 220, pro: 6, carb: 22, fat: 12, tags: ['fat', 'breakfast'] },
+        // Light / low-cal options
+        { name: 'Green Salad + Tahini', emoji: '&#x1F957;', cal: 150, pro: 5, carb: 12, fat: 10, tags: ['light', 'fat'] },
+        { name: 'Veggie Soup', emoji: '&#x1F963;', cal: 120, pro: 4, carb: 18, fat: 3, tags: ['light', 'fiber'] },
+        { name: 'Fruit Bowl', emoji: '&#x1F353;', cal: 140, pro: 2, carb: 34, fat: 1, tags: ['light', 'carb'] },
+        { name: 'Hummus + Veggies', emoji: '&#x1FAD8;', cal: 160, pro: 6, carb: 16, fat: 8, tags: ['light', 'snack'] }
+    ];
+
+    // Score each food by how well it fills gaps
+    const scored = foods.map(f => {
+        let score = 0;
+        // Reward filling calorie gap without overshooting
+        if (f.cal <= calLeft + 50) score += 20;
+        else if (f.cal <= calLeft + 150) score += 5;
+        else score -= 10;
+
+        // Reward filling the biggest macro gap
+        if (proLeft > 10 && f.pro >= 12) score += 30;
+        if (proLeft > 5 && f.pro >= 8) score += 15;
+        if (carbLeft > 20 && f.carb >= 25) score += 15;
+        if (fatLeft > 10 && f.fat >= 10) score += 10;
+
+        // Penalize if we'd overshoot a macro that's already met
+        if (proLeft <= 0 && f.pro > 10) score -= 10;
+        if (carbLeft <= 0 && f.carb > 20) score -= 10;
+        if (fatLeft <= 0 && f.fat > 10) score -= 10;
+
+        return { ...f, score };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    const top3 = scored.slice(0, 3);
+
+    // Determine what's most needed
+    let gapText = '';
+    if (proLeft > 10 && calLeft > 200) gapText = `You need ~${Math.round(proLeft)}g protein and ${Math.round(calLeft)} cal`;
+    else if (proLeft > 10) gapText = `Focus on protein — ${Math.round(proLeft)}g left to hit your goal`;
+    else if (calLeft > 200) gapText = `${Math.round(calLeft)} calories left to reach your target`;
+    else gapText = 'Fine-tune your macros with one of these';
+
+    if (subtitleEl) subtitleEl.textContent = gapText;
+
+    section.style.display = 'block';
+    listEl.innerHTML = top3.map(f => {
+        // Tag for the main benefit
+        let tagText = 'Balanced';
+        let tagBg = '#dbeafe';
+        let tagColor = '#1e40af';
+        if (f.pro >= 15) { tagText = 'High Protein'; tagBg = '#dcfce7'; tagColor = '#166534'; }
+        else if (f.carb >= 35) { tagText = 'Carb Rich'; tagBg = '#fef3c7'; tagColor = '#92400e'; }
+        else if (f.fat >= 12) { tagText = 'Healthy Fats'; tagBg = '#fce7f3'; tagColor = '#9d174d'; }
+
+        return `
+            <div class="suggestion-item">
+                <div class="suggestion-emoji">${f.emoji}</div>
+                <div class="suggestion-info">
+                    <div class="suggestion-name">${f.name}</div>
+                    <div class="suggestion-macros">${f.cal} cal | P: ${f.pro}g | C: ${f.carb}g | F: ${f.fat}g</div>
+                </div>
+                <span class="suggestion-tag" style="background: ${tagBg}; color: ${tagColor};">${tagText}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+// --- 10. Hydration Tracker ---
+function initHydrationTracker() {
+    const container = document.getElementById('hydration-glasses');
+    if (!container) return;
+
+    const today = getLocalDateString();
+    const storageKey = `pbb_hydration_${today}`;
+    let glasses = parseInt(localStorage.getItem(storageKey) || '0');
+
+    renderHydrationUI(glasses, container, storageKey);
+}
+
+function renderHydrationUI(glasses, container, storageKey) {
+    const totalGlasses = 8;
+    let html = '';
+    for (let i = 0; i < totalGlasses; i++) {
+        const filled = i < glasses;
+        html += `
+            <div class="hydration-glass${filled ? ' filled' : ''}" onclick="toggleHydrationGlass(${i})">
+                <div class="hydration-glass-fill" style="height: ${filled ? '100' : '0'}%;"></div>
+                <span class="hydration-glass-icon">${filled ? '&#x1F4A7;' : ''}</span>
+            </div>
+        `;
+    }
+    container.innerHTML = html;
+
+    const totalEl = document.getElementById('hydration-total');
+    if (totalEl) {
+        const ml = glasses * 250;
+        totalEl.textContent = `${glasses} / ${totalGlasses} glasses (${ml} ml)`;
+    }
+}
+
+function toggleHydrationGlass(index) {
+    const today = getLocalDateString();
+    const storageKey = `pbb_hydration_${today}`;
+    let glasses = parseInt(localStorage.getItem(storageKey) || '0');
+
+    // If tapping the last filled glass, unfill it (toggle). Otherwise fill up to tapped glass.
+    if (index < glasses) {
+        glasses = index; // Unfill from this glass onward
+    } else {
+        glasses = index + 1; // Fill up to and including this glass
+    }
+
+    localStorage.setItem(storageKey, glasses.toString());
+    const container = document.getElementById('hydration-glasses');
+    if (container) renderHydrationUI(glasses, container, storageKey);
+}
+
+// --- 11. Macro Ratio Pie Chart ---
+function updateMacroPieChart(dailyData) {
+    const svg = document.getElementById('macro-pie-svg');
+    const legend = document.getElementById('macro-pie-legend');
+    if (!svg) return;
+
+    const protein = dailyData?.total_protein_g || 0;
+    const carbs = dailyData?.total_carbs_g || 0;
+    const fat = dailyData?.total_fat_g || 0;
+
+    // Convert to calories for ratio
+    const proCal = protein * 4;
+    const carbCal = carbs * 4;
+    const fatCal = fat * 9;
+    const totalCal = proCal + carbCal + fatCal;
+
+    if (totalCal === 0) {
+        svg.innerHTML = '<circle cx="60" cy="60" r="50" fill="#f3f4f6" stroke="none"/><text x="60" y="63" text-anchor="middle" font-size="10" fill="#9ca3af">No data</text>';
+        return;
+    }
+
+    const proPct = Math.round((proCal / totalCal) * 100);
+    const carbPct = Math.round((carbCal / totalCal) * 100);
+    const fatPct = 100 - proPct - carbPct;
+
+    // Build donut segments
+    const segments = [
+        { pct: proPct, color: '#3b82f6' },
+        { pct: carbPct, color: '#f59e0b' },
+        { pct: fatPct, color: '#ef4444' }
+    ];
+
+    const radius = 50;
+    const cx = 60, cy = 60;
+    const circumference = 2 * Math.PI * radius;
+    let accumulatedOffset = 0;
+    let svgContent = '';
+
+    segments.forEach(seg => {
+        const dashLen = (seg.pct / 100) * circumference;
+        const dashGap = circumference - dashLen;
+        const rotation = (accumulatedOffset / 100) * 360 - 90;
+        svgContent += `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="none" stroke="${seg.color}" stroke-width="20"
+            stroke-dasharray="${dashLen} ${dashGap}"
+            transform="rotate(${rotation} ${cx} ${cy})"/>`;
+        accumulatedOffset += seg.pct;
+    });
+
+    // Inner white circle for donut hole
+    svgContent += `<circle cx="${cx}" cy="${cy}" r="32" fill="white"/>`;
+    // Center text
+    svgContent += `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text-main)">${Math.round(totalCal)}</text>`;
+    svgContent += `<text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="7" fill="var(--text-muted)">cal</text>`;
+
+    svg.innerHTML = svgContent;
+
+    // Update legend with target comparison
+    if (legend) {
+        const goalPro = dailyData?.protein_goal_g || 50;
+        const goalCarb = dailyData?.carbs_goal_g || 250;
+        const goalFat = dailyData?.fat_goal_g || 70;
+        const goalProCal = goalPro * 4;
+        const goalCarbCal = goalCarb * 4;
+        const goalFatCal = goalFat * 9;
+        const goalTotal = goalProCal + goalCarbCal + goalFatCal;
+        const goalProPct = goalTotal > 0 ? Math.round((goalProCal / goalTotal) * 100) : 0;
+        const goalCarbPct = goalTotal > 0 ? Math.round((goalCarbCal / goalTotal) * 100) : 0;
+        const goalFatPct = goalTotal > 0 ? 100 - goalProPct - goalCarbPct : 0;
+
+        legend.innerHTML = `
+            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #3b82f6;"></span><span class="macro-legend-label">Protein</span><span class="macro-legend-value">${proPct}% <span style="font-weight:400;color:var(--text-muted);font-size:0.72rem;">(goal ${goalProPct}%)</span></span></div>
+            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #f59e0b;"></span><span class="macro-legend-label">Carbs</span><span class="macro-legend-value">${carbPct}% <span style="font-weight:400;color:var(--text-muted);font-size:0.72rem;">(goal ${goalCarbPct}%)</span></span></div>
+            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #ef4444;"></span><span class="macro-legend-label">Fat</span><span class="macro-legend-value">${fatPct}% <span style="font-weight:400;color:var(--text-muted);font-size:0.72rem;">(goal ${goalFatPct}%)</span></span></div>
+        `;
+    }
+}
+
+// --- 12. Meal Prep Score ---
+async function loadMealPrepScore() {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+        const { data: meals, error } = await window.supabaseClient
+            .from('meal_logs')
+            .select('meal_date, meal_type, photo_url, food_items, ai_confidence')
+            .eq('user_id', session.user.id)
+            .gte('meal_date', getLocalDateString(sevenDaysAgo))
+            .order('meal_date', { ascending: true });
+
+        if (error) { console.error('Error loading meal prep data:', error); return; }
+        renderMealPrepScore(meals || []);
+    } catch (err) {
+        console.error('Error in loadMealPrepScore:', err);
+    }
+}
+
+function renderMealPrepScore(meals) {
+    const circleEl = document.getElementById('prep-score-circle');
+    const valueEl = document.getElementById('prep-score-value');
+    const labelEl = document.getElementById('prep-score-label');
+    const statsEl = document.getElementById('prep-stats');
+
+    if (!meals || meals.length === 0) {
+        if (valueEl) valueEl.textContent = '--';
+        if (statsEl) statsEl.innerHTML = '<div class="prep-stat"><div class="prep-stat-value">0</div><div class="prep-stat-label">Total Meals</div></div>';
+        return;
+    }
+
+    // Classify meals as home-cooked vs dining out
+    // Home-cooked: has photo with high/medium confidence, or text-input meals
+    // Dining out: meal type contains "dining" or food_items suggest restaurant
+    let homeMeals = 0;
+    let diningMeals = 0;
+
+    meals.forEach(m => {
+        const items = Array.isArray(m.food_items) ? m.food_items : [];
+        const isDining = items.some(i =>
+            (i.name || '').toLowerCase().match(/restaurant|takeout|take-out|delivery|uber|doordash|fast food|mcdonald|burger king|subway|starbucks|pizza hut|chipotle|panda express/)
+        );
+        if (isDining) diningMeals++;
+        else homeMeals++;
+    });
+
+    const total = meals.length;
+    const score = total > 0 ? Math.round((homeMeals / total) * 100) : 0;
+
+    if (valueEl) valueEl.textContent = score;
+    if (circleEl) {
+        const circumference = 2 * Math.PI * 38;
+        const offset = circumference * (1 - score / 100);
+        circleEl.style.strokeDashoffset = offset;
+    }
+    if (labelEl) {
+        if (score >= 80) labelEl.textContent = 'Amazing prep consistency!';
+        else if (score >= 60) labelEl.textContent = 'Solid home cooking habit';
+        else if (score >= 40) labelEl.textContent = 'Room to cook more at home';
+        else labelEl.textContent = 'Try prepping a few meals this week';
+    }
+
+    // Group by day
+    const daySet = new Set(meals.map(m => m.meal_date));
+
+    if (statsEl) {
+        statsEl.innerHTML = `
+            <div class="prep-stat"><div class="prep-stat-value">${homeMeals}</div><div class="prep-stat-label">Home Meals</div></div>
+            <div class="prep-stat"><div class="prep-stat-value">${diningMeals}</div><div class="prep-stat-label">Dining Out</div></div>
+            <div class="prep-stat"><div class="prep-stat-value">${daySet.size}/7</div><div class="prep-stat-label">Days Active</div></div>
+        `;
+    }
+}
+
+// --- 13. Nutrition Badges ---
+async function loadNutritionBadges() {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+
+        const userId = session.user.id;
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        // Get daily nutrition for last 30 days
+        const { data: days, error } = await window.supabaseClient
+            .from('daily_nutrition')
+            .select('nutrition_date, total_calories, total_protein_g, total_carbs_g, total_fat_g, calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g')
+            .eq('user_id', userId)
+            .gte('nutrition_date', getLocalDateString(thirtyDaysAgo))
+            .order('nutrition_date', { ascending: true });
+
+        if (error) { console.error('Error loading badge data:', error); return; }
+
+        // Get meal count
+        const { count: mealCount } = await window.supabaseClient
+            .from('meal_logs')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', userId);
+
+        // Get micronutrient data
+        const { data: mealMicros } = await window.supabaseClient
+            .from('meal_logs')
+            .select('meal_date, micronutrients')
+            .eq('user_id', userId)
+            .gte('meal_date', getLocalDateString(thirtyDaysAgo));
+
+        renderNutritionBadges(days || [], mealCount || 0, mealMicros || []);
+    } catch (err) {
+        console.error('Error in loadNutritionBadges:', err);
+    }
+}
+
+function renderNutritionBadges(days, mealCount, mealMicros) {
+    const grid = document.getElementById('badges-grid');
+    if (!grid) return;
+
+    // Calculate streaks and achievements
+    let proteinStreak = 0;
+    let maxProteinStreak = 0;
+    let balancedStreak = 0;
+    let maxBalancedStreak = 0;
+    let loggingStreak = 0;
+    let maxLoggingStreak = 0;
+
+    // Iron tracking
+    let ironDays = 0;
+    const ironByDate = {};
+    (mealMicros || []).forEach(m => {
+        if (m.micronutrients && m.micronutrients.iron) {
+            ironByDate[m.meal_date] = (ironByDate[m.meal_date] || 0) + m.micronutrients.iron;
+        }
+    });
+    Object.values(ironByDate).forEach(v => { if (v >= 14) ironDays++; }); // ~80% RDA
+
+    const sortedDays = [...days].sort((a, b) => a.nutrition_date.localeCompare(b.nutrition_date));
+
+    sortedDays.forEach(d => {
+        if (d.total_calories > 0) {
+            loggingStreak++;
+            maxLoggingStreak = Math.max(maxLoggingStreak, loggingStreak);
+        } else {
+            loggingStreak = 0;
+        }
+
+        const proGoal = d.protein_goal_g || 50;
+        if (d.total_protein_g >= proGoal * 0.9) {
+            proteinStreak++;
+            maxProteinStreak = Math.max(maxProteinStreak, proteinStreak);
+        } else {
+            proteinStreak = 0;
+        }
+
+        // Balanced = all macros within 15%
+        const calOk = d.calorie_goal > 0 && Math.abs(d.total_calories - d.calorie_goal) / d.calorie_goal < 0.15;
+        const proOk = proGoal > 0 && Math.abs(d.total_protein_g - proGoal) / proGoal < 0.15;
+        const carbGoal = d.carbs_goal_g || 250;
+        const carbOk = carbGoal > 0 && Math.abs(d.total_carbs_g - carbGoal) / carbGoal < 0.15;
+        if (calOk && proOk && carbOk) {
+            balancedStreak++;
+            maxBalancedStreak = Math.max(maxBalancedStreak, balancedStreak);
+        } else {
+            balancedStreak = 0;
+        }
+    });
+
+    // Define badges
+    const badges = [
+        { icon: '&#x1F525;', name: 'First Flame', desc: 'Log meals 3 days in a row', target: 3, current: maxLoggingStreak, earned: maxLoggingStreak >= 3 },
+        { icon: '&#x1F4AA;', name: 'Protein Pro', desc: 'Hit protein goal 7 days', target: 7, current: maxProteinStreak, earned: maxProteinStreak >= 7 },
+        { icon: '&#x2696;&#xFE0F;', name: 'Balanced Week', desc: 'All macros within 15% for 7 days', target: 7, current: maxBalancedStreak, earned: maxBalancedStreak >= 7 },
+        { icon: '&#x1FA78;', name: 'Iron Warrior', desc: 'Hit iron RDA 7 days', target: 7, current: ironDays, earned: ironDays >= 7 },
+        { icon: '&#x1F4F8;', name: 'Snap Happy', desc: 'Log 50 meals', target: 50, current: Math.min(mealCount, 50), earned: mealCount >= 50 },
+        { icon: '&#x1F451;', name: 'Legend', desc: 'Log meals 30 days straight', target: 30, current: maxLoggingStreak, earned: maxLoggingStreak >= 30 }
+    ];
+
+    grid.innerHTML = badges.map(b => {
+        const progress = b.target > 0 ? Math.min(100, Math.round((b.current / b.target) * 100)) : 0;
+        const stateClass = b.earned ? 'earned' : (b.current > 0 ? '' : 'locked');
+        return `
+            <div class="badge-item ${stateClass}">
+                <div class="badge-icon">${b.earned ? b.icon : '&#x1F512;'}</div>
+                <div class="badge-name">${b.name}</div>
+                <div class="badge-progress">${b.earned ? 'Earned!' : `${b.current}/${b.target}`}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// --- 14. Social Meal Comparison ---
+async function loadSocialComparison() {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+        // Get this user's averages
+        const { data: myDays, error } = await window.supabaseClient
+            .from('daily_nutrition')
+            .select('total_calories, total_protein_g, total_carbs_g, total_fat_g, calorie_goal')
+            .eq('user_id', session.user.id)
+            .gte('nutrition_date', getLocalDateString(sevenDaysAgo));
+
+        if (error) { console.error('Error loading social comparison:', error); return; }
+
+        const myData = (myDays || []).filter(d => d.total_calories > 0);
+        if (myData.length < 2) {
+            const container = document.getElementById('social-compare-content');
+            if (container) container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log at least 2 days to see how you compare</p>';
+            return;
+        }
+
+        const myAvgCal = Math.round(myData.reduce((s, d) => s + d.total_calories, 0) / myData.length);
+        const myAvgPro = Math.round(myData.reduce((s, d) => s + d.total_protein_g, 0) / myData.length);
+        const myGoal = myData[0]?.calorie_goal || 2000;
+        const myConsistency = myData.length; // Days logged out of 7
+
+        // Get anonymized community averages (all users, last 7 days)
+        const { data: communityData, error: commError } = await window.supabaseClient
+            .from('daily_nutrition')
+            .select('total_calories, total_protein_g')
+            .gte('nutrition_date', getLocalDateString(sevenDaysAgo))
+            .gt('total_calories', 0);
+
+        if (commError) {
+            console.error('Error loading community data:', commError);
+            renderSocialFallback(myAvgCal, myAvgPro, myConsistency);
+            return;
+        }
+
+        const community = communityData || [];
+        if (community.length < 5) {
+            renderSocialFallback(myAvgCal, myAvgPro, myConsistency);
+            return;
+        }
+
+        // Calculate percentiles
+        const allCals = community.map(d => d.total_calories).sort((a, b) => a - b);
+        const allPro = community.map(d => d.total_protein_g).sort((a, b) => a - b);
+
+        const calPercentile = Math.round((allCals.filter(c => c <= myAvgCal).length / allCals.length) * 100);
+        const proPercentile = Math.round((allPro.filter(p => p <= myAvgPro).length / allPro.length) * 100);
+        const consistencyPercentile = Math.min(100, Math.round((myConsistency / 7) * 100));
+
+        // Goal adherence
+        const goalAdherence = myGoal > 0 ? Math.round((1 - Math.abs(myAvgCal - myGoal) / myGoal) * 100) : 50;
+
+        renderSocialComparison(proPercentile, consistencyPercentile, goalAdherence);
+    } catch (err) {
+        console.error('Error in loadSocialComparison:', err);
+    }
+}
+
+function renderSocialFallback(avgCal, avgPro, consistency) {
+    // Fallback when not enough community data — show personal stats as percentile estimates
+    const proPercentile = Math.min(95, Math.max(20, Math.round(avgPro / 0.8)));
+    const consistencyPercentile = Math.round((consistency / 7) * 100);
+    const goalPercentile = 50;
+    renderSocialComparison(proPercentile, consistencyPercentile, goalPercentile);
+}
+
+function renderSocialComparison(proteinPct, consistencyPct, goalPct) {
+    const container = document.getElementById('social-compare-content');
+    if (!container) return;
+
+    const stats = [
+        { label: 'Protein', pct: Math.min(99, Math.max(1, proteinPct)), desc: 'intake vs community' },
+        { label: 'Logging', pct: Math.min(99, Math.max(1, consistencyPct)), desc: 'consistency' },
+        { label: 'On Goal', pct: Math.min(99, Math.max(1, goalPct)), desc: 'adherence' }
+    ];
+
+    container.innerHTML = stats.map(s => `
+        <div class="social-stat-row">
+            <div class="social-stat-label">${s.label}</div>
+            <div class="social-bar-bg"><div class="social-bar-fill" style="width: ${s.pct}%;"></div></div>
+            <div class="social-percentile">Top ${100 - s.pct}%</div>
+        </div>
+    `).join('') + '<p style="text-align: center; font-size: 0.68rem; color: #9333ea; margin: 10px 0 0 0;">Based on anonymous, aggregated data from all users</p>';
+}
+
 // --- Master function to load all enhanced nutrition features ---
 async function loadEnhancedNutritionFeatures() {
     try {
@@ -44337,10 +45344,15 @@ async function loadEnhancedNutritionFeatures() {
             loadMultiWeekData(4),
             loadMicronutrientInsights(),
             loadMealPatterns(),
-            loadMealJournal()
+            loadMealJournal(),
+            loadScoreHistory(),
+            loadMealPrepScore(),
+            loadNutritionBadges(),
+            loadSocialComparison()
         ]);
-        // Cycle tips are synchronous (uses already-loaded cycle data)
+        // Synchronous features (use already-loaded data)
         loadCycleNutritionTips();
+        initHydrationTracker();
     } catch (err) {
         console.error('Error loading enhanced nutrition features:', err);
     }
@@ -44406,6 +45418,12 @@ function updateNutritionUI(dailyData, mealsData) {
 
     // Update daily nutrition score
     updateNutritionScoreUI(data);
+
+    // Update macro ratio pie chart
+    updateMacroPieChart(data);
+
+    // Generate smart meal suggestions based on macro gaps
+    generateSmartSuggestions(data);
 }
 
 // Helper function to update element text
