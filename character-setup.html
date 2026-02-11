@@ -240,22 +240,54 @@
         const isAlreadyInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
         function onboardingInstallPWA() {
+            const btn = document.getElementById('onboarding-install-btn');
+
+            if (isAlreadyInstalled) {
+                // Already installed — show message and redirect
+                if (btn) btn.innerHTML = '&#10003; Already Installed!';
+                setTimeout(() => { window.location.href = 'plantbasedswitch.html'; }, 1200);
+                return;
+            }
+
             if (onboardingDeferredPrompt) {
+                if (btn) {
+                    btn.innerHTML = 'Installing...';
+                    btn.disabled = true;
+                }
                 onboardingDeferredPrompt.prompt();
                 onboardingDeferredPrompt.userChoice.then((result) => {
                     onboardingDeferredPrompt = null;
-                    // Proceed to next page regardless of choice
-                    window.location.href = 'plantbasedswitch.html';
+                    if (result.outcome === 'accepted' && btn) {
+                        btn.innerHTML = '&#10003; Installed!';
+                    }
+                    setTimeout(() => { window.location.href = 'plantbasedswitch.html'; }, 800);
                 });
             } else {
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
                 if (isIOS) {
-                    alert("On iOS: Tap the Share button at the bottom of Safari, then tap 'Add to Home Screen' to install the app.");
+                    if (btn) {
+                        btn.innerHTML = 'Use Share → Add to Home Screen';
+                        btn.style.fontSize = '0.85rem';
+                    }
+                    setTimeout(() => { window.location.href = 'plantbasedswitch.html'; }, 3000);
                 } else {
-                    alert("App installation is getting ready. Please try again in a moment, or install from the banner on your dashboard.");
+                    // Show installing feedback, wait for prompt
+                    if (btn) {
+                        btn.innerHTML = 'Installing...';
+                        btn.disabled = true;
+                    }
+                    setTimeout(() => {
+                        if (onboardingDeferredPrompt) {
+                            onboardingInstallPWA();
+                        } else {
+                            if (btn) {
+                                btn.innerHTML = 'Use browser menu → Install App';
+                                btn.style.fontSize = '0.85rem';
+                            }
+                            setTimeout(() => { window.location.href = 'plantbasedswitch.html'; }, 2500);
+                        }
+                    }, 1500);
                 }
-                // Still redirect after alert
-                window.location.href = 'plantbasedswitch.html';
             }
         }
 

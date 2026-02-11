@@ -14867,8 +14867,7 @@ function viewWorkoutHistoryDetail(date) {
                         <div>Download App</div>
                         <div style="font-size:0.75rem; color:var(--text-muted);">Install for the best experience</div>
                     </div>
-                    <button onclick="installPWA()" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:16px; height:16px; fill:none; stroke:white; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <button class="pwa-install-btn" onclick="installPWA(this)" data-original-text="Install" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
                         Install
                     </button>
                 </div>
@@ -14889,7 +14888,7 @@ function viewWorkoutHistoryDetail(date) {
 
         <!-- Download App Button (above logout) -->
         <div id="profile-download-app-btn" style="padding: 0 25px; margin-top: 30px;">
-            <button onclick="installPWA()" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:linear-gradient(135deg, #046A38, #06a94d); color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition: transform 0.2s, box-shadow 0.2s; box-shadow:0 4px 15px rgba(4,106,56,0.25);" onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 6px 20px rgba(4,106,56,0.35)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(4,106,56,0.25)'">
+            <button class="pwa-install-btn" onclick="installPWA(this)" data-original-text="DOWNLOAD APP" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:linear-gradient(135deg, #046A38, #06a94d); color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition: transform 0.2s, box-shadow 0.2s; box-shadow:0 4px 15px rgba(4,106,56,0.25);" onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 6px 20px rgba(4,106,56,0.35)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(4,106,56,0.25)'">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 DOWNLOAD APP
             </button>
@@ -29159,38 +29158,58 @@ window.submitCoachMessage = async function() {
 <script>
 // --- PWA INSTALL BANNER LOGIC ---
 let deferredPrompt;
-let installBannerDismissed = localStorage.getItem('pwa_banner_dismissed_v2') === 'true'; // Reset key to force show
+let installBannerDismissed = localStorage.getItem('pwa_banner_dismissed_v2') === 'true';
 
 // Detect if running as installed PWA
 const isInstalledPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
-// Only show on mobile devices - REMOVED RESTRICTION
-const isMobile = true; 
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     console.log("Install Prompt Captured");
+    // Update any buttons that were showing "waiting" state
+    document.querySelectorAll('.pwa-install-btn').forEach(btn => {
+        btn.disabled = false;
+        if (btn.dataset.originalText) {
+            btn.innerHTML = btn.dataset.originalText;
+        }
+    });
 });
 
-// Force check on load - Show banner if not installed
-// (Duplicate logic removed)
-
 window.addEventListener('load', () => {
-    // Only show if not installed and not dismissed and NOT iOS (since iOS can't "one-click" install)
-    // Actually user wants "Click -> Download". If iOS, we can't do that.
-    // We will show transparency.
-
-    if (!isInstalledPWA && !installBannerDismissed) {
-        showPwaBanner();
-    }
-
-    // Hide download app buttons in settings/profile if already installed as PWA
     if (isInstalledPWA) {
+        // App is already installed — show "already installed" state everywhere
+        const banner = document.getElementById('pwa-install-banner');
+        if (banner) banner.style.display = 'none';
+
         const settingsDownload = document.getElementById('settings-download-app');
+        if (settingsDownload) {
+            const btn = settingsDownload.querySelector('button');
+            if (btn) {
+                btn.onclick = null;
+                btn.style.background = '#6b7280';
+                btn.style.cursor = 'default';
+                btn.innerHTML = '&#10003; Installed';
+            }
+            const subtitle = settingsDownload.querySelector('div > div:last-child');
+            if (subtitle) subtitle.textContent = 'Already installed on your phone';
+        }
+
         const profileDownload = document.getElementById('profile-download-app-btn');
-        if (settingsDownload) settingsDownload.style.display = 'none';
-        if (profileDownload) profileDownload.style.display = 'none';
+        if (profileDownload) {
+            const btn = profileDownload.querySelector('button');
+            if (btn) {
+                btn.onclick = null;
+                btn.style.background = 'linear-gradient(135deg, #6b7280, #9ca3af)';
+                btn.style.cursor = 'default';
+                btn.style.boxShadow = 'none';
+                btn.onmouseover = null;
+                btn.onmouseout = null;
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ALREADY INSTALLED';
+            }
+        }
+    } else if (!installBannerDismissed) {
+        showPwaBanner();
     }
 
     // Make Coach Bubble Draggable
@@ -29201,11 +29220,105 @@ function showPwaBanner() {
     const banner = document.getElementById('pwa-install-banner');
     if(banner) {
         banner.style.display = 'flex';
-        // Push body content down to avoid overlap
         document.body.style.transition = 'padding-top 0.3s ease';
         document.body.style.paddingTop = banner.offsetHeight + 'px';
     }
 }
+
+window.installPWA = async function(clickedBtn) {
+    // If already installed, just show the message
+    if (isInstalledPWA) {
+        if (clickedBtn) {
+            clickedBtn.innerHTML = '&#10003; Already Installed';
+            clickedBtn.disabled = true;
+        }
+        return;
+    }
+
+    if (deferredPrompt) {
+        // Show installing feedback immediately
+        if (clickedBtn) {
+            clickedBtn.dataset.originalText = clickedBtn.innerHTML;
+            clickedBtn.innerHTML = 'Installing...';
+            clickedBtn.disabled = true;
+        }
+
+        try {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                // Successfully accepted install
+                if (clickedBtn) {
+                    clickedBtn.innerHTML = '&#10003; Installed!';
+                }
+                dismissInstall();
+                // Update all other install buttons
+                document.querySelectorAll('.pwa-install-btn').forEach(btn => {
+                    btn.innerHTML = '&#10003; Installed!';
+                    btn.disabled = true;
+                });
+            } else {
+                // User dismissed — restore button
+                if (clickedBtn) {
+                    clickedBtn.innerHTML = clickedBtn.dataset.originalText || 'Install';
+                    clickedBtn.disabled = false;
+                }
+            }
+        } catch(err) {
+            console.error('Install error:', err);
+            if (clickedBtn) {
+                clickedBtn.innerHTML = clickedBtn.dataset.originalText || 'Install';
+                clickedBtn.disabled = false;
+            }
+        }
+        deferredPrompt = null;
+    } else {
+        // No deferred prompt available
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+            // Show iOS-specific instructions
+            if (clickedBtn) {
+                clickedBtn.innerHTML = 'Use Share → Add to Home Screen';
+                clickedBtn.style.fontSize = '0.7rem';
+                setTimeout(() => {
+                    clickedBtn.innerHTML = clickedBtn.dataset.originalText || 'Install';
+                    clickedBtn.style.fontSize = '';
+                }, 4000);
+            }
+        } else {
+            // Android/Desktop — prompt may not have fired yet, or browser doesn't support it
+            if (clickedBtn) {
+                clickedBtn.dataset.originalText = clickedBtn.dataset.originalText || clickedBtn.innerHTML;
+                clickedBtn.innerHTML = 'Installing...';
+                clickedBtn.disabled = true;
+                // Wait a moment for the prompt to potentially arrive
+                setTimeout(() => {
+                    if (deferredPrompt) {
+                        // Prompt arrived, retry
+                        window.installPWA(clickedBtn);
+                    } else {
+                        clickedBtn.innerHTML = 'Use browser menu → Install';
+                        clickedBtn.style.fontSize = '0.7rem';
+                        setTimeout(() => {
+                            clickedBtn.innerHTML = clickedBtn.dataset.originalText || 'Install';
+                            clickedBtn.style.fontSize = '';
+                            clickedBtn.disabled = false;
+                        }, 4000);
+                    }
+                }, 1500);
+            }
+        }
+    }
+};
+
+window.dismissInstall = function() {
+    const banner = document.getElementById('pwa-install-banner');
+    if(banner) {
+        banner.style.display = 'none';
+        document.body.style.paddingTop = '0';
+    }
+    localStorage.setItem('pwa_banner_dismissed_v2', 'true');
+};
 
 function initDraggableBubble() {
     const bubble = document.getElementById('coach-floating-btn');
@@ -34906,8 +35019,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <span style="font-weight:600;">Install App for Best Experience</span>
     </div>
     <div style="display:flex; gap:10px;">
-        <button onclick="dismissInstall()" style="background:transparent; border:1px solid rgba(255,255,255,0.4); color:white; padding:6px 12px; border-radius:20px; font-size:70%; font-weight:600;">LATER</button>
-        <button onclick="installPWA()" style="background:white; color:var(--primary); border:none; padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:700; box-shadow:0 2px 10px rgba(0,0,0,0.1);">INSTALL</button>
+        <button onclick="dismissInstall()" style="background:transparent; border:1px solid rgba(255,255,255,0.4); color:white; padding:6px 12px; border-radius:20px; font-size:70%; font-weight:600; cursor:pointer;">LATER</button>
+        <button class="pwa-install-btn" onclick="installPWA(this)" data-original-text="INSTALL" style="background:white; color:var(--primary); border:none; padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:700; box-shadow:0 2px 10px rgba(0,0,0,0.1); cursor:pointer; min-width:80px;">INSTALL</button>
     </div>
 </div>
 
