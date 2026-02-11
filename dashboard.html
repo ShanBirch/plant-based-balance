@@ -45481,6 +45481,12 @@ function closeWeeklyTrendsPage() {
     const page = document.getElementById('weekly-trends-page');
     if (!page) return;
 
+    // Ensure we return to the Nutrition tab
+    const mealsBtn = document.querySelector('.bottom-nav .nav-item[onclick*="meals"]');
+    if (mealsBtn) {
+        switchAppTab('meals', mealsBtn);
+    }
+
     page.style.transition = 'transform 0.3s ease-out';
     page.style.transform = 'translateX(100%)';
     setTimeout(() => {
