@@ -7517,6 +7517,11 @@ async function applyAppTheme(themeKey) {
                         <div class="score-breakdown-item"><span class="score-dot" style="background: #f59e0b;"></span> Carbs</div>
                         <div class="score-breakdown-item"><span class="score-dot" style="background: #ef4444;"></span> Fat</div>
                     </div>
+                    <!-- Share Nutrition Card Button -->
+                    <button id="share-nutrition-btn" onclick="shareNutritionToFeed()" style="display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:12px; padding:10px 16px; background:linear-gradient(135deg, rgba(99,102,241,0.15), rgba(129,140,248,0.15)); border:1px solid rgba(99,102,241,0.25); border-radius:10px; color:var(--text-main); font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.2s;">
+                        <span style="font-size:1rem;">🥗</span>
+                        <span style="font-size:0.85rem;">Share Nutrition</span>
+                    </button>
                 </div>
 
                 <!-- Streak Tracker (hidden - now inline in header) -->
@@ -40578,7 +40583,15 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
             checkNewAnimationUnlocks(previousLevel, newLevel);
         }
 
-        // Step 12: Clean up after celebration (5 seconds)
+        // Step 12: Auto-share level-up to feed
+        shareLevelUpToFeed({
+            newLevel: newLevel,
+            previousLevel: previousLevel,
+            title: title,
+            lifetimePoints: lifetimePoints
+        });
+
+        // Step 13: Clean up after celebration (5 seconds)
         setTimeout(() => {
             overlay.classList.remove('active');
             banner.style.display = 'none';
@@ -40657,6 +40670,14 @@ function showLevelUpToast(newLevel, title, previousLevel = null, lifetimePoints 
     createGlowRings();
     triggerVictoryAnimation();
     triggerXPBarRainbow();
+
+    // Auto-share level-up to feed
+    shareLevelUpToFeed({
+        newLevel: newLevel,
+        previousLevel: previousLevel,
+        title: title,
+        lifetimePoints: lifetimePoints
+    });
 
     // Check for newly unlocked animations
     if (previousLevel) {
@@ -41550,6 +41571,162 @@ async function sharePBCardToFeed(pbData) {
     } catch (error) {
         console.error('Error sharing PB card:', error);
         showToast('Failed to share PB. Please try again.', 'error');
+    }
+}
+
+// Share daily nutrition summary card to feed
+async function shareNutritionToFeed() {
+    if (!window.currentUser) {
+        showToast('You must be logged in to share', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('share-nutrition-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span style="font-size:1rem;">🥗</span><span style="font-size:0.85rem;">Sharing...</span>';
+    }
+
+    try {
+        const userId = window.currentUser.id;
+        const today = getLocalDateString();
+
+        // Load today's nutrition data
+        const { data: dailyData, error: dailyError } = await window.supabaseClient
+            .from('daily_nutrition')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('nutrition_date', today)
+            .single();
+
+        if (dailyError || !dailyData || !dailyData.total_calories) {
+            showToast('Log some meals first before sharing!', 'info');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<span style="font-size:1rem;">🥗</span><span style="font-size:0.85rem;">Share Nutrition</span>';
+            }
+            return;
+        }
+
+        // Calculate score
+        const scoreData = calculateNutritionScore(dailyData);
+        const score = scoreData ? scoreData.total : 0;
+
+        // Get meal count for today
+        const { data: mealsData } = await window.supabaseClient
+            .from('meal_logs')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('meal_date', today);
+
+        const mealCount = mealsData ? mealsData.length : 0;
+
+        // Get streak
+        let streak = 0;
+        try {
+            const pointsData = await window.db?.points?.getPoints(userId);
+            streak = pointsData?.current_streak || 0;
+        } catch (e) {
+            console.log('Could not get streak for nutrition card');
+        }
+
+        const cardPayload = {
+            card_type: 'nutrition',
+            score: score,
+            calories: dailyData.total_calories || 0,
+            calorie_goal: dailyData.calorie_goal || 2000,
+            protein: dailyData.total_protein_g || 0,
+            protein_goal: dailyData.protein_goal_g || 50,
+            carbs: dailyData.total_carbs_g || 0,
+            carbs_goal: dailyData.carbs_goal_g || 250,
+            fat: dailyData.total_fat_g || 0,
+            fat_goal: dailyData.fat_goal_g || 70,
+            meal_count: mealCount,
+            streak: streak
+        };
+
+        const story = await dbHelpers.stories.create(window.currentUser.id, {
+            media_type: 'nutrition_card',
+            media_url: '',
+            thumbnail_url: null,
+            caption: JSON.stringify(cardPayload),
+            duration: 5
+        });
+
+        console.log('Nutrition card story created:', story);
+
+        // Update button to show success
+        if (btn) {
+            btn.style.background = 'rgba(99, 102, 241, 0.2)';
+            btn.style.border = '1px solid rgba(99, 102, 241, 0.4)';
+            btn.innerHTML = '<span style="font-size:1rem;">✅</span><span style="font-size:0.85rem;">Shared!</span>';
+        }
+
+        // Refresh feed if visible
+        if (typeof loadPhotoFeed === 'function') {
+            loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
+        }
+
+        showToast('Nutrition card shared to feed!', 'success');
+
+    } catch (error) {
+        console.error('Error sharing nutrition card:', error);
+        showToast('Failed to share. Please try again.', 'error');
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span style="font-size:1rem;">🥗</span><span style="font-size:0.85rem;">Share Nutrition</span>';
+        }
+    }
+}
+
+// Share level-up achievement card to feed
+async function shareLevelUpToFeed(levelData) {
+    if (!window.currentUser || !levelData) return;
+
+    try {
+        // Get streak
+        let streak = 0;
+        try {
+            const session = await window.authHelpers?.getSession();
+            if (session?.user) {
+                const pointsData = await window.db?.points?.getPoints(session.user.id);
+                streak = pointsData?.current_streak || 0;
+            }
+        } catch (e) {
+            console.log('Could not get streak for level-up card');
+        }
+
+        const cardPayload = {
+            card_type: 'level_up',
+            level: levelData.newLevel || levelData.level,
+            title: levelData.title || getLevelTitle(levelData.newLevel || levelData.level),
+            previous_level: levelData.previousLevel || null,
+            previous_title: levelData.previousLevel ? getLevelTitle(levelData.previousLevel) : null,
+            lifetime_xp: levelData.lifetimePoints || 0,
+            streak: streak
+        };
+
+        const story = await dbHelpers.stories.create(window.currentUser.id, {
+            media_type: 'level_up_card',
+            media_url: '',
+            thumbnail_url: null,
+            caption: JSON.stringify(cardPayload),
+            duration: 5
+        });
+
+        console.log('Level-up card story created:', story);
+
+        // Refresh feed if visible
+        if (typeof loadPhotoFeed === 'function') {
+            loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
+        }
+
+        showToast('Level up shared to feed!', 'success');
+
+    } catch (error) {
+        console.error('Error sharing level-up card:', error);
+        showToast('Failed to share level up. Please try again.', 'error');
     }
 }
 
