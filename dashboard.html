@@ -38732,25 +38732,30 @@ async function loadPointsWidget() {
         widget.style.display = 'block';
     }
 
+    // Default points data — ensures baby model always loads even if DB/auth fail
+    const defaultPointsData = { current_points: 0, lifetime_points: 0, current_streak: 0 };
+
     try {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) {
             console.log('No user session, showing default points widget');
-            updatePointsDisplay({ current_points: 0, current_streak: 0 });
+            updatePointsDisplay(defaultPointsData);
             return;
         }
 
         const userId = session.user.id;
 
         // Try to get points data, fall back to defaults if table doesn't exist
-        let pointsData = { current_points: 0, current_streak: 0 };
+        let pointsData = defaultPointsData;
         try {
-            const data = await window.db?.points?.getPoints(userId);
+            // Use window.dbHelpers (primary) or window.db (alias) — both set by supabase.js
+            const db = window.dbHelpers || window.db;
+            const data = await db?.points?.getPoints(userId);
             if (data) {
                 pointsData = data;
             }
         } catch (dbError) {
-            console.log('Points table not set up yet, using defaults');
+            console.log('Points table not set up yet, using defaults:', dbError.message || dbError);
         }
 
         // Update points display
@@ -38758,8 +38763,8 @@ async function loadPointsWidget() {
 
     } catch (error) {
         console.error('Error loading points widget:', error);
-        // Still show with defaults
-        updatePointsDisplay({ current_points: 0, current_streak: 0 });
+        // Still show with defaults — this guarantees the tamagotchi baby model appears
+        updatePointsDisplay(defaultPointsData);
     }
 }
 
@@ -45918,6 +45923,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏠', theme: 'tamagotchi-bg-home', image: './assets/home.jpeg' },
             { name: 'beach', displayName: 'Beach', unlockLevel: 30, icon: '🏖️', theme: 'tamagotchi-bg-beach', image: './assets/beach.jpeg' },
             { name: 'mountain', displayName: 'Mountain', unlockLevel: 40, icon: '⛰️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
+            { name: 'dojo', displayName: 'Battle Dojo', unlockLevel: 50, icon: '🥋', theme: 'tamagotchi-bg-dojo', image: './assets/battle_dojo_bg.jpeg' },
         ];
         // Expose globally so battle restore can look up the saved background image
         window.BACKGROUND_UNLOCKS = BACKGROUND_UNLOCKS;
@@ -46286,6 +46292,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             const selectedEl = document.querySelector(`.bg-selector-item[data-bg="${bgName}"]`);
             if (selectedEl) selectedEl.classList.add('bg-selected');
+
+            // Easter egg: Play DBZ video when dojo background is selected for the first time
+            if (bgName === 'dojo') {
+                const dojoEggKey = 'dojo_bg_easter_egg_seen';
+                if (!localStorage.getItem(dojoEggKey)) {
+                    localStorage.setItem(dojoEggKey, 'true');
+                    setTimeout(() => {
+                        if (typeof openExerciseVideo === 'function') {
+                            openExerciseVideo(
+                                'https://f005.backblazeb2.com/file/shannonsvideos/download_20260120_225718_0000.mp4',
+                                'Battle Dojo Unlocked!',
+                                true
+                            );
+                        }
+                    }, 300);
+                }
+            }
         };
 
         // Listen for initial model load to log available animations and apply colors
