@@ -2920,6 +2920,431 @@ async function applyAppTheme(themeKey) {
         overflow: hidden;
     }
 
+    /* ============================================================
+       ENHANCED NUTRITION TAB STYLES
+       ============================================================ */
+
+    /* Daily Nutrition Score */
+    .nutrition-score-ring {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+    }
+    .nutrition-score-ring svg { width: 100%; height: 100%; }
+    .nutrition-score-value {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: var(--text-main);
+    }
+    .nutrition-score-card {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border: 1px solid #bbf7d0;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+        text-align: center;
+    }
+    .nutrition-score-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .score-breakdown {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+    }
+    .score-breakdown-item {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .score-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    /* Streak Tracker */
+    .streak-tracker-card {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border: 1px solid #fde68a;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+    }
+    .streak-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+    }
+    .streak-flame {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .streak-count {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #d97706;
+    }
+    .streak-label {
+        font-size: 0.85rem;
+        color: #92400e;
+        font-weight: 600;
+    }
+    .streak-next-bonus {
+        font-size: 0.78rem;
+        color: #92400e;
+        background: rgba(217, 119, 6, 0.12);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    .streak-progress-bar {
+        height: 8px;
+        background: rgba(217, 119, 6, 0.15);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+    .streak-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+    .streak-days-grid {
+        display: flex;
+        gap: 6px;
+        margin-top: 12px;
+        justify-content: center;
+    }
+    .streak-day-dot {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        border: 2px solid #fde68a;
+        color: #92400e;
+        background: white;
+    }
+    .streak-day-dot.filled {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        border-color: #d97706;
+    }
+    .streak-day-dot.today {
+        border-color: #d97706;
+        box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.3);
+    }
+
+    /* Multi-Week History */
+    .multi-week-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+    }
+    .multi-week-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    .multi-week-nav {
+        display: flex;
+        gap: 6px;
+    }
+    .multi-week-nav button {
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        color: var(--text-main);
+        font-weight: 600;
+    }
+    .multi-week-nav button.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+    .sparkline-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    .sparkline-row:last-child { border-bottom: none; }
+    .sparkline-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text-main);
+        width: 55px;
+        flex-shrink: 0;
+    }
+    .sparkline-svg {
+        flex: 1;
+        height: 30px;
+    }
+    .sparkline-value {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-main);
+        width: 60px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+    .sparkline-trend {
+        font-size: 0.75rem;
+        font-weight: 700;
+        width: 50px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+    .sparkline-trend.up { color: #16a34a; }
+    .sparkline-trend.down { color: #dc2626; }
+    .sparkline-trend.neutral { color: #9ca3af; }
+    .week-compare-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-top: 14px;
+    }
+    .week-compare-stat {
+        text-align: center;
+        padding: 12px 8px;
+        background: #f9fafb;
+        border-radius: 10px;
+    }
+    .week-compare-stat .stat-value {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+    .week-compare-stat .stat-label {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    /* Micronutrient Insights */
+    .micro-insights-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+    }
+    .micro-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-top: 14px;
+    }
+    .micro-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #f9fafb;
+    }
+    .micro-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    .micro-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .micro-name {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+    .micro-bar-bg {
+        height: 5px;
+        background: #e5e7eb;
+        border-radius: 3px;
+        margin-top: 4px;
+        overflow: hidden;
+    }
+    .micro-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.4s ease;
+    }
+    .micro-status {
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    /* Meal Pattern Analysis */
+    .meal-pattern-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+    }
+    .pattern-insight {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px;
+        border-radius: 10px;
+        background: #f9fafb;
+        margin-bottom: 8px;
+    }
+    .pattern-insight:last-child { margin-bottom: 0; }
+    .pattern-icon {
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+    .pattern-text {
+        font-size: 0.85rem;
+        color: var(--text-main);
+        line-height: 1.4;
+    }
+    .pattern-text strong {
+        color: var(--primary);
+    }
+
+    /* Photo Meal Journal */
+    .meal-journal-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+    }
+    .journal-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 14px;
+    }
+    .journal-day {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+    }
+    .journal-date-col {
+        width: 45px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+    .journal-date-day {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+    .journal-date-num {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-main);
+    }
+    .journal-photos {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        flex: 1;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .journal-photo {
+        width: 64px;
+        height: 64px;
+        border-radius: 10px;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .journal-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .journal-photo .placeholder {
+        font-size: 1.5rem;
+    }
+    .journal-day-cals {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+        white-space: nowrap;
+    }
+
+    /* Cycle-Synced Nutrition Tips */
+    .cycle-nutrition-card {
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+        border: 1px solid;
+    }
+    .cycle-nutrition-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+    .cycle-nutrition-phase {
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    .cycle-tip-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .cycle-tip {
+        display: flex;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    .cycle-tip-icon {
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
     /* Camera Button Large */
     .camera-btn-large {
         background: var(--primary);
@@ -6367,6 +6792,112 @@ async function applyAppTheme(themeKey) {
                         <div id="weekly-daily-breakdown">
                             <p style="text-align: center; color: var(--text-muted); padding: 20px 0;">Loading weekly data...</p>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Daily Nutrition Score -->
+                <div class="nutrition-score-card" id="nutrition-score-section">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+                        <div class="nutrition-score-ring">
+                            <svg viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="42" fill="none" stroke="#bbf7d0" stroke-width="8"/>
+                                <circle id="nutrition-score-circle" cx="50" cy="50" r="42" fill="none" stroke="var(--primary)" stroke-width="8" stroke-linecap="round"
+                                    style="stroke-dasharray: 264; stroke-dashoffset: 264; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 0.6s ease;"/>
+                            </svg>
+                            <div class="nutrition-score-value" id="nutrition-score-value">--</div>
+                        </div>
+                        <div style="text-align: left;">
+                            <div style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Daily Score</div>
+                            <div class="nutrition-score-label" id="nutrition-score-grade">Track meals to see score</div>
+                        </div>
+                    </div>
+                    <div class="score-breakdown" id="score-breakdown">
+                        <div class="score-breakdown-item"><span class="score-dot" style="background: var(--primary);"></span> Calories</div>
+                        <div class="score-breakdown-item"><span class="score-dot" style="background: #3b82f6;"></span> Protein</div>
+                        <div class="score-breakdown-item"><span class="score-dot" style="background: #f59e0b;"></span> Carbs</div>
+                        <div class="score-breakdown-item"><span class="score-dot" style="background: #ef4444;"></span> Fat</div>
+                    </div>
+                </div>
+
+                <!-- Streak Tracker -->
+                <div class="streak-tracker-card" id="streak-tracker-section">
+                    <div class="streak-header">
+                        <div class="streak-flame">
+                            <span style="font-size: 1.8rem;">&#x1F525;</span>
+                            <div>
+                                <div class="streak-count" id="streak-count">0</div>
+                                <div class="streak-label">Day Streak</div>
+                            </div>
+                        </div>
+                        <div class="streak-next-bonus" id="streak-next-bonus">Loading...</div>
+                    </div>
+                    <div class="streak-days-grid" id="streak-days-grid">
+                        <!-- 7 day dots rendered by JS -->
+                    </div>
+                    <div class="streak-progress-bar">
+                        <div class="streak-progress-fill" id="streak-progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 6px;">
+                        <span style="font-size: 0.72rem; color: #92400e;">Current</span>
+                        <span style="font-size: 0.72rem; color: #92400e;" id="streak-target-label">Next: 7-day (5 pts)</span>
+                    </div>
+                </div>
+
+                <!-- Multi-Week History -->
+                <div class="multi-week-card" id="multi-week-section">
+                    <div class="multi-week-header">
+                        <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main);">Weekly Trends</h3>
+                        <div class="multi-week-nav" id="multi-week-nav">
+                            <button class="active" onclick="loadMultiWeekData(4)">4 Weeks</button>
+                            <button onclick="loadMultiWeekData(8)">8 Weeks</button>
+                        </div>
+                    </div>
+                    <div id="multi-week-sparklines">
+                        <p style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.85rem;">Loading trend data...</p>
+                    </div>
+                    <div class="week-compare-grid" id="week-compare-grid">
+                        <!-- Comparison stats rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Micronutrient Insights -->
+                <div class="micro-insights-card" id="micro-insights-section">
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Micronutrient Insights</h3>
+                    <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Key nutrients for plant-based diets</p>
+                    <div class="micro-grid" id="micro-grid">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Meal Pattern Analysis -->
+                <div class="meal-pattern-card" id="meal-pattern-section">
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Meal Patterns</h3>
+                    <p style="margin: 0 0 14px 0; font-size: 0.78rem; color: var(--text-muted);">Insights from your last 7 days</p>
+                    <div id="meal-pattern-insights">
+                        <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log more meals to see patterns</p>
+                    </div>
+                </div>
+
+                <!-- Photo Meal Journal -->
+                <div class="meal-journal-card" id="meal-journal-section">
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Meal Journal</h3>
+                    <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Your recent meals at a glance</p>
+                    <div class="journal-timeline" id="journal-timeline">
+                        <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Loading your meal photos...</p>
+                    </div>
+                </div>
+
+                <!-- Cycle-Synced Nutrition Tips -->
+                <div class="cycle-nutrition-card" id="cycle-nutrition-section" style="display: none;">
+                    <div class="cycle-nutrition-header">
+                        <span id="cycle-nutrition-icon" style="font-size: 1.5rem;"></span>
+                        <div>
+                            <div class="cycle-nutrition-phase" id="cycle-nutrition-phase">Loading...</div>
+                            <div style="font-size: 0.78rem; color: var(--text-muted);">Nutrition tips for your cycle phase</div>
+                        </div>
+                    </div>
+                    <div class="cycle-tip-list" id="cycle-tip-list">
+                        <!-- Rendered by JS -->
                     </div>
                 </div>
 
@@ -18597,10 +19128,11 @@ function switchWeek(id, btn) {
         if (id === 'today') {
             renderTodayMeals();
         } else if (id === 'calorie-tracker') {
-            // Recalculate and load nutrition data
+            // Recalculate and load nutrition data + enhanced features
             (async () => {
                 await recalculateDailyNutrition();
                 loadTodayNutrition();
+                loadEnhancedNutritionFeatures();
             })();
         } else if (id === 'meal-plan-store') {
             // Render the meal plan store
@@ -42942,6 +43474,878 @@ function updateWeeklyMetricsUI(metrics) {
     }
 }
 
+// ============================================================
+// ENHANCED NUTRITION TAB FEATURES
+// ============================================================
+
+// --- 1. Daily Nutrition Score (0-100) ---
+function calculateNutritionScore(dailyData) {
+    if (!dailyData || !dailyData.calorie_goal) return null;
+
+    const calorieGoal = dailyData.calorie_goal || 2000;
+    const proteinGoal = dailyData.protein_goal_g || 50;
+    const carbsGoal = dailyData.carbs_goal_g || 250;
+    const fatGoal = dailyData.fat_goal_g || 70;
+
+    const calories = dailyData.total_calories || 0;
+    const protein = dailyData.total_protein_g || 0;
+    const carbs = dailyData.total_carbs_g || 0;
+    const fat = dailyData.total_fat_g || 0;
+
+    if (calories === 0) return null;
+
+    // Score each macro: 100 if on target, decreases as you deviate
+    function macroScore(actual, goal) {
+        if (goal === 0) return 100;
+        const ratio = actual / goal;
+        // Perfect = 1.0, penalize for over or under
+        const deviation = Math.abs(1 - ratio);
+        return Math.max(0, Math.round(100 - (deviation * 120)));
+    }
+
+    const calScore = macroScore(calories, calorieGoal);
+    const proScore = macroScore(protein, proteinGoal);
+    const carbScore = macroScore(carbs, carbsGoal);
+    const fatScore = macroScore(fat, fatGoal);
+
+    // Weighted average: calories 40%, protein 25%, carbs 20%, fat 15%
+    const total = Math.round(calScore * 0.4 + proScore * 0.25 + carbScore * 0.2 + fatScore * 0.15);
+
+    return { total, calScore, proScore, carbScore, fatScore };
+}
+
+function updateNutritionScoreUI(dailyData) {
+    const scoreData = calculateNutritionScore(dailyData);
+    const valueEl = document.getElementById('nutrition-score-value');
+    const gradeEl = document.getElementById('nutrition-score-grade');
+    const circleEl = document.getElementById('nutrition-score-circle');
+
+    if (!scoreData || !valueEl) return;
+
+    valueEl.textContent = scoreData.total;
+
+    // Update grade text
+    let grade = 'Keep going!';
+    if (scoreData.total >= 90) grade = 'Excellent!';
+    else if (scoreData.total >= 75) grade = 'Great job!';
+    else if (scoreData.total >= 60) grade = 'Good progress';
+    else if (scoreData.total >= 40) grade = 'Getting there';
+    if (gradeEl) gradeEl.textContent = grade;
+
+    // Update ring
+    if (circleEl) {
+        const circumference = 2 * Math.PI * 42;
+        const offset = circumference * (1 - scoreData.total / 100);
+        circleEl.style.strokeDashoffset = offset;
+
+        // Color based on score
+        if (scoreData.total >= 75) circleEl.style.stroke = 'var(--primary)';
+        else if (scoreData.total >= 50) circleEl.style.stroke = '#f59e0b';
+        else circleEl.style.stroke = '#ef4444';
+    }
+
+    // Update breakdown
+    const breakdownEl = document.getElementById('score-breakdown');
+    if (breakdownEl) {
+        breakdownEl.innerHTML = `
+            <div class="score-breakdown-item"><span class="score-dot" style="background: var(--primary);"></span> Cal ${scoreData.calScore}%</div>
+            <div class="score-breakdown-item"><span class="score-dot" style="background: #3b82f6;"></span> Pro ${scoreData.proScore}%</div>
+            <div class="score-breakdown-item"><span class="score-dot" style="background: #f59e0b;"></span> Carb ${scoreData.carbScore}%</div>
+            <div class="score-breakdown-item"><span class="score-dot" style="background: #ef4444;"></span> Fat ${scoreData.fatScore}%</div>
+        `;
+    }
+}
+
+// --- 2. Streak Tracker ---
+async function loadStreakData() {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+
+        const userId = session.user.id;
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        // Check point_transactions for daily_log claims to determine streak
+        const { data: claims, error } = await window.supabaseClient
+            .from('point_transactions')
+            .select('created_at')
+            .eq('user_id', userId)
+            .eq('transaction_type', 'earn_daily_log')
+            .gte('created_at', getLocalDateString(thirtyDaysAgo))
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error loading streak:', error);
+            // Fallback: use daily_nutrition table
+            await loadStreakFromNutrition(userId);
+            return;
+        }
+
+        // Calculate streak from daily log claims
+        const claimedDates = new Set();
+        (claims || []).forEach(c => {
+            const d = c.created_at.split('T')[0];
+            claimedDates.add(d);
+        });
+
+        // Also check daily_nutrition for days with data (broader definition of streak)
+        const { data: nutritionDays } = await window.supabaseClient
+            .from('daily_nutrition')
+            .select('nutrition_date, total_calories')
+            .eq('user_id', userId)
+            .gte('nutrition_date', getLocalDateString(thirtyDaysAgo))
+            .order('nutrition_date', { ascending: false });
+
+        const loggedDates = new Set();
+        (nutritionDays || []).forEach(d => {
+            if (d.total_calories > 0) loggedDates.add(d.nutrition_date);
+        });
+
+        // Calculate streak (consecutive days with logged nutrition)
+        let streak = 0;
+        const checkDate = new Date(today);
+        for (let i = 0; i < 100; i++) {
+            const ds = getLocalDateString(checkDate);
+            if (loggedDates.has(ds) || claimedDates.has(ds)) {
+                streak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            } else {
+                break;
+            }
+        }
+
+        renderStreakUI(streak, loggedDates);
+    } catch (err) {
+        console.error('Error in loadStreakData:', err);
+    }
+}
+
+async function loadStreakFromNutrition(userId) {
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { data: nutritionDays } = await window.supabaseClient
+        .from('daily_nutrition')
+        .select('nutrition_date, total_calories')
+        .eq('user_id', userId)
+        .gte('nutrition_date', getLocalDateString(thirtyDaysAgo))
+        .order('nutrition_date', { ascending: false });
+
+    const loggedDates = new Set();
+    (nutritionDays || []).forEach(d => {
+        if (d.total_calories > 0) loggedDates.add(d.nutrition_date);
+    });
+
+    let streak = 0;
+    const checkDate = new Date(today);
+    for (let i = 0; i < 100; i++) {
+        if (loggedDates.has(getLocalDateString(checkDate))) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+            break;
+        }
+    }
+
+    renderStreakUI(streak, loggedDates);
+}
+
+function renderStreakUI(streak, loggedDates) {
+    const countEl = document.getElementById('streak-count');
+    if (countEl) countEl.textContent = streak;
+
+    // Streak bonuses from config
+    const bonuses = [
+        { days: 7, points: 5 },
+        { days: 14, points: 10 },
+        { days: 30, points: 25 },
+        { days: 60, points: 50 },
+        { days: 100, points: 100 }
+    ];
+
+    // Find next bonus
+    const nextBonus = bonuses.find(b => b.days > streak) || bonuses[bonuses.length - 1];
+    const nextBonusEl = document.getElementById('streak-next-bonus');
+    if (nextBonusEl) {
+        if (streak >= 100) {
+            nextBonusEl.textContent = '+100 pts earned!';
+        } else {
+            nextBonusEl.textContent = `+${nextBonus.points} pts at ${nextBonus.days}d`;
+        }
+    }
+
+    const targetLabel = document.getElementById('streak-target-label');
+    if (targetLabel) {
+        if (streak >= 100) {
+            targetLabel.textContent = 'Max streak bonus reached!';
+        } else {
+            targetLabel.textContent = `Next: ${nextBonus.days}-day (${nextBonus.points} pts)`;
+        }
+    }
+
+    // Progress bar toward next bonus
+    const progressEl = document.getElementById('streak-progress-fill');
+    if (progressEl && nextBonus) {
+        const prevBonus = bonuses.filter(b => b.days <= streak).pop();
+        const start = prevBonus ? prevBonus.days : 0;
+        const pct = Math.min(100, ((streak - start) / (nextBonus.days - start)) * 100);
+        progressEl.style.width = pct + '%';
+    }
+
+    // Render 7-day dots
+    const gridEl = document.getElementById('streak-days-grid');
+    if (gridEl) {
+        const today = new Date();
+        let html = '';
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            const ds = getLocalDateString(d);
+            const dayName = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+            const isFilled = loggedDates && loggedDates.has(ds);
+            const isToday = i === 0;
+            html += `<div class="streak-day-dot${isFilled ? ' filled' : ''}${isToday ? ' today' : ''}">${dayName}</div>`;
+        }
+        gridEl.innerHTML = html;
+    }
+}
+
+// --- 3. Multi-Week History ---
+async function loadMultiWeekData(numWeeks = 4) {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+
+        // Update nav buttons
+        document.querySelectorAll('#multi-week-nav button').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.textContent.includes(numWeeks)) btn.classList.add('active');
+        });
+
+        const userId = session.user.id;
+        const today = new Date();
+        const startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - (numWeeks * 7));
+
+        const { data: allData, error } = await window.supabaseClient
+            .from('daily_nutrition')
+            .select('nutrition_date, total_calories, total_protein_g, total_carbs_g, total_fat_g, calorie_goal')
+            .eq('user_id', userId)
+            .gte('nutrition_date', getLocalDateString(startDate))
+            .order('nutrition_date', { ascending: true });
+
+        if (error) {
+            console.error('Error loading multi-week:', error);
+            return;
+        }
+
+        // Group by week
+        const weeks = [];
+        for (let w = 0; w < numWeeks; w++) {
+            const weekStart = new Date(today);
+            weekStart.setDate(weekStart.getDate() - ((numWeeks - 1 - w) * 7 + 6));
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+
+            const weekData = (allData || []).filter(d => {
+                return d.nutrition_date >= getLocalDateString(weekStart) && d.nutrition_date <= getLocalDateString(weekEnd);
+            });
+
+            const daysWithData = weekData.filter(d => d.total_calories > 0);
+            const totalCal = daysWithData.reduce((s, d) => s + (d.total_calories || 0), 0);
+            const totalPro = daysWithData.reduce((s, d) => s + (d.total_protein_g || 0), 0);
+            const totalCarb = daysWithData.reduce((s, d) => s + (d.total_carbs_g || 0), 0);
+            const totalFat = daysWithData.reduce((s, d) => s + (d.total_fat_g || 0), 0);
+            const count = daysWithData.length || 1;
+
+            weeks.push({
+                label: `Wk ${w + 1}`,
+                avgCal: Math.round(totalCal / count),
+                avgPro: Math.round(totalPro / count),
+                avgCarb: Math.round(totalCarb / count),
+                avgFat: Math.round(totalFat / count),
+                daysLogged: daysWithData.length,
+                totalCal: Math.round(totalCal)
+            });
+        }
+
+        renderMultiWeekUI(weeks);
+    } catch (err) {
+        console.error('Error in loadMultiWeekData:', err);
+    }
+}
+
+function renderMultiWeekUI(weeks) {
+    const container = document.getElementById('multi-week-sparklines');
+    const compareGrid = document.getElementById('week-compare-grid');
+    if (!container) return;
+
+    if (!weeks || weeks.length === 0 || weeks.every(w => w.avgCal === 0)) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.85rem;">Log meals for at least 2 weeks to see trends</p>';
+        if (compareGrid) compareGrid.innerHTML = '';
+        return;
+    }
+
+    // Build sparklines for calories, protein, carbs, fat
+    const metrics = [
+        { key: 'avgCal', label: 'Calories', color: 'var(--primary)', suffix: '' },
+        { key: 'avgPro', label: 'Protein', color: '#3b82f6', suffix: 'g' },
+        { key: 'avgCarb', label: 'Carbs', color: '#f59e0b', suffix: 'g' },
+        { key: 'avgFat', label: 'Fat', color: '#ef4444', suffix: 'g' }
+    ];
+
+    let html = '';
+    metrics.forEach(metric => {
+        const values = weeks.map(w => w[metric.key]);
+        const max = Math.max(...values, 1);
+        const min = Math.min(...values.filter(v => v > 0));
+        const current = values[values.length - 1];
+        const previous = values.length >= 2 ? values[values.length - 2] : current;
+
+        // Trend
+        let trendClass = 'neutral';
+        let trendText = '--';
+        if (previous > 0 && current > 0) {
+            const pctChange = Math.round(((current - previous) / previous) * 100);
+            if (pctChange > 2) { trendClass = 'up'; trendText = '+' + pctChange + '%'; }
+            else if (pctChange < -2) { trendClass = 'down'; trendText = pctChange + '%'; }
+            else { trendText = '~0%'; }
+        }
+
+        // Build SVG sparkline
+        const svgWidth = 120;
+        const svgHeight = 30;
+        const padding = 4;
+        const points = values.map((v, i) => {
+            const x = padding + (i / (values.length - 1 || 1)) * (svgWidth - padding * 2);
+            const y = max > min ? svgHeight - padding - ((v - min) / (max - min)) * (svgHeight - padding * 2) : svgHeight / 2;
+            return `${x},${y}`;
+        }).join(' ');
+
+        html += `
+            <div class="sparkline-row">
+                <div class="sparkline-label">${metric.label}</div>
+                <svg class="sparkline-svg" viewBox="0 0 ${svgWidth} ${svgHeight}">
+                    <polyline points="${points}" fill="none" stroke="${metric.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    ${values.map((v, i) => {
+                        const x = padding + (i / (values.length - 1 || 1)) * (svgWidth - padding * 2);
+                        const y = max > min ? svgHeight - padding - ((v - min) / (max - min)) * (svgHeight - padding * 2) : svgHeight / 2;
+                        return `<circle cx="${x}" cy="${y}" r="3" fill="${metric.color}" opacity="${i === values.length - 1 ? 1 : 0.4}"/>`;
+                    }).join('')}
+                </svg>
+                <div class="sparkline-value">${current}${metric.suffix}</div>
+                <div class="sparkline-trend ${trendClass}">${trendText}</div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    // Comparison stats: this week vs last week
+    if (compareGrid && weeks.length >= 2) {
+        const thisWeek = weeks[weeks.length - 1];
+        const lastWeek = weeks[weeks.length - 2];
+
+        compareGrid.innerHTML = `
+            <div class="week-compare-stat">
+                <div class="stat-value">${thisWeek.avgCal}</div>
+                <div class="stat-label">Avg Cal/Day (This Week)</div>
+            </div>
+            <div class="week-compare-stat">
+                <div class="stat-value">${lastWeek.avgCal}</div>
+                <div class="stat-label">Avg Cal/Day (Last Week)</div>
+            </div>
+            <div class="week-compare-stat">
+                <div class="stat-value">${thisWeek.daysLogged}/7</div>
+                <div class="stat-label">Days Logged (This Week)</div>
+            </div>
+            <div class="week-compare-stat">
+                <div class="stat-value">${lastWeek.daysLogged}/7</div>
+                <div class="stat-label">Days Logged (Last Week)</div>
+            </div>
+        `;
+    }
+}
+
+// --- 4. Micronutrient Insights ---
+async function loadMicronutrientInsights() {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+
+        const today = getLocalDateString();
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+        const { data: meals, error } = await window.supabaseClient
+            .from('meal_logs')
+            .select('micronutrients, food_items, calories, protein_g')
+            .eq('user_id', session.user.id)
+            .gte('meal_date', getLocalDateString(sevenDaysAgo))
+            .lte('meal_date', today);
+
+        if (error) {
+            console.error('Error loading micronutrients:', error);
+            return;
+        }
+
+        // Aggregate micronutrients from meal data
+        const totals = { iron: 0, vitamin_c: 0, calcium: 0, b12: 0, omega3: 0, zinc: 0 };
+        let mealCount = 0;
+
+        (meals || []).forEach(meal => {
+            mealCount++;
+            if (meal.micronutrients && typeof meal.micronutrients === 'object') {
+                Object.keys(totals).forEach(k => {
+                    totals[k] += meal.micronutrients[k] || 0;
+                });
+            }
+        });
+
+        // Daily averages
+        const days = Math.max(1, Math.min(7, mealCount > 0 ? 7 : 1));
+        const dailyAvg = {};
+        Object.keys(totals).forEach(k => { dailyAvg[k] = Math.round(totals[k] / days); });
+
+        renderMicronutrientUI(dailyAvg, mealCount);
+    } catch (err) {
+        console.error('Error in loadMicronutrientInsights:', err);
+    }
+}
+
+function renderMicronutrientUI(dailyAvg, mealCount) {
+    const grid = document.getElementById('micro-grid');
+    if (!grid) return;
+
+    // RDA values (daily recommended for adults)
+    const nutrients = [
+        { key: 'iron', name: 'Iron', rda: 18, unit: 'mg', icon: '&#x1FA78;', bgColor: '#fef2f2', barColor: '#ef4444' },
+        { key: 'vitamin_c', name: 'Vitamin C', rda: 90, unit: 'mg', icon: '&#x1F34A;', bgColor: '#fff7ed', barColor: '#f97316' },
+        { key: 'calcium', name: 'Calcium', rda: 1000, unit: 'mg', icon: '&#x1F9B4;', bgColor: '#f0fdf4', barColor: '#22c55e' },
+        { key: 'b12', name: 'B12', rda: 2.4, unit: 'mcg', icon: '&#x1F9EC;', bgColor: '#eef2ff', barColor: '#6366f1' },
+        { key: 'omega3', name: 'Omega-3', rda: 1.6, unit: 'g', icon: '&#x1F41F;', bgColor: '#f0f9ff', barColor: '#0ea5e9' },
+        { key: 'zinc', name: 'Zinc', rda: 11, unit: 'mg', icon: '&#x1F6E1;', bgColor: '#faf5ff', barColor: '#a855f7' }
+    ];
+
+    if (mealCount === 0) {
+        grid.innerHTML = nutrients.map(n => `
+            <div class="micro-item">
+                <div class="micro-icon" style="background: ${n.bgColor};">${n.icon}</div>
+                <div class="micro-info">
+                    <div class="micro-name">${n.name}</div>
+                    <div class="micro-bar-bg"><div class="micro-bar-fill" style="width: 0%; background: ${n.barColor};"></div></div>
+                </div>
+                <div class="micro-status" style="color: #9ca3af;">--</div>
+            </div>
+        `).join('');
+        return;
+    }
+
+    grid.innerHTML = nutrients.map(n => {
+        const val = dailyAvg[n.key] || 0;
+        const pct = Math.min(100, (val / n.rda) * 100);
+        let status = 'Low';
+        let statusColor = '#ef4444';
+        if (pct >= 80) { status = 'Good'; statusColor = '#22c55e'; }
+        else if (pct >= 50) { status = 'Fair'; statusColor = '#f59e0b'; }
+
+        return `
+            <div class="micro-item">
+                <div class="micro-icon" style="background: ${n.bgColor};">${n.icon}</div>
+                <div class="micro-info">
+                    <div class="micro-name">${n.name}</div>
+                    <div class="micro-bar-bg"><div class="micro-bar-fill" style="width: ${pct}%; background: ${n.barColor};"></div></div>
+                </div>
+                <div class="micro-status" style="color: ${statusColor};">${status}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// --- 5. Meal Pattern Analysis ---
+async function loadMealPatterns() {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+        const { data: meals, error } = await window.supabaseClient
+            .from('meal_logs')
+            .select('meal_date, meal_time, meal_type, calories, protein_g, carbs_g, fat_g')
+            .eq('user_id', session.user.id)
+            .gte('meal_date', getLocalDateString(sevenDaysAgo))
+            .order('meal_date', { ascending: true });
+
+        if (error) {
+            console.error('Error loading meal patterns:', error);
+            return;
+        }
+
+        if (!meals || meals.length < 3) {
+            return; // Not enough data for patterns
+        }
+
+        const insights = analyzeMealPatterns(meals);
+        renderMealPatterns(insights);
+    } catch (err) {
+        console.error('Error in loadMealPatterns:', err);
+    }
+}
+
+function analyzeMealPatterns(meals) {
+    const insights = [];
+
+    // 1. Meal frequency by day of week
+    const dayMealCounts = {};
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    meals.forEach(m => {
+        const d = new Date(m.meal_date);
+        const day = dayNames[d.getDay()];
+        dayMealCounts[day] = (dayMealCounts[day] || 0) + 1;
+    });
+
+    // Find day with least meals
+    const dayEntries = Object.entries(dayMealCounts);
+    if (dayEntries.length >= 3) {
+        dayEntries.sort((a, b) => a[1] - b[1]);
+        const lowestDay = dayEntries[0];
+        const highestDay = dayEntries[dayEntries.length - 1];
+        if (lowestDay[1] < highestDay[1] * 0.5) {
+            insights.push({
+                icon: '&#x1F4C5;',
+                text: `You log fewer meals on <strong>${lowestDay[0]}</strong> (${lowestDay[1]} meals) vs <strong>${highestDay[0]}</strong> (${highestDay[1]} meals). Try to stay consistent!`
+            });
+        }
+    }
+
+    // 2. Meal type distribution
+    const typeCount = { breakfast: 0, lunch: 0, dinner: 0, snack: 0 };
+    meals.forEach(m => {
+        const t = (m.meal_type || '').toLowerCase();
+        if (typeCount[t] !== undefined) typeCount[t]++;
+    });
+
+    const totalMeals = meals.length;
+    if (typeCount.breakfast < totalMeals * 0.05 && totalMeals >= 5) {
+        insights.push({
+            icon: '&#x1F305;',
+            text: `You rarely log <strong>breakfast</strong>. Starting the day with protein helps stabilize energy and blood sugar.`
+        });
+    }
+
+    // 3. Protein distribution across meals
+    const mealTypeProtein = { breakfast: [], lunch: [], dinner: [], snack: [] };
+    meals.forEach(m => {
+        const t = (m.meal_type || '').toLowerCase();
+        if (mealTypeProtein[t]) mealTypeProtein[t].push(m.protein_g || 0);
+    });
+
+    const avgProtein = {};
+    Object.entries(mealTypeProtein).forEach(([type, values]) => {
+        if (values.length > 0) {
+            avgProtein[type] = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+        }
+    });
+
+    const proteinEntries = Object.entries(avgProtein).filter(e => e[1] > 0);
+    if (proteinEntries.length >= 2) {
+        proteinEntries.sort((a, b) => a[1] - b[1]);
+        const lowest = proteinEntries[0];
+        const highest = proteinEntries[proteinEntries.length - 1];
+        if (lowest[1] < highest[1] * 0.4) {
+            insights.push({
+                icon: '&#x1F4AA;',
+                text: `Your <strong>${lowest[0]}</strong> averages only ${lowest[1]}g protein vs ${highest[1]}g at <strong>${highest[0]}</strong>. Spreading protein evenly aids muscle synthesis.`
+            });
+        }
+    }
+
+    // 4. Eating timing
+    const mealHours = meals.filter(m => m.meal_time).map(m => parseInt(m.meal_time.split(':')[0]));
+    if (mealHours.length >= 5) {
+        const lateCount = mealHours.filter(h => h >= 21).length;
+        if (lateCount >= 3) {
+            insights.push({
+                icon: '&#x1F319;',
+                text: `You've had <strong>${lateCount} late-night meals</strong> (after 9pm) this week. Earlier dinners may improve sleep and digestion.`
+            });
+        }
+
+        const earlyFirst = Math.min(...mealHours);
+        const lateLast = Math.max(...mealHours);
+        const window = lateLast - earlyFirst;
+        if (window <= 8) {
+            insights.push({
+                icon: '&#x23F0;',
+                text: `Your eating window is <strong>${window} hours</strong> - a naturally tight window that supports metabolic health.`
+            });
+        }
+    }
+
+    // 5. Calorie consistency
+    const dailyCals = {};
+    meals.forEach(m => {
+        dailyCals[m.meal_date] = (dailyCals[m.meal_date] || 0) + (m.calories || 0);
+    });
+    const calValues = Object.values(dailyCals);
+    if (calValues.length >= 3) {
+        const avg = calValues.reduce((a, b) => a + b, 0) / calValues.length;
+        const variance = calValues.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / calValues.length;
+        const stdDev = Math.sqrt(variance);
+        const cv = avg > 0 ? (stdDev / avg) * 100 : 0;
+        if (cv < 15) {
+            insights.push({
+                icon: '&#x2705;',
+                text: `Your daily calories are <strong>very consistent</strong> (only ${Math.round(cv)}% variation). Great discipline!`
+            });
+        } else if (cv > 35) {
+            insights.push({
+                icon: '&#x1F4C9;',
+                text: `Your calorie intake varies a lot (${Math.round(cv)}% variation). More consistency can help with steady progress.`
+            });
+        }
+    }
+
+    return insights.slice(0, 4); // Max 4 insights
+}
+
+function renderMealPatterns(insights) {
+    const container = document.getElementById('meal-pattern-insights');
+    if (!container) return;
+
+    if (!insights || insights.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log more meals to see patterns</p>';
+        return;
+    }
+
+    container.innerHTML = insights.map(i => `
+        <div class="pattern-insight">
+            <span class="pattern-icon">${i.icon}</span>
+            <div class="pattern-text">${i.text}</div>
+        </div>
+    `).join('');
+}
+
+// --- 6. Photo Meal Journal ---
+async function loadMealJournal() {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+        const { data: meals, error } = await window.supabaseClient
+            .from('meal_logs')
+            .select('meal_date, meal_time, photo_url, calories, food_items')
+            .eq('user_id', session.user.id)
+            .gte('meal_date', getLocalDateString(sevenDaysAgo))
+            .order('meal_date', { ascending: false });
+
+        if (error) {
+            console.error('Error loading meal journal:', error);
+            return;
+        }
+
+        renderMealJournal(meals || []);
+    } catch (err) {
+        console.error('Error in loadMealJournal:', err);
+    }
+}
+
+function renderMealJournal(meals) {
+    const container = document.getElementById('journal-timeline');
+    if (!container) return;
+
+    if (!meals || meals.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">No meals logged yet this week</p>';
+        return;
+    }
+
+    // Group by date
+    const grouped = {};
+    meals.forEach(m => {
+        if (!grouped[m.meal_date]) grouped[m.meal_date] = [];
+        grouped[m.meal_date].push(m);
+    });
+
+    const dates = Object.keys(grouped).sort().reverse().slice(0, 7);
+
+    let html = '';
+    dates.forEach(dateStr => {
+        const d = new Date(dateStr + 'T12:00:00');
+        const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+        const dayNum = d.getDate();
+        const dayMeals = grouped[dateStr];
+        const totalCal = dayMeals.reduce((s, m) => s + (m.calories || 0), 0);
+
+        html += `
+            <div class="journal-day">
+                <div class="journal-date-col">
+                    <div class="journal-date-day">${dayName}</div>
+                    <div class="journal-date-num">${dayNum}</div>
+                    <div class="journal-day-cals">${Math.round(totalCal)} cal</div>
+                </div>
+                <div class="journal-photos">
+        `;
+
+        dayMeals.forEach(meal => {
+            const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '' && meal.photo_url !== 'text-input';
+            if (hasPhoto) {
+                html += `<div class="journal-photo"><img src="${meal.photo_url}" alt="Meal" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='<span class=\\'placeholder\\'>&#x1F37D;</span>';"></div>`;
+            } else {
+                const foodName = Array.isArray(meal.food_items) && meal.food_items.length > 0
+                    ? meal.food_items[0].name || 'Meal'
+                    : 'Meal';
+                html += `<div class="journal-photo" style="font-size: 0.65rem; color: var(--text-muted); padding: 4px; text-align: center; word-break: break-word;">${foodName.substring(0, 20)}</div>`;
+            }
+        });
+
+        html += `
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// --- 7. Cycle-Synced Nutrition Tips ---
+function loadCycleNutritionTips() {
+    // Only show for female users with cycle tracking
+    if (typeof isMaleUser === 'function' && isMaleUser()) return;
+
+    const section = document.getElementById('cycle-nutrition-section');
+    if (!section) return;
+
+    // Get current cycle phase
+    let phaseKey = null;
+    try {
+        if (typeof userCycleData !== 'undefined' && userCycleData.lastPeriod) {
+            const lastPeriod = new Date(userCycleData.lastPeriod);
+            const today = new Date();
+            const diffMs = today - lastPeriod;
+            const dayOfCycle = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+            const cycleLen = userCycleData.cycleLength || 28;
+            phaseKey = getCyclePhase(dayOfCycle, cycleLen);
+        }
+    } catch (e) {
+        console.log('Could not determine cycle phase for nutrition tips');
+    }
+
+    if (!phaseKey || phaseKey === 'performance' || phaseKey === 'wellness') return;
+
+    const tips = {
+        menstrual: {
+            phase: 'Menstrual Phase',
+            icon: '&#x1FA78;',
+            color: '#E57373',
+            bgColor: '#fef2f2',
+            borderColor: '#fecaca',
+            tipBg: 'rgba(239, 68, 68, 0.06)',
+            tips: [
+                { icon: '&#x1FA78;', text: '<strong>Focus on iron-rich foods</strong> — spinach, lentils, pumpkin seeds, and dark chocolate to replenish iron lost during menstruation.' },
+                { icon: '&#x1F9CA;', text: '<strong>Anti-inflammatory foods</strong> — turmeric, ginger, and berries help reduce cramps and bloating.' },
+                { icon: '&#x2615;', text: '<strong>Warm, comforting meals</strong> — soups and stews are easier to digest. Your body needs gentle nourishment right now.' },
+                { icon: '&#x1F4A7;', text: '<strong>Stay hydrated</strong> — water retention is common. Drink more water to help flush excess fluid.' }
+            ]
+        },
+        follicular: {
+            phase: 'Follicular Phase',
+            icon: '&#x26A1;',
+            color: '#F06292',
+            bgColor: '#fdf2f8',
+            borderColor: '#fbcfe8',
+            tipBg: 'rgba(240, 98, 146, 0.06)',
+            tips: [
+                { icon: '&#x1F95A;', text: '<strong>Higher protein intake</strong> — your body is primed for muscle building. Aim for extra protein with each meal.' },
+                { icon: '&#x1F966;', text: '<strong>Fermented and sprouted foods</strong> — your gut is more receptive now. Great time for kimchi, sauerkraut, and sprouted grains.' },
+                { icon: '&#x26A1;', text: '<strong>Light, energizing meals</strong> — your metabolism is speeding up. Fresh salads, grain bowls, and smoothies work well.' },
+                { icon: '&#x1F3CB;', text: '<strong>Pre-workout carbs</strong> — energy is rising. Fuel your workouts with oats, sweet potato, or banana.' }
+            ]
+        },
+        ovulation: {
+            phase: 'Ovulation Phase',
+            icon: '&#x1F31F;',
+            color: '#BA68C8',
+            bgColor: '#faf5ff',
+            borderColor: '#e9d5ff',
+            tipBg: 'rgba(186, 104, 200, 0.06)',
+            tips: [
+                { icon: '&#x1F966;', text: '<strong>Cruciferous vegetables</strong> — broccoli, kale, cauliflower help your liver process the estrogen peak.' },
+                { icon: '&#x1F95C;', text: '<strong>Fiber-rich foods</strong> — help eliminate excess estrogen. Flaxseeds, chia seeds, and legumes are ideal.' },
+                { icon: '&#x1F4A7;', text: '<strong>Lighter meals</strong> — energy is at its peak but appetite may drop slightly. Listen to your body.' },
+                { icon: '&#x1F34E;', text: '<strong>Antioxidant-rich fruits</strong> — support egg health and reduce oxidative stress.' }
+            ]
+        },
+        luteal: {
+            phase: 'Luteal Phase',
+            icon: '&#x1F319;',
+            color: '#FFB74D',
+            bgColor: '#fffbeb',
+            borderColor: '#fde68a',
+            tipBg: 'rgba(255, 183, 77, 0.06)',
+            tips: [
+                { icon: '&#x1F360;', text: '<strong>Complex carbs are key</strong> — sweet potato, brown rice, quinoa help boost serotonin and manage cravings.' },
+                { icon: '&#x1F36B;', text: '<strong>Magnesium-rich foods</strong> — dark chocolate, nuts, and seeds help reduce PMS symptoms and improve sleep.' },
+                { icon: '&#x1F9C0;', text: '<strong>Calcium boost</strong> — studies show calcium reduces PMS. Include leafy greens, fortified plant milk, and tahini.' },
+                { icon: '&#x1F34C;', text: '<strong>B6 foods</strong> — bananas, chickpeas, and potatoes help with mood stability and reduce water retention.' }
+            ]
+        }
+    };
+
+    const phaseData = tips[phaseKey];
+    if (!phaseData) return;
+
+    section.style.display = 'block';
+    section.style.background = `linear-gradient(135deg, ${phaseData.bgColor} 0%, white 100%)`;
+    section.style.borderColor = phaseData.borderColor;
+
+    const iconEl = document.getElementById('cycle-nutrition-icon');
+    const phaseEl = document.getElementById('cycle-nutrition-phase');
+    const listEl = document.getElementById('cycle-tip-list');
+
+    if (iconEl) iconEl.innerHTML = phaseData.icon;
+    if (phaseEl) {
+        phaseEl.textContent = phaseData.phase;
+        phaseEl.style.color = phaseData.color;
+    }
+
+    if (listEl) {
+        listEl.innerHTML = phaseData.tips.map(t => `
+            <div class="cycle-tip" style="background: ${phaseData.tipBg};">
+                <span class="cycle-tip-icon">${t.icon}</span>
+                <div>${t.text}</div>
+            </div>
+        `).join('');
+    }
+}
+
+// --- Master function to load all enhanced nutrition features ---
+async function loadEnhancedNutritionFeatures() {
+    try {
+        // Load features in parallel for speed
+        await Promise.allSettled([
+            loadStreakData(),
+            loadMultiWeekData(4),
+            loadMicronutrientInsights(),
+            loadMealPatterns(),
+            loadMealJournal()
+        ]);
+        // Cycle tips are synchronous (uses already-loaded cycle data)
+        loadCycleNutritionTips();
+    } catch (err) {
+        console.error('Error loading enhanced nutrition features:', err);
+    }
+}
+
 // Update nutrition UI with data
 function updateNutritionUI(dailyData, mealsData) {
     const defaults = {
@@ -42999,6 +44403,9 @@ function updateNutritionUI(dailyData, mealsData) {
     if (mealsData && mealsData.length > 0) {
         renderMealsList(mealsData);
     }
+
+    // Update daily nutrition score
+    updateNutritionScoreUI(data);
 }
 
 // Helper function to update element text
