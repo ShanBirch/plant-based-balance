@@ -3033,6 +3033,85 @@ async function applyAppTheme(themeKey) {
         font-weight: 800;
         color: var(--text-main);
     }
+    /* Inline Streak Badge */
+    .streak-inline {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border: 1px solid #fde68a;
+        border-radius: 20px;
+        padding: 4px 12px;
+    }
+    .streak-inline-flame {
+        font-size: 1rem;
+    }
+    .streak-inline-count {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #d97706;
+    }
+    .streak-inline-label {
+        font-size: 0.72rem;
+        color: #92400e;
+        font-weight: 600;
+    }
+
+    /* Daily Score Popup */
+    .score-popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        animation: fadeInOverlay 0.2s ease;
+    }
+    @keyframes fadeInOverlay {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes slideUpPopup {
+        from { transform: translateY(30px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .score-popup-modal {
+        background: white;
+        border-radius: 20px;
+        padding: 28px 24px;
+        max-width: 380px;
+        width: 100%;
+        position: relative;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        animation: slideUpPopup 0.3s ease;
+    }
+    .score-popup-close {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 4px 8px;
+        line-height: 1;
+    }
+    .score-popup-header {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-main);
+        text-align: center;
+        margin-bottom: 4px;
+    }
+
     .nutrition-score-card {
         background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
         border: 1px solid #bbf7d0;
@@ -7097,7 +7176,14 @@ async function applyAppTheme(themeKey) {
 
                 <!-- Daily Summary Card -->
                 <div class="calorie-tracker-summary">
-                    <h2 style="margin: 0 0 20px 0; font-size: 1.5rem; color: var(--text-main);">Daily Nutrition Tracker</h2>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin: 0 0 20px 0;">
+                        <h2 style="margin: 0; font-size: 1.5rem; color: var(--text-main);">Daily Nutrition Tracker</h2>
+                        <div class="streak-inline" id="streak-inline-section">
+                            <span class="streak-inline-flame">&#x1F525;</span>
+                            <span class="streak-inline-count" id="streak-inline-count">0</span>
+                            <span class="streak-inline-label">day streak</span>
+                        </div>
+                    </div>
 
                     <!-- Calorie Progress Large (Tri-color macro ring) -->
                     <div class="calorie-progress-large">
@@ -7175,9 +7261,20 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
 
+                <!-- Today's Meals List -->
+                <h3 style="margin: 25px 0 15px 0;">Today's Meals</h3>
+                <div id="meals-log-list">
+                    <div class="empty-state">
+                        <p style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+                            📸 No meals logged yet today.<br>
+                            <span style="font-size: 0.9rem;">Take a photo of your meal to get started!</span>
+                        </p>
+                    </div>
+                </div>
+
                 <!-- Log Your Day Button -->
                 <div id="daily-log-bonus-section" style="margin: 25px 0; text-align: center;">
-                    <button id="daily-log-btn" onclick="claimDailyNutritionBonus()" style="
+                    <button id="daily-log-btn" onclick="openDailyScorePopup()" style="
                         width: 100%;
                         padding: 16px 24px;
                         background: linear-gradient(135deg, var(--primary) 0%, #065f3a 100%);
@@ -7201,6 +7298,57 @@ async function applyAppTheme(themeKey) {
                     <p id="daily-log-hint" style="margin: 8px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
                         Hit within 10% of your calorie &amp; macro goals to earn 2 bonus points
                     </p>
+                </div>
+
+                <!-- Daily Score Popup Modal -->
+                <div class="score-popup-overlay" id="score-popup-overlay" style="display: none;" onclick="closeDailyScorePopup(event)">
+                    <div class="score-popup-modal" onclick="event.stopPropagation()">
+                        <button class="score-popup-close" onclick="closeDailyScorePopup()">&times;</button>
+                        <div class="score-popup-header">Daily Score</div>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 20px 0;">
+                            <div class="nutrition-score-ring">
+                                <svg viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="#bbf7d0" stroke-width="8"/>
+                                    <circle id="popup-score-circle" cx="50" cy="50" r="42" fill="none" stroke="var(--primary)" stroke-width="8" stroke-linecap="round"
+                                        style="stroke-dasharray: 264; stroke-dashoffset: 264; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 0.6s ease;"/>
+                                </svg>
+                                <div class="nutrition-score-value" id="popup-score-value">--</div>
+                            </div>
+                            <div style="text-align: left;">
+                                <div style="font-size: 1.4rem; font-weight: 700; color: var(--text-main);" id="popup-score-grade">Track meals to see score</div>
+                            </div>
+                        </div>
+                        <div class="score-breakdown" id="popup-score-breakdown">
+                            <div class="score-breakdown-item"><span class="score-dot" style="background: var(--primary);"></span> Calories</div>
+                            <div class="score-breakdown-item"><span class="score-dot" style="background: #3b82f6;"></span> Protein</div>
+                            <div class="score-breakdown-item"><span class="score-dot" style="background: #f59e0b;"></span> Carbs</div>
+                            <div class="score-breakdown-item"><span class="score-dot" style="background: #ef4444;"></span> Fat</div>
+                        </div>
+                        <button id="popup-claim-btn" onclick="claimDailyNutritionBonus()" style="
+                            width: 100%;
+                            padding: 14px 24px;
+                            background: linear-gradient(135deg, var(--primary) 0%, #065f3a 100%);
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 10px;
+                            margin-top: 20px;
+                            box-shadow: 0 4px 12px rgba(4, 106, 56, 0.3);
+                        ">
+                            <span style="font-size: 1.3rem;">&#x2705;</span>
+                            <span>Claim Daily Bonus</span>
+                            <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
+                        </button>
+                        <p id="popup-claim-hint" style="margin: 8px 0 0 0; font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+                            Hit within 10% of your calorie &amp; macro goals to earn 2 bonus points
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Weekly Metrics Section -->
@@ -7234,8 +7382,8 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
 
-                <!-- Daily Nutrition Score -->
-                <div class="nutrition-score-card" id="nutrition-score-section">
+                <!-- Daily Nutrition Score (hidden - now shown as popup) -->
+                <div class="nutrition-score-card" id="nutrition-score-section" style="display: none;">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
                         <div class="nutrition-score-ring">
                             <svg viewBox="0 0 100 100">
@@ -7258,8 +7406,8 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
 
-                <!-- Streak Tracker -->
-                <div class="streak-tracker-card" id="streak-tracker-section">
+                <!-- Streak Tracker (hidden - now inline in header) -->
+                <div class="streak-tracker-card" id="streak-tracker-section" style="display: none;">
                     <div class="streak-header">
                         <div class="streak-flame">
                             <span style="font-size: 1.8rem;">&#x1F525;</span>
@@ -7356,64 +7504,8 @@ async function applyAppTheme(themeKey) {
                     <div class="hydration-total" id="hydration-total">0 / 8 glasses (0 ml)</div>
                 </div>
 
-                <!-- Weekly Score History -->
-                <div class="score-history-card" id="score-history-section">
-                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Score History</h3>
-                    <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Your daily nutrition scores this week</p>
-                    <div class="score-history-bars" id="score-history-bars">
-                        <p style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.85rem; width: 100%;">Loading scores...</p>
-                    </div>
-                </div>
+                <!-- Score History, Meal Prep Score, Nutrition Badges, Social Comparison removed -->
 
-                <!-- Meal Prep Score -->
-                <div class="meal-prep-card" id="meal-prep-section">
-                    <div style="display: flex; align-items: center; gap: 16px;">
-                        <div class="prep-score-ring">
-                            <svg viewBox="0 0 90 90">
-                                <circle cx="45" cy="45" r="38" fill="none" stroke="#fde68a" stroke-width="6"/>
-                                <circle id="prep-score-circle" cx="45" cy="45" r="38" fill="none" stroke="#eab308" stroke-width="6" stroke-linecap="round"
-                                    style="stroke-dasharray: 239; stroke-dashoffset: 239; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 0.6s ease;"/>
-                            </svg>
-                            <div class="prep-score-value" id="prep-score-value">--</div>
-                        </div>
-                        <div>
-                            <h3 style="margin: 0; font-size: 1.1rem; color: #854d0e;">Meal Prep Score</h3>
-                            <p style="margin: 4px 0 0 0; font-size: 0.78rem; color: #a16207;" id="prep-score-label">How consistently you cook at home</p>
-                        </div>
-                    </div>
-                    <div class="prep-stats" id="prep-stats">
-                        <!-- Rendered by JS -->
-                    </div>
-                </div>
-
-                <!-- Nutrition Badges -->
-                <div class="badges-card" id="badges-section">
-                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Nutrition Badges</h3>
-                    <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Earn badges by hitting your goals</p>
-                    <div class="badges-grid" id="badges-grid">
-                        <!-- Rendered by JS -->
-                    </div>
-                </div>
-
-                <!-- Social Meal Comparison -->
-                <div class="social-compare-card" id="social-compare-section">
-                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: #7c3aed;">How You Compare</h3>
-                    <p style="margin: 0 0 14px 0; font-size: 0.78rem; color: #9333ea;">Anonymous comparison with similar users</p>
-                    <div id="social-compare-content">
-                        <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Loading comparison data...</p>
-                    </div>
-                </div>
-
-                <!-- Today's Meals List -->
-                <h3 style="margin: 30px 0 15px 0;">Today's Meals</h3>
-                <div id="meals-log-list">
-                    <div class="empty-state">
-                        <p style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
-                            📸 No meals logged yet today.<br>
-                            <span style="font-size: 0.9rem;">Take a photo of your meal to get started!</span>
-                        </p>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -40547,8 +40639,9 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
 
 // Claim daily nutrition bonus (2 points for hitting within 10% of cal/macro goals)
 async function claimDailyNutritionBonus() {
-    const btn = document.getElementById('daily-log-btn');
-    const hint = document.getElementById('daily-log-hint');
+    // Use popup button if available, fall back to main button
+    const btn = document.getElementById('popup-claim-btn') || document.getElementById('daily-log-btn');
+    const hint = document.getElementById('popup-claim-hint') || document.getElementById('daily-log-hint');
     if (!btn) return;
 
     try {
@@ -40591,7 +40684,7 @@ async function claimDailyNutritionBonus() {
         const result = await response.json();
 
         if (result.success) {
-            // Show success state
+            // Show success state on popup button
             btn.style.background = 'linear-gradient(135deg, #28a745 0%, #1e7e34 100%)';
             btn.innerHTML = `
                 <span style="font-size: 1.3rem;">&#x1F389;</span>
@@ -40600,6 +40693,9 @@ async function claimDailyNutritionBonus() {
             `;
             btn.style.opacity = '1';
             if (hint) hint.textContent = 'Great job hitting your nutrition goals today!';
+
+            // Also update the main Log button to show claimed state
+            setDailyLogButtonClaimed();
 
             // Show points toast
             showPointsEarnedToast(result.pointsAwarded, result.bonusPoints || 0, result.currentStreak || 0);
@@ -40679,34 +40775,67 @@ async function claimDailyNutritionBonus() {
 function setDailyLogButtonClaimed() {
     const btn = document.getElementById('daily-log-btn');
     const hint = document.getElementById('daily-log-hint');
-    if (!btn) return;
-    btn.disabled = true;
-    btn.style.background = 'linear-gradient(135deg, #28a745 0%, #1e7e34 100%)';
-    btn.style.opacity = '0.7';
-    btn.style.boxShadow = 'none';
-    btn.style.cursor = 'default';
-    btn.innerHTML = `
-        <span style="font-size: 1.3rem;">&#x2705;</span>
-        <span>Daily Bonus Claimed</span>
-    `;
+    if (btn) {
+        btn.disabled = true;
+        btn.style.background = 'linear-gradient(135deg, #28a745 0%, #1e7e34 100%)';
+        btn.style.opacity = '0.7';
+        btn.style.boxShadow = 'none';
+        btn.style.cursor = 'default';
+        btn.innerHTML = `
+            <span style="font-size: 1.3rem;">&#x2705;</span>
+            <span>Daily Bonus Claimed</span>
+        `;
+    }
     if (hint) hint.textContent = 'Come back tomorrow for another chance!';
+
+    // Also update popup claim button
+    const popupBtn = document.getElementById('popup-claim-btn');
+    const popupHint = document.getElementById('popup-claim-hint');
+    if (popupBtn) {
+        popupBtn.disabled = true;
+        popupBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #1e7e34 100%)';
+        popupBtn.style.opacity = '0.7';
+        popupBtn.style.cursor = 'default';
+        popupBtn.innerHTML = `
+            <span style="font-size: 1.3rem;">&#x2705;</span>
+            <span>Daily Bonus Claimed</span>
+        `;
+    }
+    if (popupHint) popupHint.textContent = 'Come back tomorrow for another chance!';
 }
 
 function resetDailyLogButton() {
     const btn = document.getElementById('daily-log-btn');
     const hint = document.getElementById('daily-log-hint');
-    if (!btn) return;
-    btn.disabled = false;
-    btn.style.opacity = '1';
-    btn.style.background = 'linear-gradient(135deg, var(--primary) 0%, #065f3a 100%)';
-    btn.style.boxShadow = '0 4px 12px rgba(4, 106, 56, 0.3)';
-    btn.style.cursor = 'pointer';
-    btn.innerHTML = `
-        <span style="font-size: 1.3rem;">&#x2705;</span>
-        <span>Log Your Meals for the Day</span>
-        <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
-    `;
+    if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.background = 'linear-gradient(135deg, var(--primary) 0%, #065f3a 100%)';
+        btn.style.boxShadow = '0 4px 12px rgba(4, 106, 56, 0.3)';
+        btn.style.cursor = 'pointer';
+        btn.innerHTML = `
+            <span style="font-size: 1.3rem;">&#x2705;</span>
+            <span>Log Your Meals for the Day</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
+        `;
+    }
     if (hint) hint.textContent = 'Hit within 10% of your calorie & macro goals to earn 2 bonus points';
+
+    // Also reset popup claim button
+    const popupBtn = document.getElementById('popup-claim-btn');
+    const popupHint = document.getElementById('popup-claim-hint');
+    if (popupBtn) {
+        popupBtn.disabled = false;
+        popupBtn.style.opacity = '1';
+        popupBtn.style.background = 'linear-gradient(135deg, var(--primary) 0%, #065f3a 100%)';
+        popupBtn.style.cursor = 'pointer';
+        popupBtn.innerHTML = `
+            <span style="font-size: 1.3rem;">&#x2705;</span>
+            <span>Claim Daily Bonus</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
+        `;
+    }
+    if (popupHint) popupHint.textContent = 'Hit within 10% of your calorie & macro goals to earn 2 bonus points';
 }
 
 // Check if daily log bonus has already been claimed today (called from loadTodayNutrition)
@@ -44085,6 +44214,49 @@ function updateNutritionScoreUI(dailyData) {
             <div class="score-breakdown-item"><span class="score-dot" style="background: #ef4444;"></span> Fat ${scoreData.fatScore}%</div>
         `;
     }
+
+    // Also update popup score elements
+    const popupValueEl = document.getElementById('popup-score-value');
+    const popupGradeEl = document.getElementById('popup-score-grade');
+    const popupCircleEl = document.getElementById('popup-score-circle');
+    const popupBreakdownEl = document.getElementById('popup-score-breakdown');
+
+    if (popupValueEl) popupValueEl.textContent = scoreData.total;
+    if (popupGradeEl) popupGradeEl.textContent = grade;
+    if (popupCircleEl) {
+        const circumference = 2 * Math.PI * 42;
+        const offset = circumference * (1 - scoreData.total / 100);
+        popupCircleEl.style.strokeDashoffset = offset;
+        if (scoreData.total >= 75) popupCircleEl.style.stroke = 'var(--primary)';
+        else if (scoreData.total >= 50) popupCircleEl.style.stroke = '#f59e0b';
+        else popupCircleEl.style.stroke = '#ef4444';
+    }
+    if (popupBreakdownEl) {
+        popupBreakdownEl.innerHTML = `
+            <div class="score-breakdown-item"><span class="score-dot" style="background: var(--primary);"></span> Cal ${scoreData.calScore}%</div>
+            <div class="score-breakdown-item"><span class="score-dot" style="background: #3b82f6;"></span> Pro ${scoreData.proScore}%</div>
+            <div class="score-breakdown-item"><span class="score-dot" style="background: #f59e0b;"></span> Carb ${scoreData.carbScore}%</div>
+            <div class="score-breakdown-item"><span class="score-dot" style="background: #ef4444;"></span> Fat ${scoreData.fatScore}%</div>
+        `;
+    }
+}
+
+// --- Daily Score Popup ---
+function openDailyScorePopup() {
+    const overlay = document.getElementById('score-popup-overlay');
+    if (overlay) {
+        overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeDailyScorePopup(event) {
+    if (event && event.target !== event.currentTarget) return;
+    const overlay = document.getElementById('score-popup-overlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+        document.body.style.overflow = '';
+    }
 }
 
 // --- 2. Streak Tracker ---
@@ -44187,6 +44359,10 @@ async function loadStreakFromNutrition(userId) {
 function renderStreakUI(streak, loggedDates) {
     const countEl = document.getElementById('streak-count');
     if (countEl) countEl.textContent = streak;
+
+    // Update inline streak badge in Daily Nutrition Tracker header
+    const inlineCountEl = document.getElementById('streak-inline-count');
+    if (inlineCountEl) inlineCountEl.textContent = streak;
 
     // Streak bonuses from config
     const bonuses = [
@@ -45506,11 +45682,7 @@ async function loadEnhancedNutritionFeatures() {
             loadMultiWeekData(4),
             loadMicronutrientInsights(),
             loadMealPatterns(),
-            loadMealJournal(),
-            loadScoreHistory(),
-            loadMealPrepScore(),
-            loadNutritionBadges(),
-            loadSocialComparison()
+            loadMealJournal()
         ]);
         // Synchronous features (use already-loaded data)
         loadCycleNutritionTips();
