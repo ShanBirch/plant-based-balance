@@ -20734,16 +20734,23 @@ async function finishOnboarding() {
     const weighInCard = document.getElementById('daily-weigh-in-card');
     if (weighInCard) weighInCard.style.display = 'none';
 
-    // Grant 1200 starting coins to new accounts
+    // Grant 1200 starting coins to new accounts (if not already granted by trigger)
     if (window.currentUser) {
         try {
             const userId = window.currentUser.id || window.currentUser.user_id;
-            await supabase.rpc('credit_coins', {
-                p_user_id: userId,
-                p_amount: 1200,
-                p_reason: 'Welcome bonus - starting coins'
-            });
-            console.log('✅ Granted 1200 starting coins');
+            // Check current balance first to avoid double-granting
+            const { data: balance } = await supabase.rpc('get_coin_balance', { user_uuid: userId });
+            if (!balance || balance === 0) {
+                await supabase.rpc('credit_coins', {
+                    user_uuid: userId,
+                    coin_amount: 1200,
+                    txn_type: 'admin_grant',
+                    txn_description: 'Welcome bonus - starting coins'
+                });
+                console.log('✅ Granted 1200 starting coins');
+            } else {
+                console.log('✅ User already has coins (' + balance + '), skipping welcome grant');
+            }
             if (typeof showToast === 'function') {
                 showToast('Welcome! You received 1,200 coins! 🪙', 'success');
             }
