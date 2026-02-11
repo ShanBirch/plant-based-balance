@@ -16296,6 +16296,18 @@ function viewWorkoutHistoryDetail(date) {
                         </button>
                     </div>
                 </div>
+                <!-- Admin Board (only visible to admins) -->
+                <div id="admin-board-setting" style="padding:15px; border-top:1px solid #f1f5f9; display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div>Admin Board</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">Manage users and view analytics</div>
+                        </div>
+                        <button onclick="window.location.href='/admin-dashboard.html'" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer;">
+                            Open
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -31198,10 +31210,14 @@ async function initAdminSettings() {
     try {
         const isAdmin = await db.pushSubscriptions.isAdmin();
         if (isAdmin) {
-            // Show the admin notifications setting
+            // Show admin-only settings
             const setting = document.getElementById('admin-notifications-setting');
             if (setting) {
                 setting.style.display = 'block';
+            }
+            const adminBoard = document.getElementById('admin-board-setting');
+            if (adminBoard) {
+                adminBoard.style.display = 'block';
             }
 
             // Check if already subscribed
