@@ -15787,6 +15787,15 @@ function viewWorkoutHistoryDetail(date) {
                     <div id="profile-equipment-display" style="font-weight: 700; color: var(--primary);">No Equipment</div>
                 </div>
 
+                <!-- Dietary Preference -->
+                <div class="setting-row" style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                     <div>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Dietary Preference</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">From your onboarding setup</div>
+                    </div>
+                    <div id="profile-diet-display" style="font-weight: 700; color: var(--primary);">Not set</div>
+                </div>
+
                 <!-- Symptoms -->
                 <div class="setting-row" style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
                      <div>
@@ -16993,6 +17002,14 @@ async function _loadProfileDataRealImpl() {
                 needsSave = true;
             }
 
+            // Sync dietary preference
+            if (quizResult.dietary_preference && localProfile.dietary_preference !== quizResult.dietary_preference) {
+                localProfile.dietary_preference = quizResult.dietary_preference;
+                localStorage.setItem('dietaryPreference', quizResult.dietary_preference);
+                needsSave = true;
+                console.log('Dietary preference synced from DB:', quizResult.dietary_preference);
+            }
+
             if (needsSave) {
                 localStorage.setItem('userProfile', JSON.stringify(localProfile));
                 console.log('✅ Profile preferences synced from database');
@@ -17054,6 +17071,14 @@ async function _loadProfileDataRealImpl() {
     if(eqDisplay) {
         eqDisplay.innerText = eqMap[equipment] || 'No Equipment';
         eqDisplay.dataset.raw = equipment; // Store raw value for edit mode mapping
+    }
+
+    // Display dietary preference
+    const dietPref = data.dietary_preference || localStorage.getItem('dietaryPreference') || '';
+    const dietDisplay = document.getElementById('profile-diet-display');
+    if (dietDisplay) {
+        const dietLabels = { omnivore: 'Omnivore', pescatarian: 'Pescatarian', vegetarian: 'Vegetarian', vegan: 'Vegan', flexitarian: 'Flexitarian' };
+        dietDisplay.textContent = dietLabels[dietPref] || 'Not set';
     }
 
     // Display symptoms from latest check-in (NOT from profile)
@@ -20619,10 +20644,20 @@ async function wizardNext() {
             return;
         }
 
+        const dietaryPreference = document.getElementById('wizard-dietary-preference').value;
+        if (!dietaryPreference) {
+            alert("Please select your dietary preference.");
+            return;
+        }
+
+        // Save dietary preference to localStorage for quick access
+        localStorage.setItem('dietaryPreference', dietaryPreference);
+
         // Save to sessionStorage for later processing
         const quizData = {
             name: name,
             age: parseInt(age),
+            dietary_preference: dietaryPreference,
             sex: selectedGender, // Use gender from "For Her/For Him" selection
             height: parseFloat(height),
             weight: parseFloat(weight),
@@ -29182,6 +29217,19 @@ function openAsClient() {
                         <option value="high">High Energy</option>
                     </select>
                 </div>
+
+                <!-- Dietary Preference -->
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-top:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Dietary Preference</label>
+                    <select id="wizard-dietary-preference" class="wizard-input" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                        <option value="">Select your diet</option>
+                        <option value="omnivore">Omnivore (I eat everything)</option>
+                        <option value="pescatarian">Pescatarian (Fish, no meat)</option>
+                        <option value="vegetarian">Vegetarian (No meat or fish)</option>
+                        <option value="vegan">Vegan (100% plant-based)</option>
+                        <option value="flexitarian">Flexitarian (Mostly plant-based)</option>
+                    </select>
+                </div>
             </div>
 
             <!-- SLIDE 3: CYCLE SETUP (females only) -->
@@ -29384,7 +29432,7 @@ function openAsClient() {
                     </li>
                     <li style="display:flex; align-items:center; gap:12px; background:white; padding:10px 12px; border:1px solid #eee; border-radius:10px;">
                         <span style="font-size:1.3rem;">🥗</span>
-                        <div><strong>Meal plans & recipes</strong><br><span style="font-size:0.8rem; color:#666;">Browse plant-based meals, smoothies & snacks</span></div>
+                        <div><strong>Meal plans & recipes</strong><br><span style="font-size:0.8rem; color:#666;">Browse meals, smoothies & snacks tailored to your diet</span></div>
                     </li>
                 </ul>
             </div>
@@ -43513,6 +43561,22 @@ async function uploadMealPhoto(file) {
 
 // Helper function to get local date in YYYY-MM-DD format
 // This ensures the date is based on user's local timezone, not UTC
+// Get user's dietary preference from storage
+function getUserDietaryPreference() {
+    // Check localStorage first (fastest)
+    const stored = localStorage.getItem('dietaryPreference');
+    if (stored) return stored;
+    // Fallback to sessionStorage userProfile
+    try {
+        const profile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        if (profile.dietary_preference) {
+            localStorage.setItem('dietaryPreference', profile.dietary_preference);
+            return profile.dietary_preference;
+        }
+    } catch (e) {}
+    return null; // Not set
+}
+
 function getLocalDateString(date = new Date()) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -44342,12 +44406,32 @@ function renderMicronutrientUI(dailyAvg, mealCount) {
     const grid = document.getElementById('micro-grid');
     if (!grid) return;
 
-    // RDA values (daily recommended for adults)
+    const userDiet = getUserDietaryPreference();
+
+    // Subtitle updates based on diet
+    const subtitleEl = document.querySelector('#micro-insights-section p');
+    if (subtitleEl) {
+        const dietTips = {
+            vegan: 'Key nutrients to watch on a vegan diet',
+            vegetarian: 'Key nutrients for vegetarian diets',
+            pescatarian: 'Key nutrients for pescatarian diets',
+            omnivore: 'Key nutrients to track daily',
+            flexitarian: 'Key nutrients for a balanced diet'
+        };
+        subtitleEl.textContent = dietTips[userDiet] || 'Key nutrients to track daily';
+    }
+
+    // Adjust RDAs based on diet — vegans/vegetarians need more iron (non-heme absorption is lower)
+    const ironRda = (userDiet === 'vegan' || userDiet === 'vegetarian') ? 32 : 18;
+    // B12 is critical for vegans (no natural dietary source)
+    const b12Rda = 2.4;
+
+    // RDA values (daily recommended for adults), adjusted per diet
     const nutrients = [
-        { key: 'iron', name: 'Iron', rda: 18, unit: 'mg', icon: '&#x1FA78;', bgColor: '#fef2f2', barColor: '#ef4444' },
+        { key: 'iron', name: 'Iron', rda: ironRda, unit: 'mg', icon: '&#x1FA78;', bgColor: '#fef2f2', barColor: '#ef4444' },
         { key: 'vitamin_c', name: 'Vitamin C', rda: 90, unit: 'mg', icon: '&#x1F34A;', bgColor: '#fff7ed', barColor: '#f97316' },
         { key: 'calcium', name: 'Calcium', rda: 1000, unit: 'mg', icon: '&#x1F9B4;', bgColor: '#f0fdf4', barColor: '#22c55e' },
-        { key: 'b12', name: 'B12', rda: 2.4, unit: 'mcg', icon: '&#x1F9EC;', bgColor: '#eef2ff', barColor: '#6366f1' },
+        { key: 'b12', name: 'B12', rda: b12Rda, unit: 'mcg', icon: '&#x1F9EC;', bgColor: '#eef2ff', barColor: '#6366f1' },
         { key: 'omega3', name: 'Omega-3', rda: 1.6, unit: 'g', icon: '&#x1F41F;', bgColor: '#f0f9ff', barColor: '#0ea5e9' },
         { key: 'zinc', name: 'Zinc', rda: 11, unit: 'mg', icon: '&#x1F6E1;', bgColor: '#faf5ff', barColor: '#a855f7' }
     ];
@@ -44672,12 +44756,18 @@ function loadCycleNutritionTips() {
             bgColor: '#fef2f2',
             borderColor: '#fecaca',
             tipBg: 'rgba(239, 68, 68, 0.06)',
-            tips: [
-                { icon: '&#x1FA78;', text: '<strong>Focus on iron-rich foods</strong> — spinach, lentils, pumpkin seeds, and dark chocolate to replenish iron lost during menstruation.' },
-                { icon: '&#x1F9CA;', text: '<strong>Anti-inflammatory foods</strong> — turmeric, ginger, and berries help reduce cramps and bloating.' },
-                { icon: '&#x2615;', text: '<strong>Warm, comforting meals</strong> — soups and stews are easier to digest. Your body needs gentle nourishment right now.' },
-                { icon: '&#x1F4A7;', text: '<strong>Stay hydrated</strong> — water retention is common. Drink more water to help flush excess fluid.' }
-            ]
+            tips: (function() {
+                const diet = getUserDietaryPreference();
+                const ironFoods = (diet === 'omnivore' || diet === 'flexitarian') ? 'red meat, spinach, lentils, and pumpkin seeds' :
+                    (diet === 'pescatarian') ? 'fish, spinach, lentils, and pumpkin seeds' :
+                    'spinach, lentils, pumpkin seeds, and dark chocolate';
+                return [
+                    { icon: '&#x1FA78;', text: `<strong>Focus on iron-rich foods</strong> — ${ironFoods} to replenish iron lost during menstruation.` },
+                    { icon: '&#x1F9CA;', text: '<strong>Anti-inflammatory foods</strong> — turmeric, ginger, and berries help reduce cramps and bloating.' },
+                    { icon: '&#x2615;', text: '<strong>Warm, comforting meals</strong> — soups and stews are easier to digest. Your body needs gentle nourishment right now.' },
+                    { icon: '&#x1F4A7;', text: '<strong>Stay hydrated</strong> — water retention is common. Drink more water to help flush excess fluid.' }
+                ];
+            })()
         },
         follicular: {
             phase: 'Follicular Phase',
@@ -44686,12 +44776,19 @@ function loadCycleNutritionTips() {
             bgColor: '#fdf2f8',
             borderColor: '#fbcfe8',
             tipBg: 'rgba(240, 98, 146, 0.06)',
-            tips: [
-                { icon: '&#x1F95A;', text: '<strong>Higher protein intake</strong> — your body is primed for muscle building. Aim for extra protein with each meal.' },
-                { icon: '&#x1F966;', text: '<strong>Fermented and sprouted foods</strong> — your gut is more receptive now. Great time for kimchi, sauerkraut, and sprouted grains.' },
-                { icon: '&#x26A1;', text: '<strong>Light, energizing meals</strong> — your metabolism is speeding up. Fresh salads, grain bowls, and smoothies work well.' },
-                { icon: '&#x1F3CB;', text: '<strong>Pre-workout carbs</strong> — energy is rising. Fuel your workouts with oats, sweet potato, or banana.' }
-            ]
+            tips: (function() {
+                const diet = getUserDietaryPreference();
+                const proteinTip = (diet === 'omnivore' || diet === 'flexitarian') ? 'Aim for lean meats, eggs, or legumes with each meal.' :
+                    (diet === 'pescatarian') ? 'Aim for fish, eggs, or legumes with each meal.' :
+                    (diet === 'vegetarian') ? 'Aim for eggs, dairy, or legumes with each meal.' :
+                    'Aim for tofu, tempeh, or legumes with each meal.';
+                return [
+                    { icon: '&#x1F95A;', text: `<strong>Higher protein intake</strong> — your body is primed for muscle building. ${proteinTip}` },
+                    { icon: '&#x1F966;', text: '<strong>Fermented and sprouted foods</strong> — your gut is more receptive now. Great time for kimchi, sauerkraut, and sprouted grains.' },
+                    { icon: '&#x26A1;', text: '<strong>Light, energizing meals</strong> — your metabolism is speeding up. Fresh salads, grain bowls, and smoothies work well.' },
+                    { icon: '&#x1F3CB;', text: '<strong>Pre-workout carbs</strong> — energy is rising. Fuel your workouts with oats, sweet potato, or banana.' }
+                ];
+            })()
         },
         ovulation: {
             phase: 'Ovulation Phase',
@@ -44834,33 +44931,64 @@ function generateSmartSuggestions(dailyData) {
     // Only show if there's meaningful gap
     if (calLeft < 100 && proLeft < 5) { section.style.display = 'none'; return; }
 
-    // Plant-based food database for on-the-fly suggestions
-    const foods = [
-        // High protein options
-        { name: 'Tofu Scramble', emoji: '&#x1F95A;', cal: 220, pro: 18, carb: 8, fat: 14, tags: ['protein'] },
-        { name: 'Lentil Soup (1 bowl)', emoji: '&#x1F963;', cal: 230, pro: 18, carb: 40, fat: 1, tags: ['protein', 'fiber'] },
-        { name: 'Chickpea Salad', emoji: '&#x1F957;', cal: 280, pro: 14, carb: 35, fat: 10, tags: ['protein', 'balanced'] },
-        { name: 'Edamame (1 cup)', emoji: '&#x1FAD8;', cal: 190, pro: 17, carb: 14, fat: 8, tags: ['protein', 'snack'] },
-        { name: 'Tempeh Stir-Fry', emoji: '&#x1F372;', cal: 320, pro: 22, carb: 25, fat: 14, tags: ['protein'] },
-        { name: 'Black Bean Tacos (2)', emoji: '&#x1F32E;', cal: 340, pro: 16, carb: 42, fat: 12, tags: ['protein', 'carb'] },
-        { name: 'Protein Smoothie', emoji: '&#x1F964;', cal: 280, pro: 25, carb: 35, fat: 6, tags: ['protein', 'quick'] },
-        { name: 'Hemp Seed Bowl', emoji: '&#x1F331;', cal: 250, pro: 15, carb: 20, fat: 14, tags: ['protein', 'fat'] },
-        // Carb-focused options
-        { name: 'Oatmeal with Banana', emoji: '&#x1F35A;', cal: 300, pro: 8, carb: 55, fat: 6, tags: ['carb', 'breakfast'] },
-        { name: 'Sweet Potato (large)', emoji: '&#x1F360;', cal: 180, pro: 4, carb: 41, fat: 0, tags: ['carb', 'clean'] },
-        { name: 'Quinoa Bowl', emoji: '&#x1F35B;', cal: 320, pro: 12, carb: 50, fat: 8, tags: ['carb', 'balanced'] },
-        { name: 'Brown Rice + Beans', emoji: '&#x1F35A;', cal: 350, pro: 14, carb: 60, fat: 4, tags: ['carb', 'protein'] },
-        { name: 'Banana + PB Toast', emoji: '&#x1F34C;', cal: 280, pro: 8, carb: 38, fat: 12, tags: ['carb', 'quick'] },
-        // Fat-focused options
-        { name: 'Avocado Toast', emoji: '&#x1F951;', cal: 280, pro: 7, carb: 25, fat: 18, tags: ['fat', 'breakfast'] },
-        { name: 'Trail Mix (1/3 cup)', emoji: '&#x1F95C;', cal: 200, pro: 6, carb: 18, fat: 14, tags: ['fat', 'snack'] },
-        { name: 'Chia Pudding', emoji: '&#x1F366;', cal: 220, pro: 6, carb: 22, fat: 12, tags: ['fat', 'breakfast'] },
-        // Light / low-cal options
-        { name: 'Green Salad + Tahini', emoji: '&#x1F957;', cal: 150, pro: 5, carb: 12, fat: 10, tags: ['light', 'fat'] },
-        { name: 'Veggie Soup', emoji: '&#x1F963;', cal: 120, pro: 4, carb: 18, fat: 3, tags: ['light', 'fiber'] },
-        { name: 'Fruit Bowl', emoji: '&#x1F353;', cal: 140, pro: 2, carb: 34, fat: 1, tags: ['light', 'carb'] },
-        { name: 'Hummus + Veggies', emoji: '&#x1FAD8;', cal: 160, pro: 6, carb: 16, fat: 8, tags: ['light', 'snack'] }
+    // Get user's dietary preference
+    const userDiet = getUserDietaryPreference();
+
+    // Diet-aware food database
+    // diet field: which diets can eat this ('all' = everyone, or specific diet keys)
+    const allFoods = [
+        // === Universal foods (all diets) ===
+        { name: 'Oatmeal with Banana', emoji: '&#x1F35A;', cal: 300, pro: 8, carb: 55, fat: 6, diet: 'all' },
+        { name: 'Sweet Potato (large)', emoji: '&#x1F360;', cal: 180, pro: 4, carb: 41, fat: 0, diet: 'all' },
+        { name: 'Quinoa Bowl', emoji: '&#x1F35B;', cal: 320, pro: 12, carb: 50, fat: 8, diet: 'all' },
+        { name: 'Brown Rice + Beans', emoji: '&#x1F35A;', cal: 350, pro: 14, carb: 60, fat: 4, diet: 'all' },
+        { name: 'Banana + PB Toast', emoji: '&#x1F34C;', cal: 280, pro: 8, carb: 38, fat: 12, diet: 'all' },
+        { name: 'Avocado Toast', emoji: '&#x1F951;', cal: 280, pro: 7, carb: 25, fat: 18, diet: 'all' },
+        { name: 'Trail Mix (1/3 cup)', emoji: '&#x1F95C;', cal: 200, pro: 6, carb: 18, fat: 14, diet: 'all' },
+        { name: 'Green Salad + Tahini', emoji: '&#x1F957;', cal: 150, pro: 5, carb: 12, fat: 10, diet: 'all' },
+        { name: 'Veggie Soup', emoji: '&#x1F963;', cal: 120, pro: 4, carb: 18, fat: 3, diet: 'all' },
+        { name: 'Fruit Bowl', emoji: '&#x1F353;', cal: 140, pro: 2, carb: 34, fat: 1, diet: 'all' },
+        { name: 'Hummus + Veggies', emoji: '&#x1FAD8;', cal: 160, pro: 6, carb: 16, fat: 8, diet: 'all' },
+        { name: 'Lentil Soup (1 bowl)', emoji: '&#x1F963;', cal: 230, pro: 18, carb: 40, fat: 1, diet: 'all' },
+        { name: 'Chickpea Salad', emoji: '&#x1F957;', cal: 280, pro: 14, carb: 35, fat: 10, diet: 'all' },
+        { name: 'Edamame (1 cup)', emoji: '&#x1FAD8;', cal: 190, pro: 17, carb: 14, fat: 8, diet: 'all' },
+        { name: 'Black Bean Tacos (2)', emoji: '&#x1F32E;', cal: 340, pro: 16, carb: 42, fat: 12, diet: 'all' },
+
+        // === Vegan / plant-based only ===
+        { name: 'Tofu Scramble', emoji: '&#x1F95A;', cal: 220, pro: 18, carb: 8, fat: 14, diet: 'vegan,vegetarian,flexitarian,pescatarian' },
+        { name: 'Tempeh Stir-Fry', emoji: '&#x1F372;', cal: 320, pro: 22, carb: 25, fat: 14, diet: 'vegan,vegetarian,flexitarian,pescatarian' },
+        { name: 'Chia Pudding', emoji: '&#x1F366;', cal: 220, pro: 6, carb: 22, fat: 12, diet: 'vegan,vegetarian,flexitarian,pescatarian' },
+        { name: 'Hemp Seed Bowl', emoji: '&#x1F331;', cal: 250, pro: 15, carb: 20, fat: 14, diet: 'vegan,vegetarian,flexitarian,pescatarian' },
+        { name: 'Vegan Protein Smoothie', emoji: '&#x1F964;', cal: 280, pro: 25, carb: 35, fat: 6, diet: 'vegan,vegetarian,flexitarian' },
+
+        // === Vegetarian (includes dairy/eggs) ===
+        { name: 'Greek Yogurt + Granola', emoji: '&#x1F95B;', cal: 280, pro: 18, carb: 35, fat: 8, diet: 'vegetarian,flexitarian,pescatarian,omnivore' },
+        { name: 'Scrambled Eggs (3)', emoji: '&#x1F373;', cal: 240, pro: 18, carb: 2, fat: 18, diet: 'vegetarian,flexitarian,pescatarian,omnivore' },
+        { name: 'Cottage Cheese + Fruit', emoji: '&#x1F9C0;', cal: 200, pro: 20, carb: 16, fat: 5, diet: 'vegetarian,flexitarian,pescatarian,omnivore' },
+        { name: 'Cheese Omelette', emoji: '&#x1F95A;', cal: 310, pro: 22, carb: 3, fat: 24, diet: 'vegetarian,flexitarian,pescatarian,omnivore' },
+        { name: 'Whey Protein Shake', emoji: '&#x1F964;', cal: 250, pro: 30, carb: 15, fat: 4, diet: 'vegetarian,flexitarian,pescatarian,omnivore' },
+
+        // === Pescatarian (fish + vegetarian) ===
+        { name: 'Salmon Fillet (150g)', emoji: '&#x1F41F;', cal: 310, pro: 34, carb: 0, fat: 18, diet: 'pescatarian,flexitarian,omnivore' },
+        { name: 'Tuna Salad', emoji: '&#x1F957;', cal: 260, pro: 28, carb: 8, fat: 12, diet: 'pescatarian,flexitarian,omnivore' },
+        { name: 'Shrimp Stir-Fry', emoji: '&#x1F364;', cal: 280, pro: 26, carb: 18, fat: 10, diet: 'pescatarian,flexitarian,omnivore' },
+        { name: 'Smoked Salmon Toast', emoji: '&#x1F363;', cal: 250, pro: 20, carb: 22, fat: 10, diet: 'pescatarian,flexitarian,omnivore' },
+
+        // === Omnivore (everything) ===
+        { name: 'Grilled Chicken Breast', emoji: '&#x1F357;', cal: 280, pro: 38, carb: 0, fat: 12, diet: 'omnivore,flexitarian' },
+        { name: 'Turkey Mince Bowl', emoji: '&#x1F35B;', cal: 320, pro: 30, carb: 25, fat: 12, diet: 'omnivore,flexitarian' },
+        { name: 'Steak + Sweet Potato', emoji: '&#x1F969;', cal: 450, pro: 40, carb: 35, fat: 16, diet: 'omnivore,flexitarian' },
+        { name: 'Chicken Wrap', emoji: '&#x1F32F;', cal: 380, pro: 28, carb: 35, fat: 14, diet: 'omnivore,flexitarian' },
+        { name: 'Beef Meatballs (5)', emoji: '&#x1F356;', cal: 350, pro: 28, carb: 12, fat: 22, diet: 'omnivore,flexitarian' },
+        { name: 'Chicken + Rice Bowl', emoji: '&#x1F35B;', cal: 420, pro: 35, carb: 45, fat: 10, diet: 'omnivore,flexitarian' }
     ];
+
+    // Filter foods based on user's dietary preference
+    const foods = allFoods.filter(f => {
+        if (f.diet === 'all') return true;
+        if (!userDiet) return true; // No preference set, show everything
+        return f.diet.split(',').includes(userDiet);
+    });
 
     // Score each food by how well it fills gaps
     const scored = foods.map(f => {
