@@ -41268,6 +41268,20 @@ async function uploadWorkoutPhoto(file) {
 document.addEventListener('DOMContentLoaded', function() {
     // Load points widget after a short delay to ensure auth is ready
     setTimeout(loadPointsWidget, 1000);
+
+    // Safety net: if the tamagotchi model still has no src after 5 seconds, force-load it
+    setTimeout(function() {
+        const modelViewer = document.getElementById('tamagotchi-model');
+        if (modelViewer && !modelViewer.getAttribute('src')) {
+            console.warn('Tamagotchi model still has no src after 5s — force-loading baby model');
+            const babySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+            modelViewer.setAttribute('src', babySrc);
+            // Also retry loading the full character data
+            if (typeof loadPointsWidget === 'function') {
+                loadPointsWidget();
+            }
+        }
+    }, 5000);
 });
 </script>
 
