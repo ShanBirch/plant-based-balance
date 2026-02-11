@@ -3613,59 +3613,171 @@ async function applyAppTheme(themeKey) {
         white-space: nowrap;
     }
 
-    /* Hydration Tracker */
-    .hydration-card {
-        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-        border: 1px solid #bae6fd;
-        border-radius: 16px;
-        padding: 20px;
-        margin: 25px 0;
-    }
-    .hydration-glasses {
+    /* Hydration Tracker - Circular Cup */
+    .hydration-circle-container {
         display: flex;
-        gap: 8px;
-        justify-content: center;
-        margin-top: 14px;
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px 0 10px 0;
+        border-top: 1px solid #e5e7eb;
+        margin-top: 20px;
     }
-    .hydration-glass {
-        width: 40px;
-        height: 50px;
-        border-radius: 6px 6px 10px 10px;
-        border: 2px solid #7dd3fc;
+    .hydration-circle-header {
         display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        overflow: hidden;
-        position: relative;
-        background: white;
-    }
-    .hydration-glass.filled {
-        border-color: #0284c7;
-    }
-    .hydration-glass-fill {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: linear-gradient(180deg, #38bdf8, #0284c7);
-        transition: height 0.3s ease;
-        border-radius: 0 0 8px 8px;
-    }
-    .hydration-glass-icon {
-        position: relative;
-        z-index: 1;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 16px;
         font-size: 0.9rem;
-        margin-bottom: 4px;
+        font-weight: 700;
+        color: #0369a1;
     }
-    .hydration-total {
-        text-align: center;
-        margin-top: 12px;
-        font-size: 0.85rem;
+    .hydration-circle-wrap {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .hydration-circle-wrap:active {
+        transform: scale(0.95);
+    }
+    .hydration-circle-svg {
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+    }
+    .hydration-circle-bg {
+        fill: none;
+        stroke: #e0f2fe;
+        stroke-width: 8;
+    }
+    .hydration-circle-fill {
+        fill: none;
+        stroke: #0284c7;
+        stroke-width: 8;
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.5s ease;
+    }
+    .hydration-cup-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        pointer-events: none;
+    }
+    .hydration-cup-svg {
+        width: 28px;
+        height: 28px;
+        fill: #0284c7;
+        transition: fill 0.3s ease;
+    }
+    .hydration-cup-count {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #0369a1;
+    }
+    .hydration-circle-label {
+        margin-top: 8px;
+        font-size: 0.78rem;
         color: #0369a1;
         font-weight: 600;
+    }
+    .hydration-circle-hint {
+        font-size: 0.68rem;
+        color: #7dd3fc;
+        margin-top: 2px;
+    }
+    .hydration-ripple {
+        animation: hydrationRipple 0.4s ease-out;
+    }
+    @keyframes hydrationRipple {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.08); }
+        100% { transform: scale(1); }
+    }
+
+    /* Weekly Trends Button */
+    .weekly-trends-btn {
+        width: 100%;
+        padding: 16px 20px;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-main);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 25px 0;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .weekly-trends-btn:active {
+        transform: scale(0.98);
+    }
+    .weekly-trends-btn-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .weekly-trends-btn-arrow {
+        font-size: 1.2rem;
+        color: var(--text-muted);
+    }
+
+    /* Weekly Trends Page */
+    .weekly-trends-page {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg-main, #f5f5f5);
+        z-index: 999;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .weekly-trends-page.active {
+        display: block;
+    }
+    .weekly-trends-page-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .weekly-trends-back-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: var(--text-main);
+    }
+    .weekly-trends-page-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+    .weekly-trends-page-content {
+        padding: 20px;
+        padding-bottom: 100px;
     }
 
     /* Macro Ratio Pie Chart */
@@ -7259,6 +7371,29 @@ async function applyAppTheme(themeKey) {
                             <!-- Rendered by JS -->
                         </div>
                     </div>
+
+                    <!-- Hydration Circle (inside daily tracker card) -->
+                    <div class="hydration-circle-container" id="hydration-section">
+                        <div class="hydration-circle-header">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#0284c7"><path d="M12 2c0 0-8 9.5-8 14a8 8 0 0 0 16 0C20 11.5 12 2 12 2z"/></svg>
+                            Hydration
+                        </div>
+                        <div class="hydration-circle-wrap" id="hydration-circle-tap" onclick="addHydrationGlass()">
+                            <svg class="hydration-circle-svg" viewBox="0 0 100 100">
+                                <circle class="hydration-circle-bg" cx="50" cy="50" r="42"/>
+                                <circle class="hydration-circle-fill" id="hydration-circle-fill" cx="50" cy="50" r="42"
+                                    stroke-dasharray="264" stroke-dashoffset="264"/>
+                            </svg>
+                            <div class="hydration-cup-icon">
+                                <svg class="hydration-cup-svg" viewBox="0 0 24 24" id="hydration-cup-svg">
+                                    <path d="M18 8h2a2 2 0 0 1 2 2v2a4 4 0 0 1-4 4h-.5M6 2h12l-1.5 16.5a2 2 0 0 1-2 1.5H9.5a2 2 0 0 1-2-1.5L6 2z"/>
+                                </svg>
+                                <span class="hydration-cup-count" id="hydration-cup-count">0/8</span>
+                            </div>
+                        </div>
+                        <div class="hydration-circle-label" id="hydration-circle-label">0 ml</div>
+                        <div class="hydration-circle-hint">Tap to add a cup</div>
+                    </div>
                 </div>
 
                 <!-- Today's Meals List -->
@@ -7351,36 +7486,14 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
 
-                <!-- Weekly Metrics Section -->
-                <div class="weekly-metrics-card" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; border: 1px solid #dee2e6;">
-                    <h3 style="margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                        📊 Weekly Summary
-                    </h3>
-
-                    <!-- Weekly Stats Grid -->
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-                        <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Total Calories</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);"><span id="weekly-total-calories">0</span></div>
-                        </div>
-                        <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Daily Average</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);"><span id="weekly-avg-calories">0</span></div>
-                        </div>
-                        <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Days Logged</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);"><span id="weekly-days-logged">0</span>/7</div>
-                        </div>
-                    </div>
-
-                    <!-- Daily Breakdown -->
-                    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">Last 7 Days</div>
-                        <div id="weekly-daily-breakdown">
-                            <p style="text-align: center; color: var(--text-muted); padding: 20px 0;">Loading weekly data...</p>
-                        </div>
-                    </div>
-                </div>
+                <!-- Weekly Trends Button -->
+                <button class="weekly-trends-btn" onclick="openWeeklyTrendsPage()">
+                    <span class="weekly-trends-btn-left">
+                        <span style="font-size: 1.3rem;">📊</span>
+                        <span>Weekly Trends</span>
+                    </span>
+                    <span class="weekly-trends-btn-arrow">&#x203A;</span>
+                </button>
 
                 <!-- Daily Nutrition Score (hidden - now shown as popup) -->
                 <div class="nutrition-score-card" id="nutrition-score-section" style="display: none;">
@@ -7430,40 +7543,7 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
 
-                <!-- Multi-Week History -->
-                <div class="multi-week-card" id="multi-week-section">
-                    <div class="multi-week-header">
-                        <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main);">Weekly Trends</h3>
-                        <div class="multi-week-nav" id="multi-week-nav">
-                            <button class="active" onclick="loadMultiWeekData(4)">4 Weeks</button>
-                            <button onclick="loadMultiWeekData(8)">8 Weeks</button>
-                        </div>
-                    </div>
-                    <div id="multi-week-sparklines">
-                        <p style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.85rem;">Loading trend data...</p>
-                    </div>
-                    <div class="week-compare-grid" id="week-compare-grid">
-                        <!-- Comparison stats rendered by JS -->
-                    </div>
-                </div>
-
-                <!-- Meal Pattern Analysis -->
-                <div class="meal-pattern-card" id="meal-pattern-section">
-                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Meal Patterns</h3>
-                    <p style="margin: 0 0 14px 0; font-size: 0.78rem; color: var(--text-muted);">Insights from your last 7 days</p>
-                    <div id="meal-pattern-insights">
-                        <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log more meals to see patterns</p>
-                    </div>
-                </div>
-
-                <!-- Photo Meal Journal -->
-                <div class="meal-journal-card" id="meal-journal-section">
-                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Meal Journal</h3>
-                    <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Your recent meals at a glance</p>
-                    <div class="journal-timeline" id="journal-timeline">
-                        <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Loading your meal photos...</p>
-                    </div>
-                </div>
+                <!-- Weekly trends, meal patterns, meal journal moved to Weekly Trends page -->
 
                 <!-- Cycle-Synced Nutrition Tips -->
                 <div class="cycle-nutrition-card" id="cycle-nutrition-section" style="display: none;">
@@ -7479,30 +7559,8 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
 
-                <!-- Macro Ratio Pie Chart -->
-                <!-- Smart Meal Suggestions -->
-                <div class="smart-suggestions-card" id="smart-suggestions-section" style="display: none;">
-                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: #1e40af;">Smart Suggestions</h3>
-                    <p style="margin: 0; font-size: 0.78rem; color: #3b82f6;" id="smart-suggestions-subtitle">Ideas to close your macro gaps</p>
-                    <div class="suggestion-list" id="suggestion-list">
-                        <!-- Rendered by JS -->
-                    </div>
-                </div>
-
-                <!-- Hydration Tracker -->
-                <div class="hydration-card" id="hydration-section">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <div>
-                            <h3 style="margin: 0; font-size: 1.1rem; color: #0369a1;">Hydration</h3>
-                            <p style="margin: 4px 0 0 0; font-size: 0.78rem; color: #0284c7;">Tap glasses to track water intake</p>
-                        </div>
-                        <span style="font-size: 1.8rem;">&#x1F4A7;</span>
-                    </div>
-                    <div class="hydration-glasses" id="hydration-glasses">
-                        <!-- 8 glasses rendered by JS -->
-                    </div>
-                    <div class="hydration-total" id="hydration-total">0 / 8 glasses (0 ml)</div>
-                </div>
+                <!-- Smart Suggestions removed -->
+                <!-- Hydration moved inside daily tracker card above -->
 
                 <!-- Score History, Meal Prep Score, Nutrition Badges, Social Comparison removed -->
 
@@ -7510,6 +7568,81 @@ async function applyAppTheme(themeKey) {
         </div>
 
         <!-- Week views will be injected/shown here -->
+
+    <!-- Weekly Trends Page (full-screen overlay) -->
+    <div class="weekly-trends-page" id="weekly-trends-page">
+        <div class="weekly-trends-page-header">
+            <button class="weekly-trends-back-btn" onclick="closeWeeklyTrendsPage()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <span class="weekly-trends-page-title">Weekly Trends</span>
+        </div>
+        <div class="weekly-trends-page-content">
+            <!-- Weekly Summary -->
+            <div class="weekly-metrics-card" style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; border: 1px solid #dee2e6; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    Weekly Summary
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Total Calories</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);"><span id="weekly-total-calories">0</span></div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Daily Average</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);"><span id="weekly-avg-calories">0</span></div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Days Logged</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);"><span id="weekly-days-logged">0</span>/7</div>
+                    </div>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">Last 7 Days</div>
+                    <div id="weekly-daily-breakdown">
+                        <p style="text-align: center; color: var(--text-muted); padding: 20px 0;">Loading weekly data...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weekly Meals (Photo Journal) -->
+            <div class="meal-journal-card" id="meal-journal-section">
+                <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Weekly Meals</h3>
+                <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Your recent meals at a glance</p>
+                <div class="journal-timeline" id="journal-timeline">
+                    <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Loading your meal photos...</p>
+                </div>
+            </div>
+
+            <!-- Weekly Trends (Multi-Week History) -->
+            <div class="multi-week-card" id="multi-week-section">
+                <div class="multi-week-header">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main);">Weekly Trends</h3>
+                    <div class="multi-week-nav" id="multi-week-nav">
+                        <button class="active" onclick="loadMultiWeekData(4)">4 Weeks</button>
+                        <button onclick="loadMultiWeekData(8)">8 Weeks</button>
+                    </div>
+                </div>
+                <div id="multi-week-sparklines">
+                    <p style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.85rem;">Loading trend data...</p>
+                </div>
+                <div class="week-compare-grid" id="week-compare-grid">
+                    <!-- Comparison stats rendered by JS -->
+                </div>
+            </div>
+
+            <!-- Meal Pattern Analysis -->
+            <div class="meal-pattern-card" id="meal-pattern-section">
+                <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Meal Patterns</h3>
+                <p style="margin: 0 0 14px 0; font-size: 0.78rem; color: var(--text-muted);">Insights from your last 7 days</p>
+                <div id="meal-pattern-insights">
+                    <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log more meals to see patterns</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <!-- START HERE -->
     <!-- Protocol Section Removed -->
@@ -45257,54 +45390,109 @@ function generateSmartSuggestions(dailyData) {
     }).join('');
 }
 
-// --- 10. Hydration Tracker ---
+// --- 10. Hydration Tracker (Circular Cup Design) ---
 function initHydrationTracker() {
-    const container = document.getElementById('hydration-glasses');
-    if (!container) return;
+    const circleEl = document.getElementById('hydration-circle-fill');
+    if (!circleEl) return;
 
     const today = getLocalDateString();
     const storageKey = `pbb_hydration_${today}`;
     let glasses = parseInt(localStorage.getItem(storageKey) || '0');
 
-    renderHydrationUI(glasses, container, storageKey);
+    updateHydrationCircle(glasses);
 }
 
-function renderHydrationUI(glasses, container, storageKey) {
+function updateHydrationCircle(glasses) {
     const totalGlasses = 8;
-    let html = '';
-    for (let i = 0; i < totalGlasses; i++) {
-        const filled = i < glasses;
-        html += `
-            <div class="hydration-glass${filled ? ' filled' : ''}" onclick="toggleHydrationGlass(${i})">
-                <div class="hydration-glass-fill" style="height: ${filled ? '100' : '0'}%;"></div>
-                <span class="hydration-glass-icon">${filled ? '&#x1F4A7;' : ''}</span>
-            </div>
-        `;
-    }
-    container.innerHTML = html;
+    const circumference = 2 * Math.PI * 42; // ~264
+    const progress = Math.min(glasses / totalGlasses, 1);
+    const offset = circumference * (1 - progress);
 
-    const totalEl = document.getElementById('hydration-total');
-    if (totalEl) {
+    const circleEl = document.getElementById('hydration-circle-fill');
+    if (circleEl) {
+        circleEl.style.strokeDashoffset = offset;
+        // Change color when full
+        if (glasses >= totalGlasses) {
+            circleEl.style.stroke = '#16a34a';
+        } else {
+            circleEl.style.stroke = '#0284c7';
+        }
+    }
+
+    const countEl = document.getElementById('hydration-cup-count');
+    if (countEl) countEl.textContent = `${glasses}/${totalGlasses}`;
+
+    const labelEl = document.getElementById('hydration-circle-label');
+    if (labelEl) {
         const ml = glasses * 250;
-        totalEl.textContent = `${glasses} / ${totalGlasses} glasses (${ml} ml)`;
+        labelEl.textContent = `${ml} ml`;
+    }
+
+    const cupSvg = document.getElementById('hydration-cup-svg');
+    if (cupSvg) {
+        cupSvg.style.fill = glasses >= totalGlasses ? '#16a34a' : '#0284c7';
     }
 }
 
-function toggleHydrationGlass(index) {
+function addHydrationGlass() {
     const today = getLocalDateString();
     const storageKey = `pbb_hydration_${today}`;
     let glasses = parseInt(localStorage.getItem(storageKey) || '0');
 
-    // If tapping the last filled glass, unfill it (toggle). Otherwise fill up to tapped glass.
-    if (index < glasses) {
-        glasses = index; // Unfill from this glass onward
+    if (glasses >= 8) {
+        // Reset if already at max
+        glasses = 0;
     } else {
-        glasses = index + 1; // Fill up to and including this glass
+        glasses++;
     }
 
     localStorage.setItem(storageKey, glasses.toString());
-    const container = document.getElementById('hydration-glasses');
-    if (container) renderHydrationUI(glasses, container, storageKey);
+    updateHydrationCircle(glasses);
+
+    // Ripple animation
+    const wrap = document.getElementById('hydration-circle-tap');
+    if (wrap) {
+        wrap.classList.remove('hydration-ripple');
+        void wrap.offsetWidth; // trigger reflow
+        wrap.classList.add('hydration-ripple');
+    }
+}
+
+// --- Weekly Trends Page ---
+function openWeeklyTrendsPage() {
+    const page = document.getElementById('weekly-trends-page');
+    if (!page) return;
+
+    page.classList.add('active');
+    page.style.transform = 'translateX(100%)';
+    page.style.transition = 'transform 0.3s ease-out';
+    requestAnimationFrame(() => {
+        page.style.transform = 'translateX(0)';
+    });
+
+    // Load data for the page
+    Promise.allSettled([
+        loadWeeklyMetrics(window.currentUser?.id),
+        loadMultiWeekData(4),
+        loadMealPatterns(),
+        loadMealJournal()
+    ]);
+
+    // Enable swipe-back
+    enableSwipeBackNavigation('weekly-trends-page', closeWeeklyTrendsPage);
+}
+
+function closeWeeklyTrendsPage() {
+    const page = document.getElementById('weekly-trends-page');
+    if (!page) return;
+
+    page.style.transition = 'transform 0.3s ease-out';
+    page.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+        page.classList.remove('active');
+        page.style.transform = '';
+        page.style.transition = '';
+    }, 300);
 }
 
 // --- 11. Macro Ratio Pie Chart ---
@@ -45677,12 +45865,10 @@ function renderSocialComparison(proteinPct, consistencyPct, goalPct) {
 async function loadEnhancedNutritionFeatures() {
     try {
         // Load features in parallel for speed
+        // Weekly trends, meal patterns, meal journal are now loaded on-demand from Weekly Trends page
         await Promise.allSettled([
             loadStreakData(),
-            loadMultiWeekData(4),
-            loadMicronutrientInsights(),
-            loadMealPatterns(),
-            loadMealJournal()
+            loadMicronutrientInsights()
         ]);
         // Synchronous features (use already-loaded data)
         loadCycleNutritionTips();
@@ -45758,9 +45944,6 @@ function updateNutritionUI(dailyData, mealsData) {
 
     // Update daily nutrition score
     updateNutritionScoreUI(data);
-
-    // Generate smart meal suggestions based on macro gaps
-    generateSmartSuggestions(data);
 }
 
 // Helper function to update element text
