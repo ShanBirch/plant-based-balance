@@ -2850,6 +2850,98 @@ async function applyAppTheme(themeKey) {
         letter-spacing: 0.5px;
     }
 
+    /* Macro Ring Legend */
+    .macro-ring-legend {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 12px;
+        margin-bottom: 8px;
+    }
+    .macro-ring-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.78rem;
+    }
+    .macro-ring-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .macro-ring-label {
+        color: var(--text-muted);
+    }
+    .macro-ring-pct {
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    /* Micronutrient Tracker (inside daily tracker) */
+    .tracker-micro-section {
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+    }
+    .tracker-micro-header {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+    }
+    .tracker-micro-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .micro-tracker-item {
+        background: #f9f9f7;
+        padding: 10px 14px;
+        border-radius: 10px;
+    }
+    .micro-tracker-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+    .micro-tracker-name {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .micro-tracker-name .micro-tracker-icon {
+        font-size: 0.9rem;
+    }
+    .micro-tracker-value {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+    .micro-tracker-status {
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .progress-bar-micro {
+        height: 6px;
+        background: #e5e5e5;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .progress-fill-micro {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.4s ease;
+    }
+
     /* Macros Detail Grid */
     .macros-detail-grid {
         display: flex;
@@ -7007,13 +7099,11 @@ async function applyAppTheme(themeKey) {
                 <div class="calorie-tracker-summary">
                     <h2 style="margin: 0 0 20px 0; font-size: 1.5rem; color: var(--text-main);">Daily Nutrition Tracker</h2>
 
-                    <!-- Calorie Progress Large -->
+                    <!-- Calorie Progress Large (Tri-color macro ring) -->
                     <div class="calorie-progress-large">
                         <div class="calorie-circle">
-                            <svg class="calorie-circle-svg" viewBox="0 0 200 200">
+                            <svg class="calorie-circle-svg" viewBox="0 0 200 200" id="calorie-circle-svg">
                                 <circle class="calorie-circle-bg" cx="100" cy="100" r="90" fill="none" stroke="#f0f0f0" stroke-width="12"/>
-                                <circle class="calorie-circle-progress" id="calorie-circle-progress" cx="100" cy="100" r="90" fill="none" stroke="var(--primary)" stroke-width="12" stroke-linecap="round"
-                                    style="stroke-dasharray: 565; stroke-dashoffset: 565; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 0.5s ease;"/>
                             </svg>
                             <div class="calorie-circle-text">
                                 <div class="calorie-circle-numbers">
@@ -7024,6 +7114,13 @@ async function applyAppTheme(themeKey) {
                                 <div class="calorie-circle-label">calories</div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Macro Ring Legend -->
+                    <div class="macro-ring-legend" id="macro-ring-legend">
+                        <div class="macro-ring-legend-item"><span class="macro-ring-dot" style="background: #3b82f6;"></span><span class="macro-ring-label">Protein</span><span class="macro-ring-pct" id="macro-ring-protein-pct">--</span></div>
+                        <div class="macro-ring-legend-item"><span class="macro-ring-dot" style="background: #f59e0b;"></span><span class="macro-ring-label">Carbs</span><span class="macro-ring-pct" id="macro-ring-carbs-pct">--</span></div>
+                        <div class="macro-ring-legend-item"><span class="macro-ring-dot" style="background: #ef4444;"></span><span class="macro-ring-label">Fat</span><span class="macro-ring-pct" id="macro-ring-fat-pct">--</span></div>
                     </div>
 
                     <!-- Macros Progress Bars -->
@@ -7068,30 +7165,13 @@ async function applyAppTheme(themeKey) {
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Macro Split (inside daily tracker) -->
-                <div class="macro-pie-card" id="macro-pie-section" style="margin-top: 20px;">
-                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Macro Split</h3>
-                    <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Today's protein / carbs / fat ratio</p>
-                    <div class="macro-pie-container" id="macro-pie-container">
-                        <svg class="macro-pie-svg" viewBox="0 0 120 120" id="macro-pie-svg">
-                            <circle cx="60" cy="60" r="50" fill="#f3f4f6" stroke="none"/>
-                        </svg>
-                        <div class="macro-pie-legend" id="macro-pie-legend">
-                            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #3b82f6;"></span><span class="macro-legend-label">Protein</span><span class="macro-legend-value">--</span></div>
-                            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #f59e0b;"></span><span class="macro-legend-label">Carbs</span><span class="macro-legend-value">--</span></div>
-                            <div class="macro-pie-legend-item"><span class="macro-legend-dot" style="background: #ef4444;"></span><span class="macro-legend-label">Fat</span><span class="macro-legend-value">--</span></div>
+                    <!-- Micronutrients Section -->
+                    <div class="tracker-micro-section">
+                        <div class="tracker-micro-header">Micronutrients</div>
+                        <div class="tracker-micro-grid" id="tracker-micro-grid">
+                            <!-- Rendered by JS -->
                         </div>
-                    </div>
-                </div>
-
-                <!-- Micronutrient Insights (inside daily tracker) -->
-                <div class="micro-insights-card" id="micro-insights-section" style="margin-top: 20px;">
-                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Micronutrient Insights</h3>
-                    <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Key nutrients to track daily</p>
-                    <div class="micro-grid" id="micro-grid">
-                        <!-- Rendered by JS -->
                     </div>
                 </div>
 
@@ -44368,23 +44448,10 @@ async function loadMicronutrientInsights() {
 }
 
 function renderMicronutrientUI(dailyAvg, mealCount) {
-    const grid = document.getElementById('micro-grid');
+    const grid = document.getElementById('tracker-micro-grid');
     if (!grid) return;
 
     const userDiet = getUserDietaryPreference();
-
-    // Subtitle updates based on diet
-    const subtitleEl = document.querySelector('#micro-insights-section p');
-    if (subtitleEl) {
-        const dietTips = {
-            vegan: 'Key nutrients to watch on a vegan diet',
-            vegetarian: 'Key nutrients for vegetarian diets',
-            pescatarian: 'Key nutrients for pescatarian diets',
-            omnivore: 'Key nutrients to track daily',
-            flexitarian: 'Key nutrients for a balanced diet'
-        };
-        subtitleEl.textContent = dietTips[userDiet] || 'Key nutrients to track daily';
-    }
 
     // Adjust RDAs based on diet — vegans/vegetarians need more iron (non-heme absorption is lower)
     const ironRda = (userDiet === 'vegan' || userDiet === 'vegetarian') ? 32 : 18;
@@ -44393,23 +44460,24 @@ function renderMicronutrientUI(dailyAvg, mealCount) {
 
     // RDA values (daily recommended for adults), adjusted per diet
     const nutrients = [
-        { key: 'iron', name: 'Iron', rda: ironRda, unit: 'mg', icon: '&#x1FA78;', bgColor: '#fef2f2', barColor: '#ef4444' },
-        { key: 'vitamin_c', name: 'Vitamin C', rda: 90, unit: 'mg', icon: '&#x1F34A;', bgColor: '#fff7ed', barColor: '#f97316' },
-        { key: 'calcium', name: 'Calcium', rda: 1000, unit: 'mg', icon: '&#x1F9B4;', bgColor: '#f0fdf4', barColor: '#22c55e' },
-        { key: 'b12', name: 'B12', rda: b12Rda, unit: 'mcg', icon: '&#x1F9EC;', bgColor: '#eef2ff', barColor: '#6366f1' },
-        { key: 'omega3', name: 'Omega-3', rda: 1.6, unit: 'g', icon: '&#x1F41F;', bgColor: '#f0f9ff', barColor: '#0ea5e9' },
-        { key: 'zinc', name: 'Zinc', rda: 11, unit: 'mg', icon: '&#x1F6E1;', bgColor: '#faf5ff', barColor: '#a855f7' }
+        { key: 'iron', name: 'Iron', rda: ironRda, unit: 'mg', icon: '&#x1FA78;', barColor: '#ef4444' },
+        { key: 'vitamin_c', name: 'Vitamin C', rda: 90, unit: 'mg', icon: '&#x1F34A;', barColor: '#f97316' },
+        { key: 'calcium', name: 'Calcium', rda: 1000, unit: 'mg', icon: '&#x1F9B4;', barColor: '#22c55e' },
+        { key: 'b12', name: 'B12', rda: b12Rda, unit: 'mcg', icon: '&#x1F9EC;', barColor: '#6366f1' },
+        { key: 'omega3', name: 'Omega-3', rda: 1.6, unit: 'g', icon: '&#x1F41F;', barColor: '#0ea5e9' },
+        { key: 'zinc', name: 'Zinc', rda: 11, unit: 'mg', icon: '&#x1F6E1;', barColor: '#a855f7' }
     ];
 
     if (mealCount === 0) {
         grid.innerHTML = nutrients.map(n => `
-            <div class="micro-item">
-                <div class="micro-icon" style="background: ${n.bgColor};">${n.icon}</div>
-                <div class="micro-info">
-                    <div class="micro-name">${n.name}</div>
-                    <div class="micro-bar-bg"><div class="micro-bar-fill" style="width: 0%; background: ${n.barColor};"></div></div>
+            <div class="micro-tracker-item">
+                <div class="micro-tracker-header">
+                    <span class="micro-tracker-name"><span class="micro-tracker-icon">${n.icon}</span> ${n.name}</span>
+                    <span class="micro-tracker-status" style="color: #9ca3af;">--</span>
                 </div>
-                <div class="micro-status" style="color: #9ca3af;">--</div>
+                <div class="progress-bar-micro">
+                    <div class="progress-fill-micro" style="width: 0%; background: ${n.barColor};"></div>
+                </div>
             </div>
         `).join('');
         return;
@@ -44424,13 +44492,14 @@ function renderMicronutrientUI(dailyAvg, mealCount) {
         else if (pct >= 50) { status = 'Fair'; statusColor = '#f59e0b'; }
 
         return `
-            <div class="micro-item">
-                <div class="micro-icon" style="background: ${n.bgColor};">${n.icon}</div>
-                <div class="micro-info">
-                    <div class="micro-name">${n.name}</div>
-                    <div class="micro-bar-bg"><div class="micro-bar-fill" style="width: ${pct}%; background: ${n.barColor};"></div></div>
+            <div class="micro-tracker-item">
+                <div class="micro-tracker-header">
+                    <span class="micro-tracker-name"><span class="micro-tracker-icon">${n.icon}</span> ${n.name}</span>
+                    <span class="micro-tracker-status" style="color: ${statusColor};">${status}</span>
                 </div>
-                <div class="micro-status" style="color: ${statusColor};">${status}</div>
+                <div class="progress-bar-micro">
+                    <div class="progress-fill-micro" style="width: ${pct}%; background: ${n.barColor};"></div>
+                </div>
             </div>
         `;
     }).join('');
@@ -45501,8 +45570,14 @@ function updateNutritionUI(dailyData, mealsData) {
     updateProgressBar('tracker-fat-bar', data.total_fat_g, data.fat_goal_g || 70);
     updateProgressBar('tracker-fiber-bar', data.total_fiber_g, 25);
 
-    // Update circular progress
-    updateCircularProgress(data.total_calories, data.calorie_goal || 2000);
+    // Update circular progress (tri-color macro ring)
+    updateCircularProgress(
+        data.total_calories,
+        data.calorie_goal || 2000,
+        data.total_protein_g,
+        data.total_carbs_g,
+        data.total_fat_g
+    );
 
     // Update meals list
     if (mealsData && mealsData.length > 0) {
@@ -45511,9 +45586,6 @@ function updateNutritionUI(dailyData, mealsData) {
 
     // Update daily nutrition score
     updateNutritionScoreUI(data);
-
-    // Update macro ratio pie chart
-    updateMacroPieChart(data);
 
     // Generate smart meal suggestions based on macro gaps
     generateSmartSuggestions(data);
@@ -45536,14 +45608,68 @@ function updateProgressBar(id, current, goal) {
     }
 }
 
-// Update circular progress (for calorie circle)
-function updateCircularProgress(current, goal) {
-    const circle = document.getElementById('calorie-circle-progress');
-    if (circle && goal > 0) {
-        const percent = Math.min(current / goal, 1);
-        const circumference = 2 * Math.PI * 90; // radius is 90
-        const offset = circumference * (1 - percent);
-        circle.style.strokeDashoffset = offset;
+// Update circular progress (tri-color macro ring)
+function updateCircularProgress(current, goal, proteinG, carbsG, fatG) {
+    const svg = document.getElementById('calorie-circle-svg');
+    if (!svg || !goal || goal <= 0) return;
+
+    const radius = 90;
+    const circumference = 2 * Math.PI * radius;
+    const totalPercent = Math.min(current / goal, 1);
+    const totalFill = totalPercent * circumference;
+
+    // Convert macros to calories
+    const proCal = (proteinG || 0) * 4;
+    const carbCal = (carbsG || 0) * 4;
+    const fatCal = (fatG || 0) * 9;
+    const macroCal = proCal + carbCal + fatCal;
+
+    // Calculate each segment's share of the filled arc
+    let proFill = 0, carbFill = 0, fatFill = 0;
+    if (macroCal > 0) {
+        proFill = (proCal / macroCal) * totalFill;
+        carbFill = (carbCal / macroCal) * totalFill;
+        fatFill = (fatCal / macroCal) * totalFill;
+    }
+
+    // Clear existing progress circles (keep bg circle)
+    const existingProgress = svg.querySelectorAll('.macro-ring-segment');
+    existingProgress.forEach(el => el.remove());
+
+    const segments = [
+        { fill: proFill, color: '#3b82f6' },   // Protein - blue
+        { fill: carbFill, color: '#f59e0b' },   // Carbs - amber
+        { fill: fatFill, color: '#ef4444' }      // Fat - red
+    ];
+
+    let accumulatedAngle = -90; // Start from top
+    segments.forEach(seg => {
+        if (seg.fill <= 0) return;
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('class', 'macro-ring-segment');
+        circle.setAttribute('cx', '100');
+        circle.setAttribute('cy', '100');
+        circle.setAttribute('r', String(radius));
+        circle.setAttribute('fill', 'none');
+        circle.setAttribute('stroke', seg.color);
+        circle.setAttribute('stroke-width', '12');
+        circle.setAttribute('stroke-linecap', 'butt');
+        circle.setAttribute('stroke-dasharray', `${seg.fill} ${circumference - seg.fill}`);
+        circle.setAttribute('transform', `rotate(${accumulatedAngle} 100 100)`);
+        circle.style.transition = 'stroke-dasharray 0.5s ease, transform 0.5s ease';
+        svg.appendChild(circle);
+        // Calculate rotation for next segment
+        accumulatedAngle += (seg.fill / circumference) * 360;
+    });
+
+    // Update macro ring legend percentages
+    if (macroCal > 0) {
+        const proPct = Math.round((proCal / macroCal) * 100);
+        const carbPct = Math.round((carbCal / macroCal) * 100);
+        const fatPct = 100 - proPct - carbPct;
+        updateElement('macro-ring-protein-pct', proPct + '%');
+        updateElement('macro-ring-carbs-pct', carbPct + '%');
+        updateElement('macro-ring-fat-pct', fatPct + '%');
     }
 }
 
