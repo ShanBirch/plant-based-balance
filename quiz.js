@@ -2201,7 +2201,7 @@ function renderStep() {
                 <div style="text-align: left; font-size: 14px; color: #666; margin-bottom: 25px;">
                     <label style="display: flex; align-items: start; gap: 10px; margin-bottom: 10px; cursor: pointer;">
                         <input type="checkbox" id="consentCheck">
-                        <span>I agree to receive future emails from PlantBasedBalance</span>
+                        <span>I agree to receive future emails from FITGotchi</span>
                     </label>
                     <label style="display: flex; align-items: start; gap: 10px; cursor: pointer;">
                         <input type="checkbox" id="termsCheck">
@@ -3075,7 +3075,7 @@ function renderQuestion(q, container) {
         
         const label = document.createElement('label');
         label.htmlFor = 'healthConsent';
-        label.innerHTML = `I consent to PlantBasedBalance processing my health data to provide services and enhance my user experience. <a href="#" style="color: inherit; text-decoration: underline;">Privacy Policy</a>`;
+        label.innerHTML = `I consent to FITGotchi processing my health data to provide services and enhance my user experience. <a href="#" style="color: inherit; text-decoration: underline;">Privacy Policy</a>`;
         
         consentDiv.appendChild(checkbox);
         consentDiv.appendChild(label);

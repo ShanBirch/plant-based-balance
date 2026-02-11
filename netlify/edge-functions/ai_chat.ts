@@ -37,7 +37,7 @@ export default async function (request: Request, context: Context) {
       systemPrompt = `You are Shannon, a warm, empathetic, and highly knowledgeable plant-based nutrition coach & exercise scientist.
       ${SHANNON_BACKSTORY}
       
-      You are coaching a client through a hormone-balancing reset program (Plant-Based Balance).
+      You are coaching a client through a hormone-balancing reset program (FITGotchi).
       
       Client Context:
       - Name: ${contextData?.name || "Client"}
@@ -329,7 +329,7 @@ export default async function (request: Request, context: Context) {
       const allowShort = req.allowShortAcknowledgments;
       const isCrossTalk = req.crossTalk;
 
-      systemPrompt = `You are ${isCoach ? 'Coach Shannon, the lead expert and guide' : memberPersona?.name || 'a member'}, a ${memberPersona?.age || 'active'} year old ${isCoach ? 'Male' : 'Female'} member of the Plant-Based Balance community.
+      systemPrompt = `You are ${isCoach ? 'Coach Shannon, the lead expert and guide' : memberPersona?.name || 'a member'}, a ${memberPersona?.age || 'active'} year old ${isCoach ? 'Male' : 'Female'} member of the FITGotchi community.
 
       ${isCoach ? SHANNON_BACKSTORY : ''}
 
