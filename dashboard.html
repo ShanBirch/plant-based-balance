@@ -73,9 +73,9 @@
 <script src="lib/stories.js"></script>
 <script src="lib/games.js"></script>
 <script src="lib/nutrition-calculator.js"></script>
-<!-- Suppress Avatar system for now -->
-<!-- <script src="lib/avatar.js"></script> -->
-<!-- <link rel="stylesheet" href="lib/avatar.css"> -->
+<!-- 2D SVG Avatar system (fallback for browsers without WebGL e.g. Safari) -->
+<script src="lib/avatar.js"></script>
+<link rel="stylesheet" href="lib/avatar.css">
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 <!-- Preload onboarding 3D models so they display instantly in the wizard -->
 <link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>
@@ -6842,22 +6842,78 @@ async function applyAppTheme(themeKey) {
             </model-viewer>
 
             <!-- Fallback for devices where model-viewer/WebGL fails (e.g. Safari, older iOS) -->
-            <div id="tamagotchi-fallback" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:3; background:#1a1a2e; justify-content:center; align-items:center; flex-direction:column; text-align:center; color:white; padding:20px;">
-                <div style="font-size:64px; margin-bottom:12px;">🐣</div>
-                <div style="font-size:1.1rem; font-weight:700; margin-bottom:6px;">Your FitGotchi</div>
-                <div style="font-size:0.8rem; color:rgba(255,255,255,0.6);">3D view not supported on this browser.<br>Try using Chrome for the full 3D experience.</div>
+            <!-- Renders the 2D SVG animated avatar instead of the 3D model -->
+            <div id="tamagotchi-fallback" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:3; background:#1a1a2e;">
+                <style>
+                    /* Scale the 2D avatar to fill the tamagotchi widget */
+                    #tamagotchi-fallback-avatar .avatar-room {
+                        width: 100% !important;
+                        height: 100% !important;
+                        border-radius: 0 !important;
+                        box-shadow: none !important;
+                    }
+                    #tamagotchi-fallback-avatar .avatar-room:hover {
+                        transform: none !important;
+                        box-shadow: none !important;
+                    }
+                    #tamagotchi-fallback-avatar .avatar-svg {
+                        width: 160px;
+                        height: 256px;
+                    }
+                </style>
+                <div id="tamagotchi-fallback-avatar" style="width:100%; height:100%;"></div>
             </div>
             <script>
-            // Detect model-viewer load failure and show fallback
-            // Handles Safari where WebGL can fail silently (no error event, canvas stays blank)
+            // Detect model-viewer/WebGL failure and render 2D SVG avatar as fallback.
+            // Handles Safari where WebGL can fail silently (no error event, canvas stays blank).
             (function() {
                 var mv = document.getElementById('tamagotchi-model');
                 var fb = document.getElementById('tamagotchi-fallback');
                 if (!mv || !fb) return;
 
+                var fallbackShown = false;
                 function showFallback() {
-                    fb.style.display = 'flex';
+                    if (fallbackShown) return;
+                    fallbackShown = true;
+                    fb.style.display = 'block';
                     mv.style.display = 'none';
+                    // Also hide the 3D background model
+                    var bgModel = document.getElementById('tamagotchi-bg-model');
+                    if (bgModel) bgModel.style.display = 'none';
+                    var floor = document.getElementById('tamagotchi-floor');
+                    if (floor) floor.style.display = 'none';
+
+                    // Render the 2D SVG avatar
+                    if (typeof Avatar === 'function') {
+                        var container = document.getElementById('tamagotchi-fallback-avatar');
+                        var avatar = new Avatar('tamagotchi-fallback-avatar', {
+                            width: container.offsetWidth || 360,
+                            height: container.offsetHeight || 420,
+                            showRoom: true,
+                            interactive: true
+                        });
+                        // Try to load user avatar customization from database
+                        if (window.currentUser && window.currentUser.id) {
+                            avatar.load(window.currentUser.id).then(function() {
+                                avatar.render();
+                            });
+                        } else {
+                            // Wait for auth, then load
+                            avatar.render(); // show defaults immediately
+                            var authCheck = setInterval(function() {
+                                if (window.currentUser && window.currentUser.id) {
+                                    clearInterval(authCheck);
+                                    avatar.load(window.currentUser.id).then(function() {
+                                        avatar.render();
+                                    });
+                                }
+                            }, 500);
+                            // Stop checking after 15s
+                            setTimeout(function() { clearInterval(authCheck); }, 15000);
+                        }
+                        // Store reference for updates (e.g. after logging a workout)
+                        window.tamagotchiFallbackAvatar = avatar;
+                    }
                 }
 
                 // Pre-check: is WebGL 2 available at all?
@@ -6867,9 +6923,7 @@ async function applyAppTheme(themeKey) {
                         var c = document.createElement('canvas');
                         var gl = c.getContext('webgl2');
                         if (!gl) return false;
-                        // Check it's not a lost context
                         var ok = !gl.isContextLost();
-                        // Clean up
                         var ext = gl.getExtension('WEBGL_lose_context');
                         if (ext) ext.loseContext();
                         return ok;
@@ -6887,37 +6941,32 @@ async function applyAppTheme(themeKey) {
                 mv.addEventListener('load', function() { loaded = true; });
                 mv.addEventListener('error', function() { showFallback(); });
 
-                // Safari-specific: after load, verify the canvas actually rendered pixels.
+                // After load, verify the canvas actually rendered pixels.
                 // Safari can fire 'load' but leave the canvas blank due to WebGL issues.
                 mv.addEventListener('load', function() {
-                    // Wait a frame for the GPU to actually paint
                     requestAnimationFrame(function() {
                         setTimeout(function() {
                             try {
                                 var canvas = mv.shadowRoot && mv.shadowRoot.querySelector('canvas');
-                                if (!canvas) return; // can't check, assume ok
-                                // Sample a few pixels from center of canvas
+                                if (!canvas) return;
                                 var gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
                                 if (!gl) { showFallback(); return; }
                                 var w = canvas.width, h = canvas.height;
                                 if (w === 0 || h === 0) { showFallback(); return; }
                                 var px = new Uint8Array(4);
-                                // Read pixel from center
                                 gl.readPixels(Math.floor(w/2), Math.floor(h/2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-                                // Also read a few more spots
                                 var px2 = new Uint8Array(4);
                                 gl.readPixels(Math.floor(w/3), Math.floor(h/3), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px2);
-                                // If all sampled pixels are fully transparent/black, rendering likely failed
                                 var allBlank = (px[0]+px[1]+px[2]+px[3] === 0) && (px2[0]+px2[1]+px2[2]+px2[3] === 0);
                                 if (allBlank) { showFallback(); }
                             } catch(e) {
-                                // Can't access canvas (cross-origin, security) - don't fallback, assume ok
+                                // Can't access canvas - don't fallback, assume ok
                             }
-                        }, 500); // small delay for GPU render to complete
+                        }, 500);
                     });
                 });
 
-                // Timeout fallback: if model hasn't loaded after 10s, show fallback
+                // Timeout: if model hasn't loaded after 10s, show 2D fallback
                 setTimeout(function() {
                     if (!loaded) {
                         showFallback();
