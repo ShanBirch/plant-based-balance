@@ -1075,7 +1075,10 @@
                 const session = await authHelpers.getSession();
 
                 if (session) {
-                    // Session still valid, redirect
+                    // Session still valid — update last_login then redirect
+                    db.users.updateLastLogin(session.user.id).catch(e => {
+                        console.warn('Failed to update last_login on biometric login:', e);
+                    });
                     redirectAfterLogin(session.user);
                 } else {
                     // Session expired - need password login

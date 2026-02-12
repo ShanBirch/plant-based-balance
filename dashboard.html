@@ -7955,6 +7955,11 @@ async function applyAppTheme(themeKey) {
                 await window.loadCharacterColorsFromDb();
             }
 
+            // Load points and update FitGotchi model based on user's level
+            if (typeof loadPointsWidget === 'function') {
+                await loadPointsWidget();
+            }
+
             updateLoginProgress(80, 'Almost there...');
 
             // Update dashboard workout card to show today's recommended workout
