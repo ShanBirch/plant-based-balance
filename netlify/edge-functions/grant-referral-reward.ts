@@ -99,14 +99,31 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
       // Mark referral as completed but note that reward is pending
       if (referralId) {
-        await supabase
+        const { data: referralData } = await supabase
           .from('referrals')
           .update({
             status: 'completed',
             reward_granted: false, // Not granted yet due to stacking
             updated_at: now.toISOString()
           })
-          .eq('id', referralId);
+          .eq('id', referralId)
+          .select('referrer_user_id, referred_user_id')
+          .single();
+
+        // Still auto-add as friends even if double XP can't be granted yet
+        if (referralData) {
+          await supabase
+            .from('friendships')
+            .upsert([{
+              user_id: referralData.referred_user_id,
+              friend_id: referralData.referrer_user_id,
+              status: 'accepted'
+            }], { onConflict: 'user_id,friend_id' })
+            .then(({ error }) => {
+              if (error) console.warn('Could not auto-add friend via referral:', error.message);
+              else console.log(`Auto-added friendship between referrer ${referralData.referrer_user_id} and referred user ${referralData.referred_user_id}`);
+            });
+        }
       }
 
       console.log(`Double XP not granted to user ${userId} - already has active double XP until ${user.double_xp_until}`);
@@ -134,14 +151,33 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
     // Update referral record if provided
     if (referralId) {
-      await supabase
+      const { data: referralData } = await supabase
         .from('referrals')
         .update({
           reward_granted: true,
           reward_granted_at: now.toISOString(),
           status: 'completed'
         })
-        .eq('id', referralId);
+        .eq('id', referralId)
+        .select('referrer_user_id, referred_user_id')
+        .single();
+
+      // Auto-add referrer and referred user as friends (server-side with service role key)
+      if (referralData) {
+        const { error: friendError } = await supabase
+          .from('friendships')
+          .upsert([{
+            user_id: referralData.referred_user_id,
+            friend_id: referralData.referrer_user_id,
+            status: 'accepted'
+          }], { onConflict: 'user_id,friend_id' });
+
+        if (friendError) {
+          console.warn('Could not auto-add friend via referral:', friendError.message);
+        } else {
+          console.log(`Auto-added friendship between referrer ${referralData.referrer_user_id} and referred user ${referralData.referred_user_id}`);
+        }
+      }
     }
 
     // Increment user's referrals_count

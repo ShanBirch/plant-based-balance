@@ -707,11 +707,11 @@
                                 // Set referred_by
                                 await dbHelpers.users.update(user.id, { referred_by_user_id: referrer.id });
 
-                                // Auto-add as friends
+                                // Auto-add as friends (user_id must be auth.uid() to pass RLS)
                                 try {
                                     await window.supabaseClient
                                         .from('friendships')
-                                        .insert([{ user_id: referrer.id, friend_id: user.id, status: 'accepted' }]);
+                                        .insert([{ user_id: user.id, friend_id: referrer.id, status: 'accepted' }]);
                                 } catch (e) { console.warn('Could not auto-add friend:', e); }
 
                                 console.log('Referral processed for Google OAuth user!');
@@ -900,13 +900,13 @@
                                 referred_by_user_id: referrer.id
                             });
 
-                            // Automatically add them as friends!
+                            // Automatically add them as friends! (user_id must be auth.uid() to pass RLS)
                             try {
                                 await window.supabaseClient
                                     .from('friendships')
                                     .insert([{
-                                        user_id: referrer.id,
-                                        friend_id: newUserId,
+                                        user_id: newUserId,
+                                        friend_id: referrer.id,
                                         status: 'accepted' // Auto-accept since they used their code
                                     }]);
                                 console.log('Auto-added referrer as friend!');
