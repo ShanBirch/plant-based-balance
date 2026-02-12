@@ -73,10 +73,10 @@
 <script src="lib/stories.js"></script>
 <script src="lib/games.js"></script>
 <script src="lib/nutrition-calculator.js"></script>
-<!-- 2D SVG Avatar system (fallback for browsers without WebGL e.g. Safari) -->
-<script src="lib/avatar.js"></script>
-<link rel="stylesheet" href="lib/avatar.css">
-<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+<!-- 2D SVG Avatar system (reserved for future use) -->
+<!-- <script src="lib/avatar.js"></script> -->
+<!-- <link rel="stylesheet" href="lib/avatar.css"> -->
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js"></script>
 <!-- Preload onboarding 3D models so they display instantly in the wizard -->
 <link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>
 <link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>
@@ -6670,8 +6670,13 @@ async function applyAppTheme(themeKey) {
         100% { opacity: 1; }
     }
 
-    /* Character model-viewer must be transparent so 3D background shows through */
+    /* Character model-viewer: starts opaque (matching container) during load,
+       then JS switches to transparent after model loads so 3D background shows through.
+       This ensures Safari users see the dark bg instead of a blank void while loading. */
     #tamagotchi-model {
+        --poster-color: #1a1a2e;
+    }
+    #tamagotchi-model.model-loaded {
         background: transparent !important;
         --poster-color: transparent;
     }
@@ -6820,7 +6825,7 @@ async function applyAppTheme(themeKey) {
                 disable-zoom
                 disable-pan>
             </model-viewer>
-            <!-- Character model - transparent background so 3D environment shows through -->
+            <!-- Character model - starts with visible background, goes transparent after load so 3D environment shows through -->
             <model-viewer
                 id="tamagotchi-model"
                 src="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb"
@@ -6828,6 +6833,7 @@ async function applyAppTheme(themeKey) {
                 disable-zoom
                 disable-pan
                 auto-rotate
+                loading="eager"
                 rotation-intensity="0.5"
                 shadow-intensity="1.5"
                 shadow-softness="0.8"
@@ -6837,141 +6843,72 @@ async function applyAppTheme(themeKey) {
                 field-of-view="55deg"
                 min-field-of-view="20deg"
                 max-field-of-view="120deg"
-                style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; --poster-color: transparent; touch-action: none; background: transparent;"
+                style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; --poster-color: #1a1a2e; touch-action: pan-y; background: #1a1a2e;"
                 interaction-prompt="none">
             </model-viewer>
+            <script>
+            // After model loads, add class to make background transparent so 3D environment shows through.
+            // Keeping it opaque during load ensures Safari users see a dark bg instead of a blank void.
+            (function() {
+                var mv = document.getElementById('tamagotchi-model');
+                if (!mv) return;
+                mv.addEventListener('load', function() {
+                    mv.classList.add('model-loaded');
+                });
+            })();
+            </script>
 
-            <!-- Fallback for devices where model-viewer/WebGL fails (e.g. Safari, older iOS) -->
-            <!-- Renders the 2D SVG animated avatar instead of the 3D model -->
-            <div id="tamagotchi-fallback" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:3; background:#1a1a2e;">
-                <style>
-                    /* Scale the 2D avatar to fill the tamagotchi widget */
-                    #tamagotchi-fallback-avatar .avatar-room {
-                        width: 100% !important;
-                        height: 100% !important;
-                        border-radius: 0 !important;
-                        box-shadow: none !important;
-                    }
-                    #tamagotchi-fallback-avatar .avatar-room:hover {
-                        transform: none !important;
-                        box-shadow: none !important;
-                    }
-                    #tamagotchi-fallback-avatar .avatar-svg {
-                        width: 160px;
-                        height: 256px;
-                    }
-                </style>
-                <div id="tamagotchi-fallback-avatar" style="width:100%; height:100%;"></div>
+            <!-- Fallback: only shown if model-viewer script fails to register or model errors -->
+            <div id="tamagotchi-fallback" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:4; background:#1a1a2e; justify-content:center; align-items:center; flex-direction:column; text-align:center; color:white; padding:20px;">
+                <div style="font-size:64px; margin-bottom:12px;">🐣</div>
+                <div style="font-size:1.1rem; font-weight:700; margin-bottom:6px;">Your FitGotchi</div>
+                <div id="tamagotchi-fallback-msg" style="font-size:0.8rem; color:rgba(255,255,255,0.6);">Loading your character...</div>
             </div>
             <script>
-            // Detect model-viewer/WebGL failure and render 2D SVG avatar as fallback.
-            // Handles Safari where WebGL can fail silently (no error event, canvas stays blank).
+            // Fallback detection — only triggers for genuine failures.
+            // Does NOT use canvas pixel checks (unreliable with preserveDrawingBuffer:false).
             (function() {
                 var mv = document.getElementById('tamagotchi-model');
                 var fb = document.getElementById('tamagotchi-fallback');
                 if (!mv || !fb) return;
 
+                var loaded = false;
                 var fallbackShown = false;
-                function showFallback() {
+
+                function showFallback(msg) {
                     if (fallbackShown) return;
                     fallbackShown = true;
-                    fb.style.display = 'block';
+                    var msgEl = document.getElementById('tamagotchi-fallback-msg');
+                    if (msgEl && msg) msgEl.textContent = msg;
+                    fb.style.display = 'flex';
                     mv.style.display = 'none';
-                    // Also hide the 3D background model
-                    var bgModel = document.getElementById('tamagotchi-bg-model');
-                    if (bgModel) bgModel.style.display = 'none';
-                    var floor = document.getElementById('tamagotchi-floor');
-                    if (floor) floor.style.display = 'none';
-
-                    // Render the 2D SVG avatar
-                    if (typeof Avatar === 'function') {
-                        var container = document.getElementById('tamagotchi-fallback-avatar');
-                        var avatar = new Avatar('tamagotchi-fallback-avatar', {
-                            width: container.offsetWidth || 360,
-                            height: container.offsetHeight || 420,
-                            showRoom: true,
-                            interactive: true
-                        });
-                        // Try to load user avatar customization from database
-                        if (window.currentUser && window.currentUser.id) {
-                            avatar.load(window.currentUser.id).then(function() {
-                                avatar.render();
-                            });
-                        } else {
-                            // Wait for auth, then load
-                            avatar.render(); // show defaults immediately
-                            var authCheck = setInterval(function() {
-                                if (window.currentUser && window.currentUser.id) {
-                                    clearInterval(authCheck);
-                                    avatar.load(window.currentUser.id).then(function() {
-                                        avatar.render();
-                                    });
-                                }
-                            }, 500);
-                            // Stop checking after 15s
-                            setTimeout(function() { clearInterval(authCheck); }, 15000);
-                        }
-                        // Store reference for updates (e.g. after logging a workout)
-                        window.tamagotchiFallbackAvatar = avatar;
-                    }
                 }
 
-                // Pre-check: is WebGL 2 available at all?
-                // model-viewer v4 requires WebGL 2 (via three.js)
-                function isWebGL2Available() {
-                    try {
-                        var c = document.createElement('canvas');
-                        var gl = c.getContext('webgl2');
-                        if (!gl) return false;
-                        var ok = !gl.isContextLost();
-                        var ext = gl.getExtension('WEBGL_lose_context');
-                        if (ext) ext.loseContext();
-                        return ok;
-                    } catch (e) {
-                        return false;
-                    }
-                }
-
-                if (!isWebGL2Available()) {
-                    showFallback();
-                    return;
-                }
-
-                var loaded = false;
+                // Listen for successful load
                 mv.addEventListener('load', function() { loaded = true; });
-                mv.addEventListener('error', function() { showFallback(); });
 
-                // After load, verify the canvas actually rendered pixels.
-                // Safari can fire 'load' but leave the canvas blank due to WebGL issues.
-                mv.addEventListener('load', function() {
-                    requestAnimationFrame(function() {
-                        setTimeout(function() {
-                            try {
-                                var canvas = mv.shadowRoot && mv.shadowRoot.querySelector('canvas');
-                                if (!canvas) return;
-                                var gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-                                if (!gl) { showFallback(); return; }
-                                var w = canvas.width, h = canvas.height;
-                                if (w === 0 || h === 0) { showFallback(); return; }
-                                var px = new Uint8Array(4);
-                                gl.readPixels(Math.floor(w/2), Math.floor(h/2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-                                var px2 = new Uint8Array(4);
-                                gl.readPixels(Math.floor(w/3), Math.floor(h/3), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px2);
-                                var allBlank = (px[0]+px[1]+px[2]+px[3] === 0) && (px2[0]+px2[1]+px2[2]+px2[3] === 0);
-                                if (allBlank) { showFallback(); }
-                            } catch(e) {
-                                // Can't access canvas - don't fallback, assume ok
-                            }
-                        }, 500);
-                    });
+                // Listen for explicit errors (e.g. GLB fetch failure)
+                mv.addEventListener('error', function() {
+                    showFallback('Could not load 3D model. Please check your connection and reload.');
                 });
 
-                // Timeout: if model hasn't loaded after 10s, show 2D fallback
+                // Check if model-viewer custom element registered (script loaded).
+                // If the ES module script failed (e.g. blocked by privacy settings),
+                // the custom element won't be defined and model-viewer is inert.
                 setTimeout(function() {
-                    if (!loaded) {
-                        showFallback();
+                    if (!customElements.get('model-viewer')) {
+                        showFallback('3D viewer could not load. Please try reloading the page.');
+                        return;
                     }
-                }, 10000);
+                }, 5000);
+
+                // Final timeout: if model hasn't loaded after 20s, show fallback.
+                // Generous timeout to give Safari extra time for WebGL initialization.
+                setTimeout(function() {
+                    if (!loaded && !fallbackShown) {
+                        showFallback('Taking too long to load. Please try reloading the page.');
+                    }
+                }, 20000);
             })();
             </script>
 
