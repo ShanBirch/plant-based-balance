@@ -26920,9 +26920,145 @@ function initializeMovementSwipeNavigation() {
     });
 }
 
+// Initialize swipe-back for Weekly Trends page (one-time setup)
+function initializeWeeklyTrendsSwipeNavigation() {
+    enableSwipeBackNavigation('weekly-trends-page', () => {
+        const page = document.getElementById('weekly-trends-page');
+        if (page) {
+            // Immediately hide (display:none) so gesture cleanup doesn't flash
+            page.classList.remove('active');
+            page.style.transform = '';
+            page.style.transition = '';
+        }
+        // Return to Nutrition tab
+        const mealsBtn = document.querySelector('.bottom-nav .nav-item[onclick*="meals"]');
+        if (mealsBtn) {
+            switchAppTab('meals', mealsBtn);
+        }
+    });
+}
+
+// Dynamic swipe-back for views that swap content in a single container (e.g. Learning tab)
+function enableDynamicSwipeBackNavigation(viewId, getBackHandler) {
+    const view = document.getElementById(viewId);
+    if (!view) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    let isDragging = false;
+    let overlayEl = null;
+    let currentBackHandler = null;
+
+    const screenWidth = window.innerWidth;
+    const isAndroid = devicePlatform === 'android';
+    const edgeThreshold = 50;
+
+    const handleTouchStart = (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+        isDragging = false;
+        currentBackHandler = getBackHandler();
+    };
+
+    const handleTouchMove = (e) => {
+        if (!currentBackHandler) return;
+
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = Math.abs(e.changedTouches[0].screenY - touchStartY);
+
+        const isFromCorrectEdge = isAndroid
+            ? (touchStartX > screenWidth - edgeThreshold && deltaX < -30)
+            : (touchStartX < edgeThreshold && deltaX > 30);
+
+        const absDeltaX = Math.abs(deltaX);
+
+        if (isFromCorrectEdge && deltaY < 100) {
+            isDragging = true;
+
+            if (!overlayEl) {
+                overlayEl = document.createElement('div');
+                overlayEl.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0,0,0,0.1); pointer-events: none;
+                    z-index: 9998; opacity: 0; transition: opacity 0.1s;
+                `;
+                document.body.appendChild(overlayEl);
+            }
+
+            const progress = Math.min(absDeltaX / 200, 1);
+            view.style.transform = `translateX(${deltaX}px)`;
+            view.style.transition = 'none';
+            overlayEl.style.opacity = progress * 0.3;
+        }
+    };
+
+    const handleTouchEnd = (e) => {
+        if (!currentBackHandler) return;
+
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = Math.abs(touchEndY - touchStartY);
+
+        const isValidSwipe = isAndroid
+            ? (touchStartX > screenWidth - edgeThreshold && deltaX < -100)
+            : (touchStartX < edgeThreshold && deltaX > 100);
+
+        if (isValidSwipe && deltaY < 100 && isDragging) {
+            const exitDirection = isAndroid ? '-100%' : '100%';
+            view.style.transition = 'transform 0.3s ease-out';
+            view.style.transform = `translateX(${exitDirection})`;
+
+            setTimeout(() => {
+                currentBackHandler();
+                view.style.transform = '';
+                view.style.transition = '';
+                if (overlayEl) {
+                    overlayEl.remove();
+                    overlayEl = null;
+                }
+            }, 300);
+        } else if (isDragging) {
+            view.style.transition = 'transform 0.3s ease-out';
+            view.style.transform = '';
+            setTimeout(() => {
+                view.style.transition = '';
+                if (overlayEl) {
+                    overlayEl.remove();
+                    overlayEl = null;
+                }
+            }, 300);
+        }
+
+        isDragging = false;
+    };
+
+    view.addEventListener('touchstart', handleTouchStart, { passive: true });
+    view.addEventListener('touchmove', handleTouchMove, { passive: true });
+    view.addEventListener('touchend', handleTouchEnd, { passive: true });
+}
+
+// Initialize swipe-back for Learning tab with dynamic back handler
+function initializeLearningSwipeNavigation() {
+    enableDynamicSwipeBackNavigation('view-learning', () => {
+        if (typeof window.getLearningBackAction === 'function') {
+            return window.getLearningBackAction();
+        }
+        return null;
+    });
+}
+
 // Initialize swipe navigation when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     initializeMovementSwipeNavigation();
+    initializeWeeklyTrendsSwipeNavigation();
+    initializeLearningSwipeNavigation();
     initializeAndroidBackNavigation();
 });
 
@@ -45724,9 +45860,8 @@ function openWeeklyTrendsPage() {
         loadMealJournal()
     ]);
 
-    // Enable swipe-back
-    enableSwipeBackNavigation('weekly-trends-page', closeWeeklyTrendsPage);
 }
+
 
 function closeWeeklyTrendsPage() {
     const page = document.getElementById('weekly-trends-page');
