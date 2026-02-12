@@ -43368,6 +43368,9 @@ async function analyzeMealInBackground({ description, mealType, inputMethod, sav
         await recalculateDailyNutrition();
         await loadTodayNutrition();
 
+        // Refresh micronutrient bars
+        await loadMicronutrientInsights();
+
         // Check meal badges
         try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
 
@@ -44020,6 +44023,9 @@ async function useMealPhoto() {
         // Refresh display
         await loadTodayNutrition();
 
+        // Refresh micronutrient bars
+        await loadMicronutrientInsights();
+
         // Check meal badges
         try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
 
@@ -44132,6 +44138,7 @@ async function analyzePhotoInBackground(originalFile, compressedFile, base64, ba
 
         await recalculateDailyNutrition();
         await loadTodayNutrition();
+        await loadMicronutrientInsights();
         showMealAnalysisSuccess(nutritionData);
 
     } catch (error) {
@@ -46942,6 +46949,7 @@ async function updateMealWithNewNutrition(nutritionData) {
 
     // Trigger recalculation of daily nutrition
     await recalculateDailyNutrition();
+    await loadMicronutrientInsights();
 }
 
 // Delete meal log
@@ -46967,6 +46975,7 @@ async function deleteMealLog(mealId) {
 
         // Reload data
         await loadTodayNutrition();
+        await loadMicronutrientInsights();
     } catch (error) {
         console.error('Error deleting meal:', error);
         alert('Failed to delete meal. Please try again.');
