@@ -4174,6 +4174,98 @@ async function applyAppTheme(themeKey) {
         opacity: 0.4;
     }
 
+    .recent-meal-confirm {
+        padding: 20px 24px 28px;
+        display: none;
+    }
+
+    .recent-meal-confirm.active {
+        display: block;
+    }
+
+    .recent-meal-confirm-info {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .recent-meal-confirm-name {
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: var(--text-main);
+        margin-bottom: 6px;
+    }
+
+    .recent-meal-confirm-macros {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .recent-meal-confirm-btns {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .recent-meal-btn-photo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 14px 20px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 14px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .recent-meal-btn-photo:hover {
+        background: var(--primary-light);
+    }
+
+    .recent-meal-btn-photo .xp-badge {
+        background: rgba(255,255,255,0.25);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .recent-meal-btn-quick {
+        width: 100%;
+        padding: 14px 20px;
+        background: #f0f5f0;
+        color: var(--text-main);
+        border: none;
+        border-radius: 14px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .recent-meal-btn-quick:hover {
+        background: #e5ede5;
+    }
+
+    .recent-meal-confirm-back {
+        text-align: center;
+        margin-top: 14px;
+    }
+
+    .recent-meal-confirm-back button {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+
     /* Simple Text Input Modal */
     .meal-text-modal {
         position: fixed;
@@ -38788,7 +38880,7 @@ window.submitWeighInModal = submitWeighInModal;
 <div id="recent-meals-modal" class="recent-meals-modal" onclick="if(event.target===this)closeRecentMealsModal()">
     <div class="recent-meals-container">
         <div class="recent-meals-header">
-            <h3>Recent Meals</h3>
+            <h3 id="recent-meals-title">Recent Meals</h3>
             <button class="recent-meals-close" onclick="closeRecentMealsModal()">&times;</button>
         </div>
         <div class="recent-meals-list" id="recent-meals-list">
@@ -38798,6 +38890,27 @@ window.submitWeighInModal = submitWeighInModal;
                     <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
                 <p>No recent meals yet.<br><span style="font-size: 0.85rem;">Your logged meals will appear here.</span></p>
+            </div>
+        </div>
+        <div class="recent-meal-confirm" id="recent-meal-confirm">
+            <div class="recent-meal-confirm-info">
+                <div class="recent-meal-confirm-name" id="recent-meal-confirm-name"></div>
+                <div class="recent-meal-confirm-macros" id="recent-meal-confirm-macros"></div>
+            </div>
+            <div class="recent-meal-confirm-btns">
+                <button class="recent-meal-btn-photo" onclick="recentMealAddWithPhoto()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                        <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                    Add with Photo <span class="xp-badge">+1 XP</span>
+                </button>
+                <button class="recent-meal-btn-quick" onclick="recentMealQuickAdd()">
+                    Quick Add (No Photo)
+                </button>
+            </div>
+            <div class="recent-meal-confirm-back">
+                <button onclick="showRecentMealsList()">Back to list</button>
             </div>
         </div>
     </div>
@@ -43580,10 +43693,14 @@ async function submitMealDescription() {
 
 // ========== Recent Meals Feature ==========
 
+// Track which recent meal is currently selected for confirm step
+let _selectedRecentMealIndex = null;
+
 // Open the recent meals modal and load data
 async function openRecentMealsModal() {
     const modal = document.getElementById('recent-meals-modal');
     if (modal) modal.classList.add('visible');
+    showRecentMealsList();
     await loadRecentMeals();
 }
 
@@ -43591,28 +43708,71 @@ async function openRecentMealsModal() {
 function closeRecentMealsModal() {
     const modal = document.getElementById('recent-meals-modal');
     if (modal) modal.classList.remove('visible');
+    _selectedRecentMealIndex = null;
+}
+
+// Toggle between the list view and the confirm view
+function showRecentMealsList() {
+    const list = document.getElementById('recent-meals-list');
+    const confirm = document.getElementById('recent-meal-confirm');
+    const title = document.getElementById('recent-meals-title');
+    if (list) list.style.display = '';
+    if (confirm) confirm.classList.remove('active');
+    if (title) title.textContent = 'Recent Meals';
+    _selectedRecentMealIndex = null;
+}
+
+function showRecentMealConfirm(index) {
+    const meal = window._recentMealsData && window._recentMealsData[index];
+    if (!meal) return;
+
+    _selectedRecentMealIndex = index;
+
+    const foodNames = getRecentMealName(meal);
+    const cal = Math.round(meal.calories || 0);
+    const protein = Math.round(meal.protein_g || 0);
+    const carbs = Math.round(meal.carbs_g || 0);
+    const fat = Math.round(meal.fat_g || 0);
+
+    const nameEl = document.getElementById('recent-meal-confirm-name');
+    const macrosEl = document.getElementById('recent-meal-confirm-macros');
+    if (nameEl) nameEl.textContent = foodNames;
+    if (macrosEl) macrosEl.textContent = cal + ' cal \u00B7 P: ' + protein + 'g \u00B7 C: ' + carbs + 'g \u00B7 F: ' + fat + 'g';
+
+    const list = document.getElementById('recent-meals-list');
+    const confirm = document.getElementById('recent-meal-confirm');
+    const title = document.getElementById('recent-meals-title');
+    if (list) list.style.display = 'none';
+    if (confirm) confirm.classList.add('active');
+    if (title) title.textContent = 'Add Meal';
+}
+
+// Helper to get display name for a meal
+function getRecentMealName(meal) {
+    if (Array.isArray(meal.food_items) && meal.food_items.length > 0) {
+        return meal.food_items.map(function(item) { return item.name; }).join(', ');
+    }
+    return meal.meal_description || 'Meal';
 }
 
 // Load recent meals from the database (unique meals from last 30 days)
 async function loadRecentMeals() {
-    const listEl = document.getElementById('recent-meals-list');
+    var listEl = document.getElementById('recent-meals-list');
     if (!listEl) return;
 
-    // Show loading state
     listEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">Loading recent meals...</div>';
 
     try {
         if (!window.supabaseClient) return;
-        const user = await window.supabaseClient.auth.getUser();
-        const userId = user?.data?.user?.id;
+        var user = await window.supabaseClient.auth.getUser();
+        var userId = user?.data?.user?.id;
         if (!userId) return;
 
-        // Fetch meals from the last 30 days
-        const thirtyDaysAgo = new Date();
+        var thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const sinceDate = thirtyDaysAgo.toISOString().split('T')[0];
+        var sinceDate = thirtyDaysAgo.toISOString().split('T')[0];
 
-        const { data: meals, error } = await window.supabaseClient
+        var { data: meals, error } = await window.supabaseClient
             .from('meal_logs')
             .select('food_items, calories, protein_g, carbs_g, fat_g, fiber_g, micronutrients, meal_description, photo_url, meal_type, notes')
             .eq('user_id', userId)
@@ -43627,20 +43787,11 @@ async function loadRecentMeals() {
         }
 
         if (!meals || meals.length === 0) {
-            listEl.innerHTML = `
-                <div class="recent-meals-empty">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <p>No recent meals yet.<br><span style="font-size: 0.85rem;">Your logged meals will appear here.</span></p>
-                </div>`;
+            listEl.innerHTML = '<div class="recent-meals-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><p>No recent meals yet.<br><span style="font-size:0.85rem;">Your logged meals will appear here.</span></p></div>';
             return;
         }
 
-        // Deduplicate meals by food items description (keep the most recent of each unique meal)
-        const uniqueMeals = deduplicateRecentMeals(meals);
-
+        var uniqueMeals = deduplicateRecentMeals(meals);
         renderRecentMealsList(listEl, uniqueMeals);
 
     } catch (err) {
@@ -43649,120 +43800,186 @@ async function loadRecentMeals() {
     }
 }
 
-// Deduplicate meals by generating a key from sorted food item names
+// Deduplicate by sorted food item names
 function deduplicateRecentMeals(meals) {
-    const seen = new Map();
-
-    for (const meal of meals) {
-        const key = getMealKey(meal);
-        if (!seen.has(key)) {
-            seen.set(key, meal);
-        }
+    var seen = new Map();
+    for (var i = 0; i < meals.length; i++) {
+        var key = getMealKey(meals[i]);
+        if (!seen.has(key)) seen.set(key, meals[i]);
     }
-
     return Array.from(seen.values());
 }
 
-// Generate a unique key for a meal based on its food items
 function getMealKey(meal) {
     if (Array.isArray(meal.food_items) && meal.food_items.length > 0) {
-        return meal.food_items.map(item => (item.name || '').toLowerCase().trim()).sort().join('|');
+        return meal.food_items.map(function(item) { return (item.name || '').toLowerCase().trim(); }).sort().join('|');
     }
-    if (meal.meal_description) {
-        return meal.meal_description.toLowerCase().trim();
-    }
-    return `meal-${meal.calories}-${meal.protein_g}`;
+    if (meal.meal_description) return meal.meal_description.toLowerCase().trim();
+    return 'meal-' + meal.calories + '-' + meal.protein_g;
 }
 
 // Render the list of recent meals
 function renderRecentMealsList(container, meals) {
     if (!meals || meals.length === 0) {
-        container.innerHTML = `
-            <div class="recent-meals-empty">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                <p>No recent meals yet.<br><span style="font-size: 0.85rem;">Your logged meals will appear here.</span></p>
-            </div>`;
+        container.innerHTML = '<div class="recent-meals-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><p>No recent meals yet.<br><span style="font-size:0.85rem;">Your logged meals will appear here.</span></p></div>';
         return;
     }
 
-    let html = '';
-    meals.forEach((meal, index) => {
-        const foodNames = Array.isArray(meal.food_items)
-            ? meal.food_items.map(item => item.name).join(', ')
-            : (meal.meal_description || 'Meal');
+    var html = '';
+    for (var i = 0; i < meals.length; i++) {
+        var meal = meals[i];
+        var foodNames = getRecentMealName(meal);
+        var cal = Math.round(meal.calories || 0);
+        var protein = Math.round(meal.protein_g || 0);
+        var carbs = Math.round(meal.carbs_g || 0);
+        var fat = Math.round(meal.fat_g || 0);
 
-        const cal = Math.round(meal.calories || 0);
-        const protein = Math.round(meal.protein_g || 0);
-        const carbs = Math.round(meal.carbs_g || 0);
-        const fat = Math.round(meal.fat_g || 0);
+        var hasPhoto = meal.photo_url && meal.photo_url.trim() !== '' && meal.photo_url !== 'text-input';
+        var iconHtml = hasPhoto
+            ? '<div class="recent-meal-icon"><img src="' + meal.photo_url + '" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML=\'&#127869;\'"></div>'
+            : '<div class="recent-meal-icon">&#127869;</div>';
 
-        const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '' && meal.photo_url !== 'text-input';
-        const iconHtml = hasPhoto
-            ? `<div class="recent-meal-icon"><img src="${meal.photo_url}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='&#127869;'"></div>`
-            : `<div class="recent-meal-icon">&#127869;</div>`;
-
-        html += `
-            <div class="recent-meal-item" onclick="quickAddRecentMeal(${index})">
-                ${iconHtml}
-                <div class="recent-meal-info">
-                    <div class="recent-meal-name">${foodNames}</div>
-                    <div class="recent-meal-macros">${cal} cal &middot; P: ${protein}g &middot; C: ${carbs}g &middot; F: ${fat}g</div>
-                </div>
-                <button class="recent-meal-add" onclick="event.stopPropagation(); quickAddRecentMeal(${index})" title="Add this meal">+</button>
-            </div>
-        `;
-    });
+        html += '<div class="recent-meal-item" onclick="showRecentMealConfirm(' + i + ')">'
+            + iconHtml
+            + '<div class="recent-meal-info">'
+            + '<div class="recent-meal-name">' + foodNames + '</div>'
+            + '<div class="recent-meal-macros">' + cal + ' cal &middot; P: ' + protein + 'g &middot; C: ' + carbs + 'g &middot; F: ' + fat + 'g</div>'
+            + '</div>'
+            + '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"></polyline></svg>'
+            + '</div>';
+    }
 
     container.innerHTML = html;
-
-    // Store the meals data for quick-add access
     window._recentMealsData = meals;
 }
 
-// Quick-add a recent meal directly to today's log
-async function quickAddRecentMeal(index) {
-    const meal = window._recentMealsData && window._recentMealsData[index];
+// "Add with Photo" — opens camera, uploads photo, saves meal + awards XP
+function recentMealAddWithPhoto() {
+    var meal = window._recentMealsData && window._recentMealsData[_selectedRecentMealIndex];
     if (!meal) return;
 
-    const foodNames = Array.isArray(meal.food_items)
-        ? meal.food_items.map(item => item.name).join(', ')
-        : (meal.meal_description || 'Meal');
-
-    // Close the modal immediately
+    // Close modal
     closeRecentMealsModal();
-    showToast('Adding "' + foodNames.substring(0, 40) + '..." to today\'s log', 'info');
+
+    // Open native camera and wire up the photo flow
+    var fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.capture = 'environment';
+    fileInput.style.display = 'none';
+
+    var hasProcessed = false;
+
+    fileInput.onchange = async function(e) {
+        if (hasProcessed) return;
+        hasProcessed = true;
+
+        var file = e.target.files[0];
+        cleanup();
+
+        if (!file || !file.type.startsWith('image/')) {
+            showToast('No valid photo taken. Meal not added.', 'error');
+            return;
+        }
+
+        showToast('Uploading photo and saving meal...', 'info');
+
+        try {
+            // Upload the photo
+            var photoUrl = await uploadMealPhoto(file);
+
+            // Save the meal with the photo URL
+            var mealType = autoDetectMealType();
+            selectedMealType = mealType;
+
+            var savedMeal = await saveMealLog({
+                photoUrl: photoUrl,
+                foodItems: meal.food_items || [],
+                totals: {
+                    calories: parseFloat(meal.calories) || 0,
+                    protein_g: parseFloat(meal.protein_g) || 0,
+                    carbs_g: parseFloat(meal.carbs_g) || 0,
+                    fat_g: parseFloat(meal.fat_g) || 0,
+                    fiber_g: parseFloat(meal.fiber_g) || 0
+                },
+                micronutrients: meal.micronutrients || {},
+                confidence: 'high',
+                notes: meal.notes || getRecentMealName(meal),
+                mealType: mealType
+            });
+
+            // Award XP points since there's a photo
+            if (savedMeal && savedMeal[0]?.id) {
+                try {
+                    var photoTimestamp = file.lastModified ? new Date(file.lastModified).toISOString() : null;
+                    var base64ForHash = await fileToBase64(file);
+                    var photoHash = await window.db?.points?.generatePhotoHash(base64ForHash);
+                    await awardPointsForMeal(savedMeal[0].id, photoTimestamp, 'high', photoHash);
+                } catch (pointsErr) {
+                    console.error('Error awarding points (meal still saved):', pointsErr);
+                }
+            }
+
+            await recalculateDailyNutrition();
+            await loadTodayNutrition();
+            try { await loadMicronutrientInsights(); } catch(e) {}
+            try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
+
+            showToast('Meal added with photo! +1 XP', 'success');
+
+        } catch (err) {
+            console.error('Error adding recent meal with photo:', err);
+            showToast('Failed to add meal. Please try again.', 'error');
+        }
+    };
+
+    function cleanup() {
+        try { if (fileInput && fileInput.parentNode) fileInput.parentNode.removeChild(fileInput); } catch(e) {}
+    }
+
+    fileInput.addEventListener('cancel', function() {
+        cleanup();
+        showToast('Photo cancelled. Meal not added.', 'info');
+    });
+
+    document.body.appendChild(fileInput);
+    setTimeout(function() {
+        try { fileInput.click(); } catch(e) { showToast('Camera unavailable.', 'error'); cleanup(); }
+    }, 100);
+}
+
+// "Quick Add" — saves meal without photo (no XP)
+async function recentMealQuickAdd() {
+    var meal = window._recentMealsData && window._recentMealsData[_selectedRecentMealIndex];
+    if (!meal) return;
+
+    var foodNames = getRecentMealName(meal);
+
+    closeRecentMealsModal();
+    showToast('Adding "' + foodNames.substring(0, 40) + '"...', 'info');
 
     try {
-        const mealType = autoDetectMealType();
+        var mealType = autoDetectMealType();
+        selectedMealType = mealType;
 
-        await saveMealLogWithType({
+        await saveMealLog({
             foodItems: meal.food_items || [],
             totals: {
-                calories: meal.calories || 0,
-                protein_g: meal.protein_g || 0,
-                carbs_g: meal.carbs_g || 0,
-                fat_g: meal.fat_g || 0,
-                fiber_g: meal.fiber_g || 0
+                calories: parseFloat(meal.calories) || 0,
+                protein_g: parseFloat(meal.protein_g) || 0,
+                carbs_g: parseFloat(meal.carbs_g) || 0,
+                fat_g: parseFloat(meal.fat_g) || 0,
+                fiber_g: parseFloat(meal.fiber_g) || 0
             },
             micronutrients: meal.micronutrients || {},
             confidence: 'high',
             notes: meal.notes || foodNames,
-            mealType: mealType,
-            inputMethod: 'recent',
-            mealDescription: foodNames
+            mealType: mealType
         });
 
-        // Refresh UI
         await recalculateDailyNutrition();
         await loadTodayNutrition();
-
-        // Refresh micronutrient bars
         try { await loadMicronutrientInsights(); } catch(e) {}
-
-        // Check meal badges
         try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
 
         showToast('"' + foodNames.substring(0, 30) + '" added!', 'success');
