@@ -6666,6 +6666,7 @@ async function applyAppTheme(themeKey) {
             <!-- Character model - transparent background so 3D environment shows through -->
             <model-viewer
                 id="tamagotchi-model"
+                src="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb"
                 camera-controls
                 disable-zoom
                 disable-pan
@@ -6682,6 +6683,34 @@ async function applyAppTheme(themeKey) {
                 style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; --poster-color: transparent; touch-action: none; background: transparent;"
                 interaction-prompt="none">
             </model-viewer>
+
+            <!-- Fallback for devices where model-viewer/WebGL fails (e.g. older iOS) -->
+            <div id="tamagotchi-fallback" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:3; background:#1a1a2e; justify-content:center; align-items:center; flex-direction:column; text-align:center; color:white; padding:20px;">
+                <div style="font-size:64px; margin-bottom:12px;">🐣</div>
+                <div style="font-size:1.1rem; font-weight:700; margin-bottom:6px;">Your FitGotchi</div>
+                <div style="font-size:0.8rem; color:rgba(255,255,255,0.6);">3D view not supported on this device.<br>Try updating your browser or use Chrome.</div>
+            </div>
+            <script>
+            // Detect model-viewer load failure and show fallback
+            (function() {
+                var mv = document.getElementById('tamagotchi-model');
+                var fb = document.getElementById('tamagotchi-fallback');
+                if (!mv || !fb) return;
+                var loaded = false;
+                mv.addEventListener('load', function() { loaded = true; });
+                mv.addEventListener('error', function() {
+                    fb.style.display = 'flex';
+                    mv.style.display = 'none';
+                });
+                // Timeout fallback: if model hasn't loaded after 15s, show fallback
+                setTimeout(function() {
+                    if (!loaded && !mv.model) {
+                        fb.style.display = 'flex';
+                        mv.style.display = 'none';
+                    }
+                }, 15000);
+            })();
+            </script>
 
             <!-- Level Up Celebration Overlay (appears inside Tamagotchi widget) -->
             <div id="tamagotchi-levelup-overlay" class="tamagotchi-levelup-overlay">
@@ -43223,15 +43252,11 @@ async function saveMealLogWithType(mealData) {
     const mealDate = getLocalDateString(now);
     const mealTime = now.toTimeString().split(' ')[0];
 
-    const { data, error } = await window.supabaseClient
-        .from('meal_logs')
-        .insert({
+    const insertData = {
             user_id: userId,
             meal_date: mealDate,
             meal_time: mealTime,
             meal_type: mealData.mealType || selectedMealType,
-            photo_url: mealData.photoUrl || null,
-            storage_path: mealData.photoUrl || null,
             food_items: mealData.foodItems,
             calories: mealData.totals.calories,
             protein_g: mealData.totals.protein_g,
@@ -43244,7 +43269,17 @@ async function saveMealLogWithType(mealData) {
             input_method: mealData.inputMethod || 'photo',
             meal_description: mealData.mealDescription || null,
             analysis_timestamp: new Date().toISOString()
-        })
+    };
+
+    // Only include photo fields when a URL exists (column may have NOT NULL constraint)
+    if (mealData.photoUrl) {
+        insertData.photo_url = mealData.photoUrl;
+        insertData.storage_path = mealData.photoUrl;
+    }
+
+    const { data, error } = await window.supabaseClient
+        .from('meal_logs')
+        .insert(insertData)
         .select();
 
     if (error) {
@@ -44109,15 +44144,11 @@ async function saveMealLog(mealData) {
     const mealDate = getLocalDateString(now);
     const mealTime = now.toTimeString().split(' ')[0];
 
-    const { data, error } = await window.supabaseClient
-        .from('meal_logs')
-        .insert({
+    const insertData = {
             user_id: userId,
             meal_date: mealDate,
             meal_time: mealTime,
             meal_type: mealData.mealType || selectedMealType,
-            photo_url: mealData.photoUrl,
-            storage_path: mealData.photoUrl,
             food_items: mealData.foodItems,
             calories: mealData.totals.calories,
             protein_g: mealData.totals.protein_g,
@@ -44128,7 +44159,17 @@ async function saveMealLog(mealData) {
             notes: mealData.notes,
             ai_confidence: mealData.confidence,
             analysis_timestamp: new Date().toISOString()
-        })
+    };
+
+    // Only include photo fields when a URL exists (column may have NOT NULL constraint)
+    if (mealData.photoUrl) {
+        insertData.photo_url = mealData.photoUrl;
+        insertData.storage_path = mealData.photoUrl;
+    }
+
+    const { data, error } = await window.supabaseClient
+        .from('meal_logs')
+        .insert(insertData)
         .select();
 
     if (error) {
