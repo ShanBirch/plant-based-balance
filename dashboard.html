@@ -4018,6 +4018,162 @@ async function applyAppTheme(themeKey) {
         transform: translateY(0);
     }
 
+    /* Recent Meals Modal */
+    .recent-meals-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        z-index: 10011;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        backdrop-filter: blur(10px);
+    }
+
+    .recent-meals-modal.visible {
+        display: flex;
+    }
+
+    .recent-meals-container {
+        background: white;
+        border-radius: 20px 20px 0 0;
+        width: 100%;
+        max-width: 500px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+        animation: slideUpRecent 0.3s ease;
+    }
+
+    @keyframes slideUpRecent {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .recent-meals-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px 16px;
+        border-bottom: 1px solid #f0f0f0;
+        flex-shrink: 0;
+    }
+
+    .recent-meals-header h3 {
+        margin: 0;
+        font-size: 1.15rem;
+        color: var(--text-main);
+    }
+
+    .recent-meals-close {
+        background: none;
+        border: none;
+        font-size: 1.8rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .recent-meals-list {
+        overflow-y: auto;
+        padding: 12px 16px 24px;
+        flex: 1;
+    }
+
+    .recent-meal-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 12px;
+        border-radius: 14px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        border: 1px solid transparent;
+    }
+
+    .recent-meal-item:hover {
+        background: #f8faf8;
+        border-color: #e8f0e8;
+    }
+
+    .recent-meal-item:active {
+        background: #f0f5f0;
+    }
+
+    .recent-meal-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: #f0f5f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .recent-meal-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .recent-meal-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .recent-meal-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .recent-meal-macros {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 3px;
+    }
+
+    .recent-meal-add {
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: white;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.3rem;
+        transition: all 0.15s ease;
+    }
+
+    .recent-meal-add:hover {
+        background: var(--primary-light);
+        transform: scale(1.1);
+    }
+
+    .recent-meals-empty {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-muted);
+    }
+
+    .recent-meals-empty svg {
+        margin-bottom: 12px;
+        opacity: 0.4;
+    }
+
     /* Simple Text Input Modal */
     .meal-text-modal {
         position: fixed;
@@ -7315,6 +7471,12 @@ async function applyAppTheme(themeKey) {
                             <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
                             <path d="M2 2l7.586 7.586"></path>
                             <circle cx="11" cy="11" r="2"></circle>
+                        </svg>
+                    </button>
+                    <button class="meal-icon-btn" onclick="openRecentMealsModal()" title="Recent meals">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
                     </button>
                 </div>
@@ -38564,6 +38726,25 @@ window.submitWeighInModal = submitWeighInModal;
     </div>
 </div>
 
+<!-- Recent Meals Modal -->
+<div id="recent-meals-modal" class="recent-meals-modal" onclick="if(event.target===this)closeRecentMealsModal()">
+    <div class="recent-meals-container">
+        <div class="recent-meals-header">
+            <h3>Recent Meals</h3>
+            <button class="recent-meals-close" onclick="closeRecentMealsModal()">&times;</button>
+        </div>
+        <div class="recent-meals-list" id="recent-meals-list">
+            <div class="recent-meals-empty">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <p>No recent meals yet.<br><span style="font-size: 0.85rem;">Your logged meals will appear here.</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Workout Photo Preview Modal -->
 <div id="workout-preview-modal" style="display:none; position:fixed; inset:0; background:black; z-index:10012; flex-direction:column; align-items:center; justify-content:center;">
     <!-- Photo Preview -->
@@ -43338,6 +43519,203 @@ async function submitMealDescription() {
         }
     });
 }
+
+// ========== Recent Meals Feature ==========
+
+// Open the recent meals modal and load data
+async function openRecentMealsModal() {
+    const modal = document.getElementById('recent-meals-modal');
+    if (modal) modal.classList.add('visible');
+    await loadRecentMeals();
+}
+
+// Close the recent meals modal
+function closeRecentMealsModal() {
+    const modal = document.getElementById('recent-meals-modal');
+    if (modal) modal.classList.remove('visible');
+}
+
+// Load recent meals from the database (unique meals from last 30 days)
+async function loadRecentMeals() {
+    const listEl = document.getElementById('recent-meals-list');
+    if (!listEl) return;
+
+    // Show loading state
+    listEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">Loading recent meals...</div>';
+
+    try {
+        if (!window.supabaseClient) return;
+        const user = await window.supabaseClient.auth.getUser();
+        const userId = user?.data?.user?.id;
+        if (!userId) return;
+
+        // Fetch meals from the last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const sinceDate = thirtyDaysAgo.toISOString().split('T')[0];
+
+        const { data: meals, error } = await window.supabaseClient
+            .from('meal_logs')
+            .select('food_items, calories, protein_g, carbs_g, fat_g, fiber_g, micronutrients, meal_description, photo_url, meal_type, notes')
+            .eq('user_id', userId)
+            .gte('meal_date', sinceDate)
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (error) {
+            console.error('Error loading recent meals:', error);
+            listEl.innerHTML = '<div class="recent-meals-empty"><p>Could not load recent meals.</p></div>';
+            return;
+        }
+
+        if (!meals || meals.length === 0) {
+            listEl.innerHTML = `
+                <div class="recent-meals-empty">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <p>No recent meals yet.<br><span style="font-size: 0.85rem;">Your logged meals will appear here.</span></p>
+                </div>`;
+            return;
+        }
+
+        // Deduplicate meals by food items description (keep the most recent of each unique meal)
+        const uniqueMeals = deduplicateRecentMeals(meals);
+
+        renderRecentMealsList(listEl, uniqueMeals);
+
+    } catch (err) {
+        console.error('Error in loadRecentMeals:', err);
+        listEl.innerHTML = '<div class="recent-meals-empty"><p>Something went wrong.</p></div>';
+    }
+}
+
+// Deduplicate meals by generating a key from sorted food item names
+function deduplicateRecentMeals(meals) {
+    const seen = new Map();
+
+    for (const meal of meals) {
+        const key = getMealKey(meal);
+        if (!seen.has(key)) {
+            seen.set(key, meal);
+        }
+    }
+
+    return Array.from(seen.values());
+}
+
+// Generate a unique key for a meal based on its food items
+function getMealKey(meal) {
+    if (Array.isArray(meal.food_items) && meal.food_items.length > 0) {
+        return meal.food_items.map(item => (item.name || '').toLowerCase().trim()).sort().join('|');
+    }
+    if (meal.meal_description) {
+        return meal.meal_description.toLowerCase().trim();
+    }
+    return `meal-${meal.calories}-${meal.protein_g}`;
+}
+
+// Render the list of recent meals
+function renderRecentMealsList(container, meals) {
+    if (!meals || meals.length === 0) {
+        container.innerHTML = `
+            <div class="recent-meals-empty">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <p>No recent meals yet.<br><span style="font-size: 0.85rem;">Your logged meals will appear here.</span></p>
+            </div>`;
+        return;
+    }
+
+    let html = '';
+    meals.forEach((meal, index) => {
+        const foodNames = Array.isArray(meal.food_items)
+            ? meal.food_items.map(item => item.name).join(', ')
+            : (meal.meal_description || 'Meal');
+
+        const cal = Math.round(meal.calories || 0);
+        const protein = Math.round(meal.protein_g || 0);
+        const carbs = Math.round(meal.carbs_g || 0);
+        const fat = Math.round(meal.fat_g || 0);
+
+        const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '' && meal.photo_url !== 'text-input';
+        const iconHtml = hasPhoto
+            ? `<div class="recent-meal-icon"><img src="${meal.photo_url}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='&#127869;'"></div>`
+            : `<div class="recent-meal-icon">&#127869;</div>`;
+
+        html += `
+            <div class="recent-meal-item" onclick="quickAddRecentMeal(${index})">
+                ${iconHtml}
+                <div class="recent-meal-info">
+                    <div class="recent-meal-name">${foodNames}</div>
+                    <div class="recent-meal-macros">${cal} cal &middot; P: ${protein}g &middot; C: ${carbs}g &middot; F: ${fat}g</div>
+                </div>
+                <button class="recent-meal-add" onclick="event.stopPropagation(); quickAddRecentMeal(${index})" title="Add this meal">+</button>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    // Store the meals data for quick-add access
+    window._recentMealsData = meals;
+}
+
+// Quick-add a recent meal directly to today's log
+async function quickAddRecentMeal(index) {
+    const meal = window._recentMealsData && window._recentMealsData[index];
+    if (!meal) return;
+
+    const foodNames = Array.isArray(meal.food_items)
+        ? meal.food_items.map(item => item.name).join(', ')
+        : (meal.meal_description || 'Meal');
+
+    // Close the modal immediately
+    closeRecentMealsModal();
+    showToast('Adding "' + foodNames.substring(0, 40) + '..." to today\'s log', 'info');
+
+    try {
+        const mealType = autoDetectMealType();
+
+        await saveMealLogWithType({
+            foodItems: meal.food_items || [],
+            totals: {
+                calories: meal.calories || 0,
+                protein_g: meal.protein_g || 0,
+                carbs_g: meal.carbs_g || 0,
+                fat_g: meal.fat_g || 0,
+                fiber_g: meal.fiber_g || 0
+            },
+            micronutrients: meal.micronutrients || {},
+            confidence: 'high',
+            notes: meal.notes || foodNames,
+            mealType: mealType,
+            inputMethod: 'recent',
+            mealDescription: foodNames
+        });
+
+        // Refresh UI
+        await recalculateDailyNutrition();
+        await loadTodayNutrition();
+
+        // Refresh micronutrient bars
+        try { await loadMicronutrientInsights(); } catch(e) {}
+
+        // Check meal badges
+        try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
+
+        showToast('"' + foodNames.substring(0, 30) + '" added!', 'success');
+
+    } catch (err) {
+        console.error('Error quick-adding recent meal:', err);
+        showToast('Failed to add meal. Please try again.', 'error');
+    }
+}
+
+// ========== End Recent Meals Feature ==========
 
 // Background meal analysis — fires off the API call and saves results without blocking the UI
 async function analyzeMealInBackground({ description, mealType, inputMethod, saveFn }) {
