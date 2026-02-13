@@ -49736,6 +49736,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             const currentEvolution = [...TAMAGOTCHI_EVOLUTIONS].reverse().find(e => level >= e.level) || TAMAGOTCHI_EVOLUTIONS[0];
             if (rankEl) rankEl.textContent = currentEvolution.title;
 
+            // Prefetch current + next evolution models in background
+            if (window._prefetchEvolutionModels) {
+                window._prefetchEvolutionModels(TAMAGOTCHI_EVOLUTIONS, level);
+            }
+
             // Progress calculation
             if (level < 99) {
                 const range = nextLevelXP - currentLevelXP;
@@ -52609,16 +52614,35 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================================
     // BACKGROUND MODEL PREFETCH - warm browser cache for 3D models
     // ============================================================
-    (function prefetchRareModels() {
-        // Wait for page to finish loading critical content first
-        const startPrefetch = () => {
-            // Prioritize: 1) active skin, 2) featured monthly rare, 3) first in collection, 4) rest
+    (function prefetchAllModels() {
+        const B2_BASE = 'https://f005.backblazeb2.com/file/shannonsvideos/';
+
+        // Shared prefetch utility - exposed globally so evolution system can use it
+        function prefetchUrl(url) {
+            return fetch(url, { mode: 'cors', credentials: 'omit' })
+                .then(() => console.log('Prefetched:', url.split('/').pop()))
+                .catch(() => {}); // Silently ignore failures
+        }
+        window._prefetchModelUrl = prefetchUrl;
+
+        function prefetchBatch(urls) {
+            const fetches = urls.map((url, i) => {
+                return new Promise(resolve => {
+                    // Stagger by 200ms each to avoid flooding the network
+                    setTimeout(() => prefetchUrl(url).finally(resolve), i * 200);
+                });
+            });
+            return Promise.all(fetches);
+        }
+
+        // --- RARE MODELS PREFETCH ---
+        const startRarePrefetch = () => {
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
             const featured = getFeaturedMonthlyRareId();
             const priorityIds = new Set();
             if (activeRareSkinId) priorityIds.add(activeRareSkinId);
             if (featured) priorityIds.add(featured);
-            priorityIds.add(RARE_COLLECTION[0].id); // First in list (shown when opening Rare Drops)
+            priorityIds.add(RARE_COLLECTION[0].id);
 
             const priorityModels = [];
             const remainingModels = [];
@@ -52630,29 +52654,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
 
-            // Prefetch priority models immediately (low-priority fetch to not block UI)
             prefetchBatch(priorityModels).then(() => {
-                // Then prefetch remaining models with staggered delays
                 prefetchBatch(remainingModels);
             });
         };
 
-        function prefetchBatch(urls) {
-            const fetches = urls.map((url, i) => {
-                return new Promise(resolve => {
-                    // Stagger by 200ms each to avoid flooding the network
-                    setTimeout(() => {
-                        fetch(url, { mode: 'cors', credentials: 'omit' })
-                            .then(() => console.log('Prefetched:', url.split('/').pop()))
-                            .catch(() => {}) // Silently ignore prefetch failures
-                            .finally(resolve);
-                    }, i * 200);
-                });
-            });
-            return Promise.all(fetches);
-        }
-
-        // Helper to get featured rare ID without creating the full object
         function getFeaturedMonthlyRareId() {
             const now = new Date();
             const monthIndex = now.getFullYear() * 12 + now.getMonth();
@@ -52660,11 +52666,35 @@ document.addEventListener('DOMContentLoaded', async function() {
             return rare ? rare.id : null;
         }
 
-        // Start prefetching after page is idle (use requestIdleCallback if available)
+        // --- EVOLUTION MODELS PREFETCH ---
+        // Called from updateFitGotchi once user gender + level are known
+        // Prefetches: current model (ensures cache), next evolution, and level 1 for the user's gender
+        window._prefetchEvolutionModels = function(evolutions, currentLevel) {
+            if (!evolutions || !evolutions.length) return;
+
+            const sorted = [...evolutions].sort((a, b) => a.level - b.level);
+            const currentEvo = [...sorted].reverse().find(e => currentLevel >= e.level) || sorted[0];
+            const nextEvo = sorted.find(e => e.level > currentLevel);
+
+            // Collect unique URLs to prefetch
+            const urls = new Set();
+            if (currentEvo) urls.add(currentEvo.src);
+            if (nextEvo) urls.add(nextEvo.src);
+            // Always prefetch level 1 (mascot uses it too)
+            urls.add(sorted[0].src);
+
+            // Prefetch with slight stagger
+            const urlArray = [...urls];
+            urlArray.forEach((url, i) => {
+                setTimeout(() => prefetchUrl(url), i * 300);
+            });
+        };
+
+        // Start rare prefetch after page is idle
         if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => startPrefetch(), { timeout: 5000 });
+            requestIdleCallback(() => startRarePrefetch(), { timeout: 5000 });
         } else {
-            setTimeout(startPrefetch, 3000);
+            setTimeout(startRarePrefetch, 3000);
         }
     })();
 
