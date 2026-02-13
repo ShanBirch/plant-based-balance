@@ -7228,9 +7228,10 @@ async function applyAppTheme(themeKey) {
     async function checkAndShowWeighInCard() {
         if (!window.currentUser) return;
 
-        // Don't show weigh-in card if onboarding wizard is still active
+        // Don't show weigh-in card if onboarding wizard is active or pending
+        if (window._onboardingWizardPending) return;
         const wizard = document.getElementById('onboarding-wizard');
-        if (wizard && wizard.style.display !== 'none' && wizard.classList.contains('active')) return;
+        if (wizard && wizard.style.display !== 'none') return;
 
         try {
             const todaysWeighIn = await db.weighIns.getTodaysWeighIn(window.currentUser.id);
@@ -14076,7 +14077,9 @@ function openYourWorkouts() {
         }
 
         // Hide any open modals/overlays that might be covering the view
+        // Skip the onboarding wizard — closing it without setting completion flags causes it to re-trigger
         document.querySelectorAll('.modal-overlay, .onboarding-overlay, .completion-modal-overlay').forEach(el => {
+            if (el.id === 'onboarding-wizard') return;
             el.style.display = 'none';
             el.classList.remove('active');
         });
@@ -20716,6 +20719,25 @@ function switchView(id) {
 let currentWizardStep = 1;
 const totalWizardSteps = 20;
 
+// Wizard-specific validation message (renders above the z-index:12000 wizard overlay)
+function wizardAlert(message) {
+    const existing = document.getElementById('wizard-validation-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'wizard-validation-toast';
+    toast.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:12px 24px; background:#ef4444; color:white; border-radius:12px; font-weight:600; font-size:0.9rem; box-shadow:0 4px 20px rgba(0,0,0,0.3); z-index:13000; text-align:center; max-width:90vw; animation:fadeInUp 0.3s ease-out;';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 3000);
+}
+
 // Workout Calendar State
 let wizardTrainingFrequency = 0;
 let wizardSelectedDays = new Set();
@@ -20734,11 +20756,11 @@ async function checkAndTriggerOnboarding() {
             // Check if cycle data exists in localStorage
             try {
                 const cycleData = JSON.parse(localStorage.getItem('userCycleData') || '{}');
-                if (!cycleData.lastPeriod) {
+                if (!cycleData.lastPeriod && !cycleData.noPeriodMode) {
                     console.warn('⚠️ Onboarding marked complete but no cycle data in localStorage - allowing re-onboarding');
                     // Don't return - continue to check database and possibly show wizard
                 } else {
-                    // Data exists in localStorage - skip wizard
+                    // Data exists in localStorage (either has period date or is in no-period/wellness mode) - skip wizard
                     return;
                 }
             } catch (e) {
@@ -20763,7 +20785,7 @@ async function checkAndTriggerOnboarding() {
                 if (userGender === 'female') {
                     try {
                         const facts = await dbHelpers.userFacts.get(window.currentUser.id);
-                        const hasCycleData = facts?.additional_data?.last_period_start;
+                        const hasCycleData = facts?.additional_data?.last_period_start || facts?.additional_data?.no_period_mode;
 
                         if (!hasCycleData) {
                             console.warn('⚠️ Onboarding marked complete but cycle data missing - allowing re-onboarding');
@@ -20824,7 +20846,8 @@ async function checkAndTriggerOnboarding() {
     // If missing essential data OR missing gender selection, trigger onboarding wizard
     if (!hasEssentialData || !hasGender) {
         console.log("Essential quiz data or gender missing, triggering onboarding wizard...");
-        setTimeout(initOnboardingWizard, 1500);
+        window._onboardingWizardPending = true;
+        setTimeout(initOnboardingWizard, 500);
     } else {
         // User has essential data AND gender but hasn't marked onboarding complete
         // Mark as complete and show the gender-specific check-in
@@ -20840,13 +20863,15 @@ async function checkAndTriggerOnboarding() {
 }
 
 function initOnboardingWizard() {
-    currentWizardStep = 1; // Reset to first step
+    // Guard against multiple simultaneous triggers
     const modal = document.getElementById('onboarding-wizard');
-    if(modal) {
-        modal.classList.add('active');
-        modal.style.display = 'flex';
-        modal.style.opacity = '1';
-    }
+    if (!modal) return;
+    if (modal.style.display === 'flex') return; // Already showing
+
+    currentWizardStep = 1; // Reset to first step
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
     updateWizardUI();
 }
 
@@ -21273,7 +21298,7 @@ async function wizardNext() {
     // Validation for Step 1: Gender Selection
     if(currentWizardStep === 1) {
         if (!selectedGender) {
-            alert("Please select your program (For Her or For Him).");
+            wizardAlert("Please select your program (For Her or For Him).");
             return;
         }
         // Gender already saved in selectGender function
@@ -21294,45 +21319,45 @@ async function wizardNext() {
 
         // Validate all required fields
         if (!name) {
-            alert("Please enter your name.");
+            wizardAlert("Please enter your name.");
             return;
         }
         if (!age || age < 18 || age > 100) {
-            alert("Please enter a valid age (18-100).");
+            wizardAlert("Please enter a valid age (18-100).");
             return;
         }
         if (!height || height < 100 || height > 250) {
-            alert("Please enter a valid height in cm (100-250).");
+            wizardAlert("Please enter a valid height in cm (100-250).");
             return;
         }
         if (!weight || weight < 30 || weight > 300) {
-            alert("Please enter a valid weight in kg (30-300).");
+            wizardAlert("Please enter a valid weight in kg (30-300).");
             return;
         }
         if (!goalWeight || goalWeight < 30 || goalWeight > 300) {
-            alert("Please enter a valid goal weight in kg (30-300).");
+            wizardAlert("Please enter a valid goal weight in kg (30-300).");
             return;
         }
         if (!goalType) {
-            alert("Please select your primary goal.");
+            wizardAlert("Please select your primary goal.");
             return;
         }
         if (!equipment) {
-            alert("Please select your equipment access.");
+            wizardAlert("Please select your equipment access.");
             return;
         }
         if (!activityLevel) {
-            alert("Please select your activity level.");
+            wizardAlert("Please select your activity level.");
             return;
         }
         if (!energyLevel) {
-            alert("Please select your energy status.");
+            wizardAlert("Please select your energy status.");
             return;
         }
 
         const dietaryPreference = document.getElementById('wizard-dietary-preference').value;
         if (!dietaryPreference) {
-            alert("Please select your dietary preference.");
+            wizardAlert("Please select your dietary preference.");
             return;
         }
 
@@ -21388,14 +21413,14 @@ async function wizardNext() {
         const wellnessToggle = document.getElementById('wizard-wellness-toggle');
 
         if (!wellnessToggle.checked && !dateInput.value) {
-            alert("Please enter your last period date so we can sync your plan.");
+            wizardAlert("Please enter your last period date so we can sync your plan.");
             return;
         }
 
         // NEW: Validate cycle sync questions
         const cycleSyncPref = document.querySelector('input[name="wizard-cycle-sync"]:checked')?.value;
         if (!cycleSyncPref) {
-            alert("Please select whether you want to sync your workouts with your cycle.");
+            wizardAlert("Please select whether you want to sync your workouts with your cycle.");
             return;
         }
 
@@ -21403,7 +21428,7 @@ async function wizardNext() {
         if (cycleSyncPref === 'yes') {
             const periodEnergy = document.querySelector('input[name="wizard-period-energy"]:checked')?.value;
             if (!periodEnergy) {
-                alert("Please select how your body responds during your period.");
+                wizardAlert("Please select how your body responds during your period.");
                 return;
             }
         }
@@ -21505,11 +21530,11 @@ async function wizardNext() {
     // Validation for Step 4: Training Frequency & Days
     if(currentWizardStep === 4) {
         if (!wizardTrainingFrequency || wizardTrainingFrequency < 2) {
-            alert("Please select how many days you want to train.");
+            wizardAlert("Please select how many days you want to train.");
             return;
         }
         if (wizardSelectedDays.size !== wizardTrainingFrequency) {
-            alert(`Please select exactly ${wizardTrainingFrequency} training days.`);
+            wizardAlert(`Please select exactly ${wizardTrainingFrequency} training days.`);
             return;
         }
 
@@ -21535,7 +21560,7 @@ async function wizardNext() {
     // Validation for Step 5: Split Preference
     if(currentWizardStep === 5) {
         if (!wizardSplitPreference) {
-            alert("Please select your training split preference.");
+            wizardAlert("Please select your training split preference.");
             return;
         }
 
@@ -21900,7 +21925,7 @@ function selectTrainingFrequency(num) {
 
 function toggleTrainingDay(day) {
     if (!wizardTrainingFrequency) {
-        alert('Please select how many days you want to train first.');
+        wizardAlert('Please select how many days you want to train first.');
         return;
     }
 
@@ -21912,7 +21937,7 @@ function toggleTrainingDay(day) {
         btn.style.color = '#1a4d2e';
     } else {
         if (wizardSelectedDays.size >= wizardTrainingFrequency) {
-            alert(`You can only select ${wizardTrainingFrequency} days. Deselect one first.`);
+            wizardAlert(`You can only select ${wizardTrainingFrequency} days. Deselect one first.`);
             return;
         }
         wizardSelectedDays.add(day);
@@ -22402,7 +22427,13 @@ function showWizardWorkoutDropdown(day, dayLabel, updateCallback) {
 async function finishOnboarding() {
     localStorage.setItem('onboardingComplete', 'true');
     localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
-    document.getElementById('onboarding-wizard').style.display = 'none';
+    window._onboardingWizardPending = false;
+    const wizardEl = document.getElementById('onboarding-wizard');
+    if (wizardEl) {
+        wizardEl.style.display = 'none';
+        wizardEl.style.opacity = '';
+        wizardEl.classList.remove('active');
+    }
 
     // Skip weigh-in prompts on first day - user already entered weight in wizard step 2
     localStorage.setItem('lastWeighInPromptDate', new Date().toDateString());
@@ -22568,9 +22599,13 @@ async function finishOnboarding() {
 }
 
 async function closeWizardManually() {
-     document.getElementById('onboarding-wizard').style.display = 'none';
-     // Warning: if they close manually without finishing, we might show it again next time?
-     // For now, let's assume they want to skip it.
+     window._onboardingWizardPending = false;
+     const wizardEl = document.getElementById('onboarding-wizard');
+     if (wizardEl) {
+         wizardEl.style.display = 'none';
+         wizardEl.style.opacity = '';
+         wizardEl.classList.remove('active');
+     }
      localStorage.setItem('onboardingComplete', 'true');
      localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
 
@@ -31157,46 +31192,15 @@ window.submitCoachMessage = async function() {
 
 
 <script>
-    // Initialize Onboarding
-    function initOnboarding() {
-        // Check if user has seen onboarding (check both keys for backwards compatibility)
-        const hasSeenOnboarding = localStorage.getItem('plantbased_onboarding_complete') || localStorage.getItem('onboardingComplete');
+    // Onboarding is now fully handled by checkAndTriggerOnboarding() -> initOnboardingWizard()
+    // which runs during the auth callback. No separate page-load trigger needed.
 
-        if (!hasSeenOnboarding) {
-            // Show modal immediately
-            setTimeout(() => {
-                const overlay = document.getElementById('onboarding-overlay');
-                if(overlay) {
-                    overlay.style.display = 'flex';
-                    // Trigger reflow
-                    overlay.offsetHeight;
-                    overlay.classList.add('active');
-                }
-            }, 100); // Reduced delay for instant feel
-        }
-    }
-
-    function completeOnboarding() {
-        const overlay = document.getElementById('onboarding-overlay');
-        overlay.classList.remove('active');
-
-        // Wait for animation
-        setTimeout(() => {
-            overlay.style.display = 'none';
-            // Set flags in localStorage (both keys for consistency)
-            localStorage.setItem('plantbased_onboarding_complete', 'true');
-            localStorage.setItem('onboardingComplete', 'true');
-        }, 400);
-    }
-    
-    // Run initialization
+    // Run community feed initialization
     if(document.readyState === 'complete') {
         loadCommunityFeed();
-        initOnboarding();
     } else {
         window.addEventListener('load', () => {
             loadCommunityFeed();
-            initOnboarding();
         });
     }
 </script>
@@ -38286,9 +38290,10 @@ window.submitDailyCycleSync = submitDailyCycleSync;
 async function checkAndShowWeighInModal() {
     if (!window.currentUser) return;
 
-    // Don't show weigh-in if onboarding wizard is still active
+    // Don't show weigh-in if onboarding wizard is active or pending
+    if (window._onboardingWizardPending) return;
     const wizard = document.getElementById('onboarding-wizard');
-    if (wizard && wizard.style.display !== 'none' && wizard.classList.contains('active')) return;
+    if (wizard && wizard.style.display !== 'none') return;
 
     // Check if we've already prompted today
     const lastPromptDate = localStorage.getItem('lastWeighInPromptDate');
