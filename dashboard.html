@@ -28,6 +28,20 @@
   }
 </script>
 
+<!-- CRITICAL: Hide loading overlay for returning users (only show on first visit/onboarding) -->
+<script>
+(function() {
+    // If the user has already completed their first dashboard load,
+    // hide the loading overlay instantly so it doesn't flash on page reloads
+    // (e.g. when returning from native camera on mobile).
+    if (localStorage.getItem('dashboardInitialized') === 'true') {
+        var style = document.createElement('style');
+        style.textContent = '.login-loading-overlay { display: none !important; }';
+        document.head.appendChild(style);
+    }
+})();
+</script>
+
 <!-- CRITICAL: Early theme application to prevent flash of default theme -->
 <script>
 (function() {
@@ -8298,6 +8312,9 @@ async function applyAppTheme(themeKey) {
                     if (dismissed) return;
                     dismissed = true;
                     updateLoginProgress(100, 'Ready!');
+                    // Mark that the user has completed their first dashboard load,
+                    // so the loading overlay won't show on subsequent page reloads.
+                    try { localStorage.setItem('dashboardInitialized', 'true'); } catch(e) {}
                     setTimeout(() => {
                         overlay.classList.add('fade-out');
                         // Remove from DOM after transition
