@@ -43894,8 +43894,11 @@ function recentMealAddWithPhoto() {
         showToast('Uploading photo and saving meal...', 'info');
 
         try {
+            // Compress the photo before uploading (phone photos can be 5-15MB)
+            var compressedFile = await compressMealImage(file);
+
             // Upload the photo
-            var photoUrl = await uploadMealPhoto(file);
+            var photoUrl = await uploadMealPhoto(compressedFile);
 
             // Save the meal with the photo URL
             var mealType = autoDetectMealType();

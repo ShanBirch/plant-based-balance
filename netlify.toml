@@ -66,6 +66,10 @@
 
 # Meal Tracking Edge Functions
 [[edge_functions]]
+  function = "upload-meal-photo"
+  path = "/api/upload-meal-photo"
+
+[[edge_functions]]
   function = "analyze-meal-text"
   path = "/.netlify/functions/analyze-meal-text"
 
