@@ -7228,9 +7228,10 @@ async function applyAppTheme(themeKey) {
     async function checkAndShowWeighInCard() {
         if (!window.currentUser) return;
 
-        // Don't show weigh-in card if onboarding wizard is still active
+        // Don't show weigh-in card if onboarding wizard is active or pending
+        if (window._onboardingWizardPending) return;
         const wizard = document.getElementById('onboarding-wizard');
-        if (wizard && wizard.style.display !== 'none' && wizard.classList.contains('active')) return;
+        if (wizard && wizard.style.display !== 'none') return;
 
         try {
             const todaysWeighIn = await db.weighIns.getTodaysWeighIn(window.currentUser.id);
@@ -14076,7 +14077,9 @@ function openYourWorkouts() {
         }
 
         // Hide any open modals/overlays that might be covering the view
+        // Skip the onboarding wizard — closing it without setting completion flags causes it to re-trigger
         document.querySelectorAll('.modal-overlay, .onboarding-overlay, .completion-modal-overlay').forEach(el => {
+            if (el.id === 'onboarding-wizard') return;
             el.style.display = 'none';
             el.classList.remove('active');
         });
@@ -20716,6 +20719,25 @@ function switchView(id) {
 let currentWizardStep = 1;
 const totalWizardSteps = 20;
 
+// Wizard-specific validation message (renders above the z-index:12000 wizard overlay)
+function wizardAlert(message) {
+    const existing = document.getElementById('wizard-validation-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'wizard-validation-toast';
+    toast.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:12px 24px; background:#ef4444; color:white; border-radius:12px; font-weight:600; font-size:0.9rem; box-shadow:0 4px 20px rgba(0,0,0,0.3); z-index:13000; text-align:center; max-width:90vw; animation:fadeInUp 0.3s ease-out;';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 3000);
+}
+
 // Workout Calendar State
 let wizardTrainingFrequency = 0;
 let wizardSelectedDays = new Set();
@@ -20734,11 +20756,11 @@ async function checkAndTriggerOnboarding() {
             // Check if cycle data exists in localStorage
             try {
                 const cycleData = JSON.parse(localStorage.getItem('userCycleData') || '{}');
-                if (!cycleData.lastPeriod) {
+                if (!cycleData.lastPeriod && !cycleData.noPeriodMode) {
                     console.warn('⚠️ Onboarding marked complete but no cycle data in localStorage - allowing re-onboarding');
                     // Don't return - continue to check database and possibly show wizard
                 } else {
-                    // Data exists in localStorage - skip wizard
+                    // Data exists in localStorage (either has period date or is in no-period/wellness mode) - skip wizard
                     return;
                 }
             } catch (e) {
@@ -20763,7 +20785,7 @@ async function checkAndTriggerOnboarding() {
                 if (userGender === 'female') {
                     try {
                         const facts = await dbHelpers.userFacts.get(window.currentUser.id);
-                        const hasCycleData = facts?.additional_data?.last_period_start;
+                        const hasCycleData = facts?.additional_data?.last_period_start || facts?.additional_data?.no_period_mode;
 
                         if (!hasCycleData) {
                             console.warn('⚠️ Onboarding marked complete but cycle data missing - allowing re-onboarding');
@@ -20824,7 +20846,8 @@ async function checkAndTriggerOnboarding() {
     // If missing essential data OR missing gender selection, trigger onboarding wizard
     if (!hasEssentialData || !hasGender) {
         console.log("Essential quiz data or gender missing, triggering onboarding wizard...");
-        setTimeout(initOnboardingWizard, 1500);
+        window._onboardingWizardPending = true;
+        setTimeout(initOnboardingWizard, 500);
     } else {
         // User has essential data AND gender but hasn't marked onboarding complete
         // Mark as complete and show the gender-specific check-in
@@ -20840,21 +20863,34 @@ async function checkAndTriggerOnboarding() {
 }
 
 function initOnboardingWizard() {
-    currentWizardStep = 1; // Reset to first step
+    // Guard against multiple simultaneous triggers
     const modal = document.getElementById('onboarding-wizard');
-    if(modal) {
-        modal.classList.add('active');
-        modal.style.display = 'flex';
-        modal.style.opacity = '1';
-    }
+    if (!modal) return;
+    if (modal.style.display === 'flex') return; // Already showing
+
+    currentWizardStep = 1; // Reset to first step
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
     updateWizardUI();
 }
 
 function updateWizardUI() {
-    // 1. Slides
+    // 1. Slides — use class-based transitions for smooth animation
     for(let i=1; i<=totalWizardSteps; i++) {
         const slide = document.getElementById('slide-' + i);
-        if(slide) slide.style.display = (i === currentWizardStep) ? 'block' : 'none';
+        if (!slide) continue;
+        if (i === currentWizardStep) {
+            // Show the target slide with entrance animation
+            slide.classList.remove('slide-exit');
+            slide.style.display = 'block';
+            // Force a reflow so the transition from opacity:0 → 1 actually animates
+            slide.offsetHeight;
+            slide.classList.add('slide-active');
+        } else {
+            slide.classList.remove('slide-active', 'slide-exit');
+            slide.style.display = 'none';
+        }
     }
 
     // 2. Dots
@@ -20864,15 +20900,18 @@ function updateWizardUI() {
         else d.classList.remove('active');
     });
 
-    // 2b. Ensure baby model on FitGotchi preview (unisex baby for levels 1-4)
-    if(currentWizardStep === 7) {
-        const fitgotchiPreview = document.getElementById('wizard-fitgotchi-preview');
-        if (fitgotchiPreview) {
-            const babySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
-            if (fitgotchiPreview.getAttribute('src') !== babySrc) {
-                fitgotchiPreview.setAttribute('src', babySrc);
-            }
-        }
+    // 2c. Lazy-load 3D models one slide before they appear (preload while user reads current slide)
+    if (currentWizardStep >= 6) {
+        const mv = document.getElementById('wizard-fitgotchi-preview');
+        if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
+    }
+    if (currentWizardStep >= 12) {
+        const mv = document.getElementById('wizard-arny-preview');
+        if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
+    }
+    if (currentWizardStep >= 15) {
+        const mv = document.getElementById('wizard-preview-model');
+        if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
     }
 
     // 3. Initialize character customization on slide 16
@@ -21273,7 +21312,7 @@ async function wizardNext() {
     // Validation for Step 1: Gender Selection
     if(currentWizardStep === 1) {
         if (!selectedGender) {
-            alert("Please select your program (For Her or For Him).");
+            wizardAlert("Please select your program (For Her or For Him).");
             return;
         }
         // Gender already saved in selectGender function
@@ -21294,45 +21333,45 @@ async function wizardNext() {
 
         // Validate all required fields
         if (!name) {
-            alert("Please enter your name.");
+            wizardAlert("Please enter your name.");
             return;
         }
         if (!age || age < 18 || age > 100) {
-            alert("Please enter a valid age (18-100).");
+            wizardAlert("Please enter a valid age (18-100).");
             return;
         }
         if (!height || height < 100 || height > 250) {
-            alert("Please enter a valid height in cm (100-250).");
+            wizardAlert("Please enter a valid height in cm (100-250).");
             return;
         }
         if (!weight || weight < 30 || weight > 300) {
-            alert("Please enter a valid weight in kg (30-300).");
+            wizardAlert("Please enter a valid weight in kg (30-300).");
             return;
         }
         if (!goalWeight || goalWeight < 30 || goalWeight > 300) {
-            alert("Please enter a valid goal weight in kg (30-300).");
+            wizardAlert("Please enter a valid goal weight in kg (30-300).");
             return;
         }
         if (!goalType) {
-            alert("Please select your primary goal.");
+            wizardAlert("Please select your primary goal.");
             return;
         }
         if (!equipment) {
-            alert("Please select your equipment access.");
+            wizardAlert("Please select your equipment access.");
             return;
         }
         if (!activityLevel) {
-            alert("Please select your activity level.");
+            wizardAlert("Please select your activity level.");
             return;
         }
         if (!energyLevel) {
-            alert("Please select your energy status.");
+            wizardAlert("Please select your energy status.");
             return;
         }
 
         const dietaryPreference = document.getElementById('wizard-dietary-preference').value;
         if (!dietaryPreference) {
-            alert("Please select your dietary preference.");
+            wizardAlert("Please select your dietary preference.");
             return;
         }
 
@@ -21388,14 +21427,14 @@ async function wizardNext() {
         const wellnessToggle = document.getElementById('wizard-wellness-toggle');
 
         if (!wellnessToggle.checked && !dateInput.value) {
-            alert("Please enter your last period date so we can sync your plan.");
+            wizardAlert("Please enter your last period date so we can sync your plan.");
             return;
         }
 
         // NEW: Validate cycle sync questions
         const cycleSyncPref = document.querySelector('input[name="wizard-cycle-sync"]:checked')?.value;
         if (!cycleSyncPref) {
-            alert("Please select whether you want to sync your workouts with your cycle.");
+            wizardAlert("Please select whether you want to sync your workouts with your cycle.");
             return;
         }
 
@@ -21403,7 +21442,7 @@ async function wizardNext() {
         if (cycleSyncPref === 'yes') {
             const periodEnergy = document.querySelector('input[name="wizard-period-energy"]:checked')?.value;
             if (!periodEnergy) {
-                alert("Please select how your body responds during your period.");
+                wizardAlert("Please select how your body responds during your period.");
                 return;
             }
         }
@@ -21425,39 +21464,37 @@ async function wizardNext() {
         // CRITICAL: Save userCycleData to localStorage AND database
         localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
 
-        // Save to database for cross-device persistence (WAIT for this to complete)
+        // Save to database for cross-device persistence (non-blocking — localStorage is already saved above)
         if (window.currentUser) {
-            try {
-                const userId = window.currentUser.id || window.currentUser.user_id;
-                let existingFacts = {};
+            (async () => {
                 try {
-                    existingFacts = await dbHelpers.userFacts.get(userId);
-                } catch(err) { /* ignore not found */ }
+                    const userId = window.currentUser.id || window.currentUser.user_id;
+                    let existingFacts = {};
+                    try {
+                        existingFacts = await dbHelpers.userFacts.get(userId);
+                    } catch(err) { /* ignore not found */ }
 
-                const currentAdditional = existingFacts?.additional_data || {};
+                    const currentAdditional = existingFacts?.additional_data || {};
+                    const userProfile = JSON.parse(sessionStorage.getItem('userProfile') || localStorage.getItem('userProfile') || '{}');
 
-                // Get cycle sync preferences from sessionStorage/localStorage
-                const userProfile = JSON.parse(sessionStorage.getItem('userProfile') || localStorage.getItem('userProfile') || '{}');
+                    const dataToSave = {
+                        additional_data: {
+                            ...currentAdditional,
+                            last_period_start: userCycleData.lastPeriod,
+                            cycle_length: userCycleData.cycleLength,
+                            no_period_mode: userCycleData.noPeriodMode,
+                            cycle_sync_preference: userProfile.cycle_sync_preference,
+                            period_energy_response: userProfile.period_energy_response
+                        }
+                    };
 
-                const dataToSave = {
-                    additional_data: {
-                        ...currentAdditional,
-                        last_period_start: userCycleData.lastPeriod,
-                        cycle_length: userCycleData.cycleLength,
-                        no_period_mode: userCycleData.noPeriodMode,
-                        // Also save cycle sync preferences here (avoids quiz_results update issues)
-                        cycle_sync_preference: userProfile.cycle_sync_preference,
-                        period_energy_response: userProfile.period_energy_response
-                    }
-                };
-
-                console.log('💾 Saving cycle data to database:', dataToSave);
-                await dbHelpers.userFacts.upsert(userId, dataToSave);
-                console.log('✅ Cycle data saved to database successfully');
-            } catch (e) {
-                console.error('❌ Failed to save cycle data to database:', e);
-                console.warn('Cycle data saved locally, database sync pending:', e);
-            }
+                    console.log('💾 Saving cycle data to database:', dataToSave);
+                    await dbHelpers.userFacts.upsert(userId, dataToSave);
+                    console.log('✅ Cycle data saved to database successfully');
+                } catch (e) {
+                    console.error('❌ Failed to save cycle data to database:', e);
+                }
+            })();
         }
 
         // Add menopause status to quizData
@@ -21505,11 +21542,11 @@ async function wizardNext() {
     // Validation for Step 4: Training Frequency & Days
     if(currentWizardStep === 4) {
         if (!wizardTrainingFrequency || wizardTrainingFrequency < 2) {
-            alert("Please select how many days you want to train.");
+            wizardAlert("Please select how many days you want to train.");
             return;
         }
         if (wizardSelectedDays.size !== wizardTrainingFrequency) {
-            alert(`Please select exactly ${wizardTrainingFrequency} training days.`);
+            wizardAlert(`Please select exactly ${wizardTrainingFrequency} training days.`);
             return;
         }
 
@@ -21535,7 +21572,7 @@ async function wizardNext() {
     // Validation for Step 5: Split Preference
     if(currentWizardStep === 5) {
         if (!wizardSplitPreference) {
-            alert("Please select your training split preference.");
+            wizardAlert("Please select your training split preference.");
             return;
         }
 
@@ -21598,16 +21635,21 @@ function wizardPrev() {
 let wizardCharacterColors = null;
 let wizardCharacterInitialized = false;
 
+let _charCustomRetries = 0;
 function initializeCharacterCustomization() {
     // Only initialize once
     if (wizardCharacterInitialized) {
         return;
     }
 
-    // Wait for CHARACTER_COLOR_OPTIONS to be available
+    // Wait for CHARACTER_COLOR_OPTIONS to be available (max 2 seconds / 10 retries)
     if (!window.CHARACTER_COLOR_OPTIONS) {
-        console.log('Waiting for CHARACTER_COLOR_OPTIONS to load...');
-        setTimeout(initializeCharacterCustomization, 100);
+        if (_charCustomRetries < 10) {
+            _charCustomRetries++;
+            setTimeout(initializeCharacterCustomization, 200);
+        } else {
+            console.warn('CHARACTER_COLOR_OPTIONS not available after 2s, using defaults');
+        }
         return;
     }
 
@@ -21900,7 +21942,7 @@ function selectTrainingFrequency(num) {
 
 function toggleTrainingDay(day) {
     if (!wizardTrainingFrequency) {
-        alert('Please select how many days you want to train first.');
+        wizardAlert('Please select how many days you want to train first.');
         return;
     }
 
@@ -21912,7 +21954,7 @@ function toggleTrainingDay(day) {
         btn.style.color = '#1a4d2e';
     } else {
         if (wizardSelectedDays.size >= wizardTrainingFrequency) {
-            alert(`You can only select ${wizardTrainingFrequency} days. Deselect one first.`);
+            wizardAlert(`You can only select ${wizardTrainingFrequency} days. Deselect one first.`);
             return;
         }
         wizardSelectedDays.add(day);
@@ -22066,90 +22108,47 @@ function renderWizardCalendarPreview() {
         'rest': { icon: '⏸️', name: 'Rest Day', desc: '' }
     };
 
-    // Clear container
-    container.innerHTML = '';
+    // Build all DOM in a DocumentFragment (single reflow instead of 35+ individual insertions)
+    const frag = document.createDocumentFragment();
 
     // Add instruction text
     const instruction = document.createElement('p');
-    instruction.style.textAlign = 'center';
-    instruction.style.fontSize = '13px';
-    instruction.style.color = '#666';
-    instruction.style.marginBottom = '12px';
+    instruction.style.cssText = 'text-align:center; font-size:13px; color:#666; margin-bottom:12px;';
     instruction.textContent = 'Tap any day to change the workout';
-    container.appendChild(instruction);
+    frag.appendChild(instruction);
 
     // Create day rows
     allDays.forEach((day, idx) => {
         const workout = wizardWorkoutCalendar[day] || 'rest';
-        const info = workoutInfo[workout] || { icon: '❓', name: 'Unknown', desc: '' };
+        const info = workoutInfo[workout] || { icon: '?', name: 'Unknown', desc: '' };
 
         const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.alignItems = 'center';
-        row.style.padding = '12px 0';
-        row.style.borderBottom = idx < 6 ? '1px solid #f0f0f0' : 'none';
-        row.style.cursor = 'pointer';
-        row.style.transition = 'background 0.2s';
-
-        // Hover effect
+        row.style.cssText = `display:flex; align-items:center; padding:12px 0; cursor:pointer; transition:background 0.2s;${idx < 6 ? ' border-bottom:1px solid #f0f0f0;' : ''}`;
         row.onmouseenter = () => { row.style.background = 'rgba(72, 134, 75, 0.05)'; };
         row.onmouseleave = () => { row.style.background = 'transparent'; };
 
-        // Day label
         const dayCol = document.createElement('div');
-        dayCol.style.width = '90px';
-        dayCol.style.fontWeight = '600';
-        dayCol.style.color = '#1a4d2e';
-        dayCol.style.fontSize = '13px';
+        dayCol.style.cssText = 'width:90px; font-weight:600; color:#1a4d2e; font-size:13px;';
         dayCol.textContent = dayLabels[idx];
 
-        // Workout info
         const workoutCol = document.createElement('div');
-        workoutCol.style.flex = '1';
-        workoutCol.style.display = 'flex';
-        workoutCol.style.alignItems = 'center';
-        workoutCol.style.gap = '10px';
+        workoutCol.style.cssText = 'flex:1; display:flex; align-items:center; gap:10px;';
 
         const icon = document.createElement('span');
         icon.style.fontSize = '18px';
         icon.textContent = info.icon;
 
         const workoutText = document.createElement('div');
-        const workoutName = document.createElement('div');
-        workoutName.style.fontWeight = '500';
-        workoutName.style.color = '#333';
-        workoutName.style.fontSize = '13px';
-        workoutName.textContent = info.name;
-        workoutText.appendChild(workoutName);
+        workoutText.innerHTML = `<div style="font-weight:500; color:#333; font-size:13px;">${info.name}</div>${info.desc ? `<div style="font-size:11px; color:#888;">${info.desc}</div>` : ''}`;
 
-        if (info.desc) {
-            const workoutDesc = document.createElement('div');
-            workoutDesc.style.fontSize = '11px';
-            workoutDesc.style.color = '#888';
-            workoutDesc.textContent = info.desc;
-            workoutText.appendChild(workoutDesc);
-        }
-
-        // Edit indicator (down arrow)
         const editIcon = document.createElement('span');
-        editIcon.style.marginLeft = 'auto';
-        editIcon.style.color = '#48864B';
-        editIcon.style.fontSize = '14px';
+        editIcon.style.cssText = 'margin-left:auto; color:#48864B; font-size:14px;';
         editIcon.innerHTML = '&#9662;';
 
-        workoutCol.appendChild(icon);
-        workoutCol.appendChild(workoutText);
-        workoutCol.appendChild(editIcon);
-
-        row.appendChild(dayCol);
-        row.appendChild(workoutCol);
-
-        // Click handler to show dropdown
-        row.onclick = () => {
-            showWizardWorkoutDropdown(day, dayLabels[idx], renderWizardCalendarPreview);
-        };
-
-        container.appendChild(row);
+        workoutCol.append(icon, workoutText, editIcon);
+        row.append(dayCol, workoutCol);
+        row.onclick = () => { showWizardWorkoutDropdown(day, dayLabels[idx], renderWizardCalendarPreview); };
+        frag.appendChild(row);
     });
 
     // Add summary
@@ -22164,15 +22163,13 @@ function renderWizardCalendarPreview() {
     ).length;
 
     const summary = document.createElement('div');
-    summary.style.textAlign = 'center';
-    summary.style.marginTop = '12px';
-    summary.style.padding = '10px';
-    summary.style.background = 'rgba(72,134,75,0.1)';
-    summary.style.borderRadius = '8px';
-    summary.style.fontSize = '13px';
-    summary.style.color = '#1a4d2e';
+    summary.style.cssText = 'text-align:center; margin-top:12px; padding:10px; background:rgba(72,134,75,0.1); border-radius:8px; font-size:13px; color:#1a4d2e;';
     summary.innerHTML = `<strong>${trainingCount} training</strong> · <strong>${yogaCount} yoga</strong> · <strong>${restCount} rest</strong>`;
-    container.appendChild(summary);
+    frag.appendChild(summary);
+
+    // Single DOM write — replaces all previous content
+    container.innerHTML = '';
+    container.appendChild(frag);
 }
 
 function openCalendarEditor() {
@@ -22402,7 +22399,13 @@ function showWizardWorkoutDropdown(day, dayLabel, updateCallback) {
 async function finishOnboarding() {
     localStorage.setItem('onboardingComplete', 'true');
     localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
-    document.getElementById('onboarding-wizard').style.display = 'none';
+    window._onboardingWizardPending = false;
+    const wizardEl = document.getElementById('onboarding-wizard');
+    if (wizardEl) {
+        wizardEl.style.display = 'none';
+        wizardEl.style.opacity = '';
+        wizardEl.classList.remove('active');
+    }
 
     // Skip weigh-in prompts on first day - user already entered weight in wizard step 2
     localStorage.setItem('lastWeighInPromptDate', new Date().toDateString());
@@ -22568,9 +22571,13 @@ async function finishOnboarding() {
 }
 
 async function closeWizardManually() {
-     document.getElementById('onboarding-wizard').style.display = 'none';
-     // Warning: if they close manually without finishing, we might show it again next time?
-     // For now, let's assume they want to skip it.
+     window._onboardingWizardPending = false;
+     const wizardEl = document.getElementById('onboarding-wizard');
+     if (wizardEl) {
+         wizardEl.style.display = 'none';
+         wizardEl.style.opacity = '';
+         wizardEl.classList.remove('active');
+     }
      localStorage.setItem('onboardingComplete', 'true');
      localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
 
@@ -29954,7 +29961,7 @@ function openAsClient() {
         <div class="wizard-content" style="flex: 1; padding: 25px; overflow-y: auto; min-height: 0;">
 
             <!-- SLIDE 1: GENDER SELECTION -->
-            <div class="wizard-slide active" id="slide-1">
+            <div class="wizard-slide slide-active" id="slide-1">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">🌟</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Welcome to Your Journey</h3>
                 <p style="text-align:center; color:#666; margin-bottom:30px;">Select your program to get started:</p>
@@ -30230,7 +30237,8 @@ function openAsClient() {
                 <div style="width: 100%; height: 320px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative;">
                     <model-viewer
                         id="wizard-fitgotchi-preview"
-                        src="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb"
+                        data-lazy-src="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb"
+                        loading="lazy"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -30392,7 +30400,8 @@ function openAsClient() {
                 <div style="width: 100%; height: 240px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%); border-radius: 12px; overflow: hidden; margin-bottom: 12px; position: relative;">
                     <model-viewer
                         id="wizard-arny-preview"
-                        src="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb"
+                        data-lazy-src="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb"
+                        loading="lazy"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -30498,7 +30507,8 @@ function openAsClient() {
                 <div id="wizard-character-preview" style="width: 100%; height: 360px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; overflow: hidden; margin-bottom: 15px; position: relative;">
                     <model-viewer
                         id="wizard-preview-model"
-                        src="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb"
+                        data-lazy-src="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb"
+                        loading="lazy"
                         camera-controls
                         disable-zoom
                         disable-pan
@@ -30646,7 +30656,21 @@ function openAsClient() {
 <style>
 .wizard-progress .dot { width: 8px; height: 8px; background: #e2e8f0; border-radius: 50%; transition: all 0.3s; }
 .wizard-progress .dot.active { background: var(--primary); width: 20px; border-radius: 10px; }
-.wizard-slide { animation: fadeIn 0.4s ease; }
+.wizard-slide {
+    display: none;
+    opacity: 0;
+    transform: translateX(12px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.wizard-slide.slide-active {
+    display: block;
+    opacity: 1;
+    transform: translateX(0);
+}
+.wizard-slide.slide-exit {
+    opacity: 0;
+    transform: translateX(-12px);
+}
 
 /* Gender selection button styles */
 .gender-select-btn:hover {
@@ -31157,46 +31181,15 @@ window.submitCoachMessage = async function() {
 
 
 <script>
-    // Initialize Onboarding
-    function initOnboarding() {
-        // Check if user has seen onboarding (check both keys for backwards compatibility)
-        const hasSeenOnboarding = localStorage.getItem('plantbased_onboarding_complete') || localStorage.getItem('onboardingComplete');
+    // Onboarding is now fully handled by checkAndTriggerOnboarding() -> initOnboardingWizard()
+    // which runs during the auth callback. No separate page-load trigger needed.
 
-        if (!hasSeenOnboarding) {
-            // Show modal immediately
-            setTimeout(() => {
-                const overlay = document.getElementById('onboarding-overlay');
-                if(overlay) {
-                    overlay.style.display = 'flex';
-                    // Trigger reflow
-                    overlay.offsetHeight;
-                    overlay.classList.add('active');
-                }
-            }, 100); // Reduced delay for instant feel
-        }
-    }
-
-    function completeOnboarding() {
-        const overlay = document.getElementById('onboarding-overlay');
-        overlay.classList.remove('active');
-
-        // Wait for animation
-        setTimeout(() => {
-            overlay.style.display = 'none';
-            // Set flags in localStorage (both keys for consistency)
-            localStorage.setItem('plantbased_onboarding_complete', 'true');
-            localStorage.setItem('onboardingComplete', 'true');
-        }, 400);
-    }
-    
-    // Run initialization
+    // Run community feed initialization
     if(document.readyState === 'complete') {
         loadCommunityFeed();
-        initOnboarding();
     } else {
         window.addEventListener('load', () => {
             loadCommunityFeed();
-            initOnboarding();
         });
     }
 </script>
@@ -38286,9 +38279,10 @@ window.submitDailyCycleSync = submitDailyCycleSync;
 async function checkAndShowWeighInModal() {
     if (!window.currentUser) return;
 
-    // Don't show weigh-in if onboarding wizard is still active
+    // Don't show weigh-in if onboarding wizard is active or pending
+    if (window._onboardingWizardPending) return;
     const wizard = document.getElementById('onboarding-wizard');
-    if (wizard && wizard.style.display !== 'none' && wizard.classList.contains('active')) return;
+    if (wizard && wizard.style.display !== 'none') return;
 
     // Check if we've already prompted today
     const lastPromptDate = localStorage.getItem('lastWeighInPromptDate');
