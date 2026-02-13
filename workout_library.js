@@ -6795,6 +6795,949 @@ const WORKOUT_LIBRARY = {
         ]
       }
     }
+  },
+
+  // ====================
+  // REHABILITATION
+  // ====================
+  "rehab": {
+    name: "Rehabilitation",
+    icon: "🏥",
+    description: "Guided rehab workouts for injury recovery and pain relief",
+    subcategories: {
+
+      // SHOULDER REHAB
+      "shoulder": {
+        name: "Shoulder Rehab",
+        description: "Rotator cuff, impingement, and shoulder mobility recovery",
+        workouts: [
+          {
+            id: "rehab-shoulder-1",
+            name: "Shoulder Rehab 1",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Arm Circles", sets: 2, reps: "30 sec each direction", desc: "Gentle warm-up" },
+              { name: "Wall Angels", sets: 3, reps: "10 slow", desc: "Shoulder mobility and scapular control" },
+              { name: "Scapular Push Up", sets: 3, reps: "10 slow", desc: "Scapular stability activation" },
+              { name: "Prone Cobra Hold", sets: 3, reps: "20 sec", desc: "Upper back and posterior shoulder" },
+              { name: "Cross Body Shoulder Stretch", sets: 1, reps: "1 min each", desc: "Posterior capsule stretch" }
+            ]
+          },
+          {
+            id: "rehab-shoulder-2",
+            name: "Shoulder Rehab 2",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat", "Light Resistance Band"],
+            exercises: [
+              { name: "Shoulder Rolls", sets: 2, reps: "1 min", desc: "Joint warm-up" },
+              { name: "Mini Band External Rotation", sets: 3, reps: "15", desc: "Rotator cuff activation" },
+              { name: "Mini Band Pull Aparts", sets: 3, reps: "15", desc: "Rear delt and rhomboid activation" },
+              { name: "Wall Angels", sets: 3, reps: "10 slow", desc: "Overhead range of motion" },
+              { name: "Shoulder Stretch", sets: 1, reps: "1 min each", desc: "Gentle shoulder release" }
+            ]
+          },
+          {
+            id: "rehab-shoulder-3",
+            name: "Shoulder Rehab 3",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat", "Light Resistance Band"],
+            exercises: [
+              { name: "Yoga - Cat Cow", sets: 1, reps: "2 min", desc: "Thoracic warm-up" },
+              { name: "Band Pull Apart Slow", sets: 3, reps: "15 slow", desc: "Upper back activation" },
+              { name: "Face Pull Slow", sets: 3, reps: "12 slow", desc: "Rear delt and external rotation" },
+              { name: "Yoga - Thread the Needle", sets: 1, reps: "1 min each", desc: "Thoracic rotation and shoulder release" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Lat and shoulder stretch" }
+            ]
+          },
+          {
+            id: "rehab-shoulder-4",
+            name: "Shoulder Rehab 4",
+            duration: "25 min",
+            difficulty: "Beginner",
+            equipment: ["Mat", "Light Resistance Band"],
+            exercises: [
+              { name: "Arm Circles", sets: 2, reps: "30 sec each direction", desc: "Circulation warm-up" },
+              { name: "Mini Band External Rotation", sets: 3, reps: "15", desc: "Infraspinatus activation" },
+              { name: "Scapular Push Up", sets: 3, reps: "12 slow", desc: "Serratus anterior strengthening" },
+              { name: "Mini Band Bent Over Y's", sets: 3, reps: "12", desc: "Lower trap activation" },
+              { name: "Prone Cobra Hold", sets: 3, reps: "25 sec", desc: "Posterior chain endurance" },
+              { name: "Upper Trap Stretch", sets: 1, reps: "1 min each", desc: "Upper trap release" }
+            ]
+          },
+          {
+            id: "rehab-shoulder-5",
+            name: "Shoulder Rehab 5",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Resistance Band"],
+            exercises: [
+              { name: "Shoulder Rolls", sets: 2, reps: "1 min", desc: "Warm-up" },
+              { name: "Mini Band Pull Aparts", sets: 3, reps: "20", desc: "Scapular retraction" },
+              { name: "SuperBand Face Pulls", sets: 3, reps: "15", desc: "External rotation under load" },
+              { name: "Wall Angels", sets: 3, reps: "12 slow", desc: "Full ROM overhead" },
+              { name: "Band Pull Apart Slow", sets: 3, reps: "15 slow", desc: "Endurance hold" },
+              { name: "Cross Body Shoulder Stretch", sets: 1, reps: "1 min each", desc: "Posterior capsule mobility" }
+            ]
+          },
+          {
+            id: "rehab-shoulder-6",
+            name: "Shoulder Rehab 6",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Resistance Band", "Light Dumbbells"],
+            exercises: [
+              { name: "Yoga - Cat Cow", sets: 1, reps: "2 min", desc: "Spinal warm-up" },
+              { name: "Mini Band External Rotation", sets: 3, reps: "15", desc: "Cuff prehab" },
+              { name: "Dumbbell Lateral Raise", sets: 3, reps: "12 light", desc: "Deltoid activation with control" },
+              { name: "Dumbbell Reverse Fly", sets: 3, reps: "12 light", desc: "Posterior delt strengthening" },
+              { name: "Scapular Push Up", sets: 3, reps: "12", desc: "Scapular control" },
+              { name: "Yoga - Thread the Needle", sets: 1, reps: "1 min each", desc: "Thoracic release" }
+            ]
+          },
+          {
+            id: "rehab-shoulder-7",
+            name: "Shoulder Rehab 7",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Resistance Band"],
+            exercises: [
+              { name: "Arm Circles", sets: 2, reps: "30 sec each direction", desc: "Warm-up" },
+              { name: "Face Pull Slow", sets: 3, reps: "15 slow", desc: "Rear delt and rotator cuff" },
+              { name: "Mini Band Bent Over Y's", sets: 3, reps: "15", desc: "Lower trap strengthening" },
+              { name: "Mini Band Pull Aparts", sets: 3, reps: "20", desc: "Scapular endurance" },
+              { name: "Prone Cobra Hold", sets: 4, reps: "25 sec", desc: "Upper back endurance" },
+              { name: "Shoulder Stretch", sets: 1, reps: "1 min each", desc: "Cool-down stretch" }
+            ]
+          },
+          {
+            id: "rehab-shoulder-8",
+            name: "Shoulder Rehab 8",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Resistance Band", "Light Dumbbells"],
+            exercises: [
+              { name: "Shoulder Rolls", sets: 2, reps: "1 min", desc: "Joint warm-up" },
+              { name: "Mini Band External Rotation", sets: 3, reps: "15", desc: "Cuff activation" },
+              { name: "Band Alternating Front Raise", sets: 3, reps: "10 each", desc: "Anterior delt control" },
+              { name: "Band Lateral Raise", sets: 3, reps: "15", desc: "Side delt strengthening" },
+              { name: "Wall Angels", sets: 3, reps: "12 slow", desc: "Overhead mobility" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Shoulder and lat stretch" }
+            ]
+          },
+          {
+            id: "rehab-shoulder-9",
+            name: "Shoulder Rehab 9",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Resistance Band", "Light Dumbbells"],
+            exercises: [
+              { name: "Yoga - Cat Cow", sets: 1, reps: "2 min", desc: "Thoracic warm-up" },
+              { name: "SuperBand Face Pulls", sets: 3, reps: "15", desc: "Scapular retraction and external rotation" },
+              { name: "Dumbbell Lateral Raise", sets: 3, reps: "12 light", desc: "Controlled delt work" },
+              { name: "Scapular Push Up", sets: 3, reps: "15", desc: "Advanced scapular control" },
+              { name: "Dumbbell Reverse Fly", sets: 3, reps: "12 light", desc: "Posterior chain balance" },
+              { name: "Upper Trap Stretch", sets: 1, reps: "1 min each", desc: "Trap and neck release" }
+            ]
+          },
+          {
+            id: "rehab-shoulder-10",
+            name: "Shoulder Rehab 10",
+            duration: "30 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Resistance Band", "Light Dumbbells"],
+            exercises: [
+              { name: "Arm Circles", sets: 2, reps: "30 sec each direction", desc: "Full warm-up" },
+              { name: "Mini Band External Rotation", sets: 3, reps: "15", desc: "Rotator cuff" },
+              { name: "Mini Band Pull Aparts", sets: 3, reps: "20", desc: "Retraction endurance" },
+              { name: "Dumbbell Overhead Press", sets: 3, reps: "10 light", desc: "Overhead strengthening" },
+              { name: "Mini Band Bent Over Y's", sets: 3, reps: "15", desc: "Lower trap endurance" },
+              { name: "Yoga - Thread the Needle", sets: 1, reps: "1 min each", desc: "Thoracic rotation cool-down" }
+            ]
+          }
+        ]
+      },
+
+      // KNEE REHAB
+      "knee": {
+        name: "Knee Rehab",
+        description: "ACL, meniscus, patella, and general knee recovery",
+        workouts: [
+          {
+            id: "rehab-knee-1",
+            name: "Knee Rehab 1",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Ankle Circles", sets: 2, reps: "1 min each", desc: "Lower limb warm-up" },
+              { name: "Glute Bridge Hold", sets: 3, reps: "30 sec", desc: "Glute activation without knee stress" },
+              { name: "Side Lying Leg Raise", sets: 3, reps: "12 each", desc: "Hip abductor strengthening" },
+              { name: "Wall Sit Light", sets: 3, reps: "20 sec", desc: "Isometric quad activation" },
+              { name: "Quad Stretch Standing", sets: 1, reps: "1 min each", desc: "Quad flexibility" }
+            ]
+          },
+          {
+            id: "rehab-knee-2",
+            name: "Knee Rehab 2",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Hip Circles", sets: 2, reps: "1 min each", desc: "Joint warm-up" },
+              { name: "Mini Band Clamshell", sets: 3, reps: "15 each", desc: "Hip external rotation and glute med" },
+              { name: "Glute Bridge Hold", sets: 3, reps: "30 sec", desc: "Posterior chain activation" },
+              { name: "Wall Sit Light", sets: 3, reps: "25 sec", desc: "Quad isometric hold" },
+              { name: "Calf Raises Slow", sets: 3, reps: "15 slow", desc: "Calf and ankle stability" }
+            ]
+          },
+          {
+            id: "rehab-knee-3",
+            name: "Knee Rehab 3",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Ankle Circles", sets: 2, reps: "1 min each", desc: "Mobility warm-up" },
+              { name: "Mini Band Fire Hydrants", sets: 3, reps: "12 each", desc: "Hip abductor and rotator" },
+              { name: "Mini Band Glute Kickback", sets: 3, reps: "12 each", desc: "Glute max activation" },
+              { name: "Bird Dog", sets: 3, reps: "8 each slow", desc: "Core stability and hip extension" },
+              { name: "Figure Four Stretch", sets: 1, reps: "1 min each", desc: "Hip and glute release" }
+            ]
+          },
+          {
+            id: "rehab-knee-4",
+            name: "Knee Rehab 4",
+            duration: "25 min",
+            difficulty: "Beginner",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Standing Hip Circles", sets: 2, reps: "1 min each", desc: "Hip warm-up" },
+              { name: "Mini Band Squat", sets: 3, reps: "12 slow", desc: "Controlled squat with abduction cue" },
+              { name: "Mini Band Clamshell", sets: 3, reps: "15 each", desc: "Glute med strengthening" },
+              { name: "Wall Sit Light", sets: 3, reps: "30 sec", desc: "Progressive quad endurance" },
+              { name: "Calf Stretch", sets: 1, reps: "1 min each", desc: "Calf flexibility" },
+              { name: "Quad Stretch Standing", sets: 1, reps: "1 min each", desc: "Quad flexibility" }
+            ]
+          },
+          {
+            id: "rehab-knee-5",
+            name: "Knee Rehab 5",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Hip Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Mini Band Squat", sets: 3, reps: "15", desc: "Quad and glute co-activation" },
+              { name: "SuperBand Glute Bridge", sets: 3, reps: "15", desc: "Loaded glute bridge" },
+              { name: "Mini Band Side Lying Hip Abduction", sets: 3, reps: "12 each", desc: "Hip stability" },
+              { name: "Step Up", sets: 3, reps: "10 each", desc: "Functional single leg strength" },
+              { name: "Calf Raises Slow", sets: 3, reps: "15 slow", desc: "Ankle stability" }
+            ]
+          },
+          {
+            id: "rehab-knee-6",
+            name: "Knee Rehab 6",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Ankle Circles", sets: 2, reps: "1 min each", desc: "Lower limb warm-up" },
+              { name: "Mini Band Wall Sit with Abductions", sets: 3, reps: "30 sec", desc: "Quad and glute med isometric" },
+              { name: "Mini Band Fire Hydrants", sets: 3, reps: "15 each", desc: "Hip rotator strength" },
+              { name: "Mini Band Single Leg Glute Bridge", sets: 3, reps: "10 each", desc: "Unilateral glute strength" },
+              { name: "Band Reverse Lunge", sets: 3, reps: "10 each", desc: "Controlled lunge pattern" },
+              { name: "Figure Four Stretch", sets: 1, reps: "1 min each", desc: "Hip release" }
+            ]
+          },
+          {
+            id: "rehab-knee-7",
+            name: "Knee Rehab 7",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Standing Hip Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Resistance Band Squat", sets: 3, reps: "12", desc: "Squat patterning with resistance" },
+              { name: "Mini Band Clamshell", sets: 3, reps: "20 each", desc: "Glute med endurance" },
+              { name: "Step Up", sets: 3, reps: "12 each", desc: "Progressive step-up" },
+              { name: "Mini Band Frog Pumps", sets: 3, reps: "15", desc: "Glute activation" },
+              { name: "Quad Stretch Standing", sets: 1, reps: "1 min each", desc: "Quad flexibility" }
+            ]
+          },
+          {
+            id: "rehab-knee-8",
+            name: "Knee Rehab 8",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band", "Light Dumbbells"],
+            exercises: [
+              { name: "Hip Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Dumbbell Glute Bridge", sets: 3, reps: "12", desc: "Loaded glute bridge" },
+              { name: "Mini Band Squat", sets: 3, reps: "15", desc: "Controlled squat" },
+              { name: "Dumbbell Step Up", sets: 3, reps: "10 each", desc: "Weighted step-up" },
+              { name: "Mini Band Standing Hip Abduction", sets: 3, reps: "12 each", desc: "Standing hip stability" },
+              { name: "Calf Stretch", sets: 1, reps: "1 min each", desc: "Calf release" }
+            ]
+          },
+          {
+            id: "rehab-knee-9",
+            name: "Knee Rehab 9",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band", "Light Dumbbells"],
+            exercises: [
+              { name: "Ankle Circles", sets: 2, reps: "1 min each", desc: "Mobility warm-up" },
+              { name: "Band Split Squat", sets: 3, reps: "10 each", desc: "Single leg squat pattern" },
+              { name: "Dumbbell Glute Bridge", sets: 3, reps: "15", desc: "Posterior chain strength" },
+              { name: "Mini Band Donkey Kicks", sets: 3, reps: "12 each", desc: "Glute isolation" },
+              { name: "Single Leg Calf Raise", sets: 3, reps: "12 each", desc: "Unilateral calf strength" },
+              { name: "Figure Four Stretch", sets: 1, reps: "1 min each", desc: "Hip and glute release" }
+            ]
+          },
+          {
+            id: "rehab-knee-10",
+            name: "Knee Rehab 10",
+            duration: "30 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band", "Light Dumbbells"],
+            exercises: [
+              { name: "Standing Hip Circles", sets: 2, reps: "1 min each", desc: "Full warm-up" },
+              { name: "Dumbbell Step Up", sets: 3, reps: "12 each", desc: "Functional strength" },
+              { name: "Dumbbell Reverse Lunge", sets: 3, reps: "10 each", desc: "Controlled lunge" },
+              { name: "Mini Band Wall Sit with Abductions", sets: 3, reps: "35 sec", desc: "Isometric endurance" },
+              { name: "Dumbbell Calf Raise", sets: 3, reps: "15", desc: "Calf strengthening" },
+              { name: "Quad Stretch Standing", sets: 1, reps: "1 min each", desc: "Cool-down stretch" }
+            ]
+          }
+        ]
+      },
+
+      // LOWER BACK REHAB
+      "lower_back": {
+        name: "Lower Back Rehab",
+        description: "Core stability, spinal mobility, and lower back pain relief",
+        workouts: [
+          {
+            id: "rehab-lowerback-1",
+            name: "Lower Back Rehab 1",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Yoga - Cat Cow", sets: 1, reps: "2 min", desc: "Gentle spinal mobilization" },
+              { name: "Dead Bug", sets: 3, reps: "8 each slow", desc: "Core activation without back stress" },
+              { name: "Glute Bridge Hold", sets: 3, reps: "30 sec", desc: "Glute activation and lumbar support" },
+              { name: "Knees to Chest", sets: 1, reps: "2 min", desc: "Lower back decompression" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Spinal release" }
+            ]
+          },
+          {
+            id: "rehab-lowerback-2",
+            name: "Lower Back Rehab 2",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Yoga - Cat Cow", sets: 1, reps: "2 min", desc: "Spinal warm-up" },
+              { name: "Bird Dog", sets: 3, reps: "8 each slow", desc: "Core and posterior chain stability" },
+              { name: "Yoga - Sphinx Pose", sets: 1, reps: "2 min", desc: "Gentle lumbar extension" },
+              { name: "Yoga - Supine Twist", sets: 1, reps: "2 min each", desc: "Spinal rotation and release" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Restful forward fold" }
+            ]
+          },
+          {
+            id: "rehab-lowerback-3",
+            name: "Lower Back Rehab 3",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Hip Circles", sets: 2, reps: "1 min each", desc: "Hip and pelvis warm-up" },
+              { name: "Dead Bug", sets: 3, reps: "10 each slow", desc: "Anti-extension core work" },
+              { name: "Side Lying Leg Raise", sets: 3, reps: "10 each", desc: "Hip abductor and lateral stability" },
+              { name: "Glute Bridge Hold", sets: 3, reps: "30 sec", desc: "Posterior chain activation" },
+              { name: "Yoga - Happy Baby", sets: 1, reps: "2 min", desc: "Lower back and hip release" }
+            ]
+          },
+          {
+            id: "rehab-lowerback-4",
+            name: "Lower Back Rehab 4",
+            duration: "25 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Yoga - Cat Cow", sets: 1, reps: "2 min", desc: "Spinal mobilization" },
+              { name: "Bird Dog", sets: 3, reps: "10 each slow", desc: "Cross-body stability" },
+              { name: "Dead Bug", sets: 3, reps: "10 each slow", desc: "Deep core engagement" },
+              { name: "Yoga - Cobra Pose", sets: 3, reps: "30 sec", desc: "Extension strengthening" },
+              { name: "Half Kneeling Hip Flexor Stretch", sets: 1, reps: "1 min each", desc: "Hip flexor release for lumbar relief" },
+              { name: "Knees to Chest", sets: 1, reps: "2 min", desc: "Spinal decompression" }
+            ]
+          },
+          {
+            id: "rehab-lowerback-5",
+            name: "Lower Back Rehab 5",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Hip Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Bird Dog", sets: 3, reps: "10 each", desc: "Core stability" },
+              { name: "Glute Bridge Hold", sets: 4, reps: "30 sec", desc: "Glute endurance" },
+              { name: "Prone Y Raise", sets: 3, reps: "10 slow", desc: "Upper back and posterior chain" },
+              { name: "Yoga - Pigeon Pose", sets: 1, reps: "2 min each", desc: "Hip external rotation and piriformis release" },
+              { name: "Yoga - Supine Twist", sets: 1, reps: "2 min each", desc: "Spinal rotation" }
+            ]
+          },
+          {
+            id: "rehab-lowerback-6",
+            name: "Lower Back Rehab 6",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Yoga - Cat Cow", sets: 1, reps: "2 min", desc: "Spinal warm-up" },
+              { name: "Dead Bug", sets: 3, reps: "12 each", desc: "Progressive core work" },
+              { name: "Mini Band Clamshell", sets: 3, reps: "15 each", desc: "Hip stability for lumbar support" },
+              { name: "Mini Band Glute Kickback", sets: 3, reps: "12 each", desc: "Glute strengthening" },
+              { name: "Yoga - Sphinx Pose", sets: 1, reps: "2 min", desc: "Gentle extension" },
+              { name: "Seated Forward Fold", sets: 1, reps: "2 min", desc: "Posterior chain stretch" }
+            ]
+          },
+          {
+            id: "rehab-lowerback-7",
+            name: "Lower Back Rehab 7",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Standing Hip Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Bird Dog", sets: 3, reps: "12 each", desc: "Advanced core stability" },
+              { name: "SuperBand Glute Bridge", sets: 3, reps: "12", desc: "Loaded glute activation" },
+              { name: "Side Lying Leg Raise", sets: 3, reps: "12 each", desc: "Lateral hip strength" },
+              { name: "Half Kneeling Hip Flexor Stretch", sets: 1, reps: "1 min each", desc: "Anterior chain release" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Cool-down" }
+            ]
+          },
+          {
+            id: "rehab-lowerback-8",
+            name: "Lower Back Rehab 8",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Dumbbells"],
+            exercises: [
+              { name: "Yoga - Cat Cow", sets: 1, reps: "2 min", desc: "Spinal warm-up" },
+              { name: "Dead Bug", sets: 3, reps: "12 each", desc: "Core endurance" },
+              { name: "Dumbbell Glute Bridge", sets: 3, reps: "12", desc: "Weighted glute bridge" },
+              { name: "Prone Y Raise", sets: 3, reps: "12 slow", desc: "Upper back strength" },
+              { name: "Yoga - Pigeon Pose", sets: 1, reps: "2 min each", desc: "Piriformis and hip release" },
+              { name: "Knees to Chest", sets: 1, reps: "2 min", desc: "Decompression" }
+            ]
+          },
+          {
+            id: "rehab-lowerback-9",
+            name: "Lower Back Rehab 9",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Hip Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Bird Dog", sets: 4, reps: "10 each", desc: "Core endurance" },
+              { name: "Mini Band Fire Hydrants", sets: 3, reps: "12 each", desc: "Hip rotator strength" },
+              { name: "Mini Band Single Leg Glute Bridge", sets: 3, reps: "10 each", desc: "Unilateral glute work" },
+              { name: "Yoga - Cobra Pose", sets: 3, reps: "30 sec", desc: "Extension mobility" },
+              { name: "Yoga - Supine Twist", sets: 1, reps: "2 min each", desc: "Spinal release" }
+            ]
+          },
+          {
+            id: "rehab-lowerback-10",
+            name: "Lower Back Rehab 10",
+            duration: "30 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band", "Light Dumbbells"],
+            exercises: [
+              { name: "Yoga - Cat Cow", sets: 1, reps: "2 min", desc: "Full spinal warm-up" },
+              { name: "Dead Bug", sets: 3, reps: "12 each", desc: "Core stabilization" },
+              { name: "Bird Dog", sets: 3, reps: "12 each", desc: "Cross-body coordination" },
+              { name: "Dumbbell Glute Bridge", sets: 3, reps: "15", desc: "Glute endurance" },
+              { name: "Prone Y Raise", sets: 3, reps: "12", desc: "Posterior chain strengthening" },
+              { name: "Half Kneeling Hip Flexor Stretch", sets: 1, reps: "1 min each", desc: "Hip flexor release" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Full cool-down" }
+            ]
+          }
+        ]
+      },
+
+      // HIP REHAB
+      "hip": {
+        name: "Hip Rehab",
+        description: "Hip mobility, labral recovery, and hip flexor rehabilitation",
+        workouts: [
+          {
+            id: "rehab-hip-1",
+            name: "Hip Rehab 1",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Hip Circles", sets: 2, reps: "1 min each", desc: "Gentle hip warm-up" },
+              { name: "Glute Bridge Hold", sets: 3, reps: "30 sec", desc: "Glute activation" },
+              { name: "Yoga - Reclined Butterfly", sets: 1, reps: "2 min", desc: "Passive hip opening" },
+              { name: "Knees to Chest", sets: 1, reps: "2 min", desc: "Hip flexion and back relief" },
+              { name: "Yoga - Happy Baby", sets: 1, reps: "2 min", desc: "Hip release" }
+            ]
+          },
+          {
+            id: "rehab-hip-2",
+            name: "Hip Rehab 2",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Standing Hip Circles", sets: 2, reps: "1 min each", desc: "Standing hip warm-up" },
+              { name: "Side Lying Leg Raise", sets: 3, reps: "10 each", desc: "Hip abductor activation" },
+              { name: "Yoga - Low Lunge", sets: 1, reps: "1 min each", desc: "Hip flexor stretch" },
+              { name: "Figure Four Stretch", sets: 1, reps: "1 min each", desc: "Piriformis stretch" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Rest and release" }
+            ]
+          },
+          {
+            id: "rehab-hip-3",
+            name: "Hip Rehab 3",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Hip Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Mini Band Clamshell", sets: 3, reps: "12 each", desc: "External rotation activation" },
+              { name: "Mini Band Fire Hydrants", sets: 3, reps: "10 each", desc: "Hip abduction and rotation" },
+              { name: "Yoga - Pigeon Pose", sets: 1, reps: "2 min each", desc: "Deep hip opener" },
+              { name: "Yoga - Reclined Butterfly", sets: 1, reps: "2 min", desc: "Passive adductor stretch" }
+            ]
+          },
+          {
+            id: "rehab-hip-4",
+            name: "Hip Rehab 4",
+            duration: "25 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Ankle Circles", sets: 2, reps: "1 min each", desc: "Lower limb warm-up" },
+              { name: "Glute Bridge Hold", sets: 3, reps: "30 sec", desc: "Glute and hip extension" },
+              { name: "Bird Dog", sets: 3, reps: "8 each slow", desc: "Hip extension with stability" },
+              { name: "Half Kneeling Hip Flexor Stretch", sets: 1, reps: "2 min each", desc: "Deep hip flexor release" },
+              { name: "Yoga - Dragon Pose", sets: 1, reps: "2 min each", desc: "Hip flexor and quad stretch" },
+              { name: "Yoga - Supine Twist", sets: 1, reps: "2 min each", desc: "Spinal and hip release" }
+            ]
+          },
+          {
+            id: "rehab-hip-5",
+            name: "Hip Rehab 5",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Standing Hip Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Mini Band Clamshell", sets: 3, reps: "15 each", desc: "Glute med strengthening" },
+              { name: "Mini Band Glute Kickback", sets: 3, reps: "12 each", desc: "Glute max activation" },
+              { name: "Mini Band Side Lying Hip Abduction", sets: 3, reps: "12 each", desc: "Hip abductor endurance" },
+              { name: "Yoga - Lizard Pose", sets: 1, reps: "1 min each", desc: "Deep hip flexor stretch" },
+              { name: "Yoga - Happy Baby", sets: 1, reps: "2 min", desc: "Hip release" }
+            ]
+          },
+          {
+            id: "rehab-hip-6",
+            name: "Hip Rehab 6",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Hip Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "SuperBand Glute Bridge", sets: 3, reps: "12", desc: "Loaded hip extension" },
+              { name: "Mini Band Fire Hydrants", sets: 3, reps: "15 each", desc: "Rotator strengthening" },
+              { name: "Mini Band Standing Hip Abduction", sets: 3, reps: "12 each", desc: "Standing stability" },
+              { name: "Frog Stretch", sets: 1, reps: "2 min", desc: "Adductor stretch" },
+              { name: "Figure Four Stretch", sets: 1, reps: "1 min each", desc: "Piriformis release" }
+            ]
+          },
+          {
+            id: "rehab-hip-7",
+            name: "Hip Rehab 7",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Standing Hip Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Mini Band Squat", sets: 3, reps: "12 slow", desc: "Controlled hip flexion and extension" },
+              { name: "Mini Band Single Leg Glute Bridge", sets: 3, reps: "10 each", desc: "Unilateral hip strength" },
+              { name: "Mini Band Frog Pumps", sets: 3, reps: "15", desc: "Glute activation in external rotation" },
+              { name: "Yoga - Pigeon Pose", sets: 1, reps: "2 min each", desc: "Deep external rotation" },
+              { name: "Couch Stretch", sets: 1, reps: "1 min each", desc: "Quad and hip flexor release" }
+            ]
+          },
+          {
+            id: "rehab-hip-8",
+            name: "Hip Rehab 8",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band", "Light Dumbbells"],
+            exercises: [
+              { name: "Hip Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Dumbbell Glute Bridge", sets: 3, reps: "12", desc: "Weighted glute bridge" },
+              { name: "Mini Band Clamshell", sets: 3, reps: "20 each", desc: "Glute med endurance" },
+              { name: "Step Up", sets: 3, reps: "10 each", desc: "Functional hip loading" },
+              { name: "Half Kneeling Hip Flexor Stretch", sets: 1, reps: "2 min each", desc: "Deep hip flexor release" },
+              { name: "Yoga - Supine Twist", sets: 1, reps: "2 min each", desc: "Hip and spine release" }
+            ]
+          },
+          {
+            id: "rehab-hip-9",
+            name: "Hip Rehab 9",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Controlled Articular Rotations Hip", sets: 2, reps: "5 each way", desc: "Hip CARs warm-up" },
+              { name: "Mini Band Donkey Kicks", sets: 3, reps: "12 each", desc: "Glute isolation" },
+              { name: "Mini Band Single Leg Deadlift", sets: 3, reps: "8 each", desc: "Balance and hamstring" },
+              { name: "Mini Band Side Lying Hip Abduction", sets: 3, reps: "15 each", desc: "Abductor endurance" },
+              { name: "Yoga - Dragon Pose", sets: 1, reps: "2 min each", desc: "Hip flexor stretch" },
+              { name: "Yoga - Reclined Butterfly", sets: 1, reps: "2 min", desc: "Passive hip opening" }
+            ]
+          },
+          {
+            id: "rehab-hip-10",
+            name: "Hip Rehab 10",
+            duration: "30 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band", "Light Dumbbells"],
+            exercises: [
+              { name: "Standing Hip Circles", sets: 2, reps: "1 min each", desc: "Full warm-up" },
+              { name: "Dumbbell Glute Bridge", sets: 3, reps: "15", desc: "Loaded hip extension" },
+              { name: "Mini Band Squat", sets: 3, reps: "15", desc: "Full range squat" },
+              { name: "Dumbbell Step Up", sets: 3, reps: "10 each", desc: "Functional strength" },
+              { name: "Mini Band Standing Hip Abduction", sets: 3, reps: "15 each", desc: "Hip stability" },
+              { name: "Yoga - Pigeon Pose", sets: 1, reps: "2 min each", desc: "Deep hip release" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Cool-down" }
+            ]
+          }
+        ]
+      },
+
+      // NECK & CERVICAL REHAB
+      "neck": {
+        name: "Neck & Cervical Rehab",
+        description: "Cervical strain, whiplash recovery, and neck tension relief",
+        workouts: [
+          {
+            id: "rehab-neck-1",
+            name: "Neck Rehab 1",
+            duration: "15 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Neck Rolls", sets: 2, reps: "1 min", desc: "Gentle cervical warm-up" },
+              { name: "Neck Stretch", sets: 1, reps: "1 min each", desc: "Lateral neck release" },
+              { name: "Upper Trap Stretch", sets: 1, reps: "1 min each", desc: "Upper trapezius release" },
+              { name: "Shoulder Rolls", sets: 2, reps: "1 min", desc: "Shoulder and neck tension release" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Cervical and upper back rest" }
+            ]
+          },
+          {
+            id: "rehab-neck-2",
+            name: "Neck Rehab 2",
+            duration: "15 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Gentle Neck Stretch", sets: 1, reps: "2 min each", desc: "Slow cervical release" },
+              { name: "Shoulder Rolls", sets: 2, reps: "1 min", desc: "Tension release" },
+              { name: "Yoga - Cat Cow", sets: 1, reps: "2 min", desc: "Cervical and thoracic mobility" },
+              { name: "Yoga - Thread the Needle", sets: 1, reps: "1 min each", desc: "Upper back and neck release" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Restful position" }
+            ]
+          },
+          {
+            id: "rehab-neck-3",
+            name: "Neck Rehab 3",
+            duration: "15 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Neck Circles", sets: 2, reps: "1 min", desc: "Cervical mobility" },
+              { name: "Neck Stretch", sets: 1, reps: "1 min each", desc: "Side flexion release" },
+              { name: "Cross Body Shoulder Stretch", sets: 1, reps: "1 min each", desc: "Posterior shoulder and neck" },
+              { name: "Prone Cobra Hold", sets: 3, reps: "15 sec", desc: "Cervical extensor strengthening" },
+              { name: "Yoga - Supine Twist", sets: 1, reps: "2 min each", desc: "Spinal release" }
+            ]
+          },
+          {
+            id: "rehab-neck-4",
+            name: "Neck Rehab 4",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Neck Rolls", sets: 2, reps: "1 min", desc: "Warm-up" },
+              { name: "Upper Trap Stretch", sets: 1, reps: "1 min each", desc: "Trap release" },
+              { name: "Wall Angels", sets: 3, reps: "8 slow", desc: "Postural correction and scapular control" },
+              { name: "Scapular Push Up", sets: 3, reps: "8 slow", desc: "Scapular stability" },
+              { name: "Yoga - Thread the Needle", sets: 1, reps: "1 min each", desc: "Thoracic rotation" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Cool-down rest" }
+            ]
+          },
+          {
+            id: "rehab-neck-5",
+            name: "Neck Rehab 5",
+            duration: "20 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Gentle Neck Stretch", sets: 1, reps: "1 min each", desc: "Cervical warm-up" },
+              { name: "Shoulder Rolls", sets: 2, reps: "1 min", desc: "Tension release" },
+              { name: "Wall Angels", sets: 3, reps: "10 slow", desc: "Overhead mobility with posture" },
+              { name: "Prone Cobra Hold", sets: 3, reps: "20 sec", desc: "Cervical and thoracic extensor strength" },
+              { name: "Yoga - Cat Cow", sets: 1, reps: "2 min", desc: "Full spinal mobility" },
+              { name: "Neck Stretch", sets: 1, reps: "1 min each", desc: "Cool-down release" }
+            ]
+          },
+          {
+            id: "rehab-neck-6",
+            name: "Neck Rehab 6",
+            duration: "20 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Resistance Band"],
+            exercises: [
+              { name: "Neck Rolls", sets: 2, reps: "1 min", desc: "Warm-up" },
+              { name: "Band Pull Apart Slow", sets: 3, reps: "12 slow", desc: "Upper back and postural muscles" },
+              { name: "Face Pull Slow", sets: 3, reps: "12 slow", desc: "Rear delt and mid-trap" },
+              { name: "Wall Angels", sets: 3, reps: "10 slow", desc: "Scapular and postural control" },
+              { name: "Upper Trap Stretch", sets: 1, reps: "1 min each", desc: "Trap release" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Rest" }
+            ]
+          },
+          {
+            id: "rehab-neck-7",
+            name: "Neck Rehab 7",
+            duration: "20 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Resistance Band"],
+            exercises: [
+              { name: "Neck Circles", sets: 2, reps: "1 min", desc: "Cervical warm-up" },
+              { name: "Mini Band Pull Aparts", sets: 3, reps: "15", desc: "Scapular retraction" },
+              { name: "Scapular Push Up", sets: 3, reps: "12", desc: "Serratus anterior strength" },
+              { name: "Prone Cobra Hold", sets: 3, reps: "25 sec", desc: "Extensor endurance" },
+              { name: "Yoga - Thread the Needle", sets: 1, reps: "1 min each", desc: "Thoracic release" },
+              { name: "Gentle Neck Stretch", sets: 1, reps: "1 min each", desc: "Cool-down" }
+            ]
+          },
+          {
+            id: "rehab-neck-8",
+            name: "Neck Rehab 8",
+            duration: "20 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Resistance Band"],
+            exercises: [
+              { name: "Shoulder Rolls", sets: 2, reps: "1 min", desc: "Warm-up" },
+              { name: "Mini Band External Rotation", sets: 3, reps: "12", desc: "Rotator cuff and postural support" },
+              { name: "Band Pull Apart Slow", sets: 3, reps: "15 slow", desc: "Mid-back strengthening" },
+              { name: "Wall Angels", sets: 3, reps: "12 slow", desc: "Full overhead mobility" },
+              { name: "Yoga - Cat Cow", sets: 1, reps: "2 min", desc: "Spinal mobility" },
+              { name: "Neck Stretch", sets: 1, reps: "1 min each", desc: "Cool-down" }
+            ]
+          },
+          {
+            id: "rehab-neck-9",
+            name: "Neck Rehab 9",
+            duration: "20 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Resistance Band"],
+            exercises: [
+              { name: "Neck Rolls", sets: 2, reps: "1 min", desc: "Warm-up" },
+              { name: "SuperBand Face Pulls", sets: 3, reps: "12", desc: "Upper back and external rotation" },
+              { name: "Mini Band Bent Over Y's", sets: 3, reps: "12", desc: "Lower trap strengthening" },
+              { name: "Prone Cobra Hold", sets: 4, reps: "20 sec", desc: "Posterior chain endurance" },
+              { name: "Cross Body Shoulder Stretch", sets: 1, reps: "1 min each", desc: "Shoulder release" },
+              { name: "Upper Trap Stretch", sets: 1, reps: "1 min each", desc: "Trap release" }
+            ]
+          },
+          {
+            id: "rehab-neck-10",
+            name: "Neck Rehab 10",
+            duration: "20 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Resistance Band"],
+            exercises: [
+              { name: "Gentle Neck Stretch", sets: 1, reps: "1 min each", desc: "Full cervical warm-up" },
+              { name: "Mini Band Pull Aparts", sets: 3, reps: "20", desc: "Scapular endurance" },
+              { name: "Face Pull Slow", sets: 3, reps: "15 slow", desc: "Postural strengthening" },
+              { name: "Scapular Push Up", sets: 3, reps: "15", desc: "Scapular control" },
+              { name: "Wall Angels", sets: 3, reps: "12 slow", desc: "Overhead mobility" },
+              { name: "Yoga - Supine Twist", sets: 1, reps: "2 min each", desc: "Full spinal release" }
+            ]
+          }
+        ]
+      },
+
+      // ANKLE & FOOT REHAB
+      "ankle": {
+        name: "Ankle & Foot Rehab",
+        description: "Ankle sprain recovery, Achilles rehab, and foot stability",
+        workouts: [
+          {
+            id: "rehab-ankle-1",
+            name: "Ankle Rehab 1",
+            duration: "15 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Ankle Circles", sets: 3, reps: "1 min each", desc: "Gentle ankle mobilization" },
+              { name: "Calf Raises Slow", sets: 3, reps: "10 slow", desc: "Calf and ankle activation" },
+              { name: "Calf Stretch", sets: 1, reps: "1 min each", desc: "Gastrocnemius stretch" },
+              { name: "Glute Bridge Hold", sets: 3, reps: "20 sec", desc: "Lower limb chain activation" },
+              { name: "Yoga - Child's Pose", sets: 1, reps: "2 min", desc: "Rest and ankle dorsiflexion" }
+            ]
+          },
+          {
+            id: "rehab-ankle-2",
+            name: "Ankle Rehab 2",
+            duration: "15 min",
+            difficulty: "Beginner",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Ankle Circles", sets: 3, reps: "1 min each", desc: "Mobility warm-up" },
+              { name: "Controlled Articular Rotations Ankle", sets: 2, reps: "5 each way", desc: "Ankle CARs for joint health" },
+              { name: "Calf Raises Slow", sets: 3, reps: "12 slow", desc: "Eccentric calf control" },
+              { name: "Side Lying Leg Raise", sets: 3, reps: "10 each", desc: "Hip stability for ankle support" },
+              { name: "Calf Stretch", sets: 1, reps: "1 min each", desc: "Calf and Achilles stretch" }
+            ]
+          },
+          {
+            id: "rehab-ankle-3",
+            name: "Ankle Rehab 3",
+            duration: "15 min",
+            difficulty: "Beginner",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Ankle Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Calf Raises Slow", sets: 3, reps: "12 slow", desc: "Progressive calf work" },
+              { name: "Mini Band Clamshell", sets: 3, reps: "12 each", desc: "Hip stability for ankle alignment" },
+              { name: "Wall Sit Light", sets: 3, reps: "20 sec", desc: "Lower limb isometric" },
+              { name: "Calf Stretch", sets: 1, reps: "1 min each", desc: "Calf flexibility" }
+            ]
+          },
+          {
+            id: "rehab-ankle-4",
+            name: "Ankle Rehab 4",
+            duration: "20 min",
+            difficulty: "Beginner",
+            equipment: ["Mat", "Foam Roller"],
+            exercises: [
+              { name: "Ankle Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Foam Roller Calf", sets: 1, reps: "2 min each", desc: "Calf tissue release" },
+              { name: "Foam Roller Shin Front", sets: 1, reps: "1 min each", desc: "Tibialis anterior release" },
+              { name: "Foam Roller Foot Arch", sets: 1, reps: "1 min each", desc: "Plantar fascia release" },
+              { name: "Calf Raises Slow", sets: 3, reps: "12 slow", desc: "Calf activation post-release" },
+              { name: "Calf Stretch", sets: 1, reps: "1 min each", desc: "Stretch" }
+            ]
+          },
+          {
+            id: "rehab-ankle-5",
+            name: "Ankle Rehab 5",
+            duration: "20 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat"],
+            exercises: [
+              { name: "Ankle Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Controlled Articular Rotations Ankle", sets: 3, reps: "5 each way", desc: "Progressive ankle CARs" },
+              { name: "Single Leg Calf Raise", sets: 3, reps: "10 each", desc: "Unilateral calf strengthening" },
+              { name: "Mini Band Squat", sets: 3, reps: "10 slow", desc: "Controlled ankle dorsiflexion" },
+              { name: "Step Up", sets: 3, reps: "8 each", desc: "Functional ankle loading" },
+              { name: "Calf Stretch", sets: 1, reps: "1 min each", desc: "Cool-down" }
+            ]
+          },
+          {
+            id: "rehab-ankle-6",
+            name: "Ankle Rehab 6",
+            duration: "20 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Foam Roller"],
+            exercises: [
+              { name: "Foam Roller Calf", sets: 1, reps: "2 min each", desc: "Calf release" },
+              { name: "Foam Roller Peroneals", sets: 1, reps: "1 min each", desc: "Lateral ankle support release" },
+              { name: "Ankle Circles", sets: 2, reps: "1 min each", desc: "Post-release mobility" },
+              { name: "Single Leg Calf Raise", sets: 3, reps: "12 each", desc: "Calf endurance" },
+              { name: "Mini Band Standing Hip Abduction", sets: 3, reps: "10 each", desc: "Hip stability for ankle chain" },
+              { name: "Calf Stretch", sets: 1, reps: "1 min each", desc: "Stretch" }
+            ]
+          },
+          {
+            id: "rehab-ankle-7",
+            name: "Ankle Rehab 7",
+            duration: "20 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Mini Band"],
+            exercises: [
+              { name: "Ankle Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Calf Raises Slow", sets: 3, reps: "15 slow", desc: "Eccentric focus" },
+              { name: "Mini Band Squat", sets: 3, reps: "12", desc: "Full ankle ROM under load" },
+              { name: "Band Reverse Lunge", sets: 3, reps: "8 each", desc: "Controlled ankle stability" },
+              { name: "Mini Band Clamshell", sets: 3, reps: "15 each", desc: "Hip and ankle chain stability" },
+              { name: "Calf Stretch", sets: 1, reps: "1 min each", desc: "Cool-down stretch" }
+            ]
+          },
+          {
+            id: "rehab-ankle-8",
+            name: "Ankle Rehab 8",
+            duration: "20 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Dumbbells"],
+            exercises: [
+              { name: "Ankle Circles", sets: 2, reps: "1 min each", desc: "Warm-up" },
+              { name: "Dumbbell Calf Raise", sets: 3, reps: "12", desc: "Loaded calf work" },
+              { name: "Dumbbell Step Up", sets: 3, reps: "8 each", desc: "Functional ankle loading" },
+              { name: "Single Leg Calf Raise", sets: 3, reps: "10 each", desc: "Unilateral strength" },
+              { name: "Controlled Articular Rotations Ankle", sets: 2, reps: "5 each way", desc: "Ankle CARs" },
+              { name: "Calf Stretch", sets: 1, reps: "1 min each", desc: "Cool-down" }
+            ]
+          },
+          {
+            id: "rehab-ankle-9",
+            name: "Ankle Rehab 9",
+            duration: "20 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Foam Roller", "Mini Band"],
+            exercises: [
+              { name: "Foam Roller Calf", sets: 1, reps: "2 min each", desc: "Pre-exercise release" },
+              { name: "Foam Roller Foot Arch", sets: 1, reps: "1 min each", desc: "Plantar release" },
+              { name: "Ankle Circles", sets: 2, reps: "1 min each", desc: "Mobility work" },
+              { name: "Single Leg Calf Raise", sets: 3, reps: "12 each", desc: "Progressive calf strength" },
+              { name: "Mini Band Squat", sets: 3, reps: "12", desc: "Ankle and knee stability" },
+              { name: "Calf Stretch", sets: 1, reps: "1 min each", desc: "Stretch" }
+            ]
+          },
+          {
+            id: "rehab-ankle-10",
+            name: "Ankle Rehab 10",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["Mat", "Light Dumbbells", "Mini Band"],
+            exercises: [
+              { name: "Controlled Articular Rotations Ankle", sets: 3, reps: "5 each way", desc: "Full ankle CARs" },
+              { name: "Dumbbell Calf Raise", sets: 3, reps: "15", desc: "Loaded calf endurance" },
+              { name: "Step Up", sets: 3, reps: "10 each", desc: "Functional single leg work" },
+              { name: "Band Reverse Lunge", sets: 3, reps: "10 each", desc: "Ankle stability under load" },
+              { name: "Mini Band Standing Hip Abduction", sets: 3, reps: "12 each", desc: "Kinetic chain stability" },
+              { name: "Calf Stretch", sets: 1, reps: "1 min each", desc: "Cool-down" }
+            ]
+          }
+        ]
+      }
+    }
   }
 };
 
