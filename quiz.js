@@ -1183,6 +1183,17 @@ function analyzeWithGemini(imageBlob, key, customPrompt) {
 
 document.addEventListener('DOMContentLoaded', () => {
     renderStep();
+
+    // iOS Safari keyboard handling: ensure input fields scroll into view when focused.
+    // On iOS Safari, overflow:hidden on body can prevent the viewport from adjusting
+    // when the keyboard opens, hiding input fields behind the keyboard.
+    document.addEventListener('focusin', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+            setTimeout(() => {
+                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        }
+    });
 });
 
 function renderStep() {
@@ -1245,7 +1256,7 @@ function renderStep() {
         progressRow.classList.add('hidden');
         
         container.innerHTML = `
-            <div style="text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; min-height: 75vh; padding: 20px; box-sizing: border-box; font-family: 'Montserrat', sans-serif;">
+            <div style="text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; min-height: 75vh; min-height: 75dvh; padding: 20px; box-sizing: border-box; font-family: 'Montserrat', sans-serif;">
                 <!-- Title Section -->
                 <div style="margin: 0;">
                     <h2 style="color: #999; font-size: 1.4rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; line-height: 1.3; margin: 0;">${step.text}</h2>
@@ -1813,7 +1824,7 @@ function renderStep() {
         updateProgress();
 
         container.innerHTML = `
-            <div style="text-align: center; padding: 140px 1.5rem 0; width: 100%;">
+            <div style="text-align: center; padding: 20px 1.5rem 0; width: 100%;">
 
                 <h2 style="text-transform: uppercase; font-size: 1.5rem; margin-bottom: 0.5rem; font-weight: 800; color: #333;">BIOMETRIC SUMMARY</h2>
                 <p style="font-size: 0.9rem; color: #666; margin-bottom: 2rem;">Device sensor data has been synchronized.</p>
@@ -2368,29 +2379,38 @@ function renderStep() {
                     }, 500);
                 };
 
-                // Falling Animation
+                // Falling Animation (using requestAnimationFrame for smooth mobile rendering)
                 let pos = -70;
-                const baseSpeed = 5; 
+                const baseSpeed = 5;
                 // Speed increases each round slightly
                 const speed = baseSpeed + (currentRound * 1.5);
-                
-                const fall = setInterval(() => {
+                let lastFrameTime = 0;
+                let fallRafId = null;
+
+                function animateFall(timestamp) {
                     if (caught || !gameActive) {
-                        clearInterval(fall);
-                         if(!caught && signal.parentNode) signal.remove(); 
+                        if(!caught && signal.parentNode) signal.remove();
                         return;
                     }
 
-                    pos += speed;
+                    // Target ~60fps: advance by speed each ~16ms
+                    if (!lastFrameTime) lastFrameTime = timestamp;
+                    const delta = timestamp - lastFrameTime;
+                    lastFrameTime = timestamp;
+
+                    pos += speed * (delta / 16);
                     signal.style.top = pos + 'px';
-                    
+
                     if (pos > area.clientHeight) {
-                        clearInterval(fall);
                         // Missed Logic here
                         if(signal.parentNode) signal.remove();
                         handleMiss();
+                        return;
                     }
-                }, 16);
+
+                    fallRafId = requestAnimationFrame(animateFall);
+                }
+                fallRafId = requestAnimationFrame(animateFall);
             }, delay); 
         }
 
