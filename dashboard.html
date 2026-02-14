@@ -15459,7 +15459,7 @@ function viewWorkoutHistoryDetail(date) {
     </div>
 
     <!-- USER PROFILE VIEW (View another user's profile from the feed) -->
-    <div id="view-user-profile" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc;">
+    <div id="view-user-profile" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc; overflow-x: hidden;">
         <!-- Header with back button -->
         <div style="padding: 16px 20px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10;">
             <button onclick="closeUserProfile()" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center;">
@@ -15491,6 +15491,35 @@ function viewWorkoutHistoryDetail(date) {
                 <div style="text-align: center;">
                     <div id="user-profile-points" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">0</div>
                     <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">XP</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tamagotchi / FitGotchi Section -->
+        <div id="user-profile-tamagotchi-section" style="padding: 0 20px 10px; display: none;">
+            <div style="background: #1a1a2e; border-radius: 16px; overflow: hidden; height: 260px; position: relative;">
+                <model-viewer
+                    id="user-profile-tamagotchi-model"
+                    camera-controls
+                    disable-zoom
+                    disable-pan
+                    auto-rotate
+                    rotation-intensity="0.5"
+                    shadow-intensity="1.5"
+                    shadow-softness="0.8"
+                    exposure="0.9"
+                    environment-image="neutral"
+                    camera-orbit="0deg 85deg 22m"
+                    field-of-view="55deg"
+                    min-field-of-view="20deg"
+                    max-field-of-view="120deg"
+                    style="width: 100%; height: 100%; --poster-color: #1a1a2e; touch-action: pan-y;"
+                    interaction-prompt="none">
+                </model-viewer>
+                <!-- Fallback -->
+                <div id="user-profile-tamagotchi-fallback" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:4; background:#1a1a2e; justify-content:center; align-items:center; flex-direction:column; text-align:center; color:white; padding:20px;">
+                    <div style="font-size:48px; margin-bottom:8px;">🐣</div>
+                    <div style="font-size:0.9rem; font-weight:600;">FitGotchi</div>
                 </div>
             </div>
         </div>
@@ -53849,6 +53878,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('user-profile-workouts').textContent = '0';
         document.getElementById('user-profile-streak').textContent = '0';
         document.getElementById('user-profile-points').textContent = '0';
+        document.getElementById('user-profile-tamagotchi-section').style.display = 'none';
         document.getElementById('user-profile-pbs-section').style.display = 'none';
         document.getElementById('user-profile-badges-section').style.display = 'none';
         document.getElementById('user-profile-posts-grid').innerHTML = '';
@@ -53877,13 +53907,52 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // Update level & stats
+            let userLevel = 1;
             if (pointsData) {
                 const levelInfo = calculateLevelFromPoints(pointsData.lifetime_points || 0);
+                userLevel = levelInfo.level;
                 document.getElementById('user-profile-level').textContent = levelInfo.level;
                 document.getElementById('user-profile-level-title').textContent = levelInfo.title;
                 document.getElementById('user-profile-workouts').textContent = pointsData.total_workouts_logged || 0;
                 document.getElementById('user-profile-streak').textContent = pointsData.current_streak || 0;
                 document.getElementById('user-profile-points').textContent = (pointsData.lifetime_points || 0).toLocaleString();
+            }
+
+            // Load tamagotchi model based on user level and gender
+            try {
+                const EVOLUTIONS_MALE = [
+                    { level: 1,  src: "https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" },
+                    { level: 5,  src: "https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb" },
+                    { level: 10, src: "https://f005.backblazeb2.com/file/shannonsvideos/level_10_real_final.glb" },
+                    { level: 20, src: "https://f005.backblazeb2.com/file/shannonsvideos/level_20_real_final.glb" },
+                    { level: 30, src: "https://f005.backblazeb2.com/file/shannonsvideos/level_30_real_final.glb" },
+                    { level: 40, src: "https://f005.backblazeb2.com/file/shannonsvideos/level_40_real_final.glb" },
+                    { level: 50, src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb" }
+                ];
+                const EVOLUTIONS_FEMALE = [
+                    { level: 1,  src: "https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" },
+                    { level: 5,  src: "https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb" },
+                    { level: 10, src: "https://f005.backblazeb2.com/file/shannonsvideos/level_10_female_final.glb" },
+                    { level: 20, src: "https://f005.backblazeb2.com/file/shannonsvideos/level_20_female_final.glb" },
+                    { level: 30, src: "https://f005.backblazeb2.com/file/shannonsvideos/level_30_female_final.glb" },
+                    { level: 40, src: "https://f005.backblazeb2.com/file/shannonsvideos/level_40_female_final.glb" },
+                    { level: 50, src: "https://f005.backblazeb2.com/file/shannonsvideos/level_50_female_final.glb" }
+                ];
+                const userSex = userData && userData.sex === 'female' ? 'female' : 'male';
+                const evolutions = userSex === 'female' ? EVOLUTIONS_FEMALE : EVOLUTIONS_MALE;
+                const evo = [...evolutions].reverse().find(e => userLevel >= e.level) || evolutions[0];
+
+                const tamaSection = document.getElementById('user-profile-tamagotchi-section');
+                const tamaModel = document.getElementById('user-profile-tamagotchi-model');
+                const tamaFallback = document.getElementById('user-profile-tamagotchi-fallback');
+
+                if (tamaSection && tamaModel && evo.src) {
+                    tamaSection.style.display = 'block';
+                    tamaModel.setAttribute('src', evo.src);
+                    tamaFallback.style.display = 'none';
+                }
+            } catch (tamaErr) {
+                console.error('Error loading profile tamagotchi:', tamaErr);
             }
 
             // Render personal bests
@@ -54092,7 +54161,7 @@ document.addEventListener('DOMContentLoaded', async function() {
      */
     async function loadUserProfileStories(userId) {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await window.supabaseClient
                 .from('stories')
                 .select('*')
                 .eq('user_id', userId)
