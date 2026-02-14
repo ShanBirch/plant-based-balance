@@ -215,95 +215,236 @@
     text-shadow: 0 0 30px rgba(239,68,68,0.5);
   }
 
-  .battle-minigame {
-    width: 90%;
-    max-width: 400px;
-    text-align: center;
-  }
-  .battle-title {
-    font-size: 1.1rem;
-    font-weight: 800;
-    color: var(--arena-warning);
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  .battle-instruction {
-    font-size: 0.8rem;
-    color: var(--arena-muted);
-    margin-bottom: 20px;
-  }
 
-  /* Battle Game Picker */
-  .battle-game-picker {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-top: 16px;
-  }
-  .battle-game-card {
-    width: 100px;
-    padding: 14px 10px;
-    border-radius: 14px;
-    text-align: center;
-    cursor: pointer;
-    border: 2px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.06);
-    transition: all 0.2s;
-  }
-  .battle-game-card:active {
-    transform: scale(0.95);
-  }
-  .battle-game-card .game-icon {
-    font-size: 1.8rem;
-    margin-bottom: 6px;
-  }
-  .battle-game-card .game-name {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: rgba(255,255,255,0.9);
-  }
-  .battle-game-card .game-desc {
-    font-size: 0.6rem;
-    color: rgba(255,255,255,0.5);
-    margin-top: 2px;
-  }
-
+  /* ── In-Battle Combat UI ── */
   .battle-timer {
-    font-size: 2rem;
+    font-size: 1.8rem;
     font-weight: 900;
     color: var(--arena-warning);
-    margin-top: 12px;
+    margin-top: 8px;
   }
 
-  /* Quick battle fallback for bots */
-  .quick-battle-area {
+  .battle-combat-zone {
     width: 100%;
-    padding: 30px;
-    border-radius: 20px;
-    background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05));
-    border: 2px solid rgba(16,185,129,0.3);
-    font-size: 2.5rem;
-    cursor: pointer;
-    transition: transform 0.05s;
-    margin-top: 12px;
+    max-width: 400px;
   }
-  .quick-battle-area:active { transform: scale(0.95); }
 
-  .quick-battle-bar {
-    height: 20px;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.1);
-    overflow: hidden;
-    margin-top: 12px;
+  /* HP Bars */
+  .battle-hp-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
   }
-  .quick-battle-bar-fill {
-    height: 100%;
+  .battle-hp-box {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
     border-radius: 10px;
-    transition: width 0.1s;
-    width: 0%;
-    background: linear-gradient(90deg, var(--arena-accent), #059669);
+    padding: 8px 12px;
+  }
+  .battle-hp-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .battle-hp-label .hp-name { color: rgba(255,255,255,0.7); }
+  .battle-hp-label .hp-val { font-family: monospace; }
+  .battle-hp-bar {
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .battle-hp-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.2s;
+  }
+  .battle-hp-fill.player-hp { background: linear-gradient(90deg, #2ecc71, #4ecdc4); }
+  .battle-hp-fill.enemy-hp { background: linear-gradient(90deg, #ff4444, #ff6b6b); }
+
+  /* Mana bar */
+  .battle-mana-row {
+    margin-bottom: 16px;
+  }
+  .battle-mana-label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: #45b7d1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  .battle-mana-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .battle-mana-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #3498db, #45b7d1);
+    transition: width 0.15s;
+  }
+  .battle-mana-fill.full {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    box-shadow: 0 0 10px rgba(251,191,36,0.5);
+  }
+
+  /* Round indicator */
+  .battle-round-info {
+    text-align: center;
+    margin-bottom: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--arena-muted);
+  }
+  .battle-round-score {
+    display: inline-flex;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 900;
+    margin-left: 8px;
+  }
+  .round-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: inline-block;
+  }
+  .round-dot.player-win { background: #2ecc71; }
+  .round-dot.enemy-win { background: #ff4444; }
+
+  /* Combat action buttons */
+  .battle-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .battle-bash-btn {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 4px solid rgba(255,255,255,0.15);
+    background: linear-gradient(135deg, #ff6b6b, #ff4444);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    box-shadow: 0 4px 20px rgba(255,68,68,0.4);
+    transition: transform 0.05s;
+    position: relative;
+  }
+  .battle-bash-btn:active { transform: scale(0.9); }
+  .battle-bash-btn .bash-icon { font-size: 1.8rem; }
+  .battle-bash-btn .bash-label { font-size: 0.55rem; letter-spacing: 1.5px; }
+
+  .battle-bash-btn .bash-ring {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: #fbbf24;
+    transition: transform 0.1s;
+  }
+  .battle-bash-btn.charging .bash-ring {
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .battle-side-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    color: white;
+    font-size: 0.5rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    transition: transform 0.1s, opacity 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .battle-side-btn:active { transform: scale(0.85); }
+  .battle-side-btn .side-icon { font-size: 1.2rem; }
+
+  .battle-block-btn {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    box-shadow: 0 2px 12px rgba(37,99,235,0.4);
+    opacity: 0.3;
+  }
+  .battle-block-btn.can-block {
+    opacity: 1;
+    animation: pulse-battle 0.8s infinite;
+  }
+
+  .battle-fire-btn {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    box-shadow: 0 2px 12px rgba(251,191,36,0.4);
+    opacity: 0.3;
+  }
+  .battle-fire-btn.can-fire {
+    opacity: 1;
+    animation: pulse-battle 0.6s infinite;
+  }
+
+  /* Hit flash */
+  .battle-hit-flash {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 210;
+    animation: hitFlash 0.3s ease-out forwards;
+  }
+  @keyframes hitFlash {
+    0% { background: rgba(255,68,68,0.3); }
+    100% { background: transparent; }
+  }
+  .battle-hit-flash.blocked {
+    animation-name: blockFlash;
+  }
+  @keyframes blockFlash {
+    0% { background: rgba(59,130,246,0.3); }
+    100% { background: transparent; }
+  }
+  .battle-hit-flash.super-hit {
+    animation-name: superFlash;
+  }
+  @keyframes superFlash {
+    0% { background: rgba(251,191,36,0.4); }
+    100% { background: transparent; }
+  }
+
+  /* Screen shake */
+  @keyframes battleShake {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-4px, 2px); }
+    40% { transform: translate(4px, -2px); }
+    60% { transform: translate(-2px, 4px); }
+    80% { transform: translate(2px, -4px); }
+  }
+  .battle-shake {
+    animation: battleShake 0.3s ease;
   }
 
   /* Battle Result */
@@ -595,7 +736,51 @@
 <!-- ═══════════════ BATTLE OVERLAY ═══════════════ -->
 <div class="battle-overlay" id="battle-overlay">
   <div class="battle-vs" id="battle-vs"></div>
-  <div class="battle-minigame" id="battle-minigame"></div>
+  <div class="battle-combat-zone" id="battle-combat-zone" style="display:none;">
+    <!-- Round info -->
+    <div class="battle-round-info">
+      ROUND <span id="bc-round">1</span> / 3
+      <span class="battle-round-score" id="bc-round-dots">
+        <span class="round-dot" id="rd1"></span>
+        <span class="round-dot" id="rd2"></span>
+        <span class="round-dot" id="rd3"></span>
+      </span>
+    </div>
+    <!-- HP bars -->
+    <div class="battle-hp-row">
+      <div class="battle-hp-box">
+        <div class="battle-hp-label"><span class="hp-name">YOU</span><span class="hp-val" id="bc-hp-player-text">100/100</span></div>
+        <div class="battle-hp-bar"><div class="battle-hp-fill player-hp" id="bc-hp-player" style="width:100%"></div></div>
+      </div>
+      <div class="battle-hp-box">
+        <div class="battle-hp-label"><span class="hp-name" id="bc-enemy-name">ENEMY</span><span class="hp-val" id="bc-hp-enemy-text">100/100</span></div>
+        <div class="battle-hp-bar"><div class="battle-hp-fill enemy-hp" id="bc-hp-enemy" style="width:100%"></div></div>
+      </div>
+    </div>
+    <!-- Mana bar -->
+    <div class="battle-mana-row">
+      <div class="battle-mana-label">SPECIAL <span id="bc-mana-pct">0%</span></div>
+      <div class="battle-mana-bar"><div class="battle-mana-fill" id="bc-mana-fill" style="width:0%"></div></div>
+    </div>
+    <!-- Timer -->
+    <div class="battle-timer" id="bc-timer">30</div>
+    <!-- Action buttons -->
+    <div class="battle-actions">
+      <button class="battle-side-btn battle-block-btn" id="bc-block-btn" ontouchstart="combatBlock(event)" onmousedown="combatBlock(event)">
+        <span class="side-icon">🛡️</span>
+        <span>Block</span>
+      </button>
+      <button class="battle-bash-btn" id="bc-bash-btn" ontouchstart="combatBash(event)" onmousedown="combatBash(event)">
+        <span class="bash-icon">👊</span>
+        <span class="bash-label">BASH!</span>
+        <div class="bash-ring"></div>
+      </button>
+      <button class="battle-side-btn battle-fire-btn" id="bc-fire-btn" ontouchstart="combatFire(event)" onmousedown="combatFire(event)">
+        <span class="side-icon">🔥</span>
+        <span>Fire!</span>
+      </button>
+    </div>
+  </div>
   <div class="battle-result" id="battle-result"></div>
 </div>
 
@@ -676,12 +861,17 @@ let lastTime = 0;
 let eliminationOrder = [];
 
 // Simulated fitness stats (would come from Supabase in prod)
+// In production these are loaded from localStorage.battleStats + users table
 let fitnessStats = {
   fitnessLevel: 65,
   energyLevel: 72,
   weeklyWorkoutCount: 4,
   level: 23,
-  title: 'Growing'
+  title: 'Growing',
+  // Battle stats (STR/HP/MANA) - from the dashboard stat allocation system
+  str: 15,   // Increases attack damage
+  hp: 12,    // Increases max health pool (100 + hp*5)
+  mana: 8,   // Reduces taps needed for special (max(10, 30 - mana/5))
 };
 
 // ── INIT ──
@@ -1312,17 +1502,19 @@ function updateParticles(dt) {
   });
 }
 
-// ── EXISTING GAME CONFIG (mirrors games.js) ──
-const ARENA_GAME_CONFIG = {
-  chess:       { name: 'Chess',      icon: '♟️', desc: 'Classic strategy',   gradient: 'linear-gradient(135deg, #8B4513, #D2691E)' },
-  checkers:    { name: 'Checkers',   icon: '⛀',  desc: 'Jump & capture',    gradient: 'linear-gradient(135deg, #DC2626, #EF4444)' },
-  connect4:    { name: 'Connect 4',  icon: '🔴', desc: 'Four in a row',     gradient: 'linear-gradient(135deg, #2563EB, #3B82F6)' },
-  tic_tac_toe: { name: 'Tic Tac Toe',icon: '❌', desc: 'Noughts & crosses', gradient: 'linear-gradient(135deg, #7C3AED, #8B5CF6)' },
-  reversi:     { name: 'Reversi',    icon: '⚫', desc: 'Flip to win',       gradient: 'linear-gradient(135deg, #059669, #10B981)' },
-  battleships: { name: 'Battleships',icon: '🚢', desc: 'Sink the fleet',    gradient: 'linear-gradient(135deg, #0369A1, #0EA5E9)' },
-};
+// ── BATTLE SYSTEM (Digimon-style Bash/Block/Fire) ──
+// Mirrors the existing battle system in dashboard.html
+// In production, collision with a real player would call
+// startBattle() from the dashboard's battle system directly.
 
-// ── BATTLE SYSTEM ──
+const ROUND_DURATION = 30000; // 30s per round
+const BASH_THRESHOLD_BASE = 30; // taps to charge special
+const AUTO_ATTACK_INTERVAL = 2500; // ms between auto-attacks
+const BLOCK_WINDOW = 400; // ms to react to incoming attack
+
+// Combat state
+let combat = null;
+
 function startBattle(opponent) {
   if (gameState !== 'playing') return;
   gameState = 'battle';
@@ -1330,13 +1522,13 @@ function startBattle(opponent) {
   const overlay = document.getElementById('battle-overlay');
   overlay.classList.add('active');
 
-  // Draw VS screen
+  // VS screen
   const vsDiv = document.getElementById('battle-vs');
   vsDiv.innerHTML = `
     <div class="battle-fighter">
       <canvas id="battle-player-canvas" width="80" height="90"></canvas>
       <div class="battle-fighter-name" style="color:${player.color.body}">You</div>
-      <div class="battle-fighter-stats">Lv.${fitnessStats.level} ${fitnessStats.title}</div>
+      <div class="battle-fighter-stats">STR ${fitnessStats.str || 10} / HP ${fitnessStats.hp || 10} / MANA ${fitnessStats.mana || 5}</div>
     </div>
     <div class="battle-vs-text">VS</div>
     <div class="battle-fighter">
@@ -1346,7 +1538,6 @@ function startBattle(opponent) {
     </div>
   `;
 
-  // Draw fighter portraits
   setTimeout(() => {
     const pc = document.getElementById('battle-player-canvas');
     const oc = document.getElementById('battle-opponent-canvas');
@@ -1354,171 +1545,378 @@ function startBattle(opponent) {
     if (oc) drawBean(oc.getContext('2d'), 40, 50, opponent.color, 1.5, true);
   }, 50);
 
-  battleState = {
-    opponent,
-    phase: 'picker', // picker | quickbattle | result
-    playerScore: 0,
-    opponentScore: 0,
-    resultShown: false,
-  };
+  battleState = { opponent, phase: 'intro' };
 
-  // Show game picker after VS intro
+  // After VS intro, start combat
   setTimeout(() => {
     if (battleState) {
-      renderGamePicker();
+      vsDiv.style.display = 'none';
+      initCombat(opponent);
     }
-  }, 1200);
+  }, 1500);
 }
 
-function renderGamePicker() {
-  const mg = document.getElementById('battle-minigame');
-  const result = document.getElementById('battle-result');
-  result.classList.remove('active');
-  result.innerHTML = '';
+function initCombat(opponent) {
+  const stats = fitnessStats;
+  const playerSTR = stats.str || 10;
+  const playerHP_stat = stats.hp || 10;
+  const playerMANA = stats.mana || 5;
 
-  const isMultiplayer = battleState.opponent.userId; // real player has userId
+  // Bot stats scale with their fitness level
+  const botLevel = opponent.fitnessLevel || 40;
+  const botSTR = Math.floor(botLevel * 0.3);
+  const botHP_stat = Math.floor(botLevel * 0.25);
+  const botMANA = Math.floor(botLevel * 0.15);
 
-  // Build game cards grid
-  const gameCards = Object.entries(ARENA_GAME_CONFIG).map(([key, game]) => `
-    <div class="battle-game-card" onclick="pickBattleGame('${key}')" style="cursor:pointer;">
-      <div class="game-icon">${game.icon}</div>
-      <div class="game-name">${game.name}</div>
-      <div class="game-desc">${game.desc}</div>
-    </div>
-  `).join('');
+  const playerMaxHP = 100 + (playerHP_stat * 5);
+  const enemyMaxHP = 100 + (botHP_stat * 5);
 
-  if (isMultiplayer) {
-    // Real multiplayer: pick a game and launch into existing game system
-    mg.innerHTML = `
-      <div class="battle-title">Choose Your Battle!</div>
-      <div class="battle-instruction">Pick a game to fight ${battleState.opponent.name}</div>
-      <div class="battle-game-picker">${gameCards}</div>
-    `;
-  } else {
-    // Bot mode POC: show game picker with quick-battle option
-    mg.innerHTML = `
-      <div class="battle-title">Choose Your Battle!</div>
-      <div class="battle-instruction">Pick a game to fight ${battleState.opponent.name}</div>
-      <div class="battle-game-picker">${gameCards}</div>
-      <div style="margin-top:16px;font-size:0.65rem;color:var(--arena-muted);">
-        Demo mode: picks resolve instantly. In multiplayer, this launches the full game board.
-      </div>
-    `;
-  }
+  combat = {
+    opponent,
+    round: 1,
+    playerRoundWins: 0,
+    enemyRoundWins: 0,
+    playerHP: playerMaxHP,
+    playerMaxHP,
+    enemyHP: enemyMaxHP,
+    enemyMaxHP,
+    playerSTR,
+    enemySTR: botSTR,
+    playerMANA: playerMANA,
+    bashCount: 0,
+    bashThreshold: Math.max(10, BASH_THRESHOLD_BASE - Math.floor(playerMANA / 5)),
+    superReady: false,
+    blockReady: false,
+    blockSuccess: false,
+    roundOver: false,
+    timerEnd: Date.now() + ROUND_DURATION,
+    autoAttackTimer: null,
+    botAttackTimer: null,
+    timerInterval: null,
+  };
+
+  // Show combat UI
+  document.getElementById('battle-combat-zone').style.display = '';
+  document.getElementById('battle-result').classList.remove('active');
+  document.getElementById('battle-result').innerHTML = '';
+
+  // Update UI
+  document.getElementById('bc-enemy-name').textContent = opponent.name.toUpperCase();
+  updateCombatUI();
+  updateRoundDots();
+
+  // Start timers
+  combat.timerInterval = setInterval(updateCombatTimer, 100);
+
+  // Player auto-attacks
+  combat.autoAttackTimer = setInterval(() => {
+    if (!combat || combat.roundOver) return;
+    const dmg = Math.floor((10 + combat.playerSTR) * 0.2);
+    dealDamageToEnemy(dmg, false);
+  }, AUTO_ATTACK_INTERVAL);
+
+  // Bot attacks
+  const botSpeed = Math.max(1800, 4500 - botLevel * 40);
+  let botAttackCount = 0;
+  combat.botAttackTimer = setInterval(() => {
+    if (!combat || combat.roundOver) return;
+    botAttackCount++;
+    const isSuper = botAttackCount % 4 === 0;
+    const dmg = isSuper
+      ? Math.floor((10 + combat.enemySTR) * 1.0)
+      : Math.floor((10 + combat.enemySTR) * 0.2);
+
+    // Show block prompt before attack lands
+    if (isSuper) {
+      showBlockPrompt();
+      setTimeout(() => {
+        if (!combat || combat.roundOver) return;
+        dealDamageToPlayer(dmg, isSuper);
+      }, BLOCK_WINDOW);
+    } else {
+      dealDamageToPlayer(dmg, false);
+    }
+  }, botSpeed);
 }
 
-function pickBattleGame(gameType) {
-  if (!battleState || battleState.phase === 'result') return;
-
-  const game = ARENA_GAME_CONFIG[gameType];
-  const isMultiplayer = battleState.opponent.userId;
-
-  if (isMultiplayer) {
-    // ── REAL MULTIPLAYER PATH ──
-    // This would call into the existing games.js system:
-    //   db.games.createChallenge(currentUser.id, opponent.userId, gameType, 0)
-    //   then openGameBoard(matchId)
-    // For now, show what would happen:
-    const mg = document.getElementById('battle-minigame');
-    mg.innerHTML = `
-      <div class="battle-title">${game.icon} ${game.name}</div>
-      <div class="battle-instruction">Launching game board against ${battleState.opponent.name}...</div>
-      <div style="margin-top:20px;font-size:0.8rem;color:var(--arena-accent);">
-        This connects to the existing game system via games.js
-      </div>
-    `;
-
-    // In production, this would be:
-    // sendArenaGameChallenge(battleState.opponent.userId, gameType);
-    return;
-  }
-
-  // ── BOT MODE: Quick-resolve against AI ──
-  battleState.phase = 'quickbattle';
-  battleState.selectedGame = gameType;
-
-  const mg = document.getElementById('battle-minigame');
-  mg.innerHTML = `
-    <div class="battle-title">${game.icon} ${game.name}</div>
-    <div class="battle-instruction">Quick battle vs ${battleState.opponent.name}!</div>
-    <div class="quick-battle-area" id="quick-battle-area" ontouchstart="quickBattleTap(event)" onmousedown="quickBattleTap(event)">
-      ${game.icon}
-    </div>
-    <div class="quick-battle-bar">
-      <div class="quick-battle-bar-fill" id="quick-battle-bar"></div>
-    </div>
-    <div style="margin-top:8px;font-size:0.7rem;color:var(--arena-muted);">
-      Tap rapidly to win the ${game.name} battle! Fitness Lv.${fitnessStats.fitnessLevel} gives you a head start.
-    </div>
-  `;
-
-  // Fitness bonus: higher fitness = start with progress
-  const fitnessBonus = fitnessStats.fitnessLevel / 200; // 0-0.5 head start
-  battleState.playerScore = fitnessBonus;
-  battleState.opponentScore = 0;
-  battleState.quickTarget = 1.0; // fill to 100%
-
-  // Bot auto-progresses
-  battleState.botInterval = setInterval(() => {
-    if (!battleState || battleState.phase !== 'quickbattle') {
-      clearInterval(battleState?.botInterval);
-      return;
-    }
-    battleState.opponentScore += 0.02 + Math.random() * 0.02;
-    // Check if bot won
-    if (battleState.opponentScore >= battleState.quickTarget) {
-      clearInterval(battleState.botInterval);
-      battleState.phase = 'result';
-      showBattleResult(false, `${battleState.opponent.name} wins the ${game.name}!`);
-    }
-  }, 100);
-
-  updateQuickBattleBar();
-}
-
-function quickBattleTap(e) {
+function combatBash(e) {
   e.preventDefault();
-  if (!battleState || battleState.phase !== 'quickbattle') return;
+  if (!combat || combat.roundOver) return;
 
-  battleState.playerScore += 0.04;
+  combat.bashCount++;
 
-  // Tap feedback
-  const area = document.getElementById('quick-battle-area');
-  if (area) {
-    area.style.transform = 'scale(0.95)';
-    setTimeout(() => { if (area) area.style.transform = ''; }, 50);
+  // Haptic
+  if (navigator.vibrate) navigator.vibrate(30);
+
+  // Bash button feedback
+  const btn = document.getElementById('bc-bash-btn');
+  btn.style.transform = 'scale(0.88)';
+  setTimeout(() => { if (btn) btn.style.transform = ''; }, 50);
+
+  // Update mana/charge bar
+  const progress = Math.min(1, combat.bashCount / combat.bashThreshold);
+  const manaFill = document.getElementById('bc-mana-fill');
+  const manaPct = document.getElementById('bc-mana-pct');
+  manaFill.style.width = (progress * 100) + '%';
+  manaPct.textContent = Math.floor(progress * 100) + '%';
+
+  if (progress >= 1) {
+    manaFill.classList.add('full');
+    btn.classList.add('charging');
   }
 
-  updateQuickBattleBar();
+  // Check if super is charged
+  if (combat.bashCount >= combat.bashThreshold && !combat.superReady) {
+    combat.superReady = true;
+    const fireBtn = document.getElementById('bc-fire-btn');
+    fireBtn.classList.add('can-fire');
+    if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
 
-  // Check win
-  if (battleState.playerScore >= battleState.quickTarget) {
-    clearInterval(battleState.botInterval);
-    battleState.phase = 'result';
-    const game = ARENA_GAME_CONFIG[battleState.selectedGame];
-    showBattleResult(true, `You won the ${game.name}!`);
+    // Auto-reset if not fired in 2s
+    combat.superTimeout = setTimeout(() => {
+      if (combat && combat.superReady) {
+        combat.superReady = false;
+        combat.bashCount = 0;
+        fireBtn.classList.remove('can-fire');
+        manaFill.classList.remove('full');
+        btn.classList.remove('charging');
+        manaFill.style.width = '0%';
+        manaPct.textContent = '0%';
+      }
+    }, 2000);
   }
 }
 
-function updateQuickBattleBar() {
-  const bar = document.getElementById('quick-battle-bar');
-  if (bar) bar.style.width = Math.min(100, (battleState.playerScore / battleState.quickTarget) * 100) + '%';
+function combatFire(e) {
+  e.preventDefault();
+  if (!combat || combat.roundOver || !combat.superReady) return;
+
+  combat.superReady = false;
+  combat.bashCount = 0;
+  clearTimeout(combat.superTimeout);
+
+  // Fire damage (full power)
+  const dmg = Math.floor((10 + combat.playerSTR) * 1.0);
+  dealDamageToEnemy(dmg, true);
+
+  // Reset UI
+  const manaFill = document.getElementById('bc-mana-fill');
+  const manaPct = document.getElementById('bc-mana-pct');
+  const fireBtn = document.getElementById('bc-fire-btn');
+  const bashBtn = document.getElementById('bc-bash-btn');
+  manaFill.style.width = '0%';
+  manaFill.classList.remove('full');
+  manaPct.textContent = '0%';
+  fireBtn.classList.remove('can-fire');
+  bashBtn.classList.remove('charging');
+
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 }
 
-// Integration hook: call this in multiplayer mode to launch existing game board
-// async function sendArenaGameChallenge(opponentUserId, gameType) {
-//   const result = await db.games.createChallenge(
-//     window.currentUser.id, opponentUserId, gameType, 0
-//   );
-//   if (result && !result.error) {
-//     openGameBoard(result.match_id);
-//   }
-// }
+function combatBlock(e) {
+  e.preventDefault();
+  if (!combat || combat.roundOver || !combat.blockReady) return;
+
+  combat.blockSuccess = true;
+  combat.blockReady = false;
+  const blockBtn = document.getElementById('bc-block-btn');
+  blockBtn.classList.remove('can-block');
+
+  // Shield flash
+  showHitFlash('blocked');
+  if (navigator.vibrate) navigator.vibrate([30, 20, 30]);
+}
+
+function showBlockPrompt() {
+  if (!combat || combat.roundOver) return;
+  combat.blockReady = true;
+  combat.blockSuccess = false;
+  const blockBtn = document.getElementById('bc-block-btn');
+  blockBtn.classList.add('can-block');
+
+  // Remove prompt after window
+  setTimeout(() => {
+    if (combat) {
+      combat.blockReady = false;
+      blockBtn.classList.remove('can-block');
+    }
+  }, BLOCK_WINDOW + 100);
+}
+
+function dealDamageToEnemy(dmg, isSuper) {
+  if (!combat || combat.roundOver) return;
+  combat.enemyHP = Math.max(0, combat.enemyHP - dmg);
+  updateCombatUI();
+
+  if (isSuper) {
+    showHitFlash('super-hit');
+    document.getElementById('battle-overlay').classList.add('battle-shake');
+    setTimeout(() => document.getElementById('battle-overlay').classList.remove('battle-shake'), 300);
+  }
+
+  if (combat.enemyHP <= 0) {
+    endRound(true);
+  }
+}
+
+function dealDamageToPlayer(dmg, isSuper) {
+  if (!combat || combat.roundOver) return;
+
+  const blockMult = combat.blockSuccess ? 0.5 : 1.0;
+  const actualDmg = Math.floor(dmg * blockMult);
+  combat.playerHP = Math.max(0, combat.playerHP - actualDmg);
+  combat.blockSuccess = false;
+  updateCombatUI();
+
+  showHitFlash(combat.blockSuccess ? 'blocked' : isSuper ? 'super-hit' : '');
+
+  if (isSuper && !combat.blockSuccess) {
+    document.getElementById('battle-overlay').classList.add('battle-shake');
+    setTimeout(() => document.getElementById('battle-overlay').classList.remove('battle-shake'), 300);
+  }
+
+  if (combat.playerHP <= 0) {
+    endRound(false);
+  }
+}
+
+function showHitFlash(type) {
+  const flash = document.createElement('div');
+  flash.className = 'battle-hit-flash ' + type;
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 400);
+}
+
+function updateCombatUI() {
+  if (!combat) return;
+  const { playerHP, playerMaxHP, enemyHP, enemyMaxHP } = combat;
+
+  document.getElementById('bc-hp-player').style.width = Math.max(0, (playerHP / playerMaxHP) * 100) + '%';
+  document.getElementById('bc-hp-enemy').style.width = Math.max(0, (enemyHP / enemyMaxHP) * 100) + '%';
+  document.getElementById('bc-hp-player-text').textContent = `${Math.max(0,playerHP)} / ${playerMaxHP}`;
+  document.getElementById('bc-hp-enemy-text').textContent = `${Math.max(0,enemyHP)} / ${enemyMaxHP}`;
+}
+
+function updateCombatTimer() {
+  if (!combat) return;
+  const remaining = Math.max(0, Math.ceil((combat.timerEnd - Date.now()) / 1000));
+  document.getElementById('bc-timer').textContent = remaining;
+  if (remaining <= 0 && !combat.roundOver) {
+    // Time's up - higher HP% wins
+    const playerPct = combat.playerHP / combat.playerMaxHP;
+    const enemyPct = combat.enemyHP / combat.enemyMaxHP;
+    endRound(playerPct >= enemyPct);
+  }
+}
+
+function updateRoundDots() {
+  if (!combat) return;
+  for (let i = 1; i <= 3; i++) {
+    const dot = document.getElementById('rd' + i);
+    dot.className = 'round-dot';
+    if (i <= combat.playerRoundWins) dot.classList.add('player-win');
+  }
+  // Show enemy wins on the other end conceptually via color
+  document.getElementById('bc-round').textContent = combat.round;
+}
+
+function endRound(playerWon) {
+  if (!combat || combat.roundOver) return;
+  combat.roundOver = true;
+
+  clearInterval(combat.autoAttackTimer);
+  clearInterval(combat.botAttackTimer);
+  clearInterval(combat.timerInterval);
+  clearTimeout(combat.superTimeout);
+
+  if (playerWon) {
+    combat.playerRoundWins++;
+  } else {
+    combat.enemyRoundWins++;
+  }
+
+  updateRoundDots();
+
+  // Check match result (best of 3)
+  if (combat.playerRoundWins >= 2 || combat.enemyRoundWins >= 2) {
+    const matchWon = combat.playerRoundWins >= 2;
+    setTimeout(() => showBattleResult(matchWon,
+      `${combat.playerRoundWins} - ${combat.enemyRoundWins}`), 800);
+  } else {
+    // Next round after brief pause
+    showNotification(playerWon ? 'Round won!' : 'Round lost!');
+    setTimeout(() => startNextRound(), 1500);
+  }
+}
+
+function startNextRound() {
+  if (!combat) return;
+  combat.round++;
+  combat.playerHP = combat.playerMaxHP;
+  combat.enemyHP = combat.enemyMaxHP;
+  combat.bashCount = 0;
+  combat.superReady = false;
+  combat.blockReady = false;
+  combat.roundOver = false;
+  combat.timerEnd = Date.now() + ROUND_DURATION;
+
+  // Reset UI
+  const manaFill = document.getElementById('bc-mana-fill');
+  manaFill.style.width = '0%';
+  manaFill.classList.remove('full');
+  document.getElementById('bc-mana-pct').textContent = '0%';
+  document.getElementById('bc-fire-btn').classList.remove('can-fire');
+  document.getElementById('bc-block-btn').classList.remove('can-block');
+  document.getElementById('bc-bash-btn').classList.remove('charging');
+  updateCombatUI();
+  updateRoundDots();
+
+  // Restart timers
+  combat.timerInterval = setInterval(updateCombatTimer, 100);
+  combat.autoAttackTimer = setInterval(() => {
+    if (!combat || combat.roundOver) return;
+    const dmg = Math.floor((10 + combat.playerSTR) * 0.2);
+    dealDamageToEnemy(dmg, false);
+  }, AUTO_ATTACK_INTERVAL);
+
+  const botLevel = combat.opponent.fitnessLevel || 40;
+  const botSpeed = Math.max(1800, 4500 - botLevel * 40);
+  let botAttackCount = 0;
+  combat.botAttackTimer = setInterval(() => {
+    if (!combat || combat.roundOver) return;
+    botAttackCount++;
+    const isSuper = botAttackCount % 4 === 0;
+    const dmg = isSuper
+      ? Math.floor((10 + combat.enemySTR) * 1.0)
+      : Math.floor((10 + combat.enemySTR) * 0.2);
+    if (isSuper) {
+      showBlockPrompt();
+      setTimeout(() => {
+        if (!combat || combat.roundOver) return;
+        dealDamageToPlayer(dmg, isSuper);
+      }, BLOCK_WINDOW);
+    } else {
+      dealDamageToPlayer(dmg, false);
+    }
+  }, botSpeed);
+}
+
+// In production: multiplayer would use the dashboard's full battle system
+// which syncs via Supabase Realtime channels. The arena collision would call:
+//   create_tamagotchi_battle(challengerId, opponentId, coinBet, stats)
+// and both players would see the same battle UI from dashboard.html.
 
 function showBattleResult(won, detail = '') {
-  const mg = document.getElementById('battle-minigame');
-  mg.innerHTML = '';
-  clearInterval(battleState?.botInterval);
+  // Hide combat zone
+  document.getElementById('battle-combat-zone').style.display = 'none';
+
+  // Clean up combat timers
+  if (combat) {
+    clearInterval(combat.autoAttackTimer);
+    clearInterval(combat.botAttackTimer);
+    clearInterval(combat.timerInterval);
+    clearTimeout(combat.superTimeout);
+  }
 
   const resultDiv = document.getElementById('battle-result');
   resultDiv.classList.add('active');
@@ -1526,11 +1924,10 @@ function showBattleResult(won, detail = '') {
   if (won) {
     resultDiv.innerHTML = `
       <div class="battle-result-text win">Victory!</div>
-      <div style="font-size:0.85rem;color:var(--arena-muted);">${detail}</div>
+      <div style="font-size:1.2rem;font-weight:900;color:var(--arena-warning);margin:4px 0;">${detail}</div>
       <div class="battle-reward">+15 Coins  +10 XP</div>
       <button class="battle-continue-btn" onclick="endBattle(true)">Continue</button>
     `;
-    // Opponent loses HP
     battleState.opponent.hp -= 1;
     if (battleState.opponent.hp <= 0) {
       battleState.opponent.alive = false;
@@ -1541,7 +1938,7 @@ function showBattleResult(won, detail = '') {
   } else {
     resultDiv.innerHTML = `
       <div class="battle-result-text lose">Defeated!</div>
-      <div style="font-size:0.85rem;color:var(--arena-muted);">${detail}</div>
+      <div style="font-size:1.2rem;font-weight:900;color:var(--arena-muted);margin:4px 0;">${detail}</div>
       <button class="battle-continue-btn" style="background:linear-gradient(135deg,var(--arena-secondary),#7c3aed);" onclick="endBattle(false)">Continue</button>
     `;
     player.hp -= 1;
@@ -1558,6 +1955,12 @@ function endBattle(won) {
   const overlay = document.getElementById('battle-overlay');
   overlay.classList.remove('active');
 
+  // Reset VS display for next battle
+  document.getElementById('battle-vs').style.display = '';
+  document.getElementById('battle-combat-zone').style.display = 'none';
+  document.getElementById('battle-result').classList.remove('active');
+  document.getElementById('battle-result').innerHTML = '';
+
   // Brief invincibility after battle
   const now = Date.now();
   player.invincibleUntil = now + 2000;
@@ -1565,7 +1968,14 @@ function endBattle(won) {
     battleState.opponent.invincibleUntil = now + 2000;
   }
 
-  clearInterval(battleState?.botInterval);
+  // Cleanup all combat state
+  if (combat) {
+    clearInterval(combat.autoAttackTimer);
+    clearInterval(combat.botAttackTimer);
+    clearInterval(combat.timerInterval);
+    clearTimeout(combat.superTimeout);
+    combat = null;
+  }
   battleState = null;
 
   if (!player.alive) {
