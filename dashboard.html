@@ -33345,7 +33345,7 @@ async function loadReferralStats() {
         if (document.getElementById('referral-network-count')) {
             // Try to get friends count too for a combined network number
             try {
-                const friends = await window.dbHelpers.friends.getFriends(window.currentUser.id);
+                const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
                 const friendCount = friends.length;
                 const totalNetwork = referralCount + friendCount;
                 document.getElementById('referral-network-count').textContent =
@@ -33789,7 +33789,7 @@ async function loadFriendsList() {
     const container = document.getElementById('friends-list');
 
     try {
-        const friends = await window.dbHelpers.friends.getFriends(window.currentUser.id);
+        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
 
         if (friends.length === 0) {
             container.innerHTML = `
@@ -33846,7 +33846,7 @@ async function removeFriend(friendId) {
 // Update network count in header (friends + referrals)
 async function updateFriendsCount() {
     try {
-        const friends = await window.dbHelpers.friends.getFriends(window.currentUser.id);
+        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
         const referralStats = await window.dbHelpers.referrals.getStats(window.currentUser.id);
         const friendCount = friends.length;
         const referralCount = referralStats.totalReferrals || 0;
@@ -34352,14 +34352,14 @@ async function openCreateGroupChatModal() {
         }
 
         container.innerHTML = friends.map(friend => {
-            const initials = (friend.name || '?').charAt(0).toUpperCase();
+            const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
             return `
                 <div onclick="toggleGroupMember('${friend.friend_id}', this)" style="display: flex; align-items: center; gap: 12px; padding: 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" data-friend-id="${friend.friend_id}">
                     <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; overflow: hidden; flex-shrink: 0;">
-                        ${friend.photo ? `<img src="${friend.photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
+                        ${friend.friend_photo ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
                     </div>
                     <div style="flex: 1;">
-                        <div style="font-weight: 600; color: var(--text-main);">${escapeHtml(friend.name)}</div>
+                        <div style="font-weight: 600; color: var(--text-main);">${escapeHtml(friend.friend_name || 'Friend')}</div>
                     </div>
                     <div class="friend-check" style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center;">
                     </div>
@@ -36079,7 +36079,7 @@ async function openMessageInbox() {
 
         // Get friends list
         if (window.currentUser && window.dbHelpers && window.dbHelpers.friends) {
-            const friends = await window.dbHelpers.friends.getFriends(window.currentUser.id);
+            const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
 
             if (friends && friends.length > 0) {
                 // Add divider
@@ -36127,6 +36127,126 @@ async function openMessageInbox() {
 function closeMessageSelectorModal() {
     const modal = document.getElementById('message-selector-modal');
     if (modal) modal.style.display = 'none';
+}
+
+// Open the Messages panel (slide-over with group chats + friends)
+function openFeedMessagesPanel() {
+    const panel = document.getElementById('feed-messages-panel');
+    if (panel) {
+        panel.style.display = 'block';
+        // Close panel when clicking on backdrop (outside panel content)
+        panel.onclick = function(e) {
+            if (e.target === panel) closeFeedMessagesPanel();
+        };
+        loadPanelGroupChats();
+        loadPanelFriends();
+    }
+}
+
+// Close the Messages panel
+function closeFeedMessagesPanel() {
+    const panel = document.getElementById('feed-messages-panel');
+    if (panel) panel.style.display = 'none';
+}
+
+// Load group chats into the messages panel
+async function loadPanelGroupChats() {
+    const container = document.getElementById('panel-group-chats');
+    if (!container || !window.currentUser) return;
+
+    container.innerHTML = '<div style="text-align: center; padding: 15px; color: var(--text-muted); font-size: 0.85rem;">Loading...</div>';
+
+    try {
+        const { data: chats, error } = await window.supabaseClient
+            .rpc('get_user_group_chats', { user_uuid: window.currentUser.id });
+
+        if (error) throw error;
+
+        if (!chats || chats.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">
+                    <div style="margin-bottom: 8px;">No group chats yet</div>
+                    <button onclick="openCreateGroupChatModal(); closeFeedMessagesPanel();" style="background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Create One</button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = chats.map(chat => {
+            const timeAgo = chat.last_message_at ? getTimeAgo(new Date(chat.last_message_at)) : '';
+            const preview = chat.last_message ? (chat.last_message.length > 40 ? chat.last_message.substring(0, 40) + '...' : chat.last_message) : 'No messages yet';
+
+            return `
+                <div onclick="openGroupChat('${chat.chat_id}', '${escapeHtml(chat.chat_name)}', '${escapeHtml(chat.member_names || '')}'); closeFeedMessagesPanel();" style="display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px; cursor: pointer; transition: background 0.2s; background: #f8fafc;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+                    <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.1rem; flex-shrink: 0;">💬</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(chat.chat_name)}</div>
+                            ${timeAgo ? `<div style="font-size: 0.7rem; color: var(--text-muted); flex-shrink: 0; margin-left: 8px;">${timeAgo}</div>` : ''}
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${chat.last_message_by ? `<span style="font-weight: 500;">${escapeHtml(chat.last_message_by)}:</span> ` : ''}${escapeHtml(preview)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading panel group chats:', error);
+        container.innerHTML = '<div style="text-align: center; padding: 15px; color: var(--text-muted); font-size: 0.85rem;">Failed to load chats</div>';
+    }
+}
+
+// Load friends into the messages panel
+async function loadPanelFriends() {
+    const container = document.getElementById('panel-friends-list');
+    const countEl = document.getElementById('panel-friends-count');
+    if (!container || !window.currentUser) return;
+
+    container.innerHTML = '<div style="text-align: center; padding: 15px; color: var(--text-muted); font-size: 0.85rem;">Loading...</div>';
+
+    try {
+        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
+
+        if (countEl) {
+            countEl.textContent = friends.length === 0 ? '0 friends' :
+                                  friends.length === 1 ? '1 friend' :
+                                  `${friends.length} friends`;
+        }
+
+        if (!friends || friends.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">
+                    <p style="margin: 0 0 10px 0;">Add friends to message them!</p>
+                    <button onclick="closeFeedMessagesPanel(); openAddFriendModal();" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Add Friends</button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = friends.map(friend => {
+            const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
+            const photoHtml = friend.friend_photo
+                ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='${initials}'">`
+                : initials;
+
+            return `
+                <div onclick="closeFeedMessagesPanel(); openDirectMessage('${friend.friend_id}', '${(friend.friend_name || 'Friend').replace(/'/g, "\\'")}', '${friend.friend_photo || ''}');" style="display: flex; align-items: center; padding: 10px 0; cursor: pointer; border-bottom: 1px solid #f1f5f9;">
+                    <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem; overflow: hidden; margin-right: 12px; flex-shrink: 0;">${photoHtml}</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${friend.friend_name || 'Friend'}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Tap to message</div>
+                    </div>
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted); flex-shrink: 0;"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading panel friends:', error);
+        container.innerHTML = '<div style="text-align: center; padding: 15px; color: #ef4444; font-size: 0.85rem;">Failed to load friends</div>';
+    }
 }
 
 // Simple toast notification
