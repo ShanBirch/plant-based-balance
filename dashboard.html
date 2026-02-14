@@ -53538,8 +53538,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Hide battle trigger + unlocks buttons during battle
             const battleTriggerBtn = document.querySelector('.battle-trigger-btn');
             const animTriggerBtn = document.querySelector('.animation-trigger-btn');
+            const arenaTriggerBtn = document.querySelector('.arena-trigger-btn');
             if (battleTriggerBtn) battleTriggerBtn.style.display = 'none';
             if (animTriggerBtn) animTriggerBtn.style.display = 'none';
+            if (arenaTriggerBtn) arenaTriggerBtn.style.display = 'none';
 
             // Show battle UI (hide mana bar - not needed anymore)
             if (hpContainer) hpContainer.classList.add('active');
@@ -53653,6 +53655,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Restore hidden buttons
             if (battleTriggerBtn) battleTriggerBtn.style.display = '';
             if (animTriggerBtn) animTriggerBtn.style.display = '';
+            if (arenaTriggerBtn) arenaTriggerBtn.style.display = '';
 
             // Settle battle
             const battleBet = window._activeBattleBet || 0;

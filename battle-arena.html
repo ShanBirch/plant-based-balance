@@ -230,7 +230,7 @@
     display: none;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     overflow: hidden;
   }
   .battle-overlay.active {
@@ -277,12 +277,17 @@
     text-shadow: 0 0 30px rgba(239,68,68,0.5);
   }
 
-  /* ── Battle Viewport (model-viewer container) ── */
+  /* ── Battle Viewport (model-viewer container - fills entire overlay) ── */
+  .battle-combat-zone {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+  }
   .battle-viewport {
     position: relative;
     width: 100%;
-    height: 55vh;
-    max-height: 420px;
+    flex: 1;
     background: #1a1a2e;
     overflow: hidden;
   }
@@ -302,7 +307,7 @@
   }
 
   .battle-viewport model-viewer {
-    width: 100%;
+    width: 130%;
     height: 100%;
     position: absolute;
     top: 0;
@@ -395,10 +400,10 @@
     font-family: 'Inter', sans-serif;
   }
 
-  /* ── Mana bar (overlaid on viewport) ── */
+  /* ── Mana bar (above action buttons, bottom of viewport) ── */
   .battle-mana-container {
     position: absolute;
-    bottom: 8px;
+    bottom: 100px;
     left: 12px;
     right: 12px;
     z-index: 150;
@@ -437,13 +442,18 @@
     100% { box-shadow: 0 0 20px rgba(155,89,182,0.8); }
   }
 
-  /* ── Round info (below viewport) ── */
+  /* ── Round info (overlaid on viewport) ── */
   .battle-round-info {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    right: 0;
     text-align: center;
-    padding: 8px 0;
     font-size: 0.7rem;
     font-weight: 700;
-    color: var(--arena-muted);
+    color: rgba(255,255,255,0.7);
+    z-index: 160;
+    pointer-events: none;
   }
   .battle-round-score {
     display: inline-flex;
@@ -463,24 +473,31 @@
   .round-dot.enemy-win { background: #ff4444; }
 
   .battle-timer {
+    position: absolute;
+    top: 70px;
+    left: 0;
+    right: 0;
     font-size: 1.2rem;
     font-weight: 900;
     color: var(--arena-warning);
     text-align: center;
-    margin-bottom: 6px;
+    z-index: 160;
+    pointer-events: none;
   }
 
-  /* ── Action buttons (dashboard style) ── */
+  /* ── Action buttons (overlaid at bottom-right, dashboard style) ── */
   .battle-action-container {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    z-index: 200;
     display: none;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 10px 20px;
     pointer-events: none;
   }
   .battle-action-container.active {
     display: flex;
+    align-items: center;
+    gap: 12px;
     pointer-events: auto;
   }
 
@@ -982,49 +999,49 @@
           <div id="bc-hp-enemy-text" class="battle-hp-text">100 / 100</div>
         </div>
       </div>
-      <!-- Mana bar overlaid -->
+      <!-- Battle text overlay -->
+      <div class="battle-overlay-text" id="bc-overlay-text">
+        <div class="battle-text" id="bc-text-inner">BATTLE!</div>
+      </div>
+      <!-- Round info (overlaid) -->
+      <div class="battle-round-info">
+        ROUND <span id="bc-round">1</span> / 3
+        <span class="battle-round-score" id="bc-round-dots">
+          <span class="round-dot" id="rd1"></span>
+          <span class="round-dot" id="rd2"></span>
+          <span class="round-dot" id="rd3"></span>
+        </span>
+      </div>
+      <!-- Timer (overlaid) -->
+      <div class="battle-timer" id="bc-timer">30</div>
+      <!-- Mana bar (above action buttons) -->
       <div id="bc-mana-container" class="battle-mana-container">
         <div class="battle-mana-label">SPECIAL <span id="bc-mana-pct">0%</span></div>
         <div class="battle-mana-bar-bg">
           <div id="bc-mana-fill" class="battle-mana-bar-fill" style="width: 0%;"></div>
         </div>
       </div>
-      <!-- Battle text overlay -->
-      <div class="battle-overlay-text" id="bc-overlay-text">
-        <div class="battle-text" id="bc-text-inner">BATTLE!</div>
+      <!-- Action buttons (overlaid at bottom-right) -->
+      <div id="bc-action-container" class="battle-action-container">
+        <button id="bc-block-btn" class="battle-action-btn battle-block-btn" ontouchstart="combatBlock(event)" onmousedown="combatBlock(event)">
+          <span class="action-btn-icon">🛡️</span>
+          <span class="action-btn-label">BLOCK</span>
+        </button>
+        <button id="bc-bash-btn" class="battle-bash-btn" ontouchstart="combatBash(event)" onmousedown="combatBash(event)">
+          <span class="bash-icon">👊</span>
+          <span class="bash-label">BASH!</span>
+          <div class="bash-progress-ring">
+            <svg viewBox="0 0 60 60">
+              <circle cx="30" cy="30" r="26" class="bash-ring-bg"/>
+              <circle cx="30" cy="30" r="26" class="bash-ring-fill" id="bash-ring-fill"/>
+            </svg>
+          </div>
+        </button>
+        <button id="bc-fire-btn" class="battle-action-btn battle-fire-btn" ontouchstart="combatFire(event)" onmousedown="combatFire(event)">
+          <span class="action-btn-icon">🔥</span>
+          <span class="action-btn-label">FIRE!</span>
+        </button>
       </div>
-    </div>
-    <!-- Round info -->
-    <div class="battle-round-info">
-      ROUND <span id="bc-round">1</span> / 3
-      <span class="battle-round-score" id="bc-round-dots">
-        <span class="round-dot" id="rd1"></span>
-        <span class="round-dot" id="rd2"></span>
-        <span class="round-dot" id="rd3"></span>
-      </span>
-    </div>
-    <!-- Timer -->
-    <div class="battle-timer" id="bc-timer">30</div>
-    <!-- Action buttons (dashboard style) -->
-    <div id="bc-action-container" class="battle-action-container">
-      <button id="bc-block-btn" class="battle-action-btn battle-block-btn" ontouchstart="combatBlock(event)" onmousedown="combatBlock(event)">
-        <span class="action-btn-icon">🛡️</span>
-        <span class="action-btn-label">BLOCK</span>
-      </button>
-      <button id="bc-bash-btn" class="battle-bash-btn" ontouchstart="combatBash(event)" onmousedown="combatBash(event)">
-        <span class="bash-icon">👊</span>
-        <span class="bash-label">BASH!</span>
-        <div class="bash-progress-ring">
-          <svg viewBox="0 0 60 60">
-            <circle cx="30" cy="30" r="26" class="bash-ring-bg"/>
-            <circle cx="30" cy="30" r="26" class="bash-ring-fill" id="bash-ring-fill"/>
-          </svg>
-        </div>
-      </button>
-      <button id="bc-fire-btn" class="battle-action-btn battle-fire-btn" ontouchstart="combatFire(event)" onmousedown="combatFire(event)">
-        <span class="action-btn-icon">🔥</span>
-        <span class="action-btn-label">FIRE!</span>
-      </button>
     </div>
   </div>
   <div class="battle-result" id="battle-result"></div>
