@@ -7,6 +7,7 @@
 <meta name="description" content="Battle your friends in the FitGotchi Arena! Your fitness powers your fighter.">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
 <link href="manifest.json" rel="manifest"/>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js"></script>
 <style>
   :root {
     --arena-bg: #0a0e1a;
@@ -93,6 +94,7 @@
     width: 50%;
     height: 40%;
     z-index: 50;
+    touch-action: none;
   }
   .joystick-base {
     position: absolute;
@@ -112,6 +114,61 @@
     display: none;
     pointer-events: none;
   }
+
+  /* ── Visible D-Pad hint ── */
+  .dpad-hint {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    width: 110px;
+    height: 110px;
+    z-index: 45;
+    pointer-events: none;
+    opacity: 0.35;
+    transition: opacity 0.3s;
+  }
+  .dpad-hint.active {
+    opacity: 0.6;
+  }
+  .dpad-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: 1.5px solid rgba(255,255,255,0.25);
+  }
+  .dpad-arrow {
+    position: absolute;
+    width: 0; height: 0;
+    border: 10px solid transparent;
+  }
+  .dpad-arrow.up {
+    top: 4px; left: 50%;
+    transform: translateX(-50%);
+    border-bottom: 12px solid rgba(255,255,255,0.35);
+    border-top: none;
+  }
+  .dpad-arrow.down {
+    bottom: 4px; left: 50%;
+    transform: translateX(-50%);
+    border-top: 12px solid rgba(255,255,255,0.35);
+    border-bottom: none;
+  }
+  .dpad-arrow.left {
+    left: 4px; top: 50%;
+    transform: translateY(-50%);
+    border-right: 12px solid rgba(255,255,255,0.35);
+    border-left: none;
+  }
+  .dpad-arrow.right {
+    right: 4px; top: 50%;
+    transform: translateY(-50%);
+    border-left: 12px solid rgba(255,255,255,0.35);
+    border-right: none;
+  }
+
 
   /* ── Action Button ── */
   .action-zone {
@@ -169,11 +226,12 @@
     position: fixed;
     inset: 0;
     z-index: 200;
-    background: rgba(0,0,0,0.9);
+    background: rgba(0,0,0,0.95);
     display: none;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    overflow: hidden;
   }
   .battle-overlay.active {
     display: flex;
@@ -182,6 +240,10 @@
   @keyframes battleIn {
     0% { opacity: 0; transform: scale(1.1); }
     100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
   }
 
   .battle-vs {
@@ -215,91 +277,170 @@
     text-shadow: 0 0 30px rgba(239,68,68,0.5);
   }
 
-
-  /* ── In-Battle Combat UI ── */
-  .battle-timer {
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: var(--arena-warning);
-    margin-top: 8px;
-  }
-
-  .battle-combat-zone {
+  /* ── Battle Viewport (model-viewer container) ── */
+  .battle-viewport {
+    position: relative;
     width: 100%;
-    max-width: 400px;
+    height: 55vh;
+    max-height: 420px;
+    background: #1a1a2e;
+    overflow: hidden;
   }
 
-  /* HP Bars */
-  .battle-hp-row {
+  .battle-viewport .dojo-bg {
+    position: absolute;
+    inset: 0;
+    background: url('./assets/battle_dojo_bg.jpeg') center center / cover no-repeat;
+    z-index: 0;
+  }
+  .battle-viewport .dojo-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.15);
+    pointer-events: none;
+  }
+
+  .battle-viewport model-viewer {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: -30%;
+    z-index: 3;
+    --poster-color: transparent;
+    background: transparent;
+  }
+
+  .battle-viewport .battle-overlay-text {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    background: rgba(0,0,0,0.5);
+    pointer-events: none;
+  }
+  .battle-viewport .battle-overlay-text.active {
     display: flex;
-    gap: 12px;
-    margin-bottom: 16px;
+    animation: fadeIn 0.3s ease-out;
+  }
+  .battle-viewport .battle-overlay-text .battle-text {
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-shadow: 0 0 20px rgba(255,0,0,0.8), 0 4px 20px rgba(0,0,0,0.7);
+    font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  /* ── HP bars (overlaid on viewport) ── */
+  .battle-hp-container {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: none;
+    justify-content: space-between;
+    z-index: 150;
+    pointer-events: none;
+  }
+  .battle-hp-container.active {
+    display: flex;
   }
   .battle-hp-box {
-    flex: 1;
-    background: rgba(255,255,255,0.06);
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
     border-radius: 10px;
-    padding: 8px 12px;
+    padding: 6px 10px;
+    min-width: 120px;
+    border: 1px solid rgba(255,255,255,0.15);
   }
-  .battle-hp-label {
-    display: flex;
-    justify-content: space-between;
+  .battle-hp-box.enemy {
+    text-align: right;
+  }
+  .battle-hp-name {
     font-size: 0.6rem;
-    font-weight: 800;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 3px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 4px;
   }
-  .battle-hp-label .hp-name { color: rgba(255,255,255,0.7); }
-  .battle-hp-label .hp-val { font-family: monospace; }
-  .battle-hp-bar {
-    height: 8px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 4px;
+  .battle-hp-bar-bg {
+    height: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 6px;
     overflow: hidden;
   }
-  .battle-hp-fill {
+  .battle-hp-bar-fill {
     height: 100%;
-    border-radius: 4px;
-    transition: width 0.2s;
+    border-radius: 6px;
+    transition: width 0.4s ease-out;
   }
-  .battle-hp-fill.player-hp { background: linear-gradient(90deg, #2ecc71, #4ecdc4); }
-  .battle-hp-fill.enemy-hp { background: linear-gradient(90deg, #ff4444, #ff6b6b); }
+  .battle-hp-bar-fill.player {
+    background: linear-gradient(90deg, #2ecc71, #4ecdc4);
+  }
+  .battle-hp-bar-fill.enemy {
+    background: linear-gradient(90deg, #e74c3c, #ff6b6b);
+  }
+  .battle-hp-text {
+    font-size: 0.5rem;
+    font-weight: 800;
+    color: rgba(255,255,255,0.7);
+    margin-top: 2px;
+    font-family: 'Inter', sans-serif;
+  }
 
-  /* Mana bar */
-  .battle-mana-row {
-    margin-bottom: 16px;
+  /* ── Mana bar (overlaid on viewport) ── */
+  .battle-mana-container {
+    position: absolute;
+    bottom: 8px;
+    left: 12px;
+    right: 12px;
+    z-index: 150;
+    pointer-events: none;
+    display: none;
+  }
+  .battle-mana-container.active {
+    display: block;
   }
   .battle-mana-label {
-    font-size: 0.6rem;
-    font-weight: 800;
-    color: #45b7d1;
+    font-size: 0.5rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.6);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 4px;
-    text-align: center;
+    margin-bottom: 2px;
   }
-  .battle-mana-bar {
-    height: 6px;
+  .battle-mana-bar-bg {
+    height: 8px;
     background: rgba(255,255,255,0.1);
-    border-radius: 3px;
+    border-radius: 8px;
     overflow: hidden;
   }
-  .battle-mana-fill {
+  .battle-mana-bar-fill {
     height: 100%;
-    border-radius: 3px;
-    background: linear-gradient(90deg, #3498db, #45b7d1);
-    transition: width 0.15s;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #3498db, #45b7d1, #9b59b6);
+    transition: width 0.2s linear;
+    box-shadow: 0 0 8px rgba(52,152,219,0.4);
   }
-  .battle-mana-fill.full {
-    background: linear-gradient(90deg, #f59e0b, #fbbf24);
-    box-shadow: 0 0 10px rgba(251,191,36,0.5);
+  .battle-mana-bar-fill.full {
+    animation: manaReady 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes manaReady {
+    0% { box-shadow: 0 0 8px rgba(52,152,219,0.4); }
+    100% { box-shadow: 0 0 20px rgba(155,89,182,0.8); }
   }
 
-  /* Round indicator */
+  /* ── Round info (below viewport) ── */
   .battle-round-info {
     text-align: center;
-    margin-bottom: 12px;
+    padding: 8px 0;
     font-size: 0.7rem;
     font-weight: 700;
     color: var(--arena-muted);
@@ -321,94 +462,155 @@
   .round-dot.player-win { background: #2ecc71; }
   .round-dot.enemy-win { background: #ff4444; }
 
-  /* Combat action buttons */
-  .battle-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
+  .battle-timer {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: var(--arena-warning);
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  /* ── Action buttons (dashboard style) ── */
+  .battle-action-container {
+    display: none;
     align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 20px;
+    pointer-events: none;
+  }
+  .battle-action-container.active {
+    display: flex;
+    pointer-events: auto;
   }
 
   .battle-bash-btn {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
+    border: none;
     border-radius: 50%;
-    border: 4px solid rgba(255,255,255,0.15);
-    background: linear-gradient(135deg, #ff6b6b, #ff4444);
+    background: radial-gradient(circle at 30% 30%, #ff6b4a, #e63946);
     color: white;
-    font-size: 0.7rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 1px;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    box-shadow: 0 4px 20px rgba(255,68,68,0.4);
-    transition: transform 0.05s;
+    gap: 0;
     position: relative;
+    box-shadow: 0 4px 20px rgba(230,57,70,0.5), inset 0 2px 4px rgba(255,255,255,0.2);
+    transition: transform 0.05s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    touch-action: manipulation;
   }
-  .battle-bash-btn:active { transform: scale(0.9); }
-  .battle-bash-btn .bash-icon { font-size: 1.8rem; }
-  .battle-bash-btn .bash-label { font-size: 0.55rem; letter-spacing: 1.5px; }
+  .battle-bash-btn:active {
+    transform: scale(0.88);
+    box-shadow: 0 2px 10px rgba(230,57,70,0.7), inset 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .battle-bash-btn .bash-icon { font-size: 1.5rem; line-height: 1; }
+  .battle-bash-btn .bash-label { font-size: 0.55rem; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
 
-  .battle-bash-btn .bash-ring {
+  .battle-bash-btn .bash-progress-ring {
     position: absolute;
-    inset: -6px;
-    border-radius: 50%;
-    border: 3px solid transparent;
-    border-top-color: #fbbf24;
-    transition: transform 0.1s;
+    inset: -4px;
+    pointer-events: none;
   }
-  .battle-bash-btn.charging .bash-ring {
-    animation: spin 0.8s linear infinite;
+  .battle-bash-btn .bash-progress-ring svg {
+    width: 100%;
+    height: 100%;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .bash-ring-bg {
+    fill: none;
+    stroke: rgba(255,255,255,0.15);
+    stroke-width: 3;
+  }
+  .bash-ring-fill {
+    fill: none;
+    stroke: #FFD700;
+    stroke-width: 3;
+    stroke-dasharray: 163.36;
+    stroke-dashoffset: 163.36;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.1s;
+    transform: rotate(-90deg);
+    transform-origin: center;
+  }
 
-  .battle-side-btn {
-    width: 56px;
-    height: 56px;
+  .battle-bash-btn.attack-ready {
+    animation: bashReady 0.3s ease-in-out infinite alternate;
+    background: radial-gradient(circle at 30% 30%, #FFD700, #ff8c00);
+  }
+  @keyframes bashReady {
+    0% { box-shadow: 0 0 15px rgba(255,215,0,0.5); transform: scale(1); }
+    100% { box-shadow: 0 0 30px rgba(255,215,0,0.9); transform: scale(1.05); }
+  }
+
+  .battle-action-btn {
+    width: 64px;
+    height: 64px;
+    border: none;
     border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.15);
     color: white;
-    font-size: 0.5rem;
-    font-weight: 800;
     cursor: pointer;
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1px;
-    transition: transform 0.1s, opacity 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    gap: 0;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    touch-action: manipulation;
   }
-  .battle-side-btn:active { transform: scale(0.85); }
-  .battle-side-btn .side-icon { font-size: 1.2rem; }
-
-  .battle-block-btn {
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
-    box-shadow: 0 2px 12px rgba(37,99,235,0.4);
-    opacity: 0.3;
+  .battle-action-btn.visible {
+    display: flex;
+    animation: actionBtnAppear 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
-  .battle-block-btn.can-block {
-    opacity: 1;
-    animation: pulse-battle 0.8s infinite;
-  }
+  .battle-action-btn .action-btn-icon { font-size: 1.3rem; line-height: 1; }
+  .battle-action-btn .action-btn-label { font-size: 0.5rem; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+  .battle-action-btn:active { transform: scale(0.85); }
 
   .battle-fire-btn {
-    background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    box-shadow: 0 2px 12px rgba(251,191,36,0.4);
-    opacity: 0.3;
+    background: radial-gradient(circle at 30% 30%, #FFD700, #ff6b00);
+    box-shadow: 0 0 20px rgba(255,215,0,0.7), 0 0 40px rgba(255,107,0,0.4);
+    animation: firePulse 0.5s ease-in-out infinite alternate;
   }
-  .battle-fire-btn.can-fire {
-    opacity: 1;
-    animation: pulse-battle 0.6s infinite;
+  @keyframes firePulse {
+    0% { box-shadow: 0 0 15px rgba(255,215,0,0.6); transform: scale(1); }
+    100% { box-shadow: 0 0 25px rgba(255,215,0,0.9); transform: scale(1.08); }
   }
 
-  /* Hit flash */
+  .battle-block-btn {
+    background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb);
+    box-shadow: 0 0 20px rgba(96,165,250,0.7), 0 0 40px rgba(37,99,235,0.4);
+    animation: blockPulse 0.4s ease-in-out infinite alternate;
+  }
+  @keyframes blockPulse {
+    0% { box-shadow: 0 0 15px rgba(96,165,250,0.6); transform: scale(1); }
+    100% { box-shadow: 0 0 25px rgba(96,165,250,0.9); transform: scale(1.08); }
+  }
+
+  @keyframes actionBtnAppear {
+    0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+
+  /* ── Fireball projectile ── */
+  .fireball {
+    position: absolute;
+    pointer-events: none;
+    z-index: 100;
+    will-change: transform;
+  }
+  .fireball img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: auto;
+  }
+
+  /* ── Hit flash ── */
   .battle-hit-flash {
     position: fixed;
     inset: 0;
@@ -420,22 +622,18 @@
     0% { background: rgba(255,68,68,0.3); }
     100% { background: transparent; }
   }
-  .battle-hit-flash.blocked {
-    animation-name: blockFlash;
-  }
+  .battle-hit-flash.blocked { animation-name: blockFlash; }
   @keyframes blockFlash {
     0% { background: rgba(59,130,246,0.3); }
     100% { background: transparent; }
   }
-  .battle-hit-flash.super-hit {
-    animation-name: superFlash;
-  }
+  .battle-hit-flash.super-hit { animation-name: superFlash; }
   @keyframes superFlash {
     0% { background: rgba(251,191,36,0.4); }
     100% { background: transparent; }
   }
 
-  /* Screen shake */
+  /* ── Screen shake ── */
   @keyframes battleShake {
     0%, 100% { transform: translate(0); }
     20% { transform: translate(-4px, 2px); }
@@ -443,11 +641,15 @@
     60% { transform: translate(-2px, 4px); }
     80% { transform: translate(2px, -4px); }
   }
-  .battle-shake {
-    animation: battleShake 0.3s ease;
+  .battle-shake { animation: battleShake 0.3s ease; }
+
+  @keyframes roundTextPop {
+    0% { transform: scale(0.3); opacity: 0; }
+    60% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
   }
 
-  /* Battle Result */
+  /* ── Battle Result ── */
   .battle-result {
     display: none;
     flex-direction: column;
@@ -724,6 +926,13 @@
   <div class="joystick-base" id="joystick-base"></div>
   <div class="joystick-thumb" id="joystick-thumb"></div>
 </div>
+<div class="dpad-hint" id="dpad-hint" style="display:none;">
+  <div class="dpad-center"></div>
+  <div class="dpad-arrow up"></div>
+  <div class="dpad-arrow down"></div>
+  <div class="dpad-arrow left"></div>
+  <div class="dpad-arrow right"></div>
+</div>
 
 <!-- ═══════════════ ACTION BUTTON ═══════════════ -->
 <div class="action-zone" id="action-zone" style="display:none;">
@@ -737,6 +946,54 @@
 <div class="battle-overlay" id="battle-overlay">
   <div class="battle-vs" id="battle-vs"></div>
   <div class="battle-combat-zone" id="battle-combat-zone" style="display:none;">
+    <!-- Battle Viewport (same as tamagotchi) -->
+    <div class="battle-viewport" id="battle-viewport">
+      <div class="dojo-bg"></div>
+      <model-viewer
+        id="arena-battle-model"
+        camera-orbit="0deg 85deg 22m"
+        field-of-view="55deg"
+        min-field-of-view="20deg"
+        max-field-of-view="120deg"
+        shadow-intensity="1.5"
+        shadow-softness="0.8"
+        exposure="0.9"
+        environment-image="neutral"
+        interaction-prompt="none"
+        disable-zoom
+        disable-pan
+        loading="eager"
+        style="background: transparent;">
+      </model-viewer>
+      <!-- HP bars overlaid -->
+      <div id="bc-hp-container" class="battle-hp-container">
+        <div class="battle-hp-box player">
+          <div class="battle-hp-name">YOU</div>
+          <div class="battle-hp-bar-bg">
+            <div id="bc-hp-player" class="battle-hp-bar-fill player" style="width: 100%;"></div>
+          </div>
+          <div id="bc-hp-player-text" class="battle-hp-text">100 / 100</div>
+        </div>
+        <div class="battle-hp-box enemy">
+          <div class="battle-hp-name" id="bc-enemy-name">OPPONENT</div>
+          <div class="battle-hp-bar-bg">
+            <div id="bc-hp-enemy" class="battle-hp-bar-fill enemy" style="width: 100%;"></div>
+          </div>
+          <div id="bc-hp-enemy-text" class="battle-hp-text">100 / 100</div>
+        </div>
+      </div>
+      <!-- Mana bar overlaid -->
+      <div id="bc-mana-container" class="battle-mana-container">
+        <div class="battle-mana-label">SPECIAL <span id="bc-mana-pct">0%</span></div>
+        <div class="battle-mana-bar-bg">
+          <div id="bc-mana-fill" class="battle-mana-bar-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+      <!-- Battle text overlay -->
+      <div class="battle-overlay-text" id="bc-overlay-text">
+        <div class="battle-text" id="bc-text-inner">BATTLE!</div>
+      </div>
+    </div>
     <!-- Round info -->
     <div class="battle-round-info">
       ROUND <span id="bc-round">1</span> / 3
@@ -746,38 +1003,27 @@
         <span class="round-dot" id="rd3"></span>
       </span>
     </div>
-    <!-- HP bars -->
-    <div class="battle-hp-row">
-      <div class="battle-hp-box">
-        <div class="battle-hp-label"><span class="hp-name">YOU</span><span class="hp-val" id="bc-hp-player-text">100/100</span></div>
-        <div class="battle-hp-bar"><div class="battle-hp-fill player-hp" id="bc-hp-player" style="width:100%"></div></div>
-      </div>
-      <div class="battle-hp-box">
-        <div class="battle-hp-label"><span class="hp-name" id="bc-enemy-name">ENEMY</span><span class="hp-val" id="bc-hp-enemy-text">100/100</span></div>
-        <div class="battle-hp-bar"><div class="battle-hp-fill enemy-hp" id="bc-hp-enemy" style="width:100%"></div></div>
-      </div>
-    </div>
-    <!-- Mana bar -->
-    <div class="battle-mana-row">
-      <div class="battle-mana-label">SPECIAL <span id="bc-mana-pct">0%</span></div>
-      <div class="battle-mana-bar"><div class="battle-mana-fill" id="bc-mana-fill" style="width:0%"></div></div>
-    </div>
     <!-- Timer -->
     <div class="battle-timer" id="bc-timer">30</div>
-    <!-- Action buttons -->
-    <div class="battle-actions">
-      <button class="battle-side-btn battle-block-btn" id="bc-block-btn" ontouchstart="combatBlock(event)" onmousedown="combatBlock(event)">
-        <span class="side-icon">🛡️</span>
-        <span>Block</span>
+    <!-- Action buttons (dashboard style) -->
+    <div id="bc-action-container" class="battle-action-container">
+      <button id="bc-block-btn" class="battle-action-btn battle-block-btn" ontouchstart="combatBlock(event)" onmousedown="combatBlock(event)">
+        <span class="action-btn-icon">🛡️</span>
+        <span class="action-btn-label">BLOCK</span>
       </button>
-      <button class="battle-bash-btn" id="bc-bash-btn" ontouchstart="combatBash(event)" onmousedown="combatBash(event)">
+      <button id="bc-bash-btn" class="battle-bash-btn" ontouchstart="combatBash(event)" onmousedown="combatBash(event)">
         <span class="bash-icon">👊</span>
         <span class="bash-label">BASH!</span>
-        <div class="bash-ring"></div>
+        <div class="bash-progress-ring">
+          <svg viewBox="0 0 60 60">
+            <circle cx="30" cy="30" r="26" class="bash-ring-bg"/>
+            <circle cx="30" cy="30" r="26" class="bash-ring-fill" id="bash-ring-fill"/>
+          </svg>
+        </div>
       </button>
-      <button class="battle-side-btn battle-fire-btn" id="bc-fire-btn" ontouchstart="combatFire(event)" onmousedown="combatFire(event)">
-        <span class="side-icon">🔥</span>
-        <span>Fire!</span>
+      <button id="bc-fire-btn" class="battle-action-btn battle-fire-btn" ontouchstart="combatFire(event)" onmousedown="combatFire(event)">
+        <span class="action-btn-icon">🔥</span>
+        <span class="action-btn-label">FIRE!</span>
       </button>
     </div>
   </div>
@@ -1080,6 +1326,7 @@ function startGame() {
   document.getElementById('hud').style.display = '';
   document.getElementById('players-alive').style.display = '';
   document.getElementById('action-zone').style.display = '';
+  document.getElementById('dpad-hint').style.display = '';
   gameState = 'playing';
 
   // Create player
@@ -1166,9 +1413,11 @@ function setupJoystick() {
   const zone = document.getElementById('joystick-zone');
   const base = document.getElementById('joystick-base');
   const thumb = document.getElementById('joystick-thumb');
+  const dpadHint = document.getElementById('dpad-hint');
 
   zone.addEventListener('touchstart', e => {
     e.preventDefault();
+    e.stopPropagation();
     const t = e.touches[0];
     joystickActive = true;
     joystickOrigin = { x: t.clientX, y: t.clientY };
@@ -1178,17 +1427,19 @@ function setupJoystick() {
     thumb.style.display = 'block';
     thumb.style.left = (t.clientX - 25) + 'px';
     thumb.style.top = (t.clientY - 25) + 'px';
-  });
+    if (dpadHint) dpadHint.classList.add('active');
+  }, { passive: false });
 
   zone.addEventListener('touchmove', e => {
     e.preventDefault();
+    e.stopPropagation();
     if (!joystickActive) return;
     const t = e.touches[0];
     const dx = t.clientX - joystickOrigin.x;
     const dy = t.clientY - joystickOrigin.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    const d = Math.sqrt(dx * dx + dy * dy);
     const maxDist = 50;
-    const clampDist = Math.min(dist, maxDist);
+    const clampDist = Math.min(d, maxDist);
     const angle = Math.atan2(dy, dx);
 
     const thumbX = joystickOrigin.x + Math.cos(angle) * clampDist;
@@ -1198,16 +1449,31 @@ function setupJoystick() {
 
     inputDir.x = (clampDist / maxDist) * Math.cos(angle);
     inputDir.y = (clampDist / maxDist) * Math.sin(angle);
-  });
+  }, { passive: false });
 
   const endJoystick = () => {
     joystickActive = false;
     inputDir = { x: 0, y: 0 };
     base.style.display = 'none';
     thumb.style.display = 'none';
+    if (dpadHint) dpadHint.classList.remove('active');
   };
   zone.addEventListener('touchend', endJoystick);
   zone.addEventListener('touchcancel', endJoystick);
+
+  // Also listen on canvas itself for taps on right side → tap-to-move
+  canvas.addEventListener('touchstart', e => {
+    if (gameState !== 'playing' || !player) return;
+    const t = e.touches[0];
+    // Only if tapping right half (joystick zone is left half)
+    if (t.clientX > window.innerWidth * 0.5) {
+      e.preventDefault();
+      const worldX = t.clientX + camera.x;
+      const worldY = t.clientY + camera.y;
+      // Set a move target the player walks toward
+      player._moveTarget = { x: worldX, y: worldY };
+    }
+  }, { passive: false });
 }
 
 // ── GAME LOOP ──
@@ -1253,13 +1519,29 @@ function updateInput() {
 function updatePlayer(dt) {
   if (!player || !player.alive) return;
 
+  let moveX = inputDir.x;
+  let moveY = inputDir.y;
+
+  // Tap-to-move: walk toward target if no joystick/keyboard input
+  if (moveX === 0 && moveY === 0 && player._moveTarget) {
+    const dx = player._moveTarget.x - player.x;
+    const dy = player._moveTarget.y - player.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d > 5) {
+      moveX = dx / d;
+      moveY = dy / d;
+    } else {
+      player._moveTarget = null;
+    }
+  }
+
   const speed = player.speed * (hasActivePowerup(player, 'speed') ? 1.6 : 1) * dt;
-  let nx = player.x + inputDir.x * speed;
-  let ny = player.y + inputDir.y * speed;
+  let nx = player.x + moveX * speed;
+  let ny = player.y + moveY * speed;
 
   // Facing direction
-  if (inputDir.x < -0.1) player.facingLeft = true;
-  if (inputDir.x > 0.1) player.facingLeft = false;
+  if (moveX < -0.1) player.facingLeft = true;
+  if (moveX > 0.1) player.facingLeft = false;
 
   // Bounds
   nx = Math.max(PLAYER_RADIUS + 20, Math.min(ARENA_W - PLAYER_RADIUS - 20, nx));
@@ -1274,6 +1556,9 @@ function updatePlayer(dt) {
   } else if (!collidesWithObstacle(player.x, ny, PLAYER_RADIUS)) {
     player.y = ny;
   }
+
+  // Cancel tap-to-move on manual input
+  if (inputDir.x !== 0 || inputDir.y !== 0) player._moveTarget = null;
 
   // Powerup expiry
   player.powerups = player.powerups.filter(p => Date.now() < p.expires);
@@ -1513,25 +1798,29 @@ function updateParticles(dt) {
   });
 }
 
-// ── BATTLE SYSTEM (Digimon-style Bash/Block/Fire) ──
-// Mirrors the existing battle system in dashboard.html
-// In production, collision with a real player would call
-// startBattle() from the dashboard's battle system directly.
+// ── BATTLE SYSTEM (Exact match to dashboard.html) ──
+// Uses model-viewer, fireball.png sprites, dojo background
 
-const ROUND_DURATION = 30000; // 30s per round
-const BASH_THRESHOLD_BASE = 30; // taps to charge special
-const AUTO_ATTACK_INTERVAL = 2500; // ms between auto-attacks
-const BLOCK_WINDOW = 400; // ms to react to incoming attack
+const ROUND_DURATION = 30000;
+const BASH_THRESHOLD_BASE = 30;
+const AUTO_ATTACK_INTERVAL = 2500;
+const BLOCK_WINDOW = 400;
 
-// Combat state
 let combat = null;
 
 function startBattle(opponent) {
   if (gameState !== 'playing') return;
   gameState = 'battle';
 
+  // Hide movement controls during battle
+  document.getElementById('dpad-hint').style.display = 'none';
+  document.getElementById('action-zone').style.display = 'none';
+
   const overlay = document.getElementById('battle-overlay');
   overlay.classList.add('active');
+
+  // Load model for battle viewport
+  setupBattleModel();
 
   // VS screen
   const vsDiv = document.getElementById('battle-vs');
@@ -1573,11 +1862,9 @@ function initCombat(opponent) {
   const playerHP_stat = stats.hp || 10;
   const playerMANA = stats.mana || 5;
 
-  // Bot stats scale with their fitness level
   const botLevel = opponent.fitnessLevel || 40;
   const botSTR = Math.floor(botLevel * 0.3);
   const botHP_stat = Math.floor(botLevel * 0.25);
-  const botMANA = Math.floor(botLevel * 0.15);
 
   const playerMaxHP = 100 + (playerHP_stat * 5);
   const enemyMaxHP = 100 + (botHP_stat * 5);
@@ -1593,7 +1880,7 @@ function initCombat(opponent) {
     enemyMaxHP,
     playerSTR,
     enemySTR: botSTR,
-    playerMANA: playerMANA,
+    playerMANA,
     bashCount: 0,
     bashThreshold: Math.max(10, BASH_THRESHOLD_BASE - Math.floor(playerMANA / 5)),
     superReady: false,
@@ -1611,6 +1898,27 @@ function initCombat(opponent) {
   document.getElementById('battle-result').classList.remove('active');
   document.getElementById('battle-result').innerHTML = '';
 
+  // Show HP bars, mana bar, action container
+  document.getElementById('bc-hp-container').classList.add('active');
+  document.getElementById('bc-mana-container').classList.add('active');
+  document.getElementById('bc-action-container').classList.add('active');
+
+  // Play battle model animation
+  const mv = document.getElementById('arena-battle-model');
+  if (mv && mv.availableAnimations && mv.availableAnimations.length > 0) {
+    const anims = mv.availableAnimations;
+    const attackAnim = anims.find(a => /boxing|punch|attack|fight/i.test(a)) || anims[0];
+    mv.animationName = attackAnim;
+    mv.play({ repetitions: Infinity });
+  }
+
+  // Show BASH! overlay briefly
+  const overlayText = document.getElementById('bc-overlay-text');
+  const textInner = document.getElementById('bc-text-inner');
+  textInner.textContent = 'BASH!';
+  overlayText.classList.add('active');
+  setTimeout(() => overlayText.classList.remove('active'), 1000);
+
   // Update UI
   document.getElementById('bc-enemy-name').textContent = opponent.name.toUpperCase();
   updateCombatUI();
@@ -1619,7 +1927,7 @@ function initCombat(opponent) {
   // Start timers
   combat.timerInterval = setInterval(updateCombatTimer, 100);
 
-  // Player auto-attacks
+  // Player auto-attacks (fires normal fireballs)
   combat.autoAttackTimer = setInterval(() => {
     if (!combat || combat.roundOver) return;
     const dmg = Math.floor((10 + combat.playerSTR) * 0.2);
@@ -1637,7 +1945,6 @@ function initCombat(opponent) {
       ? Math.floor((10 + combat.enemySTR) * 1.0)
       : Math.floor((10 + combat.enemySTR) * 0.2);
 
-    // Show block prompt before attack lands
     if (isSuper) {
       showBlockPrompt();
       setTimeout(() => {
@@ -1655,8 +1962,6 @@ function combatBash(e) {
   if (!combat || combat.roundOver) return;
 
   combat.bashCount++;
-
-  // Haptic
   if (navigator.vibrate) navigator.vibrate(30);
 
   // Bash button feedback
@@ -1664,23 +1969,30 @@ function combatBash(e) {
   btn.style.transform = 'scale(0.88)';
   setTimeout(() => { if (btn) btn.style.transform = ''; }, 50);
 
-  // Update mana/charge bar
+  // Update mana/charge bar + SVG ring
   const progress = Math.min(1, combat.bashCount / combat.bashThreshold);
   const manaFill = document.getElementById('bc-mana-fill');
   const manaPct = document.getElementById('bc-mana-pct');
+  const ringFill = document.getElementById('bash-ring-fill');
+
   manaFill.style.width = (progress * 100) + '%';
   manaPct.textContent = Math.floor(progress * 100) + '%';
 
+  // Update SVG ring (circumference = 2 * PI * 26 = 163.36)
+  if (ringFill) {
+    ringFill.style.strokeDashoffset = 163.36 * (1 - progress);
+  }
+
   if (progress >= 1) {
     manaFill.classList.add('full');
-    btn.classList.add('charging');
+    btn.classList.add('attack-ready');
   }
 
   // Check if super is charged
   if (combat.bashCount >= combat.bashThreshold && !combat.superReady) {
     combat.superReady = true;
     const fireBtn = document.getElementById('bc-fire-btn');
-    fireBtn.classList.add('can-fire');
+    fireBtn.classList.add('visible');
     if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
 
     // Auto-reset if not fired in 2s
@@ -1688,11 +2000,12 @@ function combatBash(e) {
       if (combat && combat.superReady) {
         combat.superReady = false;
         combat.bashCount = 0;
-        fireBtn.classList.remove('can-fire');
+        fireBtn.classList.remove('visible');
         manaFill.classList.remove('full');
-        btn.classList.remove('charging');
+        btn.classList.remove('attack-ready');
         manaFill.style.width = '0%';
         manaPct.textContent = '0%';
+        if (ringFill) ringFill.style.strokeDashoffset = 163.36;
       }
     }, 2000);
   }
@@ -1706,20 +2019,34 @@ function combatFire(e) {
   combat.bashCount = 0;
   clearTimeout(combat.superTimeout);
 
-  // Fire damage (full power)
+  // Fire damage (full power) + triple fireball
   const dmg = Math.floor((10 + combat.playerSTR) * 1.0);
   dealDamageToEnemy(dmg, true);
+
+  // Play attack animation on model
+  const mv = document.getElementById('arena-battle-model');
+  if (mv) {
+    const anims = mv.availableAnimations || [];
+    const attackAnim = anims.find(a => /boxing|punch|attack|fight/i.test(a));
+    if (attackAnim) {
+      mv.animationName = attackAnim;
+      mv.play({ repetitions: 1 });
+    }
+  }
 
   // Reset UI
   const manaFill = document.getElementById('bc-mana-fill');
   const manaPct = document.getElementById('bc-mana-pct');
   const fireBtn = document.getElementById('bc-fire-btn');
   const bashBtn = document.getElementById('bc-bash-btn');
+  const ringFill = document.getElementById('bash-ring-fill');
+
   manaFill.style.width = '0%';
   manaFill.classList.remove('full');
   manaPct.textContent = '0%';
-  fireBtn.classList.remove('can-fire');
-  bashBtn.classList.remove('charging');
+  fireBtn.classList.remove('visible');
+  bashBtn.classList.remove('attack-ready');
+  if (ringFill) ringFill.style.strokeDashoffset = 163.36;
 
   if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 }
@@ -1731,9 +2058,8 @@ function combatBlock(e) {
   combat.blockSuccess = true;
   combat.blockReady = false;
   const blockBtn = document.getElementById('bc-block-btn');
-  blockBtn.classList.remove('can-block');
+  blockBtn.classList.remove('visible');
 
-  // Shield flash
   showHitFlash('blocked');
   if (navigator.vibrate) navigator.vibrate([30, 20, 30]);
 }
@@ -1743,13 +2069,12 @@ function showBlockPrompt() {
   combat.blockReady = true;
   combat.blockSuccess = false;
   const blockBtn = document.getElementById('bc-block-btn');
-  blockBtn.classList.add('can-block');
+  blockBtn.classList.add('visible');
 
-  // Remove prompt after window
   setTimeout(() => {
     if (combat) {
       combat.blockReady = false;
-      blockBtn.classList.remove('can-block');
+      blockBtn.classList.remove('visible');
     }
   }, BLOCK_WINDOW + 100);
 }
@@ -1758,6 +2083,14 @@ function dealDamageToEnemy(dmg, isSuper) {
   if (!combat || combat.roundOver) return;
   combat.enemyHP = Math.max(0, combat.enemyHP - dmg);
   updateCombatUI();
+
+  // Spawn fireball in viewport (same as dashboard)
+  const viewport = document.getElementById('battle-viewport');
+  if (isSuper) {
+    spawnTripleFireball(viewport);
+  } else {
+    spawnNormalFireball(viewport);
+  }
 
   if (isSuper) {
     showHitFlash('super-hit');
@@ -1776,12 +2109,32 @@ function dealDamageToPlayer(dmg, isSuper) {
   const blockMult = combat.blockSuccess ? 0.5 : 1.0;
   const actualDmg = Math.floor(dmg * blockMult);
   combat.playerHP = Math.max(0, combat.playerHP - actualDmg);
+  const wasBlocked = combat.blockSuccess;
   combat.blockSuccess = false;
   updateCombatUI();
 
-  showHitFlash(combat.blockSuccess ? 'blocked' : isSuper ? 'super-hit' : '');
+  // Spawn incoming fireball (same as dashboard)
+  const viewport = document.getElementById('battle-viewport');
+  if (isSuper) {
+    spawnIncomingTripleFireball(viewport);
+  } else {
+    spawnIncomingBattleFireball(viewport);
+  }
 
-  if (isSuper && !combat.blockSuccess) {
+  // Play hit animation on model
+  const mv = document.getElementById('arena-battle-model');
+  if (mv && !wasBlocked) {
+    const anims = mv.availableAnimations || [];
+    const hitAnim = anims.find(a => /hit|hurt|damage|flinch/i.test(a));
+    if (hitAnim) {
+      mv.animationName = hitAnim;
+      mv.play({ repetitions: 1 });
+    }
+  }
+
+  showHitFlash(wasBlocked ? 'blocked' : isSuper ? 'super-hit' : '');
+
+  if (isSuper && !wasBlocked) {
     document.getElementById('battle-overlay').classList.add('battle-shake');
     setTimeout(() => document.getElementById('battle-overlay').classList.remove('battle-shake'), 300);
   }
@@ -1802,8 +2155,11 @@ function updateCombatUI() {
   if (!combat) return;
   const { playerHP, playerMaxHP, enemyHP, enemyMaxHP } = combat;
 
-  document.getElementById('bc-hp-player').style.width = Math.max(0, (playerHP / playerMaxHP) * 100) + '%';
-  document.getElementById('bc-hp-enemy').style.width = Math.max(0, (enemyHP / enemyMaxHP) * 100) + '%';
+  const playerPct = Math.max(0, (playerHP / playerMaxHP) * 100);
+  const enemyPct = Math.max(0, (enemyHP / enemyMaxHP) * 100);
+
+  document.getElementById('bc-hp-player').style.width = playerPct + '%';
+  document.getElementById('bc-hp-enemy').style.width = enemyPct + '%';
   document.getElementById('bc-hp-player-text').textContent = `${Math.max(0,playerHP)} / ${playerMaxHP}`;
   document.getElementById('bc-hp-enemy-text').textContent = `${Math.max(0,enemyHP)} / ${enemyMaxHP}`;
 }
@@ -1871,14 +2227,28 @@ function startNextRound() {
   combat.roundOver = false;
   combat.timerEnd = Date.now() + ROUND_DURATION;
 
+  // Clear any remaining fireballs
+  document.querySelectorAll('#battle-viewport .fireball').forEach(f => f.remove());
+
+  // Show round transition
+  const overlayText = document.getElementById('bc-overlay-text');
+  const textInner = document.getElementById('bc-text-inner');
+  textInner.innerHTML = `<div style="animation:roundTextPop 0.5s ease-out;">ROUND ${combat.round}</div>` +
+    `<div style="font-size:0.6em;margin-top:8px;opacity:0.9;">${combat.playerRoundWins} - ${combat.enemyRoundWins}</div>`;
+  overlayText.style.color = '#FFD700';
+  overlayText.classList.add('active');
+  setTimeout(() => { overlayText.classList.remove('active'); overlayText.style.color = ''; }, 1500);
+
   // Reset UI
   const manaFill = document.getElementById('bc-mana-fill');
+  const ringFill = document.getElementById('bash-ring-fill');
   manaFill.style.width = '0%';
   manaFill.classList.remove('full');
   document.getElementById('bc-mana-pct').textContent = '0%';
-  document.getElementById('bc-fire-btn').classList.remove('can-fire');
-  document.getElementById('bc-block-btn').classList.remove('can-block');
-  document.getElementById('bc-bash-btn').classList.remove('charging');
+  document.getElementById('bc-fire-btn').classList.remove('visible');
+  document.getElementById('bc-block-btn').classList.remove('visible');
+  document.getElementById('bc-bash-btn').classList.remove('attack-ready');
+  if (ringFill) ringFill.style.strokeDashoffset = 163.36;
   updateCombatUI();
   updateRoundDots();
 
@@ -1912,14 +2282,120 @@ function startNextRound() {
   }, botSpeed);
 }
 
-// In production: multiplayer would use the dashboard's full battle system
-// which syncs via Supabase Realtime channels. The arena collision would call:
-//   create_tamagotchi_battle(challengerId, opponentId, coinBet, stats)
-// and both players would see the same battle UI from dashboard.html.
+// ── FIREBALL SYSTEM (matches dashboard exactly) ──
+
+function spawnNormalFireball(container) {
+  const fb = document.createElement('div');
+  fb.className = 'fireball';
+  fb.innerHTML = `<img src="./assets/fireball.png" style="width:140px;height:140px;filter:drop-shadow(0 0 22px orange);" onerror="this.style.background='radial-gradient(circle, orange, red)'; this.style.borderRadius='50%';">`;
+  fb.style.cssText = 'position:absolute; left:150px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;';
+  container.appendChild(fb);
+  let posX = 150;
+  function move() {
+    posX += 5;
+    fb.style.left = posX + 'px';
+    if (posX > container.clientWidth) fb.remove();
+    else requestAnimationFrame(move);
+  }
+  move();
+}
+
+function spawnTripleFireball(container) {
+  const offsets = [-80, 0, 80];
+  offsets.forEach((yOff, i) => {
+    const fb = document.createElement('div');
+    fb.className = 'fireball';
+    fb.innerHTML = `<img src="./assets/special.png" style="width:140px;height:140px;border-radius:50%;filter:drop-shadow(0 0 30px gold) brightness(1.3);">`;
+    fb.style.cssText = `position:absolute; left:150px; top:calc(50% + ${yOff}px); transform:translateY(-50%); z-index:100; pointer-events:none;`;
+    container.appendChild(fb);
+    let posX = 150;
+    const speed = 5 + i;
+    function move() {
+      posX += speed;
+      fb.style.left = posX + 'px';
+      if (posX > container.clientWidth) fb.remove();
+      else requestAnimationFrame(move);
+    }
+    setTimeout(() => move(), i * 60);
+  });
+}
+
+function spawnIncomingBattleFireball(container) {
+  return new Promise(resolve => {
+    const fb = document.createElement('div');
+    fb.className = 'fireball';
+    fb.innerHTML = `<img src="./assets/fireball.png" style="width:140px;height:140px; transform:scaleX(-1); filter:drop-shadow(0 0 22px orange);" onerror="this.style.background='radial-gradient(circle, orange, red)'; this.style.borderRadius='50%';">`;
+    fb.style.cssText = 'position:absolute; right:-150px; top:50%; transform:translateY(-50%); z-index:100; pointer-events:none;';
+    container.appendChild(fb);
+    let posX = container.clientWidth;
+    const targetX = container.clientWidth / 2;
+    const speed = 4;
+    function move() {
+      posX -= speed;
+      fb.style.left = posX + 'px';
+      if (posX <= targetX) { fb.remove(); resolve(); }
+      else requestAnimationFrame(move);
+    }
+    move();
+  });
+}
+
+function spawnIncomingTripleFireball(container) {
+  return new Promise(resolve => {
+    const offsets = [-60, 0, 60];
+    let resolved = false;
+    offsets.forEach((yOff, i) => {
+      const fb = document.createElement('div');
+      fb.className = 'fireball';
+      fb.innerHTML = `<img src="./assets/special.png" style="width:140px;height:140px;border-radius:50%;transform:scaleX(-1);filter:drop-shadow(0 0 30px cyan) brightness(1.3);">`;
+      fb.style.cssText = `position:absolute; right:-150px; top:calc(50% + ${yOff}px); transform:translateY(-50%); z-index:100; pointer-events:none;`;
+      container.appendChild(fb);
+      let posX = container.clientWidth;
+      const targetX = container.clientWidth / 2;
+      const speed = 4 + i;
+      function move() {
+        posX -= speed;
+        fb.style.left = posX + 'px';
+        if (posX <= targetX) {
+          fb.remove();
+          if (!resolved) { resolved = true; resolve(); }
+        }
+        else requestAnimationFrame(move);
+      }
+      setTimeout(() => move(), i * 60);
+    });
+  });
+}
+
+// Setup battle model from localStorage (same source as tamagotchi)
+function setupBattleModel() {
+  const mv = document.getElementById('arena-battle-model');
+  if (!mv) return;
+  const src = localStorage.getItem('fitgotchi_model_src') ||
+    'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+  mv.setAttribute('src', src);
+  mv.removeAttribute('auto-rotate');
+  mv.removeAttribute('camera-controls');
+  const savedOrbit = localStorage.getItem('fitgotchi_camera_orbit');
+  if (savedOrbit) {
+    // Extract distance from saved orbit, use 0deg 85deg for battle
+    const match = savedOrbit.match(/([\d.]+m)$/);
+    const dist = match ? match[1] : '22m';
+    mv.setAttribute('camera-orbit', `0deg 85deg ${dist}`);
+  }
+}
 
 function showBattleResult(won, detail = '') {
   // Hide combat zone
   document.getElementById('battle-combat-zone').style.display = 'none';
+
+  // Hide battle UI overlays
+  document.getElementById('bc-hp-container').classList.remove('active');
+  document.getElementById('bc-mana-container').classList.remove('active');
+  document.getElementById('bc-action-container').classList.remove('active');
+
+  // Clear remaining fireballs
+  document.querySelectorAll('#battle-viewport .fireball').forEach(f => f.remove());
 
   // Clean up combat timers
   if (combat) {
@@ -1972,6 +2448,16 @@ function endBattle(won) {
   document.getElementById('battle-result').classList.remove('active');
   document.getElementById('battle-result').innerHTML = '';
 
+  // Reset battle UI overlays
+  document.getElementById('bc-hp-container').classList.remove('active');
+  document.getElementById('bc-mana-container').classList.remove('active');
+  document.getElementById('bc-action-container').classList.remove('active');
+  document.querySelectorAll('#battle-viewport .fireball').forEach(f => f.remove());
+
+  // Clear model src to free memory
+  const mv = document.getElementById('arena-battle-model');
+  if (mv) mv.removeAttribute('src');
+
   // Brief invincibility after battle
   const now = Date.now();
   player.invincibleUntil = now + 2000;
@@ -1994,6 +2480,8 @@ function endBattle(won) {
     showGameOver();
   } else {
     gameState = 'playing';
+    document.getElementById('dpad-hint').style.display = '';
+    document.getElementById('action-zone').style.display = '';
   }
 }
 
@@ -2091,6 +2579,7 @@ function returnToLobby() {
   document.getElementById('hud').style.display = 'none';
   document.getElementById('players-alive').style.display = 'none';
   document.getElementById('action-zone').style.display = 'none';
+  document.getElementById('dpad-hint').style.display = 'none';
   document.getElementById('powerup-active').innerHTML = '';
   gameState = 'lobby';
   player = null;
