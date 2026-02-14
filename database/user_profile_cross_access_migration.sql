@@ -34,18 +34,5 @@ CREATE POLICY "Friends can view points" ON public.user_points
     )
   );
 
--- ============================================================
--- WORKOUT MILESTONES: Allow friends to view each other's badges
--- ============================================================
-CREATE POLICY "Friends can view milestones" ON public.workout_milestones
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.friendships
-      WHERE status = 'accepted'
-      AND (
-        (friendships.user_id = auth.uid() AND friendships.friend_id = workout_milestones.user_id)
-        OR
-        (friendships.friend_id = auth.uid() AND friendships.user_id = workout_milestones.user_id)
-      )
-    )
-  );
+-- NOTE: workout_milestones table does not exist in production yet.
+-- When it is created, add a similar policy for it.
