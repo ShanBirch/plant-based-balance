@@ -45165,11 +45165,10 @@ async function saveMealLogWithType(mealData) {
             analysis_timestamp: new Date().toISOString()
     };
 
-    // Only include photo fields when a URL exists (column may have NOT NULL constraint)
-    if (mealData.photoUrl) {
-        insertData.photo_url = mealData.photoUrl;
-        insertData.storage_path = mealData.photoUrl;
-    }
+    // Always include photo fields — use 'text-input' sentinel when no photo
+    // to satisfy any NOT NULL constraint and match existing UI checks
+    insertData.photo_url = mealData.photoUrl || 'text-input';
+    insertData.storage_path = mealData.photoUrl || 'text-input';
 
     const { data, error } = await window.supabaseClient
         .from('meal_logs')
@@ -46059,11 +46058,10 @@ async function saveMealLog(mealData) {
             analysis_timestamp: new Date().toISOString()
     };
 
-    // Only include photo fields when a URL exists (column may have NOT NULL constraint)
-    if (mealData.photoUrl) {
-        insertData.photo_url = mealData.photoUrl;
-        insertData.storage_path = mealData.photoUrl;
-    }
+    // Always include photo fields — use 'text-input' sentinel when no photo
+    // to satisfy any NOT NULL constraint and match existing UI checks
+    insertData.photo_url = mealData.photoUrl || 'text-input';
+    insertData.storage_path = mealData.photoUrl || 'text-input';
 
     const { data, error } = await window.supabaseClient
         .from('meal_logs')
