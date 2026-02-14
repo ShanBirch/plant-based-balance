@@ -7464,6 +7464,16 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
+    <!-- Daily Weigh-In Completed Card -->
+    <div id="daily-weigh-in-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
+        <button onclick="document.getElementById('daily-weigh-in-done-card').style.display='none';" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
+        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
+        <div style="flex: 1;">
+            <div style="font-weight: 700; font-size: 1rem;">Weigh-In Complete!</div>
+            <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back tomorrow!</div>
+        </div>
+    </div>
+
     <!-- Daily Quiz Card (disappears after completion) -->
     <div id="daily-quiz-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden; cursor: pointer;">
         <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
@@ -7490,7 +7500,8 @@ async function applyAppTheme(themeKey) {
     </div>
 
     <!-- Daily Quiz Completed Card -->
-    <div id="daily-quiz-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px;">
+    <div id="daily-quiz-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
+        <button onclick="document.getElementById('daily-quiz-done-card').style.display='none';" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
         <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
         <div style="flex: 1;">
             <div style="font-weight: 700; font-size: 1rem;">Daily Quiz Complete!</div>
@@ -7515,14 +7526,17 @@ async function applyAppTheme(themeKey) {
         try {
             const todaysWeighIn = await db.weighIns.getTodaysWeighIn(window.currentUser.id);
             const card = document.getElementById('daily-weigh-in-card');
+            const doneCard = document.getElementById('daily-weigh-in-done-card');
 
             if (card) {
                 if (todaysWeighIn) {
-                    // Already weighed in today - hide the card
+                    // Already weighed in today - hide input card, show done card
                     card.style.display = 'none';
+                    if (doneCard) doneCard.style.display = 'flex';
                 } else {
                     // Show the card for today's weigh-in
                     card.style.display = 'block';
+                    if (doneCard) doneCard.style.display = 'none';
 
                     // Pre-fill with last known weight if available
                     const latestWeighIn = await db.weighIns.getLatest(window.currentUser.id);
@@ -7630,7 +7644,7 @@ async function applyAppTheme(themeKey) {
                 console.log('Profile weight update skipped:', updateError);
             }
 
-            // Hide card after 2 seconds with fade out
+            // Hide input card after 2 seconds and show done card
             setTimeout(() => {
                 if (card) {
                     card.style.transition = 'opacity 0.5s, transform 0.5s';
@@ -7644,6 +7658,9 @@ async function applyAppTheme(themeKey) {
                         if (inputSection) inputSection.style.display = 'flex';
                         if (successSection) successSection.style.display = 'none';
                         if (input) input.value = '';
+                        // Show the completed card
+                        const doneCard = document.getElementById('daily-weigh-in-done-card');
+                        if (doneCard) doneCard.style.display = 'flex';
                     }, 500);
                 }
             }, 2000);
