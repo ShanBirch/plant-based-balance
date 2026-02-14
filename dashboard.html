@@ -45786,6 +45786,15 @@ async function loadMicronutrientInsights() {
         }
 
         // Aggregate micronutrients from meal data
+        // Map from stored DB keys (with unit suffixes) to display keys
+        const keyMap = {
+            iron: ['iron_mg', 'iron'],
+            vitamin_c: ['vitamin_c_mg', 'vitamin_c'],
+            calcium: ['calcium_mg', 'calcium'],
+            b12: ['b12_mcg', 'b12'],
+            omega3: ['omega3_g', 'omega3'],
+            zinc: ['zinc_mg', 'zinc']
+        };
         const totals = { iron: 0, vitamin_c: 0, calcium: 0, b12: 0, omega3: 0, zinc: 0 };
         let mealCount = 0;
 
@@ -45793,7 +45802,13 @@ async function loadMicronutrientInsights() {
             mealCount++;
             if (meal.micronutrients && typeof meal.micronutrients === 'object') {
                 Object.keys(totals).forEach(k => {
-                    totals[k] += meal.micronutrients[k] || 0;
+                    const aliases = keyMap[k] || [k];
+                    for (const alias of aliases) {
+                        if (meal.micronutrients[alias]) {
+                            totals[k] += parseFloat(meal.micronutrients[alias]) || 0;
+                            break;
+                        }
+                    }
                 });
             }
         });
