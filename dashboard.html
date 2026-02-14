@@ -46479,15 +46479,12 @@ async function loadMicronutrientInsights() {
         if (!session?.user) return;
 
         const today = getLocalDateString();
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 
         const { data: meals, error } = await window.supabaseClient
             .from('meal_logs')
             .select('micronutrients, food_items, calories, protein_g')
             .eq('user_id', session.user.id)
-            .gte('meal_date', getLocalDateString(sevenDaysAgo))
-            .lte('meal_date', today);
+            .eq('meal_date', today);
 
         if (error) {
             console.error('Error loading micronutrients:', error);
@@ -46522,12 +46519,11 @@ async function loadMicronutrientInsights() {
             }
         });
 
-        // Daily averages
-        const days = Math.max(1, Math.min(7, mealCount > 0 ? 7 : 1));
-        const dailyAvg = {};
-        Object.keys(totals).forEach(k => { dailyAvg[k] = Math.round(totals[k] / days); });
+        // Daily totals for today
+        const dailyTotals = {};
+        Object.keys(totals).forEach(k => { dailyTotals[k] = Math.round(totals[k]); });
 
-        renderMicronutrientUI(dailyAvg, mealCount);
+        renderMicronutrientUI(dailyTotals, mealCount);
     } catch (err) {
         console.error('Error in loadMicronutrientInsights:', err);
     }
