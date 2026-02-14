@@ -93,6 +93,7 @@
     width: 50%;
     height: 40%;
     z-index: 50;
+    touch-action: none;
   }
   .joystick-base {
     position: absolute;
@@ -111,6 +112,86 @@
     border: 2px solid rgba(16,185,129,0.5);
     display: none;
     pointer-events: none;
+  }
+
+  /* ── Visible D-Pad hint ── */
+  .dpad-hint {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    width: 110px;
+    height: 110px;
+    z-index: 45;
+    pointer-events: none;
+    opacity: 0.35;
+    transition: opacity 0.3s;
+  }
+  .dpad-hint.active {
+    opacity: 0.6;
+  }
+  .dpad-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: 1.5px solid rgba(255,255,255,0.25);
+  }
+  .dpad-arrow {
+    position: absolute;
+    width: 0; height: 0;
+    border: 10px solid transparent;
+  }
+  .dpad-arrow.up {
+    top: 4px; left: 50%;
+    transform: translateX(-50%);
+    border-bottom: 12px solid rgba(255,255,255,0.35);
+    border-top: none;
+  }
+  .dpad-arrow.down {
+    bottom: 4px; left: 50%;
+    transform: translateX(-50%);
+    border-top: 12px solid rgba(255,255,255,0.35);
+    border-bottom: none;
+  }
+  .dpad-arrow.left {
+    left: 4px; top: 50%;
+    transform: translateY(-50%);
+    border-right: 12px solid rgba(255,255,255,0.35);
+    border-left: none;
+  }
+  .dpad-arrow.right {
+    right: 4px; top: 50%;
+    transform: translateY(-50%);
+    border-left: 12px solid rgba(255,255,255,0.35);
+    border-right: none;
+  }
+
+  /* ── Battle Scene (fireball arena) ── */
+  .battle-scene {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    margin: 8px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #0a0e1a 0%, #1a1e2e 60%, #252a3a 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .battle-scene canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .battle-scene .scene-floor {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(16,185,129,0.05) 0%, rgba(16,185,129,0.12) 100%);
+    border-top: 1px solid rgba(16,185,129,0.15);
   }
 
   /* ── Action Button ── */
@@ -724,6 +805,13 @@
   <div class="joystick-base" id="joystick-base"></div>
   <div class="joystick-thumb" id="joystick-thumb"></div>
 </div>
+<div class="dpad-hint" id="dpad-hint" style="display:none;">
+  <div class="dpad-center"></div>
+  <div class="dpad-arrow up"></div>
+  <div class="dpad-arrow down"></div>
+  <div class="dpad-arrow left"></div>
+  <div class="dpad-arrow right"></div>
+</div>
 
 <!-- ═══════════════ ACTION BUTTON ═══════════════ -->
 <div class="action-zone" id="action-zone" style="display:none;">
@@ -737,6 +825,11 @@
 <div class="battle-overlay" id="battle-overlay">
   <div class="battle-vs" id="battle-vs"></div>
   <div class="battle-combat-zone" id="battle-combat-zone" style="display:none;">
+    <!-- Battle Scene (fireballs) -->
+    <div class="battle-scene" id="battle-scene">
+      <div class="scene-floor"></div>
+      <canvas id="battle-scene-canvas"></canvas>
+    </div>
     <!-- Round info -->
     <div class="battle-round-info">
       ROUND <span id="bc-round">1</span> / 3
@@ -1080,6 +1173,7 @@ function startGame() {
   document.getElementById('hud').style.display = '';
   document.getElementById('players-alive').style.display = '';
   document.getElementById('action-zone').style.display = '';
+  document.getElementById('dpad-hint').style.display = '';
   gameState = 'playing';
 
   // Create player
@@ -1166,9 +1260,11 @@ function setupJoystick() {
   const zone = document.getElementById('joystick-zone');
   const base = document.getElementById('joystick-base');
   const thumb = document.getElementById('joystick-thumb');
+  const dpadHint = document.getElementById('dpad-hint');
 
   zone.addEventListener('touchstart', e => {
     e.preventDefault();
+    e.stopPropagation();
     const t = e.touches[0];
     joystickActive = true;
     joystickOrigin = { x: t.clientX, y: t.clientY };
@@ -1178,17 +1274,19 @@ function setupJoystick() {
     thumb.style.display = 'block';
     thumb.style.left = (t.clientX - 25) + 'px';
     thumb.style.top = (t.clientY - 25) + 'px';
-  });
+    if (dpadHint) dpadHint.classList.add('active');
+  }, { passive: false });
 
   zone.addEventListener('touchmove', e => {
     e.preventDefault();
+    e.stopPropagation();
     if (!joystickActive) return;
     const t = e.touches[0];
     const dx = t.clientX - joystickOrigin.x;
     const dy = t.clientY - joystickOrigin.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    const d = Math.sqrt(dx * dx + dy * dy);
     const maxDist = 50;
-    const clampDist = Math.min(dist, maxDist);
+    const clampDist = Math.min(d, maxDist);
     const angle = Math.atan2(dy, dx);
 
     const thumbX = joystickOrigin.x + Math.cos(angle) * clampDist;
@@ -1198,16 +1296,31 @@ function setupJoystick() {
 
     inputDir.x = (clampDist / maxDist) * Math.cos(angle);
     inputDir.y = (clampDist / maxDist) * Math.sin(angle);
-  });
+  }, { passive: false });
 
   const endJoystick = () => {
     joystickActive = false;
     inputDir = { x: 0, y: 0 };
     base.style.display = 'none';
     thumb.style.display = 'none';
+    if (dpadHint) dpadHint.classList.remove('active');
   };
   zone.addEventListener('touchend', endJoystick);
   zone.addEventListener('touchcancel', endJoystick);
+
+  // Also listen on canvas itself for taps on right side → tap-to-move
+  canvas.addEventListener('touchstart', e => {
+    if (gameState !== 'playing' || !player) return;
+    const t = e.touches[0];
+    // Only if tapping right half (joystick zone is left half)
+    if (t.clientX > window.innerWidth * 0.5) {
+      e.preventDefault();
+      const worldX = t.clientX + camera.x;
+      const worldY = t.clientY + camera.y;
+      // Set a move target the player walks toward
+      player._moveTarget = { x: worldX, y: worldY };
+    }
+  }, { passive: false });
 }
 
 // ── GAME LOOP ──
@@ -1253,13 +1366,29 @@ function updateInput() {
 function updatePlayer(dt) {
   if (!player || !player.alive) return;
 
+  let moveX = inputDir.x;
+  let moveY = inputDir.y;
+
+  // Tap-to-move: walk toward target if no joystick/keyboard input
+  if (moveX === 0 && moveY === 0 && player._moveTarget) {
+    const dx = player._moveTarget.x - player.x;
+    const dy = player._moveTarget.y - player.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d > 5) {
+      moveX = dx / d;
+      moveY = dy / d;
+    } else {
+      player._moveTarget = null;
+    }
+  }
+
   const speed = player.speed * (hasActivePowerup(player, 'speed') ? 1.6 : 1) * dt;
-  let nx = player.x + inputDir.x * speed;
-  let ny = player.y + inputDir.y * speed;
+  let nx = player.x + moveX * speed;
+  let ny = player.y + moveY * speed;
 
   // Facing direction
-  if (inputDir.x < -0.1) player.facingLeft = true;
-  if (inputDir.x > 0.1) player.facingLeft = false;
+  if (moveX < -0.1) player.facingLeft = true;
+  if (moveX > 0.1) player.facingLeft = false;
 
   // Bounds
   nx = Math.max(PLAYER_RADIUS + 20, Math.min(ARENA_W - PLAYER_RADIUS - 20, nx));
@@ -1274,6 +1403,9 @@ function updatePlayer(dt) {
   } else if (!collidesWithObstacle(player.x, ny, PLAYER_RADIUS)) {
     player.y = ny;
   }
+
+  // Cancel tap-to-move on manual input
+  if (inputDir.x !== 0 || inputDir.y !== 0) player._moveTarget = null;
 
   // Powerup expiry
   player.powerups = player.powerups.filter(p => Date.now() < p.expires);
@@ -1530,6 +1662,10 @@ function startBattle(opponent) {
   if (gameState !== 'playing') return;
   gameState = 'battle';
 
+  // Hide movement controls during battle
+  document.getElementById('dpad-hint').style.display = 'none';
+  document.getElementById('action-zone').style.display = 'none';
+
   const overlay = document.getElementById('battle-overlay');
   overlay.classList.add('active');
 
@@ -1610,6 +1746,9 @@ function initCombat(opponent) {
   document.getElementById('battle-combat-zone').style.display = '';
   document.getElementById('battle-result').classList.remove('active');
   document.getElementById('battle-result').innerHTML = '';
+
+  // Start battle scene (fireball canvas)
+  initBattleScene();
 
   // Update UI
   document.getElementById('bc-enemy-name').textContent = opponent.name.toUpperCase();
@@ -1759,6 +1898,9 @@ function dealDamageToEnemy(dmg, isSuper) {
   combat.enemyHP = Math.max(0, combat.enemyHP - dmg);
   updateCombatUI();
 
+  // Spawn player fireball in battle scene
+  spawnPlayerFireball(isSuper);
+
   if (isSuper) {
     showHitFlash('super-hit');
     document.getElementById('battle-overlay').classList.add('battle-shake');
@@ -1776,12 +1918,16 @@ function dealDamageToPlayer(dmg, isSuper) {
   const blockMult = combat.blockSuccess ? 0.5 : 1.0;
   const actualDmg = Math.floor(dmg * blockMult);
   combat.playerHP = Math.max(0, combat.playerHP - actualDmg);
+  const wasBlocked = combat.blockSuccess;
   combat.blockSuccess = false;
   updateCombatUI();
 
-  showHitFlash(combat.blockSuccess ? 'blocked' : isSuper ? 'super-hit' : '');
+  // Spawn enemy fireball in battle scene
+  spawnEnemyFireball(isSuper);
 
-  if (isSuper && !combat.blockSuccess) {
+  showHitFlash(wasBlocked ? 'blocked' : isSuper ? 'super-hit' : '');
+
+  if (isSuper && !wasBlocked) {
     document.getElementById('battle-overlay').classList.add('battle-shake');
     setTimeout(() => document.getElementById('battle-overlay').classList.remove('battle-shake'), 300);
   }
@@ -1871,6 +2017,10 @@ function startNextRound() {
   combat.roundOver = false;
   combat.timerEnd = Date.now() + ROUND_DURATION;
 
+  // Clear scene projectiles
+  battleSceneProjectiles = [];
+  battleSceneParticles = [];
+
   // Reset UI
   const manaFill = document.getElementById('bc-mana-fill');
   manaFill.style.width = '0%';
@@ -1912,6 +2062,219 @@ function startNextRound() {
   }, botSpeed);
 }
 
+// ── BATTLE SCENE RENDERER (Fireball animations) ──
+// Draws two beans facing each other with fireball projectiles
+
+let battleSceneProjectiles = [];
+let battleSceneState = { playerHit: 0, enemyHit: 0, playerIdle: 0, enemyIdle: 0 };
+
+function initBattleScene() {
+  const sceneCanvas = document.getElementById('battle-scene-canvas');
+  if (!sceneCanvas) return;
+  const container = document.getElementById('battle-scene');
+  sceneCanvas.width = container.clientWidth * 2;
+  sceneCanvas.height = container.clientHeight * 2;
+  battleSceneProjectiles = [];
+  battleSceneState = { playerHit: 0, enemyHit: 0, playerIdle: 0, enemyIdle: 0 };
+  renderBattleScene();
+}
+
+function renderBattleScene() {
+  const sceneCanvas = document.getElementById('battle-scene-canvas');
+  if (!sceneCanvas || gameState !== 'battle') return;
+
+  const sctx = sceneCanvas.getContext('2d');
+  const w = sceneCanvas.width;
+  const h = sceneCanvas.height;
+  sctx.clearRect(0, 0, w, h);
+
+  // Floor
+  sctx.fillStyle = 'rgba(16,185,129,0.06)';
+  sctx.fillRect(0, h * 0.6, w, h * 0.4);
+  sctx.strokeStyle = 'rgba(16,185,129,0.15)';
+  sctx.lineWidth = 1;
+  sctx.beginPath();
+  sctx.moveTo(0, h * 0.6);
+  sctx.lineTo(w, h * 0.6);
+  sctx.stroke();
+
+  const now = Date.now();
+  const beanScale = 2.2;
+  const floorY = h * 0.55;
+
+  // Player bean (left side) - idle bounce
+  const playerBounce = Math.sin(now / 300) * 3;
+  const playerX = w * 0.22;
+  const playerY = floorY + playerBounce;
+  let playerShake = 0;
+  if (battleSceneState.playerHit > 0) {
+    playerShake = Math.sin(now / 30) * 6 * battleSceneState.playerHit;
+    battleSceneState.playerHit = Math.max(0, battleSceneState.playerHit - 0.02);
+  }
+
+  // Enemy bean (right side) - idle bounce (offset phase)
+  const enemyBounce = Math.sin(now / 300 + 1.5) * 3;
+  const enemyX = w * 0.78;
+  const enemyY = floorY + enemyBounce;
+  let enemyShake = 0;
+  if (battleSceneState.enemyHit > 0) {
+    enemyShake = Math.sin(now / 30) * 6 * battleSceneState.enemyHit;
+    battleSceneState.enemyHit = Math.max(0, battleSceneState.enemyHit - 0.02);
+  }
+
+  // Draw player bean
+  if (player) {
+    drawBean(sctx, playerX + playerShake, playerY, player.color, beanScale, false, '');
+  }
+
+  // Draw enemy bean
+  if (battleState && battleState.opponent) {
+    drawBean(sctx, enemyX + enemyShake, enemyY, battleState.opponent.color, beanScale, true, '');
+  }
+
+  // Draw projectiles
+  battleSceneProjectiles = battleSceneProjectiles.filter(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= 0.02;
+
+    if (p.life <= 0) return false;
+
+    // Check if fireball reached target
+    if (p.fromPlayer && p.x > w * 0.72) {
+      battleSceneState.enemyHit = 1;
+      spawnBattleSceneParticles(sctx, enemyX, enemyY);
+      return false;
+    }
+    if (!p.fromPlayer && p.x < w * 0.28) {
+      battleSceneState.playerHit = 1;
+      spawnBattleSceneParticles(sctx, playerX, playerY);
+      return false;
+    }
+
+    // Draw fireball
+    sctx.save();
+    sctx.translate(p.x, p.y);
+
+    // Glow
+    const grad = sctx.createRadialGradient(0, 0, 2, 0, 0, p.isSuper ? 22 : 14);
+    if (p.fromPlayer) {
+      grad.addColorStop(0, 'rgba(255,200,50,0.9)');
+      grad.addColorStop(0.5, 'rgba(255,100,0,0.6)');
+      grad.addColorStop(1, 'rgba(255,50,0,0)');
+    } else {
+      grad.addColorStop(0, 'rgba(100,200,255,0.9)');
+      grad.addColorStop(0.5, 'rgba(50,100,255,0.6)');
+      grad.addColorStop(1, 'rgba(50,50,255,0)');
+    }
+    sctx.fillStyle = grad;
+    sctx.beginPath();
+    sctx.arc(0, 0, p.isSuper ? 22 : 14, 0, Math.PI * 2);
+    sctx.fill();
+
+    // Core
+    sctx.fillStyle = p.fromPlayer ? '#fff5cc' : '#ccf0ff';
+    sctx.beginPath();
+    sctx.arc(0, 0, p.isSuper ? 7 : 4, 0, Math.PI * 2);
+    sctx.fill();
+
+    // Trail particles
+    for (let i = 0; i < 3; i++) {
+      const tx = -p.vx * (i + 1) * 0.5 + (Math.random() - 0.5) * 6;
+      const ty = (Math.random() - 0.5) * 8;
+      sctx.globalAlpha = 0.3 - i * 0.08;
+      sctx.fillStyle = p.fromPlayer ? '#ff6600' : '#6699ff';
+      sctx.beginPath();
+      sctx.arc(tx, ty, 3 - i * 0.5, 0, Math.PI * 2);
+      sctx.fill();
+    }
+    sctx.globalAlpha = 1;
+
+    sctx.restore();
+    return true;
+  });
+
+  // Draw particles (impact effects)
+  battleSceneParticles = (battleSceneParticles || []).filter(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.3;
+    p.life -= 0.04;
+    if (p.life <= 0) return false;
+
+    sctx.globalAlpha = p.life;
+    sctx.fillStyle = p.color;
+    sctx.beginPath();
+    sctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    sctx.fill();
+    sctx.globalAlpha = 1;
+    return true;
+  });
+
+  window._battleSceneRAF = requestAnimationFrame(renderBattleScene);
+}
+
+let battleSceneParticles = [];
+
+function spawnBattleSceneParticles(sctx, x, y) {
+  for (let i = 0; i < 8; i++) {
+    battleSceneParticles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.5) * 6 - 2,
+      life: 1,
+      color: ['#ff6600', '#ffaa00', '#ff4444', '#ffcc00'][Math.floor(Math.random() * 4)],
+      size: 2 + Math.random() * 3,
+    });
+  }
+}
+
+function spawnPlayerFireball(isSuper) {
+  const sceneCanvas = document.getElementById('battle-scene-canvas');
+  if (!sceneCanvas) return;
+  const w = sceneCanvas.width;
+  const h = sceneCanvas.height;
+  const count = isSuper ? 3 : 1;
+  const offsets = isSuper ? [-30, 0, 30] : [0];
+
+  offsets.forEach((offsetY, i) => {
+    setTimeout(() => {
+      battleSceneProjectiles.push({
+        x: w * 0.28,
+        y: h * 0.55 + offsetY,
+        vx: isSuper ? 10 : 7,
+        vy: offsetY * 0.05,
+        fromPlayer: true,
+        isSuper,
+        life: 1,
+      });
+    }, i * 80);
+  });
+}
+
+function spawnEnemyFireball(isSuper) {
+  const sceneCanvas = document.getElementById('battle-scene-canvas');
+  if (!sceneCanvas) return;
+  const w = sceneCanvas.width;
+  const h = sceneCanvas.height;
+  const count = isSuper ? 3 : 1;
+  const offsets = isSuper ? [-30, 0, 30] : [0];
+
+  offsets.forEach((offsetY, i) => {
+    setTimeout(() => {
+      battleSceneProjectiles.push({
+        x: w * 0.72,
+        y: h * 0.55 + offsetY,
+        vx: isSuper ? -10 : -7,
+        vy: offsetY * 0.05,
+        fromPlayer: false,
+        isSuper,
+        life: 1,
+      });
+    }, i * 80);
+  });
+}
+
 // In production: multiplayer would use the dashboard's full battle system
 // which syncs via Supabase Realtime channels. The arena collision would call:
 //   create_tamagotchi_battle(challengerId, opponentId, coinBet, stats)
@@ -1920,6 +2283,12 @@ function startNextRound() {
 function showBattleResult(won, detail = '') {
   // Hide combat zone
   document.getElementById('battle-combat-zone').style.display = 'none';
+
+  // Stop battle scene animation
+  if (window._battleSceneRAF) {
+    cancelAnimationFrame(window._battleSceneRAF);
+    window._battleSceneRAF = null;
+  }
 
   // Clean up combat timers
   if (combat) {
@@ -1989,11 +2358,19 @@ function endBattle(won) {
   }
   battleState = null;
 
+  // Stop battle scene animation
+  if (window._battleSceneRAF) {
+    cancelAnimationFrame(window._battleSceneRAF);
+    window._battleSceneRAF = null;
+  }
+
   if (!player.alive) {
     gameState = 'gameover';
     showGameOver();
   } else {
     gameState = 'playing';
+    document.getElementById('dpad-hint').style.display = '';
+    document.getElementById('action-zone').style.display = '';
   }
 }
 
@@ -2091,6 +2468,7 @@ function returnToLobby() {
   document.getElementById('hud').style.display = 'none';
   document.getElementById('players-alive').style.display = 'none';
   document.getElementById('action-zone').style.display = 'none';
+  document.getElementById('dpad-hint').style.display = 'none';
   document.getElementById('powerup-active').innerHTML = '';
   gameState = 'lobby';
   player = null;
