@@ -2300,6 +2300,12 @@ async function applyAppTheme(themeKey) {
         100% { width: 600px; height: 600px; opacity: 0; }
     }
 
+    /* Full-screen golden flash on level-up */
+    @keyframes celebrationFlash {
+        0% { opacity: 0.6; }
+        100% { opacity: 0; }
+    }
+
     /* Sparkle particles */
     .levelup-sparkle {
         position: absolute;
@@ -18595,6 +18601,11 @@ function _switchAppTabReal(tabName, btn) {
                 );
                 pendingLevelUp = null;
             }, 500);
+        }
+
+        // Check for celebration that was interrupted by page reload
+        if (typeof checkPendingLevelUpCelebration === 'function') {
+            setTimeout(() => checkPendingLevelUpCelebration(), 1500);
         }
 
         // Hide Today's Priority section if user doesn't have meal plan access
@@ -41547,29 +41558,56 @@ function createGlowRings() {
 // Trigger victory animation on Shazie
 function triggerVictoryAnimation() {
     const mv = document.getElementById('tamagotchi-model');
-    if (!mv || !mv.availableAnimations || !mv.availableAnimations.length) return;
+    if (!mv) return;
 
-    // Find victory/celebration animation (always unlocked for level-up celebrations)
-    const victoryAnim = mv.availableAnimations.find(a =>
-        a === 'laugh' ||
-        a === 'clap' ||
-        a === 'arms_up_still'
-    ) || mv.availableAnimations.find(a =>
-        a === 'greet' ||
-        a === 'dance'
-    );
+    function playVictoryAnim() {
+        if (!mv.availableAnimations || !mv.availableAnimations.length) return;
 
-    if (victoryAnim) {
-        mv.animationName = victoryAnim;
-        mv.play();
+        // Prioritise dance animations for level-up celebrations
+        const victoryAnim = mv.availableAnimations.find(a =>
+            a === 'dance' ||
+            a === 'dance_1'
+        ) || mv.availableAnimations.find(a =>
+            a === 'clap' ||
+            a === 'arms_up_still' ||
+            a === 'laugh'
+        ) || mv.availableAnimations.find(a =>
+            a === 'greet' ||
+            a === 'strut' ||
+            a === 'warm_up'
+        );
 
-        // Return to static stance after celebration - pause to prevent default loop
-        setTimeout(() => {
-            mv.pause();
-            mv.currentTime = 0;
-            mv.animationName = null;
-            mv.removeAttribute('animation-name');
-        }, 4000);
+        if (victoryAnim) {
+            mv.animationName = victoryAnim;
+            mv.play();
+
+            // Loop the dance: replay once after the first play to fill the celebration window
+            setTimeout(() => {
+                if (mv.animationName === victoryAnim) {
+                    mv.currentTime = 0;
+                    mv.play();
+                }
+            }, 2500);
+
+            // Return to static stance after celebration
+            setTimeout(() => {
+                mv.pause();
+                mv.currentTime = 0;
+                mv.animationName = null;
+                mv.removeAttribute('animation-name');
+            }, 6000);
+        }
+    }
+
+    // If model already has animations loaded, play immediately
+    if (mv.availableAnimations && mv.availableAnimations.length) {
+        playVictoryAnim();
+    } else {
+        // Wait for model to finish loading before playing animation
+        mv.addEventListener('load', function onModelLoad() {
+            mv.removeEventListener('load', onModelLoad);
+            setTimeout(playVictoryAnim, 200);
+        });
     }
 }
 
@@ -41648,9 +41686,18 @@ function triggerXPBarRainbow() {
  * NEW LEVEL UP CELEBRATION SYSTEM
  * Shows celebration directly in the Tamagotchi widget instead of as a popup toast.
  * Auto-navigates to dashboard, plays dance animation, and animates the XP bar.
+ * Persists pending celebration to localStorage so it survives page reloads.
  */
 function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifetimePoints = 0, currentStreak = 0, previousProgress = 0) {
     console.log('🎉 Level Up Celebration triggered!', { newLevel, title, previousLevel });
+
+    // Persist celebration data so it can be recovered if page reloads mid-flow
+    try {
+        localStorage.setItem('pendingLevelUpCelebration', JSON.stringify({
+            newLevel, title, previousLevel, lifetimePoints, currentStreak, previousProgress,
+            timestamp: Date.now()
+        }));
+    } catch (e) { /* ignore storage errors */ }
 
     // Get the previous title for rank transition display
     const previousTitle = previousLevel ? getLevelTitle(previousLevel) : null;
@@ -41665,9 +41712,13 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
         // Find the dashboard nav button
         const dashboardBtn = document.querySelector('.bottom-nav .nav-item');
         switchAppTab('dashboard', dashboardBtn);
-        // Wait for navigation transition
-        setTimeout(() => startCelebrationSequence(), 400);
+        // Wait for navigation transition then scroll to top so character is visible
+        setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            startCelebrationSequence();
+        }, 500);
     } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         startCelebrationSequence();
     }
 
@@ -41683,6 +41734,7 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
         if (!overlay || !banner) {
             console.log('Level up overlay elements not found, falling back to toast');
             showLevelUpToast(newLevel, title, previousLevel, lifetimePoints, currentStreak);
+            clearPendingCelebration();
             return;
         }
 
@@ -41692,7 +41744,13 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
         // Step 2: Play sound
         playLevelUpSound();
 
-        // Step 3: Activate overlay and add effects
+        // Step 3: Full-screen flash effect for impact
+        const flash = document.createElement('div');
+        flash.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,215,0,0.4);z-index:9998;pointer-events:none;animation:celebrationFlash 0.6s ease-out forwards;';
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 700);
+
+        // Step 4: Activate overlay and add effects
         overlay.classList.add('active');
 
         // Add burst effect
@@ -41700,21 +41758,21 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
         burst.className = 'levelup-burst';
         overlay.appendChild(burst);
 
-        // Add sparkle particles
-        for (let i = 0; i < 20; i++) {
+        // Add sparkle particles (more particles for bigger celebration)
+        for (let i = 0; i < 30; i++) {
             setTimeout(() => {
                 const sparkle = document.createElement('div');
                 sparkle.className = 'levelup-sparkle';
-                sparkle.style.left = `${20 + Math.random() * 60}%`;
-                sparkle.style.bottom = `${20 + Math.random() * 30}%`;
+                sparkle.style.left = `${10 + Math.random() * 80}%`;
+                sparkle.style.bottom = `${10 + Math.random() * 40}%`;
                 sparkle.style.animationDelay = `${Math.random() * 0.5}s`;
                 sparkle.style.animationDuration = `${1.5 + Math.random()}s`;
                 overlay.appendChild(sparkle);
-            }, i * 50);
+            }, i * 40);
         }
 
         // Add rising stars
-        const starPositions = [20, 35, 50, 65, 80];
+        const starPositions = [15, 30, 42, 58, 70, 85];
         starPositions.forEach((pos, i) => {
             setTimeout(() => {
                 const star = document.createElement('div');
@@ -41722,14 +41780,14 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
                 star.textContent = '⭐';
                 star.style.left = `${pos}%`;
                 star.style.bottom = '30%';
-                star.style.animationDelay = `${i * 0.15}s`;
+                star.style.animationDelay = `${i * 0.12}s`;
                 overlay.appendChild(star);
-            }, 200 + i * 100);
+            }, 200 + i * 80);
         });
 
-        // Add confetti
-        const confettiColors = ['#FFD700', '#FFA500', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96E6A1'];
-        for (let i = 0; i < 30; i++) {
+        // Add confetti - first wave
+        const confettiColors = ['#FFD700', '#FFA500', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96E6A1', '#FF69B4', '#9B59B6'];
+        for (let i = 0; i < 40; i++) {
             setTimeout(() => {
                 const confetti = document.createElement('div');
                 confetti.className = 'levelup-confetti';
@@ -41742,10 +41800,29 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
                 confetti.style.width = `${6 + Math.random() * 8}px`;
                 confetti.style.height = `${6 + Math.random() * 8}px`;
                 overlay.appendChild(confetti);
-            }, i * 30);
+            }, i * 25);
         }
 
-        // Step 4: Show level-up banner
+        // Second wave of confetti for sustained celebration
+        setTimeout(() => {
+            for (let i = 0; i < 25; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'levelup-confetti';
+                    confetti.style.left = `${Math.random() * 100}%`;
+                    confetti.style.top = '-20px';
+                    confetti.style.backgroundColor = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                    confetti.style.animationDelay = `${Math.random() * 0.3}s`;
+                    confetti.style.animationDuration = `${2 + Math.random() * 1.5}s`;
+                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                    confetti.style.width = `${6 + Math.random() * 8}px`;
+                    confetti.style.height = `${6 + Math.random() * 8}px`;
+                    overlay.appendChild(confetti);
+                }, i * 30);
+            }
+        }, 2000);
+
+        // Step 5: Show level-up banner
         setTimeout(() => {
             banner.style.display = 'block';
             // Reset animation by removing and re-adding class
@@ -41814,10 +41891,10 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
             }
         }, 300);
 
-        // Step 5: Trigger Shazie's celebration dance
+        // Step 6: Trigger Shazie's celebration dance
         triggerVictoryAnimation();
 
-        // Step 6: Animate XP bar (fill to 100%, then reset to new progress)
+        // Step 7: Animate XP bar (fill to 100%, then reset to new progress)
         if (xpBar) {
             // Set CSS variables for the animation
             xpBar.style.setProperty('--start-width', `${previousProgress}%`);
@@ -41830,7 +41907,7 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
             }, 1600);
         }
 
-        // Step 7: Update level number with animation
+        // Step 8: Update level number with animation
         if (levelDisplay) {
             setTimeout(() => {
                 levelDisplay.textContent = newLevel;
@@ -41839,14 +41916,14 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
             }, 800);
         }
 
-        // Step 8: Update rank display
+        // Step 9: Update rank display
         if (rankDisplay) {
             setTimeout(() => {
                 rankDisplay.textContent = title.toUpperCase();
             }, 900);
         }
 
-        // Step 9: Update XP text
+        // Step 10: Update XP text
         if (xpText && newLevelData) {
             setTimeout(() => {
                 const pointsIntoLevel = newLevelData.pointsIntoLevel || 0;
@@ -41858,18 +41935,18 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
             }, 1000);
         }
 
-        // Step 10: Glow effect on stats bar
+        // Step 11: Glow effect on stats bar
         if (statsBar) {
             statsBar.classList.add('stats-bar-celebrating');
-            setTimeout(() => statsBar.classList.remove('stats-bar-celebrating'), 2000);
+            setTimeout(() => statsBar.classList.remove('stats-bar-celebrating'), 3000);
         }
 
-        // Step 11: Check for newly unlocked animations
+        // Step 12: Check for newly unlocked animations
         if (previousLevel) {
             checkNewAnimationUnlocks(previousLevel, newLevel);
         }
 
-        // Step 12: Auto-share level-up to feed
+        // Step 13: Auto-share level-up to feed
         shareLevelUpToFeed({
             newLevel: newLevel,
             previousLevel: previousLevel,
@@ -41877,7 +41954,7 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
             lifetimePoints: lifetimePoints
         });
 
-        // Step 13: Clean up after celebration (5 seconds)
+        // Step 14: Clean up after celebration (6.5 seconds - gives dance time to finish)
         setTimeout(() => {
             overlay.classList.remove('active');
             banner.style.display = 'none';
@@ -41889,7 +41966,49 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
                 unlockedContainer.style.display = 'none';
                 unlockedContainer.style.animation = '';
             }
-        }, 5000);
+            // Clear localStorage flag - celebration completed successfully
+            clearPendingCelebration();
+
+            // Step 15: Show stat allocation modal after celebration ends
+            // (grantStatPoints is called by the progression system hook, but the
+            //  modal display is handled here to ensure correct timing)
+            setTimeout(() => {
+                if (typeof window.showStatAllocationModal === 'function') {
+                    window.showStatAllocationModal();
+                }
+            }, 800);
+        }, 6500);
+    }
+}
+
+// Clear pending celebration from localStorage
+function clearPendingCelebration() {
+    try { localStorage.removeItem('pendingLevelUpCelebration'); } catch (e) { /* ignore */ }
+}
+
+// Check for and replay any pending celebration that was interrupted (e.g. page reload)
+function checkPendingLevelUpCelebration() {
+    try {
+        const raw = localStorage.getItem('pendingLevelUpCelebration');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        // Only replay if less than 2 minutes old (prevent stale celebrations)
+        if (Date.now() - data.timestamp > 120000) {
+            clearPendingCelebration();
+            return;
+        }
+        console.log('🎉 Replaying pending level-up celebration from localStorage');
+        clearPendingCelebration(); // Clear first to prevent infinite loop
+        triggerLevelUpCelebration(
+            data.newLevel,
+            data.title,
+            data.previousLevel,
+            data.lifetimePoints,
+            data.currentStreak || 0,
+            data.previousProgress || 0
+        );
+    } catch (e) {
+        clearPendingCelebration();
     }
 }
 
@@ -51444,8 +51563,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const current = getUnallocatedPoints();
                 setUnallocatedPoints(current + totalNewPoints);
                 console.log(`🎮 Granted ${totalNewPoints} stat points (levels ${previousLevel+1}-${newLevel})`);
-                // Show allocation modal after celebration
-                setTimeout(() => showStatAllocationModal(), 5500);
+                // The stat allocation modal is now shown by the celebration cleanup
+                // in triggerLevelUpCelebration (Step 15) for correct timing.
+                // No separate timeout needed here.
             }
         }
 
@@ -53336,12 +53456,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // Also check for unallocated points on page load (in case user closed before allocating)
+        // Delay longer to avoid interrupting any pending level-up celebration
         setTimeout(() => {
+            // Skip if a celebration is pending/playing - the celebration cleanup will show the modal
+            const pendingCeleb = localStorage.getItem('pendingLevelUpCelebration');
+            if (pendingCeleb) return;
+
             const unalloc = getUnallocatedPoints();
             if (unalloc > 0) {
                 showStatAllocationModal();
             }
-        }, 4000);
+        }, 8000);
 
         console.log('🎮 Progression & Battle System loaded!');
     })();
