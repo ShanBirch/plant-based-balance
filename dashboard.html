@@ -1209,6 +1209,10 @@ async function applyAppTheme(themeKey) {
         from { transform: translateY(20px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
     }
+    @keyframes slideUpModal {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
     @keyframes slideDown {
         from { transform: translate(-50%, -20px); opacity: 0; }
         to { transform: translate(-50%, 0); opacity: 1; }
@@ -7277,6 +7281,39 @@ async function applyAppTheme(themeKey) {
     <div id="stories-carousel-container" style="display: none;">
         <div id="stories-carousel" style="display: inline-flex; gap: 15px;">
             <div class="story-ring add-story-btn" onclick="openStoryCamera()" style="display: inline-block; text-align: center; cursor: pointer;"></div>
+        </div>
+    </div>
+
+    <!-- Friends Pill Widget -->
+    <div id="home-friends-pill" onclick="openHomeFriendsModal()" style="margin: 12px 25px 0; display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: white; border-radius: 40px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f1f5f9; transition: transform 0.15s;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center;">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        </div>
+        <div style="flex: 1;">
+            <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">Friends</span>
+            <span id="home-friends-pill-count" style="font-size: 0.8rem; color: var(--text-muted); margin-left: 6px;">0</span>
+        </div>
+        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #94a3b8;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+    </div>
+
+    <!-- Friends Modal (Home Page) -->
+    <div id="home-friends-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10007; align-items: flex-end; justify-content: center; backdrop-filter: blur(3px);" onclick="if(event.target===this) closeHomeFriendsModal();">
+        <div style="background: white; border-radius: 20px 20px 0 0; max-width: 500px; width: 100%; max-height: 70vh; overflow: hidden; animation: slideUpModal 0.3s ease-out;">
+            <!-- Header -->
+            <div style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Friends</h3>
+                    <span id="home-friends-modal-count" style="background: var(--primary); color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px;">0</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button onclick="closeHomeFriendsModal(); openAddFriendModal();" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; padding: 6px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; cursor: pointer;">+ Add</button>
+                    <button onclick="closeHomeFriendsModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; line-height: 1;">&times;</button>
+                </div>
+            </div>
+            <!-- Friends List -->
+            <div id="home-friends-modal-list" style="overflow-y: auto; max-height: calc(70vh - 60px); padding: 8px 0;">
+                <div style="text-align: center; padding: 30px; color: var(--text-muted); font-size: 0.85rem;">Loading...</div>
+            </div>
         </div>
     </div>
 
@@ -18397,6 +18434,11 @@ function _switchAppTabReal(tabName, btn) {
     // Trigger Cycle Sync Check if entering Dashboard
     if(tabName === 'dashboard' && typeof checkAndRenderCycleSync === 'function') {
         checkAndRenderCycleSync();
+    }
+
+    // Update friends pill count on home page
+    if(tabName === 'dashboard' && typeof updateHomeFriendsPillCount === 'function') {
+        updateHomeFriendsPillCount();
     }
 
     window.scrollTo(0,0);
@@ -36344,6 +36386,94 @@ function openFeedMessagesPanel() {
 function closeFeedMessagesPanel() {
     const panel = document.getElementById('feed-messages-panel');
     if (panel) panel.style.display = 'none';
+}
+
+// --- Home Friends Pill & Modal ---
+
+// Update the friends pill count on the home page
+async function updateHomeFriendsPillCount() {
+    try {
+        if (!window.currentUser) return;
+        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
+        const count = friends ? friends.length : 0;
+        const pillCount = document.getElementById('home-friends-pill-count');
+        if (pillCount) pillCount.textContent = count;
+    } catch (e) {
+        console.error('Error updating friends pill count:', e);
+    }
+}
+
+function openHomeFriendsModal() {
+    const modal = document.getElementById('home-friends-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        loadHomeFriendsModal();
+    }
+}
+
+function closeHomeFriendsModal() {
+    const modal = document.getElementById('home-friends-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function loadHomeFriendsModal() {
+    const container = document.getElementById('home-friends-modal-list');
+    const countBadge = document.getElementById('home-friends-modal-count');
+    if (!container || !window.currentUser) return;
+
+    container.innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-muted); font-size: 0.85rem;">Loading...</div>';
+
+    try {
+        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
+        const count = friends ? friends.length : 0;
+        if (countBadge) countBadge.textContent = count;
+
+        // Also update the pill
+        const pillCount = document.getElementById('home-friends-pill-count');
+        if (pillCount) pillCount.textContent = count;
+
+        if (!friends || friends.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">👥</div>
+                    <div style="font-size: 0.95rem; margin-bottom: 6px; font-weight: 600; color: var(--text-main);">No friends yet</div>
+                    <div style="font-size: 0.8rem; margin-bottom: 16px;">Add friends to see them here!</div>
+                    <button onclick="closeHomeFriendsModal(); openAddFriendModal();" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; padding: 10px 24px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Add Friends</button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = friends.map(friend => {
+            const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
+            const friendName = (friend.friend_name || 'Friend').replace(/'/g, "\\'");
+            const friendPhoto = (friend.friend_photo || '').replace(/'/g, "\\'");
+            const photoHtml = friend.friend_photo
+                ? `<img src="${friend.friend_photo}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.parentElement.innerHTML='${initials}'">`
+                : initials;
+
+            return `
+                <div style="display: flex; align-items: center; padding: 10px 20px; border-bottom: 1px solid #f8fafc;">
+                    <div onclick="closeHomeFriendsModal(); viewUserProfile('${friend.friend_id}', '${friendName}', '${friendPhoto}');" style="display: flex; align-items: center; gap: 12px; flex: 1; cursor: pointer; min-width: 0;">
+                        <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.1rem; overflow: hidden; flex-shrink: 0;">
+                            ${photoHtml}
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${friend.friend_name || 'Friend'}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">View profile</div>
+                        </div>
+                    </div>
+                    <button onclick="closeHomeFriendsModal(); openDirectMessage('${friend.friend_id}', '${friendName}', '${friendPhoto}');" style="width: 36px; height: 36px; background: #f1f5f9; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Message">
+                        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading home friends modal:', error);
+        container.innerHTML = '<div style="text-align: center; padding: 30px; color: #ef4444; font-size: 0.85rem;">Failed to load friends</div>';
+    }
 }
 
 // Load group chats into the messages panel
