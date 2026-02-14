@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
 <title>FitGotchi</title>
 <meta name="description" content="Your fitness pet adventure — track workouts, raise your FitGotchi, and level up.">
 
@@ -28,16 +28,30 @@
   }
 </script>
 
-<!-- CRITICAL: Hide loading overlay for returning users (only show on first visit/onboarding) -->
+<!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
 (function() {
     // If the user has already completed their first dashboard load,
     // hide the loading overlay instantly so it doesn't flash on page reloads
     // (e.g. when returning from native camera on mobile).
-    if (localStorage.getItem('dashboardInitialized') === 'true') {
+    var isReturning = localStorage.getItem('dashboardInitialized') === 'true';
+    if (isReturning) {
         var style = document.createElement('style');
         style.textContent = '.login-loading-overlay { display: none !important; }';
         document.head.appendChild(style);
+    }
+
+    // For returning users, preload their actual character model instead of the baby
+    var cachedModel = localStorage.getItem('fitgotchi_model_src');
+    if (isReturning && cachedModel) {
+        var preload = document.createElement('link');
+        preload.rel = 'preload';
+        preload.href = cachedModel;
+        preload.as = 'fetch';
+        preload.crossOrigin = '';
+        document.head.appendChild(preload);
+        // Mark that we have a cached model so the baby preload can be skipped
+        window._fitgotchiCachedModel = cachedModel;
     }
 })();
 </script>
@@ -92,7 +106,12 @@
 <!-- <link rel="stylesheet" href="lib/avatar.css"> -->
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js"></script>
 <!-- Preload onboarding 3D models so they display instantly in the wizard -->
-<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>
+<!-- Baby model preload only for first-time users (returning users preload their cached model above) -->
+<script>
+if (!window._fitgotchiCachedModel) {
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>');
+}
+</script>
 <link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
 
@@ -172,12 +191,14 @@ async function applyAppTheme(themeKey) {
 
     * { box-sizing: border-box; }
 
-    body { 
-        font-family: 'Inter', sans-serif; 
+    body {
+        font-family: 'Inter', sans-serif;
         background: var(--bg);
-        color: var(--text-main); 
-        margin: 0; 
-        padding-bottom: calc(var(--nav-height) + 20px); /* Space for bottom nav */
+        color: var(--text-main);
+        margin: 0;
+        padding-bottom: calc(var(--nav-height) + 20px + env(safe-area-inset-bottom)); /* Space for bottom nav + safe area */
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
         line-height: 1.6;
         -webkit-font-smoothing: antialiased;
     }
@@ -905,6 +926,61 @@ async function applyAppTheme(themeKey) {
         .view-section { padding: 25px 15px; }
         .card-body { padding: 0 20px; }
         .card.open .card-body { padding: 20px; }
+
+        /* Responsive tamagotchi widget - scale down on smaller phones */
+        #tamagotchi-widget-container {
+            height: 340px !important;
+        }
+        #tamagotchi-stats-bar {
+            padding: 12px 14px !important;
+        }
+        #tamagotchi-stats-bar #tamagotchi-level {
+            font-size: 1.3rem !important;
+        }
+        #tamagotchi-stats-bar #tamagotchi-xp-text {
+            font-size: 0.6rem !important;
+        }
+        #tamagotchi-stats-bar #tamagotchi-rank {
+            font-size: 0.65rem !important;
+        }
+
+        /* Reduce header padding on mobile */
+        .app-header {
+            padding: 10px 14px !important;
+        }
+        /* Bottom nav compact on smaller screens */
+        .bottom-nav {
+            height: 68px;
+        }
+        .nav-item {
+            font-size: 0.65rem;
+            gap: 3px;
+        }
+        .nav-item .nav-icon {
+            font-size: 1.2rem;
+        }
+        body {
+            padding-bottom: calc(68px + 16px);
+        }
+    }
+    @media (max-width: 380px) {
+        /* Very small phones (iPhone SE, older Androids) */
+        #tamagotchi-widget-container {
+            height: 280px !important;
+        }
+        #tamagotchi-stats-bar {
+            padding: 10px 12px !important;
+        }
+        .bottom-nav {
+            height: 60px;
+        }
+        .nav-item {
+            font-size: 0.6rem;
+            gap: 2px;
+        }
+        body {
+            padding-bottom: calc(60px + 12px);
+        }
     }
     /* Image Modal */
     .image-modal-overlay {
@@ -6932,9 +7008,9 @@ async function applyAppTheme(themeKey) {
                 disable-pan>
             </model-viewer>
             <!-- Character model - starts with visible background, goes transparent after load so 3D environment shows through -->
+            <!-- src is set dynamically below to avoid baby model flash for returning users -->
             <model-viewer
                 id="tamagotchi-model"
-                src="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb"
                 camera-controls
                 disable-zoom
                 disable-pan
@@ -6953,11 +7029,32 @@ async function applyAppTheme(themeKey) {
                 interaction-prompt="none">
             </model-viewer>
             <script>
-            // After model loads, add class to make background transparent so 3D environment shows through.
-            // Keeping it opaque during load ensures Safari users see a dark bg instead of a blank void.
+            // Set model src from cache (returning users) or default to baby (new users).
+            // Runs before model-viewer custom element registers, so the correct model loads from the start.
             (function() {
                 var mv = document.getElementById('tamagotchi-model');
                 if (!mv) return;
+
+                var cachedModel = window._fitgotchiCachedModel || localStorage.getItem('fitgotchi_model_src');
+                var cachedOrbit = localStorage.getItem('fitgotchi_camera_orbit');
+                var cachedFov = localStorage.getItem('fitgotchi_fov');
+                var cachedScale = localStorage.getItem('fitgotchi_scale');
+                var isReturning = localStorage.getItem('dashboardInitialized') === 'true';
+
+                if (isReturning && cachedModel) {
+                    mv.setAttribute('src', cachedModel);
+                    if (cachedOrbit) mv.setAttribute('camera-orbit', cachedOrbit);
+                    if (cachedFov) mv.setAttribute('field-of-view', cachedFov);
+                    if (cachedScale) {
+                        mv.style.transform = cachedScale;
+                        mv.style.transformOrigin = 'center center';
+                    }
+                } else {
+                    mv.setAttribute('src', 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb');
+                }
+
+                // After model loads, add class to make background transparent so 3D environment shows through.
+                // Keeping it opaque during load ensures Safari users see a dark bg instead of a blank void.
                 mv.addEventListener('load', function() {
                     mv.classList.add('model-loaded');
                 });
@@ -7132,6 +7229,23 @@ async function applyAppTheme(themeKey) {
                 <div id="tamagotchi-rank" style="color: var(--secondary); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">NEWCOMER</div>
             </div>
         </div>
+
+        <!-- Restore cached stats for returning users to prevent flash of default values -->
+        <script>
+        (function() {
+            if (localStorage.getItem('dashboardInitialized') !== 'true') return;
+            var lvl = localStorage.getItem('fitgotchi_level');
+            var rank = localStorage.getItem('fitgotchi_rank');
+            var xpText = localStorage.getItem('fitgotchi_xp_text');
+            var xpPct = localStorage.getItem('fitgotchi_xp_percent');
+            var streak = localStorage.getItem('fitgotchi_streak');
+            if (lvl) { var el = document.getElementById('tamagotchi-level'); if (el) el.textContent = lvl; }
+            if (rank) { var el = document.getElementById('tamagotchi-rank'); if (el) el.textContent = rank; }
+            if (xpText) { var el = document.getElementById('tamagotchi-xp-text'); if (el) el.textContent = xpText; }
+            if (xpPct) { var el = document.getElementById('tamagotchi-xp-bar'); if (el) el.style.width = xpPct; }
+            if (streak) { var el = document.getElementById('tamagotchi-streak'); if (el) el.textContent = streak; }
+        })();
+        </script>
 
         <!-- Battle Stats Row (STR / HP / MANA) -->
         <div id="battle-stats-row" class="battle-stats-row" style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; padding-bottom: 10px; margin-bottom: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
@@ -8238,21 +8352,31 @@ async function applyAppTheme(themeKey) {
             try {
             updateLoginProgress(25, 'Loading your profile...');
 
+            // Fire-and-forget: non-blocking background loads
             loadChat();
             loadJournalHistory();
-            await syncQuizDataToDb(); // Sync quiz data first
-            await seedTestAccount(); // Inject fake data for test user
 
-            // CRITICAL: Load cycle data BEFORE loadProfileData, since loadProfileData calls renderCycleStatus
-            if(typeof initCalendarView === 'function') {
-                await initCalendarView();
-                console.log('✅ Cycle data loaded before profile rendering');
-            }
-
-            await loadProfileData(); // Ensure profile is loaded (includes gender restore)
-            initProgramDate(); // Ensure program date is synced
+            // Phase 1: Run independent async operations in parallel for faster startup
+            // - syncQuizDataToDb: sync local quiz data to DB (independent)
+            // - seedTestAccount: inject test data if test user (independent)
+            // - initCalendarView: load cycle data (loadProfileData depends on this)
+            // - loadCharacterColorsFromDb: load gender & colors (loadPointsWidget depends on this)
+            await Promise.all([
+                syncQuizDataToDb().catch(e => console.warn('Quiz sync error:', e)),
+                seedTestAccount().catch(e => console.warn('Seed error:', e)),
+                (typeof initCalendarView === 'function'
+                    ? initCalendarView().then(() => console.log('✅ Cycle data loaded'))
+                    : Promise.resolve()),
+                (typeof window.loadCharacterColorsFromDb === 'function'
+                    ? window.loadCharacterColorsFromDb()
+                    : Promise.resolve())
+            ]);
 
             updateLoginProgress(50, 'Setting up your experience...');
+
+            // Phase 2: Profile data (depends on cycle data from Phase 1)
+            await loadProfileData();
+            initProgramDate();
 
             // Apply saved theme AFTER gender is loaded from database
             const savedTheme = localStorage.getItem('userThemePreference') || 'default';
@@ -8260,36 +8384,22 @@ async function applyAppTheme(themeKey) {
                 applyAppTheme(savedTheme);
             }
 
-            // Avatar companion disabled for now
-            // await initializeAvatar();
-
             // Check if essential quiz data is missing and trigger onboarding wizard
             await checkAndTriggerOnboarding();
 
             updateLoginProgress(65, 'Preparing your FitGotchi...');
 
-            // Load character colors and gender from database (must await to set correct evolution path)
-            if (typeof window.loadCharacterColorsFromDb === 'function') {
-                await window.loadCharacterColorsFromDb();
-            }
-
-            // Load points and update FitGotchi model based on user's level
+            // Phase 3: Load points and update FitGotchi (depends on character colors from Phase 1)
             if (typeof loadPointsWidget === 'function') {
                 await loadPointsWidget();
             }
 
             updateLoginProgress(80, 'Almost there...');
 
-            // Update dashboard workout card to show today's recommended workout
+            // Phase 4: Non-critical UI updates (fire-and-forget, don't block)
             if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
-
-            // Check and show daily weigh-in modal on first login of day
             if(typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
-
-            // Also check and show daily weigh-in card (fallback if modal was skipped)
             if(typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
-
-            // Also refresh community feed if function exists
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
 
             // Switch to dashboard as default entry point
@@ -49963,7 +50073,25 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // Scale down both male and female characters equally via CSS transform
                 modelViewer.style.transform = 'scale(0.75)';
                 modelViewer.style.transformOrigin = 'center center';
+
+                // Cache current model state for instant restore on next page load
+                try {
+                    var finalSrc = modelViewer.getAttribute('src');
+                    if (finalSrc) localStorage.setItem('fitgotchi_model_src', finalSrc);
+                    localStorage.setItem('fitgotchi_camera_orbit', `0deg 85deg ${cameraDist}m`);
+                    localStorage.setItem('fitgotchi_fov', `${fov}deg`);
+                    localStorage.setItem('fitgotchi_scale', 'scale(0.75)');
+                } catch(e) {}
             }
+
+            // Cache stats for instant restore on next page load
+            try {
+                localStorage.setItem('fitgotchi_level', String(level));
+                localStorage.setItem('fitgotchi_rank', currentEvolution.title);
+                localStorage.setItem('fitgotchi_streak', String(currentStreak));
+                if (xpBarEl) localStorage.setItem('fitgotchi_xp_percent', xpBarEl.style.width);
+                if (xpTextEl) localStorage.setItem('fitgotchi_xp_text', xpTextEl.textContent);
+            } catch(e) {}
         };
 
         // Animation unlock system - animations unlocked at specific levels
