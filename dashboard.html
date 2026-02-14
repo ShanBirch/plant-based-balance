@@ -7464,6 +7464,40 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
+    <!-- Daily Quiz Card (disappears after completion) -->
+    <div id="daily-quiz-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden; cursor: pointer;">
+        <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+        <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+        <div style="position: relative; z-index: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div>
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; font-weight: 700;">Daily Quiz</h3>
+                    <p id="daily-quiz-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Complete a lesson, earn bonus XP!</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
+                    +10 XP
+                </div>
+            </div>
+            <div id="daily-quiz-lesson-info" style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px;">
+                <div id="daily-quiz-icon" style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;"></div>
+                <div style="flex: 1;">
+                    <div id="daily-quiz-lesson-title" style="font-weight: 600; font-size: 0.95rem;"></div>
+                    <div id="daily-quiz-lesson-context" style="font-size: 0.8rem; opacity: 0.85; margin-top: 2px;"></div>
+                </div>
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: rgba(255,255,255,0.7);"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Quiz Completed Card -->
+    <div id="daily-quiz-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px;">
+        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
+        <div style="flex: 1;">
+            <div style="font-weight: 700; font-size: 1rem;">Daily Quiz Complete!</div>
+            <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+10 XP earned. Come back tomorrow!</div>
+        </div>
+    </div>
+
     <script>
     // ===== DAILY WEIGH-IN CARD LOGIC =====
 
@@ -7636,14 +7670,114 @@ async function applyAppTheme(themeKey) {
         if (document.visibilityState === 'visible') {
             const today = new Date().toDateString();
             if (today !== _lastWeighInCheckDate) {
-                // It's a new day since last check - refresh weigh-in card & modal
+                // It's a new day since last check - refresh weigh-in card, modal & daily quiz
                 _lastWeighInCheckDate = today;
-                console.log('🔄 New day detected on PWA resume, refreshing weigh-in card');
+                console.log('🔄 New day detected on PWA resume, refreshing daily cards');
                 if (typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
                 if (typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
+                if (typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
             }
         }
     });
+    </script>
+
+    <script>
+    // ===== DAILY QUIZ CARD LOGIC =====
+
+    /**
+     * Check if user has completed their daily quiz and show/hide card accordingly.
+     * Uses learning system state exposed via window functions.
+     */
+    async function checkAndShowDailyQuizCard() {
+        if (!window.currentUser) return;
+
+        // Don't show if onboarding wizard is active
+        if (window._onboardingWizardPending) return;
+        const wizard = document.getElementById('onboarding-wizard');
+        if (wizard && wizard.style.display !== 'none') return;
+
+        const card = document.getElementById('daily-quiz-card');
+        const doneCard = document.getElementById('daily-quiz-done-card');
+        if (!card || !doneCard) return;
+
+        try {
+            // Ensure learning progress is loaded before checking
+            if (typeof window._ensureLearningProgressLoaded === 'function') {
+                await window._ensureLearningProgressLoaded();
+            }
+
+            // Check if daily quiz already completed today (uses learning-inline.js exposed fn)
+            if (typeof window._isDailyQuizCompletedToday === 'function' && window._isDailyQuizCompletedToday()) {
+                card.style.display = 'none';
+                doneCard.style.display = 'flex';
+                return;
+            }
+
+            // Find next available lesson (uses learning-inline.js exposed fn)
+            if (typeof window._getNextAvailableLesson !== 'function') {
+                card.style.display = 'none';
+                doneCard.style.display = 'none';
+                return;
+            }
+
+            const nextLesson = window._getNextAvailableLesson();
+            if (!nextLesson) {
+                // All lessons completed
+                card.style.display = 'none';
+                doneCard.style.display = 'none';
+                return;
+            }
+
+            const { lesson, unit, module } = nextLesson;
+            const moduleEmojis = { body: '💪', fuel: '🥗', mind: '🧠', longevity: '⏳', workouts: '🏋️', hormones: '🧪' };
+
+            // Populate card content
+            document.getElementById('daily-quiz-icon').textContent = moduleEmojis[module.id] || '📚';
+            document.getElementById('daily-quiz-lesson-title').textContent = lesson.title;
+            document.getElementById('daily-quiz-lesson-context').textContent = module.title + ' \u2022 ' + unit.title;
+
+            card.onclick = function() {
+                // Switch to learning tab and start the daily quiz
+                if (typeof switchAppTab === 'function') {
+                    const learningNav = document.querySelectorAll('.nav-item')[3];
+                    switchAppTab('learning', learningNav);
+                    // Wait for learning to init, then start the daily quiz
+                    setTimeout(function() {
+                        if (typeof window.startDailyQuiz === 'function') {
+                            window.startDailyQuiz(lesson.id);
+                        }
+                    }, 500);
+                }
+            };
+
+            card.style.display = 'block';
+            doneCard.style.display = 'none';
+
+        } catch (error) {
+            console.error('Error checking daily quiz status:', error);
+        }
+    }
+
+    window.checkAndShowDailyQuizCard = checkAndShowDailyQuizCard;
+
+    /**
+     * Called after daily quiz is completed to update dashboard card
+     */
+    window.refreshDailyQuizCard = function() {
+        const card = document.getElementById('daily-quiz-card');
+        const doneCard = document.getElementById('daily-quiz-done-card');
+        if (card) {
+            card.style.transition = 'opacity 0.5s, transform 0.5s';
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                card.style.display = 'none';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+                if (doneCard) doneCard.style.display = 'flex';
+            }, 500);
+        }
+    };
     </script>
 
     <div style="padding: 0 25px;">
@@ -8531,6 +8665,7 @@ async function applyAppTheme(themeKey) {
             if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
             if(typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
             if(typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
+            if(typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
 
             // Switch to dashboard as default entry point
@@ -18456,6 +18591,9 @@ function _switchAppTabReal(tabName, btn) {
         }
         if (typeof checkAndShowWeighInCard === 'function') {
             checkAndShowWeighInCard();
+        }
+        if (typeof checkAndShowDailyQuizCard === 'function') {
+            checkAndShowDailyQuizCard();
         }
     } else if (tabName === 'meals') {
         document.getElementById('view-meals').style.display = 'block';
