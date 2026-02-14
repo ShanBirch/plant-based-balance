@@ -881,6 +881,17 @@ function init() {
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
 
+  // Read query params from dashboard launch
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('players')) {
+    playerCount = parseInt(params.get('players')) || 4;
+    // Update lobby mode buttons
+    document.querySelectorAll('.lobby-mode-btn').forEach(btn => {
+      btn.classList.remove('selected');
+      if (btn.textContent.trim() === playerCount + ' Players') btn.classList.add('selected');
+    });
+  }
+
   // Input
   window.addEventListener('keydown', e => { keys[e.key] = true; e.preventDefault(); });
   window.addEventListener('keyup', e => { keys[e.key] = false; });
