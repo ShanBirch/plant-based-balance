@@ -277,19 +277,23 @@
     text-shadow: 0 0 30px rgba(239,68,68,0.5);
   }
 
-  /* ── Battle Viewport (model-viewer container - fills entire overlay) ── */
+  /* ── Battle Combat Zone (stacks viewport + info panel) ── */
   .battle-combat-zone {
-    position: absolute;
-    inset: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
   }
+
+  /* ── Battle Viewport (matches tamagotchi widget: 420px) ── */
   .battle-viewport {
     position: relative;
     width: 100%;
-    flex: 1;
+    height: 420px;
+    min-height: 320px;
     background: #1a1a2e;
     overflow: hidden;
+    flex-shrink: 0;
   }
 
   .battle-viewport .dojo-bg {
@@ -307,11 +311,11 @@
   }
 
   .battle-viewport model-viewer {
-    width: 130%;
+    width: 100%;
     height: 100%;
     position: absolute;
     top: 0;
-    left: -30%;
+    left: 0;
     z-index: 3;
     --poster-color: transparent;
     background: transparent;
@@ -403,7 +407,7 @@
   /* ── Mana bar (above action buttons, bottom of viewport) ── */
   .battle-mana-container {
     position: absolute;
-    bottom: 100px;
+    bottom: 95px;
     left: 12px;
     right: 12px;
     z-index: 150;
@@ -442,18 +446,85 @@
     100% { box-shadow: 0 0 20px rgba(155,89,182,0.8); }
   }
 
-  /* ── Round info (overlaid on viewport) ── */
-  .battle-round-info {
-    position: absolute;
-    top: 50px;
-    left: 0;
-    right: 0;
+  /* ── Info Panel (below viewport) ── */
+  .battle-info-panel {
+    flex: 1;
+    width: 100%;
+    padding: 16px 20px;
+    overflow-y: auto;
+    background: linear-gradient(180deg, #0d1117 0%, #0a0e1a 100%);
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .battle-info-title {
     text-align: center;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--arena-accent);
+    margin-bottom: 12px;
+    opacity: 0.8;
+  }
+  .battle-info-opponent {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 14px;
+    padding: 12px 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 12px;
+  }
+  .battle-info-opponent canvas {
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    flex-shrink: 0;
+  }
+  .battle-info-opponent-details {
+    flex: 1;
+    min-width: 0;
+  }
+  .battle-info-opponent-name {
+    font-size: 1rem;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 2px;
+  }
+  .battle-info-opponent-level {
     font-size: 0.7rem;
     font-weight: 700;
-    color: rgba(255,255,255,0.7);
-    z-index: 160;
-    pointer-events: none;
+    color: var(--arena-muted);
+    margin-bottom: 6px;
+  }
+  .battle-info-stat-row {
+    display: flex;
+    gap: 12px;
+  }
+  .battle-info-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.5);
+  }
+  .battle-info-stat span:first-child {
+    color: rgba(255,255,255,0.3);
+  }
+  .battle-info-stat-val {
+    color: rgba(255,255,255,0.8) !important;
+  }
+
+  .battle-info-round-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+  }
+  .battle-round-info {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.6);
   }
   .battle-round-score {
     display: inline-flex;
@@ -473,16 +544,10 @@
   .round-dot.enemy-win { background: #ff4444; }
 
   .battle-timer {
-    position: absolute;
-    top: 70px;
-    left: 0;
-    right: 0;
-    font-size: 1.2rem;
+    font-size: 1.6rem;
     font-weight: 900;
     color: var(--arena-warning);
-    text-align: center;
-    z-index: 160;
-    pointer-events: none;
+    font-family: 'Inter', monospace;
   }
 
   /* ── Action buttons (overlaid at bottom-right, dashboard style) ── */
@@ -1003,17 +1068,6 @@
       <div class="battle-overlay-text" id="bc-overlay-text">
         <div class="battle-text" id="bc-text-inner">BATTLE!</div>
       </div>
-      <!-- Round info (overlaid) -->
-      <div class="battle-round-info">
-        ROUND <span id="bc-round">1</span> / 3
-        <span class="battle-round-score" id="bc-round-dots">
-          <span class="round-dot" id="rd1"></span>
-          <span class="round-dot" id="rd2"></span>
-          <span class="round-dot" id="rd3"></span>
-        </span>
-      </div>
-      <!-- Timer (overlaid) -->
-      <div class="battle-timer" id="bc-timer">30</div>
       <!-- Mana bar (above action buttons) -->
       <div id="bc-mana-container" class="battle-mana-container">
         <div class="battle-mana-label">SPECIAL <span id="bc-mana-pct">0%</span></div>
@@ -1041,6 +1095,33 @@
           <span class="action-btn-icon">🔥</span>
           <span class="action-btn-label">FIRE!</span>
         </button>
+      </div>
+    </div>
+    <!-- Info Panel (below viewport) -->
+    <div class="battle-info-panel" id="battle-info-panel">
+      <div class="battle-info-title">Arena Battle Mode</div>
+      <div class="battle-info-opponent" id="battle-info-opponent">
+        <canvas id="battle-info-avatar" width="56" height="64"></canvas>
+        <div class="battle-info-opponent-details">
+          <div class="battle-info-opponent-name" id="bc-info-name">Opponent</div>
+          <div class="battle-info-opponent-level" id="bc-info-level">Level ??</div>
+          <div class="battle-info-stat-row" id="bc-info-stats">
+            <div class="battle-info-stat"><span>STR</span> <span class="battle-info-stat-val" id="bc-info-str">?</span></div>
+            <div class="battle-info-stat"><span>HP</span> <span class="battle-info-stat-val" id="bc-info-hp">?</span></div>
+            <div class="battle-info-stat"><span>DEF</span> <span class="battle-info-stat-val" id="bc-info-def">?</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="battle-info-round-row">
+        <div class="battle-round-info">
+          ROUND <span id="bc-round">1</span> / 3
+          <span class="battle-round-score" id="bc-round-dots">
+            <span class="round-dot" id="rd1"></span>
+            <span class="round-dot" id="rd2"></span>
+            <span class="round-dot" id="rd3"></span>
+          </span>
+        </div>
+        <div class="battle-timer" id="bc-timer">30</div>
       </div>
     </div>
   </div>
@@ -1940,6 +2021,18 @@ function initCombat(opponent) {
   document.getElementById('bc-enemy-name').textContent = opponent.name.toUpperCase();
   updateCombatUI();
   updateRoundDots();
+
+  // Populate info panel
+  document.getElementById('bc-info-name').textContent = opponent.name;
+  document.getElementById('bc-info-level').textContent = `Level ${botLevel}`;
+  document.getElementById('bc-info-str').textContent = botSTR;
+  document.getElementById('bc-info-hp').textContent = botHP_stat;
+  document.getElementById('bc-info-def').textContent = Math.floor(botLevel * 0.2);
+  // Draw opponent avatar in info panel
+  const infoCanvas = document.getElementById('battle-info-avatar');
+  if (infoCanvas && opponent.color) {
+    drawBean(infoCanvas.getContext('2d'), 28, 36, opponent.color, 1.2, true);
+  }
 
   // Start timers
   combat.timerInterval = setInterval(updateCombatTimer, 100);
