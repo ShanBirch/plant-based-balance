@@ -7466,7 +7466,7 @@ async function applyAppTheme(themeKey) {
 
     <!-- Daily Weigh-In Completed Card -->
     <div id="daily-weigh-in-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
-        <button onclick="document.getElementById('daily-weigh-in-done-card').style.display='none';" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
+        <button onclick="dismissWeighInDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
         <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
         <div style="flex: 1;">
             <div style="font-weight: 700; font-size: 1rem;">Weigh-In Complete!</div>
@@ -7501,7 +7501,7 @@ async function applyAppTheme(themeKey) {
 
     <!-- Daily Quiz Completed Card -->
     <div id="daily-quiz-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
-        <button onclick="document.getElementById('daily-quiz-done-card').style.display='none';" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
+        <button onclick="dismissQuizDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
         <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
         <div style="flex: 1;">
             <div style="font-weight: 700; font-size: 1rem;">Daily Quiz Complete!</div>
@@ -7530,9 +7530,13 @@ async function applyAppTheme(themeKey) {
 
             if (card) {
                 if (todaysWeighIn) {
-                    // Already weighed in today - hide input card, show done card
+                    // Already weighed in today - hide input card, show done card (unless dismissed)
                     card.style.display = 'none';
-                    if (doneCard) doneCard.style.display = 'flex';
+                    if (doneCard) {
+                        var d = new Date();
+                        var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+                        doneCard.style.display = localStorage.getItem('weighInDoneCardDismissedDate') === today ? 'none' : 'flex';
+                    }
                 } else {
                     // Show the card for today's weigh-in
                     card.style.display = 'block';
@@ -7676,7 +7680,15 @@ async function applyAppTheme(themeKey) {
         }
     }
 
+    function dismissWeighInDoneCard() {
+        var d = new Date();
+        var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        localStorage.setItem('weighInDoneCardDismissedDate', today);
+        document.getElementById('daily-weigh-in-done-card').style.display = 'none';
+    }
+
     // Make functions globally available
+    window.dismissWeighInDoneCard = dismissWeighInDoneCard;
     window.submitDailyWeighIn = submitDailyWeighIn;
     window.checkAndShowWeighInCard = checkAndShowWeighInCard;
 
@@ -7726,7 +7738,9 @@ async function applyAppTheme(themeKey) {
             // Check if daily quiz already completed today (uses learning-inline.js exposed fn)
             if (typeof window._isDailyQuizCompletedToday === 'function' && window._isDailyQuizCompletedToday()) {
                 card.style.display = 'none';
-                doneCard.style.display = 'flex';
+                var d = new Date();
+                var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+                doneCard.style.display = localStorage.getItem('quizDoneCardDismissedDate') === today ? 'none' : 'flex';
                 return;
             }
 
@@ -7776,6 +7790,14 @@ async function applyAppTheme(themeKey) {
     }
 
     window.checkAndShowDailyQuizCard = checkAndShowDailyQuizCard;
+
+    function dismissQuizDoneCard() {
+        var d = new Date();
+        var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        localStorage.setItem('quizDoneCardDismissedDate', today);
+        document.getElementById('daily-quiz-done-card').style.display = 'none';
+    }
+    window.dismissQuizDoneCard = dismissQuizDoneCard;
 
     /**
      * Called after daily quiz is completed to update dashboard card
