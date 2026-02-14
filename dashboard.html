@@ -2793,6 +2793,242 @@ async function applyAppTheme(themeKey) {
         transform: scale(0.95);
     }
 
+    /* Arena Trigger Button */
+    .arena-trigger-btn {
+        position: absolute;
+        bottom: 15px;
+        right: 115px;
+        background: rgba(16, 185, 129, 0.35);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(16, 185, 129, 0.45);
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.2s ease;
+        font-size: 1.3rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        touch-action: manipulation;
+        pointer-events: auto;
+    }
+
+    .arena-trigger-btn:hover {
+        background: rgba(16, 185, 129, 0.55);
+        transform: scale(1.1);
+    }
+
+    .arena-trigger-btn:active {
+        transform: scale(0.95);
+    }
+
+    .arena-trigger-btn.locked {
+        opacity: 0.5;
+        position: absolute;
+    }
+
+    .arena-trigger-btn.locked::after {
+        content: 'Lv.10';
+        position: absolute;
+        bottom: -14px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.45rem;
+        font-weight: 800;
+        color: rgba(255,255,255,0.6);
+        white-space: nowrap;
+        background: rgba(0,0,0,0.5);
+        padding: 1px 5px;
+        border-radius: 4px;
+    }
+
+    /* ── Arena Invite Modal ── */
+    .arena-invite-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: blur(8px);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .arena-invite-modal {
+        background: linear-gradient(135deg, #0a1a2e 0%, #0e2a1e 50%, #1a2e0a 100%);
+        border-radius: 24px;
+        width: 100%;
+        max-width: 380px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(16,185,129,0.15);
+        border: 1px solid rgba(16,185,129,0.2);
+        animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        overflow: hidden;
+    }
+
+    .arena-invite-header {
+        text-align: center;
+        padding: 24px 20px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .arena-invite-header h2 {
+        margin: 0 0 4px;
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #10b981;
+        text-shadow: 0 0 20px rgba(16,185,129,0.3);
+    }
+
+    .arena-invite-header p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.6);
+    }
+
+    .arena-invite-body {
+        padding: 12px 16px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .arena-invite-friend {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .arena-invite-friend:hover {
+        background: rgba(255,255,255,0.12);
+        border-color: rgba(16,185,129,0.3);
+    }
+
+    .arena-invite-friend:active {
+        transform: scale(0.98);
+    }
+
+    .arena-invite-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.3));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1rem;
+        color: white;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .arena-invite-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .arena-invite-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .arena-invite-name {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .arena-invite-status {
+        font-size: 0.65rem;
+        color: rgba(255,255,255,0.5);
+        margin-top: 2px;
+    }
+
+    .arena-invite-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s;
+        background: linear-gradient(135deg, rgba(16,185,129,0.6), rgba(5,150,105,0.4));
+        color: white;
+        border: 1px solid rgba(16,185,129,0.4);
+        flex-shrink: 0;
+    }
+
+    .arena-invite-btn:hover {
+        background: linear-gradient(135deg, rgba(16,185,129,0.8), rgba(5,150,105,0.6));
+        transform: scale(1.05);
+    }
+
+    .arena-invite-footer {
+        padding: 12px 16px 16px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        text-align: center;
+    }
+
+    .arena-invite-close {
+        padding: 10px 24px;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 12px;
+        background: transparent;
+        color: rgba(255,255,255,0.7);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .arena-invite-close:hover {
+        background: rgba(255,255,255,0.1);
+        color: white;
+    }
+
+    .arena-player-count {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+    }
+
+    .arena-count-btn {
+        flex: 1;
+        padding: 8px;
+        background: rgba(255,255,255,0.08);
+        border: 2px solid rgba(255,255,255,0.15);
+        border-radius: 8px;
+        color: white;
+        font-weight: 700;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .arena-count-btn.active {
+        background: rgba(16,185,129,0.2);
+        border-color: rgba(16,185,129,0.5);
+        color: #10b981;
+    }
+
     /* Fireball Projectile */
     .fireball {
         position: absolute;
@@ -7243,6 +7479,11 @@ async function applyAppTheme(themeKey) {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Arena Trigger Button -->
+            <div class="arena-trigger-btn" onclick="event.stopPropagation(); showArenaInviteModal();" title="Arena Mode">
+                🗺️
             </div>
 
             <!-- Battle Trigger Button -->
@@ -51998,6 +52239,139 @@ document.addEventListener('DOMContentLoaded', async function() {
             const overlay = document.getElementById('battle-invite-overlay');
             if (overlay) overlay.remove();
         };
+
+        // ============================================================
+        // ARENA MODE - Among Us-style battle arena
+        // ============================================================
+        window._arenaPlayerCount = 4;
+
+        async function showArenaInviteModal() {
+            // Level gate
+            const level = window.getCurrentUserLevel ? window.getCurrentUserLevel() : 1;
+            if (level < 10) {
+                if (typeof showToast === 'function') showToast('Reach Level 10 to unlock Arena Mode!');
+                return;
+            }
+
+            const overlay = document.createElement('div');
+            overlay.className = 'arena-invite-overlay';
+            overlay.id = 'arena-invite-overlay';
+
+            let friendsHtml = '';
+            try {
+                if (window.supabaseClient && window.currentUser) {
+                    const { data: friends, error } = await window.supabaseClient
+                        .rpc('get_friends_with_status', { user_uuid: window.currentUser.id });
+
+                    if (!error && friends && friends.length > 0) {
+                        friendsHtml = friends.map(friend => {
+                            const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
+                            const isActive = friend.has_workout_today || friend.has_meal_today;
+                            const statusText = isActive ? 'Active today' : (friend.days_inactive > 0 ? `${friend.days_inactive}d ago` : 'Online');
+                            const statusClass = isActive ? 'active' : '';
+                            const photoHtml = friend.friend_photo
+                                ? `<img src="${friend.friend_photo}" alt="${friend.friend_name}">`
+                                : initials;
+                            const streak = friend.current_streak > 0 ? ` 🔥${friend.current_streak}` : '';
+
+                            return `
+                                <div class="arena-invite-friend" onclick="window._launchArena('${friend.friend_id}', '${(friend.friend_name || '').replace(/'/g, "\\'")}')">
+                                    <div class="arena-invite-avatar">${photoHtml}</div>
+                                    <div class="arena-invite-info">
+                                        <div class="arena-invite-name">${friend.friend_name || 'Friend'}${streak}</div>
+                                        <div class="arena-invite-status ${statusClass}">${statusText}</div>
+                                    </div>
+                                    <button class="arena-invite-btn">Invite</button>
+                                </div>`;
+                        }).join('');
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not fetch friends for arena invite:', e);
+            }
+
+            overlay.innerHTML = `
+                <div class="arena-invite-modal">
+                    <div class="arena-invite-header">
+                        <h2>🗺️ Arena Mode</h2>
+                        <p>Run around, find opponents, battle it out!</p>
+                    </div>
+                    <div class="arena-invite-body">
+                        <!-- Player count -->
+                        <div style="padding: 10px 0 14px;">
+                            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600; margin-bottom: 8px;">ARENA SIZE</div>
+                            <div class="arena-player-count">
+                                <button onclick="window._setArenaCount(4, this)" class="arena-count-btn active">4 Players</button>
+                                <button onclick="window._setArenaCount(6, this)" class="arena-count-btn">6 Players</button>
+                                <button onclick="window._setArenaCount(8, this)" class="arena-count-btn">8 Players</button>
+                            </div>
+                        </div>
+
+                        <div class="arena-invite-friend" onclick="window._launchArena(null, null)">
+                            <div class="arena-invite-avatar" style="background: linear-gradient(135deg, rgba(16,185,129,0.4), rgba(5,150,105,0.4));">🤖</div>
+                            <div class="arena-invite-info">
+                                <div class="arena-invite-name">Solo Practice</div>
+                                <div class="arena-invite-status" style="color:#10b981;">Play vs bots</div>
+                            </div>
+                            <button class="arena-invite-btn">Play</button>
+                        </div>
+                        ${friendsHtml ? '<div style="padding: 8px 0 4px; font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px;">Invite friends to the arena</div>' : ''}
+                        ${friendsHtml || '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.4);font-size:0.85rem;">Add friends from the Feed to invite them!</div>'}
+                    </div>
+                    <div class="arena-invite-footer">
+                        <button class="arena-invite-close" onclick="window.closeArenaInvite()">Cancel</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) window.closeArenaInvite();
+            });
+        }
+
+        window.showArenaInviteModal = showArenaInviteModal;
+
+        window._setArenaCount = function(count, btnEl) {
+            window._arenaPlayerCount = count;
+            if (btnEl) {
+                document.querySelectorAll('.arena-count-btn').forEach(b => {
+                    b.classList.remove('active');
+                });
+                btnEl.classList.add('active');
+            }
+        };
+
+        window.closeArenaInvite = function() {
+            const overlay = document.getElementById('arena-invite-overlay');
+            if (overlay) overlay.remove();
+        };
+
+        window._launchArena = function(friendId, friendName) {
+            window.closeArenaInvite();
+            // Navigate to arena with params
+            const params = new URLSearchParams();
+            params.set('players', window._arenaPlayerCount || 4);
+            if (friendId) {
+                params.set('invite', friendId);
+                params.set('inviteName', friendName || '');
+            }
+            window.location.href = 'battle-arena.html?' + params.toString();
+        };
+
+        // Arena level gate
+        function updateArenaButtonLock() {
+            const btn = document.querySelector('.arena-trigger-btn');
+            if (!btn) return;
+            const level = window.getCurrentUserLevel ? window.getCurrentUserLevel() : 1;
+            if (level < 10) {
+                btn.classList.add('locked');
+            } else {
+                btn.classList.remove('locked');
+            }
+        }
+        setTimeout(updateArenaButtonLock, 2500);
+        window.updateArenaButtonLock = updateArenaButtonLock;
 
         window._sendBattleInvite = async function(friendId, friendName) {
             const betAmount = window._currentBattleBet || 0;
