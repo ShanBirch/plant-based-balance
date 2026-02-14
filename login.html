@@ -22,8 +22,12 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            min-height: 100dvh;
             margin: 0;
+            padding: 20px;
+            padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 20px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 20px);
             font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
         }
 
         .login-card {
@@ -35,6 +39,7 @@
             max-width: 400px;
             text-align: center;
             border: 1px solid #f1f5f9;
+            box-sizing: border-box;
         }
 
         .login-logo {

@@ -122,12 +122,28 @@
             .setup-card {
                 grid-template-columns: 1fr;
                 height: auto;
+                min-height: auto;
             }
             .model-section {
                 height: 400px;
             }
             .controls-section {
                 padding: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .setup-card {
+                min-height: auto;
+            }
+            .model-section {
+                height: 300px;
+            }
+            .controls-section {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.8rem;
             }
         }
     </style>
