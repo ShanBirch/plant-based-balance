@@ -40060,7 +40060,7 @@ function renderPersonalBests(personalBests, recentPBs) {
     // Create the persistent overlay once on load
     const overlay = document.createElement('div');
     overlay.id = 'pb-picker-overlay';
-    overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: none; align-items: flex-end; justify-content: center;';
+    overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200001; display: none; align-items: flex-end; justify-content: center;';
     overlay.innerHTML = `
         <div style="background: white; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; max-height: 70vh; display: flex; flex-direction: column; overflow: hidden;">
             <div style="padding: 20px; border-bottom: 1px solid rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center;">
