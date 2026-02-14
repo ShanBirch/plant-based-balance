@@ -593,6 +593,102 @@
             vertical-align: middle;
         }
 
+        /* User detail panel */
+        .user-detail-panel {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 24px;
+            border: 2px solid #48864B;
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .detail-header h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .detail-close {
+            background: #e2e8f0;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+        }
+
+        .detail-close:hover {
+            background: #cbd5e1;
+        }
+
+        .detail-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .detail-stat {
+            background: white;
+            border-radius: 10px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .detail-stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .detail-stat-value {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #1e293b;
+        }
+
+        .detail-stat-sub {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .detail-loading {
+            text-align: center;
+            padding: 24px;
+            color: #64748b;
+        }
+
+        .activity-row {
+            cursor: pointer;
+        }
+
+        .activity-row:hover {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+
         @media (max-width: 768px) {
             .usage-bar-label {
                 width: 100px;
@@ -607,6 +703,10 @@
                 text-align: left;
                 width: 100%;
                 padding-left: 56px;
+            }
+
+            .detail-stats-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -723,8 +823,9 @@
             <div id="activity" class="section">
                 <div class="content-card">
                     <h2>User Login Activity</h2>
-                    <p style="color: #64748b; margin-bottom: 20px;">See when each user last logged in and their signup date.</p>
+                    <p style="color: #64748b; margin-bottom: 20px;">See when each user last logged in and their signup date. Click a user to see their feature usage.</p>
                     <input type="text" class="search-box" id="activity-search" placeholder="Search by name or email..." onkeyup="filterActivity()">
+                    <div id="user-detail-container"></div>
                     <div id="activity-list" class="loading">Loading activity...</div>
                 </div>
             </div>
@@ -861,9 +962,10 @@
                 const lastLogin = user.last_login ? formatDateTime(user.last_login) : 'Never';
                 const ago = user.last_login ? timeAgo(user.last_login) : '';
                 const joined = new Date(user.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+                const escapedName = (user.name || user.email).replace(/'/g, "\\'");
 
                 html += `
-                    <div class="activity-row">
+                    <div class="activity-row" onclick="showUserDetail('${user.id}', '${escapedName}')">
                         <div class="activity-avatar">${initials}</div>
                         <div class="activity-info">
                             <div class="activity-name">${user.name || 'No name'}</div>
@@ -886,6 +988,110 @@
                 u.email.toLowerCase().includes(term)
             );
             renderActivityList(filtered);
+        }
+
+        // User detail panel
+        async function showUserDetail(userId, userName) {
+            const container = document.getElementById('user-detail-container');
+            container.innerHTML = `
+                <div class="user-detail-panel">
+                    <div class="detail-header">
+                        <h3>${userName}'s Activity</h3>
+                        <button class="detail-close" onclick="closeUserDetail()">&times;</button>
+                    </div>
+                    <div class="detail-loading">Loading stats...</div>
+                </div>
+            `;
+            container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            try {
+                const stats = await dbHelpers.admin.getUserStats(userId);
+
+                let lastWorkoutHtml = 'No workouts yet';
+                if (stats.lastWorkout) {
+                    lastWorkoutHtml = `${stats.lastWorkout.exercise_name || 'Workout'}<br><span class="detail-stat-sub">${new Date(stats.lastWorkout.workout_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}</span>`;
+                }
+
+                let lastMealHtml = 'No meals tracked';
+                if (stats.lastMeal) {
+                    const mealLabel = stats.lastMeal.meal_type ? stats.lastMeal.meal_type.charAt(0).toUpperCase() + stats.lastMeal.meal_type.slice(1) : 'Meal';
+                    lastMealHtml = `${mealLabel}${stats.lastMeal.calories ? ' &middot; ' + stats.lastMeal.calories + ' cal' : ''}<br><span class="detail-stat-sub">${new Date(stats.lastMeal.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}</span>`;
+                }
+
+                let lastLessonHtml = 'No lessons completed';
+                if (stats.lastLesson) {
+                    lastLessonHtml = `${stats.lastLesson.module_id || 'Lesson'}${stats.lastLesson.xp_earned ? ' &middot; +' + stats.lastLesson.xp_earned + ' XP' : ''}<br><span class="detail-stat-sub">${new Date(stats.lastLesson.completed_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}</span>`;
+                }
+
+                let lastCheckinHtml = 'No check-ins';
+                if (stats.lastCheckin) {
+                    const parts = [];
+                    if (stats.lastCheckin.energy) parts.push('Energy: ' + stats.lastCheckin.energy);
+                    if (stats.lastCheckin.sleep) parts.push('Sleep: ' + stats.lastCheckin.sleep);
+                    if (stats.lastCheckin.water_intake) parts.push('Water: ' + stats.lastCheckin.water_intake);
+                    lastCheckinHtml = `${parts.join(' &middot; ') || 'Checked in'}<br><span class="detail-stat-sub">${new Date(stats.lastCheckin.checkin_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}</span>`;
+                }
+
+                const tamaBattleCount = stats.tamagotchiBattles.length;
+                const tamaWins = stats.tamagotchiBattles.filter(b => b.winner_id === userId).length;
+                const quizBattleCount = stats.quizBattles.length;
+                const quizWins = stats.quizBattles.filter(b => b.winner_id === userId).length;
+
+                container.innerHTML = `
+                    <div class="user-detail-panel">
+                        <div class="detail-header">
+                            <h3>${userName}'s Activity</h3>
+                            <button class="detail-close" onclick="closeUserDetail()">&times;</button>
+                        </div>
+                        <div class="detail-stats-grid">
+                            <div class="detail-stat">
+                                <div class="detail-stat-label">Last Workout</div>
+                                <div class="detail-stat-value">${lastWorkoutHtml}</div>
+                                <div class="detail-stat-sub">${stats.totalWorkouts} total sessions</div>
+                            </div>
+                            <div class="detail-stat">
+                                <div class="detail-stat-label">Last Meal Tracked</div>
+                                <div class="detail-stat-value">${lastMealHtml}</div>
+                                <div class="detail-stat-sub">${stats.totalMeals} total meals</div>
+                            </div>
+                            <div class="detail-stat">
+                                <div class="detail-stat-label">Last Lesson</div>
+                                <div class="detail-stat-value">${lastLessonHtml}</div>
+                                <div class="detail-stat-sub">${stats.totalLessons} total lessons</div>
+                            </div>
+                            <div class="detail-stat">
+                                <div class="detail-stat-label">Last Check-in</div>
+                                <div class="detail-stat-value">${lastCheckinHtml}</div>
+                            </div>
+                            <div class="detail-stat">
+                                <div class="detail-stat-label">Tamagotchi Battles</div>
+                                <div class="detail-stat-value">${tamaBattleCount > 0 ? tamaBattleCount + ' battles &middot; ' + tamaWins + ' wins' : 'No battles'}</div>
+                                ${tamaBattleCount > 0 && stats.tamagotchiBattles[0] ? '<div class="detail-stat-sub">Last: ' + timeAgo(stats.tamagotchiBattles[0].created_at) + '</div>' : ''}
+                            </div>
+                            <div class="detail-stat">
+                                <div class="detail-stat-label">Quiz Challenges</div>
+                                <div class="detail-stat-value">${quizBattleCount > 0 ? quizBattleCount + ' challenges &middot; ' + quizWins + ' wins' : 'No challenges'}</div>
+                                ${quizBattleCount > 0 && stats.quizBattles[0] ? '<div class="detail-stat-sub">Last: ' + timeAgo(stats.quizBattles[0].created_at) + '</div>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Failed to load user stats:', error);
+                container.innerHTML = `
+                    <div class="user-detail-panel">
+                        <div class="detail-header">
+                            <h3>${userName}'s Activity</h3>
+                            <button class="detail-close" onclick="closeUserDetail()">&times;</button>
+                        </div>
+                        <p style="color: #ef4444;">Failed to load user stats.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function closeUserDetail() {
+            document.getElementById('user-detail-container').innerHTML = '';
         }
 
         // Analytics data
