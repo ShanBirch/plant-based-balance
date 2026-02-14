@@ -7645,7 +7645,6 @@ async function applyAppTheme(themeKey) {
                         <div class="streak-inline" id="streak-inline-section">
                             <span class="streak-inline-flame">&#x1F525;</span>
                             <span class="streak-inline-count" id="streak-inline-count">0</span>
-                            <span class="streak-inline-label">day streak</span>
                         </div>
                     </div>
 
@@ -35030,7 +35029,7 @@ async function loadFriendsForChallenge() {
                     </div>
                     <div style="flex: 1;">
                         <div style="font-weight: 600; color: white; font-size: 0.9rem;">${friend.friend_name}</div>
-                        ${friend.current_streak > 0 ? `<div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">🔥 ${friend.current_streak} day streak</div>` : ''}
+                        ${friend.current_streak > 0 ? `<div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">🔥 ${friend.current_streak}</div>` : ''}
                     </div>
                 </label>
             `;
@@ -40732,7 +40731,7 @@ function showPointsEarnedToast(points, bonusPoints = 0, streak = 0) {
     toast.innerHTML = `
         <div class="points-earned-main">+${points} pt${points > 1 ? 's' : ''}</div>
         ${bonusPoints > 0 ? `<div class="points-earned-bonus">+${bonusPoints} streak bonus!</div>` : ''}
-        ${streak > 0 ? `<div class="points-earned-streak">&#x1F525; ${streak} day streak</div>` : ''}
+        ${streak > 0 ? `<div class="points-earned-streak">&#x1F525; ${streak}</div>` : ''}
     `;
 
     document.body.appendChild(toast);

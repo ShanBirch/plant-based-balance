@@ -2016,7 +2016,7 @@ async function loadFriends() {
       const photoHtml = f.friend_photo
         ? `<img src="${f.friend_photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">`
         : `<div class="friend-avatar">${initials}</div>`;
-      const streakText = f.current_streak > 0 ? `<span style="font-size:0.7rem;color:var(--duel-warning);">🔥 ${f.current_streak} day streak</span>` : '';
+      const streakText = f.current_streak > 0 ? `<span style="font-size:0.7rem;color:var(--duel-warning);">🔥 ${f.current_streak}</span>` : '';
       const workoutDot = f.has_workout_today ? '<span style="width:8px;height:8px;border-radius:50%;background:#a78bfa;display:inline-block;margin-left:6px;" title="Worked out today"></span>' : '';
       const safeName = (f.friend_name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
