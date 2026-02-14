@@ -50003,8 +50003,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         let shaziAvailableAnimations = [];
 
         // Stop any playing animation and return to static stance
+        let previewTimeoutId = null;
         function stopAnimation() {
             const mv = document.getElementById('tamagotchi-model');
+            if (previewTimeoutId) { clearTimeout(previewTimeoutId); previewTimeoutId = null; }
             if (mv) {
                 mv.pause();
                 mv.currentTime = 0;
@@ -50015,6 +50017,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         function playAnimation(animName, returnToStatic = true) {
             const mv = document.getElementById('tamagotchi-model');
             if (!mv) return false;
+
+            // Cancel any pending preview reset from a previous animation
+            if (previewTimeoutId) { clearTimeout(previewTimeoutId); previewTimeoutId = null; }
 
             // Check if unlocked based on level
             if (!isAnimationUnlocked(animName)) {
@@ -50046,13 +50051,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             mv.play();
 
             if (returnToStatic) {
-                // Return to static stance after animation - pause to prevent default loop
-                setTimeout(() => {
-                    mv.pause();
-                    mv.currentTime = 0;
-                    mv.animationName = null;
-                    mv.removeAttribute('animation-name');
-                }, 3500);
+                // Use the actual animation duration so the full move plays before resetting
+                requestAnimationFrame(() => {
+                    const durationMs = (mv.duration > 0 ? mv.duration : 3.5) * 1000;
+                    previewTimeoutId = setTimeout(() => {
+                        mv.pause();
+                        mv.currentTime = 0;
+                        mv.animationName = null;
+                        mv.removeAttribute('animation-name');
+                        previewTimeoutId = null;
+                    }, durationMs);
+                });
             }
             return true;
         }
