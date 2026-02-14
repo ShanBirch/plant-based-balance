@@ -4014,8 +4014,8 @@ async function applyAppTheme(themeKey) {
     /* User Profile Page */
     .up-pb-card {
         background: white;
-        border-radius: 14px;
-        padding: 14px;
+        border-radius: 10px;
+        padding: 8px 6px;
         border: 1px solid #f1f5f9;
         text-align: center;
         transition: transform 0.2s;
@@ -4024,24 +4024,24 @@ async function applyAppTheme(themeKey) {
         transform: scale(0.97);
     }
     .up-pb-weight {
-        font-size: 1.3rem;
+        font-size: 1rem;
         font-weight: 800;
         color: var(--text-main);
-        margin-bottom: 2px;
+        margin-bottom: 1px;
     }
     .up-pb-exercise {
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         color: var(--text-muted);
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.3px;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
     .up-pb-reps {
-        font-size: 0.7rem;
+        font-size: 0.6rem;
         color: var(--primary);
         font-weight: 500;
     }
@@ -15529,7 +15529,7 @@ function viewWorkoutHistoryDetail(date) {
             <h3 style="margin: 0 0 14px; font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 1.1rem;">🏋️</span> Personal Bests
             </h3>
-            <div id="user-profile-pbs-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div id="user-profile-pbs-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                 <!-- PB cards rendered dynamically -->
             </div>
         </div>
