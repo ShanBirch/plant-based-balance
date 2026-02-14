@@ -34340,13 +34340,13 @@ async function loadActivityFeed(filter = 'all') {
             return `
                 <div style="background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">
                     <div style="display: flex; align-items: flex-start; gap: 12px;">
-                        <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden;">
+                        <div onclick="viewUserProfile('${activity.user_id}', '${(activity.user_name || '').replace(/'/g, "\\'")}', '${(activity.user_photo || '').replace(/'/g, "\\'")}')" style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; flex-shrink: 0; overflow: hidden; cursor: pointer;">
                             ${activity.user_photo ? `<img src="${activity.user_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
                         </div>
                         <div style="flex: 1; min-width: 0;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                                 <div>
-                                    <span style="font-weight: 600; color: var(--text-main);">${activity.user_name}</span>
+                                    <span onclick="viewUserProfile('${activity.user_id}', '${(activity.user_name || '').replace(/'/g, "\\'")}', '${(activity.user_photo || '').replace(/'/g, "\\'")}')" style="font-weight: 600; color: var(--text-main); cursor: pointer;">${activity.user_name}</span>
                                     <span style="color: var(--text-muted);"> ${config.label} </span>
                                     <span style="font-weight: 500; color: var(--text-main);">${activity.activity_title}</span>
                                 </div>
@@ -53808,12 +53808,6 @@ document.addEventListener('DOMContentLoaded', async function() {
      */
     async function viewUserProfile(userId, userName, userPhoto) {
         if (!userId) return;
-
-        // Don't open profile for yourself - go to settings profile instead
-        if (window.currentUser && userId === window.currentUser.id) {
-            switchAppTab('profile');
-            return;
-        }
 
         // Remember where we came from
         const currentView = document.querySelector('.app-view[style*="display: block"], .app-view[style*="display:block"], .app-view.active');
