@@ -4011,6 +4011,100 @@ async function applyAppTheme(themeKey) {
         margin-top: 2px;
     }
 
+    /* User Profile Page */
+    .up-pb-card {
+        background: white;
+        border-radius: 14px;
+        padding: 14px;
+        border: 1px solid #f1f5f9;
+        text-align: center;
+        transition: transform 0.2s;
+    }
+    .up-pb-card:active {
+        transform: scale(0.97);
+    }
+    .up-pb-weight {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 2px;
+    }
+    .up-pb-exercise {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        margin-bottom: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .up-pb-reps {
+        font-size: 0.7rem;
+        color: var(--primary);
+        font-weight: 500;
+    }
+    .up-badge-card {
+        text-align: center;
+        padding: 14px 8px;
+        border-radius: 14px;
+        background: white;
+        border: 1px solid #f1f5f9;
+    }
+    .up-badge-card.earned {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border-color: #86efac;
+    }
+    .up-badge-emoji {
+        font-size: 1.6rem;
+        margin-bottom: 4px;
+    }
+    .up-badge-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: var(--text-main);
+        line-height: 1.2;
+    }
+    .up-post-thumb {
+        aspect-ratio: 1;
+        background: #f1f5f9;
+        overflow: hidden;
+        cursor: pointer;
+        position: relative;
+    }
+    .up-post-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .up-post-thumb .up-post-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .up-post-thumb:active .up-post-overlay {
+        opacity: 1;
+    }
+    .up-post-card-thumb {
+        aspect-ratio: 1;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        position: relative;
+    }
+    .up-post-card-thumb span {
+        font-size: 2rem;
+    }
+
     /* Social Comparison */
     .social-compare-card {
         background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
@@ -15364,6 +15458,78 @@ function viewWorkoutHistoryDetail(date) {
         </div>
     </div>
 
+    <!-- USER PROFILE VIEW (View another user's profile from the feed) -->
+    <div id="view-user-profile" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc;">
+        <!-- Header with back button -->
+        <div style="padding: 16px 20px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10;">
+            <button onclick="closeUserProfile()" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center;">
+                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--text-main);"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </button>
+            <h2 id="user-profile-header-name" style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.3rem; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Profile</h2>
+        </div>
+
+        <!-- Profile Top Section: Photo, Name, Level, Strength -->
+        <div id="user-profile-top" style="background: white; padding: 24px 20px 20px; text-align: center; border-bottom: 1px solid #f1f5f9;">
+            <div id="user-profile-avatar" style="width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; overflow: hidden; border: 3px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <span style="font-size: 2.2rem; color: white; font-weight: 700;">?</span>
+            </div>
+            <h2 id="user-profile-name" style="margin: 0 0 4px; font-size: 1.3rem; font-weight: 700; color: var(--text-main);"></h2>
+            <div id="user-profile-level-badge" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 5px 14px; border-radius: 20px; margin-bottom: 12px; border: 1px solid #fcd34d;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: #92400e;">Lv. <span id="user-profile-level">1</span></span>
+                <span style="font-size: 0.75rem; color: #a16207; font-weight: 600;" id="user-profile-level-title">Newcomer</span>
+            </div>
+            <!-- Stats row: Workouts, Streak, Points -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px;">
+                <div style="text-align: center;">
+                    <div id="user-profile-workouts" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">0</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Workouts</div>
+                </div>
+                <div style="text-align: center;">
+                    <div id="user-profile-streak" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">0</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Day Streak</div>
+                </div>
+                <div style="text-align: center;">
+                    <div id="user-profile-points" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">0</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">XP</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personal Bests Section -->
+        <div id="user-profile-pbs-section" style="padding: 20px; display: none;">
+            <h3 style="margin: 0 0 14px; font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">🏋️</span> Personal Bests
+            </h3>
+            <div id="user-profile-pbs-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <!-- PB cards rendered dynamically -->
+            </div>
+        </div>
+
+        <!-- Badges / Milestones Section -->
+        <div id="user-profile-badges-section" style="padding: 0 20px 20px; display: none;">
+            <h3 style="margin: 0 0 14px; font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">🏅</span> Badges
+            </h3>
+            <div id="user-profile-badges-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <!-- Badge cards rendered dynamically -->
+            </div>
+        </div>
+
+        <!-- Posts Section -->
+        <div id="user-profile-posts-section" style="padding: 0 20px 20px;">
+            <h3 style="margin: 0 0 14px; font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">📸</span> Posts
+            </h3>
+            <div id="user-profile-posts-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; border-radius: 12px; overflow: hidden;">
+                <!-- Post thumbnails rendered dynamically -->
+            </div>
+            <div id="user-profile-posts-empty" style="display: none; text-align: center; padding: 30px 20px; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
+                <div style="font-size: 2rem; margin-bottom: 8px;">📷</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No posts yet</div>
+            </div>
+        </div>
+    </div>
+
     <!-- MESSAGES PANEL (Slide-over for Group Chats + Friends) -->
     <div id="feed-messages-panel" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10006; backdrop-filter: blur(3px);">
         <div id="feed-messages-panel-content" style="position: absolute; right: 0; top: 0; bottom: 0; width: 100%; max-width: 400px; background: white; box-shadow: -5px 0 20px rgba(0,0,0,0.15); overflow-y: auto; animation: slideInFromRight 0.3s ease-out;">
@@ -24449,7 +24615,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning', 'view-log-activity', 'view-activity-success'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning', 'view-log-activity', 'view-activity-success', 'view-user-profile'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
@@ -39230,10 +39396,10 @@ window.submitWeighInModal = submitWeighInModal;
 
     <!-- Story Header -->
     <div id="story-viewer-header" style="position:absolute; top:0; left:0; right:0; padding:20px; display:flex; align-items:center; gap:12px; background:linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%); z-index:10009;">
-        <div id="story-user-avatar" style="width:40px; height:40px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:600; overflow:hidden;">
+        <div id="story-user-avatar" onclick="openStoryUserProfile()" style="width:40px; height:40px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:600; overflow:hidden; cursor:pointer;">
 
         </div>
-        <div style="flex:1;">
+        <div onclick="openStoryUserProfile()" style="flex:1; cursor:pointer;">
             <div id="story-user-name" style="color:white; font-weight:600; font-size:0.95rem;"></div>
             <div id="story-timestamp" style="color:rgba(255,255,255,0.8); font-size:0.75rem;"></div>
         </div>
@@ -53608,6 +53774,388 @@ document.addEventListener('DOMContentLoaded', async function() {
         viewer.addEventListener('load', () => {
             loader.style.display = 'none';
         }, { once: true });
+    }
+    </script>
+
+    <!-- User Profile Page Script -->
+    <script>
+    // Track which view we came from (so back button returns correctly)
+    var _userProfilePreviousView = 'friends';
+
+    /**
+     * Open profile from the story viewer (full-screen story view)
+     */
+    function openStoryUserProfile() {
+        // Get current story from the stories module
+        if (typeof currentUserStories !== 'undefined' && typeof currentUserStoryIndex !== 'undefined') {
+            const story = currentUserStories[currentUserStoryIndex];
+            if (story && story.user_id) {
+                // Close the story viewer first
+                if (typeof closeStoryViewer === 'function') closeStoryViewer();
+                viewUserProfile(story.user_id, story.user_name, story.profile_photo);
+            }
+        }
+    }
+    window.openStoryUserProfile = openStoryUserProfile;
+
+    /**
+     * Open another user's profile from the feed
+     * @param {string} userId - The UUID of the user whose profile to view
+     * @param {string} [userName] - Optional pre-loaded name
+     * @param {string} [userPhoto] - Optional pre-loaded photo URL
+     */
+    async function viewUserProfile(userId, userName, userPhoto) {
+        if (!userId) return;
+
+        // Don't open profile for yourself - go to settings profile instead
+        if (window.currentUser && userId === window.currentUser.id) {
+            switchAppTab('profile');
+            return;
+        }
+
+        // Remember where we came from
+        const currentView = document.querySelector('.app-view[style*="display: block"], .app-view[style*="display:block"], .app-view.active');
+        if (currentView) {
+            _userProfilePreviousView = currentView.id || 'friends';
+        }
+
+        // Hide all views, show profile
+        hideAllAppViews();
+        const profileView = document.getElementById('view-user-profile');
+        profileView.style.display = 'block';
+
+        // Hide bottom nav for immersive feel
+        document.querySelector('.bottom-nav').style.display = 'none';
+
+        // Set initial data if provided
+        const headerName = document.getElementById('user-profile-header-name');
+        const nameEl = document.getElementById('user-profile-name');
+        const avatarEl = document.getElementById('user-profile-avatar');
+
+        if (userName) {
+            headerName.textContent = userName;
+            nameEl.textContent = userName;
+        } else {
+            headerName.textContent = 'Profile';
+            nameEl.textContent = 'Loading...';
+        }
+
+        if (userPhoto) {
+            avatarEl.innerHTML = `<img src="${userPhoto}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+        } else {
+            const initial = (userName || '?').charAt(0).toUpperCase();
+            avatarEl.innerHTML = `<span style="font-size:2.2rem; color:white; font-weight:700;">${initial}</span>`;
+        }
+
+        // Reset sections
+        document.getElementById('user-profile-level').textContent = '1';
+        document.getElementById('user-profile-level-title').textContent = 'Newcomer';
+        document.getElementById('user-profile-workouts').textContent = '0';
+        document.getElementById('user-profile-streak').textContent = '0';
+        document.getElementById('user-profile-points').textContent = '0';
+        document.getElementById('user-profile-pbs-section').style.display = 'none';
+        document.getElementById('user-profile-badges-section').style.display = 'none';
+        document.getElementById('user-profile-posts-grid').innerHTML = '';
+        document.getElementById('user-profile-posts-empty').style.display = 'none';
+
+        // Scroll to top
+        profileView.scrollTop = 0;
+
+        // Load all data in parallel
+        try {
+            const [userData, pointsData, personalBests, milestones, stories] = await Promise.all([
+                db.users.get(userId).catch(() => null),
+                db.points.getPoints(userId).catch(() => null),
+                db.personalBests.getAll(userId, 20).catch(() => []),
+                db.milestones.getAll(userId, 50).catch(() => []),
+                loadUserProfileStories(userId).catch(() => [])
+            ]);
+
+            // Update user info
+            if (userData) {
+                headerName.textContent = userData.name || 'User';
+                nameEl.textContent = userData.name || 'User';
+                if (userData.profile_photo) {
+                    avatarEl.innerHTML = `<img src="${userData.profile_photo}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+                }
+            }
+
+            // Update level & stats
+            if (pointsData) {
+                const levelInfo = calculateLevelFromPoints(pointsData.lifetime_points || 0);
+                document.getElementById('user-profile-level').textContent = levelInfo.level;
+                document.getElementById('user-profile-level-title').textContent = levelInfo.title;
+                document.getElementById('user-profile-workouts').textContent = pointsData.total_workouts_logged || 0;
+                document.getElementById('user-profile-streak').textContent = pointsData.current_streak || 0;
+                document.getElementById('user-profile-points').textContent = (pointsData.lifetime_points || 0).toLocaleString();
+            }
+
+            // Render personal bests
+            renderUserProfilePBs(personalBests);
+
+            // Render badges/milestones
+            renderUserProfileBadges(milestones, pointsData);
+
+            // Render posts
+            renderUserProfilePosts(stories);
+
+        } catch (err) {
+            console.error('Error loading user profile:', err);
+        }
+    }
+    window.viewUserProfile = viewUserProfile;
+
+    /**
+     * Close the user profile and return to the previous view
+     */
+    function closeUserProfile() {
+        document.getElementById('view-user-profile').style.display = 'none';
+        document.querySelector('.bottom-nav').style.display = 'flex';
+
+        // Return to previous view
+        if (_userProfilePreviousView === 'view-friends' || _userProfilePreviousView === 'friends') {
+            switchAppTab('friends');
+        } else {
+            // Fallback: show the stored view
+            const prevEl = document.getElementById(_userProfilePreviousView);
+            if (prevEl) {
+                prevEl.style.display = 'block';
+            } else {
+                switchAppTab('friends');
+            }
+        }
+    }
+    window.closeUserProfile = closeUserProfile;
+
+    /**
+     * Calculate level info from lifetime points (client-side)
+     */
+    function calculateLevelFromPoints(lifetimePoints) {
+        const CURVE_MULTIPLIER = 1.3;
+        const CURVE_EXPONENT = 1.55;
+        const MAX_LEVEL = 99;
+
+        function getPointsForLevel(level) {
+            if (level <= 1) return 0;
+            return Math.floor(CURVE_MULTIPLIER * Math.pow(level, CURVE_EXPONENT));
+        }
+
+        let level = 1;
+        while (level < MAX_LEVEL) {
+            const pointsNeeded = getPointsForLevel(level + 1);
+            if (lifetimePoints < pointsNeeded) break;
+            level++;
+        }
+
+        // Level title
+        let title = 'Newcomer';
+        if (level >= 99) title = 'Legend';
+        else if (level >= 90) title = 'Master';
+        else if (level >= 80) title = 'Champion';
+        else if (level >= 70) title = 'Expert';
+        else if (level >= 60) title = 'Veteran';
+        else if (level >= 50) title = 'Dedicated';
+        else if (level >= 40) title = 'Committed';
+        else if (level >= 30) title = 'Consistent';
+        else if (level >= 20) title = 'Growing';
+        else if (level >= 10) title = 'Rising';
+        else if (level >= 5) title = 'Beginner';
+
+        return { level, title };
+    }
+
+    /**
+     * Render personal bests grid
+     */
+    function renderUserProfilePBs(personalBests) {
+        const section = document.getElementById('user-profile-pbs-section');
+        const grid = document.getElementById('user-profile-pbs-grid');
+
+        if (!personalBests || personalBests.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+
+        // Sort: prioritize big compound lifts first, then by weight
+        const priorityExercises = ['bench press', 'squat', 'deadlift', 'overhead press', 'barbell row'];
+        const sorted = [...personalBests].sort((a, b) => {
+            const aIdx = priorityExercises.findIndex(e => a.exercise_name.toLowerCase().includes(e));
+            const bIdx = priorityExercises.findIndex(e => b.exercise_name.toLowerCase().includes(e));
+            if (aIdx !== -1 && bIdx === -1) return -1;
+            if (aIdx === -1 && bIdx !== -1) return 1;
+            if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+            return (b.best_weight_kg || 0) - (a.best_weight_kg || 0);
+        });
+
+        // Show up to 6 PBs
+        grid.innerHTML = sorted.slice(0, 6).map(pb => {
+            const weight = pb.best_weight_kg ? `${Number(pb.best_weight_kg).toFixed(1)}kg` : '-';
+            const reps = pb.best_weight_reps ? `${pb.best_weight_reps} reps` : '';
+            const exerciseName = formatExerciseName(pb.exercise_name);
+
+            return `
+                <div class="up-pb-card">
+                    <div class="up-pb-exercise">${exerciseName}</div>
+                    <div class="up-pb-weight">${weight}</div>
+                    ${reps ? `<div class="up-pb-reps">${reps}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Format exercise name for display (capitalize, abbreviate)
+     */
+    function formatExerciseName(name) {
+        if (!name) return '';
+        return name.split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    }
+
+    /**
+     * Render badges/milestones for a user profile
+     */
+    function renderUserProfileBadges(milestones, pointsData) {
+        const section = document.getElementById('user-profile-badges-section');
+        const grid = document.getElementById('user-profile-badges-grid');
+
+        // Build badge list from milestones and points data
+        const badges = [];
+
+        // Workout count badges
+        const workoutCount = pointsData?.total_workouts_logged || 0;
+        const workoutThresholds = [
+            { value: 1, emoji: '🎉', label: 'First Workout' },
+            { value: 5, emoji: '💪', label: '5 Workouts' },
+            { value: 10, emoji: '🔥', label: '10 Workouts' },
+            { value: 25, emoji: '🌟', label: '25 Workouts' },
+            { value: 50, emoji: '🏆', label: '50 Workouts' },
+            { value: 100, emoji: '👑', label: '100 Workouts' }
+        ];
+        workoutThresholds.forEach(t => {
+            badges.push({
+                emoji: t.emoji,
+                label: t.label,
+                earned: workoutCount >= t.value
+            });
+        });
+
+        // Streak badges
+        const streak = pointsData?.longest_streak || pointsData?.current_streak || 0;
+        const streakThresholds = [
+            { value: 7, emoji: '⚡', label: '7-Day Streak' },
+            { value: 14, emoji: '⚡', label: '14-Day Streak' },
+            { value: 30, emoji: '🔥', label: '30-Day Streak' },
+            { value: 100, emoji: '💎', label: '100-Day Streak' }
+        ];
+        streakThresholds.forEach(t => {
+            badges.push({
+                emoji: t.emoji,
+                label: t.label,
+                earned: streak >= t.value
+            });
+        });
+
+        // Milestone-based badges
+        if (milestones && milestones.length > 0) {
+            const milestoneTypes = new Set(milestones.map(m => m.milestone_type));
+            if (milestoneTypes.has('pr_weight')) {
+                badges.push({ emoji: '🏅', label: 'PR Crusher', earned: true });
+            }
+        }
+
+        // Meal badges
+        const mealCount = pointsData?.total_meals_logged || 0;
+        if (mealCount >= 1) badges.push({ emoji: '🥗', label: 'First Meal', earned: true });
+        if (mealCount >= 50) badges.push({ emoji: '🍽️', label: '50 Meals', earned: true });
+        if (mealCount >= 100) badges.push({ emoji: '👨‍🍳', label: '100 Meals', earned: true });
+
+        // Filter to only show earned badges
+        const earnedBadges = badges.filter(b => b.earned);
+
+        if (earnedBadges.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+
+        grid.innerHTML = earnedBadges.slice(0, 9).map(b => `
+            <div class="up-badge-card earned">
+                <div class="up-badge-emoji">${b.emoji}</div>
+                <div class="up-badge-label">${b.label}</div>
+            </div>
+        `).join('');
+    }
+
+    /**
+     * Load stories/posts for a specific user (including expired ones for their profile)
+     */
+    async function loadUserProfileStories(userId) {
+        try {
+            const { data, error } = await supabase
+                .from('stories')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(30);
+
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.error('Error loading user stories:', err);
+            return [];
+        }
+    }
+
+    /**
+     * Render post thumbnails grid (Instagram-style 3-column grid)
+     */
+    function renderUserProfilePosts(stories) {
+        const grid = document.getElementById('user-profile-posts-grid');
+        const emptyState = document.getElementById('user-profile-posts-empty');
+
+        if (!stories || stories.length === 0) {
+            grid.innerHTML = '';
+            emptyState.style.display = 'block';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+
+        grid.innerHTML = stories.map(story => {
+            const storyId = story.id;
+            const isImage = story.media_type === 'image' || story.media_type === 'video';
+            const isCardType = ['workout_card', 'nutrition_card', 'level_up_card'].includes(story.media_type);
+
+            if (isImage && story.media_url) {
+                const thumb = story.thumbnail_url || story.media_url;
+                return `
+                    <div class="up-post-thumb" onclick="openFeedPostViewer('${storyId}')">
+                        <img src="${thumb}" loading="lazy" onerror="this.parentElement.style.background='linear-gradient(135deg, var(--primary), var(--secondary))'; this.style.display='none';">
+                        ${story.media_type === 'video' ? '<div style="position:absolute; top:6px; right:6px;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:white; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));"><path d="M8 5v14l11-7z"/></svg></div>' : ''}
+                    </div>
+                `;
+            } else if (isCardType) {
+                const typeEmoji = story.media_type === 'workout_card' ? '💪'
+                    : story.media_type === 'nutrition_card' ? '🥗'
+                    : '⭐';
+                return `
+                    <div class="up-post-card-thumb" onclick="openFeedPostViewer('${storyId}')">
+                        <span>${typeEmoji}</span>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="up-post-thumb" style="background: linear-gradient(135deg, #e2e8f0, #f1f5f9);">
+                    <div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:1.5rem;">📷</div>
+                </div>
+            `;
+        }).join('');
     }
     </script>
 </body>
