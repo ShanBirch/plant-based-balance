@@ -39806,7 +39806,7 @@ function renderPersonalBests(personalBests, recentPBs) {
             if (isCustom && !label) {
                 // Empty custom slot - show add button
                 return `
-                    <div onclick="openCustomPBPicker(${slotIndex})" style="background: white; padding: 18px; border-radius: 18px; box-shadow: var(--card-shadow); border: 2px dashed rgba(0,0,0,0.1); position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 140px; cursor: pointer; transition: border-color 0.2s;">
+                    <div onclick="openCustomPBPicker(${slotIndex})" style="background: white; padding: 18px; border-radius: 18px; box-shadow: var(--card-shadow); border: 2px dashed rgba(0,0,0,0.1); position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 140px; cursor: pointer; transition: border-color 0.2s; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;">
                         <div style="font-size: 1.5rem; opacity: 0.3; margin-bottom: 8px;">+</div>
                         <div style="font-weight: 600; color: var(--text-muted); font-size: 0.75rem; opacity: 0.6;">Add Exercise</div>
                     </div>
@@ -39814,7 +39814,7 @@ function renderPersonalBests(personalBests, recentPBs) {
             }
             // Big 3 or custom slot with name but no data
             return `
-                <div ${isCustom ? `onclick="openCustomPBPicker(${slotIndex})"` : ''} style="background: white; padding: 18px; border-radius: 18px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; ${isCustom ? 'cursor: pointer;' : ''}">
+                <div ${isCustom ? `onclick="openCustomPBPicker(${slotIndex})"` : ''} style="background: white; padding: 18px; border-radius: 18px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; ${isCustom ? 'cursor: pointer; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;' : ''}">
                     <div style="position: absolute; top: 12px; right: 12px; font-size: 1.2rem; opacity: 0.15;">🏆</div>
                     <div style="font-weight: 600; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px; padding-right: 25px; line-height: 1.2;">${label}</div>
                     <div>
@@ -39839,7 +39839,7 @@ function renderPersonalBests(personalBests, recentPBs) {
             : '';
 
         return `
-            <div ${isCustom ? `onclick="openCustomPBPicker(${slotIndex})"` : ''} style="background: white; padding: 18px; border-radius: 18px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; ${isCustom ? 'cursor: pointer;' : ''}">
+            <div ${isCustom ? `onclick="openCustomPBPicker(${slotIndex})"` : ''} style="background: white; padding: 18px; border-radius: 18px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; ${isCustom ? 'cursor: pointer; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;' : ''}">
                 <div style="position: absolute; top: 12px; right: 12px; font-size: 1.2rem; opacity: 0.3;">🏆</div>
                 <div style="font-weight: 600; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px; padding-right: 25px; line-height: 1.2;">${label}</div>
                 <div>
@@ -39867,13 +39867,31 @@ function renderPersonalBests(personalBests, recentPBs) {
     pbsContainer.innerHTML = html;
 }
 
-// Custom PB slot picker
-function openCustomPBPicker(slotIndex) {
-    // Get all existing PBs to offer as choices
-    const existingCards = document.querySelectorAll('#personal-bests-list > div');
+// Custom PB slot picker - uses a reusable overlay for instant display
+(function() {
+    // Create the persistent overlay once on load
+    const overlay = document.createElement('div');
+    overlay.id = 'pb-picker-overlay';
+    overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: none; align-items: flex-end; justify-content: center;';
+    overlay.innerHTML = `
+        <div style="background: white; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; max-height: 70vh; display: flex; flex-direction: column; overflow: hidden;">
+            <div style="padding: 20px; border-bottom: 1px solid rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 700; font-size: 1.05rem;">Choose Exercise</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Select a personal best to track</div>
+                </div>
+                <div onclick="closePBPicker()" style="width: 32px; height: 32px; border-radius: 50%; background: #f3f4f6; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem; color: var(--text-muted); touch-action: manipulation;">✕</div>
+            </div>
+            <div id="pb-picker-exercise-list" style="overflow-y: auto; flex: 1;"></div>
+        </div>
+    `;
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closePBPicker();
+    });
+    document.body.appendChild(overlay);
+})();
 
-    // We need the personalBests data - re-fetch from what's already loaded
-    // Build list of exercises that have PB data, plus exercises from recent workouts
+function openCustomPBPicker(slotIndex) {
     const BIG_3_KEYS = ['Barbell Bench Press', 'Barbell Back Squat', 'Barbell Romanian Deadlift'];
     let customSlots = [];
     try {
@@ -39885,22 +39903,15 @@ function openCustomPBPicker(slotIndex) {
     const allPBs = window._cachedPersonalBests || [];
     const usedExercises = new Set([...BIG_3_KEYS, ...customSlots.filter(Boolean)]);
 
-    // Also pull exercise names from recent workouts if available
     const availableExercises = allPBs
         .map(pb => pb.exercise_name)
         .filter(name => !usedExercises.has(name) || name === customSlots[slotIndex]);
 
-    // Sort alphabetically
     availableExercises.sort();
-
-    // Build picker modal
-    const overlay = document.createElement('div');
-    overlay.id = 'pb-picker-overlay';
-    overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: flex-end; justify-content: center;';
 
     const exerciseListHtml = availableExercises.length > 0
         ? availableExercises.map(name => `
-            <div onclick="selectCustomPBSlot(${slotIndex}, '${name.replace(/'/g, "\\'")}')" style="padding: 14px 18px; border-bottom: 1px solid rgba(0,0,0,0.06); cursor: pointer; font-size: 0.95rem; font-weight: 500; transition: background 0.15s;" ontouchstart="this.style.background='#f3f4f6'" ontouchend="this.style.background=''" onmouseenter="this.style.background='#f3f4f6'" onmouseleave="this.style.background=''">
+            <div onclick="selectCustomPBSlot(${slotIndex}, '${name.replace(/'/g, "\\'")}')" style="padding: 14px 18px; border-bottom: 1px solid rgba(0,0,0,0.06); cursor: pointer; font-size: 0.95rem; font-weight: 500; transition: background 0.15s; touch-action: manipulation;" ontouchstart="this.style.background='#f3f4f6'" ontouchend="this.style.background=''" onmouseenter="this.style.background='#f3f4f6'" onmouseleave="this.style.background=''">
                 ${name}
             </div>
         `).join('')
@@ -39910,32 +39921,14 @@ function openCustomPBPicker(slotIndex) {
         </div>`;
 
     const clearBtnHtml = customSlots[slotIndex]
-        ? `<div onclick="selectCustomPBSlot(${slotIndex}, null)" style="padding: 14px 18px; border-bottom: 1px solid rgba(0,0,0,0.06); cursor: pointer; font-size: 0.95rem; font-weight: 500; color: #ef4444; transition: background 0.15s;" ontouchstart="this.style.background='#fef2f2'" ontouchend="this.style.background=''" onmouseenter="this.style.background='#fef2f2'" onmouseleave="this.style.background=''">
+        ? `<div onclick="selectCustomPBSlot(${slotIndex}, null)" style="padding: 14px 18px; border-bottom: 1px solid rgba(0,0,0,0.06); cursor: pointer; font-size: 0.95rem; font-weight: 500; color: #ef4444; transition: background 0.15s; touch-action: manipulation;" ontouchstart="this.style.background='#fef2f2'" ontouchend="this.style.background=''" onmouseenter="this.style.background='#fef2f2'" onmouseleave="this.style.background=''">
             Remove this exercise
         </div>`
         : '';
 
-    overlay.innerHTML = `
-        <div style="background: white; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; max-height: 70vh; display: flex; flex-direction: column; overflow: hidden;">
-            <div style="padding: 20px; border-bottom: 1px solid rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div style="font-weight: 700; font-size: 1.05rem;">Choose Exercise</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Select a personal best to track</div>
-                </div>
-                <div onclick="closePBPicker()" style="width: 32px; height: 32px; border-radius: 50%; background: #f3f4f6; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem; color: var(--text-muted);">✕</div>
-            </div>
-            <div style="overflow-y: auto; flex: 1;">
-                ${clearBtnHtml}
-                ${exerciseListHtml}
-            </div>
-        </div>
-    `;
-
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) closePBPicker();
-    });
-
-    document.body.appendChild(overlay);
+    // Update the exercise list content and show the overlay
+    document.getElementById('pb-picker-exercise-list').innerHTML = clearBtnHtml + exerciseListHtml;
+    document.getElementById('pb-picker-overlay').style.display = 'flex';
 }
 
 function selectCustomPBSlot(slotIndex, exerciseName) {
@@ -39958,7 +39951,7 @@ function selectCustomPBSlot(slotIndex, exerciseName) {
 
 function closePBPicker() {
     const overlay = document.getElementById('pb-picker-overlay');
-    if (overlay) overlay.remove();
+    if (overlay) overlay.style.display = 'none';
 }
 
 // Share past workout - go to group chats
