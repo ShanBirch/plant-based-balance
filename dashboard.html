@@ -9001,6 +9001,75 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
+    <!-- Movement Weekly Trends Page (full-screen overlay) -->
+    <div class="weekly-trends-page" id="movement-weekly-trends-page">
+        <div class="weekly-trends-page-header">
+            <span class="weekly-trends-page-title">Movement Trends</span>
+        </div>
+        <div class="weekly-trends-page-content">
+            <!-- Weekly Summary -->
+            <div class="weekly-metrics-card" style="padding: 20px; background: linear-gradient(135deg, #f0f0ff 0%, #e8e0f0 100%); border-radius: 12px; border: 1px solid #d4d0e0; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    Weekly Summary
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Workouts</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #6366f1;"><span id="mvmt-weekly-workouts">0</span></div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Total Exercises</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #6366f1;"><span id="mvmt-weekly-exercises">0</span></div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Active Days</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #6366f1;"><span id="mvmt-weekly-active-days">0</span>/7</div>
+                    </div>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">Last 7 Days</div>
+                    <div id="mvmt-weekly-daily-breakdown">
+                        <p style="text-align: center; color: var(--text-muted); padding: 20px 0;">Loading workout data...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workout Journal -->
+            <div class="meal-journal-card" id="mvmt-workout-journal-section">
+                <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Workout Journal</h3>
+                <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Your recent workouts at a glance</p>
+                <div class="journal-timeline" id="mvmt-workout-journal-timeline">
+                    <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Loading your workouts...</p>
+                </div>
+            </div>
+
+            <!-- Multi-Week Trends -->
+            <div class="multi-week-card" id="mvmt-multi-week-section">
+                <div class="multi-week-header">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main);">Weekly Trends</h3>
+                    <div class="multi-week-nav" id="mvmt-multi-week-nav">
+                        <button class="active" onclick="loadMovementMultiWeekData(4)">4 Weeks</button>
+                        <button onclick="loadMovementMultiWeekData(8)">8 Weeks</button>
+                    </div>
+                </div>
+                <div id="mvmt-multi-week-sparklines">
+                    <p style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.85rem;">Loading trend data...</p>
+                </div>
+                <div class="week-compare-grid" id="mvmt-week-compare-grid">
+                </div>
+            </div>
+
+            <!-- Workout Pattern Analysis -->
+            <div class="meal-pattern-card" id="mvmt-workout-pattern-section">
+                <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Workout Patterns</h3>
+                <p style="margin: 0 0 14px 0; font-size: 0.78rem; color: var(--text-muted);">Insights from your last 7 days</p>
+                <div id="mvmt-workout-pattern-insights">
+                    <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log more workouts to see patterns</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <!-- START HERE -->
     <!-- Protocol Section Removed -->
 
@@ -14549,6 +14618,15 @@ async function applyAppTheme(themeKey) {
 
         <!-- Dynamic Grid Container -->
         <div id="movement-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
+
+        <!-- Weekly Trends Button -->
+        <button class="weekly-trends-btn" onclick="openMovementWeeklyTrendsPage()" style="margin-top: 25px;">
+            <span class="weekly-trends-btn-left">
+                <span style="font-size: 1.3rem;">📊</span>
+                <span>Weekly Trends</span>
+            </span>
+            <span class="weekly-trends-btn-arrow">&#x203A;</span>
+        </button>
     </div>
 </div>
 
@@ -28418,6 +28496,22 @@ function initializeWeeklyTrendsSwipeNavigation() {
     });
 }
 
+function initializeMovementWeeklyTrendsSwipeNavigation() {
+    enableSwipeBackNavigation('movement-weekly-trends-page', () => {
+        const page = document.getElementById('movement-weekly-trends-page');
+        if (page) {
+            page.classList.remove('active');
+            page.style.transform = '';
+            page.style.transition = '';
+        }
+        // Return to Movement tab
+        const movementBtn = document.querySelector('.bottom-nav .nav-item[onclick*="movement"]');
+        if (movementBtn) {
+            switchAppTab('movement-tab', movementBtn);
+        }
+    });
+}
+
 // Dynamic swipe-back for views that swap content in a single container (e.g. Learning tab)
 function enableDynamicSwipeBackNavigation(viewId, getBackHandler) {
     const view = document.getElementById(viewId);
@@ -28545,6 +28639,7 @@ function initializeUserProfileSwipeNavigation() {
 document.addEventListener('DOMContentLoaded', () => {
     initializeMovementSwipeNavigation();
     initializeWeeklyTrendsSwipeNavigation();
+    initializeMovementWeeklyTrendsSwipeNavigation();
     initializeLearningSwipeNavigation();
     initializeUserProfileSwipeNavigation();
     initializeAndroidBackNavigation();
@@ -48178,6 +48273,556 @@ function closeWeeklyTrendsPage() {
         page.style.transform = '';
         page.style.transition = '';
     }, 300);
+}
+
+// --- Movement Weekly Trends Page ---
+
+function openMovementWeeklyTrendsPage() {
+    const page = document.getElementById('movement-weekly-trends-page');
+    if (!page) return;
+
+    page.classList.add('active');
+    page.style.transform = 'translateX(100%)';
+    page.style.transition = 'transform 0.3s ease-out';
+    requestAnimationFrame(() => {
+        page.style.transform = 'translateX(0)';
+    });
+
+    // Load data for the page
+    Promise.allSettled([
+        loadMovementWeeklyMetrics(),
+        loadMovementMultiWeekData(4),
+        loadMovementWorkoutJournal(),
+        loadMovementWorkoutPatterns()
+    ]);
+}
+
+function closeMovementWeeklyTrendsPage() {
+    const page = document.getElementById('movement-weekly-trends-page');
+    if (!page) return;
+
+    const movementBtn = document.querySelector('.bottom-nav .nav-item[onclick*="movement"]');
+    if (movementBtn) {
+        switchAppTab('movement-tab', movementBtn);
+    }
+
+    page.style.transition = 'transform 0.3s ease-out';
+    page.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+        page.classList.remove('active');
+        page.style.transform = '';
+        page.style.transition = '';
+    }, 300);
+}
+
+async function loadMovementWeeklyMetrics() {
+    try {
+        if (!window.currentUser) return;
+        const userId = window.currentUser.id;
+
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+        const startDate = getLocalDateString(sevenDaysAgo);
+        const endDate = getLocalDateString(today);
+
+        // Fetch workouts for last 7 days
+        const [workoutsResult, activitiesResult] = await Promise.allSettled([
+            window.supabaseClient
+                .from('workouts')
+                .select('workout_date, exercise_name, set_number, reps, weight_kg, time_duration')
+                .eq('user_id', userId)
+                .eq('workout_type', 'history')
+                .gte('workout_date', startDate)
+                .lte('workout_date', endDate)
+                .order('workout_date', { ascending: true }),
+            window.supabaseClient
+                .from('activity_logs')
+                .select('activity_date, activity_type, activity_label, duration_minutes, estimated_calories')
+                .eq('user_id', userId)
+                .gte('activity_date', startDate)
+                .lte('activity_date', endDate)
+                .order('activity_date', { ascending: true })
+        ]);
+
+        const workouts = workoutsResult.status === 'fulfilled' && !workoutsResult.value.error ? workoutsResult.value.data || [] : [];
+        const activities = activitiesResult.status === 'fulfilled' && !activitiesResult.value.error ? activitiesResult.value.data || [] : [];
+
+        // Calculate metrics
+        const workoutDates = new Set();
+        const exerciseNames = new Set();
+        const allActiveDates = new Set();
+
+        workouts.forEach(w => {
+            if (w.workout_date) {
+                workoutDates.add(w.workout_date);
+                allActiveDates.add(w.workout_date);
+            }
+            if (w.exercise_name) exerciseNames.add(w.exercise_name);
+        });
+
+        activities.forEach(a => {
+            if (a.activity_date) allActiveDates.add(a.activity_date);
+        });
+
+        const totalSessions = workoutDates.size + activities.length;
+        const totalExercises = exerciseNames.size;
+        const activeDays = allActiveDates.size;
+
+        updateElement('mvmt-weekly-workouts', totalSessions);
+        updateElement('mvmt-weekly-exercises', totalExercises);
+        updateElement('mvmt-weekly-active-days', activeDays);
+
+        // Build daily breakdown
+        const breakdownContainer = document.getElementById('mvmt-weekly-daily-breakdown');
+        if (breakdownContainer) {
+            let html = '';
+            for (let i = 6; i >= 0; i--) {
+                const day = new Date(today);
+                day.setDate(day.getDate() - i);
+                const dateStr = getLocalDateString(day);
+                const dayName = day.toLocaleDateString('en-US', { weekday: 'short' });
+
+                const dayWorkouts = workouts.filter(w => w.workout_date === dateStr);
+                const dayActivities = activities.filter(a => a.activity_date === dateStr);
+
+                const dayExercises = [...new Set(dayWorkouts.map(w => w.exercise_name).filter(Boolean))];
+                const dayActivityLabels = dayActivities.map(a => a.activity_label || a.activity_type).filter(Boolean);
+
+                const hasActivity = dayWorkouts.length > 0 || dayActivities.length > 0;
+                const totalSets = dayWorkouts.length;
+
+                let rightLabel = 'Rest';
+                if (totalSets > 0 && dayActivityLabels.length > 0) {
+                    rightLabel = totalSets + ' sets + ' + dayActivityLabels[0];
+                } else if (totalSets > 0) {
+                    rightLabel = totalSets + ' sets';
+                } else if (dayActivityLabels.length > 0) {
+                    rightLabel = dayActivityLabels[0];
+                }
+
+                html += `
+                    <div class="weekly-day-item">
+                        <div class="weekly-day-header">
+                            <span class="weekly-day-name">${dayName}</span>
+                            <span class="weekly-day-calories">${rightLabel}</span>
+                        </div>
+                        <div class="progress-bar-small">
+                            <div class="progress-fill" style="width: ${hasActivity ? '100' : '0'}%; background: ${hasActivity ? '#6366f1' : '#e5e7eb'};"></div>
+                        </div>
+                    </div>
+                `;
+            }
+            breakdownContainer.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Error in loadMovementWeeklyMetrics:', error);
+    }
+}
+
+async function loadMovementMultiWeekData(numWeeks) {
+    numWeeks = numWeeks || 4;
+    try {
+        if (!window.currentUser) return;
+        const userId = window.currentUser.id;
+
+        // Update nav buttons
+        document.querySelectorAll('#mvmt-multi-week-nav button').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.textContent.includes(numWeeks)) btn.classList.add('active');
+        });
+
+        const today = new Date();
+        const startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - (numWeeks * 7));
+        const startDateStr = getLocalDateString(startDate);
+
+        const [workoutsResult, activitiesResult] = await Promise.allSettled([
+            window.supabaseClient
+                .from('workouts')
+                .select('workout_date, exercise_name, set_number, reps, weight_kg, time_duration')
+                .eq('user_id', userId)
+                .eq('workout_type', 'history')
+                .gte('workout_date', startDateStr)
+                .order('workout_date', { ascending: true }),
+            window.supabaseClient
+                .from('activity_logs')
+                .select('activity_date, duration_minutes, estimated_calories')
+                .eq('user_id', userId)
+                .gte('activity_date', startDateStr)
+                .order('activity_date', { ascending: true })
+        ]);
+
+        const workouts = workoutsResult.status === 'fulfilled' && !workoutsResult.value.error ? workoutsResult.value.data || [] : [];
+        const activities = activitiesResult.status === 'fulfilled' && !activitiesResult.value.error ? activitiesResult.value.data || [] : [];
+
+        // Group by week
+        const weeks = [];
+        for (let w = 0; w < numWeeks; w++) {
+            const weekStart = new Date(today);
+            weekStart.setDate(weekStart.getDate() - ((numWeeks - 1 - w) * 7 + 6));
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+
+            const weekStartStr = getLocalDateString(weekStart);
+            const weekEndStr = getLocalDateString(weekEnd);
+
+            const weekWorkouts = workouts.filter(d => d.workout_date >= weekStartStr && d.workout_date <= weekEndStr);
+            const weekActivities = activities.filter(a => a.activity_date >= weekStartStr && a.activity_date <= weekEndStr);
+
+            const workoutDateSet = new Set(weekWorkouts.map(r => r.workout_date).filter(Boolean));
+            const activityDateSet = new Set(weekActivities.map(a => a.activity_date).filter(Boolean));
+            const allDates = new Set([...workoutDateSet, ...activityDateSet]);
+
+            const totalSets = weekWorkouts.length;
+            const totalVolume = weekWorkouts.reduce((sum, r) => {
+                return sum + ((parseFloat(r.weight_kg) || 0) * (parseInt(r.reps) || 0));
+            }, 0);
+
+            const activityMinutes = weekActivities.reduce((sum, a) => sum + (a.duration_minutes || 0), 0);
+            const workoutMinutes = totalSets * 2;
+
+            weeks.push({
+                label: 'Wk ' + (w + 1),
+                sessions: allDates.size,
+                totalSets: totalSets,
+                totalVolume: Math.round(totalVolume),
+                activeMinutes: activityMinutes + workoutMinutes,
+                activeDays: allDates.size
+            });
+        }
+
+        renderMovementMultiWeekUI(weeks);
+    } catch (err) {
+        console.error('Error in loadMovementMultiWeekData:', err);
+    }
+}
+
+function renderMovementMultiWeekUI(weeks) {
+    const container = document.getElementById('mvmt-multi-week-sparklines');
+    const compareGrid = document.getElementById('mvmt-week-compare-grid');
+    if (!container) return;
+
+    if (!weeks || weeks.length === 0 || weeks.every(w => w.sessions === 0)) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.85rem;">Log workouts for at least 2 weeks to see trends</p>';
+        if (compareGrid) compareGrid.innerHTML = '';
+        return;
+    }
+
+    const metrics = [
+        { key: 'sessions', label: 'Sessions', color: '#6366f1', suffix: '' },
+        { key: 'totalSets', label: 'Sets', color: '#3b82f6', suffix: '' },
+        { key: 'totalVolume', label: 'Volume', color: '#f59e0b', suffix: 'kg' },
+        { key: 'activeMinutes', label: 'Minutes', color: '#ef4444', suffix: '' }
+    ];
+
+    let html = '';
+    metrics.forEach(metric => {
+        const values = weeks.map(w => w[metric.key]);
+        const max = Math.max(...values, 1);
+        const minPositive = values.filter(v => v > 0);
+        const min = minPositive.length > 0 ? Math.min(...minPositive) : 0;
+        const current = values[values.length - 1];
+        const previous = values.length >= 2 ? values[values.length - 2] : current;
+
+        let trendClass = 'neutral';
+        let trendText = '--';
+        if (previous > 0 && current > 0) {
+            const pctChange = Math.round(((current - previous) / previous) * 100);
+            if (pctChange > 2) { trendClass = 'up'; trendText = '+' + pctChange + '%'; }
+            else if (pctChange < -2) { trendClass = 'down'; trendText = pctChange + '%'; }
+            else { trendText = '~0%'; }
+        }
+
+        const svgWidth = 120;
+        const svgHeight = 30;
+        const padding = 4;
+        const points = values.map((v, i) => {
+            const x = padding + (i / (values.length - 1 || 1)) * (svgWidth - padding * 2);
+            const y = max > min ? svgHeight - padding - ((v - min) / (max - min)) * (svgHeight - padding * 2) : svgHeight / 2;
+            return x + ',' + y;
+        }).join(' ');
+
+        const displayValue = metric.key === 'totalVolume' && current >= 1000
+            ? (Math.round(current / 100) / 10) + 'k'
+            : current;
+
+        html += '<div class="sparkline-row">';
+        html += '<div class="sparkline-label">' + metric.label + '</div>';
+        html += '<svg class="sparkline-svg" viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '">';
+        html += '<polyline points="' + points + '" fill="none" stroke="' + metric.color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+        values.forEach((v, i) => {
+            const x = padding + (i / (values.length - 1 || 1)) * (svgWidth - padding * 2);
+            const y = max > min ? svgHeight - padding - ((v - min) / (max - min)) * (svgHeight - padding * 2) : svgHeight / 2;
+            html += '<circle cx="' + x + '" cy="' + y + '" r="3" fill="' + metric.color + '" opacity="' + (i === values.length - 1 ? 1 : 0.4) + '"/>';
+        });
+        html += '</svg>';
+        html += '<div class="sparkline-value">' + displayValue + metric.suffix + '</div>';
+        html += '<div class="sparkline-trend ' + trendClass + '">' + trendText + '</div>';
+        html += '</div>';
+    });
+
+    container.innerHTML = html;
+
+    if (compareGrid && weeks.length >= 2) {
+        const thisWeek = weeks[weeks.length - 1];
+        const lastWeek = weeks[weeks.length - 2];
+
+        compareGrid.innerHTML = ''
+            + '<div class="week-compare-stat">'
+            + '    <div class="stat-value">' + thisWeek.sessions + '</div>'
+            + '    <div class="stat-label">Sessions (This Week)</div>'
+            + '</div>'
+            + '<div class="week-compare-stat">'
+            + '    <div class="stat-value">' + lastWeek.sessions + '</div>'
+            + '    <div class="stat-label">Sessions (Last Week)</div>'
+            + '</div>'
+            + '<div class="week-compare-stat">'
+            + '    <div class="stat-value">' + thisWeek.activeDays + '/7</div>'
+            + '    <div class="stat-label">Active Days (This Week)</div>'
+            + '</div>'
+            + '<div class="week-compare-stat">'
+            + '    <div class="stat-value">' + lastWeek.activeDays + '/7</div>'
+            + '    <div class="stat-label">Active Days (Last Week)</div>'
+            + '</div>';
+    }
+}
+
+async function loadMovementWorkoutJournal() {
+    try {
+        if (!window.currentUser) return;
+        const userId = window.currentUser.id;
+
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        const startDate = getLocalDateString(sevenDaysAgo);
+        const endDate = getLocalDateString(today);
+
+        const [workoutsResult, activitiesResult] = await Promise.allSettled([
+            window.supabaseClient
+                .from('workouts')
+                .select('workout_date, exercise_name, set_number, reps, weight_kg')
+                .eq('user_id', userId)
+                .eq('workout_type', 'history')
+                .gte('workout_date', startDate)
+                .lte('workout_date', endDate)
+                .order('workout_date', { ascending: false }),
+            window.supabaseClient
+                .from('activity_logs')
+                .select('activity_date, activity_type, activity_label, duration_minutes, estimated_calories')
+                .eq('user_id', userId)
+                .gte('activity_date', startDate)
+                .lte('activity_date', endDate)
+                .order('activity_date', { ascending: false })
+        ]);
+
+        const workouts = workoutsResult.status === 'fulfilled' && !workoutsResult.value.error ? workoutsResult.value.data || [] : [];
+        const activities = activitiesResult.status === 'fulfilled' && !activitiesResult.value.error ? activitiesResult.value.data || [] : [];
+
+        const container = document.getElementById('mvmt-workout-journal-timeline');
+        if (!container) return;
+
+        // Group by date
+        const byDate = {};
+        workouts.forEach(w => {
+            if (!w.workout_date) return;
+            if (!byDate[w.workout_date]) byDate[w.workout_date] = { exercises: {}, activities: [] };
+            if (!byDate[w.workout_date].exercises[w.exercise_name]) {
+                byDate[w.workout_date].exercises[w.exercise_name] = { name: w.exercise_name, sets: 0, bestWeight: 0, bestReps: 0 };
+            }
+            var ex = byDate[w.workout_date].exercises[w.exercise_name];
+            ex.sets++;
+            var weight = parseFloat(w.weight_kg) || 0;
+            var reps = parseInt(w.reps) || 0;
+            if (weight > ex.bestWeight) { ex.bestWeight = weight; ex.bestReps = reps; }
+            else if (weight === ex.bestWeight && reps > ex.bestReps) { ex.bestReps = reps; }
+        });
+
+        activities.forEach(a => {
+            if (!a.activity_date) return;
+            if (!byDate[a.activity_date]) byDate[a.activity_date] = { exercises: {}, activities: [] };
+            byDate[a.activity_date].activities.push(a);
+        });
+
+        var dates = Object.keys(byDate).sort(function(a, b) { return new Date(b) - new Date(a); });
+
+        if (dates.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">No workouts logged this week</p>';
+            return;
+        }
+
+        var html = '';
+        dates.forEach(function(dateStr) {
+            var date = new Date(dateStr + 'T12:00:00');
+            var dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+            var dayNum = date.getDate();
+            var dayData = byDate[dateStr];
+            var exercises = Object.values(dayData.exercises);
+            var acts = dayData.activities;
+
+            var detailsHtml = '';
+            exercises.forEach(function(ex) {
+                var weightInfo = ex.bestWeight > 0 ? ex.bestWeight + 'kg x ' + ex.bestReps : ex.bestReps + ' reps';
+                detailsHtml += '<div style="display: inline-block; background: #f0f0ff; color: #4338ca; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; margin: 2px 4px 2px 0;">'
+                    + ex.name + ' <span style="opacity:0.7;">(' + ex.sets + 's · ' + weightInfo + ')</span></div>';
+            });
+
+            acts.forEach(function(a) {
+                var label = a.activity_label || a.activity_type;
+                var mins = a.duration_minutes ? a.duration_minutes + 'min' : '';
+                detailsHtml += '<div style="display: inline-block; background: #f0fdf4; color: #16a34a; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; margin: 2px 4px 2px 0;">'
+                    + label + ' <span style="opacity:0.7;">' + mins + '</span></div>';
+            });
+
+            var totalSets = exercises.reduce(function(s, e) { return s + e.sets; }, 0);
+            var totalExercises = exercises.length;
+            var summaryParts = [];
+            if (totalExercises > 0) summaryParts.push(totalExercises + ' exercise' + (totalExercises !== 1 ? 's' : '') + ' · ' + totalSets + ' sets');
+            if (acts.length > 0) summaryParts.push(acts.length + ' activit' + (acts.length !== 1 ? 'ies' : 'y'));
+
+            html += '<div class="journal-day">'
+                + '<div class="journal-date-col">'
+                + '    <div class="journal-date-day">' + dayName + '</div>'
+                + '    <div class="journal-date-num">' + dayNum + '</div>'
+                + '    <div class="journal-day-cals">' + summaryParts.join(', ') + '</div>'
+                + '</div>'
+                + '<div style="flex: 1; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0;">'
+                + detailsHtml
+                + '</div>'
+                + '</div>';
+        });
+
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error in loadMovementWorkoutJournal:', error);
+    }
+}
+
+async function loadMovementWorkoutPatterns() {
+    try {
+        if (!window.currentUser) return;
+        var userId = window.currentUser.id;
+
+        var today = new Date();
+        var sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        var startDate = getLocalDateString(sevenDaysAgo);
+        var endDate = getLocalDateString(today);
+
+        var [workoutsResult, activitiesResult] = await Promise.allSettled([
+            window.supabaseClient
+                .from('workouts')
+                .select('workout_date, exercise_name, reps, weight_kg, set_number')
+                .eq('user_id', userId)
+                .eq('workout_type', 'history')
+                .gte('workout_date', startDate)
+                .lte('workout_date', endDate)
+                .order('workout_date', { ascending: true }),
+            window.supabaseClient
+                .from('activity_logs')
+                .select('activity_date, activity_type, duration_minutes')
+                .eq('user_id', userId)
+                .gte('activity_date', startDate)
+                .lte('activity_date', endDate)
+                .order('activity_date', { ascending: true })
+        ]);
+
+        var workouts = workoutsResult.status === 'fulfilled' && !workoutsResult.value.error ? workoutsResult.value.data || [] : [];
+        var activities = activitiesResult.status === 'fulfilled' && !activitiesResult.value.error ? activitiesResult.value.data || [] : [];
+
+        var insights = analyzeMovementPatterns(workouts, activities, today);
+        renderMovementPatternInsights(insights);
+    } catch (error) {
+        console.error('Error in loadMovementWorkoutPatterns:', error);
+    }
+}
+
+function analyzeMovementPatterns(workouts, activities, today) {
+    var insights = [];
+
+    var workoutDates = new Set(workouts.map(function(w) { return w.workout_date; }).filter(Boolean));
+    var activityDates = new Set(activities.map(function(a) { return a.activity_date; }).filter(Boolean));
+    var allDates = new Set([...workoutDates, ...activityDates]);
+
+    if (allDates.size === 0) return insights;
+
+    // 1. Training frequency
+    var activeDays = allDates.size;
+    var restDays = 7 - activeDays;
+    if (activeDays >= 6) {
+        insights.push({ icon: '⚡', text: 'You trained <strong>' + activeDays + ' out of 7 days</strong> this week. Consider adding a rest day for recovery.' });
+    } else if (activeDays >= 4) {
+        insights.push({ icon: '💪', text: '<strong>' + activeDays + ' active days</strong> this week with <strong>' + restDays + ' rest days</strong>. Great balance of training and recovery!' });
+    } else if (activeDays >= 1) {
+        insights.push({ icon: '📈', text: '<strong>' + activeDays + ' active day' + (activeDays !== 1 ? 's' : '') + '</strong> this week. Try to aim for 3-4 sessions for consistent progress.' });
+    }
+
+    // 2. Exercise variety
+    var uniqueExercises = new Set(workouts.map(function(w) { return w.exercise_name; }).filter(Boolean));
+    if (uniqueExercises.size >= 8) {
+        insights.push({ icon: '🎯', text: '<strong>' + uniqueExercises.size + ' different exercises</strong> this week. Excellent variety across muscle groups!' });
+    } else if (uniqueExercises.size >= 4) {
+        insights.push({ icon: '🔄', text: '<strong>' + uniqueExercises.size + ' exercises</strong> in your rotation. Consider mixing in new movements for balanced development.' });
+    } else if (uniqueExercises.size >= 1) {
+        insights.push({ icon: '🎯', text: 'Only <strong>' + uniqueExercises.size + ' exercise' + (uniqueExercises.size !== 1 ? 's' : '') + '</strong> this week. Adding variety can help prevent plateaus.' });
+    }
+
+    // 3. Volume check
+    var totalSets = workouts.length;
+    var totalVolume = workouts.reduce(function(sum, w) {
+        return sum + ((parseFloat(w.weight_kg) || 0) * (parseInt(w.reps) || 0));
+    }, 0);
+    if (totalVolume > 0) {
+        var avgVolumePerSession = workoutDates.size > 0 ? Math.round(totalVolume / workoutDates.size) : 0;
+        var volDisplay = totalVolume >= 1000 ? (Math.round(totalVolume / 100) / 10) + 'k' : totalVolume;
+        insights.push({ icon: '🏋️', text: 'Total volume: <strong>' + volDisplay + ' kg</strong> across <strong>' + totalSets + ' sets</strong>.' + (avgVolumePerSession > 0 ? ' Averaging ' + avgVolumePerSession + ' kg per session.' : '') });
+    }
+
+    // 4. Consecutive rest days warning
+    var maxConsecutiveRest = 0;
+    var currentRestStreak = 0;
+    for (var i = 6; i >= 0; i--) {
+        var day = new Date(today);
+        day.setDate(day.getDate() - i);
+        var dateStr = getLocalDateString(day);
+        if (allDates.has(dateStr)) {
+            currentRestStreak = 0;
+        } else {
+            currentRestStreak++;
+            maxConsecutiveRest = Math.max(maxConsecutiveRest, currentRestStreak);
+        }
+    }
+    if (maxConsecutiveRest >= 3) {
+        insights.push({ icon: '⏰', text: '<strong>' + maxConsecutiveRest + ' consecutive rest days</strong> detected. A short walk or stretch session can help maintain momentum.' });
+    }
+
+    // 5. Activity mix
+    if (activities.length > 0 && workoutDates.size > 0) {
+        insights.push({ icon: '🌟', text: 'Nice mix of <strong>structured workouts</strong> and <strong>activities</strong> this week. Cross-training supports overall fitness.' });
+    }
+
+    return insights.slice(0, 4);
+}
+
+function renderMovementPatternInsights(insights) {
+    var container = document.getElementById('mvmt-workout-pattern-insights');
+    if (!container) return;
+
+    if (!insights || insights.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log more workouts to see patterns</p>';
+        return;
+    }
+
+    var html = '';
+    insights.forEach(function(insight) {
+        html += '<div class="pattern-insight">'
+            + '<div class="pattern-icon">' + insight.icon + '</div>'
+            + '<div class="pattern-text">' + insight.text + '</div>'
+            + '</div>';
+    });
+    container.innerHTML = html;
 }
 
 // --- 11. Macro Ratio Pie Chart ---
