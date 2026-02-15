@@ -16805,11 +16805,13 @@ function viewWorkoutHistoryDetail(date) {
                     </div>
                 </div>
 
-                <!-- Workout Activity Graph -->
+                <!-- Body Weight Graph -->
                 <div style="padding: 20px 20px 10px 20px;">
-                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">Workout Activity</h3>
+                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">
+                        <span style="color: #7BA883;">&#9878;</span> Body Weight
+                    </h3>
                     <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow);">
-                        <div id="workout-activity-graph">
+                        <div id="bodyweight-graph">
                             <!-- Populated by JS -->
                         </div>
                     </div>
@@ -40124,9 +40126,18 @@ async function initProgressView() {
         window._cachedPersonalBests = personalBests;
         window._cachedRecentPBs = recentPBs;
 
+        // Load weigh-in data for body weight graph
+        let weighIns = [];
+        try {
+            weighIns = await dbHelpers.weighIns.getRecent(user.id, 90);
+            console.log('Weigh-ins:', weighIns?.length || 0);
+        } catch (e) {
+            console.warn('Failed to load weigh-ins:', e);
+        }
+
         // Render sections
         renderPersonalBests(personalBests, recentPBs);
-        renderWorkoutActivityGraph(workoutHistory);
+        renderBodyWeightGraph(weighIns);
         // renderCheckins(checkins); // UI removed in redesign
         await renderExerciseProgress(user.id, recentExercises);
 
@@ -40189,151 +40200,150 @@ function renderWorkoutHistory(workoutHistory) {
     container.innerHTML = html || '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No recent workouts</div>';
 }
 
-// Render Workout Activity Graph - shows all workouts on a bar chart with dates
-function renderWorkoutActivityGraph(workoutHistory) {
-    const container = document.getElementById('workout-activity-graph');
+// Render Body Weight Graph - line chart of weigh-in data over time
+function renderBodyWeightGraph(weighIns) {
+    const container = document.getElementById('bodyweight-graph');
     if (!container) return;
 
-    if (!workoutHistory || workoutHistory.length === 0) {
-        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 30px 20px;"><div style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;">📊</div><div style="font-size: 0.9rem;">Complete workouts to see your activity graph!</div></div>';
+    if (!weighIns || weighIns.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 30px 20px;"><div style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;">&#9878;</div><div style="font-size: 0.9rem;">Log your first weigh-in to see your progress here!</div></div>';
         return;
     }
 
-    // Group workouts by date and count exercises per day
-    const grouped = {};
-    workoutHistory.forEach(w => {
-        const date = w.workout_date;
-        if (!grouped[date]) grouped[date] = { exercises: new Set(), totalSets: 0 };
-        grouped[date].exercises.add(w.exercise_name);
-        grouped[date].totalSets++;
+    const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+    const unitLabel = preferLbs ? 'lbs' : 'kg';
+
+    // Sort ascending by date
+    const sorted = [...weighIns].sort((a, b) => new Date(a.weigh_in_date) - new Date(b.weigh_in_date));
+
+    const dates = sorted.map(w => {
+        const d = new Date(w.weigh_in_date);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     });
 
-    // Sort dates ascending for the graph
-    const sortedDates = Object.keys(grouped).sort((a, b) => new Date(a) - new Date(b));
+    const weights = sorted.map(w => {
+        const kg = parseFloat(w.weight_kg) || 0;
+        return preferLbs ? +(kg * 2.20462).toFixed(1) : +kg.toFixed(1);
+    });
 
-    // Data: number of unique exercises per workout day
-    const exerciseCounts = sortedDates.map(d => grouped[d].exercises.size);
-    const exerciseNames = sortedDates.map(d => [...grouped[d].exercises]);
-
-    const maxExercises = Math.max(...exerciseCounts, 1);
+    const minWeight = Math.min(...weights);
+    const maxWeight = Math.max(...weights);
+    // Add some padding to the range so the line doesn't hug the edges
+    const range = maxWeight - minWeight || 1;
+    const yMin = minWeight - range * 0.15;
+    const yMax = maxWeight + range * 0.15;
 
     // Chart dimensions
     const width = 400;
-    const height = 220;
-    const padding = { top: 15, right: 15, bottom: 50, left: 35 };
+    const height = 230;
+    const padding = { top: 20, right: 15, bottom: 45, left: 45 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
-    // Bar sizing
-    const barCount = sortedDates.length;
-    const gap = barCount > 15 ? 2 : (barCount > 8 ? 4 : 6);
-    const barWidth = Math.max(6, Math.min(30, (chartWidth - gap * (barCount - 1)) / barCount));
-    const totalBarsWidth = barCount * barWidth + (barCount - 1) * gap;
-    const offsetX = padding.left + (chartWidth - totalBarsWidth) / 2;
+    const pointCount = sorted.length;
+    const xStep = pointCount > 1 ? chartWidth / (pointCount - 1) : 0;
 
     // Build SVG
     let svg = `<svg viewBox="0 0 ${width} ${height}" style="width: 100%; display: block; overflow: visible;">`;
 
-    // Horizontal grid lines
-    const gridLines = Math.min(maxExercises, 5);
-    for (let i = 0; i <= gridLines; i++) {
-        const y = padding.top + chartHeight - (chartHeight / gridLines) * i;
-        const val = Math.round((maxExercises / gridLines) * i);
-        svg += `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="#f1f5f9" stroke-width="1"/>`;
-        if (i > 0) {
-            svg += `<text x="${padding.left - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="#94a3b8">${val}</text>`;
-        }
-    }
-
-    // Y-axis label
-    svg += `<text x="${padding.left - 28}" y="${padding.top + chartHeight / 2}" text-anchor="middle" font-size="9" fill="#94a3b8" transform="rotate(-90, ${padding.left - 28}, ${padding.top + chartHeight / 2})">Exercises</text>`;
-
-    // Bars and date labels
-    sortedDates.forEach((date, i) => {
-        const count = exerciseCounts[i];
-        const barHeight = (count / maxExercises) * chartHeight;
-        const x = offsetX + i * (barWidth + gap);
-        const y = padding.top + chartHeight - barHeight;
-
-        // Bar with gradient fill
-        svg += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="${Math.min(barWidth / 2, 4)}" fill="url(#barGrad)" opacity="0.9"/>`;
-
-        // Exercise count on top of bar (only if bar is tall enough)
-        if (barHeight > 14) {
-            svg += `<text x="${x + barWidth / 2}" y="${y + 12}" text-anchor="middle" font-size="9" fill="white" font-weight="700">${count}</text>`;
-        }
-
-        // Date label on x-axis
-        const d = new Date(date);
-        const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        // Show all labels if <= 10, otherwise sample
-        const showLabel = barCount <= 10 || i === 0 || i === barCount - 1 || i % Math.ceil(barCount / 8) === 0;
-        if (showLabel) {
-            svg += `<text x="${x + barWidth / 2}" y="${padding.top + chartHeight + 14}" text-anchor="middle" font-size="${barCount > 15 ? '8' : '9'}" fill="#94a3b8" transform="rotate(-45, ${x + barWidth / 2}, ${padding.top + chartHeight + 14})">${label}</text>`;
-        }
-    });
-
-    // Gradient definition
+    // Gradient fill under the line
     svg += `
         <defs>
-            <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#7BA883"/>
-                <stop offset="100%" stop-color="#5a8a65"/>
+            <linearGradient id="weightFillGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#7BA883" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#7BA883" stop-opacity="0.02"/>
             </linearGradient>
         </defs>
     `;
 
+    // Horizontal grid lines (5 lines)
+    const gridLines = 4;
+    for (let i = 0; i <= gridLines; i++) {
+        const y = padding.top + (chartHeight / gridLines) * i;
+        const val = yMax - ((yMax - yMin) / gridLines) * i;
+        svg += `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="#f1f5f9" stroke-width="1"/>`;
+        svg += `<text x="${padding.left - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="#94a3b8">${val.toFixed(1)}</text>`;
+    }
+
+    // Y-axis unit label
+    svg += `<text x="${padding.left - 35}" y="${padding.top + chartHeight / 2}" text-anchor="middle" font-size="9" fill="#94a3b8" transform="rotate(-90, ${padding.left - 35}, ${padding.top + chartHeight / 2})">${unitLabel}</text>`;
+
+    // Build line path and area fill
+    let linePath = '';
+    let areaPath = '';
+    const points = [];
+
+    weights.forEach((weight, i) => {
+        const x = padding.left + xStep * i;
+        const y = padding.top + chartHeight - ((weight - yMin) / (yMax - yMin)) * chartHeight;
+        points.push({ x, y, weight, date: dates[i] });
+        if (i === 0) {
+            linePath = `M ${x},${y}`;
+            areaPath = `M ${x},${padding.top + chartHeight} L ${x},${y}`;
+        } else {
+            linePath += ` L ${x},${y}`;
+            areaPath += ` L ${x},${y}`;
+        }
+    });
+
+    // Close area path
+    if (points.length > 0) {
+        areaPath += ` L ${points[points.length - 1].x},${padding.top + chartHeight} Z`;
+    }
+
+    // Area fill
+    svg += `<path d="${areaPath}" fill="url(#weightFillGrad)"/>`;
+
+    // Line
+    svg += `<path d="${linePath}" fill="none" stroke="#7BA883" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+    // Data points
+    points.forEach((p, i) => {
+        const isFirst = i === 0;
+        const isLast = i === points.length - 1;
+        const r = (isFirst || isLast) ? 5 : 3.5;
+        svg += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${isLast ? '#7BA883' : 'white'}" stroke="#7BA883" stroke-width="2"/>`;
+    });
+
+    // X-axis date labels
+    const labelFreq = Math.max(1, Math.ceil(pointCount / 7));
+    points.forEach((p, i) => {
+        const showLabel = pointCount <= 8 || i === 0 || i === pointCount - 1 || i % labelFreq === 0;
+        if (showLabel) {
+            let anchor = 'middle';
+            if (i === 0 && pointCount > 1) anchor = 'start';
+            else if (i === pointCount - 1 && pointCount > 1) anchor = 'end';
+            svg += `<text x="${p.x}" y="${height - 8}" text-anchor="${anchor}" font-size="9" fill="#94a3b8">${p.date}</text>`;
+        }
+    });
+
     svg += '</svg>';
 
-    // Summary stats
-    const totalWorkouts = sortedDates.length;
-    const totalExercisesAllTime = exerciseCounts.reduce((a, b) => a + b, 0);
-    const avgExercisesPerSession = (totalExercisesAllTime / totalWorkouts).toFixed(1);
-
-    // Recent streak calculation
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let lastWorkoutLabel = '';
-    if (sortedDates.length > 0) {
-        const lastDate = new Date(sortedDates[sortedDates.length - 1]);
-        const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
-        if (diffDays === 0) lastWorkoutLabel = 'Today';
-        else if (diffDays === 1) lastWorkoutLabel = 'Yesterday';
-        else lastWorkoutLabel = `${diffDays} days ago`;
-    }
+    // Stats
+    const currentWeight = weights[weights.length - 1];
+    const startWeight = weights[0];
+    const change = currentWeight - startWeight;
+    const changeColor = change < 0 ? '#10b981' : (change > 0 ? '#ef4444' : '#94a3b8');
+    const changePrefix = change > 0 ? '+' : '';
 
     const stats = `
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px;">
             <div style="background: #f0fdf4; padding: 12px 8px; border-radius: 12px; text-align: center;">
-                <div style="font-size: 1.3rem; font-weight: 700; color: var(--primary);">${totalWorkouts}</div>
-                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Workouts</div>
+                <div style="font-size: 1.3rem; font-weight: 700; color: var(--primary);">${currentWeight}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Current (${unitLabel})</div>
             </div>
             <div style="background: #f0fdf4; padding: 12px 8px; border-radius: 12px; text-align: center;">
-                <div style="font-size: 1.3rem; font-weight: 700; color: var(--primary);">${avgExercisesPerSession}</div>
-                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Avg Exercises</div>
+                <div style="font-size: 1.3rem; font-weight: 700; color: ${changeColor};">${changePrefix}${change.toFixed(1)}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Change (${unitLabel})</div>
             </div>
             <div style="background: #f0fdf4; padding: 12px 8px; border-radius: 12px; text-align: center;">
-                <div style="font-size: 1.3rem; font-weight: 700; color: var(--primary);">${lastWorkoutLabel}</div>
-                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Last Workout</div>
+                <div style="font-size: 1.3rem; font-weight: 700; color: var(--primary);">${sorted.length}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Weigh-ins</div>
             </div>
         </div>
     `;
 
-    // Build exercise breakdown for most recent workout
-    const lastDate = sortedDates[sortedDates.length - 1];
-    const lastExercises = exerciseNames[exerciseNames.length - 1];
-    const lastDateFormatted = new Date(lastDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-
-    const recentDetail = `
-        <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #f1f5f9;">
-            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Latest - ${lastDateFormatted}</div>
-            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                ${lastExercises.map(ex => `<span style="background: #f0fdf4; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 500;">${ex}</span>`).join('')}
-            </div>
-        </div>
-    `;
-
-    container.innerHTML = svg + stats + recentDetail;
+    container.innerHTML = svg + stats;
 }
 
 // Render Personal Bests section
