@@ -7756,6 +7756,46 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
+    <!-- Daily Meal Tip Card -->
+    <div id="daily-meal-tip-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 16px; padding: 18px 20px; color: white; position: relative; overflow: hidden; cursor: pointer;" onclick="openWeeklyTrendsPage()">
+        <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+        <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+        <button onclick="event.stopPropagation(); dismissMealTipCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0; z-index: 2;">&#x2715;</button>
+        <div style="position: relative; z-index: 1;">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">🥗</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px;">Meal Insight</div>
+                    <div id="daily-meal-tip-text" style="font-size: 0.82rem; opacity: 0.95; line-height: 1.4;">Loading your latest meal pattern...</div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: flex-end; margin-top: 10px; gap: 6px; font-size: 0.78rem; opacity: 0.8;">
+                <span>View all trends</span>
+                <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: rgba(255,255,255,0.8);"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Workout Trend Card -->
+    <div id="daily-workout-trend-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 16px; padding: 18px 20px; color: white; position: relative; overflow: hidden; cursor: pointer;" onclick="switchAppTab('movement-tab', this)">
+        <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+        <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+        <button onclick="event.stopPropagation(); dismissWorkoutTrendCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0; z-index: 2;">&#x2715;</button>
+        <div style="position: relative; z-index: 1;">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">💪</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px;">Workout Trend</div>
+                    <div id="daily-workout-trend-text" style="font-size: 0.82rem; opacity: 0.95; line-height: 1.4;">Loading your workout stats...</div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: flex-end; margin-top: 10px; gap: 6px; font-size: 0.78rem; opacity: 0.8;">
+                <span>Open Movement Studio</span>
+                <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: rgba(255,255,255,0.8);"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+            </div>
+        </div>
+    </div>
+
     <script>
     // ===== DAILY WEIGH-IN CARD LOGIC =====
 
@@ -7952,6 +7992,8 @@ async function applyAppTheme(themeKey) {
                 if (typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
                 if (typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
                 if (typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
+                if (typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
+                if (typeof checkAndShowWorkoutTrendCard === 'function') checkAndShowWorkoutTrendCard();
             }
         }
     });
@@ -8064,6 +8106,305 @@ async function applyAppTheme(themeKey) {
             }, 500);
         }
     };
+    </script>
+
+    <script>
+    // ===== DAILY MEAL TIP CARD LOGIC =====
+
+    /**
+     * Check and show the daily meal tip card with the most recent meal pattern insight.
+     * Shows one insight per day, dismissible. Reappears next day with a new insight.
+     */
+    async function checkAndShowMealTipCard() {
+        if (!window.currentUser) return;
+        if (window._onboardingWizardPending) return;
+        const wizard = document.getElementById('onboarding-wizard');
+        if (wizard && wizard.style.display !== 'none') return;
+
+        const card = document.getElementById('daily-meal-tip-card');
+        if (!card) return;
+
+        // Check if dismissed today
+        var d = new Date();
+        var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        if (localStorage.getItem('mealTipCardDismissedDate') === today) {
+            card.style.display = 'none';
+            return;
+        }
+
+        try {
+            const session = await window.authHelpers?.getSession();
+            if (!session?.user) { card.style.display = 'none'; return; }
+
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+            const { data: meals, error } = await window.supabaseClient
+                .from('meal_logs')
+                .select('meal_date, meal_time, meal_type, calories, protein_g, carbs_g, fat_g')
+                .eq('user_id', session.user.id)
+                .gte('meal_date', getLocalDateString(sevenDaysAgo))
+                .order('meal_date', { ascending: true });
+
+            if (error || !meals || meals.length < 3) {
+                card.style.display = 'none';
+                return;
+            }
+
+            // Reuse the existing analyzeMealPatterns function
+            var insights = [];
+            if (typeof analyzeMealPatterns === 'function') {
+                insights = analyzeMealPatterns(meals);
+            }
+
+            if (!insights || insights.length === 0) {
+                card.style.display = 'none';
+                return;
+            }
+
+            // Pick one insight for today (rotate by day-of-year so it changes daily)
+            var dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
+            var insightIndex = dayOfYear % insights.length;
+            var tip = insights[insightIndex];
+
+            // Strip HTML tags for the card (keep it clean)
+            var tipText = tip.text.replace(/<strong>/g, '').replace(/<\/strong>/g, '');
+            document.getElementById('daily-meal-tip-text').textContent = tipText;
+
+            card.style.display = 'block';
+        } catch (err) {
+            console.error('Error in checkAndShowMealTipCard:', err);
+            card.style.display = 'none';
+        }
+    }
+
+    function dismissMealTipCard() {
+        var d = new Date();
+        var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        localStorage.setItem('mealTipCardDismissedDate', today);
+        var card = document.getElementById('daily-meal-tip-card');
+        if (card) {
+            card.style.transition = 'opacity 0.4s, transform 0.4s';
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(-15px)';
+            setTimeout(function() { card.style.display = 'none'; card.style.opacity = '1'; card.style.transform = 'translateY(0)'; }, 400);
+        }
+    }
+
+    window.checkAndShowMealTipCard = checkAndShowMealTipCard;
+    window.dismissMealTipCard = dismissMealTipCard;
+    </script>
+
+    <script>
+    // ===== DAILY WORKOUT TREND CARD LOGIC =====
+
+    /**
+     * Check and show the daily workout trend card on the home screen.
+     * Analyzes recent workout history and shows a summary insight.
+     */
+    async function checkAndShowWorkoutTrendCard() {
+        if (!window.currentUser) return;
+        if (window._onboardingWizardPending) return;
+        const wizard = document.getElementById('onboarding-wizard');
+        if (wizard && wizard.style.display !== 'none') return;
+
+        const card = document.getElementById('daily-workout-trend-card');
+        if (!card) return;
+
+        // Check if dismissed today
+        var d = new Date();
+        var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        if (localStorage.getItem('workoutTrendCardDismissedDate') === today) {
+            card.style.display = 'none';
+            return;
+        }
+
+        try {
+            var workoutData = await _getWorkoutTrendData();
+            if (!workoutData) {
+                card.style.display = 'none';
+                return;
+            }
+
+            var textEl = document.getElementById('daily-workout-trend-text');
+            if (textEl) textEl.textContent = workoutData.insight;
+            card.style.display = 'block';
+        } catch (err) {
+            console.error('Error in checkAndShowWorkoutTrendCard:', err);
+            card.style.display = 'none';
+        }
+    }
+
+    /**
+     * Load and show workout trend in the Movement tab card.
+     */
+    async function loadMovementTrendCard() {
+        var card = document.getElementById('movement-workout-trend-card');
+        if (!card) return;
+
+        // Check if dismissed today
+        var d = new Date();
+        var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        if (localStorage.getItem('movementTrendCardDismissedDate') === today) {
+            card.style.display = 'none';
+            return;
+        }
+
+        try {
+            var workoutData = await _getWorkoutTrendData();
+            if (!workoutData) {
+                card.style.display = 'none';
+                return;
+            }
+
+            // Update Movement tab trend stats
+            var weekEl = document.getElementById('movement-trend-week-count');
+            var totalEl = document.getElementById('movement-trend-total-count');
+            var streakEl = document.getElementById('movement-trend-streak');
+            var insightEl = document.getElementById('movement-trend-insight');
+
+            if (weekEl) weekEl.textContent = workoutData.thisWeekCount;
+            if (totalEl) totalEl.textContent = workoutData.totalCount;
+            if (streakEl) streakEl.textContent = workoutData.weekStreak;
+            if (insightEl) insightEl.textContent = workoutData.insight;
+
+            card.style.display = 'block';
+        } catch (err) {
+            console.error('Error loading movement trend card:', err);
+            card.style.display = 'none';
+        }
+    }
+
+    /**
+     * Get workout trend data from history. Shared between home and movement tab.
+     */
+    async function _getWorkoutTrendData() {
+        if (!window.currentUser) return null;
+
+        try {
+            // Get workout history (last 60 days worth)
+            var history = await dbHelpers.workouts.getHistory(window.currentUser.id, 500);
+            if (!history || history.length === 0) return null;
+
+            // Get unique workout dates
+            var uniqueDates = [];
+            var dateSet = {};
+            history.forEach(function(w) {
+                if (w.workout_date && !dateSet[w.workout_date]) {
+                    dateSet[w.workout_date] = true;
+                    uniqueDates.push(w.workout_date);
+                }
+            });
+
+            uniqueDates.sort(function(a, b) { return new Date(b) - new Date(a); });
+
+            var totalCount = uniqueDates.length;
+            if (totalCount === 0) return null;
+
+            // This week's workouts (Mon-Sun)
+            var now = new Date();
+            var dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
+            var mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            var monday = new Date(now);
+            monday.setDate(monday.getDate() - mondayOffset);
+            monday.setHours(0, 0, 0, 0);
+
+            var thisWeekCount = 0;
+            uniqueDates.forEach(function(dateStr) {
+                var dateObj = new Date(dateStr + 'T12:00:00');
+                if (dateObj >= monday) thisWeekCount++;
+            });
+
+            // Calculate week streak (consecutive weeks with at least 1 workout)
+            var weekStreak = 0;
+            var checkWeekStart = new Date(monday);
+
+            for (var w = 0; w < 52; w++) {
+                var weekStart = new Date(checkWeekStart);
+                weekStart.setDate(weekStart.getDate() - (w * 7));
+                var weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 7);
+
+                var hasWorkout = uniqueDates.some(function(dateStr) {
+                    var dateObj = new Date(dateStr + 'T12:00:00');
+                    return dateObj >= weekStart && dateObj < weekEnd;
+                });
+
+                if (hasWorkout) {
+                    weekStreak++;
+                } else {
+                    break;
+                }
+            }
+
+            // Last week's workouts for comparison
+            var lastMonday = new Date(monday);
+            lastMonday.setDate(lastMonday.getDate() - 7);
+            var lastWeekCount = 0;
+            uniqueDates.forEach(function(dateStr) {
+                var dateObj = new Date(dateStr + 'T12:00:00');
+                if (dateObj >= lastMonday && dateObj < monday) lastWeekCount++;
+            });
+
+            // Generate insight
+            var insight = '';
+            if (thisWeekCount === 0 && lastWeekCount > 0) {
+                insight = 'No workouts logged this week yet. Last week you hit ' + lastWeekCount + ' session' + (lastWeekCount !== 1 ? 's' : '') + ' \u2014 keep the momentum going!';
+            } else if (thisWeekCount > lastWeekCount && lastWeekCount > 0) {
+                insight = 'You\'re ahead of last week! ' + thisWeekCount + ' workout' + (thisWeekCount !== 1 ? 's' : '') + ' so far vs ' + lastWeekCount + ' last week. Keep pushing!';
+            } else if (thisWeekCount === lastWeekCount && thisWeekCount > 0) {
+                insight = 'Matching last week\'s pace with ' + thisWeekCount + ' workout' + (thisWeekCount !== 1 ? 's' : '') + '. Consistency is key!';
+            } else if (thisWeekCount > 0 && lastWeekCount === 0) {
+                insight = 'Great start! ' + thisWeekCount + ' workout' + (thisWeekCount !== 1 ? 's' : '') + ' this week. You\'re building a solid habit!';
+            } else if (thisWeekCount > 0) {
+                insight = thisWeekCount + ' workout' + (thisWeekCount !== 1 ? 's' : '') + ' this week. ' + (weekStreak > 1 ? weekStreak + '-week streak \u2014 you\'re on fire!' : 'Keep it up!');
+            } else {
+                insight = 'Start your week strong \u2014 your ' + totalCount + ' total workout' + (totalCount !== 1 ? 's' : '') + ' show you\'ve got what it takes!';
+            }
+
+            return {
+                thisWeekCount: thisWeekCount,
+                lastWeekCount: lastWeekCount,
+                totalCount: totalCount,
+                weekStreak: weekStreak,
+                insight: insight
+            };
+        } catch (err) {
+            console.error('Error computing workout trend data:', err);
+            return null;
+        }
+    }
+
+    function dismissWorkoutTrendCard() {
+        var d = new Date();
+        var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        localStorage.setItem('workoutTrendCardDismissedDate', today);
+        var card = document.getElementById('daily-workout-trend-card');
+        if (card) {
+            card.style.transition = 'opacity 0.4s, transform 0.4s';
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(-15px)';
+            setTimeout(function() { card.style.display = 'none'; card.style.opacity = '1'; card.style.transform = 'translateY(0)'; }, 400);
+        }
+    }
+
+    function dismissMovementTrendCard() {
+        var d = new Date();
+        var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        localStorage.setItem('movementTrendCardDismissedDate', today);
+        var card = document.getElementById('movement-workout-trend-card');
+        if (card) {
+            card.style.transition = 'opacity 0.4s, transform 0.4s';
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(-15px)';
+            setTimeout(function() { card.style.display = 'none'; card.style.opacity = '1'; card.style.transform = 'translateY(0)'; }, 400);
+        }
+    }
+
+    window.checkAndShowWorkoutTrendCard = checkAndShowWorkoutTrendCard;
+    window.loadMovementTrendCard = loadMovementTrendCard;
+    window.dismissWorkoutTrendCard = dismissWorkoutTrendCard;
+    window.dismissMovementTrendCard = dismissMovementTrendCard;
     </script>
 
     <div style="padding: 0 25px;">
@@ -8952,6 +9293,8 @@ async function applyAppTheme(themeKey) {
             if(typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
             if(typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
             if(typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
+            if(typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
+            if(typeof checkAndShowWorkoutTrendCard === 'function') checkAndShowWorkoutTrendCard();
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
 
             // Switch to dashboard as default entry point
@@ -14179,6 +14522,31 @@ async function applyAppTheme(themeKey) {
             <!-- Button Removed -->
         </div>
 
+        <!-- Weekly Workout Trend Card (Movement Tab) -->
+        <div id="movement-workout-trend-card" style="display: none; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 16px; padding: 18px 20px; color: white; position: relative; overflow: hidden; margin-bottom: 20px;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+            <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+            <button onclick="dismissMovementTrendCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0; z-index: 2;">&#x2715;</button>
+            <div style="position: relative; z-index: 1;">
+                <div style="font-weight: 700; font-size: 1rem; margin-bottom: 10px;">Your Workout Trend</div>
+                <div id="movement-trend-stats" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; text-align: center;">
+                        <div id="movement-trend-week-count" style="font-size: 1.4rem; font-weight: 700;">0</div>
+                        <div style="font-size: 0.7rem; opacity: 0.85;">This Week</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; text-align: center;">
+                        <div id="movement-trend-total-count" style="font-size: 1.4rem; font-weight: 700;">0</div>
+                        <div style="font-size: 0.7rem; opacity: 0.85;">All Time</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; text-align: center;">
+                        <div id="movement-trend-streak" style="font-size: 1.4rem; font-weight: 700;">0</div>
+                        <div style="font-size: 0.7rem; opacity: 0.85;">Week Streak</div>
+                    </div>
+                </div>
+                <div id="movement-trend-insight" style="font-size: 0.82rem; opacity: 0.9; line-height: 1.4;"></div>
+            </div>
+        </div>
+
         <!-- Dynamic Grid Container -->
         <div id="movement-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
     </div>
@@ -18880,6 +19248,12 @@ function _switchAppTabReal(tabName, btn) {
         if (typeof checkAndShowDailyQuizCard === 'function') {
             checkAndShowDailyQuizCard();
         }
+        if (typeof checkAndShowMealTipCard === 'function') {
+            checkAndShowMealTipCard();
+        }
+        if (typeof checkAndShowWorkoutTrendCard === 'function') {
+            checkAndShowWorkoutTrendCard();
+        }
     } else if (tabName === 'meals') {
         document.getElementById('view-meals').style.display = 'block';
 
@@ -18900,6 +19274,11 @@ function _switchAppTabReal(tabName, btn) {
             el.classList.add('active');
             el.style.display='block';
             renderMovementView();
+
+            // Load workout trend card in Movement tab
+            if (typeof loadMovementTrendCard === 'function') {
+                loadMovementTrendCard();
+            }
 
             // Auto-Check-in Logic (Once per day)
             const todayStr = new Date().toDateString();
