@@ -16805,21 +16805,13 @@ function viewWorkoutHistoryDetail(date) {
                     </div>
                 </div>
 
-                <!-- Workout Analytics Section -->
+                <!-- Workout Activity Graph -->
                 <div style="padding: 20px 20px 10px 20px;">
-                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">Workout History</h3>
+                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">Workout Activity</h3>
                     <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow);">
-                        <div id="workout-history-list">
+                        <div id="workout-activity-graph">
                             <!-- Populated by JS -->
                         </div>
-                    </div>
-                </div>
-
-                <!-- Milestones & Achievements Section -->
-                <div style="padding: 20px 20px 10px 20px;">
-                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">Achievements</h3>
-                    <div id="milestones-list">
-                        <!-- Populated by JS -->
                     </div>
                 </div>
 
@@ -40134,8 +40126,7 @@ async function initProgressView() {
 
         // Render sections
         renderPersonalBests(personalBests, recentPBs);
-        renderWorkoutHistory(workoutHistory);
-        renderMilestones(milestones, workoutCount, pointsData, personalBests);
+        renderWorkoutActivityGraph(workoutHistory);
         // renderCheckins(checkins); // UI removed in redesign
         await renderExerciseProgress(user.id, recentExercises);
 
@@ -40196,6 +40187,153 @@ function renderWorkoutHistory(workoutHistory) {
     }).join('');
 
     container.innerHTML = html || '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No recent workouts</div>';
+}
+
+// Render Workout Activity Graph - shows all workouts on a bar chart with dates
+function renderWorkoutActivityGraph(workoutHistory) {
+    const container = document.getElementById('workout-activity-graph');
+    if (!container) return;
+
+    if (!workoutHistory || workoutHistory.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 30px 20px;"><div style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;">📊</div><div style="font-size: 0.9rem;">Complete workouts to see your activity graph!</div></div>';
+        return;
+    }
+
+    // Group workouts by date and count exercises per day
+    const grouped = {};
+    workoutHistory.forEach(w => {
+        const date = w.workout_date;
+        if (!grouped[date]) grouped[date] = { exercises: new Set(), totalSets: 0 };
+        grouped[date].exercises.add(w.exercise_name);
+        grouped[date].totalSets++;
+    });
+
+    // Sort dates ascending for the graph
+    const sortedDates = Object.keys(grouped).sort((a, b) => new Date(a) - new Date(b));
+
+    // Data: number of unique exercises per workout day
+    const exerciseCounts = sortedDates.map(d => grouped[d].exercises.size);
+    const exerciseNames = sortedDates.map(d => [...grouped[d].exercises]);
+
+    const maxExercises = Math.max(...exerciseCounts, 1);
+
+    // Chart dimensions
+    const width = 400;
+    const height = 220;
+    const padding = { top: 15, right: 15, bottom: 50, left: 35 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+
+    // Bar sizing
+    const barCount = sortedDates.length;
+    const gap = barCount > 15 ? 2 : (barCount > 8 ? 4 : 6);
+    const barWidth = Math.max(6, Math.min(30, (chartWidth - gap * (barCount - 1)) / barCount));
+    const totalBarsWidth = barCount * barWidth + (barCount - 1) * gap;
+    const offsetX = padding.left + (chartWidth - totalBarsWidth) / 2;
+
+    // Build SVG
+    let svg = `<svg viewBox="0 0 ${width} ${height}" style="width: 100%; display: block; overflow: visible;">`;
+
+    // Horizontal grid lines
+    const gridLines = Math.min(maxExercises, 5);
+    for (let i = 0; i <= gridLines; i++) {
+        const y = padding.top + chartHeight - (chartHeight / gridLines) * i;
+        const val = Math.round((maxExercises / gridLines) * i);
+        svg += `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="#f1f5f9" stroke-width="1"/>`;
+        if (i > 0) {
+            svg += `<text x="${padding.left - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="#94a3b8">${val}</text>`;
+        }
+    }
+
+    // Y-axis label
+    svg += `<text x="${padding.left - 28}" y="${padding.top + chartHeight / 2}" text-anchor="middle" font-size="9" fill="#94a3b8" transform="rotate(-90, ${padding.left - 28}, ${padding.top + chartHeight / 2})">Exercises</text>`;
+
+    // Bars and date labels
+    sortedDates.forEach((date, i) => {
+        const count = exerciseCounts[i];
+        const barHeight = (count / maxExercises) * chartHeight;
+        const x = offsetX + i * (barWidth + gap);
+        const y = padding.top + chartHeight - barHeight;
+
+        // Bar with gradient fill
+        svg += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="${Math.min(barWidth / 2, 4)}" fill="url(#barGrad)" opacity="0.9"/>`;
+
+        // Exercise count on top of bar (only if bar is tall enough)
+        if (barHeight > 14) {
+            svg += `<text x="${x + barWidth / 2}" y="${y + 12}" text-anchor="middle" font-size="9" fill="white" font-weight="700">${count}</text>`;
+        }
+
+        // Date label on x-axis
+        const d = new Date(date);
+        const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        // Show all labels if <= 10, otherwise sample
+        const showLabel = barCount <= 10 || i === 0 || i === barCount - 1 || i % Math.ceil(barCount / 8) === 0;
+        if (showLabel) {
+            svg += `<text x="${x + barWidth / 2}" y="${padding.top + chartHeight + 14}" text-anchor="middle" font-size="${barCount > 15 ? '8' : '9'}" fill="#94a3b8" transform="rotate(-45, ${x + barWidth / 2}, ${padding.top + chartHeight + 14})">${label}</text>`;
+        }
+    });
+
+    // Gradient definition
+    svg += `
+        <defs>
+            <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#7BA883"/>
+                <stop offset="100%" stop-color="#5a8a65"/>
+            </linearGradient>
+        </defs>
+    `;
+
+    svg += '</svg>';
+
+    // Summary stats
+    const totalWorkouts = sortedDates.length;
+    const totalExercisesAllTime = exerciseCounts.reduce((a, b) => a + b, 0);
+    const avgExercisesPerSession = (totalExercisesAllTime / totalWorkouts).toFixed(1);
+
+    // Recent streak calculation
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let lastWorkoutLabel = '';
+    if (sortedDates.length > 0) {
+        const lastDate = new Date(sortedDates[sortedDates.length - 1]);
+        const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+        if (diffDays === 0) lastWorkoutLabel = 'Today';
+        else if (diffDays === 1) lastWorkoutLabel = 'Yesterday';
+        else lastWorkoutLabel = `${diffDays} days ago`;
+    }
+
+    const stats = `
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px;">
+            <div style="background: #f0fdf4; padding: 12px 8px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.3rem; font-weight: 700; color: var(--primary);">${totalWorkouts}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Workouts</div>
+            </div>
+            <div style="background: #f0fdf4; padding: 12px 8px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.3rem; font-weight: 700; color: var(--primary);">${avgExercisesPerSession}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Avg Exercises</div>
+            </div>
+            <div style="background: #f0fdf4; padding: 12px 8px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.3rem; font-weight: 700; color: var(--primary);">${lastWorkoutLabel}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Last Workout</div>
+            </div>
+        </div>
+    `;
+
+    // Build exercise breakdown for most recent workout
+    const lastDate = sortedDates[sortedDates.length - 1];
+    const lastExercises = exerciseNames[exerciseNames.length - 1];
+    const lastDateFormatted = new Date(lastDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+    const recentDetail = `
+        <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #f1f5f9;">
+            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Latest - ${lastDateFormatted}</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                ${lastExercises.map(ex => `<span style="background: #f0fdf4; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 500;">${ex}</span>`).join('')}
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = svg + stats + recentDetail;
 }
 
 // Render Personal Bests section
