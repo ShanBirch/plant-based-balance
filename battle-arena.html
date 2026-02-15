@@ -2964,62 +2964,778 @@ function drawObstacles() {
         o.y + o.h < camera.y - 20 || o.y > camera.y + window.innerHeight + 20) return;
 
     if (o.type === 'wall') {
-      // Wall rendering
       ctx.fillStyle = '#1e2538';
       ctx.beginPath();
       ctx.roundRect(o.x, o.y, o.w, o.h, 2);
       ctx.fill();
-
-      // Wall top highlight
       ctx.fillStyle = 'rgba(255,255,255,0.06)';
       ctx.fillRect(o.x, o.y, o.w, 2);
-
-      // Wall border
       ctx.strokeStyle = 'rgba(255,255,255,0.1)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.roundRect(o.x, o.y, o.w, o.h, 2);
       ctx.stroke();
     } else {
-      // Furniture shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.beginPath();
-      ctx.roundRect(o.x + 3, o.y + 3, o.w, o.h, 8);
-      ctx.fill();
-
-      // Furniture body
-      const grd = ctx.createLinearGradient(o.x, o.y, o.x, o.y + o.h);
-      grd.addColorStop(0, '#2a3450');
-      grd.addColorStop(1, '#1e2740');
-      ctx.fillStyle = grd;
-      ctx.beginPath();
-      ctx.roundRect(o.x, o.y, o.w, o.h, 8);
-      ctx.fill();
-
-      // Furniture border
-      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.roundRect(o.x, o.y, o.w, o.h, 8);
-      ctx.stroke();
-
-      // Furniture icon
-      if (o.icon) {
-        ctx.font = `${Math.min(o.w, o.h) * 0.5}px serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(o.icon, o.x + o.w / 2, o.y + o.h / 2);
-      }
-
-      // Furniture label
-      if (o.label) {
-        ctx.font = '500 8px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(255,255,255,0.25)';
-        ctx.fillText(o.label, o.x + o.w / 2, o.y + o.h + 12);
-      }
+      drawFurnitureItem(o);
     }
   });
+}
+
+// ── FURNITURE RENDERER (top-down, Among Us style) ──
+function drawFurnitureItem(o) {
+  const x = o.x, y = o.y, w = o.w, h = o.h;
+  ctx.save();
+
+  // Shadow under everything
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath();
+  ctx.roundRect(x + 3, y + 3, w, h, 6);
+  ctx.fill();
+
+  switch (o.label) {
+
+  // ─── KITCHEN ───
+  case 'Stove': {
+    // Dark metal body
+    ctx.fillStyle = '#2a2a2e';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
+    ctx.strokeStyle = '#444'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.stroke();
+    // 4 burners (2x2 grid)
+    const bx = [x + w * 0.28, x + w * 0.72];
+    const by = [y + h * 0.32, y + h * 0.72];
+    bx.forEach(cx => by.forEach(cy => {
+      ctx.strokeStyle = '#666'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#3a3a40';
+      ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill();
+    }));
+    // Knobs
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = '#555';
+      ctx.beginPath(); ctx.arc(x + 12 + i * 14, y + h - 6, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    break;
+  }
+  case 'Fridge': {
+    // Tall silver body
+    ctx.fillStyle = '#c8cdd4';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
+    ctx.strokeStyle = '#999'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.stroke();
+    // Door split
+    ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + 4, y + h * 0.4); ctx.lineTo(x + w - 4, y + h * 0.4); ctx.stroke();
+    // Handles
+    ctx.fillStyle = '#888';
+    ctx.fillRect(x + w - 12, y + h * 0.15, 4, 16);
+    ctx.fillRect(x + w - 12, y + h * 0.55, 4, 16);
+    // Top vent
+    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+    ctx.fillRect(x + 6, y + 4, w - 12, 3);
+    break;
+  }
+  case 'Counter': {
+    // Wood top
+    ctx.fillStyle = '#8B6914';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
+    // Surface highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillRect(x + 3, y + 3, w - 6, h * 0.3);
+    ctx.strokeStyle = '#6B4F12'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
+    // Cabinet handles below
+    for (let i = 0; i < Math.floor(w / 60); i++) {
+      ctx.fillStyle = '#555';
+      ctx.fillRect(x + 20 + i * 60, y + h - 8, 20, 3);
+    }
+    break;
+  }
+  case 'Sink': {
+    // Counter body
+    ctx.fillStyle = '#7a7a80';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
+    // Basin (dark oval)
+    ctx.fillStyle = '#3a3a44';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h / 2, w * 0.32, h * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Faucet
+    ctx.fillStyle = '#bbb';
+    ctx.fillRect(x + w / 2 - 3, y + 4, 6, 12);
+    ctx.beginPath(); ctx.arc(x + w / 2, y + 16, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.stroke();
+    break;
+  }
+  case 'Bin': {
+    // Cylindrical bin
+    ctx.fillStyle = '#4a4a4e';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, w * 0.3); ctx.fill();
+    // Lid
+    ctx.fillStyle = '#5a5a5e';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + 10, w * 0.42, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, w * 0.3); ctx.stroke();
+    break;
+  }
+
+  // ─── CAFETERIA ───
+  case 'Table': {
+    // Wood table
+    ctx.fillStyle = '#6B4F12';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill();
+    // Surface
+    ctx.fillStyle = '#8B6914';
+    ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 6); ctx.fill();
+    // Wood grain
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 1;
+    for (let i = 1; i < 4; i++) {
+      ctx.beginPath(); ctx.moveTo(x + 10, y + h * i / 4); ctx.lineTo(x + w - 10, y + h * i / 4); ctx.stroke();
+    }
+    // Chairs (small squares at sides)
+    ctx.fillStyle = '#4a3a1a';
+    ctx.beginPath(); ctx.roundRect(x + w * 0.2, y - 14, 20, 12, 3); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w * 0.6, y - 14, 20, 12, 3); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w * 0.2, y + h + 2, 20, 12, 3); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w * 0.6, y + h + 2, 20, 12, 3); ctx.fill();
+    break;
+  }
+  case 'Vending': {
+    // Tall machine
+    ctx.fillStyle = '#c62828';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
+    // Glass panel
+    ctx.fillStyle = '#1a237e';
+    ctx.beginPath(); ctx.roundRect(x + 8, y + 12, w - 16, h * 0.5, 3); ctx.fill();
+    // Item rows
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    for (let i = 0; i < 3; i++) {
+      ctx.fillRect(x + 12, y + 18 + i * 18, w - 24, 2);
+    }
+    // Dispenser slot
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.roundRect(x + 14, y + h * 0.7, w - 28, 20, 3); ctx.fill();
+    ctx.strokeStyle = '#a00'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.stroke();
+    break;
+  }
+
+  // ─── LIVING ROOM ───
+  case 'Couch': {
+    // Base
+    ctx.fillStyle = '#5c3d2e';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.fill();
+    // Cushions
+    ctx.fillStyle = '#7a4f3a';
+    ctx.beginPath(); ctx.roundRect(x + 6, y + 6, w - 12, h - 16, 8); ctx.fill();
+    // Back rest
+    ctx.fillStyle = '#6a4232';
+    ctx.beginPath(); ctx.roundRect(x + 4, y + h - 14, w - 8, 12, 4); ctx.fill();
+    // Cushion lines
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 1;
+    const seats = 3;
+    for (let i = 1; i < seats; i++) {
+      ctx.beginPath(); ctx.moveTo(x + (w / seats) * i, y + 8); ctx.lineTo(x + (w / seats) * i, y + h - 18); ctx.stroke();
+    }
+    // Arm rests
+    ctx.fillStyle = '#503020';
+    ctx.beginPath(); ctx.roundRect(x, y, 10, h, 5); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w - 10, y, 10, h, 5); ctx.fill();
+    break;
+  }
+  case 'TV': {
+    // Stand
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.roundRect(x + w * 0.3, y + h - 12, w * 0.4, 12, 2); ctx.fill();
+    // Screen bezel
+    ctx.fillStyle = '#111';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h - 10, 4); ctx.fill();
+    // Screen
+    ctx.fillStyle = '#1a3a5a';
+    ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 18, 2); ctx.fill();
+    // Screen reflection
+    ctx.fillStyle = 'rgba(100,180,255,0.08)';
+    ctx.beginPath(); ctx.roundRect(x + 6, y + 6, (w - 12) * 0.6, (h - 22) * 0.4, 2); ctx.fill();
+    // Power LED
+    ctx.fillStyle = '#0f0';
+    ctx.beginPath(); ctx.arc(x + w / 2, y + h - 14, 2, 0, Math.PI * 2); ctx.fill();
+    break;
+  }
+  case 'Armchair': {
+    ctx.fillStyle = '#5c3d2e';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 12); ctx.fill();
+    // Cushion
+    ctx.fillStyle = '#7a4f3a';
+    ctx.beginPath(); ctx.roundRect(x + 10, y + 8, w - 20, h - 20, 8); ctx.fill();
+    // Arms
+    ctx.fillStyle = '#503020';
+    ctx.beginPath(); ctx.roundRect(x, y + 4, 12, h - 8, 6); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w - 12, y + 4, 12, h - 8, 6); ctx.fill();
+    break;
+  }
+  case 'Coffee Table': {
+    ctx.fillStyle = '#5a4020';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
+    ctx.fillStyle = '#7a5a30';
+    ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 4); ctx.fill();
+    // Magazine
+    ctx.fillStyle = '#ddd';
+    ctx.save(); ctx.translate(x + w * 0.6, y + h * 0.3); ctx.rotate(0.2);
+    ctx.fillRect(-10, -7, 20, 14); ctx.restore();
+    break;
+  }
+  case 'Bookshelf': {
+    ctx.fillStyle = '#5a3a1a';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
+    // Shelves
+    const shelves = 4;
+    for (let i = 0; i < shelves; i++) {
+      const sy = y + (h / shelves) * i;
+      const sh = h / shelves;
+      // Shelf line
+      ctx.fillStyle = '#4a2a10';
+      ctx.fillRect(x + 2, sy + sh - 3, w - 4, 3);
+      // Books (colored rectangles)
+      const colors = ['#c62828','#1565c0','#2e7d32','#f9a825','#6a1b9a','#e65100'];
+      let bx = x + 4;
+      while (bx < x + w - 8) {
+        const bw = 5 + Math.random() * 7;
+        ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+        ctx.fillRect(bx, sy + 4, bw, sh - 8);
+        bx += bw + 1;
+      }
+    }
+    ctx.strokeStyle = '#3a2210'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
+    break;
+  }
+  case 'Plant': {
+    // Pot
+    ctx.fillStyle = '#8B4513';
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.2, y + h * 0.5);
+    ctx.lineTo(x + w * 0.3, y + h);
+    ctx.lineTo(x + w * 0.7, y + h);
+    ctx.lineTo(x + w * 0.8, y + h * 0.5);
+    ctx.closePath(); ctx.fill();
+    // Pot rim
+    ctx.fillStyle = '#a0522d';
+    ctx.beginPath(); ctx.roundRect(x + w * 0.15, y + h * 0.45, w * 0.7, 8, 3); ctx.fill();
+    // Leaves
+    ctx.fillStyle = '#2d8a3e';
+    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.3, w * 0.35, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#3da54e';
+    ctx.beginPath(); ctx.arc(x + w * 0.4, y + h * 0.22, w * 0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + w * 0.65, y + h * 0.25, w * 0.18, 0, Math.PI * 2); ctx.fill();
+    break;
+  }
+
+  // ─── BATHROOM ───
+  case 'Shower': {
+    // Tray
+    ctx.fillStyle = '#e0e0e0';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
+    // Drain
+    ctx.fillStyle = '#888';
+    ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#666';
+    ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, 3, 0, Math.PI * 2); ctx.fill();
+    // Glass door line
+    ctx.strokeStyle = 'rgba(150,200,255,0.4)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x + w - 4, y + 4); ctx.lineTo(x + w - 4, y + h - 4); ctx.stroke();
+    // Shower head
+    ctx.fillStyle = '#bbb';
+    ctx.beginPath(); ctx.arc(x + w * 0.5, y + 10, 8, 0, Math.PI * 2); ctx.fill();
+    // Water drops
+    ctx.fillStyle = 'rgba(100,180,255,0.2)';
+    for (let i = 0; i < 5; i++) {
+      ctx.beginPath();
+      ctx.arc(x + w * 0.3 + Math.random() * w * 0.4, y + 25 + Math.random() * (h - 35), 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.stroke();
+    break;
+  }
+  case 'Toilet': {
+    // Base
+    ctx.fillStyle = '#f0f0f0';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h * 0.6, w * 0.42, h * 0.38, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Seat
+    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h * 0.6, w * 0.32, h * 0.28, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    // Tank
+    ctx.fillStyle = '#e8e8e8';
+    ctx.beginPath(); ctx.roundRect(x + w * 0.15, y, w * 0.7, h * 0.3, 4); ctx.fill();
+    // Flush button
+    ctx.fillStyle = '#ccc';
+    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.12, 4, 0, Math.PI * 2); ctx.fill();
+    break;
+  }
+  case 'Bathtub': {
+    // Tub
+    ctx.fillStyle = '#f5f5f5';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.fill();
+    // Inside
+    ctx.fillStyle = '#e0e8f0';
+    ctx.beginPath(); ctx.roundRect(x + 6, y + 6, w - 12, h - 12, 8); ctx.fill();
+    // Faucet end
+    ctx.fillStyle = '#bbb';
+    ctx.beginPath(); ctx.roundRect(x + w - 16, y + h * 0.3, 12, 16, 3); ctx.fill();
+    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.stroke();
+    break;
+  }
+  case 'Laundry': {
+    // Basket
+    ctx.fillStyle = '#8d6e63';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill();
+    // Weave lines
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1;
+    for (let i = 1; i < 5; i++) {
+      ctx.beginPath(); ctx.moveTo(x + 4, y + i * h / 5); ctx.lineTo(x + w - 4, y + i * h / 5); ctx.stroke();
+    }
+    // Clothes peeking out
+    ctx.fillStyle = '#e53935';
+    ctx.beginPath(); ctx.arc(x + w * 0.3, y + 6, 8, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#1e88e5';
+    ctx.beginPath(); ctx.arc(x + w * 0.65, y + 4, 7, Math.PI, 0); ctx.fill();
+    break;
+  }
+
+  // ─── BEDROOM ───
+  case 'Bed': {
+    // Frame
+    ctx.fillStyle = '#5a3a1a';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
+    // Mattress
+    ctx.fillStyle = '#f5f5f0';
+    ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 4); ctx.fill();
+    // Blanket
+    ctx.fillStyle = '#3949ab';
+    ctx.beginPath(); ctx.roundRect(x + 4, y + h * 0.35, w - 8, h * 0.6, 4); ctx.fill();
+    // Blanket fold
+    ctx.fillStyle = '#303f9f';
+    ctx.beginPath(); ctx.roundRect(x + 4, y + h * 0.35, w - 8, 8, 2); ctx.fill();
+    // Pillow
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.roundRect(x + 12, y + 10, w * 0.35, h * 0.22, 6); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w * 0.52, y + 10, w * 0.35, h * 0.22, 6); ctx.fill();
+    break;
+  }
+  case 'Desk': {
+    // Surface
+    ctx.fillStyle = '#6d5030';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
+    ctx.fillStyle = '#8a6840';
+    ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 3); ctx.fill();
+    // Monitor
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.roundRect(x + w * 0.3, y + 6, w * 0.4, h * 0.35, 2); ctx.fill();
+    ctx.fillStyle = '#2a4a6a';
+    ctx.beginPath(); ctx.roundRect(x + w * 0.33, y + 8, w * 0.34, h * 0.27, 1); ctx.fill();
+    // Keyboard
+    ctx.fillStyle = '#444';
+    ctx.beginPath(); ctx.roundRect(x + w * 0.2, y + h * 0.55, w * 0.6, h * 0.2, 2); ctx.fill();
+    break;
+  }
+  case 'Wardrobe': {
+    ctx.fillStyle = '#5a3a1a';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
+    // Doors
+    ctx.fillStyle = '#6d4a2a';
+    ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w / 2 - 5, h - 6, 3); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w / 2 + 2, y + 3, w / 2 - 5, h - 6, 3); ctx.fill();
+    // Handles
+    ctx.fillStyle = '#aa8844';
+    ctx.beginPath(); ctx.arc(x + w / 2 - 6, y + h / 2, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + w / 2 + 6, y + h / 2, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#4a2a10'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
+    break;
+  }
+  case 'Mirror': {
+    // Frame
+    ctx.fillStyle = '#aa8844';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
+    // Glass
+    const grd = ctx.createLinearGradient(x, y, x + w, y + h);
+    grd.addColorStop(0, '#a0c0d8');
+    grd.addColorStop(0.5, '#d0e8f5');
+    grd.addColorStop(1, '#90b0c8');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 4); ctx.fill();
+    // Shine
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath(); ctx.roundRect(x + 8, y + 8, w * 0.3, h * 0.4, 2); ctx.fill();
+    break;
+  }
+
+  // ─── HALLWAY ───
+  case 'Bench': {
+    ctx.fillStyle = '#5a4020';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
+    ctx.fillStyle = '#7a5a30';
+    ctx.beginPath(); ctx.roundRect(x + 2, y + 2, w - 4, h - 4, 3); ctx.fill();
+    // Slats
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1;
+    for (let i = 1; i < 4; i++) {
+      ctx.beginPath(); ctx.moveTo(x + 6, y + h * i / 4); ctx.lineTo(x + w - 6, y + h * i / 4); ctx.stroke();
+    }
+    break;
+  }
+  case 'Cabinet': {
+    ctx.fillStyle = '#4a3520';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
+    // Doors
+    ctx.fillStyle = '#5a4530';
+    ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w / 2 - 5, h - 6, 2); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w / 2 + 2, y + 3, w / 2 - 5, h - 6, 2); ctx.fill();
+    // Handles
+    ctx.fillStyle = '#888';
+    ctx.fillRect(x + w / 2 - 7, y + h / 2 - 2, 4, 4);
+    ctx.fillRect(x + w / 2 + 3, y + h / 2 - 2, 4, 4);
+    break;
+  }
+  case 'Lamp': {
+    // Base
+    ctx.fillStyle = '#333';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h * 0.8, w * 0.3, h * 0.15, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Pole
+    ctx.fillStyle = '#555';
+    ctx.fillRect(x + w / 2 - 2, y + h * 0.25, 4, h * 0.55);
+    // Shade
+    ctx.fillStyle = '#f5e6b8';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h * 0.2, w * 0.4, h * 0.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Glow
+    ctx.fillStyle = 'rgba(255,240,180,0.08)';
+    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.2, w * 0.7, 0, Math.PI * 2); ctx.fill();
+    break;
+  }
+
+  // ─── GYM ───
+  case 'Bench Press': {
+    // Bench
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.roundRect(x, y + h * 0.3, w, h * 0.4, 4); ctx.fill();
+    // Padding
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.roundRect(x + 8, y + h * 0.35, w - 16, h * 0.3, 3); ctx.fill();
+    // Bar rack
+    ctx.fillStyle = '#888';
+    ctx.fillRect(x + 4, y, 6, h);
+    ctx.fillRect(x + w - 10, y, 6, h);
+    // Bar
+    ctx.fillStyle = '#aaa';
+    ctx.fillRect(x - 10, y + 6, w + 20, 4);
+    // Weights
+    ctx.fillStyle = '#555';
+    ctx.beginPath(); ctx.roundRect(x - 16, y, 10, 16, 2); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w + 6, y, 10, 16, 2); ctx.fill();
+    break;
+  }
+  case 'Weights': {
+    // Rack
+    ctx.fillStyle = '#444';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
+    // Dumbbell pairs
+    const colors = ['#666','#555','#777','#888'];
+    for (let i = 0; i < 3; i++) {
+      const dy = y + 8 + i * (h / 3 - 2);
+      ctx.fillStyle = colors[i];
+      // Left weight
+      ctx.beginPath(); ctx.roundRect(x + 8, dy, 12, 14, 3); ctx.fill();
+      // Bar
+      ctx.fillStyle = '#aaa';
+      ctx.fillRect(x + 20, dy + 5, w - 40, 4);
+      // Right weight
+      ctx.fillStyle = colors[i];
+      ctx.beginPath(); ctx.roundRect(x + w - 20, dy, 12, 14, 3); ctx.fill();
+    }
+    break;
+  }
+  case 'Treadmill': {
+    // Body
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
+    // Belt
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.roundRect(x + 4, y + h * 0.25, w - 8, h * 0.6, 4); ctx.fill();
+    // Belt lines
+    ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1;
+    for (let i = 1; i < 6; i++) {
+      const ly = y + h * 0.25 + (h * 0.6 / 6) * i;
+      ctx.beginPath(); ctx.moveTo(x + 8, ly); ctx.lineTo(x + w - 8, ly); ctx.stroke();
+    }
+    // Console
+    ctx.fillStyle = '#444';
+    ctx.beginPath(); ctx.roundRect(x + 6, y + 4, w - 12, h * 0.15, 3); ctx.fill();
+    // Screen
+    ctx.fillStyle = '#1a4a2a';
+    ctx.beginPath(); ctx.roundRect(x + 12, y + 6, w - 24, h * 0.1, 2); ctx.fill();
+    // Handles
+    ctx.fillStyle = '#666';
+    ctx.fillRect(x, y + 4, 5, h * 0.4);
+    ctx.fillRect(x + w - 5, y + 4, 5, h * 0.4);
+    break;
+  }
+  case 'Dumbbells': {
+    // Floor mat
+    ctx.fillStyle = '#2a2a30';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
+    // Two dumbbells
+    for (let d = 0; d < 2; d++) {
+      const dy = y + 10 + d * 28;
+      ctx.fillStyle = '#666';
+      ctx.beginPath(); ctx.roundRect(x + 10, dy, 16, 14, 4); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(x + w - 26, dy, 16, 14, 4); ctx.fill();
+      ctx.fillStyle = '#aaa';
+      ctx.fillRect(x + 26, dy + 5, w - 52, 4);
+    }
+    break;
+  }
+  case 'Punching Bag': {
+    // Shadow on floor
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h * 0.85, w * 0.35, h * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Chain
+    ctx.strokeStyle = '#777'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x + w / 2, y); ctx.lineTo(x + w / 2, y + h * 0.15); ctx.stroke();
+    // Bag
+    const bgrd = ctx.createLinearGradient(x, y + h * 0.15, x + w, y + h * 0.15);
+    bgrd.addColorStop(0, '#8b2020'); bgrd.addColorStop(0.5, '#c62828'); bgrd.addColorStop(1, '#8b2020');
+    ctx.fillStyle = bgrd;
+    ctx.beginPath();
+    ctx.roundRect(x + w * 0.15, y + h * 0.15, w * 0.7, h * 0.65, w * 0.25);
+    ctx.fill();
+    // Stitch line
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + w / 2, y + h * 0.2); ctx.lineTo(x + w / 2, y + h * 0.75); ctx.stroke();
+    break;
+  }
+  case 'Yoga Mat': {
+    ctx.fillStyle = '#7b1fa2';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
+    ctx.fillStyle = '#9c27b0';
+    ctx.beginPath(); ctx.roundRect(x + 2, y + 2, w - 4, h - 4, 3); ctx.fill();
+    // Texture lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      ctx.beginPath(); ctx.moveTo(x + 6 + i * 20, y + 2); ctx.lineTo(x + 6 + i * 20, y + h - 2); ctx.stroke();
+    }
+    break;
+  }
+
+  // ─── GARDEN ───
+  case 'Tree': {
+    // Trunk
+    ctx.fillStyle = '#5d4037';
+    ctx.fillRect(x + w * 0.38, y + h * 0.5, w * 0.24, h * 0.5);
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h * 0.9, w * 0.45, h * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Canopy layers
+    ctx.fillStyle = '#1b5e20';
+    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.35, w * 0.48, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2e7d32';
+    ctx.beginPath(); ctx.arc(x + w * 0.4, y + h * 0.28, w * 0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#388e3c';
+    ctx.beginPath(); ctx.arc(x + w * 0.62, y + h * 0.3, w * 0.25, 0, Math.PI * 2); ctx.fill();
+    break;
+  }
+  case 'Bush': {
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h * 0.85, w * 0.45, h * 0.15, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Bush body
+    ctx.fillStyle = '#2e7d32';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h * 0.5, w * 0.48, h * 0.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#43a047';
+    ctx.beginPath(); ctx.arc(x + w * 0.35, y + h * 0.4, w * 0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + w * 0.65, y + h * 0.4, w * 0.18, 0, Math.PI * 2); ctx.fill();
+    break;
+  }
+  case 'Fountain': {
+    // Basin
+    ctx.fillStyle = '#78909c';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h * 0.6, w * 0.48, h * 0.38, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Water
+    ctx.fillStyle = '#4fc3f7';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h * 0.6, w * 0.4, h * 0.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Center pillar
+    ctx.fillStyle = '#90a4ae';
+    ctx.fillRect(x + w / 2 - 5, y + h * 0.15, 10, h * 0.45);
+    // Top bowl
+    ctx.fillStyle = '#78909c';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h * 0.18, 14, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    break;
+  }
+  case 'Flowers': {
+    // Soil
+    ctx.fillStyle = '#4e342e';
+    ctx.beginPath(); ctx.roundRect(x, y + h * 0.5, w, h * 0.5, 4); ctx.fill();
+    // Flowers
+    const flowerColors = ['#e53935','#fdd835','#e91e63','#ff9800'];
+    for (let i = 0; i < 4; i++) {
+      const fx = x + 8 + i * 13, fy = y + 10 + (i % 2) * 8;
+      // Stem
+      ctx.strokeStyle = '#4caf50'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(fx, fy + 8); ctx.lineTo(fx, y + h * 0.55); ctx.stroke();
+      // Petals
+      ctx.fillStyle = flowerColors[i];
+      ctx.beginPath(); ctx.arc(fx, fy, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff59d';
+      ctx.beginPath(); ctx.arc(fx, fy, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    break;
+  }
+
+  // ─── GARAGE ───
+  case 'Car': {
+    // Body
+    ctx.fillStyle = '#1565c0';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.fill();
+    // Roof
+    ctx.fillStyle = '#0d47a1';
+    ctx.beginPath(); ctx.roundRect(x + w * 0.2, y + h * 0.2, w * 0.6, h * 0.5, 8); ctx.fill();
+    // Windshields
+    ctx.fillStyle = 'rgba(150,200,255,0.3)';
+    ctx.beginPath(); ctx.roundRect(x + w * 0.22, y + h * 0.22, w * 0.56, h * 0.15, 4); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w * 0.22, y + h * 0.55, w * 0.56, h * 0.13, 4); ctx.fill();
+    // Wheels
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.roundRect(x - 4, y + h * 0.12, 10, 20, 3); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x - 4, y + h * 0.6, 10, 20, 3); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w - 6, y + h * 0.12, 10, 20, 3); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x + w - 6, y + h * 0.6, 10, 20, 3); ctx.fill();
+    // Headlights
+    ctx.fillStyle = '#ffeb3b';
+    ctx.beginPath(); ctx.arc(x + 10, y + 8, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + w - 10, y + 8, 5, 0, Math.PI * 2); ctx.fill();
+    break;
+  }
+  case 'Workbench': {
+    // Table
+    ctx.fillStyle = '#5d4037';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
+    ctx.fillStyle = '#6d5040';
+    ctx.beginPath(); ctx.roundRect(x + 2, y + 2, w - 4, h - 4, 3); ctx.fill();
+    // Tool pegboard (back wall feel)
+    ctx.fillStyle = '#4a3525';
+    ctx.beginPath(); ctx.roundRect(x + 2, y + 2, w - 4, h * 0.2, 2); ctx.fill();
+    // Tools hanging
+    ctx.fillStyle = '#aaa';
+    ctx.fillRect(x + 10, y + 6, 3, 14);  // wrench
+    ctx.fillRect(x + 22, y + 8, 3, 10);  // screwdriver
+    ctx.fillRect(x + 34, y + 5, 8, 3);   // hammer head
+    ctx.fillRect(x + 36, y + 8, 3, 12);  // hammer handle
+    // Vice
+    ctx.fillStyle = '#777';
+    ctx.beginPath(); ctx.roundRect(x + w - 25, y + h * 0.5, 20, 16, 2); ctx.fill();
+    break;
+  }
+  case 'Toolbox': {
+    ctx.fillStyle = '#d32f2f';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
+    // Lid line
+    ctx.strokeStyle = '#b71c1c'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + 4, y + h * 0.35); ctx.lineTo(x + w - 4, y + h * 0.35); ctx.stroke();
+    // Handle
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.roundRect(x + w * 0.3, y + 3, w * 0.4, 8, 3); ctx.fill();
+    // Latch
+    ctx.fillStyle = '#fdd835';
+    ctx.fillRect(x + w / 2 - 4, y + h * 0.35 - 3, 8, 6);
+    ctx.strokeStyle = '#c62828'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.stroke();
+    break;
+  }
+  case 'Barrel': {
+    ctx.fillStyle = '#5d4037';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, w * 0.2); ctx.fill();
+    // Metal bands
+    ctx.strokeStyle = '#888'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x + 4, y + h * 0.25); ctx.lineTo(x + w - 4, y + h * 0.25); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 4, y + h * 0.75); ctx.lineTo(x + w - 4, y + h * 0.75); ctx.stroke();
+    // Top
+    ctx.fillStyle = '#4e342e';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + 6, w * 0.42, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Wood grain
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + w * 0.3, y + 4); ctx.lineTo(x + w * 0.3, y + h - 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + w * 0.7, y + 4); ctx.lineTo(x + w * 0.7, y + h - 4); ctx.stroke();
+    break;
+  }
+  case 'Boxes': {
+    // Bottom box
+    ctx.fillStyle = '#8d6e63';
+    ctx.beginPath(); ctx.roundRect(x, y + h * 0.35, w, h * 0.65, 3); ctx.fill();
+    ctx.strokeStyle = '#6d4c41'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(x, y + h * 0.35, w, h * 0.65, 3); ctx.stroke();
+    // Tape
+    ctx.fillStyle = '#bcaaa4';
+    ctx.fillRect(x + w * 0.4, y + h * 0.35, w * 0.2, h * 0.65);
+    // Top box (smaller, rotated slightly)
+    ctx.save(); ctx.translate(x + w * 0.5, y + h * 0.25); ctx.rotate(0.1);
+    ctx.fillStyle = '#a1887f';
+    ctx.beginPath(); ctx.roundRect(-w * 0.35, -h * 0.2, w * 0.7, h * 0.4, 3); ctx.fill();
+    ctx.fillStyle = '#bcaaa4';
+    ctx.fillRect(-w * 0.08, -h * 0.2, w * 0.16, h * 0.4);
+    ctx.restore();
+    break;
+  }
+  case 'Ladder': {
+    // Side rails
+    ctx.fillStyle = '#ff8f00';
+    ctx.fillRect(x + 6, y, 5, h);
+    ctx.fillRect(x + w - 11, y, 5, h);
+    // Rungs
+    ctx.fillStyle = '#ffa726';
+    const rungs = 5;
+    for (let i = 0; i < rungs; i++) {
+      ctx.fillRect(x + 11, y + 8 + i * (h - 16) / (rungs - 1), w - 22, 4);
+    }
+    break;
+  }
+
+  // ─── DEFAULT FALLBACK ───
+  default: {
+    ctx.fillStyle = '#2a3450';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.stroke();
+    break;
+  }
+  }
+
+  ctx.restore();
 }
 
 function drawPowerups() {
