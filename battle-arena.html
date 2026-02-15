@@ -319,6 +319,8 @@
     z-index: 3;
     --poster-color: transparent;
     background: transparent;
+    transform: scale(0.75);
+    transform-origin: center center;
   }
 
   .battle-viewport .battle-overlay-text {
@@ -1153,8 +1155,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 // ── CONFIG ──
-const ARENA_W = 2400;
-const ARENA_H = 1800;
+const ARENA_W = 4000;
+const ARENA_H = 3000;
 const TILE_SIZE = 60;
 const PLAYER_RADIUS = 18;
 const PLAYER_SPEED = 3;
@@ -1258,34 +1260,169 @@ function resizeCanvas() {
   ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
 }
 
+// ── ROOM DEFINITIONS ──
+const WALL = 16;
+const DOOR = 100; // doorway gap size
+const ROOMS = [
+  { name: 'Kitchen',     x: 40,   y: 40,   w: 1200, h: 940,  floor: '#1a1f14', accent: '#2d4a1e' },
+  { name: 'Cafeteria',   x: 1300, y: 40,   w: 1400, h: 940,  floor: '#1a1420', accent: '#3d1e4a' },
+  { name: 'Living Room', x: 2760, y: 40,   w: 1200, h: 940,  floor: '#1a1a28', accent: '#1e2d4a' },
+  { name: 'Bathroom',    x: 40,   y: 1040, w: 900,  h: 920,  floor: '#141a1a', accent: '#1e3a4a' },
+  { name: 'Hallway',     x: 1000, y: 1040, w: 2000, h: 920,  floor: '#18181f', accent: '#333340' },
+  { name: 'Bedroom',     x: 3060, y: 1040, w: 900,  h: 920,  floor: '#201a1a', accent: '#4a1e2d' },
+  { name: 'Gym',         x: 40,   y: 2020, w: 1200, h: 940,  floor: '#1f1a14', accent: '#4a3a1e' },
+  { name: 'Garden',      x: 1300, y: 2020, w: 1400, h: 940,  floor: '#142014', accent: '#1e4a28' },
+  { name: 'Garage',      x: 2760, y: 2020, w: 1200, h: 940,  floor: '#1a1a1a', accent: '#3a3a3a' },
+];
+
 // ── MAP GENERATION ──
 function generateMap() {
   MAP_OBSTACLES.length = 0;
-  // Gym equipment clusters
-  const clusters = [
-    { cx: 400, cy: 350, items: [{x:0,y:0,w:80,h:40},{x:100,y:-10,w:40,h:60}] },
-    { cx: 900, cy: 250, items: [{x:0,y:0,w:120,h:30},{x:20,y:50,w:80,h:30}] },
-    { cx: 1600, cy: 400, items: [{x:0,y:0,w:60,h:80},{x:80,y:20,w:60,h:60}] },
-    { cx: 500, cy: 900, items: [{x:0,y:0,w:100,h:40},{x:-20,y:60,w:140,h:30}] },
-    { cx: 1200, cy: 700, items: [{x:0,y:0,w:80,h:80}] },
-    { cx: 1800, cy: 900, items: [{x:0,y:0,w:50,h:100},{x:70,y:10,w:50,h:80}] },
-    { cx: 350, cy: 1400, items: [{x:0,y:0,w:110,h:40},{x:30,y:60,w:60,h:40}] },
-    { cx: 1000, cy: 1200, items: [{x:0,y:0,w:90,h:50}] },
-    { cx: 1700, cy: 1300, items: [{x:0,y:0,w:70,h:70},{x:90,y:0,w:70,h:70}] },
-    { cx: 2000, cy: 600, items: [{x:0,y:0,w:40,h:120}] },
-    { cx: 700, cy: 1600, items: [{x:0,y:0,w:100,h:30}] },
-    { cx: 1400, cy: 1500, items: [{x:0,y:0,w:60,h:60}] },
-  ];
-  clusters.forEach(c => {
-    c.items.forEach(item => {
-      MAP_OBSTACLES.push({
-        x: c.cx + item.x,
-        y: c.cy + item.y,
-        w: item.w,
-        h: item.h
-      });
-    });
-  });
+
+  // Helper: add a wall segment
+  function wall(x, y, w, h) {
+    MAP_OBSTACLES.push({ x, y, w, h, type: 'wall' });
+  }
+  // Helper: add furniture
+  function furniture(x, y, w, h, icon, label) {
+    MAP_OBSTACLES.push({ x, y, w, h, type: 'furniture', icon, label });
+  }
+
+  // ─── ROOM WALLS (with doorways) ───
+
+  // Kitchen walls
+  wall(40, 40, 1200, WALL);              // top
+  wall(40, 40, WALL, 940);               // left
+  wall(40, 980 - WALL, 500, WALL);       // bottom-left
+  wall(500 + DOOR, 980 - WALL, 700 - DOOR, WALL); // bottom-right
+  wall(1240 - WALL, 40, WALL, 400);      // right-top
+  wall(1240 - WALL, 400 + DOOR, WALL, 540 - DOOR); // right-bottom
+
+  // Cafeteria walls
+  wall(1300, 40, 1400, WALL);            // top
+  wall(1300, 980 - WALL, 600, WALL);     // bottom-left
+  wall(1300 + 600 + DOOR, 980 - WALL, 700 - DOOR, WALL); // bottom-right
+  wall(2700 - WALL, 40, WALL, 400);      // right-top
+  wall(2700 - WALL, 400 + DOOR, WALL, 540 - DOOR); // right-bottom
+
+  // Living Room walls
+  wall(2760, 40, 1200, WALL);            // top
+  wall(3960 - WALL, 40, WALL, 940);      // right
+  wall(2760, 980 - WALL, 500, WALL);     // bottom-left
+  wall(2760 + 500 + DOOR, 980 - WALL, 700 - DOOR, WALL); // bottom-right
+
+  // Bathroom walls
+  wall(40, 1040, WALL, 920);             // left
+  wall(40, 1040, 900, WALL);             // top (shared)
+  wall(40, 1960 - WALL, 400, WALL);      // bottom-left
+  wall(400 + DOOR, 1960 - WALL, 500 - DOOR, WALL); // bottom-right
+  wall(940 - WALL, 1040, WALL, 400);     // right-top
+  wall(940 - WALL, 1040 + 400 + DOOR, WALL, 520 - DOOR - WALL); // right-bottom
+
+  // Hallway (open area, just top/bottom walls with doorways)
+  wall(1000, 1040, 800, WALL);           // top-left section
+  wall(1000 + 800 + DOOR, 1040, 1100 - DOOR, WALL); // top-right section
+  wall(1000, 1960 - WALL, 700, WALL);    // bottom-left
+  wall(1000 + 700 + DOOR, 1960 - WALL, 1200 - DOOR, WALL); // bottom-right
+
+  // Bedroom walls
+  wall(3060, 1040, 900, WALL);           // top
+  wall(3960 - WALL, 1040, WALL, 920);    // right
+  wall(3060, 1960 - WALL, 400, WALL);    // bottom-left
+  wall(3060 + 400 + DOOR, 1960 - WALL, 500 - DOOR, WALL); // bottom-right
+
+  // Gym walls
+  wall(40, 2020, WALL, 940);             // left
+  wall(40, 2020, 1200, WALL);            // top
+  wall(40, 2960 - WALL, 1200, WALL);     // bottom
+  wall(1240 - WALL, 2020, WALL, 400);    // right-top
+  wall(1240 - WALL, 2020 + 400 + DOOR, WALL, 540 - DOOR - WALL); // right-bottom
+
+  // Garden walls
+  wall(1300, 2020, 600, WALL);           // top-left
+  wall(1300 + 600 + DOOR, 2020, 700 - DOOR, WALL); // top-right
+  wall(1300, 2960 - WALL, 1400, WALL);   // bottom
+  wall(2700 - WALL, 2020, WALL, 400);    // right-top
+  wall(2700 - WALL, 2020 + 400 + DOOR, WALL, 540 - DOOR - WALL); // right-bottom
+
+  // Garage walls
+  wall(2760, 2020, 500, WALL);           // top-left
+  wall(2760 + 500 + DOOR, 2020, 700 - DOOR, WALL); // top-right
+  wall(3960 - WALL, 2020, WALL, 940);    // right
+  wall(2760, 2960 - WALL, 1200, WALL);   // bottom
+
+  // ─── FURNITURE ───
+
+  // Kitchen
+  furniture(100, 100, 200, 60, '🍳', 'Stove');
+  furniture(100, 200, 60, 120, '🧊', 'Fridge');
+  furniture(400, 100, 300, 50, '🔪', 'Counter');
+  furniture(800, 100, 120, 50, '🍽️', 'Sink');
+  furniture(500, 500, 180, 100, '🪑', 'Table');
+  furniture(900, 400, 80, 80, '🗑️', 'Bin');
+
+  // Cafeteria
+  furniture(1450, 200, 200, 80, '🪑', 'Table');
+  furniture(1750, 200, 200, 80, '🪑', 'Table');
+  furniture(1450, 500, 200, 80, '🪑', 'Table');
+  furniture(1750, 500, 200, 80, '🪑', 'Table');
+  furniture(2050, 350, 200, 80, '🪑', 'Table');
+  furniture(2350, 150, 80, 200, '🥤', 'Vending');
+
+  // Living Room
+  furniture(2900, 200, 280, 70, '🛋️', 'Couch');
+  furniture(3300, 100, 120, 80, '📺', 'TV');
+  furniture(2900, 500, 120, 70, '🪑', 'Armchair');
+  furniture(3100, 450, 100, 60, '☕', 'Coffee Table');
+  furniture(3500, 500, 80, 120, '📚', 'Bookshelf');
+  furniture(3650, 200, 60, 60, '🪴', 'Plant');
+
+  // Bathroom
+  furniture(120, 1120, 100, 80, '🚿', 'Shower');
+  furniture(120, 1400, 80, 50, '🪥', 'Sink');
+  furniture(350, 1120, 60, 60, '🚽', 'Toilet');
+  furniture(600, 1120, 120, 60, '🛁', 'Bathtub');
+  furniture(600, 1600, 60, 60, '🧺', 'Laundry');
+
+  // Hallway
+  furniture(1200, 1200, 60, 60, '🪴', 'Plant');
+  furniture(1800, 1350, 100, 50, '🖼️', 'Bench');
+  furniture(2400, 1200, 60, 60, '🪴', 'Plant');
+  furniture(1500, 1600, 80, 80, '🗄️', 'Cabinet');
+  furniture(2100, 1150, 60, 60, '💡', 'Lamp');
+
+  // Bedroom
+  furniture(3200, 1150, 200, 120, '🛏️', 'Bed');
+  furniture(3600, 1150, 100, 70, '💻', 'Desk');
+  furniture(3600, 1500, 80, 120, '👔', 'Wardrobe');
+  furniture(3150, 1500, 60, 60, '🪴', 'Plant');
+  furniture(3750, 1350, 60, 60, '🪞', 'Mirror');
+
+  // Gym
+  furniture(200, 2150, 140, 60, '🏋️', 'Bench Press');
+  furniture(500, 2150, 100, 60, '🏋️', 'Weights');
+  furniture(200, 2450, 60, 140, '🏃', 'Treadmill');
+  furniture(400, 2450, 60, 140, '🏃', 'Treadmill');
+  furniture(700, 2300, 120, 60, '💪', 'Dumbbells');
+  furniture(900, 2500, 80, 80, '🥊', 'Punching Bag');
+  furniture(700, 2650, 100, 50, '🧘', 'Yoga Mat');
+
+  // Garden
+  furniture(1450, 2200, 100, 100, '🌳', 'Tree');
+  furniture(1800, 2150, 100, 100, '🌳', 'Tree');
+  furniture(2200, 2400, 100, 100, '🌳', 'Tree');
+  furniture(1500, 2550, 80, 60, '🌿', 'Bush');
+  furniture(2000, 2600, 80, 60, '🌿', 'Bush');
+  furniture(1700, 2400, 120, 70, '⛲', 'Fountain');
+  furniture(2400, 2200, 60, 60, '🌻', 'Flowers');
+
+  // Garage
+  furniture(2900, 2200, 220, 120, '🚗', 'Car');
+  furniture(3300, 2150, 80, 200, '🔧', 'Workbench');
+  furniture(3550, 2150, 120, 60, '🧰', 'Toolbox');
+  furniture(2900, 2550, 100, 80, '🛢️', 'Barrel');
+  furniture(3200, 2600, 100, 80, '📦', 'Boxes');
+  furniture(3600, 2500, 60, 100, '🪜', 'Ladder');
 }
 
 // ── COLOR PICKER ──
@@ -1996,9 +2133,8 @@ function initCombat(opponent) {
   document.getElementById('battle-result').classList.remove('active');
   document.getElementById('battle-result').innerHTML = '';
 
-  // Show HP bars, mana bar, action container
+  // Show HP bars + action container (mana bar hidden like dashboard)
   document.getElementById('bc-hp-container').classList.add('active');
-  document.getElementById('bc-mana-container').classList.add('active');
   document.getElementById('bc-action-container').classList.add('active');
 
   // Play battle model animation
@@ -2771,84 +2907,118 @@ function render() {
 }
 
 function drawArenaBackground() {
-  // Floor tiles
-  const startCol = Math.floor(camera.x / TILE_SIZE);
-  const endCol = Math.ceil((camera.x + window.innerWidth) / TILE_SIZE);
-  const startRow = Math.floor(camera.y / TILE_SIZE);
-  const endRow = Math.ceil((camera.y + window.innerHeight) / TILE_SIZE);
+  const vx = camera.x, vy = camera.y;
+  const vw = window.innerWidth, vh = window.innerHeight;
 
-  for (let r = startRow; r <= endRow; r++) {
-    for (let c = startCol; c <= endCol; c++) {
-      if (c < 0 || r < 0 || c >= ARENA_W / TILE_SIZE || r >= ARENA_H / TILE_SIZE) continue;
-      const x = c * TILE_SIZE;
-      const y = r * TILE_SIZE;
-      ctx.fillStyle = (r + c) % 2 === 0 ? '#141b2d' : '#161e30';
-      ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+  // Dark void outside rooms
+  ctx.fillStyle = '#080a10';
+  ctx.fillRect(vx, vy, vw, vh);
+
+  // Draw room floors
+  ROOMS.forEach(rm => {
+    // Skip if off-screen
+    if (rm.x + rm.w < vx || rm.x > vx + vw || rm.y + rm.h < vy || rm.y > vy + vh) return;
+
+    // Room floor
+    ctx.fillStyle = rm.floor;
+    ctx.fillRect(rm.x, rm.y, rm.w, rm.h);
+
+    // Floor tiles (checkerboard)
+    const sc = Math.max(0, Math.floor((rm.x - vx) / TILE_SIZE));
+    const ec = Math.ceil((rm.x + rm.w - vx) / TILE_SIZE);
+    const sr = Math.max(0, Math.floor((rm.y - vy) / TILE_SIZE));
+    const er = Math.ceil((rm.y + rm.h - vy) / TILE_SIZE);
+    for (let r = sr; r <= er; r++) {
+      for (let c = sc; c <= ec; c++) {
+        const tx = vx + c * TILE_SIZE;
+        const ty = vy + r * TILE_SIZE;
+        if (tx < rm.x || tx + TILE_SIZE > rm.x + rm.w || ty < rm.y || ty + TILE_SIZE > rm.y + rm.h) continue;
+        if ((r + c) % 2 === 0) {
+          ctx.fillStyle = 'rgba(255,255,255,0.015)';
+          ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+        }
+      }
     }
-  }
 
-  // Grid lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-  ctx.lineWidth = 1;
-  for (let c = startCol; c <= endCol; c++) {
-    ctx.beginPath();
-    ctx.moveTo(c * TILE_SIZE, startRow * TILE_SIZE);
-    ctx.lineTo(c * TILE_SIZE, endRow * TILE_SIZE);
-    ctx.stroke();
-  }
-  for (let r = startRow; r <= endRow; r++) {
-    ctx.beginPath();
-    ctx.moveTo(startCol * TILE_SIZE, r * TILE_SIZE);
-    ctx.lineTo(endCol * TILE_SIZE, r * TILE_SIZE);
-    ctx.stroke();
-  }
-
-  // Arena walls
-  ctx.strokeStyle = 'rgba(16,185,129,0.3)';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(10, 10, ARENA_W - 20, ARENA_H - 20);
-
-  // Corner markers
-  const corners = [[20,20],[ARENA_W-20,20],[20,ARENA_H-20],[ARENA_W-20,ARENA_H-20]];
-  corners.forEach(([cx, cy]) => {
-    ctx.fillStyle = 'rgba(16,185,129,0.15)';
-    ctx.beginPath();
-    ctx.arc(cx, cy, 30, 0, Math.PI * 2);
-    ctx.fill();
+    // Room label
+    ctx.save();
+    ctx.font = '600 14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.letterSpacing = '3px';
+    ctx.fillText(rm.name.toUpperCase(), rm.x + rm.w / 2, rm.y + rm.h / 2);
+    ctx.restore();
   });
+
+  // Outer arena border
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(20, 20, ARENA_W - 40, ARENA_H - 40);
 }
 
 function drawObstacles() {
   MAP_OBSTACLES.forEach(o => {
-    // Check if visible
+    // Frustum culling
     if (o.x + o.w < camera.x - 20 || o.x > camera.x + window.innerWidth + 20 ||
         o.y + o.h < camera.y - 20 || o.y > camera.y + window.innerHeight + 20) return;
 
-    // Equipment shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.beginPath();
-    ctx.roundRect(o.x + 3, o.y + 3, o.w, o.h, 6);
-    ctx.fill();
+    if (o.type === 'wall') {
+      // Wall rendering
+      ctx.fillStyle = '#1e2538';
+      ctx.beginPath();
+      ctx.roundRect(o.x, o.y, o.w, o.h, 2);
+      ctx.fill();
 
-    // Equipment body
-    const grd = ctx.createLinearGradient(o.x, o.y, o.x, o.y + o.h);
-    grd.addColorStop(0, '#2a3450');
-    grd.addColorStop(1, '#1e2740');
-    ctx.fillStyle = grd;
-    ctx.beginPath();
-    ctx.roundRect(o.x, o.y, o.w, o.h, 6);
-    ctx.fill();
+      // Wall top highlight
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(o.x, o.y, o.w, 2);
 
-    // Equipment border
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(o.x, o.y, o.w, o.h, 6);
-    ctx.stroke();
+      // Wall border
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(o.x, o.y, o.w, o.h, 2);
+      ctx.stroke();
+    } else {
+      // Furniture shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.roundRect(o.x + 3, o.y + 3, o.w, o.h, 8);
+      ctx.fill();
 
-    // Equipment detail line
-    ctx.fillStyle = 'rgba(139,92,246,0.15)';
-    ctx.fillRect(o.x + 4, o.y + 4, o.w - 8, 3);
+      // Furniture body
+      const grd = ctx.createLinearGradient(o.x, o.y, o.x, o.y + o.h);
+      grd.addColorStop(0, '#2a3450');
+      grd.addColorStop(1, '#1e2740');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.roundRect(o.x, o.y, o.w, o.h, 8);
+      ctx.fill();
+
+      // Furniture border
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(o.x, o.y, o.w, o.h, 8);
+      ctx.stroke();
+
+      // Furniture icon
+      if (o.icon) {
+        ctx.font = `${Math.min(o.w, o.h) * 0.5}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(o.icon, o.x + o.w / 2, o.y + o.h / 2);
+      }
+
+      // Furniture label
+      if (o.label) {
+        ctx.font = '500 8px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fillText(o.label, o.x + o.w / 2, o.y + o.h + 12);
+      }
+    }
   });
 }
 
@@ -2933,28 +3103,35 @@ function drawParticles() {
 }
 
 function drawMinimap() {
-  const size = 100;
+  const mapW = 120;
+  const mapH = mapW * (ARENA_H / ARENA_W);
   const padding = 12;
-  const mx = window.innerWidth - size - padding;
-  const my = window.innerHeight - size - padding - 60;
-  const scale = size / Math.max(ARENA_W, ARENA_H);
+  const mx = window.innerWidth - mapW - padding;
+  const my = window.innerHeight - mapH - padding - 60;
+  const scale = mapW / ARENA_W;
 
   // Background
-  ctx.fillStyle = 'rgba(10,14,26,0.85)';
+  ctx.fillStyle = 'rgba(10,14,26,0.9)';
   ctx.beginPath();
-  ctx.roundRect(mx - 4, my - 4, size + 8, size * (ARENA_H / ARENA_W) + 8, 8);
+  ctx.roundRect(mx - 4, my - 4, mapW + 8, mapH + 8, 8);
   ctx.fill();
 
   ctx.strokeStyle = 'rgba(255,255,255,0.15)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.roundRect(mx - 4, my - 4, size + 8, size * (ARENA_H / ARENA_W) + 8, 8);
+  ctx.roundRect(mx - 4, my - 4, mapW + 8, mapH + 8, 8);
   ctx.stroke();
 
-  // Obstacles
+  // Room floors
+  ROOMS.forEach(rm => {
+    ctx.fillStyle = rm.floor;
+    ctx.fillRect(mx + rm.x * scale, my + rm.y * scale, rm.w * scale, rm.h * scale);
+  });
+
+  // Walls + furniture
   MAP_OBSTACLES.forEach(o => {
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.fillRect(mx + o.x * scale, my + o.y * scale, Math.max(2, o.w * scale), Math.max(2, o.h * scale));
+    ctx.fillStyle = o.type === 'wall' ? 'rgba(255,255,255,0.3)' : 'rgba(100,140,255,0.2)';
+    ctx.fillRect(mx + o.x * scale, my + o.y * scale, Math.max(1, o.w * scale), Math.max(1, o.h * scale));
   });
 
   // Bots
