@@ -101,9 +101,88 @@
 # Note: send-meal-reminders is a regular Node.js function (not edge)
 # because it requires the web-push npm package
 
+# WHOOP Integration Edge Functions
+[[edge_functions]]
+  function = "whoop-auth"
+  path = "/api/whoop/auth"
+
+[[edge_functions]]
+  function = "whoop-auth"
+  path = "/api/whoop/callback"
+
+[[edge_functions]]
+  function = "whoop-auth"
+  path = "/api/whoop/disconnect"
+
+[[edge_functions]]
+  function = "whoop-sync"
+  path = "/api/whoop/sync"
+
+[[edge_functions]]
+  function = "whoop-sync"
+  path = "/api/whoop/sync-all"
+
+[[edge_functions]]
+  function = "whoop-sync"
+  path = "/api/whoop/data"
+
+# Oura Ring Integration Edge Functions
+[[edge_functions]]
+  function = "oura-auth"
+  path = "/api/oura/auth"
+
+[[edge_functions]]
+  function = "oura-auth"
+  path = "/api/oura/callback"
+
+[[edge_functions]]
+  function = "oura-auth"
+  path = "/api/oura/disconnect"
+
+[[edge_functions]]
+  function = "oura-sync"
+  path = "/api/oura/sync"
+
+[[edge_functions]]
+  function = "oura-sync"
+  path = "/api/oura/sync-all"
+
+[[edge_functions]]
+  function = "oura-sync"
+  path = "/api/oura/data"
+
+# Strava Integration Edge Functions
+[[edge_functions]]
+  function = "strava-auth"
+  path = "/api/strava/auth"
+
+[[edge_functions]]
+  function = "strava-auth"
+  path = "/api/strava/callback"
+
+[[edge_functions]]
+  function = "strava-auth"
+  path = "/api/strava/disconnect"
+
+[[edge_functions]]
+  function = "strava-sync"
+  path = "/api/strava/sync"
+
+[[edge_functions]]
+  function = "strava-sync"
+  path = "/api/strava/sync-all"
+
+[[edge_functions]]
+  function = "strava-sync"
+  path = "/api/strava/data"
+
 # Fitbit scheduled sync - runs every 2 hours
 [functions."sync-fitbit-data"]
   schedule = "0 */2 * * *"
+
+# All wearables scheduled sync - runs every 2 hours (offset by 1 hour from Fitbit)
+[functions."sync-wearable-data"]
+  schedule = "0 1-23/2 * * *"
 
 # Ensure we redirect legacy URLs
 [[redirects]]
