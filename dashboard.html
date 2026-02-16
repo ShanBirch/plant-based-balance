@@ -101,6 +101,8 @@
 <script src="lib/stories.js"></script>
 <script src="lib/games.js"></script>
 <script src="lib/nutrition-calculator.js"></script>
+<script src="lib/native-health.js"></script>
+<script src="lib/native-push.js"></script>
 <!-- 2D SVG Avatar system (reserved for future use) -->
 <!-- <script src="lib/avatar.js"></script> -->
 <!-- <link rel="stylesheet" href="lib/avatar.css"> -->
@@ -10407,6 +10409,23 @@ async function applyAppTheme(themeKey) {
             if(typeof checkAndShowWorkoutTrendCard === 'function') checkAndShowWorkoutTrendCard();
             if(typeof initFitbitDashboard === 'function') initFitbitDashboard();
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
+
+            // Native app: init Health Connect/HealthKit + push notifications
+            if (window.NativeHealth && window.NativeHealth.isNativeApp()) {
+                console.log('📱 Native app detected — initializing Health Connect/HealthKit');
+                window.NativeHealth.init().then(ready => {
+                    if (ready) {
+                        console.log('✅ Native health ready — fetching summary');
+                        window.NativeHealth.getSummary().then(summary => {
+                            if (summary) console.log('📊 Native health summary:', summary);
+                        });
+                    }
+                });
+            }
+            if (window.NativePush && window.NativePush.isNativeApp()) {
+                console.log('📱 Native app detected — initializing native push notifications');
+                window.NativePush.init();
+            }
 
             // Switch to dashboard as default entry point
             if(typeof switchAppTab === 'function') {
