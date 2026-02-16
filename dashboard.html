@@ -9002,75 +9002,6 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
-    <!-- Movement Weekly Trends Page (full-screen overlay) -->
-    <div class="weekly-trends-page" id="movement-weekly-trends-page">
-        <div class="weekly-trends-page-header">
-            <span class="weekly-trends-page-title">Movement Trends</span>
-        </div>
-        <div class="weekly-trends-page-content">
-            <!-- Weekly Summary -->
-            <div class="weekly-metrics-card" style="padding: 20px; background: linear-gradient(135deg, #f0f0ff 0%, #e8e0f0 100%); border-radius: 12px; border: 1px solid #d4d0e0; margin-bottom: 20px;">
-                <h3 style="margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                    Weekly Summary
-                </h3>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-                    <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Workouts</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #6366f1;"><span id="mvmt-weekly-workouts">0</span></div>
-                    </div>
-                    <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Total Exercises</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #6366f1;"><span id="mvmt-weekly-exercises">0</span></div>
-                    </div>
-                    <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Active Days</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #6366f1;"><span id="mvmt-weekly-active-days">0</span>/7</div>
-                    </div>
-                </div>
-                <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">Last 7 Days</div>
-                    <div id="mvmt-weekly-daily-breakdown">
-                        <p style="text-align: center; color: var(--text-muted); padding: 20px 0;">Loading workout data...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Workout Journal -->
-            <div class="meal-journal-card" id="mvmt-workout-journal-section">
-                <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Workout Journal</h3>
-                <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Your recent workouts at a glance</p>
-                <div class="journal-timeline" id="mvmt-workout-journal-timeline" style="gap: 10px;">
-                    <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Loading your workouts...</p>
-                </div>
-            </div>
-
-            <!-- Multi-Week Trends -->
-            <div class="multi-week-card" id="mvmt-multi-week-section">
-                <div class="multi-week-header">
-                    <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main);">Weekly Trends</h3>
-                    <div class="multi-week-nav" id="mvmt-multi-week-nav">
-                        <button class="active" onclick="loadMovementMultiWeekData(4)">4 Weeks</button>
-                        <button onclick="loadMovementMultiWeekData(8)">8 Weeks</button>
-                    </div>
-                </div>
-                <div id="mvmt-multi-week-sparklines">
-                    <p style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.85rem;">Loading trend data...</p>
-                </div>
-                <div class="week-compare-grid" id="mvmt-week-compare-grid">
-                </div>
-            </div>
-
-            <!-- Workout Pattern Analysis -->
-            <div class="meal-pattern-card" id="mvmt-workout-pattern-section">
-                <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Workout Patterns</h3>
-                <p style="margin: 0 0 14px 0; font-size: 0.78rem; color: var(--text-muted);">Insights from your last 7 days</p>
-                <div id="mvmt-workout-pattern-insights">
-                    <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log more workouts to see patterns</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
 <!-- START HERE -->
     <!-- Protocol Section Removed -->
 
@@ -14628,6 +14559,75 @@ async function applyAppTheme(themeKey) {
             </span>
             <span class="weekly-trends-btn-arrow">&#x203A;</span>
         </button>
+    </div>
+</div>
+
+<!-- Movement Weekly Trends Page (full-screen overlay) -->
+<div class="weekly-trends-page" id="movement-weekly-trends-page">
+    <div class="weekly-trends-page-header">
+        <span class="weekly-trends-page-title">Movement Trends</span>
+    </div>
+    <div class="weekly-trends-page-content">
+        <!-- Weekly Summary -->
+        <div class="weekly-metrics-card" style="padding: 20px; background: linear-gradient(135deg, #f0f0ff 0%, #e8e0f0 100%); border-radius: 12px; border: 1px solid #d4d0e0; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                Weekly Summary
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Workouts</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #6366f1;"><span id="mvmt-weekly-workouts">0</span></div>
+                </div>
+                <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Total Exercises</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #6366f1;"><span id="mvmt-weekly-exercises">0</span></div>
+                </div>
+                <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Active Days</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #6366f1;"><span id="mvmt-weekly-active-days">0</span>/7</div>
+                </div>
+            </div>
+            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">Last 7 Days</div>
+                <div id="mvmt-weekly-daily-breakdown">
+                    <p style="text-align: center; color: var(--text-muted); padding: 20px 0;">Loading workout data...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workout Journal -->
+        <div class="meal-journal-card" id="mvmt-workout-journal-section">
+            <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Workout Journal</h3>
+            <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Your recent workouts at a glance</p>
+            <div class="journal-timeline" id="mvmt-workout-journal-timeline" style="gap: 10px;">
+                <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Loading your workouts...</p>
+            </div>
+        </div>
+
+        <!-- Multi-Week Trends -->
+        <div class="multi-week-card" id="mvmt-multi-week-section">
+            <div class="multi-week-header">
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main);">Weekly Trends</h3>
+                <div class="multi-week-nav" id="mvmt-multi-week-nav">
+                    <button class="active" onclick="loadMovementMultiWeekData(4)">4 Weeks</button>
+                    <button onclick="loadMovementMultiWeekData(8)">8 Weeks</button>
+                </div>
+            </div>
+            <div id="mvmt-multi-week-sparklines">
+                <p style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.85rem;">Loading trend data...</p>
+            </div>
+            <div class="week-compare-grid" id="mvmt-week-compare-grid">
+            </div>
+        </div>
+
+        <!-- Workout Pattern Analysis -->
+        <div class="meal-pattern-card" id="mvmt-workout-pattern-section">
+            <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Workout Patterns</h3>
+            <p style="margin: 0 0 14px 0; font-size: 0.78rem; color: var(--text-muted);">Insights from your last 7 days</p>
+            <div id="mvmt-workout-pattern-insights">
+                <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log more workouts to see patterns</p>
+            </div>
+        </div>
     </div>
 </div>
 
