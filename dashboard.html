@@ -7995,6 +7995,9 @@ async function applyAppTheme(themeKey) {
                 if (typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
                 if (typeof checkAndShowWorkoutTrendCard === 'function') checkAndShowWorkoutTrendCard();
                 if (typeof initFitbitDashboard === 'function') initFitbitDashboard();
+                if (typeof initWhoopDashboard === 'function') initWhoopDashboard();
+                if (typeof initOuraDashboard === 'function') initOuraDashboard();
+                if (typeof initStravaDashboard === 'function') initStravaDashboard();
             }
         }
     });
@@ -8203,6 +8206,386 @@ async function applyAppTheme(themeKey) {
 
     // Check OAuth result on page load
     checkFitbitOAuthResult();
+    </script>
+
+    <script>
+    // ===== WHOOP INTEGRATION LOGIC =====
+
+    async function initWhoopDashboard() {
+        if (!window.currentUser) return;
+        try {
+            const response = await fetch(`/api/whoop/data?user_id=${window.currentUser.id}`);
+            const data = await response.json();
+            if (data.connected) {
+                const card = document.getElementById('whoop-dashboard-card');
+                if (card) card.style.display = 'block';
+                const btn = document.getElementById('whoop-connect-btn');
+                const statusText = document.getElementById('whoop-status-text');
+                if (btn) { btn.textContent = 'Disconnect'; btn.style.background = '#ef4444'; }
+                if (statusText) statusText.textContent = 'Connected and syncing';
+                updateWhoopDisplay(data);
+            } else {
+                const card = document.getElementById('whoop-dashboard-card');
+                if (card) card.style.display = 'none';
+                const btn = document.getElementById('whoop-connect-btn');
+                const statusText = document.getElementById('whoop-status-text');
+                if (btn) { btn.textContent = 'Connect'; btn.style.background = '#1a1a1a'; }
+                if (statusText) statusText.textContent = 'Sync recovery, strain & sleep';
+            }
+        } catch (err) { console.warn('WHOOP init error:', err); }
+    }
+
+    function updateWhoopDisplay(data) {
+        const todayRecovery = data.recovery && data.recovery[0];
+        if (todayRecovery) {
+            const recEl = document.getElementById('whoop-recovery');
+            const hrEl = document.getElementById('whoop-resting-hr');
+            const hrvEl = document.getElementById('whoop-hrv');
+            if (recEl) recEl.textContent = (todayRecovery.recovery_score || 0) + '%';
+            if (hrEl && todayRecovery.resting_heart_rate) hrEl.textContent = todayRecovery.resting_heart_rate;
+            if (hrvEl && todayRecovery.hrv_rmssd) hrvEl.textContent = Math.round(todayRecovery.hrv_rmssd);
+        }
+        const todaySleep = data.sleep && data.sleep[0];
+        if (todaySleep) {
+            const sleepEl = document.getElementById('whoop-sleep');
+            if (sleepEl) {
+                const hours = Math.floor((todaySleep.duration_minutes || 0) / 60);
+                const mins = (todaySleep.duration_minutes || 0) % 60;
+                sleepEl.textContent = hours + 'h ' + mins + 'm';
+            }
+        }
+        const todayWorkout = data.workouts && data.workouts[0];
+        if (todayWorkout) {
+            const strainEl = document.getElementById('whoop-strain');
+            if (strainEl) strainEl.textContent = (todayWorkout.strain || 0).toFixed(1);
+        }
+        if (data.last_sync) {
+            const syncEl = document.getElementById('whoop-last-sync');
+            if (syncEl) syncEl.textContent = 'Last synced ' + formatTimeAgo(data.last_sync);
+        }
+    }
+
+    function toggleWhoopConnection() {
+        if (!window.currentUser) return;
+        const btn = document.getElementById('whoop-connect-btn');
+        if (btn && btn.textContent.trim() === 'Disconnect') {
+            if (confirm('Disconnect your WHOOP? Your synced data will remain.')) {
+                btn.textContent = '...'; btn.disabled = true;
+                fetch('/api/whoop/disconnect', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: window.currentUser.id }),
+                }).then(() => {
+                    btn.textContent = 'Connect'; btn.style.background = '#1a1a1a'; btn.disabled = false;
+                    document.getElementById('whoop-status-text').textContent = 'Sync recovery, strain & sleep';
+                    const card = document.getElementById('whoop-dashboard-card');
+                    if (card) card.style.display = 'none';
+                }).catch(() => { btn.textContent = 'Disconnect'; btn.disabled = false; alert('Failed to disconnect.'); });
+            }
+        } else {
+            window.location.href = '/api/whoop/auth?user_id=' + window.currentUser.id;
+        }
+    }
+
+    function syncWhoopNow() {
+        if (!window.currentUser) return;
+        const btn = document.getElementById('whoop-sync-btn');
+        if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
+        fetch('/api/whoop/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: window.currentUser.id }) })
+            .then(r => r.json()).then(() => fetch('/api/whoop/data?user_id=' + window.currentUser.id))
+            .then(r => r.json()).then(data => { if (data.connected) updateWhoopDisplay(data); })
+            .catch(err => console.warn('WHOOP sync error:', err))
+            .finally(() => { if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; } });
+    }
+
+    function checkWhoopOAuthResult() {
+        const params = new URLSearchParams(window.location.search);
+        const result = params.get('whoop');
+        if (result) {
+            window.history.replaceState({}, '', window.location.pathname);
+            if (result === 'connected') {
+                showWearableToast('WHOOP connected! Syncing your data...');
+                setTimeout(() => initWhoopDashboard(), 2000);
+            } else if (result === 'denied') {
+                alert('WHOOP connection was cancelled. You can connect anytime from Settings.');
+            } else if (result === 'error') {
+                alert('There was a problem connecting to WHOOP. Please try again.');
+            }
+        }
+    }
+
+    window.toggleWhoopConnection = toggleWhoopConnection;
+    window.syncWhoopNow = syncWhoopNow;
+    window.initWhoopDashboard = initWhoopDashboard;
+    checkWhoopOAuthResult();
+    </script>
+
+    <script>
+    // ===== OURA RING INTEGRATION LOGIC =====
+
+    async function initOuraDashboard() {
+        if (!window.currentUser) return;
+        try {
+            const response = await fetch(`/api/oura/data?user_id=${window.currentUser.id}`);
+            const data = await response.json();
+            if (data.connected) {
+                const card = document.getElementById('oura-dashboard-card');
+                if (card) card.style.display = 'block';
+                const btn = document.getElementById('oura-connect-btn');
+                const statusText = document.getElementById('oura-status-text');
+                if (btn) { btn.textContent = 'Disconnect'; btn.style.background = '#ef4444'; }
+                if (statusText) statusText.textContent = 'Connected and syncing';
+                updateOuraDisplay(data);
+            } else {
+                const card = document.getElementById('oura-dashboard-card');
+                if (card) card.style.display = 'none';
+                const btn = document.getElementById('oura-connect-btn');
+                const statusText = document.getElementById('oura-status-text');
+                if (btn) { btn.textContent = 'Connect'; btn.style.background = '#c4a862'; }
+                if (statusText) statusText.textContent = 'Sync readiness, sleep & activity';
+            }
+        } catch (err) { console.warn('Oura init error:', err); }
+    }
+
+    function updateOuraDisplay(data) {
+        const todayActivity = data.activity && data.activity[0];
+        if (todayActivity) {
+            const stepsEl = document.getElementById('oura-steps');
+            const caloriesEl = document.getElementById('oura-calories');
+            if (stepsEl) stepsEl.textContent = (todayActivity.steps || 0).toLocaleString();
+            if (caloriesEl) caloriesEl.textContent = (todayActivity.active_calories || 0).toLocaleString();
+        }
+        const todaySleep = data.sleep && data.sleep[0];
+        if (todaySleep) {
+            const sleepEl = document.getElementById('oura-sleep');
+            const scoreEl = document.getElementById('oura-sleep-score');
+            if (sleepEl) {
+                const hours = Math.floor((todaySleep.total_sleep_minutes || 0) / 60);
+                const mins = (todaySleep.total_sleep_minutes || 0) % 60;
+                sleepEl.textContent = hours + 'h ' + mins + 'm';
+            }
+            if (scoreEl && todaySleep.sleep_score) scoreEl.textContent = todaySleep.sleep_score;
+        }
+        const todayReadiness = data.readiness && data.readiness[0];
+        if (todayReadiness && todayReadiness.readiness_score) {
+            const readyEl = document.getElementById('oura-readiness');
+            if (readyEl) readyEl.textContent = todayReadiness.readiness_score;
+        }
+        if (data.last_sync) {
+            const syncEl = document.getElementById('oura-last-sync');
+            if (syncEl) syncEl.textContent = 'Last synced ' + formatTimeAgo(data.last_sync);
+        }
+    }
+
+    function toggleOuraConnection() {
+        if (!window.currentUser) return;
+        const btn = document.getElementById('oura-connect-btn');
+        if (btn && btn.textContent.trim() === 'Disconnect') {
+            if (confirm('Disconnect your Oura Ring? Your synced data will remain.')) {
+                btn.textContent = '...'; btn.disabled = true;
+                fetch('/api/oura/disconnect', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: window.currentUser.id }),
+                }).then(() => {
+                    btn.textContent = 'Connect'; btn.style.background = '#c4a862'; btn.disabled = false;
+                    document.getElementById('oura-status-text').textContent = 'Sync readiness, sleep & activity';
+                    const card = document.getElementById('oura-dashboard-card');
+                    if (card) card.style.display = 'none';
+                }).catch(() => { btn.textContent = 'Disconnect'; btn.disabled = false; alert('Failed to disconnect.'); });
+            }
+        } else {
+            window.location.href = '/api/oura/auth?user_id=' + window.currentUser.id;
+        }
+    }
+
+    function syncOuraNow() {
+        if (!window.currentUser) return;
+        const btn = document.getElementById('oura-sync-btn');
+        if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
+        fetch('/api/oura/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: window.currentUser.id }) })
+            .then(r => r.json()).then(() => fetch('/api/oura/data?user_id=' + window.currentUser.id))
+            .then(r => r.json()).then(data => { if (data.connected) updateOuraDisplay(data); })
+            .catch(err => console.warn('Oura sync error:', err))
+            .finally(() => { if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; } });
+    }
+
+    function checkOuraOAuthResult() {
+        const params = new URLSearchParams(window.location.search);
+        const result = params.get('oura');
+        if (result) {
+            window.history.replaceState({}, '', window.location.pathname);
+            if (result === 'connected') {
+                showWearableToast('Oura Ring connected! Syncing your data...');
+                setTimeout(() => initOuraDashboard(), 2000);
+            } else if (result === 'denied') {
+                alert('Oura connection was cancelled. You can connect anytime from Settings.');
+            } else if (result === 'error') {
+                alert('There was a problem connecting to Oura. Please try again.');
+            }
+        }
+    }
+
+    window.toggleOuraConnection = toggleOuraConnection;
+    window.syncOuraNow = syncOuraNow;
+    window.initOuraDashboard = initOuraDashboard;
+    checkOuraOAuthResult();
+    </script>
+
+    <script>
+    // ===== STRAVA INTEGRATION LOGIC =====
+
+    async function initStravaDashboard() {
+        if (!window.currentUser) return;
+        try {
+            const response = await fetch(`/api/strava/data?user_id=${window.currentUser.id}`);
+            const data = await response.json();
+            if (data.connected) {
+                const card = document.getElementById('strava-dashboard-card');
+                if (card) card.style.display = 'block';
+                const btn = document.getElementById('strava-connect-btn');
+                const statusText = document.getElementById('strava-status-text');
+                if (btn) { btn.textContent = 'Disconnect'; btn.style.background = '#ef4444'; }
+                if (statusText) statusText.textContent = 'Connected and syncing';
+                updateStravaDisplay(data);
+            } else {
+                const card = document.getElementById('strava-dashboard-card');
+                if (card) card.style.display = 'none';
+                const btn = document.getElementById('strava-connect-btn');
+                const statusText = document.getElementById('strava-status-text');
+                if (btn) { btn.textContent = 'Connect'; btn.style.background = '#FC4C02'; }
+                if (statusText) statusText.textContent = 'Sync workouts, runs & rides';
+            }
+        } catch (err) { console.warn('Strava init error:', err); }
+    }
+
+    function updateStravaDisplay(data) {
+        const latest = data.activities && data.activities[0];
+        if (latest) {
+            const nameEl = document.getElementById('strava-activity-name');
+            const typeEl = document.getElementById('strava-activity-type');
+            const distEl = document.getElementById('strava-distance');
+            const durEl = document.getElementById('strava-duration');
+            const hrEl = document.getElementById('strava-heart-rate');
+            const calEl = document.getElementById('strava-calories');
+            const elevEl = document.getElementById('strava-elevation');
+
+            if (nameEl) nameEl.textContent = latest.name || 'Activity';
+            if (typeEl) typeEl.textContent = latest.sport_type || '';
+
+            // Distance: convert meters to km or miles
+            if (distEl) {
+                const km = ((latest.distance_meters || 0) / 1000).toFixed(1);
+                distEl.textContent = km + ' km';
+            }
+            // Duration: convert seconds to h:mm
+            if (durEl) {
+                const totalMins = Math.round((latest.moving_time_seconds || 0) / 60);
+                const hours = Math.floor(totalMins / 60);
+                const mins = totalMins % 60;
+                durEl.textContent = hours > 0 ? hours + 'h ' + mins + 'm' : mins + 'm';
+            }
+            if (hrEl && latest.avg_heart_rate) hrEl.textContent = latest.avg_heart_rate;
+            if (calEl) calEl.textContent = (latest.calories || 0).toLocaleString();
+            if (elevEl) elevEl.textContent = Math.round(latest.total_elevation_gain || 0) + 'm';
+        }
+        if (data.last_sync) {
+            const syncEl = document.getElementById('strava-last-sync');
+            if (syncEl) syncEl.textContent = 'Last synced ' + formatTimeAgo(data.last_sync);
+        }
+    }
+
+    function toggleStravaConnection() {
+        if (!window.currentUser) return;
+        const btn = document.getElementById('strava-connect-btn');
+        if (btn && btn.textContent.trim() === 'Disconnect') {
+            if (confirm('Disconnect your Strava? Your synced data will remain.')) {
+                btn.textContent = '...'; btn.disabled = true;
+                fetch('/api/strava/disconnect', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: window.currentUser.id }),
+                }).then(() => {
+                    btn.textContent = 'Connect'; btn.style.background = '#FC4C02'; btn.disabled = false;
+                    document.getElementById('strava-status-text').textContent = 'Sync workouts, runs & rides';
+                    const card = document.getElementById('strava-dashboard-card');
+                    if (card) card.style.display = 'none';
+                }).catch(() => { btn.textContent = 'Disconnect'; btn.disabled = false; alert('Failed to disconnect.'); });
+            }
+        } else {
+            window.location.href = '/api/strava/auth?user_id=' + window.currentUser.id;
+        }
+    }
+
+    function syncStravaNow() {
+        if (!window.currentUser) return;
+        const btn = document.getElementById('strava-sync-btn');
+        if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
+        fetch('/api/strava/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: window.currentUser.id }) })
+            .then(r => r.json()).then(() => fetch('/api/strava/data?user_id=' + window.currentUser.id))
+            .then(r => r.json()).then(data => { if (data.connected) updateStravaDisplay(data); })
+            .catch(err => console.warn('Strava sync error:', err))
+            .finally(() => { if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; } });
+    }
+
+    function checkStravaOAuthResult() {
+        const params = new URLSearchParams(window.location.search);
+        const result = params.get('strava');
+        if (result) {
+            window.history.replaceState({}, '', window.location.pathname);
+            if (result === 'connected') {
+                showWearableToast('Strava connected! Syncing your data...');
+                setTimeout(() => initStravaDashboard(), 2000);
+            } else if (result === 'denied') {
+                alert('Strava connection was cancelled. You can connect anytime from Settings.');
+            } else if (result === 'error') {
+                alert('There was a problem connecting to Strava. Please try again.');
+            }
+        }
+    }
+
+    window.toggleStravaConnection = toggleStravaConnection;
+    window.syncStravaNow = syncStravaNow;
+    window.initStravaDashboard = initStravaDashboard;
+    checkStravaOAuthResult();
+    </script>
+
+    <script>
+    // ===== SHARED WEARABLE HELPERS =====
+
+    function formatTimeAgo(dateStr) {
+        const syncDate = new Date(dateStr);
+        const now = new Date();
+        const diffMins = Math.floor((now - syncDate) / 60000);
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return diffMins + 'm ago';
+        if (diffMins < 1440) return Math.floor(diffMins / 60) + 'h ago';
+        return Math.floor(diffMins / 1440) + 'd ago';
+    }
+
+    function showWearableToast(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#10b981; color:white; padding:14px 24px; border-radius:12px; font-weight:600; z-index:99999; box-shadow:0 4px 12px rgba(0,0,0,0.15); font-size:0.9rem;';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    // Initialize all wearable dashboards on page load
+    function initAllWearableDashboards() {
+        if (typeof initWhoopDashboard === 'function') initWhoopDashboard();
+        if (typeof initOuraDashboard === 'function') initOuraDashboard();
+        if (typeof initStravaDashboard === 'function') initStravaDashboard();
+    }
+
+    // Call after user is loaded (piggyback on Fitbit init timing)
+    if (window.currentUser) {
+        initAllWearableDashboards();
+    } else {
+        // Wait for user to be set, then init
+        const _origInitFitbit = window.initFitbitDashboard;
+        window.initFitbitDashboard = function() {
+            if (_origInitFitbit) _origInitFitbit();
+            initAllWearableDashboards();
+        };
+    }
     </script>
 
     <script>
@@ -8774,6 +9157,165 @@ async function applyAppTheme(themeKey) {
                 </div>
             </div>
             <div id="fitbit-last-sync" style="text-align: right; font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; padding-right: 4px;"></div>
+        </div>
+
+        <!-- WHOOP Activity Card (hidden until connected) -->
+        <div id="whoop-dashboard-card" style="display: none; margin: 20px 0 15px 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#1a1a1a;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    WHOOP
+                </h3>
+                <button onclick="syncWhoopNow()" id="whoop-sync-btn" style="background: none; border: none; color: #1a1a1a; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:#1a1a1a;"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    Sync
+                </button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <!-- Recovery -->
+                <div style="background: white; border-radius: 14px; padding: 16px 14px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="font-size: 1.4rem; margin-bottom: 4px;">💚</div>
+                    <div id="whoop-recovery" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">Recovery</div>
+                </div>
+                <!-- Sleep -->
+                <div style="background: white; border-radius: 14px; padding: 16px 14px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="font-size: 1.4rem; margin-bottom: 4px;">😴</div>
+                    <div id="whoop-sleep" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">Sleep</div>
+                </div>
+                <!-- Resting HR -->
+                <div style="background: white; border-radius: 14px; padding: 16px 14px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="font-size: 1.4rem; margin-bottom: 4px;">❤️</div>
+                    <div id="whoop-resting-hr" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">RHR</div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                <!-- HRV -->
+                <div style="background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="width: 36px; height: 36px; background: #EFF6FF; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">📊</div>
+                    <div>
+                        <div id="whoop-hrv" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">--</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">HRV (ms)</div>
+                    </div>
+                </div>
+                <!-- Strain -->
+                <div style="background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="width: 36px; height: 36px; background: #FFF7ED; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">🔥</div>
+                    <div>
+                        <div id="whoop-strain" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">--</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Strain</div>
+                    </div>
+                </div>
+            </div>
+            <div id="whoop-last-sync" style="text-align: right; font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; padding-right: 4px;"></div>
+        </div>
+
+        <!-- Oura Ring Activity Card (hidden until connected) -->
+        <div id="oura-dashboard-card" style="display: none; margin: 20px 0 15px 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#c4a862;"><circle cx="12" cy="12" r="9" stroke="#c4a862" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="5" stroke="#c4a862" stroke-width="1.5" fill="none"/></svg>
+                    Oura
+                </h3>
+                <button onclick="syncOuraNow()" id="oura-sync-btn" style="background: none; border: none; color: #c4a862; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:#c4a862;"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    Sync
+                </button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <!-- Steps -->
+                <div style="background: white; border-radius: 14px; padding: 16px 14px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="font-size: 1.4rem; margin-bottom: 4px;">👟</div>
+                    <div id="oura-steps" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">Steps</div>
+                </div>
+                <!-- Sleep -->
+                <div style="background: white; border-radius: 14px; padding: 16px 14px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="font-size: 1.4rem; margin-bottom: 4px;">😴</div>
+                    <div id="oura-sleep" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">Sleep</div>
+                </div>
+                <!-- Readiness -->
+                <div style="background: white; border-radius: 14px; padding: 16px 14px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="font-size: 1.4rem; margin-bottom: 4px;">🎯</div>
+                    <div id="oura-readiness" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">Ready</div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                <!-- Sleep Score -->
+                <div style="background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="width: 36px; height: 36px; background: #F0F0FF; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">💤</div>
+                    <div>
+                        <div id="oura-sleep-score" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">--</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Sleep Score</div>
+                    </div>
+                </div>
+                <!-- Calories -->
+                <div style="background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="width: 36px; height: 36px; background: #F0FDF4; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">⚡</div>
+                    <div>
+                        <div id="oura-calories" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">--</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Active Cal</div>
+                    </div>
+                </div>
+            </div>
+            <div id="oura-last-sync" style="text-align: right; font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; padding-right: 4px;"></div>
+        </div>
+
+        <!-- Strava Activity Card (hidden until connected) -->
+        <div id="strava-dashboard-card" style="display: none; margin: 20px 0 15px 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#FC4C02;"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+                    Strava
+                </h3>
+                <button onclick="syncStravaNow()" id="strava-sync-btn" style="background: none; border: none; color: #FC4C02; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:#FC4C02;"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    Sync
+                </button>
+            </div>
+            <div id="strava-latest-activity" style="background: white; border-radius: 14px; padding: 16px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div id="strava-activity-name" style="font-weight: 700; color: var(--text-main);">No recent activity</div>
+                    <div id="strava-activity-type" style="font-size: 0.7rem; background: #FFF4ED; color: #FC4C02; padding: 2px 8px; border-radius: 6px; font-weight: 600;"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                    <div style="text-align: center;">
+                        <div id="strava-distance" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">--</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Distance</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div id="strava-duration" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">--</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Time</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div id="strava-heart-rate" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">--</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Avg HR</div>
+                    </div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                <!-- Calories -->
+                <div style="background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="width: 36px; height: 36px; background: #FFF7ED; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">🔥</div>
+                    <div>
+                        <div id="strava-calories" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">--</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Calories</div>
+                    </div>
+                </div>
+                <!-- Elevation -->
+                <div style="background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="width: 36px; height: 36px; background: #F0FDF4; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">⛰️</div>
+                    <div>
+                        <div id="strava-elevation" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">--</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Elevation</div>
+                    </div>
+                </div>
+            </div>
+            <div id="strava-last-sync" style="text-align: right; font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; padding-right: 4px;"></div>
         </div>
 
         <!-- Live Challenges Section -->
@@ -18104,6 +18646,45 @@ function viewWorkoutHistoryDetail(date) {
                         <div id="fitbit-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync steps, sleep & heart rate</div>
                     </div>
                     <button id="fitbit-connect-btn" onclick="toggleFitbitConnection()" style="padding:8px 16px; border-radius:8px; border:none; background:#00B0B9; color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
+                        Connect
+                    </button>
+                </div>
+                <!-- WHOOP Connection -->
+                <div id="settings-whoop-connect" style="padding:15px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#1a1a1a;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                            WHOOP
+                        </div>
+                        <div id="whoop-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync recovery, strain & sleep</div>
+                    </div>
+                    <button id="whoop-connect-btn" onclick="toggleWhoopConnection()" style="padding:8px 16px; border-radius:8px; border:none; background:#1a1a1a; color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
+                        Connect
+                    </button>
+                </div>
+                <!-- Oura Ring Connection -->
+                <div id="settings-oura-connect" style="padding:15px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#c4a862;"><circle cx="12" cy="12" r="9" stroke="#c4a862" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="5" stroke="#c4a862" stroke-width="1.5" fill="none"/></svg>
+                            Oura Ring
+                        </div>
+                        <div id="oura-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync readiness, sleep & activity</div>
+                    </div>
+                    <button id="oura-connect-btn" onclick="toggleOuraConnection()" style="padding:8px 16px; border-radius:8px; border:none; background:#c4a862; color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
+                        Connect
+                    </button>
+                </div>
+                <!-- Strava Connection -->
+                <div id="settings-strava-connect" style="padding:15px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#FC4C02;"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+                            Strava
+                        </div>
+                        <div id="strava-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync workouts, runs & rides</div>
+                    </div>
+                    <button id="strava-connect-btn" onclick="toggleStravaConnection()" style="padding:8px 16px; border-radius:8px; border:none; background:#FC4C02; color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
                         Connect
                     </button>
                 </div>
