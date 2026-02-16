@@ -8450,15 +8450,50 @@ async function applyAppTheme(themeKey) {
                 return;
             }
 
-            const nextLesson = window._getNextAvailableLesson();
-            if (!nextLesson) {
-                // All lessons completed
-                card.style.display = 'none';
-                doneCard.style.display = 'none';
-                return;
+            // Check if we already picked a daily quiz lesson for today
+            var d2 = new Date();
+            var todayStr = d2.getFullYear() + '-' + String(d2.getMonth()+1).padStart(2,'0') + '-' + String(d2.getDate()).padStart(2,'0');
+            var savedQuizLesson = null;
+            try {
+                var saved = JSON.parse(localStorage.getItem('dailyQuizLessonToday') || 'null');
+                if (saved && saved.date === todayStr && saved.lessonId) {
+                    // Use the saved lesson if it hasn't been completed yet
+                    if (typeof window._getLessonById === 'function') {
+                        var savedLesson = window._getLessonById(saved.lessonId);
+                        if (savedLesson) {
+                            savedQuizLesson = savedLesson;
+                        }
+                    }
+                }
+            } catch (e) { /* ignore parse errors */ }
+
+            var lesson, unit, module;
+            if (savedQuizLesson) {
+                // Check if the saved lesson was already completed (e.g., via regular learning path)
+                if (typeof window._isLessonCompleted === 'function' && window._isLessonCompleted(savedQuizLesson.lesson.id)) {
+                    // Lesson was completed outside daily quiz flow — treat daily quiz as done
+                    card.style.display = 'none';
+                    doneCard.style.display = 'none';
+                    return;
+                }
+                lesson = savedQuizLesson.lesson;
+                unit = savedQuizLesson.unit;
+                module = savedQuizLesson.module;
+            } else {
+                const nextLesson = window._getNextAvailableLesson();
+                if (!nextLesson) {
+                    // All lessons completed
+                    card.style.display = 'none';
+                    doneCard.style.display = 'none';
+                    return;
+                }
+                lesson = nextLesson.lesson;
+                unit = nextLesson.unit;
+                module = nextLesson.module;
+                // Save today's daily quiz lesson so it stays consistent
+                localStorage.setItem('dailyQuizLessonToday', JSON.stringify({ date: todayStr, lessonId: lesson.id }));
             }
 
-            const { lesson, unit, module } = nextLesson;
             const moduleEmojis = { body: '💪', fuel: '🥗', mind: '🧠', longevity: '⏳', workouts: '🏋️', hormones: '🧪' };
 
             // Populate card content
@@ -8472,11 +8507,20 @@ async function applyAppTheme(themeKey) {
                     const learningNav = document.querySelectorAll('.nav-item')[3];
                     switchAppTab('learning', learningNav);
                     // Wait for learning to init, then start the daily quiz
-                    setTimeout(function() {
-                        if (typeof window.startDailyQuiz === 'function') {
+                    // Use polling instead of fixed timeout to handle slow DB calls
+                    var attempts = 0;
+                    var waitForInit = setInterval(function() {
+                        attempts++;
+                        if (typeof window.startDailyQuiz === 'function' && !window._learningInitInProgress) {
+                            clearInterval(waitForInit);
                             window.startDailyQuiz(lesson.id);
+                        } else if (attempts > 20) { // 4 second max wait
+                            clearInterval(waitForInit);
+                            if (typeof window.startDailyQuiz === 'function') {
+                                window.startDailyQuiz(lesson.id);
+                            }
                         }
-                    }, 500);
+                    }, 200);
                 }
             };
 
