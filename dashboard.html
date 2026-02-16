@@ -7962,6 +7962,48 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
+    <!-- Weekly Progress Photo Card (shows on Mondays) -->
+    <div id="weekly-progress-photo-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden; cursor: pointer;">
+        <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+        <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+        <input type="file" id="progress-photo-input" accept="image/*" capture="environment" style="display:none;">
+        <div style="position: relative; z-index: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div>
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; font-weight: 700;">Weekly Progress Photo</h3>
+                    <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Snap a pic to track your transformation!</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
+                    +15 XP
+                </div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px;">
+                <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">📸</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 0.95rem;">Take your weekly photo</div>
+                    <div style="font-size: 0.8rem; opacity: 0.85; margin-top: 2px;">Every Monday - track your journey</div>
+                </div>
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: rgba(255,255,255,0.7);"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Progress Photo Upload Loading -->
+    <div id="weekly-progress-photo-uploading" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); border-radius: 16px; padding: 20px; color: white; text-align: center;">
+        <div style="font-size: 2rem; margin-bottom: 8px;">📸</div>
+        <p style="margin: 0; font-weight: 600;">Uploading your progress photo...</p>
+    </div>
+
+    <!-- Weekly Progress Photo Completed Card -->
+    <div id="weekly-progress-photo-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
+        <button onclick="dismissProgressPhotoDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
+        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
+        <div style="flex: 1;">
+            <div style="font-weight: 700; font-size: 1rem;">Progress Photo Saved!</div>
+            <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+15 XP earned. See you next Monday!</div>
+        </div>
+    </div>
+
     <!-- Daily Meal Tip Card -->
     <div id="daily-meal-tip-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 16px; padding: 18px 20px; color: white; position: relative; overflow: hidden; cursor: pointer;" onclick="openWeeklyTrendsPage()">
         <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
@@ -8199,6 +8241,7 @@ async function applyAppTheme(themeKey) {
                 if (typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
                 if (typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
                 if (typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
+                if (typeof checkAndShowProgressPhotoCard === 'function') checkAndShowProgressPhotoCard();
                 if (typeof checkAndShowWorkoutTrendCard === 'function') checkAndShowWorkoutTrendCard();
                 if (typeof initFitbitDashboard === 'function') initFitbitDashboard();
                 if (typeof initWhoopDashboard === 'function') initWhoopDashboard();
@@ -8945,6 +8988,168 @@ async function applyAppTheme(themeKey) {
             }, 500);
         }
     };
+    </script>
+
+    <script>
+    // ===== WEEKLY PROGRESS PHOTO CARD LOGIC =====
+
+    /**
+     * Check if it's Monday and user hasn't uploaded a progress photo this week.
+     * Shows the card only on Mondays (or any day the user hasn't done it that week).
+     */
+    async function checkAndShowProgressPhotoCard() {
+        if (!window.currentUser) return;
+        if (window._onboardingWizardPending) return;
+        const wizard = document.getElementById('onboarding-wizard');
+        if (wizard && wizard.style.display !== 'none') return;
+
+        const card = document.getElementById('weekly-progress-photo-card');
+        const doneCard = document.getElementById('weekly-progress-photo-done-card');
+        const uploadingCard = document.getElementById('weekly-progress-photo-uploading');
+        if (!card || !doneCard) return;
+
+        try {
+            // Only show on Mondays (day 1)
+            const today = new Date();
+            if (today.getDay() !== 1) {
+                card.style.display = 'none';
+                doneCard.style.display = 'none';
+                if (uploadingCard) uploadingCard.style.display = 'none';
+                return;
+            }
+
+            // Check if user already uploaded this week
+            const thisWeeksPhoto = await db.progressPhotos.getThisWeeksPhoto(window.currentUser.id);
+
+            if (thisWeeksPhoto) {
+                // Already done this week
+                card.style.display = 'none';
+                if (uploadingCard) uploadingCard.style.display = 'none';
+                var d = new Date();
+                var todayStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+                doneCard.style.display = localStorage.getItem('progressPhotoDoneCardDismissedDate') === todayStr ? 'none' : 'flex';
+            } else {
+                // Show the upload card
+                card.style.display = 'block';
+                doneCard.style.display = 'none';
+                if (uploadingCard) uploadingCard.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error checking progress photo status:', error);
+        }
+    }
+
+    /**
+     * Handle progress photo file selection and upload
+     */
+    async function handleProgressPhotoSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const card = document.getElementById('weekly-progress-photo-card');
+        const uploadingCard = document.getElementById('weekly-progress-photo-uploading');
+        const doneCard = document.getElementById('weekly-progress-photo-done-card');
+
+        try {
+            // Show uploading state
+            if (card) card.style.display = 'none';
+            if (uploadingCard) uploadingCard.style.display = 'block';
+
+            const user = await window.supabaseClient.auth.getUser();
+            const userId = user?.data?.user?.id;
+
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
+
+            // Upload photo to B2
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('userId', userId);
+
+            const uploadResponse = await fetch('/api/upload-progress-photo', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!uploadResponse.ok) {
+                const errorData = await uploadResponse.json();
+                throw new Error(errorData.error || 'Failed to upload photo');
+            }
+
+            const uploadData = await uploadResponse.json();
+
+            // Save to database
+            await db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
+
+            // Award 15 XP (add to lifetime_points for leveling)
+            try {
+                const { data: currentPoints } = await supabaseClient
+                    .from('user_points')
+                    .select('lifetime_points')
+                    .eq('user_id', userId)
+                    .maybeSingle();
+
+                if (currentPoints) {
+                    await supabaseClient
+                        .from('user_points')
+                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 15 })
+                        .eq('user_id', userId);
+                } else {
+                    await supabaseClient
+                        .from('user_points')
+                        .insert({ user_id: userId, lifetime_points: 15, current_points: 0 });
+                }
+
+                if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+            } catch (xpError) {
+                console.log('XP award skipped:', xpError);
+            }
+
+            // Show success - transition to done card
+            if (uploadingCard) uploadingCard.style.display = 'none';
+            if (doneCard) doneCard.style.display = 'flex';
+
+            // Refresh points display if visible
+            if (typeof refreshPointsDisplay === 'function') {
+                refreshPointsDisplay();
+            }
+
+            console.log('Progress photo uploaded successfully!');
+
+        } catch (error) {
+            console.error('Error uploading progress photo:', error);
+            if (uploadingCard) uploadingCard.style.display = 'none';
+            if (card) card.style.display = 'block';
+            alert('Failed to upload progress photo. Please try again.');
+        }
+
+        // Reset file input so same file can be re-selected
+        event.target.value = '';
+    }
+
+    function dismissProgressPhotoDoneCard() {
+        var d = new Date();
+        var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        localStorage.setItem('progressPhotoDoneCardDismissedDate', today);
+        document.getElementById('weekly-progress-photo-done-card').style.display = 'none';
+    }
+
+    // Set up event listeners
+    (function() {
+        // Card click triggers file input
+        var photoCard = document.getElementById('weekly-progress-photo-card');
+        var photoInput = document.getElementById('progress-photo-input');
+        if (photoCard && photoInput) {
+            photoCard.onclick = function() { photoInput.click(); };
+            photoInput.onchange = handleProgressPhotoSelect;
+        }
+    })();
+
+    // Make functions globally available
+    window.dismissProgressPhotoDoneCard = dismissProgressPhotoDoneCard;
+    window.checkAndShowProgressPhotoCard = checkAndShowProgressPhotoCard;
     </script>
 
     <script>
@@ -10406,6 +10611,7 @@ async function applyAppTheme(themeKey) {
             if(typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
             if(typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
             if(typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
+            if(typeof checkAndShowProgressPhotoCard === 'function') checkAndShowProgressPhotoCard();
             if(typeof checkAndShowWorkoutTrendCard === 'function') checkAndShowWorkoutTrendCard();
             if(typeof initFitbitDashboard === 'function') initFitbitDashboard();
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
@@ -18625,6 +18831,15 @@ function viewWorkoutHistoryDetail(date) {
                     </div>
                 </div>
 
+                <!-- Progress Photos Timeline -->
+                <div style="padding: 20px 20px 10px 20px;">
+                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">
+                        <span style="color: #ec4899;">📸</span> Progress Photos
+                    </h3>
+                    <div id="progress-photos-container" style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow);">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
 
 
             </div>
@@ -20750,6 +20965,9 @@ function _switchAppTabReal(tabName, btn) {
         }
         if (typeof checkAndShowMealTipCard === 'function') {
             checkAndShowMealTipCard();
+        }
+        if (typeof checkAndShowProgressPhotoCard === 'function') {
+            checkAndShowProgressPhotoCard();
         }
         if (typeof checkAndShowWorkoutTrendCard === 'function') {
             checkAndShowWorkoutTrendCard();
@@ -42360,9 +42578,19 @@ async function initProgressView() {
             console.warn('Failed to load weigh-ins:', e);
         }
 
+        // Load progress photos
+        let progressPhotos = [];
+        try {
+            progressPhotos = await db.progressPhotos.getAll(user.id, 52);
+            console.log('Progress photos:', progressPhotos?.length || 0);
+        } catch (e) {
+            console.warn('Failed to load progress photos:', e);
+        }
+
         // Render sections
         renderPersonalBests(personalBests, recentPBs);
         renderBodyWeightGraph(weighIns);
+        renderProgressPhotosTimeline(progressPhotos);
         // renderCheckins(checkins); // UI removed in redesign
         await renderExerciseProgress(user.id, recentExercises);
 
@@ -42570,6 +42798,103 @@ function renderBodyWeightGraph(weighIns) {
 
     container.innerHTML = svg + stats;
 }
+
+// Render Progress Photos Timeline - grid of weekly progress photos
+function renderProgressPhotosTimeline(photos) {
+    const container = document.getElementById('progress-photos-container');
+    if (!container) return;
+
+    if (!photos || photos.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 30px 20px;"><div style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;">📸</div><div style="font-size: 0.9rem;">Upload your first progress photo on Monday to start tracking your transformation!</div></div>';
+        return;
+    }
+
+    // Build a grid of photo thumbnails with dates
+    let html = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">';
+
+    photos.forEach(function(photo, index) {
+        const weekDate = new Date(photo.photo_week + 'T00:00:00');
+        const dateLabel = weekDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const yearLabel = weekDate.getFullYear();
+
+        html += '<div onclick="openProgressPhotoModal(' + index + ')" style="cursor: pointer; position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 3/4; background: #f1f5f9;">';
+        html += '<img src="' + photo.photo_url + '" alt="Progress photo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">';
+        html += '<div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); padding: 8px 6px 6px; color: white;">';
+        html += '<div style="font-size: 0.7rem; font-weight: 600;">' + dateLabel + '</div>';
+        html += '<div style="font-size: 0.6rem; opacity: 0.8;">' + yearLabel + '</div>';
+        html += '</div></div>';
+    });
+
+    html += '</div>';
+
+    // Stats row
+    html += '<div style="display: flex; justify-content: center; gap: 20px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #f1f5f9;">';
+    html += '<div style="text-align: center;">';
+    html += '<div style="font-size: 1.3rem; font-weight: 700; color: var(--primary);">' + photos.length + '</div>';
+    html += '<div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Photos</div>';
+    html += '</div>';
+
+    // Calculate weeks span
+    if (photos.length >= 2) {
+        var firstDate = new Date(photos[photos.length - 1].photo_week);
+        var lastDate = new Date(photos[0].photo_week);
+        var weeksDiff = Math.round((lastDate - firstDate) / (7 * 24 * 60 * 60 * 1000));
+        html += '<div style="text-align: center;">';
+        html += '<div style="font-size: 1.3rem; font-weight: 700; color: var(--primary);">' + weeksDiff + '</div>';
+        html += '<div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Weeks tracked</div>';
+        html += '</div>';
+    }
+
+    html += '</div>';
+
+    container.innerHTML = html;
+
+    // Store photos for modal
+    window._progressPhotosData = photos;
+}
+
+// Full-screen modal for viewing a single progress photo
+function openProgressPhotoModal(index) {
+    var photos = window._progressPhotosData;
+    if (!photos || !photos[index]) return;
+    var photo = photos[index];
+
+    var weekDate = new Date(photo.photo_week + 'T00:00:00');
+    var dateLabel = weekDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+    // Create or reuse modal
+    var modal = document.getElementById('progress-photo-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'progress-photo-modal';
+        modal.style.cssText = 'display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:200001; align-items:center; justify-content:center; flex-direction:column; padding:20px;';
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = '<button onclick="closeProgressPhotoModal()" style="position:absolute; top:15px; right:15px; background:rgba(255,255,255,0.2); border:none; color:white; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.2rem; z-index:2;">&#x2715;</button>'
+        + '<img src="' + photo.photo_url + '" style="max-width:100%; max-height:75vh; object-fit:contain; border-radius:12px;">'
+        + '<div style="color:white; text-align:center; margin-top:15px;">'
+        + '<div style="font-weight:700; font-size:1rem;">' + dateLabel + '</div>'
+        + '<div style="font-size:0.85rem; opacity:0.7; margin-top:4px;">Week ' + (photos.length - index) + ' of ' + photos.length + '</div>'
+        + '</div>';
+
+    // Navigation arrows
+    if (index > 0) {
+        modal.innerHTML += '<button onclick="openProgressPhotoModal(' + (index - 1) + ')" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.2); border:none; color:white; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.2rem;">&#x276F;</button>';
+    }
+    if (index < photos.length - 1) {
+        modal.innerHTML += '<button onclick="openProgressPhotoModal(' + (index + 1) + ')" style="position:absolute; left:15px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.2); border:none; color:white; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.2rem;">&#x276E;</button>';
+    }
+
+    modal.style.display = 'flex';
+}
+
+function closeProgressPhotoModal() {
+    var modal = document.getElementById('progress-photo-modal');
+    if (modal) modal.style.display = 'none';
+}
+window.openProgressPhotoModal = openProgressPhotoModal;
+window.closeProgressPhotoModal = closeProgressPhotoModal;
 
 // Render Personal Bests section
 function renderPersonalBests(personalBests, recentPBs) {
