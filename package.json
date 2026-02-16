@@ -1,13 +1,23 @@
 {
   "name": "plant-based-balance",
   "version": "1.0.0",
+  "scripts": {
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android",
+    "cap:build": "npx cap sync android && cd android && ./gradlew assembleDebug",
+    "cap:build:release": "npx cap sync android && cd android && ./gradlew assembleRelease"
+  },
   "dependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0",
     "@google/generative-ai": "^0.21.0",
     "@supabase/supabase-js": "^2.94.1",
     "stripe": "^14.21.0",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "typescript": "^5.9.3"
   }
 }

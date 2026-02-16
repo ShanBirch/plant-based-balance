@@ -2,4 +2,13 @@ assets/*.glb
 !assets/characters/baby.glb
 node_modules/
 .env
+.env.*
 .DS_Store
+
+# Capacitor Android build artifacts
+android/app/build/
+android/.gradle/
+android/build/
+android/local.properties
+*.apk
+*.aab
