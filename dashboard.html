@@ -49307,7 +49307,13 @@ function renderMicronutrientUI(dailyAvg, mealCount) {
         { key: 'calcium', name: 'Calcium', rda: 1000, unit: 'mg', icon: '&#x1F9B4;', barColor: '#22c55e' },
         { key: 'b12', name: 'B12', rda: b12Rda, unit: 'mcg', icon: '&#x1F9EC;', barColor: '#6366f1' },
         { key: 'omega3', name: 'Omega-3', rda: 1.6, unit: 'g', icon: '&#x1F41F;', barColor: '#0ea5e9' },
-        { key: 'zinc', name: 'Zinc', rda: 11, unit: 'mg', icon: '&#x1F6E1;', barColor: '#a855f7' }
+        { key: 'zinc', name: 'Zinc', rda: 11, unit: 'mg', icon: '&#x1F6E1;', barColor: '#a855f7' },
+        { key: 'vitamin_d', name: 'Vitamin D', rda: 15, unit: 'mcg', icon: '&#x2600;', barColor: '#eab308' },
+        { key: 'iodine', name: 'Iodine', rda: 150, unit: 'mcg', icon: '&#x1F30A;', barColor: '#14b8a6' },
+        { key: 'selenium', name: 'Selenium', rda: 55, unit: 'mcg', icon: '&#x1FAA8;', barColor: '#78716c' },
+        { key: 'folate', name: 'Folate', rda: 400, unit: 'mcg', icon: '&#x1F96C;', barColor: '#16a34a' },
+        { key: 'potassium', name: 'Potassium', rda: 2600, unit: 'mg', icon: '&#x1F34C;', barColor: '#d97706' },
+        { key: 'magnesium', name: 'Magnesium', rda: 400, unit: 'mg', icon: '&#x1FAB6;', barColor: '#8b5cf6' }
     ];
 
     if (mealCount === 0) {
@@ -49553,7 +49559,13 @@ function analyzeMealPatterns(meals) {
         calcium: { rda: 1000, unit: 'mg', name: 'Calcium', keys: ['calcium_mg', 'calcium'] },
         b12: { rda: 2.4, unit: 'mcg', name: 'B12', keys: ['b12_mcg', 'b12'] },
         omega3: { rda: 1.6, unit: 'g', name: 'Omega-3', keys: ['omega3_g', 'omega3'] },
-        zinc: { rda: 11, unit: 'mg', name: 'Zinc', keys: ['zinc_mg', 'zinc'] }
+        zinc: { rda: 11, unit: 'mg', name: 'Zinc', keys: ['zinc_mg', 'zinc'] },
+        vitamin_d: { rda: 15, unit: 'mcg', name: 'Vitamin D', keys: ['vitamin_d_mcg', 'vitamin_d'] },
+        iodine: { rda: 150, unit: 'mcg', name: 'Iodine', keys: ['iodine_mcg', 'iodine'] },
+        selenium: { rda: 55, unit: 'mcg', name: 'Selenium', keys: ['selenium_mcg', 'selenium'] },
+        folate: { rda: 400, unit: 'mcg', name: 'Folate', keys: ['folate_mcg', 'folate'] },
+        potassium: { rda: 2600, unit: 'mg', name: 'Potassium', keys: ['potassium_mg', 'potassium'] },
+        magnesium: { rda: 400, unit: 'mg', name: 'Magnesium', keys: ['magnesium_mg', 'magnesium'] }
     };
 
     // Aggregate weekly micronutrient totals
@@ -49585,12 +49597,20 @@ function analyzeMealPatterns(meals) {
         iron: 'Your iron is low \u2014 consider <strong>Iron Bisglycinate</strong> (18-25mg every other day) paired with Vitamin C for absorption.',
         calcium: 'Consider a <strong>Calcium Citrate + D3</strong> supplement (500mg Ca + 2000IU D3) for bone density protection.',
         zinc: 'Your zinc intake is low \u2014 consider a <strong>Zinc supplement</strong> (15mg every other day). Supports immunity and thyroid function.',
-        vitamin_c: 'Your Vitamin C is low. Add citrus fruits, bell peppers, or strawberries \u2014 also boosts iron absorption.'
+        vitamin_c: 'Your Vitamin C is low. Add citrus fruits, bell peppers, or strawberries \u2014 also boosts iron absorption.',
+        vitamin_d: 'Your Vitamin D is low \u2014 consider a <strong>Vitamin D3 supplement</strong> (2000 IU daily). Critical for calcium absorption and immune function, especially with limited sun exposure.',
+        iodine: 'Your iodine is low \u2014 consider using <strong>iodized salt</strong> or a <strong>kelp supplement</strong> (150mcg daily). Supports thyroid function and metabolism.',
+        selenium: 'Your selenium is low \u2014 try eating <strong>1-2 Brazil nuts daily</strong> (the richest plant source). Supports antioxidant defense and thyroid health.',
+        folate: 'Your folate is low \u2014 add more <strong>leafy greens, lentils, and chickpeas</strong>. Essential for cell division and DNA synthesis.',
+        potassium: 'Your potassium is low \u2014 add more <strong>bananas, sweet potatoes, and beans</strong>. Important for blood pressure regulation and muscle function.',
+        magnesium: 'Your magnesium is low \u2014 consider a <strong>Magnesium Glycinate</strong> supplement (200-400mg daily) or add more pumpkin seeds, spinach, and dark chocolate.'
     };
 
     const microIcons = {
         omega3: '&#x1F41F;', b12: '&#x1F9EC;', iron: '&#x1FA78;',
-        calcium: '&#x1F9B4;', zinc: '&#x1F6E1;', vitamin_c: '&#x1F34A;'
+        calcium: '&#x1F9B4;', zinc: '&#x1F6E1;', vitamin_c: '&#x1F34A;',
+        vitamin_d: '&#x2600;', iodine: '&#x1F30A;', selenium: '&#x1FAA8;',
+        folate: '&#x1F96C;', potassium: '&#x1F34C;', magnesium: '&#x1FAB6;'
     };
 
     Object.keys(microRdas).forEach(k => {
@@ -49618,7 +49638,7 @@ function analyzeMealPatterns(meals) {
         }
     });
 
-    return insights.slice(0, 8); // Max 8 insights (was 4, expanded for micro/macro)
+    return insights.slice(0, 12); // Max 12 insights (expanded for additional micronutrients)
 }
 
 function renderMealPatterns(insights) {
