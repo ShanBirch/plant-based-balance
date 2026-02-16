@@ -48601,6 +48601,11 @@ function openMovementWeeklyTrendsPage() {
     const page = document.getElementById('movement-weekly-trends-page');
     if (!page) return;
 
+    // Ensure overlay is a direct child of body so it's never hidden by a parent container
+    if (page.parentElement !== document.body) {
+        document.body.appendChild(page);
+    }
+
     page.classList.add('active');
     page.style.transform = 'translateX(100%)';
     page.style.transition = 'transform 0.3s ease-out';
