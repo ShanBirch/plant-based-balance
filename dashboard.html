@@ -9472,16 +9472,6 @@ async function applyAppTheme(themeKey) {
                             <circle cx="11" cy="11" r="2"></circle>
                         </svg>
                     </button>
-                    <button class="camera-btn-widget" onclick="openBarcodeScanner('widget')" title="Scan barcode">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                            <line x1="6" y1="8" x2="6" y2="16"></line>
-                            <line x1="9" y1="8" x2="9" y2="16"></line>
-                            <line x1="12" y1="8" x2="12" y2="16"></line>
-                            <line x1="15" y1="8" x2="15" y2="16"></line>
-                            <line x1="18" y1="8" x2="18" y2="16"></line>
-                        </svg>
-                    </button>
                     <button class="camera-btn-widget" onclick="openRecentMealsModal()" title="Recent meals">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
@@ -9901,16 +9891,6 @@ async function applyAppTheme(themeKey) {
                             <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
                             <path d="M2 2l7.586 7.586"></path>
                             <circle cx="11" cy="11" r="2"></circle>
-                        </svg>
-                    </button>
-                    <button class="meal-icon-btn" onclick="openBarcodeScanner('tracker')" title="Scan barcode">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                            <line x1="6" y1="8" x2="6" y2="16"></line>
-                            <line x1="9" y1="8" x2="9" y2="16"></line>
-                            <line x1="12" y1="8" x2="12" y2="16"></line>
-                            <line x1="15" y1="8" x2="15" y2="16"></line>
-                            <line x1="18" y1="8" x2="18" y2="16"></line>
                         </svg>
                     </button>
                     <button class="meal-icon-btn" onclick="openRecentMealsModal()" title="Recent meals">
@@ -42212,19 +42192,63 @@ window.submitWeighInModal = submitWeighInModal;
     </button>
 </div>
 
-<!-- Barcode Scanner Modal -->
-<div id="barcode-scanner-modal" style="display:none; position:fixed; inset:0; background:#000; z-index:10013; flex-direction:column;">
-    <!-- Header -->
-    <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; background:rgba(0,0,0,0.8); z-index:2;">
-        <h3 style="margin:0; color:#fff; font-size:1.1rem;">Scan Barcode</h3>
-        <button onclick="closeBarcodeScanner()" style="background:rgba(255,255,255,0.15); border:none; color:white; width:36px; height:36px; border-radius:50%; font-size:1.3rem; cursor:pointer;">&times;</button>
+<!-- Unified Camera Modal (Photo + Barcode) -->
+<div id="unified-camera-modal" style="display:none; position:fixed; inset:0; background:#000; z-index:10013; flex-direction:column;">
+    <!-- Close button -->
+    <button onclick="closeUnifiedCamera()" style="position:absolute; top:16px; right:16px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:5; backdrop-filter:blur(10px);">&times;</button>
+    <!-- Barcode detected banner (hidden by default) -->
+    <div id="barcode-detected-banner" style="display:none; position:absolute; top:0; left:0; right:0; z-index:4; padding:14px 20px; background:linear-gradient(135deg, #22c55e, #16a34a); color:#fff; text-align:center; animation:fadeInUp 0.3s ease-out;">
+        <div style="font-weight:700; font-size:1rem;" id="barcode-detected-name">Product found!</div>
+        <div style="font-size:0.85rem; opacity:0.9; margin-top:2px;" id="barcode-detected-detail"></div>
+        <button onclick="showBarcodeResult()" style="margin-top:8px; background:rgba(255,255,255,0.25); color:#fff; border:none; border-radius:20px; padding:8px 24px; font-weight:600; font-size:0.9rem; cursor:pointer; backdrop-filter:blur(5px);">View & Log Product</button>
     </div>
-    <!-- Scanner viewport -->
-    <div id="barcode-reader" style="flex:1; width:100%; background:#000;"></div>
-    <!-- Manual entry fallback -->
-    <div style="padding:16px 20px; background:rgba(0,0,0,0.8); display:flex; gap:10px; align-items:center;">
-        <input type="text" id="barcode-manual-input" inputmode="numeric" pattern="[0-9]*" placeholder="Or type barcode number..." style="flex:1; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:12px; color:#fff; padding:12px 16px; font-size:1rem; font-family:inherit; outline:none;" />
-        <button onclick="lookupManualBarcode()" style="background:var(--primary); color:#fff; border:none; border-radius:12px; padding:12px 20px; font-weight:600; cursor:pointer; white-space:nowrap;">Look Up</button>
+    <!-- Live camera feed -->
+    <video id="unified-camera-video" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover;"></video>
+    <!-- Hidden canvas for photo capture -->
+    <canvas id="unified-camera-canvas" style="display:none;"></canvas>
+    <!-- Hidden element for html5-qrcode barcode scanning -->
+    <div id="barcode-reader" style="position:absolute; top:0; left:0; width:1px; height:1px; overflow:hidden; opacity:0;"></div>
+    <!-- Bottom controls -->
+    <div style="position:absolute; bottom:0; left:0; right:0; z-index:3; padding:20px; background:linear-gradient(transparent, rgba(0,0,0,0.8) 40%);">
+        <!-- Food description input -->
+        <div style="margin-bottom:14px;">
+            <input type="text" id="unified-camera-description" placeholder="What is this? (optional)" style="width:100%; max-width:500px; margin:0 auto; display:block; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); border-radius:15px; color:white; padding:12px 18px; font-size:0.95rem; backdrop-filter:blur(10px); font-family:inherit; outline:none; box-sizing:border-box;" />
+        </div>
+        <!-- Capture + barcode manual row -->
+        <div style="display:flex; align-items:center; justify-content:center; gap:16px;">
+            <!-- Manual barcode button -->
+            <button onclick="showManualBarcodeEntry()" id="manual-barcode-btn" style="background:rgba(255,255,255,0.15); border:none; color:#fff; width:50px; height:50px; border-radius:50%; cursor:pointer; backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center;" title="Type barcode">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <line x1="6" y1="8" x2="6" y2="16"></line>
+                    <line x1="10" y1="8" x2="10" y2="16"></line>
+                    <line x1="14" y1="8" x2="14" y2="16"></line>
+                    <line x1="18" y1="8" x2="18" y2="16"></line>
+                </svg>
+            </button>
+            <!-- Capture photo button -->
+            <button onclick="captureUnifiedPhoto()" style="width:72px; height:72px; border-radius:50%; border:4px solid white; background:rgba(255,255,255,0.2); cursor:pointer; backdrop-filter:blur(10px); position:relative; transition:transform 0.15s;" id="unified-capture-btn">
+                <div style="width:56px; height:56px; border-radius:50%; background:white; margin:auto; transition:transform 0.15s;"></div>
+            </button>
+            <!-- Flip camera button -->
+            <button onclick="flipUnifiedCamera()" style="background:rgba(255,255,255,0.15); border:none; color:#fff; width:50px; height:50px; border-radius:50%; cursor:pointer; backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center;" title="Flip camera">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 16V7a2 2 0 00-2-2H6"></path>
+                    <polyline points="14 5 20 5 20 11"></polyline>
+                    <path d="M4 8v9a2 2 0 002 2h12"></path>
+                    <polyline points="10 19 4 19 4 13"></polyline>
+                </svg>
+            </button>
+        </div>
+        <!-- Manual barcode input (hidden by default) -->
+        <div id="manual-barcode-row" style="display:none; margin-top:12px; gap:10px; align-items:center;">
+            <input type="text" id="barcode-manual-input" inputmode="numeric" pattern="[0-9]*" placeholder="Enter barcode number..." style="flex:1; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); border-radius:12px; color:#fff; padding:12px 16px; font-size:1rem; font-family:inherit; outline:none;" />
+            <button onclick="lookupManualBarcode()" style="background:var(--primary); color:#fff; border:none; border-radius:12px; padding:12px 20px; font-weight:600; cursor:pointer; white-space:nowrap;">Look Up</button>
+        </div>
+        <!-- Scanning indicator -->
+        <div style="text-align:center; margin-top:10px;">
+            <span id="barcode-scan-status" style="color:rgba(255,255,255,0.5); font-size:0.8rem;">Scanning for barcodes automatically...</span>
+        </div>
     </div>
 </div>
 
@@ -48236,67 +48260,11 @@ async function saveMealReminderSettings() {
     }
 }
 
-// Open native camera for meal photos (called after selecting photo method)
+// Open unified camera for meal photos + barcode scanning
 function openMealCameraDirect(source) {
     console.log('openMealCameraDirect called from:', source);
     mealCameraSource = source || 'widget';
-
-    // Create file input to trigger native camera
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*';
-    fileInput.capture = 'environment';
-    fileInput.style.display = 'none';
-
-    let hasProcessedFile = false;
-
-    fileInput.onchange = function(e) {
-        if (hasProcessedFile) return;
-        hasProcessedFile = true;
-
-        const file = e.target.files[0];
-        if (!file) {
-            cleanup();
-            return;
-        }
-
-        if (!file.type.startsWith('image/')) {
-            alert('Invalid file type. Please take a photo.');
-            cleanup();
-            return;
-        }
-
-        capturedMealFile = file;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            showMealPhotoPreview(e.target.result);
-        };
-        reader.onerror = function() {
-            alert('Failed to load photo. Please try again.');
-            cleanup();
-        };
-        reader.readAsDataURL(file);
-
-        setTimeout(cleanup, 500);
-    };
-
-    function cleanup() {
-        try {
-            if (fileInput && fileInput.parentNode) {
-                fileInput.parentNode.removeChild(fileInput);
-            }
-        } catch (e) {}
-    }
-
-    fileInput.addEventListener('cancel', cleanup);
-    setTimeout(() => { if (!hasProcessedFile) cleanup(); }, 120000);
-
-    document.body.appendChild(fileInput);
-    setTimeout(() => {
-        try { fileInput.click(); }
-        catch (e) { alert('Camera unavailable.'); cleanup(); }
-    }, 100);
+    openUnifiedCamera();
 }
 
 // Keep original function name for backwards compatibility but redirect to new modal
@@ -52725,101 +52693,147 @@ function showMealAnalysisError(message) {
 }
 
 // ==========================================
-// BARCODE SCANNER
+// UNIFIED CAMERA (Photo + Barcode Scanner)
 // ==========================================
 
-let barcodeScanner = null;
+let unifiedCameraStream = null;
+let unifiedFacingMode = 'environment';
+let barcodeScanInterval = null;
+let lastBarcodeDetected = null;
 let barcodeProductData = null;
 let barcodeServings = 1;
 
-function openBarcodeScanner(source) {
-    mealCameraSource = source || 'widget';
-    const modal = document.getElementById('barcode-scanner-modal');
+async function openUnifiedCamera() {
+    const modal = document.getElementById('unified-camera-modal');
     if (!modal) return;
+
+    // Reset state
+    lastBarcodeDetected = null;
+    document.getElementById('barcode-detected-banner').style.display = 'none';
+    document.getElementById('unified-camera-description').value = '';
+    document.getElementById('manual-barcode-row').style.display = 'none';
+    document.getElementById('barcode-scan-status').textContent = 'Scanning for barcodes automatically...';
+
     modal.style.display = 'flex';
-    document.getElementById('barcode-manual-input').value = '';
-    startBarcodeScanner();
+    await startUnifiedCamera();
 }
 
-function closeBarcodeScanner() {
-    stopBarcodeScanner();
-    const modal = document.getElementById('barcode-scanner-modal');
+function closeUnifiedCamera() {
+    stopUnifiedCamera();
+    const modal = document.getElementById('unified-camera-modal');
     if (modal) modal.style.display = 'none';
 }
 
-async function startBarcodeScanner() {
-    if (typeof Html5Qrcode === 'undefined') {
-        console.error('html5-qrcode library not loaded');
-        showToast('Barcode scanner failed to load. Use manual entry.', 'error');
-        return;
-    }
-
+async function startUnifiedCamera() {
+    stopUnifiedCamera();
     try {
-        stopBarcodeScanner();
-        barcodeScanner = new Html5Qrcode('barcode-reader');
+        unifiedCameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: unifiedFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+            audio: false
+        });
+        const video = document.getElementById('unified-camera-video');
+        video.srcObject = unifiedCameraStream;
+        await video.play();
 
-        await barcodeScanner.start(
-            { facingMode: 'environment' },
-            {
-                fps: 10,
-                qrbox: { width: 280, height: 160 },
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.EAN_8,
-                    Html5QrcodeSupportedFormats.UPC_A,
-                    Html5QrcodeSupportedFormats.UPC_E,
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39
-                ]
-            },
-            onBarcodeScanned,
-            () => {} // ignore scan failures
-        );
+        // Start background barcode scanning on the live video frames
+        startBarcodeScanLoop(video);
     } catch (err) {
-        console.error('Failed to start barcode scanner:', err);
-        showToast('Could not access camera. Try typing the barcode instead.', 'warning');
+        console.error('Failed to access camera:', err);
+        showToast('Could not access camera. Check permissions.', 'error');
     }
 }
 
-function stopBarcodeScanner() {
-    if (barcodeScanner) {
-        try {
-            barcodeScanner.stop().catch(() => {});
-            barcodeScanner.clear();
-        } catch (e) {}
-        barcodeScanner = null;
+function stopUnifiedCamera() {
+    stopBarcodeScanLoop();
+    if (unifiedCameraStream) {
+        unifiedCameraStream.getTracks().forEach(t => t.stop());
+        unifiedCameraStream = null;
     }
+    const video = document.getElementById('unified-camera-video');
+    if (video) video.srcObject = null;
 }
 
-async function onBarcodeScanned(decodedText) {
-    // Stop scanner immediately to prevent multiple reads
-    stopBarcodeScanner();
-    showToast('Barcode detected! Looking up product...', 'info');
-    await lookupBarcode(decodedText.trim());
+async function flipUnifiedCamera() {
+    unifiedFacingMode = unifiedFacingMode === 'environment' ? 'user' : 'environment';
+    await startUnifiedCamera();
 }
 
-function lookupManualBarcode() {
-    const input = document.getElementById('barcode-manual-input');
-    const code = input ? input.value.trim() : '';
-    if (!code) {
-        showToast('Please enter a barcode number.', 'warning');
+// --- Barcode scanning on video frames ---
+function startBarcodeScanLoop(videoEl) {
+    stopBarcodeScanLoop();
+
+    // Use BarcodeDetector API if available (Chrome, Edge, Android WebView)
+    if ('BarcodeDetector' in window) {
+        const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'] });
+        barcodeScanInterval = setInterval(async () => {
+            if (videoEl.readyState < 2) return;
+            try {
+                const barcodes = await detector.detect(videoEl);
+                if (barcodes.length > 0) {
+                    const code = barcodes[0].rawValue;
+                    if (code && code !== lastBarcodeDetected) {
+                        lastBarcodeDetected = code;
+                        onBarcodeDetected(code);
+                    }
+                }
+            } catch (e) {}
+        }, 400);
         return;
     }
-    stopBarcodeScanner();
-    showToast('Looking up product...', 'info');
-    lookupBarcode(code);
+
+    // Fallback: use html5-qrcode scanning on canvas snapshots
+    if (typeof Html5Qrcode !== 'undefined') {
+        const scanCanvas = document.createElement('canvas');
+        const scanCtx = scanCanvas.getContext('2d');
+        const qr = new Html5Qrcode('barcode-reader', /* verbose= */ false);
+
+        barcodeScanInterval = setInterval(async () => {
+            if (videoEl.readyState < 2) return;
+            try {
+                scanCanvas.width = videoEl.videoWidth;
+                scanCanvas.height = videoEl.videoHeight;
+                scanCtx.drawImage(videoEl, 0, 0);
+                scanCanvas.toBlob(async (blob) => {
+                    if (!blob) return;
+                    try {
+                        const imageFile = new File([blob], 'frame.jpg', { type: 'image/jpeg' });
+                        const result = await qr.scanFileV2(imageFile, /* showImage= */ false);
+                        if (result && result.decodedText && result.decodedText !== lastBarcodeDetected) {
+                            lastBarcodeDetected = result.decodedText;
+                            onBarcodeDetected(result.decodedText);
+                        }
+                    } catch (e) {
+                        // No barcode found in this frame — expected
+                    }
+                }, 'image/jpeg', 0.8);
+            } catch (e) {}
+        }, 800);
+        return;
+    }
+
+    // No barcode scanning available
+    document.getElementById('barcode-scan-status').textContent = 'Barcode scanning unavailable — use manual entry';
 }
 
-async function lookupBarcode(barcode) {
+function stopBarcodeScanLoop() {
+    if (barcodeScanInterval) {
+        clearInterval(barcodeScanInterval);
+        barcodeScanInterval = null;
+    }
+}
+
+async function onBarcodeDetected(code) {
+    document.getElementById('barcode-scan-status').textContent = 'Barcode found! Looking up...';
+
     try {
-        const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`);
+        const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);
         if (!response.ok) throw new Error('Network error');
         const data = await response.json();
 
         if (data.status !== 1 || !data.product) {
-            showToast('Product not found. Try a different barcode.', 'warning');
-            // Re-open scanner so user can try again
-            startBarcodeScanner();
+            document.getElementById('barcode-scan-status').textContent = `Barcode ${code} not found in database. Keep scanning or snap a photo.`;
+            // Allow re-detection of same barcode after a delay
+            setTimeout(() => { lastBarcodeDetected = null; }, 5000);
             return;
         }
 
@@ -52832,7 +52846,6 @@ async function lookupBarcode(barcode) {
             quantity: product.quantity || '',
             image: product.image_front_small_url || product.image_url || '',
             servingSize: product.serving_size || '',
-            // Per-serving values (fall back to per-100g if no serving data)
             perServing: {
                 calories: parseFloat(nutrients['energy-kcal_serving']) || parseFloat(nutrients['energy-kcal_100g']) || 0,
                 protein_g: parseFloat(nutrients.proteins_serving) || parseFloat(nutrients.proteins_100g) || 0,
@@ -52843,7 +52856,6 @@ async function lookupBarcode(barcode) {
                 saturated_fat_g: parseFloat(nutrients['saturated-fat_serving']) || parseFloat(nutrients['saturated-fat_100g']) || 0,
                 sodium_mg: (parseFloat(nutrients.sodium_serving) || parseFloat(nutrients.sodium_100g) || 0) * 1000
             },
-            // Micronutrients per serving
             micronutrients: {
                 vitamin_c_mg: parseFloat(nutrients['vitamin-c_serving']) || parseFloat(nutrients['vitamin-c_100g']) || 0,
                 iron_mg: parseFloat(nutrients['iron_serving']) || parseFloat(nutrients['iron_100g']) || 0,
@@ -52853,22 +52865,105 @@ async function lookupBarcode(barcode) {
                 vitamin_d_mcg: parseFloat(nutrients['vitamin-d_serving']) || parseFloat(nutrients['vitamin-d_100g']) || 0
             },
             isPerServing: !!(nutrients['energy-kcal_serving']),
-            barcode: barcode
+            barcode: code
         };
 
         barcodeServings = 1;
-        closeBarcodeScanner();
-        showBarcodeResult();
+
+        // Show the detected banner on the camera view
+        const banner = document.getElementById('barcode-detected-banner');
+        document.getElementById('barcode-detected-name').textContent = barcodeProductData.name;
+        document.getElementById('barcode-detected-detail').textContent =
+            (barcodeProductData.brand ? barcodeProductData.brand + ' — ' : '') +
+            Math.round(barcodeProductData.perServing.calories) + ' kcal per serving';
+        banner.style.display = 'block';
+        document.getElementById('barcode-scan-status').textContent = 'Product found! Tap banner to log, or snap a photo instead.';
 
     } catch (error) {
         console.error('Barcode lookup error:', error);
-        showToast('Failed to look up product. Please try again.', 'error');
-        startBarcodeScanner();
+        document.getElementById('barcode-scan-status').textContent = 'Lookup failed. Keep scanning or snap a photo.';
+        setTimeout(() => { lastBarcodeDetected = null; }, 3000);
     }
+}
+
+// --- Photo capture from live video ---
+function captureUnifiedPhoto() {
+    const video = document.getElementById('unified-camera-video');
+    const canvas = document.getElementById('unified-camera-canvas');
+    if (!video || !canvas || video.readyState < 2) {
+        showToast('Camera not ready. Please wait a moment.', 'warning');
+        return;
+    }
+
+    // Animate the capture button
+    const btn = document.getElementById('unified-capture-btn');
+    if (btn) { btn.style.transform = 'scale(0.9)'; setTimeout(() => { btn.style.transform = ''; }, 150); }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+
+    canvas.toBlob((blob) => {
+        if (!blob) {
+            showToast('Failed to capture photo.', 'error');
+            return;
+        }
+
+        const file = new File([blob], `meal-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        capturedMealFile = file;
+
+        // Get description from the unified camera input
+        const desc = document.getElementById('unified-camera-description');
+        const description = desc ? desc.value.trim() : '';
+
+        // Close camera and show the existing meal preview flow
+        closeUnifiedCamera();
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            showMealPhotoPreview(e.target.result);
+            // Pre-fill the description field in the preview modal
+            if (description) {
+                const previewDesc = document.getElementById('meal-photo-description');
+                if (previewDesc) previewDesc.value = description;
+            }
+        };
+        reader.readAsDataURL(file);
+    }, 'image/jpeg', 0.85);
+}
+
+// --- Manual barcode entry toggle ---
+function showManualBarcodeEntry() {
+    const row = document.getElementById('manual-barcode-row');
+    if (row) {
+        const isVisible = row.style.display === 'flex';
+        row.style.display = isVisible ? 'none' : 'flex';
+        if (!isVisible) document.getElementById('barcode-manual-input').focus();
+    }
+}
+
+function lookupManualBarcode() {
+    const input = document.getElementById('barcode-manual-input');
+    const code = input ? input.value.trim() : '';
+    if (!code) {
+        showToast('Please enter a barcode number.', 'warning');
+        return;
+    }
+    showToast('Looking up product...', 'info');
+    onBarcodeDetected(code);
+}
+
+// --- Barcode lookup (called from result modal "View & Log") ---
+async function lookupBarcode(barcode) {
+    // This function is kept for any external callers; main flow uses onBarcodeDetected
+    await onBarcodeDetected(barcode);
 }
 
 function showBarcodeResult() {
     if (!barcodeProductData) return;
+
+    // Close the unified camera — user is moving to the result modal
+    closeUnifiedCamera();
 
     const modal = document.getElementById('barcode-result-modal');
     if (!modal) return;
