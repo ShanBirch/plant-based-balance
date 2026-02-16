@@ -69,7 +69,10 @@ RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
     "iodine_mcg": number,
     "selenium_mcg": number,
     "folate_mcg": number,
-    "magnesium_mg": number
+    "magnesium_mg": number,
+    "vitamin_a_mcg": number,
+    "vitamin_e_mg": number,
+    "vitamin_k_mcg": number
   },
   "confidence": "high/medium/low",
   "notes": "Any additional observations or caveats about the analysis"

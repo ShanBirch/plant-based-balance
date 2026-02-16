@@ -49313,7 +49313,10 @@ function renderMicronutrientUI(dailyAvg, mealCount) {
         { key: 'selenium', name: 'Selenium', rda: 55, unit: 'mcg', icon: '&#x1FAA8;', barColor: '#78716c' },
         { key: 'folate', name: 'Folate', rda: 400, unit: 'mcg', icon: '&#x1F96C;', barColor: '#16a34a' },
         { key: 'potassium', name: 'Potassium', rda: 2600, unit: 'mg', icon: '&#x1F34C;', barColor: '#d97706' },
-        { key: 'magnesium', name: 'Magnesium', rda: 400, unit: 'mg', icon: '&#x1FAB6;', barColor: '#8b5cf6' }
+        { key: 'magnesium', name: 'Magnesium', rda: 400, unit: 'mg', icon: '&#x1FAB6;', barColor: '#8b5cf6' },
+        { key: 'vitamin_a', name: 'Vitamin A', rda: 900, unit: 'mcg', icon: '&#x1F955;', barColor: '#ea580c' },
+        { key: 'vitamin_e', name: 'Vitamin E', rda: 15, unit: 'mg', icon: '&#x1F331;', barColor: '#65a30d' },
+        { key: 'vitamin_k', name: 'Vitamin K', rda: 120, unit: 'mcg', icon: '&#x1F343;', barColor: '#059669' }
     ];
 
     if (mealCount === 0) {
@@ -49565,7 +49568,10 @@ function analyzeMealPatterns(meals) {
         selenium: { rda: 55, unit: 'mcg', name: 'Selenium', keys: ['selenium_mcg', 'selenium'] },
         folate: { rda: 400, unit: 'mcg', name: 'Folate', keys: ['folate_mcg', 'folate'] },
         potassium: { rda: 2600, unit: 'mg', name: 'Potassium', keys: ['potassium_mg', 'potassium'] },
-        magnesium: { rda: 400, unit: 'mg', name: 'Magnesium', keys: ['magnesium_mg', 'magnesium'] }
+        magnesium: { rda: 400, unit: 'mg', name: 'Magnesium', keys: ['magnesium_mg', 'magnesium'] },
+        vitamin_a: { rda: 900, unit: 'mcg', name: 'Vitamin A', keys: ['vitamin_a_mcg', 'vitamin_a'] },
+        vitamin_e: { rda: 15, unit: 'mg', name: 'Vitamin E', keys: ['vitamin_e_mg', 'vitamin_e'] },
+        vitamin_k: { rda: 120, unit: 'mcg', name: 'Vitamin K', keys: ['vitamin_k_mcg', 'vitamin_k'] }
     };
 
     // Aggregate weekly micronutrient totals
@@ -49603,14 +49609,18 @@ function analyzeMealPatterns(meals) {
         selenium: 'Your selenium is low \u2014 try eating <strong>1-2 Brazil nuts daily</strong> (the richest plant source). Supports antioxidant defense and thyroid health.',
         folate: 'Your folate is low \u2014 add more <strong>leafy greens, lentils, and chickpeas</strong>. Essential for cell division and DNA synthesis.',
         potassium: 'Your potassium is low \u2014 add more <strong>bananas, sweet potatoes, and beans</strong>. Important for blood pressure regulation and muscle function.',
-        magnesium: 'Your magnesium is low \u2014 consider a <strong>Magnesium Glycinate</strong> supplement (200-400mg daily) or add more pumpkin seeds, spinach, and dark chocolate.'
+        magnesium: 'Your magnesium is low \u2014 consider a <strong>Magnesium Glycinate</strong> supplement (200-400mg daily) or add more pumpkin seeds, spinach, and dark chocolate.',
+        vitamin_a: 'Your Vitamin A is low \u2014 add more <strong>sweet potatoes, carrots, and spinach</strong>. Essential for vision, immune function, and skin health.',
+        vitamin_e: 'Your Vitamin E is low \u2014 add more <strong>almonds, sunflower seeds, and avocado</strong>. A key antioxidant that protects cells from oxidative damage.',
+        vitamin_k: 'Your Vitamin K is low \u2014 add more <strong>kale, broccoli, and Brussels sprouts</strong>. Critical for blood clotting and bone mineralization.'
     };
 
     const microIcons = {
         omega3: '&#x1F41F;', b12: '&#x1F9EC;', iron: '&#x1FA78;',
         calcium: '&#x1F9B4;', zinc: '&#x1F6E1;', vitamin_c: '&#x1F34A;',
         vitamin_d: '&#x2600;', iodine: '&#x1F30A;', selenium: '&#x1FAA8;',
-        folate: '&#x1F96C;', potassium: '&#x1F34C;', magnesium: '&#x1FAB6;'
+        folate: '&#x1F96C;', potassium: '&#x1F34C;', magnesium: '&#x1FAB6;',
+        vitamin_a: '&#x1F955;', vitamin_e: '&#x1F331;', vitamin_k: '&#x1F343;'
     };
 
     Object.keys(microRdas).forEach(k => {
