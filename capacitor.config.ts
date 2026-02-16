@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   // Load from live Netlify site — means you deploy as normal
   // and the app always shows the latest version
   server: {
-    url: 'https://plantbased-balance.org',
+    url: 'https://plantbased-balance.org/dashboard.html',
     cleartext: false,
   },
 
