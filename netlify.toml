@@ -73,8 +73,37 @@
   function = "analyze-meal-text"
   path = "/.netlify/functions/analyze-meal-text"
 
+# Fitbit Integration Edge Functions
+[[edge_functions]]
+  function = "fitbit-auth"
+  path = "/api/fitbit/auth"
+
+[[edge_functions]]
+  function = "fitbit-auth"
+  path = "/api/fitbit/callback"
+
+[[edge_functions]]
+  function = "fitbit-auth"
+  path = "/api/fitbit/disconnect"
+
+[[edge_functions]]
+  function = "fitbit-sync"
+  path = "/api/fitbit/sync"
+
+[[edge_functions]]
+  function = "fitbit-sync"
+  path = "/api/fitbit/sync-all"
+
+[[edge_functions]]
+  function = "fitbit-sync"
+  path = "/api/fitbit/data"
+
 # Note: send-meal-reminders is a regular Node.js function (not edge)
 # because it requires the web-push npm package
+
+# Fitbit scheduled sync - runs every 2 hours
+[functions."sync-fitbit-data"]
+  schedule = "0 */2 * * *"
 
 # Ensure we redirect legacy URLs
 [[redirects]]

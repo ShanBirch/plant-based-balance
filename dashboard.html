@@ -7994,9 +7994,215 @@ async function applyAppTheme(themeKey) {
                 if (typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
                 if (typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
                 if (typeof checkAndShowWorkoutTrendCard === 'function') checkAndShowWorkoutTrendCard();
+                if (typeof initFitbitDashboard === 'function') initFitbitDashboard();
             }
         }
     });
+    </script>
+
+    <script>
+    // ===== FITBIT INTEGRATION LOGIC =====
+
+    /**
+     * Check Fitbit connection status and load data
+     */
+    async function initFitbitDashboard() {
+        if (!window.currentUser) return;
+
+        try {
+            const response = await fetch(`/api/fitbit/data?user_id=${window.currentUser.id}`);
+            const data = await response.json();
+
+            if (data.connected) {
+                // Show dashboard card
+                const card = document.getElementById('fitbit-dashboard-card');
+                if (card) card.style.display = 'block';
+
+                // Update settings button
+                const btn = document.getElementById('fitbit-connect-btn');
+                const statusText = document.getElementById('fitbit-status-text');
+                if (btn) {
+                    btn.textContent = 'Disconnect';
+                    btn.style.background = '#ef4444';
+                }
+                if (statusText) statusText.textContent = 'Connected and syncing';
+
+                // Populate today's data
+                updateFitbitDisplay(data);
+            } else {
+                // Not connected - ensure card is hidden
+                const card = document.getElementById('fitbit-dashboard-card');
+                if (card) card.style.display = 'none';
+
+                // Reset settings button
+                const btn = document.getElementById('fitbit-connect-btn');
+                const statusText = document.getElementById('fitbit-status-text');
+                if (btn) {
+                    btn.textContent = 'Connect';
+                    btn.style.background = '#00B0B9';
+                }
+                if (statusText) statusText.textContent = 'Sync steps, sleep & heart rate';
+            }
+        } catch (err) {
+            console.warn('Fitbit init error:', err);
+        }
+    }
+
+    /**
+     * Update the Fitbit display cards with data
+     */
+    function updateFitbitDisplay(data) {
+        // Today's activity
+        const todayActivity = data.activity && data.activity[0];
+        if (todayActivity) {
+            const stepsEl = document.getElementById('fitbit-steps');
+            const activeMinsEl = document.getElementById('fitbit-active-mins');
+            const caloriesEl = document.getElementById('fitbit-calories');
+
+            if (stepsEl) stepsEl.textContent = (todayActivity.steps || 0).toLocaleString();
+            if (activeMinsEl) activeMinsEl.textContent = (todayActivity.active_minutes || 0) + ' min';
+            if (caloriesEl) caloriesEl.textContent = (todayActivity.calories_burned || 0).toLocaleString();
+        }
+
+        // Today's sleep
+        const todaySleep = data.sleep && data.sleep[0];
+        if (todaySleep) {
+            const sleepEl = document.getElementById('fitbit-sleep');
+            if (sleepEl) {
+                const hours = Math.floor((todaySleep.duration_minutes || 0) / 60);
+                const mins = (todaySleep.duration_minutes || 0) % 60;
+                sleepEl.textContent = hours + 'h ' + mins + 'm';
+            }
+        }
+
+        // Today's heart rate
+        const todayHR = data.heart_rate && data.heart_rate[0];
+        if (todayHR && todayHR.resting_heart_rate) {
+            const hrEl = document.getElementById('fitbit-heart-rate');
+            if (hrEl) hrEl.textContent = todayHR.resting_heart_rate;
+        }
+
+        // Last sync time
+        if (data.last_sync) {
+            const syncEl = document.getElementById('fitbit-last-sync');
+            if (syncEl) {
+                const syncDate = new Date(data.last_sync);
+                const now = new Date();
+                const diffMins = Math.floor((now - syncDate) / 60000);
+                let timeAgo;
+                if (diffMins < 1) timeAgo = 'Just now';
+                else if (diffMins < 60) timeAgo = diffMins + 'm ago';
+                else if (diffMins < 1440) timeAgo = Math.floor(diffMins / 60) + 'h ago';
+                else timeAgo = Math.floor(diffMins / 1440) + 'd ago';
+                syncEl.textContent = 'Last synced ' + timeAgo;
+            }
+        }
+    }
+
+    /**
+     * Connect or disconnect Fitbit
+     */
+    function toggleFitbitConnection() {
+        if (!window.currentUser) return;
+
+        const btn = document.getElementById('fitbit-connect-btn');
+        if (btn && btn.textContent.trim() === 'Disconnect') {
+            // Disconnect
+            if (confirm('Disconnect your Fitbit? Your synced data will remain.')) {
+                btn.textContent = '...';
+                btn.disabled = true;
+                fetch('/api/fitbit/disconnect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: window.currentUser.id }),
+                }).then(() => {
+                    btn.textContent = 'Connect';
+                    btn.style.background = '#00B0B9';
+                    btn.disabled = false;
+                    const statusText = document.getElementById('fitbit-status-text');
+                    if (statusText) statusText.textContent = 'Sync steps, sleep & heart rate';
+                    const card = document.getElementById('fitbit-dashboard-card');
+                    if (card) card.style.display = 'none';
+                }).catch(() => {
+                    btn.textContent = 'Disconnect';
+                    btn.disabled = false;
+                    alert('Failed to disconnect. Please try again.');
+                });
+            }
+        } else {
+            // Connect - redirect to Fitbit OAuth
+            window.location.href = '/api/fitbit/auth?user_id=' + window.currentUser.id;
+        }
+    }
+
+    /**
+     * Manual sync button
+     */
+    function syncFitbitNow() {
+        if (!window.currentUser) return;
+
+        const btn = document.getElementById('fitbit-sync-btn');
+        if (btn) {
+            btn.style.opacity = '0.5';
+            btn.style.pointerEvents = 'none';
+        }
+
+        fetch('/api/fitbit/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: window.currentUser.id }),
+        }).then(r => r.json()).then(() => {
+            // Refresh display
+            return fetch('/api/fitbit/data?user_id=' + window.currentUser.id);
+        }).then(r => r.json()).then(data => {
+            if (data.connected) updateFitbitDisplay(data);
+        }).catch(err => {
+            console.warn('Fitbit sync error:', err);
+        }).finally(() => {
+            if (btn) {
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+            }
+        });
+    }
+
+    /**
+     * Handle Fitbit OAuth redirect results
+     */
+    function checkFitbitOAuthResult() {
+        const params = new URLSearchParams(window.location.search);
+        const fitbitResult = params.get('fitbit');
+
+        if (fitbitResult) {
+            // Clean URL
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, '', cleanUrl);
+
+            if (fitbitResult === 'connected') {
+                // Show success message
+                const toast = document.createElement('div');
+                toast.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#10b981; color:white; padding:14px 24px; border-radius:12px; font-weight:600; z-index:99999; box-shadow:0 4px 12px rgba(0,0,0,0.15); font-size:0.9rem;';
+                toast.textContent = 'Fitbit connected! Syncing your data...';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 4000);
+
+                // Refresh Fitbit data
+                setTimeout(() => initFitbitDashboard(), 2000);
+            } else if (fitbitResult === 'denied') {
+                alert('Fitbit connection was cancelled. You can connect anytime from Settings.');
+            } else if (fitbitResult === 'error') {
+                alert('There was a problem connecting to Fitbit. Please try again.');
+            }
+        }
+    }
+
+    // Make functions globally available
+    window.toggleFitbitConnection = toggleFitbitConnection;
+    window.syncFitbitNow = syncFitbitNow;
+    window.initFitbitDashboard = initFitbitDashboard;
+
+    // Check OAuth result on page load
+    checkFitbitOAuthResult();
     </script>
 
     <script>
@@ -8516,6 +8722,59 @@ async function applyAppTheme(themeKey) {
                 </div>
             </div>
          </div>
+
+        <!-- Fitbit Activity Card (hidden until connected) -->
+        <div id="fitbit-dashboard-card" style="display: none; margin: 20px 0 15px 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#00B0B9;"><circle cx="12" cy="4" r="2.5"/><circle cx="12" cy="9.5" r="2.5"/><circle cx="12" cy="15" r="2"/><circle cx="12" cy="19.5" r="1.5"/><circle cx="7" cy="9.5" r="1.5"/><circle cx="17" cy="9.5" r="1.5"/></svg>
+                    Fitbit
+                </h3>
+                <button onclick="syncFitbitNow()" id="fitbit-sync-btn" style="background: none; border: none; color: #00B0B9; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:#00B0B9;"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    Sync
+                </button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <!-- Steps -->
+                <div style="background: white; border-radius: 14px; padding: 16px 14px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="font-size: 1.4rem; margin-bottom: 4px;">👟</div>
+                    <div id="fitbit-steps" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">Steps</div>
+                </div>
+                <!-- Sleep -->
+                <div style="background: white; border-radius: 14px; padding: 16px 14px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="font-size: 1.4rem; margin-bottom: 4px;">😴</div>
+                    <div id="fitbit-sleep" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">Sleep</div>
+                </div>
+                <!-- Heart Rate -->
+                <div style="background: white; border-radius: 14px; padding: 16px 14px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="font-size: 1.4rem; margin-bottom: 4px;">❤️</div>
+                    <div id="fitbit-heart-rate" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">BPM</div>
+                </div>
+            </div>
+            <div id="fitbit-details-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                <!-- Active Minutes -->
+                <div style="background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="width: 36px; height: 36px; background: #FFF7ED; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">🔥</div>
+                    <div>
+                        <div id="fitbit-active-mins" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">--</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Active Mins</div>
+                    </div>
+                </div>
+                <!-- Calories -->
+                <div style="background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="width: 36px; height: 36px; background: #F0FDF4; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">⚡</div>
+                    <div>
+                        <div id="fitbit-calories" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">--</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Cal Burned</div>
+                    </div>
+                </div>
+            </div>
+            <div id="fitbit-last-sync" style="text-align: right; font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; padding-right: 4px;"></div>
+        </div>
 
         <!-- Live Challenges Section -->
         <div style="margin: 20px 0 15px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-green); padding-bottom: 8px;">
@@ -9296,6 +9555,7 @@ async function applyAppTheme(themeKey) {
             if(typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
             if(typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
             if(typeof checkAndShowWorkoutTrendCard === 'function') checkAndShowWorkoutTrendCard();
+            if(typeof initFitbitDashboard === 'function') initFitbitDashboard();
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
 
             // Switch to dashboard as default entry point
@@ -17834,6 +18094,19 @@ function viewWorkoutHistoryDetail(date) {
                          Share
                      </button>
                  </div>
+                <!-- Fitbit Connection -->
+                <div id="settings-fitbit-connect" style="padding:15px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#00B0B9;"><circle cx="12" cy="4" r="2.5"/><circle cx="12" cy="9.5" r="2.5"/><circle cx="12" cy="15" r="2"/><circle cx="12" cy="19.5" r="1.5"/><circle cx="7" cy="9.5" r="1.5"/><circle cx="17" cy="9.5" r="1.5"/></svg>
+                            Fitbit
+                        </div>
+                        <div id="fitbit-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync steps, sleep & heart rate</div>
+                    </div>
+                    <button id="fitbit-connect-btn" onclick="toggleFitbitConnection()" style="padding:8px 16px; border-radius:8px; border:none; background:#00B0B9; color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
+                        Connect
+                    </button>
+                </div>
                 <!-- Download App (hidden if already installed as PWA) -->
                 <div id="settings-download-app" style="padding:15px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                     <div>
