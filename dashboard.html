@@ -8872,8 +8872,8 @@ async function applyAppTheme(themeKey) {
                 return;
             }
 
-            // Find next available lesson (uses learning-inline.js exposed fn)
-            if (typeof window._getNextAvailableLesson !== 'function') {
+            // Find a random available lesson from any category (uses learning-inline.js exposed fn)
+            if (typeof window._getRandomAvailableLesson !== 'function') {
                 card.style.display = 'none';
                 doneCard.style.display = 'none';
                 return;
@@ -8909,7 +8909,7 @@ async function applyAppTheme(themeKey) {
                 unit = savedQuizLesson.unit;
                 module = savedQuizLesson.module;
             } else {
-                const nextLesson = window._getNextAvailableLesson();
+                const nextLesson = window._getRandomAvailableLesson();
                 if (!nextLesson) {
                     // All lessons completed
                     card.style.display = 'none';
