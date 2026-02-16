@@ -8735,6 +8735,7 @@ async function applyAppTheme(themeKey) {
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="#0284c7"><path d="M12 2c0 0-8 9.5-8 14a8 8 0 0 0 16 0C20 11.5 12 2 12 2z"/></svg>
                             Hydration
                         </div>
+                        <div id="hydration-goal-display" style="font-size:0.72rem; color:#0369a1; font-weight:600; margin-bottom:10px;">Goal: 2,000 ml</div>
                         <div class="hydration-circle-wrap" id="hydration-circle-tap" onclick="addHydrationGlass()">
                             <svg class="hydration-circle-svg" viewBox="0 0 100 100">
                                 <circle class="hydration-circle-bg" cx="50" cy="50" r="42"/>
@@ -8748,8 +8749,8 @@ async function applyAppTheme(themeKey) {
                                 <span class="hydration-cup-count" id="hydration-cup-count">0/8</span>
                             </div>
                         </div>
-                        <div class="hydration-circle-label" id="hydration-circle-label">0 ml</div>
-                        <div class="hydration-circle-hint">Tap to add a cup</div>
+                        <div class="hydration-circle-label" id="hydration-circle-label">0 / 2,000 ml</div>
+                        <div class="hydration-circle-hint" id="hydration-circle-hint">Tap to add 250ml</div>
                     </div>
                 </div>
 
@@ -18909,6 +18910,14 @@ async function _loadProfileDataRealImpl() {
         }
     }
 
+    // Sync water goal settings from DB to localStorage (for cross-device persistence)
+    if (profile?.water_goal_ml && !localStorage.getItem('pbb_water_goal_ml')) {
+        localStorage.setItem('pbb_water_goal_ml', profile.water_goal_ml.toString());
+        localStorage.setItem('pbb_water_glass_size', (profile.water_glass_size || 250).toString());
+        localStorage.setItem('pbb_water_total_glasses', (profile.water_total_glasses || Math.ceil(profile.water_goal_ml / (profile.water_glass_size || 250))).toString());
+        console.log('Restored water goal from DB:', profile.water_goal_ml, 'ml');
+    }
+
     // Fallback if DB fetch fail
     if (!profile) {
         try {
@@ -21942,7 +21951,7 @@ function switchView(id) {
 
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
-const totalWizardSteps = 20;
+const totalWizardSteps = 21;
 
 // Wizard-specific validation message (renders above the z-index:12000 wizard overlay)
 function wizardAlert(message) {
@@ -22130,27 +22139,32 @@ function updateWizardUI() {
         const mv = document.getElementById('wizard-fitgotchi-preview');
         if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
     }
-    if (currentWizardStep >= 12) {
+    if (currentWizardStep >= 13) {
         const mv = document.getElementById('wizard-arny-preview');
         if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
     }
-    if (currentWizardStep >= 15) {
+    if (currentWizardStep >= 16) {
         const mv = document.getElementById('wizard-preview-model');
         if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
     }
 
-    // 3. Initialize character customization on slide 16
-    if(currentWizardStep === 16) {
+    // 3. Initialize character customization on slide 17
+    if(currentWizardStep === 17) {
         initializeCharacterCustomization();
     }
 
-    // 3b. Load referral code on slide 18
-    if(currentWizardStep === 18) {
+    // 3b. Load referral code on slide 19
+    if(currentWizardStep === 19) {
         loadWizardReferralCode();
     }
 
+    // 3c. Calculate and display water goal on slide 9
+    if(currentWizardStep === 9) {
+        calculateAndDisplayWaterGoal();
+    }
+
     // 4. Update final slide goal text
-    if(currentWizardStep === 20) {
+    if(currentWizardStep === 21) {
         const goalDiv = document.getElementById('wizard-hormone-goal');
         if(goalDiv) {
             goalDiv.innerHTML = 'Goal: Get Stronger & Level Up Your FitGotchi 💪';
@@ -22819,6 +22833,28 @@ async function wizardNext() {
         existingData.workout_calendar = JSON.stringify(wizardWorkoutCalendar);
         sessionStorage.setItem('userProfile', JSON.stringify(existingData));
         localStorage.setItem('workoutCalendar', JSON.stringify(wizardWorkoutCalendar));
+    }
+
+    // Step 9: Water Goal - save hydration settings
+    if(currentWizardStep === 9) {
+        const waterGoal = parseInt(document.getElementById('wizard-water-goal-ml')?.value) || wizardWaterGoalMl;
+        const glassSize = parseInt(document.getElementById('wizard-glass-size')?.value) || wizardGlassSize;
+        const totalGlasses = Math.ceil(waterGoal / glassSize);
+
+        // Save to localStorage for the hydration tracker
+        localStorage.setItem('pbb_water_goal_ml', waterGoal.toString());
+        localStorage.setItem('pbb_water_glass_size', glassSize.toString());
+        localStorage.setItem('pbb_water_total_glasses', totalGlasses.toString());
+
+        // Also save to sessionStorage userProfile for DB sync
+        let existingData = {};
+        try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
+        existingData.water_goal_ml = waterGoal;
+        existingData.water_glass_size = glassSize;
+        existingData.water_total_glasses = totalGlasses;
+        sessionStorage.setItem('userProfile', JSON.stringify(existingData));
+
+        console.log("Step 9 water goal saved:", waterGoal, "ml, glass size:", glassSize, "ml, total glasses:", totalGlasses);
     }
 
     if(currentWizardStep < totalWizardSteps) {
@@ -31202,7 +31238,7 @@ function openAsClient() {
         <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative; flex-shrink: 0;">
             <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
             <div class="wizard-progress" style="display:flex; justify-content:center; gap:6px; margin-bottom:15px;">
-                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
             <h2 id="wizard-title" style="margin:0; color:var(--primary);">Let's Align Your Body</h2>
         </div>
@@ -31544,8 +31580,56 @@ function openAsClient() {
                 </ul>
             </div>
 
-            <!-- SLIDE 9: TRACK YOUR WORKOUTS -->
+            <!-- SLIDE 9: YOUR HYDRATION GOAL -->
             <div class="wizard-slide" id="slide-9" style="display:none;">
+                <div style="text-align:center; margin-bottom:10px; font-size:3rem;">💧</div>
+                <h3 style="text-align:center; margin-bottom:6px;">Your Hydration Goal</h3>
+                <p style="text-align:center; color:#666; margin-bottom:18px; font-size:0.88rem;">We calculated your ideal daily water intake based on your body weight and activity level.</p>
+
+                <!-- Recommended Goal Display -->
+                <div style="background:linear-gradient(135deg, #e0f2fe, #bae6fd); padding:18px; border-radius:16px; border:1px solid #7dd3fc; text-align:center; margin-bottom:18px;">
+                    <p style="margin:0 0 4px; font-size:0.8rem; color:#0369a1; font-weight:600;">Your Recommended Daily Intake</p>
+                    <div id="wizard-water-recommended" style="font-size:1.6rem; font-weight:800; color:#0c4a6e;">2,100 ml</div>
+                    <p id="wizard-water-formula-note" style="margin:4px 0 0; font-size:0.72rem; color:#0369a1;">Based on your weight &times; 33ml/kg + activity adjustment</p>
+                </div>
+
+                <!-- Adjustable Goal -->
+                <div style="background:#f8fafc; padding:16px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:14px;">
+                    <label style="display:block; font-weight:600; margin-bottom:10px; font-size:0.88rem; text-align:center;">Set Your Daily Goal</label>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:14px;">
+                        <button type="button" onclick="adjustWaterGoal(-250)" style="width:40px; height:40px; border-radius:50%; border:2px solid #0284c7; background:white; color:#0284c7; font-size:1.3rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1;">−</button>
+                        <div style="text-align:center; min-width:100px;">
+                            <div id="wizard-water-goal" style="font-size:1.8rem; font-weight:800; color:#0c4a6e;">2,100</div>
+                            <div style="font-size:0.75rem; color:#64748b; font-weight:600;">ml / day</div>
+                        </div>
+                        <button type="button" onclick="adjustWaterGoal(250)" style="width:40px; height:40px; border-radius:50%; border:2px solid #0284c7; background:white; color:#0284c7; font-size:1.3rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1;">+</button>
+                    </div>
+                    <input type="hidden" id="wizard-water-goal-ml" value="2100">
+                </div>
+
+                <!-- Glass Size Selection -->
+                <div style="background:#f8fafc; padding:16px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:14px;">
+                    <label style="display:block; font-weight:600; margin-bottom:10px; font-size:0.88rem; text-align:center;">What size is your cup/bottle?</label>
+                    <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+                        <button type="button" onclick="selectGlassSize(200)" class="glass-size-btn" data-size="200" style="padding:8px 14px; border-radius:10px; border:2px solid #e2e8f0; background:white; font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.2s ease; color:#334155;">200ml</button>
+                        <button type="button" onclick="selectGlassSize(250)" class="glass-size-btn active" data-size="250" style="padding:8px 14px; border-radius:10px; border:2px solid #0284c7; background:#e0f2fe; font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.2s ease; color:#0c4a6e;">250ml</button>
+                        <button type="button" onclick="selectGlassSize(350)" class="glass-size-btn" data-size="350" style="padding:8px 14px; border-radius:10px; border:2px solid #e2e8f0; background:white; font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.2s ease; color:#334155;">350ml</button>
+                        <button type="button" onclick="selectGlassSize(500)" class="glass-size-btn" data-size="500" style="padding:8px 14px; border-radius:10px; border:2px solid #e2e8f0; background:white; font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.2s ease; color:#334155;">500ml</button>
+                    </div>
+                    <input type="hidden" id="wizard-glass-size" value="250">
+                </div>
+
+                <!-- Glass Count Preview -->
+                <div style="background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:14px; border-radius:12px; border:1px solid #bbf7d0; text-align:center;">
+                    <p style="margin:0; font-size:0.88rem; color:#166534; font-weight:600;">
+                        That's <span id="wizard-glass-count" style="font-size:1.1rem; font-weight:800;">8</span> cups per day
+                    </p>
+                    <p style="margin:4px 0 0; font-size:0.75rem; color:#166534;">Tap the hydration circle in the Nutrition tab to log each cup</p>
+                </div>
+            </div>
+
+            <!-- SLIDE 10: TRACK YOUR WORKOUTS -->
+            <div class="wizard-slide" id="slide-10" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🏋️</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Track Your Workouts</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">Every rep counts. We track it all.</p>
@@ -31570,8 +31654,8 @@ function openAsClient() {
                 </ul>
             </div>
 
-            <!-- SLIDE 10: BUILD & BROWSE WORKOUTS -->
-            <div class="wizard-slide" id="slide-10" style="display:none;">
+            <!-- SLIDE 11: BUILD & BROWSE WORKOUTS -->
+            <div class="wizard-slide" id="slide-11" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🔨</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Build & Browse Workouts</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">Your gym, your rules.</p>
@@ -31592,8 +31676,8 @@ function openAsClient() {
                 </ul>
             </div>
 
-            <!-- SLIDE 11: LEARN & LEVEL UP -->
-            <div class="wizard-slide" id="slide-11" style="display:none;">
+            <!-- SLIDE 12: LEARN & LEVEL UP -->
+            <div class="wizard-slide" id="slide-12" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🧠</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Learn & Level Up</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">Duolingo-style fitness education</p>
@@ -31618,8 +31702,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 12: YOUR FEED -->
-            <div class="wizard-slide" id="slide-12" style="display:none;">
+            <!-- SLIDE 13: YOUR FEED -->
+            <div class="wizard-slide" id="slide-13" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">📱</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Your Feed</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">Share your wins and cheer on your friends</p>
@@ -31640,8 +31724,8 @@ function openAsClient() {
                 </ul>
             </div>
 
-            <!-- SLIDE 13: CHALLENGE YOUR FRIENDS -->
-            <div class="wizard-slide" id="slide-13" style="display:none;">
+            <!-- SLIDE 14: CHALLENGE YOUR FRIENDS -->
+            <div class="wizard-slide" id="slide-14" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">⚔️</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Challenge Your Friends</h3>
                 <p style="text-align:center; color:#666; margin-bottom:15px;">Compete, battle & win rare rewards</p>
@@ -31687,8 +31771,8 @@ function openAsClient() {
                 </ul>
             </div>
 
-            <!-- SLIDE 14: COINS -->
-            <div class="wizard-slide" id="slide-14" style="display:none;">
+            <!-- SLIDE 15: COINS -->
+            <div class="wizard-slide" id="slide-15" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🪙</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Coins</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">Your in-app currency for battles, bets & rewards</p>
@@ -31713,8 +31797,8 @@ function openAsClient() {
                 </ul>
             </div>
 
-            <!-- SLIDE 15: ALL WAYS TO EARN XP -->
-            <div class="wizard-slide" id="slide-15" style="display:none;">
+            <!-- SLIDE 16: ALL WAYS TO EARN XP -->
+            <div class="wizard-slide" id="slide-16" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">⭐</div>
                 <h3 style="text-align:center; margin-bottom:10px;">All Ways to Earn XP</h3>
                 <p style="text-align:center; color:#666; margin-bottom:15px;">Every point levels up your FitGotchi!</p>
@@ -31747,8 +31831,8 @@ function openAsClient() {
                 </div>
             </div>
 
-            <!-- SLIDE 16: DESIGN YOUR CHARACTER -->
-            <div class="wizard-slide" id="slide-16" style="display:none;">
+            <!-- SLIDE 17: DESIGN YOUR CHARACTER -->
+            <div class="wizard-slide" id="slide-17" style="display:none;">
                 <div style="text-align:center; margin-bottom:10px; font-size:3rem;">✨</div>
                 <h3 style="text-align:center; margin-bottom:8px;">Design Your Character</h3>
                 <p style="text-align:center; color:#666; margin-bottom:15px;">Make your FitGotchi your own!</p>
@@ -31796,7 +31880,7 @@ function openAsClient() {
             </div>
 
             <!-- SLIDE 17: SET YOUR PROFILE PICTURE -->
-            <div class="wizard-slide" id="slide-17" style="display:none;">
+            <div class="wizard-slide" id="slide-18" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">📸</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Set Your Profile Picture</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">This is how your friends will see you in the feed & battles</p>
@@ -31820,8 +31904,8 @@ function openAsClient() {
                 <p style="text-align:center; color:#94a3b8; font-size:0.8rem;">You can skip this and add one later from your profile</p>
             </div>
 
-            <!-- SLIDE 18: INVITE YOUR FRIENDS -->
-            <div class="wizard-slide" id="slide-18" style="display:none;">
+            <!-- SLIDE 19: INVITE YOUR FRIENDS -->
+            <div class="wizard-slide" id="slide-19" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🤝</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Invite Your Friends</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">Everything's better with friends! You BOTH get <strong style="color:var(--primary);">1 week double XP</strong></p>
@@ -31850,8 +31934,8 @@ function openAsClient() {
                 <p style="text-align:center; color:#64748b; font-size:0.8rem;">You can always share your code later from the Friends tab</p>
             </div>
 
-            <!-- SLIDE 19: BUILT BY SHANNON -->
-            <div class="wizard-slide" id="slide-19" style="display:none;">
+            <!-- SLIDE 20: BUILT BY SHANNON -->
+            <div class="wizard-slide" id="slide-20" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">💚</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Built by Shannon</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">This app was designed and built by your coach, Shannon. If you have any suggestions, feedback, or ideas to make it even better — I'd love to hear from you!</p>
@@ -31875,8 +31959,8 @@ function openAsClient() {
                 <p style="text-align:center; color:#64748b; font-size:0.85rem;">Your feedback helps make this app better for everyone. Don't be shy!</p>
             </div>
 
-            <!-- SLIDE 20: YOU'RE ALL SET! -->
-            <div class="wizard-slide" id="slide-20" style="display:none; text-align:center;">
+            <!-- SLIDE 21: YOU'RE ALL SET! -->
+            <div class="wizard-slide" id="slide-21" style="display:none; text-align:center;">
                 <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
                 <h3 style="margin-bottom:10px;">You're All Set!</h3>
                 <p style="color:#64748b; margin-bottom:20px;">Your personalized plan is ready.</p>
@@ -48165,7 +48249,112 @@ function generateSmartSuggestions(dailyData) {
     }).join('');
 }
 
-// --- 10. Hydration Tracker (Circular Cup Design) ---
+// --- Water Goal Calculation (Onboarding Wizard) ---
+let wizardWaterGoalMl = 2100;
+let wizardGlassSize = 250;
+
+function calculateWaterGoal(weightKg, activityLevel) {
+    // Base: 33ml per kg body weight (standard hydration guideline)
+    let baseWater = Math.round(weightKg * 33);
+
+    // Activity level adjustment
+    const activityBonus = {
+        'sedentary': 0,
+        'light': 250,
+        'moderate': 500,
+        'very': 750
+    };
+    baseWater += (activityBonus[activityLevel] || 0);
+
+    // Round to nearest 50ml for cleaner numbers
+    return Math.round(baseWater / 50) * 50;
+}
+
+function calculateAndDisplayWaterGoal() {
+    // Pull user data from sessionStorage (already saved from slide 2)
+    let userData = {};
+    try { userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
+
+    const weight = parseFloat(userData.weight) || 70;
+    const activityLevel = userData.activity_level || 'sedentary';
+
+    const recommended = calculateWaterGoal(weight, activityLevel);
+    wizardWaterGoalMl = recommended;
+
+    // Update display
+    const recEl = document.getElementById('wizard-water-recommended');
+    if (recEl) recEl.textContent = recommended.toLocaleString() + ' ml';
+
+    const goalEl = document.getElementById('wizard-water-goal');
+    if (goalEl) goalEl.textContent = recommended.toLocaleString();
+
+    const hiddenEl = document.getElementById('wizard-water-goal-ml');
+    if (hiddenEl) hiddenEl.value = recommended;
+
+    // Update formula note
+    const noteEl = document.getElementById('wizard-water-formula-note');
+    if (noteEl) {
+        const base = Math.round(weight * 33);
+        const bonus = {'sedentary': 0, 'light': 250, 'moderate': 500, 'very': 750}[activityLevel] || 0;
+        let note = `${weight}kg × 33ml = ${base.toLocaleString()}ml`;
+        if (bonus > 0) note += ` + ${bonus}ml activity`;
+        noteEl.textContent = note;
+    }
+
+    updateWizardGlassCount();
+}
+
+function adjustWaterGoal(delta) {
+    wizardWaterGoalMl = Math.max(500, Math.min(5000, wizardWaterGoalMl + delta));
+
+    const goalEl = document.getElementById('wizard-water-goal');
+    if (goalEl) goalEl.textContent = wizardWaterGoalMl.toLocaleString();
+
+    const hiddenEl = document.getElementById('wizard-water-goal-ml');
+    if (hiddenEl) hiddenEl.value = wizardWaterGoalMl;
+
+    updateWizardGlassCount();
+}
+
+function selectGlassSize(size) {
+    wizardGlassSize = size;
+
+    const hiddenEl = document.getElementById('wizard-glass-size');
+    if (hiddenEl) hiddenEl.value = size;
+
+    // Update button styles
+    document.querySelectorAll('.glass-size-btn').forEach(btn => {
+        const btnSize = parseInt(btn.dataset.size);
+        if (btnSize === size) {
+            btn.style.borderColor = '#0284c7';
+            btn.style.background = '#e0f2fe';
+            btn.style.color = '#0c4a6e';
+            btn.classList.add('active');
+        } else {
+            btn.style.borderColor = '#e2e8f0';
+            btn.style.background = 'white';
+            btn.style.color = '#334155';
+            btn.classList.remove('active');
+        }
+    });
+
+    updateWizardGlassCount();
+}
+
+function updateWizardGlassCount() {
+    const glasses = Math.ceil(wizardWaterGoalMl / wizardGlassSize);
+    const countEl = document.getElementById('wizard-glass-count');
+    if (countEl) countEl.textContent = glasses;
+}
+
+// --- 10. Hydration Tracker (Personalized Circular Design) ---
+function getHydrationSettings() {
+    const goalMl = parseInt(localStorage.getItem('pbb_water_goal_ml')) || 2000;
+    const glassSize = parseInt(localStorage.getItem('pbb_water_glass_size')) || 250;
+    const totalGlasses = parseInt(localStorage.getItem('pbb_water_total_glasses')) || Math.ceil(goalMl / glassSize);
+    return { goalMl, glassSize, totalGlasses };
+}
+
 function initHydrationTracker() {
     const circleEl = document.getElementById('hydration-circle-fill');
     if (!circleEl) return;
@@ -48174,11 +48363,19 @@ function initHydrationTracker() {
     const storageKey = `pbb_hydration_${today}`;
     let glasses = parseInt(localStorage.getItem(storageKey) || '0');
 
+    // Update the goal display in the header
+    const settings = getHydrationSettings();
+    const headerEl = document.getElementById('hydration-goal-display');
+    if (headerEl) headerEl.textContent = `Goal: ${settings.goalMl.toLocaleString()} ml`;
+
+    const hintEl = document.getElementById('hydration-circle-hint');
+    if (hintEl) hintEl.textContent = `Tap to add ${settings.glassSize}ml`;
+
     updateHydrationCircle(glasses);
 }
 
 function updateHydrationCircle(glasses) {
-    const totalGlasses = 8;
+    const { goalMl, glassSize, totalGlasses } = getHydrationSettings();
     const circumference = 2 * Math.PI * 42; // ~264
     const progress = Math.min(glasses / totalGlasses, 1);
     const offset = circumference * (1 - progress);
@@ -48186,7 +48383,6 @@ function updateHydrationCircle(glasses) {
     const circleEl = document.getElementById('hydration-circle-fill');
     if (circleEl) {
         circleEl.style.strokeDashoffset = offset;
-        // Change color when full
         if (glasses >= totalGlasses) {
             circleEl.style.stroke = '#16a34a';
         } else {
@@ -48199,8 +48395,8 @@ function updateHydrationCircle(glasses) {
 
     const labelEl = document.getElementById('hydration-circle-label');
     if (labelEl) {
-        const ml = glasses * 250;
-        labelEl.textContent = `${ml} ml`;
+        const ml = glasses * glassSize;
+        labelEl.textContent = `${ml.toLocaleString()} / ${goalMl.toLocaleString()} ml`;
     }
 
     const cupSvg = document.getElementById('hydration-cup-svg');
@@ -48210,12 +48406,12 @@ function updateHydrationCircle(glasses) {
 }
 
 function addHydrationGlass() {
+    const { totalGlasses } = getHydrationSettings();
     const today = getLocalDateString();
     const storageKey = `pbb_hydration_${today}`;
     let glasses = parseInt(localStorage.getItem(storageKey) || '0');
 
-    if (glasses >= 8) {
-        // Reset if already at max
+    if (glasses >= totalGlasses) {
         glasses = 0;
     } else {
         glasses++;
