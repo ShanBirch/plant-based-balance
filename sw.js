@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v15'; // Updated for DM push notification support
+const CACHE_NAME = 'pbb-app-v16'; // v16: fix cache-first strategy causing stale content in native app
 const MODEL_CACHE_NAME = 'pbb-models-v1'; // Separate long-lived cache for 3D models
 const ASSETS = [
   './dashboard.html',
@@ -34,8 +34,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
-  // Network first for HTML and JS files (always get latest)
-  if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js')) {
+  // Network first for HTML, JS, and CSS files (always get latest)
+  if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
     e.respondWith(
       fetch(e.request)
         .then(response => {
