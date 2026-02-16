@@ -42266,14 +42266,25 @@ window.submitWeighInModal = submitWeighInModal;
                 </div>
             </div>
         </div>
-        <!-- Serving size selector -->
+        <!-- Amount selector (servings or custom g/ml) -->
         <div id="barcode-serving-section" style="padding:0 24px 16px;">
-            <label style="color:var(--text-muted, #aaa); font-size:0.8rem; display:block; margin-bottom:6px;">Servings</label>
-            <div style="display:flex; align-items:center; gap:12px;">
+            <!-- Mode toggle -->
+            <div style="display:flex; gap:0; margin-bottom:10px; background:rgba(255,255,255,0.06); border-radius:10px; overflow:hidden;">
+                <button id="barcode-mode-servings" onclick="setBarcodeAmountMode('servings')" style="flex:1; padding:9px 0; border:none; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.2s; background:var(--primary); color:#fff;">Servings</button>
+                <button id="barcode-mode-custom" onclick="setBarcodeAmountMode('custom')" style="flex:1; padding:9px 0; border:none; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.2s; background:transparent; color:var(--text-muted, #888);">Custom (g/ml)</button>
+            </div>
+            <!-- Servings row -->
+            <div id="barcode-servings-row" style="display:flex; align-items:center; gap:12px;">
                 <button onclick="adjustBarcodeServings(-0.5)" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:36px; height:36px; border-radius:50%; font-size:1.2rem; cursor:pointer;">&minus;</button>
                 <span id="barcode-servings-display" style="color:#fff; font-size:1.1rem; font-weight:600; min-width:30px; text-align:center;">1</span>
                 <button onclick="adjustBarcodeServings(0.5)" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:36px; height:36px; border-radius:50%; font-size:1.2rem; cursor:pointer;">+</button>
                 <span id="barcode-serving-size-label" style="color:var(--text-muted, #888); font-size:0.85rem;"></span>
+            </div>
+            <!-- Custom amount row -->
+            <div id="barcode-custom-row" style="display:none; align-items:center; gap:10px;">
+                <input type="number" id="barcode-custom-amount" inputmode="decimal" placeholder="e.g. 150" min="0" step="any" oninput="onBarcodeCustomAmountChange()" style="flex:1; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); border-radius:12px; color:#fff; padding:11px 14px; font-size:1.05rem; font-family:inherit; outline:none; -moz-appearance:textfield;" />
+                <span id="barcode-custom-unit" style="color:var(--text-muted, #aaa); font-size:0.95rem; min-width:20px;">g</span>
+                <span id="barcode-custom-hint" style="color:var(--text-muted, #666); font-size:0.8rem; white-space:nowrap;"></span>
             </div>
         </div>
         <!-- Nutrition breakdown -->
@@ -52702,6 +52713,8 @@ let barcodeScanInterval = null;
 let lastBarcodeDetected = null;
 let barcodeProductData = null;
 let barcodeServings = 1;
+let barcodeAmountMode = 'servings'; // 'servings' or 'custom'
+let barcodeCustomAmount = '';
 
 async function openUnifiedCamera() {
     const modal = document.getElementById('unified-camera-modal');
@@ -52840,35 +52853,69 @@ async function onBarcodeDetected(code) {
         const product = data.product;
         const nutrients = product.nutriments || {};
 
+        // Always store per-100g values for custom gram entry
+        const per100g = {
+            calories: parseFloat(nutrients['energy-kcal_100g']) || 0,
+            protein_g: parseFloat(nutrients.proteins_100g) || 0,
+            carbs_g: parseFloat(nutrients.carbohydrates_100g) || 0,
+            fat_g: parseFloat(nutrients.fat_100g) || 0,
+            fiber_g: parseFloat(nutrients.fiber_100g) || 0,
+            sugars_g: parseFloat(nutrients.sugars_100g) || 0,
+            saturated_fat_g: parseFloat(nutrients['saturated-fat_100g']) || 0,
+            sodium_mg: (parseFloat(nutrients.sodium_100g) || 0) * 1000
+        };
+
+        const hasServingData = !!(nutrients['energy-kcal_serving']);
+        const perServing = hasServingData ? {
+            calories: parseFloat(nutrients['energy-kcal_serving']) || 0,
+            protein_g: parseFloat(nutrients.proteins_serving) || 0,
+            carbs_g: parseFloat(nutrients.carbohydrates_serving) || 0,
+            fat_g: parseFloat(nutrients.fat_serving) || 0,
+            fiber_g: parseFloat(nutrients.fiber_serving) || 0,
+            sugars_g: parseFloat(nutrients.sugars_serving) || 0,
+            saturated_fat_g: parseFloat(nutrients['saturated-fat_serving']) || 0,
+            sodium_mg: (parseFloat(nutrients.sodium_serving) || 0) * 1000
+        } : { ...per100g }; // fall back to per-100g
+
+        // Parse serving weight in grams (e.g. "30g", "250 ml")
+        const servingSizeStr = product.serving_size || '';
+        const servingWeightMatch = servingSizeStr.match(/([\d.]+)\s*(g|ml)/i);
+        const servingWeightG = servingWeightMatch ? parseFloat(servingWeightMatch[1]) : null;
+
+        const micro100g = {
+            vitamin_c_mg: parseFloat(nutrients['vitamin-c_100g']) || 0,
+            iron_mg: parseFloat(nutrients['iron_100g']) || 0,
+            calcium_mg: parseFloat(nutrients['calcium_100g']) || 0,
+            potassium_mg: parseFloat(nutrients['potassium_100g']) || 0,
+            vitamin_a_mcg: parseFloat(nutrients['vitamin-a_100g']) || 0,
+            vitamin_d_mcg: parseFloat(nutrients['vitamin-d_100g']) || 0
+        };
+
         barcodeProductData = {
             name: product.product_name || product.product_name_en || 'Unknown Product',
             brand: product.brands || '',
             quantity: product.quantity || '',
             image: product.image_front_small_url || product.image_url || '',
-            servingSize: product.serving_size || '',
-            perServing: {
-                calories: parseFloat(nutrients['energy-kcal_serving']) || parseFloat(nutrients['energy-kcal_100g']) || 0,
-                protein_g: parseFloat(nutrients.proteins_serving) || parseFloat(nutrients.proteins_100g) || 0,
-                carbs_g: parseFloat(nutrients.carbohydrates_serving) || parseFloat(nutrients.carbohydrates_100g) || 0,
-                fat_g: parseFloat(nutrients.fat_serving) || parseFloat(nutrients.fat_100g) || 0,
-                fiber_g: parseFloat(nutrients.fiber_serving) || parseFloat(nutrients.fiber_100g) || 0,
-                sugars_g: parseFloat(nutrients.sugars_serving) || parseFloat(nutrients.sugars_100g) || 0,
-                saturated_fat_g: parseFloat(nutrients['saturated-fat_serving']) || parseFloat(nutrients['saturated-fat_100g']) || 0,
-                sodium_mg: (parseFloat(nutrients.sodium_serving) || parseFloat(nutrients.sodium_100g) || 0) * 1000
-            },
+            servingSize: servingSizeStr,
+            servingWeightG: servingWeightG,
+            perServing: perServing,
+            per100g: per100g,
+            micro100g: micro100g,
             micronutrients: {
-                vitamin_c_mg: parseFloat(nutrients['vitamin-c_serving']) || parseFloat(nutrients['vitamin-c_100g']) || 0,
-                iron_mg: parseFloat(nutrients['iron_serving']) || parseFloat(nutrients['iron_100g']) || 0,
-                calcium_mg: parseFloat(nutrients['calcium_serving']) || parseFloat(nutrients['calcium_100g']) || 0,
-                potassium_mg: parseFloat(nutrients['potassium_serving']) || parseFloat(nutrients['potassium_100g']) || 0,
-                vitamin_a_mcg: parseFloat(nutrients['vitamin-a_serving']) || parseFloat(nutrients['vitamin-a_100g']) || 0,
-                vitamin_d_mcg: parseFloat(nutrients['vitamin-d_serving']) || parseFloat(nutrients['vitamin-d_100g']) || 0
+                vitamin_c_mg: parseFloat(nutrients['vitamin-c_serving']) || micro100g.vitamin_c_mg,
+                iron_mg: parseFloat(nutrients['iron_serving']) || micro100g.iron_mg,
+                calcium_mg: parseFloat(nutrients['calcium_serving']) || micro100g.calcium_mg,
+                potassium_mg: parseFloat(nutrients['potassium_serving']) || micro100g.potassium_mg,
+                vitamin_a_mcg: parseFloat(nutrients['vitamin-a_serving']) || micro100g.vitamin_a_mcg,
+                vitamin_d_mcg: parseFloat(nutrients['vitamin-d_serving']) || micro100g.vitamin_d_mcg
             },
-            isPerServing: !!(nutrients['energy-kcal_serving']),
+            isPerServing: hasServingData,
             barcode: code
         };
 
         barcodeServings = 1;
+        barcodeAmountMode = 'servings'; // reset to servings mode
+        barcodeCustomAmount = '';
 
         // Show the detected banner on the camera view
         const banner = document.getElementById('barcode-detected-banner');
@@ -52981,7 +53028,7 @@ function showBarcodeResult() {
         img.style.display = 'none';
     }
 
-    // Serving info
+    // Serving label
     const servingLabel = document.getElementById('barcode-serving-size-label');
     if (barcodeProductData.isPerServing && barcodeProductData.servingSize) {
         servingLabel.textContent = `(${barcodeProductData.servingSize} each)`;
@@ -52989,8 +53036,59 @@ function showBarcodeResult() {
         servingLabel.textContent = '(per 100g)';
     }
 
+    // Determine unit hint for custom mode (g or ml)
+    const unitEl = document.getElementById('barcode-custom-unit');
+    const isLiquid = /ml|litr/i.test(barcodeProductData.quantity || '') || /ml|litr/i.test(barcodeProductData.servingSize || '');
+    if (unitEl) unitEl.textContent = isLiquid ? 'ml' : 'g';
+
+    // Show hint with serving weight if known
+    const hintEl = document.getElementById('barcode-custom-hint');
+    if (hintEl && barcodeProductData.servingWeightG) {
+        hintEl.textContent = `1 serving = ${barcodeProductData.servingWeightG}${isLiquid ? 'ml' : 'g'}`;
+    } else if (hintEl) {
+        hintEl.textContent = '';
+    }
+
+    // Reset to servings mode
+    barcodeAmountMode = 'servings';
+    barcodeServings = 1;
+    barcodeCustomAmount = '';
+    setBarcodeAmountMode('servings');
+
     updateBarcodeNutritionDisplay();
     modal.style.display = 'flex';
+}
+
+function setBarcodeAmountMode(mode) {
+    barcodeAmountMode = mode;
+    const servingsBtn = document.getElementById('barcode-mode-servings');
+    const customBtn = document.getElementById('barcode-mode-custom');
+    const servingsRow = document.getElementById('barcode-servings-row');
+    const customRow = document.getElementById('barcode-custom-row');
+
+    if (mode === 'servings') {
+        servingsBtn.style.background = 'var(--primary)';
+        servingsBtn.style.color = '#fff';
+        customBtn.style.background = 'transparent';
+        customBtn.style.color = 'var(--text-muted, #888)';
+        servingsRow.style.display = 'flex';
+        customRow.style.display = 'none';
+    } else {
+        customBtn.style.background = 'var(--primary)';
+        customBtn.style.color = '#fff';
+        servingsBtn.style.background = 'transparent';
+        servingsBtn.style.color = 'var(--text-muted, #888)';
+        servingsRow.style.display = 'none';
+        customRow.style.display = 'flex';
+        // Pre-fill with serving weight if available
+        const input = document.getElementById('barcode-custom-amount');
+        if (input && !input.value && barcodeProductData && barcodeProductData.servingWeightG) {
+            input.value = barcodeProductData.servingWeightG;
+            barcodeCustomAmount = String(barcodeProductData.servingWeightG);
+        }
+        if (input) input.focus();
+    }
+    updateBarcodeNutritionDisplay();
 }
 
 function adjustBarcodeServings(delta) {
@@ -52999,22 +53097,38 @@ function adjustBarcodeServings(delta) {
     updateBarcodeNutritionDisplay();
 }
 
+function onBarcodeCustomAmountChange() {
+    const input = document.getElementById('barcode-custom-amount');
+    barcodeCustomAmount = input ? input.value : '';
+    updateBarcodeNutritionDisplay();
+}
+
+// Returns { multiplier, per } based on current mode
+function getBarcodeMultiplier() {
+    if (!barcodeProductData) return { multiplier: 0, per: barcodeProductData?.perServing || {} };
+    if (barcodeAmountMode === 'custom') {
+        const grams = parseFloat(barcodeCustomAmount) || 0;
+        // per100g values × (grams / 100)
+        return { multiplier: grams / 100, per: barcodeProductData.per100g };
+    }
+    return { multiplier: barcodeServings, per: barcodeProductData.perServing };
+}
+
 function updateBarcodeNutritionDisplay() {
     if (!barcodeProductData) return;
-    const s = barcodeServings;
-    const p = barcodeProductData.perServing;
+    const { multiplier, per } = getBarcodeMultiplier();
 
-    document.getElementById('barcode-calories').textContent = Math.round(p.calories * s);
-    document.getElementById('barcode-protein').textContent = Math.round(p.protein_g * s) + 'g';
-    document.getElementById('barcode-carbs').textContent = Math.round(p.carbs_g * s) + 'g';
-    document.getElementById('barcode-fat').textContent = Math.round(p.fat_g * s) + 'g';
+    document.getElementById('barcode-calories').textContent = Math.round(per.calories * multiplier);
+    document.getElementById('barcode-protein').textContent = Math.round(per.protein_g * multiplier) + 'g';
+    document.getElementById('barcode-carbs').textContent = Math.round(per.carbs_g * multiplier) + 'g';
+    document.getElementById('barcode-fat').textContent = Math.round(per.fat_g * multiplier) + 'g';
 
     // Extra nutrients
     const extras = document.getElementById('barcode-extra-nutrients');
     const extraItems = [
-        { label: 'Fiber', value: p.fiber_g * s, unit: 'g' },
-        { label: 'Sugar', value: p.sugars_g * s, unit: 'g' },
-        { label: 'Sodium', value: p.sodium_mg * s, unit: 'mg' }
+        { label: 'Fiber', value: per.fiber_g * multiplier, unit: 'g' },
+        { label: 'Sugar', value: per.sugars_g * multiplier, unit: 'g' },
+        { label: 'Sodium', value: per.sodium_mg * multiplier, unit: 'mg' }
     ].filter(item => item.value > 0);
 
     extras.innerHTML = extraItems.map(item =>
@@ -53030,42 +53144,60 @@ function closeBarcodeResult() {
     if (modal) modal.style.display = 'none';
     barcodeProductData = null;
     barcodeServings = 1;
+    barcodeAmountMode = 'servings';
+    barcodeCustomAmount = '';
 }
 
 async function logBarcodeAsMeal() {
     if (!barcodeProductData) return;
 
-    const s = barcodeServings;
-    const p = barcodeProductData.perServing;
-    const m = barcodeProductData.micronutrients;
+    const { multiplier, per } = getBarcodeMultiplier();
+    const isLiquid = /ml|litr/i.test(barcodeProductData.quantity || '') || /ml|litr/i.test(barcodeProductData.servingSize || '');
+    const unit = isLiquid ? 'ml' : 'g';
+
+    // Build portion description based on mode
+    let portion;
+    if (barcodeAmountMode === 'custom') {
+        const amt = parseFloat(barcodeCustomAmount) || 0;
+        portion = `${amt}${unit}`;
+    } else {
+        const s = barcodeServings;
+        if (barcodeProductData.isPerServing) {
+            portion = `${s} serving${s !== 1 ? 's' : ''}${barcodeProductData.servingSize ? ' (' + barcodeProductData.servingSize + ')' : ''}`;
+        } else {
+            portion = `${Math.round(100 * s)}${unit}`;
+        }
+    }
 
     const foodItems = [{
         name: barcodeProductData.name + (barcodeProductData.brand ? ` (${barcodeProductData.brand})` : ''),
-        portion: barcodeProductData.isPerServing
-            ? `${s} serving${s !== 1 ? 's' : ''}${barcodeProductData.servingSize ? ' (' + barcodeProductData.servingSize + ')' : ''}`
-            : `${Math.round(100 * s)}g`,
-        calories: Math.round(p.calories * s),
-        protein_g: Math.round(p.protein_g * s * 10) / 10,
-        carbs_g: Math.round(p.carbs_g * s * 10) / 10,
-        fat_g: Math.round(p.fat_g * s * 10) / 10,
-        fiber_g: Math.round(p.fiber_g * s * 10) / 10
+        portion: portion,
+        calories: Math.round(per.calories * multiplier),
+        protein_g: Math.round(per.protein_g * multiplier * 10) / 10,
+        carbs_g: Math.round(per.carbs_g * multiplier * 10) / 10,
+        fat_g: Math.round(per.fat_g * multiplier * 10) / 10,
+        fiber_g: Math.round(per.fiber_g * multiplier * 10) / 10
     }];
 
     const totals = {
-        calories: Math.round(p.calories * s),
-        protein_g: Math.round(p.protein_g * s * 10) / 10,
-        carbs_g: Math.round(p.carbs_g * s * 10) / 10,
-        fat_g: Math.round(p.fat_g * s * 10) / 10,
-        fiber_g: Math.round(p.fiber_g * s * 10) / 10
+        calories: Math.round(per.calories * multiplier),
+        protein_g: Math.round(per.protein_g * multiplier * 10) / 10,
+        carbs_g: Math.round(per.carbs_g * multiplier * 10) / 10,
+        fat_g: Math.round(per.fat_g * multiplier * 10) / 10,
+        fiber_g: Math.round(per.fiber_g * multiplier * 10) / 10
     };
 
+    // Micronutrients: use per-100g values when in custom mode, per-serving when in servings mode
+    const microSrc = barcodeAmountMode === 'custom' ? barcodeProductData.micro100g : barcodeProductData.micronutrients;
+    const microScale = barcodeAmountMode === 'custom' ? multiplier : barcodeServings;
+
     const micronutrients = {
-        vitamin_c_mg: Math.round((m.vitamin_c_mg || 0) * s * 10) / 10,
-        iron_mg: Math.round((m.iron_mg || 0) * s * 10) / 10,
-        calcium_mg: Math.round((m.calcium_mg || 0) * s * 10) / 10,
-        potassium_mg: Math.round((m.potassium_mg || 0) * s * 10) / 10,
-        vitamin_a_mcg: Math.round((m.vitamin_a_mcg || 0) * s * 10) / 10,
-        vitamin_d_mcg: Math.round((m.vitamin_d_mcg || 0) * s * 10) / 10,
+        vitamin_c_mg: Math.round((microSrc.vitamin_c_mg || 0) * microScale * 10) / 10,
+        iron_mg: Math.round((microSrc.iron_mg || 0) * microScale * 10) / 10,
+        calcium_mg: Math.round((microSrc.calcium_mg || 0) * microScale * 10) / 10,
+        potassium_mg: Math.round((microSrc.potassium_mg || 0) * microScale * 10) / 10,
+        vitamin_a_mcg: Math.round((microSrc.vitamin_a_mcg || 0) * microScale * 10) / 10,
+        vitamin_d_mcg: Math.round((microSrc.vitamin_d_mcg || 0) * microScale * 10) / 10,
         b12_mcg: 0, omega3_g: 0, zinc_mg: 0, iodine_mcg: 0,
         selenium_mcg: 0, folate_mcg: 0, magnesium_mg: 0,
         vitamin_e_mg: 0, vitamin_k_mcg: 0
@@ -53105,6 +53237,8 @@ async function logBarcodeAsMeal() {
 
     barcodeProductData = null;
     barcodeServings = 1;
+    barcodeAmountMode = 'servings';
+    barcodeCustomAmount = '';
 }
 
 // Initialize calorie tracker when page loads
