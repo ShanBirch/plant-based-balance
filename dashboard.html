@@ -3765,6 +3765,210 @@ async function applyAppTheme(themeKey) {
         color: var(--primary);
     }
 
+    /* Adaptive Calorie Adjustment Card */
+    .adaptive-adjustment-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 25px 0;
+        position: relative;
+        overflow: hidden;
+    }
+    .adaptive-adjustment-card.has-suggestion {
+        border-color: rgba(4, 106, 56, 0.3);
+        background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+    }
+    .adaptive-adjustment-card.on-track {
+        border-color: rgba(34, 197, 94, 0.3);
+        background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    }
+    .adaptive-progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        margin: 12px 0;
+        overflow: hidden;
+    }
+    .adaptive-progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.6s ease;
+        background: var(--primary);
+    }
+    .adaptive-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin: 14px 0;
+    }
+    .adaptive-stat {
+        text-align: center;
+        padding: 10px 6px;
+        background: rgba(4, 106, 56, 0.05);
+        border-radius: 10px;
+    }
+    .adaptive-stat-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+    .adaptive-stat-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+    .adaptive-suggestion-box {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 12px;
+        padding: 14px;
+        margin-top: 14px;
+    }
+    .adaptive-suggestion-box.positive {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+    }
+    .adaptive-suggestion-text {
+        font-size: 0.85rem;
+        color: var(--text-main);
+        line-height: 1.5;
+        margin-bottom: 8px;
+    }
+    .adaptive-suggestion-question {
+        font-size: 0.82rem;
+        color: #92400e;
+        font-style: italic;
+        line-height: 1.4;
+    }
+    .adaptive-suggestion-box.positive .adaptive-suggestion-question {
+        color: var(--primary);
+    }
+    .adaptive-adjust-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        margin-top: 14px;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, var(--primary), #059669);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .adaptive-adjust-btn:active {
+        transform: scale(0.97);
+    }
+    .adaptive-dismiss-btn {
+        display: block;
+        width: 100%;
+        margin-top: 8px;
+        padding: 8px;
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        cursor: pointer;
+    }
+    /* Adaptive Adjustment Confirmation Modal */
+    .adaptive-modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+    }
+    .adaptive-modal-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .adaptive-modal {
+        background: white;
+        border-radius: 20px;
+        padding: 28px 24px;
+        width: 90%;
+        max-width: 360px;
+        text-align: center;
+        transform: scale(0.9);
+        transition: transform 0.2s;
+    }
+    .adaptive-modal-overlay.active .adaptive-modal {
+        transform: scale(1);
+    }
+    .adaptive-modal-icon {
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+    }
+    .adaptive-modal-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 8px;
+    }
+    .adaptive-modal-body {
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+    .adaptive-modal-change {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin: 16px 0;
+        padding: 14px;
+        background: #f0fdf4;
+        border-radius: 12px;
+    }
+    .adaptive-modal-old {
+        font-size: 1rem;
+        color: var(--text-muted);
+        text-decoration: line-through;
+    }
+    .adaptive-modal-arrow {
+        font-size: 1.2rem;
+        color: var(--primary);
+    }
+    .adaptive-modal-new {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+    .adaptive-modal-confirm {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, var(--primary), #059669);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        margin-bottom: 8px;
+    }
+    .adaptive-modal-cancel {
+        width: 100%;
+        padding: 10px;
+        background: none;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        cursor: pointer;
+    }
+
     /* Photo Meal Journal */
     .meal-journal-card {
         background: white;
@@ -9258,6 +9462,66 @@ async function applyAppTheme(themeKey) {
                     <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log more meals to see patterns</p>
                 </div>
             </div>
+
+            <!-- Adaptive Calorie Adjustment -->
+            <div class="adaptive-adjustment-card" id="adaptive-adjustment-section" style="display: none;">
+                <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.3rem;">&#x1F4CA;</span> Adaptive Adjustment
+                </h3>
+                <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Based on your last 2 weeks of tracking &amp; weigh-ins</p>
+
+                <!-- Progress toward eligibility (shown when not yet eligible) -->
+                <div id="adaptive-progress-section" style="display: none;">
+                    <div style="margin-top: 14px; font-size: 0.85rem; color: var(--text-main);">
+                        <span id="adaptive-progress-label">Tracking progress</span>
+                    </div>
+                    <div class="adaptive-progress-bar">
+                        <div class="adaptive-progress-fill" id="adaptive-progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <p id="adaptive-progress-message" style="margin: 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.4;"></p>
+                </div>
+
+                <!-- Stats + suggestion (shown when eligible) -->
+                <div id="adaptive-eligible-section" style="display: none;">
+                    <div class="adaptive-stats-grid">
+                        <div class="adaptive-stat">
+                            <div class="adaptive-stat-value" id="adaptive-stat-tracked">0</div>
+                            <div class="adaptive-stat-label">Days Tracked</div>
+                        </div>
+                        <div class="adaptive-stat">
+                            <div class="adaptive-stat-value" id="adaptive-stat-adherence">0%</div>
+                            <div class="adaptive-stat-label">On Target</div>
+                        </div>
+                        <div class="adaptive-stat">
+                            <div class="adaptive-stat-value" id="adaptive-stat-weight-change">0</div>
+                            <div class="adaptive-stat-label">Weight Change</div>
+                        </div>
+                    </div>
+
+                    <div id="adaptive-suggestion-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adaptive Calorie Adjustment Confirmation Modal -->
+    <div class="adaptive-modal-overlay" id="adaptive-modal-overlay">
+        <div class="adaptive-modal">
+            <div class="adaptive-modal-icon" id="adaptive-modal-icon">&#x2696;&#xFE0F;</div>
+            <div class="adaptive-modal-title" id="adaptive-modal-title">Adjust Your Calories?</div>
+            <div class="adaptive-modal-body" id="adaptive-modal-body">
+                Based on your tracking data and weight trends, we suggest updating your daily calorie goal.
+            </div>
+            <div class="adaptive-modal-change">
+                <span class="adaptive-modal-old" id="adaptive-modal-old">2000 kcal</span>
+                <span class="adaptive-modal-arrow">&#x2192;</span>
+                <span class="adaptive-modal-new" id="adaptive-modal-new">1850 kcal</span>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 16px 0;">
+                Your macros (protein, carbs, fat) will be recalculated proportionally.
+            </p>
+            <button class="adaptive-modal-confirm" onclick="confirmAdaptiveAdjustment()">Yes, update my goals</button>
+            <button class="adaptive-modal-cancel" onclick="closeAdaptiveModal()">No thanks, keep current goals</button>
         </div>
     </div>
 
@@ -48237,6 +48501,323 @@ function renderMealPatterns(insights) {
     `).join('');
 }
 
+// --- Adaptive Calorie Adjustment ---
+
+// Store current adjustment data so the modal can reference it
+let _pendingAdaptiveAdjustment = null;
+
+/**
+ * Load and check adaptive calorie adjustment eligibility.
+ * Called when the Weekly Trends page opens.
+ */
+async function loadAdaptiveAdjustment() {
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+        const userId = session.user.id;
+
+        const card = document.getElementById('adaptive-adjustment-section');
+        if (!card) return;
+
+        // Check if user dismissed this today
+        const dismissedDate = localStorage.getItem('adaptiveAdjustmentDismissedDate');
+        const today = getLocalDateString();
+        if (dismissedDate === today) {
+            card.style.display = 'none';
+            return;
+        }
+
+        // Show the card
+        card.style.display = '';
+
+        // Calculate date range: last 14 days
+        const now = new Date();
+        const fourteenDaysAgo = new Date(now);
+        fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13);
+        const startDate = getLocalDateString(fourteenDaysAgo);
+        const endDate = getLocalDateString(now);
+
+        // Fetch nutrition data, weigh-ins, and user goals in parallel
+        const [nutritionResult, weighInResult, quizResult] = await Promise.allSettled([
+            window.supabaseClient
+                .from('daily_nutrition')
+                .select('*')
+                .eq('user_id', userId)
+                .gte('nutrition_date', startDate)
+                .lte('nutrition_date', endDate)
+                .order('nutrition_date', { ascending: true }),
+            window.supabaseClient
+                .from('daily_weigh_ins')
+                .select('*')
+                .eq('user_id', userId)
+                .gte('weigh_in_date', startDate)
+                .lte('weigh_in_date', endDate)
+                .order('weigh_in_date', { ascending: true }),
+            window.supabaseClient
+                .from('quiz_results')
+                .select('calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g, goal_weight, goal_body_type, sex, weight')
+                .eq('user_id', userId)
+                .order('taken_at', { ascending: false })
+                .limit(1)
+                .single()
+        ]);
+
+        const nutritionDays = nutritionResult.status === 'fulfilled' ? (nutritionResult.value.data || []) : [];
+        const weighIns = weighInResult.status === 'fulfilled' ? (weighInResult.value.data || []) : [];
+        const quizData = quizResult.status === 'fulfilled' ? quizResult.value.data : null;
+
+        if (!quizData || !quizData.calorie_goal) {
+            card.style.display = 'none';
+            return;
+        }
+
+        const currentCalorieGoal = quizData.calorie_goal;
+        const goalWeight = quizData.goal_weight || quizData.weight;
+
+        // Run the analysis
+        const result = analyzeAdaptiveAdjustment(nutritionDays, weighIns, currentCalorieGoal, goalWeight);
+
+        if (!result) {
+            card.style.display = 'none';
+            return;
+        }
+
+        // Render the result
+        renderAdaptiveAdjustment(result, quizData);
+
+    } catch (err) {
+        console.error('Error loading adaptive adjustment:', err);
+    }
+}
+
+/**
+ * Render the adaptive adjustment card based on analysis results.
+ */
+function renderAdaptiveAdjustment(result, quizData) {
+    const card = document.getElementById('adaptive-adjustment-section');
+    const progressSection = document.getElementById('adaptive-progress-section');
+    const eligibleSection = document.getElementById('adaptive-eligible-section');
+
+    if (!card) return;
+
+    if (!result.eligible) {
+        // Show progress toward eligibility
+        card.classList.remove('has-suggestion', 'on-track');
+        progressSection.style.display = '';
+        eligibleSection.style.display = 'none';
+
+        const progressLabel = document.getElementById('adaptive-progress-label');
+        const progressFill = document.getElementById('adaptive-progress-fill');
+        const progressMessage = document.getElementById('adaptive-progress-message');
+
+        if (result.reason === 'not_enough_tracking') {
+            const pct = Math.round((result.trackedDays / result.requiredDays) * 100);
+            progressLabel.textContent = `${result.trackedDays} / ${result.requiredDays} days tracked`;
+            progressFill.style.width = pct + '%';
+            progressMessage.textContent = result.message;
+        } else if (result.reason === 'not_enough_weigh_ins') {
+            progressLabel.textContent = `${result.weighInCount} / 2 weigh-ins`;
+            progressFill.style.width = (result.weighInCount / 2 * 100) + '%';
+            progressMessage.textContent = result.message;
+        }
+        return;
+    }
+
+    // Eligible - show full analysis
+    progressSection.style.display = 'none';
+    eligibleSection.style.display = '';
+
+    // Update stats
+    document.getElementById('adaptive-stat-tracked').textContent = result.trackedDays;
+    document.getElementById('adaptive-stat-adherence').textContent = result.adherenceRate + '%';
+
+    const weightChangeEl = document.getElementById('adaptive-stat-weight-change');
+    const weightUnitPref = localStorage.getItem('weightUnitPreference') || 'kg';
+    let weightChangeDisplay;
+    if (weightUnitPref === 'lbs') {
+        weightChangeDisplay = (result.weightChange * 2.20462).toFixed(1) + ' lbs';
+    } else {
+        weightChangeDisplay = result.weightChange.toFixed(1) + ' kg';
+    }
+    if (result.weightChange > 0) weightChangeDisplay = '+' + weightChangeDisplay;
+    weightChangeEl.textContent = weightChangeDisplay;
+
+    // Build suggestion
+    const container = document.getElementById('adaptive-suggestion-container');
+    const suggestion = result.suggestion;
+
+    if (!suggestion) {
+        container.innerHTML = '';
+        return;
+    }
+
+    if (suggestion.direction === 'none') {
+        // On track - positive reinforcement
+        card.classList.add('on-track');
+        card.classList.remove('has-suggestion');
+        container.innerHTML = `
+            <div class="adaptive-suggestion-box positive">
+                <div class="adaptive-suggestion-text">${suggestion.reason}</div>
+            </div>
+        `;
+    } else {
+        // Has a suggestion
+        card.classList.add('has-suggestion');
+        card.classList.remove('on-track');
+
+        const directionWord = suggestion.direction === 'increase' ? 'Increase' : 'Decrease';
+        const directionIcon = suggestion.direction === 'increase' ? '&#x1F4C8;' : '&#x1F4C9;';
+
+        container.innerHTML = `
+            <div class="adaptive-suggestion-box">
+                <div class="adaptive-suggestion-text">${suggestion.reason}</div>
+                ${suggestion.question ? `<div class="adaptive-suggestion-question">${suggestion.question}</div>` : ''}
+            </div>
+            <button class="adaptive-adjust-btn" onclick="openAdaptiveModal()">
+                <span>${directionIcon}</span>
+                <span>${directionWord} to ${result.newCalorieGoal} kcal/day</span>
+            </button>
+            <button class="adaptive-dismiss-btn" onclick="dismissAdaptiveAdjustment()">Not right now</button>
+        `;
+
+        // Store pending adjustment data for the modal
+        _pendingAdaptiveAdjustment = {
+            currentCalorieGoal: result.currentCalorieGoal,
+            newCalorieGoal: result.newCalorieGoal,
+            direction: suggestion.direction,
+            quizData: quizData
+        };
+    }
+}
+
+/**
+ * Open the confirmation modal for calorie adjustment.
+ */
+function openAdaptiveModal() {
+    if (!_pendingAdaptiveAdjustment) return;
+
+    const overlay = document.getElementById('adaptive-modal-overlay');
+    const { currentCalorieGoal, newCalorieGoal, direction } = _pendingAdaptiveAdjustment;
+
+    document.getElementById('adaptive-modal-icon').innerHTML = direction === 'increase' ? '&#x1F4C8;' : '&#x1F4C9;';
+    document.getElementById('adaptive-modal-title').textContent =
+        direction === 'increase' ? 'Increase Your Calories?' : 'Reduce Your Calories?';
+
+    const diff = Math.abs(newCalorieGoal - currentCalorieGoal);
+    document.getElementById('adaptive-modal-body').textContent =
+        direction === 'increase'
+            ? `Based on your 2-week tracking data, we suggest adding ${diff} calories per day to support your weight gain goals.`
+            : `Based on your 2-week tracking data, we suggest reducing ${diff} calories per day to support your weight loss goals.`;
+
+    document.getElementById('adaptive-modal-old').textContent = currentCalorieGoal + ' kcal';
+    document.getElementById('adaptive-modal-new').textContent = newCalorieGoal + ' kcal';
+
+    overlay.classList.add('active');
+}
+
+/**
+ * Close the adjustment modal without applying.
+ */
+function closeAdaptiveModal() {
+    const overlay = document.getElementById('adaptive-modal-overlay');
+    overlay.classList.remove('active');
+}
+
+/**
+ * Confirm and apply the adaptive calorie adjustment.
+ * Updates quiz_results, daily_nutrition, and reloads the UI.
+ */
+async function confirmAdaptiveAdjustment() {
+    if (!_pendingAdaptiveAdjustment) return;
+
+    const confirmBtn = document.querySelector('.adaptive-modal-confirm');
+    confirmBtn.textContent = 'Updating...';
+    confirmBtn.disabled = true;
+
+    try {
+        const userId = window.currentUser?.id;
+        if (!userId) throw new Error('Not authenticated');
+
+        const { newCalorieGoal, quizData } = _pendingAdaptiveAdjustment;
+
+        // Recalculate macros proportionally based on new calorie goal
+        const goalBodyType = quizData.goal_body_type || 'Athletic';
+        const currentWeight = quizData.weight || 70;
+        const macros = calculateMacros(newCalorieGoal, goalBodyType, currentWeight);
+
+        const newGoals = {
+            calorie_goal: newCalorieGoal,
+            protein_goal_g: macros.protein_g,
+            carbs_goal_g: macros.carbs_g,
+            fat_goal_g: macros.fat_g
+        };
+
+        // Update quiz_results
+        await window.supabaseClient.from('quiz_results')
+            .update({
+                calorie_goal: newGoals.calorie_goal,
+                protein_goal_g: newGoals.protein_goal_g,
+                carbs_goal_g: newGoals.carbs_goal_g,
+                fat_goal_g: newGoals.fat_goal_g
+            })
+            .eq('user_id', userId);
+
+        // Update today's daily_nutrition goals
+        const today = getLocalDateString();
+        await window.supabaseClient.from('daily_nutrition')
+            .upsert({
+                user_id: userId,
+                nutrition_date: today,
+                calorie_goal: newGoals.calorie_goal,
+                protein_goal_g: newGoals.protein_goal_g,
+                carbs_goal_g: newGoals.carbs_goal_g,
+                fat_goal_g: newGoals.fat_goal_g
+            }, {
+                onConflict: 'user_id,nutrition_date'
+            });
+
+        // Close modal
+        closeAdaptiveModal();
+
+        // Update the card to show success
+        const container = document.getElementById('adaptive-suggestion-container');
+        const card = document.getElementById('adaptive-adjustment-section');
+        card.classList.remove('has-suggestion');
+        card.classList.add('on-track');
+        container.innerHTML = `
+            <div class="adaptive-suggestion-box positive">
+                <div class="adaptive-suggestion-text">
+                    <strong>Goals updated!</strong> Your new daily target is <strong>${newGoals.calorie_goal} kcal</strong>
+                    (${newGoals.protein_goal_g}g protein, ${newGoals.carbs_goal_g}g carbs, ${newGoals.fat_goal_g}g fat).
+                    Keep tracking and we'll check in again in 2 weeks.
+                </div>
+            </div>
+        `;
+
+        // Reload nutrition UI to reflect new goals
+        _pendingAdaptiveAdjustment = null;
+        if (typeof loadTodayNutrition === 'function') {
+            loadTodayNutrition();
+        }
+
+    } catch (err) {
+        console.error('Error applying adaptive adjustment:', err);
+        alert('Failed to update goals. Please try again.');
+    } finally {
+        confirmBtn.textContent = 'Yes, update my goals';
+        confirmBtn.disabled = false;
+    }
+}
+
+/**
+ * Dismiss the adaptive adjustment suggestion for today.
+ */
+function dismissAdaptiveAdjustment() {
+    localStorage.setItem('adaptiveAdjustmentDismissedDate', getLocalDateString());
+    const card = document.getElementById('adaptive-adjustment-section');
+    if (card) card.style.display = 'none';
+}
+
 // --- 6. Photo Meal Journal ---
 async function loadMealJournal() {
     try {
@@ -48843,7 +49424,8 @@ function openWeeklyTrendsPage() {
         loadWeeklyMetrics(window.currentUser?.id),
         loadMultiWeekData(4),
         loadMealPatterns(),
-        loadMealJournal()
+        loadMealJournal(),
+        loadAdaptiveAdjustment()
     ]);
 
 }
@@ -48852,6 +49434,9 @@ function openWeeklyTrendsPage() {
 function closeWeeklyTrendsPage() {
     const page = document.getElementById('weekly-trends-page');
     if (!page) return;
+
+    // Close adaptive modal if open
+    closeAdaptiveModal();
 
     // Ensure we return to the Nutrition tab
     const mealsBtn = document.querySelector('.bottom-nav .nav-item[onclick*="meals"]');
