@@ -2,4 +2,5 @@ assets/*.glb
 !assets/characters/baby.glb
 node_modules/
 .env
+.env.*
 .DS_Store
