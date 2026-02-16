@@ -709,6 +709,330 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* AI Coach Section */
+        .ai-coach-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 160px);
+        }
+
+        .ai-coach-user-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .ai-coach-user-bar input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .ai-coach-user-bar input:focus {
+            outline: none;
+            border-color: #48864B;
+        }
+
+        .ai-user-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 240px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+
+        .ai-user-dropdown.show {
+            display: block;
+        }
+
+        .ai-user-option {
+            padding: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.15s;
+        }
+
+        .ai-user-option:hover {
+            background: #f1f5f9;
+        }
+
+        .ai-user-option .name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .ai-user-option .email {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .ai-selected-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: #48864B;
+            color: white;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .ai-selected-user .remove-user {
+            cursor: pointer;
+            opacity: 0.8;
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+
+        .ai-selected-user .remove-user:hover {
+            opacity: 1;
+        }
+
+        .ai-timeframe-select {
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .ai-timeframe-select:focus {
+            outline: none;
+            border-color: #48864B;
+        }
+
+        .ai-coach-chat {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .ai-coach-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            gap: 16px;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .ai-coach-empty i {
+            width: 48px;
+            height: 48px;
+            color: #cbd5e1;
+        }
+
+        .ai-coach-empty h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.2rem;
+            color: #64748b;
+        }
+
+        .ai-coach-empty .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .ai-coach-empty .suggestion-chip {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: #475569;
+        }
+
+        .ai-coach-empty .suggestion-chip:hover {
+            background: #e2e8f0;
+            border-color: #48864B;
+            color: #1e293b;
+        }
+
+        .ai-msg {
+            max-width: 85%;
+            padding: 14px 18px;
+            border-radius: 16px;
+            line-height: 1.6;
+            font-size: 0.9rem;
+        }
+
+        .ai-msg.user-msg {
+            align-self: flex-end;
+            background: #48864B;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .ai-msg.ai-msg-response {
+            align-self: flex-start;
+            background: white;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .ai-msg.ai-msg-response h1,
+        .ai-msg.ai-msg-response h2,
+        .ai-msg.ai-msg-response h3 {
+            font-family: 'Montserrat', sans-serif;
+            margin: 12px 0 6px 0;
+            color: #1e293b;
+        }
+
+        .ai-msg.ai-msg-response h1 { font-size: 1.1rem; }
+        .ai-msg.ai-msg-response h2 { font-size: 1rem; }
+        .ai-msg.ai-msg-response h3 { font-size: 0.95rem; }
+
+        .ai-msg.ai-msg-response ul,
+        .ai-msg.ai-msg-response ol {
+            padding-left: 20px;
+            margin: 6px 0;
+        }
+
+        .ai-msg.ai-msg-response li {
+            margin-bottom: 4px;
+        }
+
+        .ai-msg.ai-msg-response strong {
+            color: #48864B;
+        }
+
+        .ai-msg.ai-msg-response code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .ai-msg-loading {
+            align-self: flex-start;
+            padding: 14px 18px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            border-bottom-left-radius: 4px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .ai-msg-loading .dot {
+            width: 8px;
+            height: 8px;
+            background: #48864B;
+            border-radius: 50%;
+            animation: aiDotPulse 1.4s ease-in-out infinite;
+        }
+
+        .ai-msg-loading .dot:nth-child(2) { animation-delay: 0.2s; }
+        .ai-msg-loading .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes aiDotPulse {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .ai-coach-input-bar {
+            display: flex;
+            gap: 10px;
+            padding: 16px 20px;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+            border-radius: 0 0 16px 16px;
+        }
+
+        .ai-coach-input-bar input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 24px;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .ai-coach-input-bar input:focus {
+            outline: none;
+            border-color: #48864B;
+        }
+
+        .ai-coach-input-bar input:disabled {
+            background: #f1f5f9;
+            color: #94a3b8;
+        }
+
+        .ai-send-btn {
+            background: #48864B;
+            color: white;
+            border: none;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+
+        .ai-send-btn:hover {
+            background: #3a6d3c;
+        }
+
+        .ai-send-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .ai-coach-container {
+                height: calc(100vh - 120px);
+            }
+
+            .ai-coach-user-bar {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .ai-msg {
+                max-width: 95%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -746,6 +1070,10 @@
             <div class="nav-item" onclick="showSection('analytics', this)">
                 <i data-lucide="bar-chart"></i>
                 <span>Analytics</span>
+            </div>
+            <div class="nav-item" onclick="showSection('ai-coach', this)">
+                <i data-lucide="bot"></i>
+                <span>AI Coach</span>
             </div>
 
             <!-- Logout at bottom -->
@@ -887,6 +1215,52 @@
                     <h2>Feature Usage Summary</h2>
                     <p style="color: #64748b; margin-bottom: 20px;">Last 30 days engagement breakdown.</p>
                     <div id="usage-bars" class="loading">Loading...</div>
+                </div>
+            </div>
+
+            <!-- AI Coach Section -->
+            <div id="ai-coach" class="section">
+                <div class="content-card" style="padding: 0; overflow: hidden;">
+                    <div class="ai-coach-container">
+                        <!-- User Selection Bar -->
+                        <div class="ai-coach-user-bar">
+                            <div style="position: relative; flex: 1;">
+                                <input type="text" id="ai-user-search" placeholder="Search for a client by name or email..." oninput="aiSearchUsers(this.value)" onfocus="aiSearchUsers(this.value)" autocomplete="off">
+                                <div class="ai-user-dropdown" id="ai-user-dropdown"></div>
+                            </div>
+                            <div id="ai-selected-user-badge" style="display: none;"></div>
+                            <select class="ai-timeframe-select" id="ai-timeframe" onchange="aiTimeframeChanged()">
+                                <option value="7">Last 7 days</option>
+                                <option value="14">Last 14 days</option>
+                                <option value="30">Last 30 days</option>
+                            </select>
+                        </div>
+
+                        <!-- Chat Messages -->
+                        <div class="ai-coach-chat" id="ai-coach-chat">
+                            <div class="ai-coach-empty" id="ai-coach-empty">
+                                <i data-lucide="bot"></i>
+                                <h3>AI Coach Assistant</h3>
+                                <p>Select a client above, then ask me anything about their progress.</p>
+                                <div class="suggestions">
+                                    <div class="suggestion-chip" onclick="aiUseSuggestion('Tell me about their week')">Tell me about their week</div>
+                                    <div class="suggestion-chip" onclick="aiUseSuggestion('Write a check-in review')">Write a check-in review</div>
+                                    <div class="suggestion-chip" onclick="aiUseSuggestion('How is their nutrition tracking?')">Nutrition tracking?</div>
+                                    <div class="suggestion-chip" onclick="aiUseSuggestion('Are they hitting their protein goals?')">Hitting protein goals?</div>
+                                    <div class="suggestion-chip" onclick="aiUseSuggestion('Draft a motivational check-in message')">Draft a message</div>
+                                    <div class="suggestion-chip" onclick="aiUseSuggestion('What should I focus on with them?')">Coaching focus?</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Input Bar -->
+                        <div class="ai-coach-input-bar">
+                            <input type="text" id="ai-coach-input" placeholder="Select a client first..." disabled onkeydown="if(event.key==='Enter') aiSendMessage()">
+                            <button class="ai-send-btn" id="ai-send-btn" disabled onclick="aiSendMessage()">
+                                <i data-lucide="send" style="width: 20px; height: 20px;"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1488,6 +1862,267 @@
                 closeSidebar();
             }
         }
+
+        // ==========================================
+        // AI COACH ASSISTANT
+        // ==========================================
+        let aiSelectedUser = null;
+        let aiUserData = null;
+        let aiChatHistory = [];
+        let aiIsLoading = false;
+        let aiSearchTimeout = null;
+
+        // Search users for the AI coach user picker
+        async function aiSearchUsers(term) {
+            const dropdown = document.getElementById('ai-user-dropdown');
+            if (!term || term.length < 2) {
+                dropdown.classList.remove('show');
+                return;
+            }
+
+            clearTimeout(aiSearchTimeout);
+            aiSearchTimeout = setTimeout(async () => {
+                try {
+                    const results = await dbHelpers.admin.searchUsers(term);
+                    if (results.length === 0) {
+                        dropdown.innerHTML = '<div style="padding: 12px 16px; color: #94a3b8;">No users found</div>';
+                    } else {
+                        dropdown.innerHTML = results.map(u => `
+                            <div class="ai-user-option" onclick="aiSelectUser('${u.id}', '${(u.name || u.email).replace(/'/g, "\\'")}', '${u.email}')">
+                                <div class="activity-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">${getInitials(u.name || u.email)}</div>
+                                <div>
+                                    <div class="name">${u.name || 'No name'}</div>
+                                    <div class="email">${u.email}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                    dropdown.classList.add('show');
+                } catch (err) {
+                    console.error('AI user search error:', err);
+                }
+            }, 300);
+        }
+
+        // Select a user for the AI coach
+        async function aiSelectUser(userId, userName, userEmail) {
+            aiSelectedUser = { id: userId, name: userName, email: userEmail };
+            aiChatHistory = [];
+            aiUserData = null;
+
+            // Update UI
+            document.getElementById('ai-user-dropdown').classList.remove('show');
+            document.getElementById('ai-user-search').style.display = 'none';
+
+            const badge = document.getElementById('ai-selected-user-badge');
+            badge.innerHTML = `
+                <div class="ai-selected-user">
+                    <span>${userName}</span>
+                    <span class="remove-user" onclick="aiClearUser()">&times;</span>
+                </div>
+            `;
+            badge.style.display = 'block';
+
+            // Enable input
+            const input = document.getElementById('ai-coach-input');
+            input.disabled = false;
+            input.placeholder = `Ask about ${userName}...`;
+            document.getElementById('ai-send-btn').disabled = false;
+
+            // Clear chat and show loading state for data fetch
+            const chat = document.getElementById('ai-coach-chat');
+            chat.innerHTML = '<div class="ai-msg-loading"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span style="margin-left: 8px; color: #64748b; font-size: 0.85rem;">Loading client data...</span></div>';
+
+            // Fetch user data
+            try {
+                const days = parseInt(document.getElementById('ai-timeframe').value);
+                aiUserData = await dbHelpers.admin.getUserWeekData(userId, days);
+                aiUserData._days = days;
+
+                // Show empty state with data loaded confirmation
+                chat.innerHTML = '';
+                const emptyEl = document.getElementById('ai-coach-empty');
+                if (emptyEl) emptyEl.remove();
+
+                // Show ready message
+                const readyMsg = document.createElement('div');
+                readyMsg.className = 'ai-msg ai-msg-response';
+                readyMsg.innerHTML = `<strong>${userName}'s</strong> data loaded (last ${days} days). I have their workouts, meals, check-ins, conversations, and wearable data ready.<br><br>What would you like to know?`;
+                chat.appendChild(readyMsg);
+                chat.scrollTop = chat.scrollHeight;
+            } catch (err) {
+                console.error('Failed to load user data:', err);
+                chat.innerHTML = `<div style="padding: 20px; color: #ef4444;">Failed to load client data. Please try again.</div>`;
+            }
+        }
+
+        // Clear selected user
+        function aiClearUser() {
+            aiSelectedUser = null;
+            aiUserData = null;
+            aiChatHistory = [];
+
+            document.getElementById('ai-selected-user-badge').style.display = 'none';
+            const searchInput = document.getElementById('ai-user-search');
+            searchInput.style.display = 'block';
+            searchInput.value = '';
+
+            const input = document.getElementById('ai-coach-input');
+            input.disabled = true;
+            input.placeholder = 'Select a client first...';
+            document.getElementById('ai-send-btn').disabled = true;
+
+            // Reset chat area
+            const chat = document.getElementById('ai-coach-chat');
+            chat.innerHTML = `
+                <div class="ai-coach-empty" id="ai-coach-empty">
+                    <i data-lucide="bot"></i>
+                    <h3>AI Coach Assistant</h3>
+                    <p>Select a client above, then ask me anything about their progress.</p>
+                    <div class="suggestions">
+                        <div class="suggestion-chip" onclick="aiUseSuggestion('Tell me about their week')">Tell me about their week</div>
+                        <div class="suggestion-chip" onclick="aiUseSuggestion('Write a check-in review')">Write a check-in review</div>
+                        <div class="suggestion-chip" onclick="aiUseSuggestion('How is their nutrition tracking?')">Nutrition tracking?</div>
+                        <div class="suggestion-chip" onclick="aiUseSuggestion('Are they hitting their protein goals?')">Hitting protein goals?</div>
+                        <div class="suggestion-chip" onclick="aiUseSuggestion('Draft a motivational check-in message')">Draft a message</div>
+                        <div class="suggestion-chip" onclick="aiUseSuggestion('What should I focus on with them?')">Coaching focus?</div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        // Handle timeframe change - reload data
+        async function aiTimeframeChanged() {
+            if (!aiSelectedUser) return;
+            await aiSelectUser(aiSelectedUser.id, aiSelectedUser.name, aiSelectedUser.email);
+        }
+
+        // Use a suggestion chip
+        function aiUseSuggestion(text) {
+            if (!aiSelectedUser) {
+                document.getElementById('ai-user-search').focus();
+                return;
+            }
+            document.getElementById('ai-coach-input').value = text;
+            aiSendMessage();
+        }
+
+        // Send a message to the AI coach
+        async function aiSendMessage() {
+            const input = document.getElementById('ai-coach-input');
+            const query = input.value.trim();
+            if (!query || !aiSelectedUser || !aiUserData || aiIsLoading) return;
+
+            aiIsLoading = true;
+            input.value = '';
+            input.disabled = true;
+            document.getElementById('ai-send-btn').disabled = true;
+
+            const chat = document.getElementById('ai-coach-chat');
+
+            // Remove empty state if present
+            const emptyEl = document.getElementById('ai-coach-empty');
+            if (emptyEl) emptyEl.remove();
+
+            // Add user message
+            const userMsg = document.createElement('div');
+            userMsg.className = 'ai-msg user-msg';
+            userMsg.textContent = query;
+            chat.appendChild(userMsg);
+
+            // Add loading dots
+            const loadingEl = document.createElement('div');
+            loadingEl.className = 'ai-msg-loading';
+            loadingEl.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+            chat.appendChild(loadingEl);
+            chat.scrollTop = chat.scrollHeight;
+
+            try {
+                const response = await fetch('/.netlify/functions/admin-ai-coach', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query,
+                        userData: aiUserData,
+                        chatHistory: aiChatHistory
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to get AI response');
+                }
+
+                // Remove loading
+                loadingEl.remove();
+
+                // Add AI response
+                const aiMsg = document.createElement('div');
+                aiMsg.className = 'ai-msg ai-msg-response';
+                aiMsg.innerHTML = aiFormatMarkdown(data.reply);
+                chat.appendChild(aiMsg);
+
+                // Store in history
+                aiChatHistory.push({ role: 'user', text: query });
+                aiChatHistory.push({ role: 'model', text: data.reply });
+
+            } catch (err) {
+                console.error('AI coach error:', err);
+                loadingEl.remove();
+
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'ai-msg ai-msg-response';
+                errorMsg.style.borderColor = '#fca5a5';
+                errorMsg.style.background = '#fef2f2';
+                errorMsg.innerHTML = `<span style="color: #ef4444;">Error: ${err.message || 'Something went wrong. Please try again.'}</span>`;
+                chat.appendChild(errorMsg);
+            }
+
+            chat.scrollTop = chat.scrollHeight;
+            aiIsLoading = false;
+            input.disabled = false;
+            input.placeholder = `Ask about ${aiSelectedUser.name}...`;
+            document.getElementById('ai-send-btn').disabled = false;
+            input.focus();
+        }
+
+        // Simple markdown to HTML formatter
+        function aiFormatMarkdown(text) {
+            if (!text) return '';
+            let html = text
+                // Code blocks
+                .replace(/```([\s\S]*?)```/g, '<pre style="background:#f1f5f9;padding:12px;border-radius:8px;overflow-x:auto;font-size:0.85rem;"><code>$1</code></pre>')
+                // Bold
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                // Italic
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                // Headers
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                // Horizontal rules
+                .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0;">')
+                // Unordered lists
+                .replace(/^- (.+)$/gm, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+                // Ordered lists
+                .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+                // Line breaks
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/\n/g, '<br>');
+            return html;
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('ai-user-dropdown');
+            const searchInput = document.getElementById('ai-user-search');
+            if (dropdown && !dropdown.contains(e.target) && e.target !== searchInput) {
+                dropdown.classList.remove('show');
+            }
+        });
 
         // Initialize icons
         lucide.createIcons();
