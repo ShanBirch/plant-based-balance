@@ -64,7 +64,15 @@ RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
     "potassium_mg": number,
     "b12_mcg": number,
     "omega3_g": number,
-    "zinc_mg": number
+    "zinc_mg": number,
+    "vitamin_d_mcg": number,
+    "iodine_mcg": number,
+    "selenium_mcg": number,
+    "folate_mcg": number,
+    "magnesium_mg": number,
+    "vitamin_a_mcg": number,
+    "vitamin_e_mg": number,
+    "vitamin_k_mcg": number
   },
   "confidence": "high/medium/low",
   "notes": "Any additional observations or caveats about the analysis"
