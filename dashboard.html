@@ -8872,8 +8872,8 @@ async function applyAppTheme(themeKey) {
                 return;
             }
 
-            // Find next available lesson (uses learning-inline.js exposed fn)
-            if (typeof window._getNextAvailableLesson !== 'function') {
+            // Find a random available lesson from any category (uses learning-inline.js exposed fn)
+            if (typeof window._getRandomAvailableLesson !== 'function') {
                 card.style.display = 'none';
                 doneCard.style.display = 'none';
                 return;
@@ -8909,7 +8909,7 @@ async function applyAppTheme(themeKey) {
                 unit = savedQuizLesson.unit;
                 module = savedQuizLesson.module;
             } else {
-                const nextLesson = window._getNextAvailableLesson();
+                const nextLesson = window._getRandomAvailableLesson();
                 if (!nextLesson) {
                     // All lessons completed
                     card.style.display = 'none';
@@ -53151,9 +53151,13 @@ function closeBarcodeResult() {
 async function logBarcodeAsMeal() {
     if (!barcodeProductData) return;
 
+    // Capture all data before closeBarcodeResult() nulls barcodeProductData
     const { multiplier, per } = getBarcodeMultiplier();
+    const barcode = barcodeProductData.barcode;
     const isLiquid = /ml|litr/i.test(barcodeProductData.quantity || '') || /ml|litr/i.test(barcodeProductData.servingSize || '');
     const unit = isLiquid ? 'ml' : 'g';
+    const microSrc = barcodeAmountMode === 'custom' ? barcodeProductData.micro100g : barcodeProductData.micronutrients;
+    const microScale = barcodeAmountMode === 'custom' ? multiplier : barcodeServings;
 
     // Build portion description based on mode
     let portion;
@@ -53187,10 +53191,6 @@ async function logBarcodeAsMeal() {
         fiber_g: Math.round(per.fiber_g * multiplier * 10) / 10
     };
 
-    // Micronutrients: use per-100g values when in custom mode, per-serving when in servings mode
-    const microSrc = barcodeAmountMode === 'custom' ? barcodeProductData.micro100g : barcodeProductData.micronutrients;
-    const microScale = barcodeAmountMode === 'custom' ? multiplier : barcodeServings;
-
     const micronutrients = {
         vitamin_c_mg: Math.round((microSrc.vitamin_c_mg || 0) * microScale * 10) / 10,
         iron_mg: Math.round((microSrc.iron_mg || 0) * microScale * 10) / 10,
@@ -53212,7 +53212,7 @@ async function logBarcodeAsMeal() {
             totals,
             micronutrients,
             confidence: 'high',
-            notes: `Barcode scan: ${barcodeProductData.barcode}`
+            notes: `Barcode scan: ${barcode}`
         });
 
         // Award points
