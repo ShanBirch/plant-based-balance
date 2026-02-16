@@ -1,27 +1,36 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'org.plantbasedbalance.fitgotchi',
+  appId: 'com.fitgotchi.app',
   appName: 'FitGotchi',
-  webDir: 'www',
+
+  // Load from live Netlify site — means you deploy as normal
+  // and the app always shows the latest version
   server: {
-    // Load from your live Netlify site — this means:
-    // 1. You keep deploying to Netlify as normal
-    // 2. The native app is just a shell that loads your site
-    // 3. You only rebuild the APK when adding new native plugins
-    // 4. All your edge functions, API routes, etc. work as-is
     url: 'https://plantbased-balance.org',
     cleartext: false,
   },
+
+  // Capacitor requires a webDir even when loading remotely
+  webDir: 'www',
+
   android: {
-    backgroundColor: '#1e3a5f',
+    // Allow mixed content for any HTTP resources
+    allowMixedContent: true,
+    // Append user agent so your JS can detect native app
+    appendUserAgent: 'FitGotchi-Native',
+    // Enable background color during load
+    backgroundColor: '#1a1a2e',
   },
+
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
-      launchAutoHide: true,
-      backgroundColor: '#1e3a5f',
+      backgroundColor: '#1a1a2e',
       showSpinner: false,
+      androidSpinnerStyle: 'small',
+      splashFullScreen: true,
+      splashImmersive: true,
     },
   },
 };
