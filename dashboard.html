@@ -8141,7 +8141,7 @@ async function applyAppTheme(themeKey) {
 
             const { data: meals, error } = await window.supabaseClient
                 .from('meal_logs')
-                .select('meal_date, meal_time, meal_type, calories, protein_g, carbs_g, fat_g')
+                .select('meal_date, meal_time, meal_type, calories, protein_g, carbs_g, fat_g, fiber_g, micronutrients')
                 .eq('user_id', session.user.id)
                 .gte('meal_date', getLocalDateString(sevenDaysAgo))
                 .order('meal_date', { ascending: true });
@@ -47506,7 +47506,7 @@ async function loadMealPatterns() {
 
         const { data: meals, error } = await window.supabaseClient
             .from('meal_logs')
-            .select('meal_date, meal_time, meal_type, calories, protein_g, carbs_g, fat_g')
+            .select('meal_date, meal_time, meal_type, calories, protein_g, carbs_g, fat_g, fiber_g, micronutrients')
             .eq('user_id', session.user.id)
             .gte('meal_date', getLocalDateString(sevenDaysAgo))
             .order('meal_date', { ascending: true });
@@ -47641,7 +47641,131 @@ function analyzeMealPatterns(meals) {
         }
     }
 
-    return insights.slice(0, 4); // Max 4 insights
+    // --- 6. Macro Balance Analysis ---
+    const totalProtein = meals.reduce((s, m) => s + (parseFloat(m.protein_g) || 0), 0);
+    const totalCarbs = meals.reduce((s, m) => s + (parseFloat(m.carbs_g) || 0), 0);
+    const totalFat = meals.reduce((s, m) => s + (parseFloat(m.fat_g) || 0), 0);
+    const totalCals = meals.reduce((s, m) => s + (parseFloat(m.calories) || 0), 0);
+
+    if (totalCals > 0) {
+        const proteinPct = Math.round((totalProtein * 4 / totalCals) * 100);
+        const carbsPct = Math.round((totalCarbs * 4 / totalCals) * 100);
+        const fatPct = Math.round((totalFat * 9 / totalCals) * 100);
+
+        if (proteinPct < 12) {
+            insights.push({
+                icon: '&#x1F4AA;',
+                text: `Only <strong>${proteinPct}%</strong> of your calories come from protein this week. Aim for 15-25% to support muscle recovery and satiety.`
+            });
+        }
+        if (fatPct > 40) {
+            insights.push({
+                icon: '&#x1F95C;',
+                text: `<strong>${fatPct}%</strong> of your calories come from fat. Try shifting some towards whole carbs for sustained energy.`
+            });
+        } else if (fatPct < 15) {
+            insights.push({
+                icon: '&#x1F95C;',
+                text: `Only <strong>${fatPct}%</strong> of your calories come from fat. Healthy fats (avocado, nuts, seeds) support hormone production.`
+            });
+        }
+    }
+
+    // --- 7. Fiber check ---
+    const totalFiber = meals.reduce((s, m) => s + (parseFloat(m.fiber_g) || 0), 0);
+    const daysWithData = Object.keys(dailyCals).length;
+    if (daysWithData >= 3 && totalFiber > 0) {
+        const avgFiber = totalFiber / daysWithData;
+        if (avgFiber < 20) {
+            insights.push({
+                icon: '&#x1F33E;',
+                text: `Your fiber averages <strong>${Math.round(avgFiber)}g/day</strong>. Aim for 25-35g via beans, oats, and veggies for gut health and satiety.`
+            });
+        } else if (avgFiber >= 35) {
+            insights.push({
+                icon: '&#x2705;',
+                text: `Great fiber intake at <strong>${Math.round(avgFiber)}g/day</strong>! This supports digestion, gut bacteria, and blood sugar control.`
+            });
+        }
+    }
+
+    // --- 8. Micronutrient Analysis with Supplement Recommendations ---
+    const userDiet = (typeof getUserDietaryPreference === 'function') ? getUserDietaryPreference() : null;
+    const isPlantBased = userDiet === 'vegan' || userDiet === 'vegetarian';
+    const ironRda = isPlantBased ? 32 : 18;
+
+    const microRdas = {
+        iron: { rda: ironRda, unit: 'mg', name: 'Iron', keys: ['iron_mg', 'iron'] },
+        vitamin_c: { rda: 90, unit: 'mg', name: 'Vitamin C', keys: ['vitamin_c_mg', 'vitamin_c'] },
+        calcium: { rda: 1000, unit: 'mg', name: 'Calcium', keys: ['calcium_mg', 'calcium'] },
+        b12: { rda: 2.4, unit: 'mcg', name: 'B12', keys: ['b12_mcg', 'b12'] },
+        omega3: { rda: 1.6, unit: 'g', name: 'Omega-3', keys: ['omega3_g', 'omega3'] },
+        zinc: { rda: 11, unit: 'mg', name: 'Zinc', keys: ['zinc_mg', 'zinc'] }
+    };
+
+    // Aggregate weekly micronutrient totals
+    const microDailyTotals = {}; // { nutrient: { date: amount } }
+    Object.keys(microRdas).forEach(k => { microDailyTotals[k] = {}; });
+
+    meals.forEach(meal => {
+        if (!meal.micronutrients || typeof meal.micronutrients !== 'object') return;
+        const mDate = meal.meal_date;
+        Object.keys(microRdas).forEach(k => {
+            const aliases = microRdas[k].keys;
+            let val = 0;
+            for (const alias of aliases) {
+                if (meal.micronutrients[alias]) {
+                    val = parseFloat(meal.micronutrients[alias]) || 0;
+                    break;
+                }
+            }
+            if (val > 0) {
+                microDailyTotals[k][mDate] = (microDailyTotals[k][mDate] || 0) + val;
+            }
+        });
+    });
+
+    // Check each micronutrient: if consistently below 50% RDA across logged days, flag it
+    const supplementRecs = {
+        omega3: 'Consider an <strong>algae-based Omega-3</strong> supplement (300-600mg DHA/EPA daily) for brain health and inflammation.',
+        b12: 'Consider a <strong>B12 supplement</strong> (1,000mcg 3x weekly). Essential for energy and nerve function, especially on a plant-based diet.',
+        iron: 'Your iron is low \u2014 consider <strong>Iron Bisglycinate</strong> (18-25mg every other day) paired with Vitamin C for absorption.',
+        calcium: 'Consider a <strong>Calcium Citrate + D3</strong> supplement (500mg Ca + 2000IU D3) for bone density protection.',
+        zinc: 'Your zinc intake is low \u2014 consider a <strong>Zinc supplement</strong> (15mg every other day). Supports immunity and thyroid function.',
+        vitamin_c: 'Your Vitamin C is low. Add citrus fruits, bell peppers, or strawberries \u2014 also boosts iron absorption.'
+    };
+
+    const microIcons = {
+        omega3: '&#x1F41F;', b12: '&#x1F9EC;', iron: '&#x1FA78;',
+        calcium: '&#x1F9B4;', zinc: '&#x1F6E1;', vitamin_c: '&#x1F34A;'
+    };
+
+    Object.keys(microRdas).forEach(k => {
+        const dailyEntries = Object.values(microDailyTotals[k]);
+        if (dailyEntries.length < 3) return; // Not enough data days
+
+        const avgDaily = dailyEntries.reduce((a, b) => a + b, 0) / dailyEntries.length;
+        const pctOfRda = (avgDaily / microRdas[k].rda) * 100;
+
+        // If below 50% RDA consistently, recommend supplement
+        if (pctOfRda < 50) {
+            const rec = supplementRecs[k];
+            if (rec) {
+                insights.push({
+                    icon: microIcons[k] || '&#x1F48A;',
+                    text: `Your <strong>${microRdas[k].name}</strong> averages ${Math.round(pctOfRda)}% of daily needs this week. ${rec}`
+                });
+            }
+        } else if (pctOfRda >= 90) {
+            // Positive reinforcement for good nutrient levels
+            insights.push({
+                icon: '&#x2705;',
+                text: `Your <strong>${microRdas[k].name}</strong> intake is strong at ${Math.round(pctOfRda)}% of daily needs. Keep it up!`
+            });
+        }
+    });
+
+    return insights.slice(0, 8); // Max 8 insights (was 4, expanded for micro/macro)
 }
 
 function renderMealPatterns(insights) {
