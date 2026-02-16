@@ -49471,6 +49471,9 @@ function openMovementWeeklyTrendsPage() {
         page.style.transform = 'translateX(0)';
     });
 
+    // Push navigation state for Android back button
+    pushNavigationState('movement-weekly-trends-page', () => closeMovementWeeklyTrendsPage());
+
     // Load data for the page
     Promise.allSettled([
         loadMovementWeeklyMetrics(),
