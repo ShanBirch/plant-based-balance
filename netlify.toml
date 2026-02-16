@@ -189,6 +189,12 @@
 [functions."sync-wearable-data"]
   schedule = "0 1-23/2 * * *"
 
+# Prevent caching of service worker so native app always gets latest version
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
 # Ensure we redirect legacy URLs
 [[redirects]]
   from = "/quiz"
