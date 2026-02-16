@@ -1261,8 +1261,12 @@ function resizeCanvas() {
 }
 
 // ── ROOM DEFINITIONS ──
-const WALL = 16;
+const WALL = 32;
 const DOOR = 100; // doorway gap size
+
+// ── WALL DETAILS (non-collision visual infrastructure) ──
+const WALL_DETAILS = [];
+const DOOR_FRAMES = []; // populated in generateMap()
 const ROOMS = [
   { name: 'Kitchen',     x: 40,   y: 40,   w: 1200, h: 940,  floor: '#1a1f14', accent: '#2d4a1e', wallColor: '#2a3d1e', wallHighlight: '#3a5530', floorType: 'checker-tile', tileColor1: '#1e2818', tileColor2: '#242e1c', trimColor: '#4a6a35' },
   { name: 'Cafeteria',   x: 1300, y: 40,   w: 1400, h: 940,  floor: '#1a1420', accent: '#3d1e4a', wallColor: '#2e1a3a', wallHighlight: '#42284e', floorType: 'linoleum', tileColor1: '#1e1628', tileColor2: '#221a2c', trimColor: '#6a3a8a' },
@@ -1291,205 +1295,373 @@ function generateMap() {
     MAP_OBSTACLES.push({ x, y, w, h, type: 'furniture', icon, label });
   }
 
-  // ─── ROOM WALLS (with doorways) ───
+  // ─── ROOM WALLS (with doorways) ── thick walls + alcoves for irregular shapes ───
+  const W = WALL; // 32px thick walls
 
-  // Kitchen walls
-  wall(40, 40, 1200, WALL);              // top
-  wall(40, 40, WALL, 940);               // left
-  wall(40, 980 - WALL, 500, WALL);       // bottom-left
-  wall(500 + DOOR, 980 - WALL, 700 - DOOR, WALL); // bottom-right
-  wall(1240 - WALL, 40, WALL, 400);      // right-top
-  wall(1240 - WALL, 400 + DOOR, WALL, 540 - DOOR); // right-bottom
+  // Kitchen walls (with counter alcove bump-out on top-right)
+  wall(40, 40, 1200, W);                 // top
+  wall(40, 40, W, 940);                  // left
+  wall(40, 980 - W, 500, W);             // bottom-left
+  wall(500 + DOOR, 980 - W, 700 - DOOR, W); // bottom-right
+  wall(1240 - W, 40, W, 380);            // right-top
+  wall(1240 - W, 380 + DOOR, W, 600 - DOOR); // right-bottom
+  // Kitchen counter alcove (top-right bump-in)
+  wall(900, 40 + W, W, 160);             // alcove left wall
+  wall(900, 40 + W, 340 - W, W);         // alcove bottom
 
-  // Cafeteria walls
-  wall(1300, 40, 1400, WALL);            // top
-  wall(1300, 980 - WALL, 600, WALL);     // bottom-left
-  wall(1300 + 600 + DOOR, 980 - WALL, 700 - DOOR, WALL); // bottom-right
-  wall(2700 - WALL, 40, WALL, 400);      // right-top
-  wall(2700 - WALL, 400 + DOOR, WALL, 540 - DOOR); // right-bottom
+  // Cafeteria walls (with serving bay notch on left side)
+  wall(1300, 40, 1400, W);               // top
+  wall(1300, 980 - W, 600, W);           // bottom-left
+  wall(1300 + 600 + DOOR, 980 - W, 700 - DOOR, W); // bottom-right
+  wall(2700 - W, 40, W, 380);            // right-top
+  wall(2700 - W, 380 + DOOR, W, 600 - DOOR); // right-bottom
+  // Cafeteria serving bay bump-in on left
+  wall(1300, 600, W + 180, W);           // bay top
+  wall(1300 + 180, 600 + W, W, 160);     // bay right wall
+  wall(1300, 760 + W, W + 180, W);       // bay bottom
 
-  // Living Room walls
-  wall(2760, 40, 1200, WALL);            // top
-  wall(3960 - WALL, 40, WALL, 940);      // right
-  wall(2760, 980 - WALL, 500, WALL);     // bottom-left
-  wall(2760 + 500 + DOOR, 980 - WALL, 700 - DOOR, WALL); // bottom-right
+  // Living Room walls (with entertainment center alcove on right)
+  wall(2760, 40, 1200, W);               // top
+  wall(3960 - W, 40, W, 940);            // right
+  wall(2760, 980 - W, 500, W);           // bottom-left
+  wall(2760 + 500 + DOOR, 980 - W, 700 - DOOR, W); // bottom-right
+  // Entertainment center alcove (right side indent)
+  wall(3960 - W - 200, 200, W, 250);     // alcove left
+  wall(3960 - W - 200, 200, 200, W);     // alcove top
+  wall(3960 - W - 200, 450, 200, W);     // alcove bottom
 
-  // Bathroom walls
-  wall(40, 1040, WALL, 920);             // left
-  wall(40, 1040, 900, WALL);             // top (shared)
-  wall(40, 1960 - WALL, 400, WALL);      // bottom-left
-  wall(400 + DOOR, 1960 - WALL, 500 - DOOR, WALL); // bottom-right
-  wall(940 - WALL, 1040, WALL, 400);     // right-top
-  wall(940 - WALL, 1040 + 400 + DOOR, WALL, 520 - DOOR - WALL); // right-bottom
+  // Bathroom walls (with shower alcove in top-left)
+  wall(40, 1040, W, 920);                // left
+  wall(40, 1040, 900, W);                // top
+  wall(40, 1960 - W, 400, W);            // bottom-left
+  wall(400 + DOOR, 1960 - W, 500 - DOOR, W); // bottom-right
+  wall(940 - W, 1040, W, 380);           // right-top
+  wall(940 - W, 1040 + 380 + DOOR, W, 540 - DOOR); // right-bottom
+  // Shower alcove (top-left corner)
+  wall(40 + W, 1040 + W + 200, 200, W);  // alcove bottom
+  wall(40 + W + 200, 1040 + W, W, 200);  // alcove right
 
-  // Hallway (open area, just top/bottom walls with doorways)
-  wall(1000, 1040, 800, WALL);           // top-left section
-  wall(1000 + 800 + DOOR, 1040, 1100 - DOOR, WALL); // top-right section
-  wall(1000, 1960 - WALL, 700, WALL);    // bottom-left
-  wall(1000 + 700 + DOOR, 1960 - WALL, 1200 - DOOR, WALL); // bottom-right
+  // Hallway walls (with side niches for panels)
+  wall(1000, 1040, 800, W);              // top-left section
+  wall(1000 + 800 + DOOR, 1040, 1100 - DOOR, W); // top-right section
+  wall(1000, 1960 - W, 700, W);          // bottom-left
+  wall(1000 + 700 + DOOR, 1960 - W, 1200 - DOOR, W); // bottom-right
+  // Top wall niche (indent for control panels)
+  wall(1600, 1040 + W, W, 120);          // niche left
+  wall(1600, 1040 + W + 120, 200, W);    // niche bottom
+  wall(1800, 1040 + W, W, 120);          // niche right
+  // Bottom wall niche
+  wall(2200, 1960 - W - 120, W, 120);    // niche left
+  wall(2200, 1960 - W - 120, 200, W);    // niche top
+  wall(2400, 1960 - W - 120, W, 120);    // niche right
 
-  // Bedroom walls
-  wall(3060, 1040, 900, WALL);           // top
-  wall(3960 - WALL, 1040, WALL, 920);    // right
-  wall(3060, 1960 - WALL, 400, WALL);    // bottom-left
-  wall(3060 + 400 + DOOR, 1960 - WALL, 500 - DOOR, WALL); // bottom-right
+  // Bedroom walls (with closet bump-out on right)
+  wall(3060, 1040, 900, W);              // top
+  wall(3960 - W, 1040, W, 920);          // right
+  wall(3060, 1960 - W, 400, W);          // bottom-left
+  wall(3060 + 400 + DOOR, 1960 - W, 500 - DOOR, W); // bottom-right
+  // Closet alcove (right side, lower)
+  wall(3960 - W - 180, 1500, W, 250);    // closet left wall
+  wall(3960 - W - 180, 1500, 180, W);    // closet top
+  wall(3960 - W - 180, 1750, 180, W);    // closet bottom
 
-  // Gym walls
-  wall(40, 2020, WALL, 940);             // left
-  wall(40, 2020, 1200, WALL);            // top
-  wall(40, 2960 - WALL, 1200, WALL);     // bottom
-  wall(1240 - WALL, 2020, WALL, 400);    // right-top
-  wall(1240 - WALL, 2020 + 400 + DOOR, WALL, 540 - DOOR - WALL); // right-bottom
+  // Gym walls (with equipment alcove on left)
+  wall(40, 2020, W, 940);                // left
+  wall(40, 2020, 1200, W);               // top
+  wall(40, 2960 - W, 1200, W);           // bottom
+  wall(1240 - W, 2020, W, 380);          // right-top
+  wall(1240 - W, 2020 + 380 + DOOR, W, 560 - DOOR); // right-bottom
+  // Gym storage alcove (bottom-left corner bump-in)
+  wall(40 + W, 2700, 250, W);            // alcove top
+  wall(40 + W + 250, 2700, W, 260 - W);  // alcove right
 
-  // Garden walls
-  wall(1300, 2020, 600, WALL);           // top-left
-  wall(1300 + 600 + DOOR, 2020, 700 - DOOR, WALL); // top-right
-  wall(1300, 2960 - WALL, 1400, WALL);   // bottom
-  wall(2700 - WALL, 2020, WALL, 400);    // right-top
-  wall(2700 - WALL, 2020 + 400 + DOOR, WALL, 540 - DOOR - WALL); // right-bottom
+  // Garden walls (with winding path feel - extra wall segments)
+  wall(1300, 2020, 600, W);              // top-left
+  wall(1300 + 600 + DOOR, 2020, 700 - DOOR, W); // top-right
+  wall(1300, 2960 - W, 1400, W);         // bottom
+  wall(2700 - W, 2020, W, 380);          // right-top
+  wall(2700 - W, 2020 + 380 + DOOR, W, 560 - DOOR); // right-bottom
+  // Garden raised bed wall segments (low walls that create garden beds)
+  wall(1500, 2300, 200, W / 2);          // garden bed 1
+  wall(2100, 2550, 200, W / 2);          // garden bed 2
+  wall(1900, 2100, W / 2, 200);          // vertical garden divider
 
-  // Garage walls
-  wall(2760, 2020, 500, WALL);           // top-left
-  wall(2760 + 500 + DOOR, 2020, 700 - DOOR, WALL); // top-right
-  wall(3960 - WALL, 2020, WALL, 940);    // right
-  wall(2760, 2960 - WALL, 1200, WALL);   // bottom
+  // Garage walls (with work bay extension on left)
+  wall(2760, 2020, 500, W);              // top-left
+  wall(2760 + 500 + DOOR, 2020, 700 - DOOR, W); // top-right
+  wall(3960 - W, 2020, W, 940);          // right
+  wall(2760, 2960 - W, 1200, W);         // bottom
+  // Work bay partition
+  wall(3200, 2020 + W, W, 300);          // bay divider wall
 
-  // ─── FURNITURE ───
+  // ─── DOOR FRAMES ───
+  DOOR_FRAMES.length = 0;
+  // doorFrame(x, y, w, h, orientation, roomColor1, roomColor2)
+  // orientation: 'h' = horizontal wall doorway, 'v' = vertical wall doorway
+  function doorFrame(x, y, gapW, gapH, orient, c1, c2) {
+    DOOR_FRAMES.push({ x, y, w: gapW, h: gapH, orient, c1: c1 || '#555568', c2: c2 || '#555568' });
+  }
+  // Kitchen bottom (Kitchen → Bathroom below / Hallway area)
+  doorFrame(500, 980 - W, DOOR, W, 'h', '#4a6a35', '#555568');
+  // Kitchen right (Kitchen → Cafeteria)
+  doorFrame(1240 - W, 380, W, DOOR, 'v', '#4a6a35', '#6a3a8a');
+  // Cafeteria bottom (Cafeteria → Hallway)
+  doorFrame(1300 + 600, 980 - W, DOOR, W, 'h', '#6a3a8a', '#555568');
+  // Cafeteria right (Cafeteria → Living Room)
+  doorFrame(2700 - W, 380, W, DOOR, 'v', '#6a3a8a', '#3a5088');
+  // Living Room bottom (Living Room → Hallway right)
+  doorFrame(2760 + 500, 980 - W, DOOR, W, 'h', '#3a5088', '#555568');
+  // Bathroom bottom (Bathroom → Gym below)
+  doorFrame(400, 1960 - W, DOOR, W, 'h', '#2a5a6a', '#555568');
+  // Bathroom right (Bathroom → Hallway)
+  doorFrame(940 - W, 1040 + 380, W, DOOR, 'v', '#2a5a6a', '#555568');
+  // Hallway top-right gap (Hallway → Bedroom/Living via top wall)
+  doorFrame(1000 + 800, 1040, DOOR, W, 'h', '#555568', '#555568');
+  // Hallway bottom (Hallway → Garden area)
+  doorFrame(1000 + 700, 1960 - W, DOOR, W, 'h', '#555568', '#555568');
+  // Bedroom bottom
+  doorFrame(3060 + 400, 1960 - W, DOOR, W, 'h', '#555568', '#555568');
+  // Gym right (Gym → Garden)
+  doorFrame(1240 - W, 2020 + 380, W, DOOR, 'v', '#555568', '#555568');
+  // Garden top (Hallway → Garden)
+  doorFrame(1300 + 600, 2020, DOOR, W, 'h', '#555568', '#3a6a3a');
+  // Garden right (Garden → Garage)
+  doorFrame(2700 - W, 2020 + 380, W, DOOR, 'v', '#3a6a3a', '#555568');
+  // Garage top (Hallway → Garage)
+  doorFrame(2760 + 500, 2020, DOOR, W, 'h', '#555568', '#555568');
 
-  // Kitchen (much more detailed)
-  furniture(100, 100, 200, 60, '🍳', 'Stove');
-  furniture(100, 200, 70, 140, '🧊', 'Fridge');
-  furniture(350, 100, 300, 50, '🔪', 'Counter');
-  furniture(750, 100, 120, 50, '🍽️', 'Sink');
-  furniture(950, 100, 100, 50, '🔪', 'Counter');
-  furniture(500, 480, 200, 110, '🪑', 'Table');
-  furniture(900, 400, 80, 80, '🗑️', 'Bin');
-  furniture(100, 400, 100, 60, '🧊', 'Dishwasher');
-  furniture(250, 100, 80, 50, '🍽️', 'Microwave');
-  furniture(100, 700, 60, 80, '📋', 'Pantry');
-  furniture(800, 700, 120, 50, '🔪', 'Counter');
-  furniture(400, 750, 100, 60, '📋', 'Spice Rack');
-  furniture(700, 300, 80, 60, '🧹', 'Mop Bucket');
+  // ─── FURNITURE (positioned for 32px thick walls) ───
+  // Helper: wall-mount object (non-collision visual only)
+  function wallMount(x, y, w, h, label) {
+    WALL_DETAILS.push({ x, y, w, h, type: 'wall-mount', label });
+  }
+  // Helper: pipe run
+  function pipe(x1, y1, x2, y2, color, hasValve) {
+    WALL_DETAILS.push({ x1, y1, x2, y2, type: 'pipe', color: color || '#6a6a75', hasValve });
+  }
+  // Helper: wire run
+  function wire(x1, y1, x2, y2, color) {
+    WALL_DETAILS.push({ x1, y1, x2, y2, type: 'wire', color: color || '#c62828' });
+  }
 
-  // Cafeteria (more tables, food service area)
-  furniture(1450, 180, 200, 80, '🪑', 'Table');
-  furniture(1750, 180, 200, 80, '🪑', 'Table');
-  furniture(1450, 450, 200, 80, '🪑', 'Table');
-  furniture(1750, 450, 200, 80, '🪑', 'Table');
-  furniture(2050, 300, 200, 80, '🪑', 'Table');
-  furniture(1450, 720, 200, 80, '🪑', 'Table');
-  furniture(1750, 720, 200, 80, '🪑', 'Table');
-  furniture(2350, 150, 80, 200, '🥤', 'Vending');
-  furniture(2500, 150, 80, 200, '🥤', 'Vending');
-  furniture(2050, 100, 200, 50, '🍽️', 'Food Counter');
-  furniture(2350, 600, 100, 60, '🗑️', 'Bin');
-  furniture(1350, 100, 80, 50, '📋', 'Menu Board');
-  furniture(2100, 700, 80, 80, '🧹', 'Mop Bucket');
-  furniture(2500, 700, 60, 60, '💡', 'Lamp');
+  // ─── Kitchen (against-wall objects fill every surface) ───
+  furniture(85, 85, 220, 65, '🍳', 'Stove');
+  furniture(85, 190, 75, 150, '🧊', 'Fridge');
+  furniture(350, 85, 250, 55, '🔪', 'Counter');
+  furniture(650, 85, 130, 55, '🍽️', 'Sink');
+  furniture(400, 85, 85, 55, '🍽️', 'Microwave');
+  furniture(500, 460, 210, 120, '🪑', 'Table');
+  furniture(850, 380, 85, 85, '🗑️', 'Bin');
+  furniture(85, 400, 110, 65, '🧊', 'Dishwasher');
+  furniture(85, 680, 65, 90, '📋', 'Pantry');
+  furniture(750, 680, 130, 55, '🔪', 'Counter');
+  furniture(380, 740, 110, 65, '📋', 'Spice Rack');
+  furniture(680, 280, 85, 65, '🧹', 'Mop Bucket');
+  // NEW: fill walls
+  furniture(85, 550, 65, 80, '📋', 'Shelving');
+  furniture(200, 740, 100, 55, '📋', 'Wall Panel');
+  furniture(600, 700, 80, 55, '🗑️', 'Bin');
+  furniture(1050, 200, 80, 60, '📋', 'Wall Panel');
+  furniture(1050, 400, 60, 60, '📋', 'Fire Extinguisher');
+  furniture(950, 650, 80, 80, '📋', 'Control Panel');
+  wallMount(300, 50, 50, 25, 'Screen');
+  wallMount(600, 50, 50, 25, 'Screen');
+  wallMount(50, 350, 25, 40, 'Screen');
 
-  // Living Room (cozy, full of stuff)
-  furniture(2900, 180, 300, 70, '🛋️', 'Couch');
-  furniture(3350, 80, 140, 100, '📺', 'TV');
-  furniture(2880, 480, 130, 70, '🪑', 'Armchair');
-  furniture(3100, 420, 120, 70, '☕', 'Coffee Table');
-  furniture(3550, 480, 80, 140, '📚', 'Bookshelf');
-  furniture(3700, 180, 60, 60, '🪴', 'Plant');
-  furniture(3550, 80, 80, 60, '🔊', 'Speaker');
-  furniture(2830, 80, 50, 50, '💡', 'Lamp');
-  furniture(3300, 500, 100, 60, '🪑', 'Armchair');
-  furniture(3100, 700, 180, 100, '📋', 'Rug Display');
-  furniture(2900, 700, 80, 60, '📋', 'Side Table');
-  furniture(3700, 400, 60, 60, '🪴', 'Plant');
-  furniture(3680, 700, 80, 80, '📦', 'Storage Ottoman');
+  // ─── Cafeteria (dense table layout, wall-lined service area) ───
+  furniture(1450, 200, 210, 85, '🪑', 'Table');
+  furniture(1750, 200, 210, 85, '🪑', 'Table');
+  furniture(1450, 430, 210, 85, '🪑', 'Table');
+  furniture(1750, 430, 210, 85, '🪑', 'Table');
+  furniture(2050, 310, 210, 85, '🪑', 'Table');
+  furniture(1450, 700, 210, 85, '🪑', 'Table');
+  furniture(1750, 700, 210, 85, '🪑', 'Table');
+  furniture(2350, 150, 85, 210, '🥤', 'Vending');
+  furniture(2500, 150, 85, 210, '🥤', 'Vending');
+  furniture(2050, 90, 210, 55, '🍽️', 'Food Counter');
+  furniture(2350, 570, 100, 65, '🗑️', 'Bin');
+  furniture(1350, 90, 85, 55, '📋', 'Menu Board');
+  furniture(2100, 690, 85, 85, '🧹', 'Mop Bucket');
+  furniture(2500, 690, 65, 65, '💡', 'Lamp');
+  // NEW: serving bay objects
+  furniture(1340, 640, 120, 55, '🍽️', 'Food Counter');
+  furniture(2050, 680, 100, 55, '🗑️', 'Bin');
+  furniture(1500, 580, 60, 60, '💡', 'Lamp');
+  furniture(2560, 500, 80, 60, '📋', 'Wall Panel');
+  furniture(2560, 700, 65, 65, '📋', 'Fire Extinguisher');
+  wallMount(1550, 50, 60, 28, 'Screen');
+  wallMount(1850, 50, 60, 28, 'Screen');
+  wallMount(2250, 50, 50, 25, 'Screen');
 
-  // Bathroom (more fixtures)
-  furniture(100, 1120, 120, 100, '🚿', 'Shower');
-  furniture(100, 1380, 80, 60, '🪥', 'Sink');
-  furniture(350, 1120, 60, 60, '🚽', 'Toilet');
-  furniture(570, 1100, 140, 70, '🛁', 'Bathtub');
-  furniture(570, 1600, 70, 70, '🧺', 'Laundry');
-  furniture(350, 1300, 60, 60, '🧻', 'Toilet Paper');
-  furniture(100, 1550, 70, 100, '📋', 'Medicine Cabinet');
-  furniture(250, 1700, 80, 60, '🧹', 'Mop Bucket');
-  furniture(700, 1350, 60, 60, '🪞', 'Mirror');
-  furniture(500, 1700, 70, 70, '🧺', 'Laundry');
-  furniture(350, 1500, 50, 50, '🧹', 'Plunger');
+  // ─── Living Room (every wall filled) ───
+  furniture(2900, 200, 310, 75, '🛋️', 'Couch');
+  furniture(3380, 85, 140, 110, '📺', 'TV');
+  furniture(2880, 460, 140, 75, '🪑', 'Armchair');
+  furniture(3100, 400, 130, 75, '☕', 'Coffee Table');
+  furniture(3530, 460, 85, 150, '📚', 'Bookshelf');
+  furniture(3700, 200, 65, 65, '🪴', 'Plant');
+  furniture(3540, 85, 85, 65, '🔊', 'Speaker');
+  furniture(2830, 85, 55, 55, '💡', 'Lamp');
+  furniture(3300, 480, 110, 65, '🪑', 'Armchair');
+  furniture(3100, 700, 190, 110, '📋', 'Rug Display');
+  furniture(2900, 700, 85, 65, '📋', 'Side Table');
+  furniture(3700, 380, 65, 65, '🪴', 'Plant');
+  furniture(3680, 680, 85, 85, '📦', 'Storage Ottoman');
+  // NEW: more wall objects, alcove TV area
+  furniture(2820, 380, 50, 50, '📋', 'Side Table');
+  furniture(2830, 600, 80, 55, '📚', 'Bookshelf');
+  furniture(3800, 85, 80, 65, '📋', 'Shelving');
+  furniture(3800, 550, 65, 60, '📋', 'Wall Panel');
+  furniture(3780, 250, 60, 60, '📋', 'Control Panel');
+  wallMount(3000, 50, 50, 25, 'Screen');
+  wallMount(3780, 55, 25, 40, 'Screen');
 
-  // Hallway (industrial feel, signs, vents, panels)
-  furniture(1150, 1180, 60, 60, '🪴', 'Plant');
-  furniture(1700, 1320, 120, 50, '🖼️', 'Bench');
-  furniture(2350, 1180, 60, 60, '🪴', 'Plant');
-  furniture(1450, 1580, 80, 80, '🗄️', 'Cabinet');
-  furniture(2000, 1130, 60, 60, '💡', 'Lamp');
-  furniture(1300, 1600, 60, 60, '📋', 'Fire Extinguisher');
-  furniture(2600, 1600, 80, 60, '📋', 'Wall Panel');
-  furniture(1900, 1600, 60, 60, '🗑️', 'Bin');
-  furniture(2700, 1300, 80, 60, '📋', 'Control Panel');
-  furniture(1600, 1180, 70, 50, '📋', 'Sign Post');
-  furniture(2200, 1580, 60, 60, '💡', 'Lamp');
-  furniture(1100, 1450, 60, 60, '📋', 'Emergency Light');
-  furniture(2800, 1450, 60, 60, '📋', 'Emergency Light');
+  // ─── Bathroom (shower alcove utilized) ───
+  furniture(85, 1085, 140, 120, '🚿', 'Shower');
+  furniture(85, 1380, 85, 65, '🪥', 'Sink');
+  furniture(360, 1120, 65, 65, '🚽', 'Toilet');
+  furniture(560, 1085, 150, 75, '🛁', 'Bathtub');
+  furniture(560, 1590, 75, 75, '🧺', 'Laundry');
+  furniture(360, 1300, 65, 65, '🧻', 'Toilet Paper');
+  furniture(85, 1540, 75, 110, '📋', 'Medicine Cabinet');
+  furniture(250, 1700, 85, 65, '🧹', 'Mop Bucket');
+  furniture(700, 1340, 65, 65, '🪞', 'Mirror');
+  furniture(500, 1700, 75, 75, '🧺', 'Laundry');
+  furniture(360, 1490, 55, 55, '🧹', 'Plunger');
+  // NEW: fill empty walls
+  furniture(700, 1120, 85, 55, '📋', 'Wall Panel');
+  furniture(700, 1550, 65, 65, '📋', 'Shelving');
+  furniture(550, 1400, 65, 65, '🗑️', 'Bin');
+  furniture(85, 1800, 65, 55, '📋', 'Emergency Light');
+  wallMount(400, 1050, 40, 24, 'Screen');
+  wallMount(700, 1050, 40, 24, 'Screen');
 
-  // Bedroom (lived-in feel)
-  furniture(3200, 1130, 220, 130, '🛏️', 'Bed');
-  furniture(3620, 1130, 110, 80, '💻', 'Desk');
-  furniture(3620, 1480, 90, 130, '👔', 'Wardrobe');
-  furniture(3130, 1480, 60, 60, '🪴', 'Plant');
-  furniture(3770, 1330, 60, 60, '🪞', 'Mirror');
-  furniture(3130, 1130, 50, 50, '📋', 'Nightstand');
-  furniture(3450, 1130, 50, 50, '📋', 'Nightstand');
-  furniture(3750, 1130, 60, 50, '📋', 'Bookshelf Small');
-  furniture(3450, 1500, 80, 60, '📦', 'Boxes');
-  furniture(3200, 1700, 80, 60, '🧺', 'Laundry');
-  furniture(3500, 1700, 60, 60, '💡', 'Lamp');
+  // ─── Hallway (dense industrial feel, niches utilized) ───
+  furniture(1120, 1200, 65, 65, '🪴', 'Plant');
+  furniture(1700, 1350, 130, 55, '🖼️', 'Bench');
+  furniture(2400, 1200, 65, 65, '🪴', 'Plant');
+  furniture(1450, 1580, 85, 85, '🗄️', 'Cabinet');
+  furniture(2000, 1150, 65, 65, '💡', 'Lamp');
+  furniture(1300, 1620, 65, 65, '📋', 'Fire Extinguisher');
+  furniture(2600, 1620, 85, 65, '📋', 'Wall Panel');
+  furniture(1900, 1620, 65, 65, '🗑️', 'Bin');
+  furniture(2700, 1300, 85, 65, '📋', 'Control Panel');
+  furniture(1100, 1460, 65, 65, '📋', 'Emergency Light');
+  furniture(2850, 1460, 65, 65, '📋', 'Emergency Light');
+  // Niche objects (in the wall indentations)
+  furniture(1640, 1090, 130, 65, '📋', 'Control Panel');
+  furniture(2240, 1835, 130, 65, '📋', 'Wall Panel');
+  // NEW: more hallway objects for density
+  furniture(1300, 1200, 65, 55, '📋', 'Sign Post');
+  furniture(1550, 1620, 65, 65, '📋', 'Wall Panel');
+  furniture(2100, 1200, 60, 60, '📋', 'Fire Extinguisher');
+  furniture(2550, 1200, 65, 65, '🪴', 'Plant');
+  furniture(1200, 1620, 65, 60, '📋', 'Control Panel');
+  furniture(2850, 1200, 65, 65, '📋', 'Wall Panel');
+  furniture(2850, 1620, 65, 65, '📋', 'Control Panel');
+  furniture(1850, 1200, 65, 55, '📋', 'Sign Post');
+  furniture(1400, 1360, 60, 55, '🗑️', 'Bin');
+  furniture(2500, 1400, 65, 65, '📋', 'Emergency Light');
+  wallMount(1200, 1050, 50, 26, 'Screen');
+  wallMount(1500, 1050, 50, 26, 'Screen');
+  wallMount(2000, 1050, 50, 26, 'Screen');
+  wallMount(2500, 1050, 50, 26, 'Screen');
+  wallMount(2800, 1050, 50, 26, 'Screen');
 
-  // Gym (packed with equipment)
-  furniture(180, 2130, 150, 65, '🏋️', 'Bench Press');
-  furniture(480, 2130, 110, 65, '🏋️', 'Weights');
-  furniture(180, 2420, 65, 150, '🏃', 'Treadmill');
-  furniture(360, 2420, 65, 150, '🏃', 'Treadmill');
-  furniture(550, 2420, 65, 150, '🏃', 'Treadmill');
-  furniture(680, 2260, 130, 65, '💪', 'Dumbbells');
-  furniture(900, 2460, 85, 85, '🥊', 'Punching Bag');
-  furniture(680, 2620, 110, 55, '🧘', 'Yoga Mat');
-  furniture(900, 2130, 100, 65, '🏋️', 'Weights');
-  furniture(1050, 2300, 80, 80, '💪', 'Kettlebells');
-  furniture(180, 2700, 100, 60, '📋', 'Gym Mirror');
-  furniture(400, 2700, 80, 80, '📋', 'Water Cooler');
-  furniture(1050, 2500, 80, 60, '📋', 'Foam Roller');
-  furniture(850, 2700, 110, 55, '🧘', 'Yoga Mat');
+  // ─── Bedroom (closet alcove utilized) ───
+  furniture(3160, 1120, 240, 140, '🛏️', 'Bed');
+  furniture(3620, 1120, 120, 85, '💻', 'Desk');
+  furniture(3100, 1500, 65, 65, '🪴', 'Plant');
+  furniture(3100, 1120, 55, 55, '📋', 'Nightstand');
+  furniture(3420, 1120, 55, 55, '📋', 'Nightstand');
+  furniture(3750, 1320, 65, 65, '🪞', 'Mirror');
+  furniture(3750, 1120, 65, 55, '📋', 'Bookshelf Small');
+  furniture(3200, 1700, 85, 65, '🧺', 'Laundry');
+  furniture(3500, 1700, 65, 65, '💡', 'Lamp');
+  // Closet alcove furniture
+  furniture(3800, 1540, 80, 180, '👔', 'Wardrobe');
+  furniture(3420, 1500, 85, 65, '📦', 'Boxes');
+  // NEW: fill walls
+  furniture(3620, 1340, 65, 65, '🗑️', 'Bin');
+  furniture(3100, 1700, 80, 55, '📋', 'Wall Panel');
+  furniture(3400, 1700, 65, 55, '📋', 'Shelving');
+  wallMount(3300, 1050, 60, 28, 'Screen');
+  wallMount(3600, 1050, 50, 24, 'Screen');
 
-  // Garden (lush and full)
-  furniture(1420, 2180, 110, 110, '🌳', 'Tree');
-  furniture(1780, 2120, 110, 110, '🌳', 'Tree');
-  furniture(2180, 2380, 110, 110, '🌳', 'Tree');
-  furniture(2450, 2600, 100, 100, '🌳', 'Tree');
-  furniture(1480, 2530, 90, 65, '🌿', 'Bush');
-  furniture(1950, 2580, 90, 65, '🌿', 'Bush');
-  furniture(2350, 2200, 90, 65, '🌿', 'Bush');
-  furniture(1680, 2380, 130, 80, '⛲', 'Fountain');
-  furniture(2450, 2180, 65, 65, '🌻', 'Flowers');
-  furniture(1400, 2400, 65, 65, '🌻', 'Flowers');
-  furniture(2100, 2150, 65, 65, '🌻', 'Flowers');
-  furniture(1600, 2700, 80, 80, '📋', 'Garden Bench');
-  furniture(2300, 2700, 80, 80, '📋', 'Bird Bath');
-  furniture(1350, 2750, 80, 60, '🌿', 'Bush');
-  furniture(2550, 2450, 60, 60, '🪴', 'Plant');
-  furniture(2000, 2250, 80, 60, '📋', 'Flower Pot');
+  // ─── Gym (storage alcove utilized, dense equipment) ───
+  furniture(180, 2120, 160, 70, '🏋️', 'Bench Press');
+  furniture(480, 2120, 120, 70, '🏋️', 'Weights');
+  furniture(180, 2400, 70, 160, '🏃', 'Treadmill');
+  furniture(360, 2400, 70, 160, '🏃', 'Treadmill');
+  furniture(550, 2400, 70, 160, '🏃', 'Treadmill');
+  furniture(680, 2260, 140, 70, '💪', 'Dumbbells');
+  furniture(900, 2440, 90, 90, '🥊', 'Punching Bag');
+  furniture(680, 2610, 120, 60, '🧘', 'Yoga Mat');
+  furniture(900, 2120, 110, 70, '🏋️', 'Weights');
+  furniture(1050, 2280, 85, 85, '💪', 'Kettlebells');
+  furniture(180, 2620, 110, 65, '📋', 'Gym Mirror');
+  furniture(400, 2620, 85, 85, '📋', 'Water Cooler');
+  furniture(1050, 2480, 85, 65, '📋', 'Foam Roller');
+  furniture(850, 2650, 120, 60, '🧘', 'Yoga Mat');
+  // Storage alcove objects
+  furniture(100, 2740, 120, 60, '📦', 'Boxes');
+  furniture(240, 2740, 80, 80, '🛢️', 'Barrel');
+  // NEW: fill walls
+  furniture(700, 2120, 80, 50, '📋', 'Wall Panel');
+  furniture(1050, 2120, 80, 55, '📋', 'Control Panel');
+  furniture(85, 2290, 65, 55, '📋', 'Gym Mirror');
+  furniture(700, 2830, 100, 50, '📋', 'Wall Panel');
+  wallMount(300, 2030, 50, 24, 'Screen');
+  wallMount(700, 2030, 50, 24, 'Screen');
+  wallMount(1000, 2030, 50, 24, 'Screen');
 
-  // Garage (workshop feel)
-  furniture(2880, 2180, 240, 130, '🚗', 'Car');
-  furniture(3280, 2130, 90, 210, '🔧', 'Workbench');
-  furniture(3530, 2130, 130, 65, '🧰', 'Toolbox');
-  furniture(2880, 2530, 110, 90, '🛢️', 'Barrel');
-  furniture(3180, 2580, 110, 90, '📦', 'Boxes');
-  furniture(3620, 2480, 65, 110, '🪜', 'Ladder');
-  furniture(3530, 2350, 100, 60, '🧰', 'Toolbox');
-  furniture(2880, 2750, 100, 80, '🛢️', 'Barrel');
-  furniture(3450, 2750, 80, 60, '📦', 'Boxes');
-  furniture(3700, 2130, 80, 60, '📋', 'Shelving');
-  furniture(3700, 2300, 80, 80, '📋', 'Oil Can');
-  furniture(3200, 2800, 80, 50, '📋', 'Floor Jack');
+  // ─── Garden (lush, dense, garden beds utilized) ───
+  furniture(1420, 2180, 120, 120, '🌳', 'Tree');
+  furniture(1780, 2120, 120, 120, '🌳', 'Tree');
+  furniture(2180, 2380, 120, 120, '🌳', 'Tree');
+  furniture(2450, 2600, 110, 110, '🌳', 'Tree');
+  furniture(1480, 2530, 95, 70, '🌿', 'Bush');
+  furniture(1950, 2580, 95, 70, '🌿', 'Bush');
+  furniture(2350, 2200, 95, 70, '🌿', 'Bush');
+  furniture(1680, 2360, 140, 85, '⛲', 'Fountain');
+  furniture(2450, 2180, 70, 70, '🌻', 'Flowers');
+  furniture(1400, 2400, 70, 70, '🌻', 'Flowers');
+  furniture(2100, 2150, 70, 70, '🌻', 'Flowers');
+  furniture(1600, 2700, 85, 85, '📋', 'Garden Bench');
+  furniture(2300, 2700, 85, 85, '📋', 'Bird Bath');
+  furniture(1350, 2750, 85, 65, '🌿', 'Bush');
+  furniture(2550, 2450, 65, 65, '🪴', 'Plant');
+  furniture(2000, 2250, 85, 65, '📋', 'Flower Pot');
+  // NEW: more garden density
+  furniture(1600, 2100, 70, 70, '🌻', 'Flowers');
+  furniture(2300, 2500, 70, 70, '🌻', 'Flowers');
+  furniture(1380, 2650, 65, 65, '🪴', 'Plant');
+  furniture(2550, 2250, 70, 70, '🌻', 'Flowers');
+  furniture(2000, 2730, 85, 65, '📋', 'Garden Bench');
+  furniture(1700, 2800, 80, 60, '🌿', 'Bush');
+
+  // ─── Garage (work bay utilized, dense workshop) ───
+  furniture(2880, 2180, 250, 140, '🚗', 'Car');
+  furniture(3240, 2100, 95, 220, '🔧', 'Workbench');
+  furniture(3530, 2100, 140, 70, '🧰', 'Toolbox');
+  furniture(2880, 2520, 120, 95, '🛢️', 'Barrel');
+  furniture(3100, 2570, 120, 95, '📦', 'Boxes');
+  furniture(3620, 2460, 70, 120, '🪜', 'Ladder');
+  furniture(3530, 2330, 110, 65, '🧰', 'Toolbox');
+  furniture(2880, 2740, 110, 85, '🛢️', 'Barrel');
+  furniture(3450, 2740, 85, 65, '📦', 'Boxes');
+  furniture(3720, 2100, 85, 65, '📋', 'Shelving');
+  furniture(3720, 2280, 85, 85, '📋', 'Oil Can');
+  furniture(3100, 2790, 85, 55, '📋', 'Floor Jack');
+  // NEW: work bay and wall objects
+  furniture(3530, 2540, 100, 60, '📋', 'Wall Panel');
+  furniture(3720, 2500, 80, 60, '📋', 'Control Panel');
+  furniture(2830, 2400, 65, 65, '📋', 'Fire Extinguisher');
+  furniture(3350, 2790, 80, 55, '📋', 'Shelving');
+  furniture(3600, 2740, 80, 65, '📋', 'Shelving');
+  wallMount(2900, 2030, 50, 24, 'Screen');
+  wallMount(3400, 2030, 50, 24, 'Screen');
+  wallMount(3700, 2030, 50, 24, 'Screen');
 
   // ─── FLOOR DECORATIONS (non-collision) ───
   FLOOR_DECORATIONS.length = 0;
@@ -1498,53 +1670,136 @@ function generateMap() {
   }
 
   // Kitchen floor decorations
-  decor(300, 600, 200, 150, 'rug', { color: 'rgba(80,120,60,0.1)', border: 'rgba(100,140,80,0.08)' });
-  decor(700, 600, 40, 20, 'vent', {});
+  decor(280, 580, 220, 160, 'rug', { color: 'rgba(80,120,60,0.1)', border: 'rgba(100,140,80,0.08)' });
+  decor(700, 580, 45, 24, 'vent', {});
+  decor(350, 380, 50, 24, 'vent', {});
 
   // Cafeteria vents and floor marks
-  decor(1600, 350, 50, 30, 'vent', {});
-  decor(2200, 250, 50, 30, 'vent', {});
-  decor(1400, 850, 100, 8, 'floor-mark', { color: 'rgba(255,200,0,0.04)' });
-  decor(2400, 850, 100, 8, 'floor-mark', { color: 'rgba(255,200,0,0.04)' });
+  decor(1600, 350, 55, 32, 'vent', {});
+  decor(2200, 250, 55, 32, 'vent', {});
+  decor(1400, 830, 120, 8, 'floor-mark', { color: 'rgba(255,200,0,0.04)' });
+  decor(2400, 830, 120, 8, 'floor-mark', { color: 'rgba(255,200,0,0.04)' });
+  decor(1700, 600, 55, 32, 'vent', {});
 
   // Living Room rug
-  decor(2950, 350, 250, 180, 'rug', { color: 'rgba(60,60,120,0.12)', border: 'rgba(80,80,150,0.1)' });
-  decor(3400, 350, 80, 20, 'cable', { color: 'rgba(40,40,40,0.15)' });
+  decor(2950, 340, 260, 190, 'rug', { color: 'rgba(60,60,120,0.12)', border: 'rgba(80,80,150,0.1)' });
+  decor(3400, 340, 90, 24, 'cable', { color: 'rgba(40,40,40,0.15)' });
+  decor(3100, 600, 50, 28, 'vent', {});
 
   // Bathroom puddle and drain
-  decor(280, 1250, 60, 40, 'puddle', {});
-  decor(500, 1500, 20, 20, 'drain', {});
-  decor(200, 1700, 100, 60, 'mat', { color: 'rgba(60,100,100,0.12)' });
+  decor(280, 1260, 65, 45, 'puddle', {});
+  decor(500, 1490, 22, 22, 'drain', {});
+  decor(200, 1700, 110, 65, 'mat', { color: 'rgba(60,100,100,0.12)' });
+  decor(450, 1200, 50, 28, 'vent', {});
 
-  // Hallway: vents, warning stripes, cables
-  decor(1100, 1350, 60, 30, 'vent', {});
-  decor(1500, 1250, 60, 30, 'vent', {});
-  decor(2100, 1350, 60, 30, 'vent', {});
-  decor(2600, 1250, 60, 30, 'vent', {});
-  decor(1050, 1700, 200, 12, 'warning-stripes', {});
-  decor(2700, 1700, 200, 12, 'warning-stripes', {});
-  decor(1350, 1300, 80, 40, 'cable', { color: 'rgba(200,50,50,0.08)' });
-  decor(2300, 1400, 100, 30, 'cable', { color: 'rgba(50,100,200,0.08)' });
-  decor(1800, 1150, 100, 10, 'floor-mark', { color: 'rgba(255,200,0,0.03)' });
+  // Hallway: dense vents, warning stripes, cables
+  decor(1100, 1350, 65, 32, 'vent', {});
+  decor(1400, 1250, 65, 32, 'vent', {});
+  decor(1800, 1350, 65, 32, 'vent', {});
+  decor(2100, 1250, 65, 32, 'vent', {});
+  decor(2500, 1350, 65, 32, 'vent', {});
+  decor(2800, 1250, 65, 32, 'vent', {});
+  decor(1050, 1700, 220, 14, 'warning-stripes', {});
+  decor(2700, 1700, 220, 14, 'warning-stripes', {});
+  decor(1350, 1300, 90, 45, 'cable', { color: 'rgba(200,50,50,0.1)' });
+  decor(2300, 1400, 110, 35, 'cable', { color: 'rgba(50,100,200,0.1)' });
+  decor(1800, 1170, 120, 10, 'floor-mark', { color: 'rgba(255,200,0,0.04)' });
+  decor(1400, 1700, 65, 32, 'vent', {});
+  decor(2200, 1700, 65, 32, 'vent', {});
+  // Door threshold markers
+  decor(1000, 1080, 60, 6, 'floor-mark', { color: 'rgba(255,200,0,0.06)' });
+  decor(2900, 1080, 60, 6, 'floor-mark', { color: 'rgba(255,200,0,0.06)' });
+  decor(1000, 1920, 60, 6, 'floor-mark', { color: 'rgba(255,200,0,0.06)' });
+  decor(2800, 1920, 60, 6, 'floor-mark', { color: 'rgba(255,200,0,0.06)' });
 
   // Bedroom rug
-  decor(3200, 1320, 200, 140, 'rug', { color: 'rgba(100,40,60,0.1)', border: 'rgba(130,60,80,0.08)' });
+  decor(3200, 1310, 220, 150, 'rug', { color: 'rgba(100,40,60,0.1)', border: 'rgba(130,60,80,0.08)' });
+  decor(3400, 1400, 50, 28, 'vent', {});
 
   // Gym floor markings
-  decor(100, 2350, 1100, 8, 'floor-mark', { color: 'rgba(255,255,255,0.02)' });
-  decor(600, 2100, 8, 600, 'floor-mark', { color: 'rgba(255,255,255,0.02)' });
-  decor(300, 2350, 80, 50, 'mat', { color: 'rgba(60,30,80,0.12)' });
-  decor(700, 2500, 40, 20, 'vent', {});
+  decor(100, 2340, 1100, 8, 'floor-mark', { color: 'rgba(255,255,255,0.025)' });
+  decor(600, 2090, 8, 600, 'floor-mark', { color: 'rgba(255,255,255,0.025)' });
+  decor(300, 2340, 85, 55, 'mat', { color: 'rgba(60,30,80,0.12)' });
+  decor(700, 2490, 45, 24, 'vent', {});
+  decor(200, 2580, 50, 28, 'vent', {});
+  decor(900, 2280, 50, 28, 'vent', {});
 
-  // Garden path stones (some extra)
-  decor(1500, 2450, 60, 40, 'mat', { color: 'rgba(100,90,80,0.08)' });
-  decor(2100, 2500, 60, 40, 'mat', { color: 'rgba(100,90,80,0.08)' });
+  // Garden path stones
+  decor(1500, 2440, 65, 45, 'mat', { color: 'rgba(100,90,80,0.08)' });
+  decor(2100, 2490, 65, 45, 'mat', { color: 'rgba(100,90,80,0.08)' });
+  decor(1800, 2660, 65, 45, 'mat', { color: 'rgba(100,90,80,0.08)' });
 
   // Garage: tire marks, oil, warning stripes
-  decor(2850, 2400, 200, 300, 'tire-marks', {});
-  decor(2800, 2900, 400, 14, 'warning-stripes', {});
-  decor(3500, 2600, 50, 30, 'vent', {});
-  decor(3300, 2450, 60, 40, 'mat', { color: 'rgba(40,40,40,0.15)' });
+  decor(2850, 2380, 220, 320, 'tire-marks', {});
+  decor(2800, 2890, 420, 16, 'warning-stripes', {});
+  decor(3500, 2590, 55, 32, 'vent', {});
+  decor(3300, 2440, 65, 45, 'mat', { color: 'rgba(40,40,40,0.15)' });
+  decor(3500, 2200, 55, 32, 'vent', {});
+  decor(2830, 2650, 50, 28, 'vent', {});
+
+  // ─── PIPE & WIRE INFRASTRUCTURE ───
+  WALL_DETAILS.length = 0;
+
+  // Re-add wall mounts defined above
+  // (already pushed during furniture section via wallMount helper)
+
+  // Kitchen pipes (water + gas)
+  pipe(80, 80, 850, 80, '#5a8a6a', true);           // top wall green pipe
+  pipe(80, 80, 80, 400, '#5a8a6a', false);           // left wall down
+  pipe(80, 900, 500, 900, '#6a6a75', true);          // bottom pipe
+  wire(300, 80, 700, 80, '#c62828');                  // red wire top
+  wire(80, 500, 80, 800, '#2196f3');                  // blue wire left
+
+  // Cafeteria pipes
+  pipe(1340, 80, 2600, 80, '#6a6a75', true);          // long top pipe
+  pipe(2620, 80, 2620, 500, '#6a6a75', false);        // right pipe down
+  wire(1500, 80, 1800, 80, '#ff9800');                 // orange wire
+  wire(2100, 80, 2300, 80, '#2196f3');                 // blue wire
+
+  // Living Room pipes
+  pipe(2800, 80, 3700, 80, '#6a6a75', true);          // top pipe
+  pipe(3880, 80, 3880, 500, '#6a6a75', false);        // right wall pipe
+  wire(3200, 80, 3500, 80, '#c62828');                 // red wire
+
+  // Bathroom pipes (prominent plumbing)
+  pipe(80, 1080, 700, 1080, '#4a8aaa', true);         // top water pipe (blue-ish)
+  pipe(80, 1080, 80, 1800, '#4a8aaa', true);          // left wall water
+  pipe(80, 1890, 400, 1890, '#6a6a75', false);        // bottom pipe
+  pipe(860, 1080, 860, 1400, '#4a8aaa', false);       // right vertical
+
+  // Hallway pipes (dense infrastructure)
+  pipe(1040, 1080, 2900, 1080, '#6a6a75', true);      // long top pipe
+  pipe(1040, 1890, 2900, 1890, '#6a6a75', true);      // long bottom pipe
+  pipe(1040, 1080, 1040, 1200, '#c64040', false);     // red vertical
+  pipe(2900, 1080, 2900, 1200, '#c64040', false);     // red vertical right
+  wire(1100, 1080, 1400, 1080, '#ff9800');
+  wire(1600, 1080, 2000, 1080, '#2196f3');
+  wire(2200, 1080, 2600, 1080, '#4caf50');
+  wire(2700, 1080, 2900, 1080, '#ff9800');
+  wire(1100, 1890, 1500, 1890, '#c62828');
+  wire(2500, 1890, 2900, 1890, '#2196f3');
+
+  // Bedroom pipes
+  pipe(3100, 1080, 3800, 1080, '#6a6a75', false);     // top pipe
+  pipe(3880, 1080, 3880, 1600, '#6a6a75', true);      // right pipe
+  wire(3300, 1080, 3600, 1080, '#c62828');
+
+  // Gym pipes
+  pipe(80, 2060, 1100, 2060, '#7a5a2a', true);        // top pipe (brown)
+  pipe(80, 2060, 80, 2700, '#7a5a2a', false);         // left pipe
+  pipe(80, 2890, 1100, 2890, '#6a6a75', false);       // bottom pipe
+  wire(200, 2060, 600, 2060, '#ff9800');
+
+  // Garden (minimal pipes, more natural)
+  pipe(1340, 2060, 1600, 2060, '#3a7a40', false);     // green pipe (irrigation)
+  wire(2000, 2060, 2400, 2060, '#4caf50');
+
+  // Garage pipes
+  pipe(2800, 2060, 3800, 2060, '#6a6a75', true);      // top pipe
+  pipe(3880, 2060, 3880, 2700, '#6a6a75', true);      // right pipe
+  pipe(2800, 2890, 3800, 2890, '#6a6a75', false);     // bottom pipe
+  wire(3000, 2060, 3300, 2060, '#c62828');
+  wire(3500, 2060, 3800, 2060, '#ff9800');
 }
 
 // ── COLOR PICKER ──
@@ -3101,7 +3356,10 @@ function render() {
   ctx.translate(-camera.x, -camera.y);
 
   drawArenaBackground();
+  drawAmbientOcclusion();
   drawObstacles();
+  drawWallDetails();
+  drawDoorFrames();
   drawPowerups();
   drawEntities();
   drawParticles();
@@ -3802,75 +4060,105 @@ function getWallRoomColor(ox, oy) {
 function drawObstacles() {
   MAP_OBSTACLES.forEach(o => {
     // Frustum culling
-    if (o.x + o.w < camera.x - 20 || o.x > camera.x + window.innerWidth + 20 ||
-        o.y + o.h < camera.y - 20 || o.y > camera.y + window.innerHeight + 20) return;
+    if (o.x + o.w < camera.x - 30 || o.x > camera.x + window.innerWidth + 30 ||
+        o.y + o.h < camera.y - 30 || o.y > camera.y + window.innerHeight + 30) return;
 
     if (o.type === 'wall') {
       const rm = getWallRoomColor(o.x, o.y);
       const wallBase = rm ? rm.wallColor : '#1e2538';
       const wallLight = rm ? rm.wallHighlight : '#2a3548';
       const trim = rm ? rm.trimColor : '#4a6a88';
+      const isHoriz = o.w > o.h;
 
-      // Wall shadow (depth effect)
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      // ── LAYER 1: Deep shadow (offset for 3D pop) ──
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
       ctx.beginPath();
-      ctx.roundRect(o.x + 2, o.y + 2, o.w, o.h, 3);
+      ctx.roundRect(o.x + 4, o.y + 4, o.w, o.h, 2);
       ctx.fill();
 
-      // Main wall body
+      // ── LAYER 2: Outer dark edge (hull color) ──
       ctx.fillStyle = wallBase;
       ctx.beginPath();
-      ctx.roundRect(o.x, o.y, o.w, o.h, 3);
+      ctx.roundRect(o.x, o.y, o.w, o.h, 2);
       ctx.fill();
 
-      // Wall top highlight (3D depth)
-      ctx.fillStyle = wallLight;
-      if (o.h <= WALL + 2) {
-        // Horizontal wall - top face
-        ctx.fillRect(o.x + 1, o.y, o.w - 2, 3);
-      } else {
-        // Vertical wall - left face
-        ctx.fillRect(o.x, o.y + 1, 3, o.h - 2);
+      // ── LAYER 3: Inner wall face (lighter, inset 4px) ──
+      if (isHoriz && o.h >= WALL - 2) {
+        ctx.fillStyle = wallLight;
+        ctx.fillRect(o.x + 2, o.y + 4, o.w - 4, o.h - 8);
+      } else if (!isHoriz && o.w >= WALL - 2) {
+        ctx.fillStyle = wallLight;
+        ctx.fillRect(o.x + 4, o.y + 2, o.w - 8, o.h - 4);
       }
 
-      // Trim/baseboard accent
-      ctx.fillStyle = trim + '30';
-      if (o.h <= WALL + 2) {
-        // Horizontal wall trim line
-        ctx.fillRect(o.x, o.y + o.h - 2, o.w, 2);
+      // ── LAYER 4: Top/left highlight (light source from top-left) ──
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      if (isHoriz) {
+        ctx.fillRect(o.x + 1, o.y, o.w - 2, 4);
       } else {
-        // Vertical wall trim
-        ctx.fillRect(o.x + o.w - 2, o.y, 2, o.h);
+        ctx.fillRect(o.x, o.y + 1, 4, o.h - 2);
       }
 
-      // Subtle texture on longer walls
-      if (o.w > 100 || o.h > 100) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+      // ── LAYER 5: Bottom/right shadow edge ──
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      if (isHoriz) {
+        ctx.fillRect(o.x + 1, o.y + o.h - 3, o.w - 2, 3);
+      } else {
+        ctx.fillRect(o.x + o.w - 3, o.y + 1, 3, o.h - 2);
+      }
+
+      // ── LAYER 6: Trim accent line (colored baseboard) ──
+      ctx.fillStyle = trim + '40';
+      if (isHoriz) {
+        ctx.fillRect(o.x + 2, o.y + o.h - 5, o.w - 4, 2);
+        ctx.fillRect(o.x + 2, o.y + 3, o.w - 4, 2);
+      } else {
+        ctx.fillRect(o.x + o.w - 5, o.y + 2, 2, o.h - 4);
+        ctx.fillRect(o.x + 3, o.y + 2, 2, o.h - 4);
+      }
+
+      // ── Panel seams (every ~60px) ──
+      if (o.w > 80 || o.h > 80) {
+        ctx.strokeStyle = 'rgba(0,0,0,0.08)';
         ctx.lineWidth = 0.5;
-        if (o.w > o.h) {
-          // Horizontal wall - brick-like segments
-          for (let bx = o.x + 30; bx < o.x + o.w - 10; bx += 40) {
+        if (isHoriz) {
+          for (let sx = o.x + 60; sx < o.x + o.w - 20; sx += 60) {
             ctx.beginPath();
-            ctx.moveTo(bx, o.y + 3);
-            ctx.lineTo(bx, o.y + o.h - 3);
+            ctx.moveTo(sx, o.y + 4);
+            ctx.lineTo(sx, o.y + o.h - 4);
             ctx.stroke();
           }
         } else {
-          // Vertical wall
-          for (let by = o.y + 30; by < o.y + o.h - 10; by += 40) {
+          for (let sy = o.y + 60; sy < o.y + o.h - 20; sy += 60) {
             ctx.beginPath();
-            ctx.moveTo(o.x + 3, by);
-            ctx.lineTo(o.x + o.w - 3, by);
+            ctx.moveTo(o.x + 4, sy);
+            ctx.lineTo(o.x + o.w - 4, sy);
             ctx.stroke();
           }
         }
       }
 
-      // Edge outline
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      // ── Bolt/rivet dots at panel seam intersections ──
+      if (o.w > 80 || o.h > 80) {
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        if (isHoriz) {
+          for (let sx = o.x + 60; sx < o.x + o.w - 20; sx += 60) {
+            ctx.beginPath(); ctx.arc(sx, o.y + 6, 1.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(sx, o.y + o.h - 6, 1.5, 0, Math.PI * 2); ctx.fill();
+          }
+        } else {
+          for (let sy = o.y + 60; sy < o.y + o.h - 20; sy += 60) {
+            ctx.beginPath(); ctx.arc(o.x + 6, sy, 1.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(o.x + o.w - 6, sy, 1.5, 0, Math.PI * 2); ctx.fill();
+          }
+        }
+      }
+
+      // ── Outer edge outline ──
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
       ctx.lineWidth = 0.5;
       ctx.beginPath();
-      ctx.roundRect(o.x, o.y, o.w, o.h, 3);
+      ctx.roundRect(o.x, o.y, o.w, o.h, 2);
       ctx.stroke();
     } else {
       drawFurnitureItem(o);
@@ -5487,6 +5775,346 @@ function drawFurnitureItem(o) {
   }
 
   ctx.restore();
+}
+
+// ── AMBIENT OCCLUSION (floor darkening near walls) ──
+function drawAmbientOcclusion() {
+  const vx = camera.x, vy = camera.y;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const AO_SIZE = 28; // shadow spread from wall
+
+  MAP_OBSTACLES.forEach(o => {
+    if (o.type !== 'wall') return;
+    if (o.x + o.w + AO_SIZE < vx || o.x - AO_SIZE > vx + vw ||
+        o.y + o.h + AO_SIZE < vy || o.y - AO_SIZE > vy + vh) return;
+
+    const isHoriz = o.w > o.h;
+
+    if (isHoriz) {
+      // Shadow below horizontal wall
+      const grad1 = ctx.createLinearGradient(o.x, o.y + o.h, o.x, o.y + o.h + AO_SIZE);
+      grad1.addColorStop(0, 'rgba(0,0,0,0.12)');
+      grad1.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad1;
+      ctx.fillRect(o.x, o.y + o.h, o.w, AO_SIZE);
+      // Shadow above horizontal wall
+      const grad2 = ctx.createLinearGradient(o.x, o.y, o.x, o.y - AO_SIZE);
+      grad2.addColorStop(0, 'rgba(0,0,0,0.08)');
+      grad2.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad2;
+      ctx.fillRect(o.x, o.y - AO_SIZE, o.w, AO_SIZE);
+    } else {
+      // Shadow right of vertical wall
+      const grad1 = ctx.createLinearGradient(o.x + o.w, o.y, o.x + o.w + AO_SIZE, o.y);
+      grad1.addColorStop(0, 'rgba(0,0,0,0.12)');
+      grad1.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad1;
+      ctx.fillRect(o.x + o.w, o.y, AO_SIZE, o.h);
+      // Shadow left of vertical wall
+      const grad2 = ctx.createLinearGradient(o.x, o.y, o.x - AO_SIZE, o.y);
+      grad2.addColorStop(0, 'rgba(0,0,0,0.08)');
+      grad2.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad2;
+      ctx.fillRect(o.x - AO_SIZE, o.y, AO_SIZE, o.h);
+    }
+  });
+}
+
+// ── WALL DETAILS (pipes, wires, wall-mounted screens) ──
+function drawWallDetails() {
+  const vx = camera.x, vy = camera.y;
+  const vw = window.innerWidth, vh = window.innerHeight;
+
+  WALL_DETAILS.forEach(d => {
+    switch (d.type) {
+      case 'pipe': {
+        const minX = Math.min(d.x1, d.x2), maxX = Math.max(d.x1, d.x2);
+        const minY = Math.min(d.y1, d.y2), maxY = Math.max(d.y1, d.y2);
+        if (maxX < vx - 20 || minX > vx + vw + 20 || maxY < vy - 20 || minY > vy + vh + 20) return;
+
+        // Pipe shadow
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+        ctx.lineWidth = 9;
+        ctx.beginPath();
+        ctx.moveTo(d.x1 + 2, d.y1 + 2);
+        ctx.lineTo(d.x2 + 2, d.y2 + 2);
+        ctx.stroke();
+
+        // Pipe body
+        ctx.strokeStyle = d.color;
+        ctx.lineWidth = 7;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(d.x1, d.y1);
+        ctx.lineTo(d.x2, d.y2);
+        ctx.stroke();
+
+        // Pipe highlight
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 2;
+        const isHorizPipe = Math.abs(d.y2 - d.y1) < Math.abs(d.x2 - d.x1);
+        if (isHorizPipe) {
+          ctx.beginPath();
+          ctx.moveTo(d.x1, d.y1 - 2);
+          ctx.lineTo(d.x2, d.y2 - 2);
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(d.x1 - 2, d.y1);
+          ctx.lineTo(d.x2 - 2, d.y2);
+          ctx.stroke();
+        }
+
+        // Joint rings (every ~200px)
+        ctx.strokeStyle = d.color;
+        ctx.lineWidth = 9;
+        const len = Math.sqrt((d.x2 - d.x1) ** 2 + (d.y2 - d.y1) ** 2);
+        const joints = Math.floor(len / 200);
+        for (let j = 1; j <= joints; j++) {
+          const t = j / (joints + 1);
+          const jx = d.x1 + (d.x2 - d.x1) * t;
+          const jy = d.y1 + (d.y2 - d.y1) * t;
+          ctx.fillStyle = 'rgba(255,255,255,0.06)';
+          if (isHorizPipe) {
+            ctx.fillRect(jx - 2, jy - 5, 4, 10);
+          } else {
+            ctx.fillRect(jx - 5, jy - 2, 10, 4);
+          }
+        }
+
+        // Valve wheel (if hasValve, at midpoint)
+        if (d.hasValve) {
+          const mx = (d.x1 + d.x2) / 2;
+          const my = (d.y1 + d.y2) / 2;
+          ctx.fillStyle = '#888';
+          ctx.beginPath(); ctx.arc(mx, my, 6, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#aaa';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.arc(mx, my, 6, 0, Math.PI * 2); ctx.stroke();
+          // Valve spokes
+          ctx.strokeStyle = '#999';
+          ctx.lineWidth = 1;
+          for (let a = 0; a < 4; a++) {
+            const angle = (a / 4) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.moveTo(mx, my);
+            ctx.lineTo(mx + Math.cos(angle) * 5, my + Math.sin(angle) * 5);
+            ctx.stroke();
+          }
+          ctx.fillStyle = '#777';
+          ctx.beginPath(); ctx.arc(mx, my, 2.5, 0, Math.PI * 2); ctx.fill();
+        }
+
+        ctx.lineCap = 'butt';
+        break;
+      }
+      case 'wire': {
+        const minX = Math.min(d.x1, d.x2), maxX = Math.max(d.x1, d.x2);
+        const minY = Math.min(d.y1, d.y2), maxY = Math.max(d.y1, d.y2);
+        if (maxX < vx - 10 || minX > vx + vw + 10 || maxY < vy - 10 || minY > vy + vh + 10) return;
+
+        // Wire with slight sag (bezier curve)
+        const mx = (d.x1 + d.x2) / 2;
+        const my = (d.y1 + d.y2) / 2;
+        const sag = 6;
+        ctx.strokeStyle = d.color + '50';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(d.x1, d.y1);
+        ctx.quadraticCurveTo(mx, my + sag, d.x2, d.y2);
+        ctx.stroke();
+        // Wire highlight
+        ctx.strokeStyle = d.color + '20';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(d.x1, d.y1 - 1);
+        ctx.quadraticCurveTo(mx, my + sag - 1, d.x2, d.y2 - 1);
+        ctx.stroke();
+        break;
+      }
+      case 'wall-mount': {
+        if (d.x + d.w < vx - 10 || d.x > vx + vw + 10 ||
+            d.y + d.h < vy - 10 || d.y > vy + vh + 10) return;
+
+        if (d.label === 'Screen') {
+          // Wall-mounted screen/monitor
+          // Bezel
+          ctx.fillStyle = '#1a1a22';
+          ctx.beginPath(); ctx.roundRect(d.x, d.y, d.w, d.h, 3); ctx.fill();
+          // Screen content
+          const scGrd = ctx.createLinearGradient(d.x, d.y, d.x + d.w, d.y + d.h);
+          scGrd.addColorStop(0, '#0a2040');
+          scGrd.addColorStop(1, '#081830');
+          ctx.fillStyle = scGrd;
+          ctx.beginPath(); ctx.roundRect(d.x + 2, d.y + 2, d.w - 4, d.h - 4, 2); ctx.fill();
+          // Screen lines (fake content)
+          ctx.fillStyle = 'rgba(0,255,100,0.15)';
+          for (let li = 0; li < 3; li++) {
+            ctx.fillRect(d.x + 5, d.y + 5 + li * 5, d.w * 0.6 - li * 4, 2);
+          }
+          // Blinking LED
+          const blink = Math.sin(frameCount / 30 + d.x) > 0;
+          ctx.fillStyle = blink ? '#00ff44' : '#004400';
+          ctx.beginPath(); ctx.arc(d.x + d.w - 5, d.y + d.h - 5, 2, 0, Math.PI * 2); ctx.fill();
+          // Screen glow on surrounding area
+          ctx.fillStyle = 'rgba(0,100,255,0.03)';
+          ctx.beginPath();
+          ctx.ellipse(d.x + d.w / 2, d.y + d.h + 15, d.w * 1.2, 25, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Frame
+          ctx.strokeStyle = '#333';
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.roundRect(d.x, d.y, d.w, d.h, 3); ctx.stroke();
+        }
+        break;
+      }
+    }
+  });
+}
+
+// ── DOOR FRAMES (metallic trim, indicator lights, threshold strips) ──
+function drawDoorFrames() {
+  const vx = camera.x, vy = camera.y;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const FRAME_W = 6; // frame trim thickness
+
+  DOOR_FRAMES.forEach(df => {
+    if (df.x + df.w + 40 < vx || df.x - 40 > vx + vw ||
+        df.y + df.h + 40 < vy || df.y - 40 > vy + vh) return;
+
+    if (df.orient === 'h') {
+      // Horizontal wall doorway (gap in a horizontal wall)
+      // The gap is at (df.x, df.y) with width=df.w, height=df.h (wall thickness)
+      const gx = df.x, gy = df.y, gw = df.w, gh = df.h;
+
+      // Door frame side pieces (metallic trim on left and right sides of opening)
+      // Left jamb
+      ctx.fillStyle = '#3a3a44';
+      ctx.fillRect(gx - FRAME_W, gy, FRAME_W, gh);
+      ctx.fillStyle = '#4a4a55';
+      ctx.fillRect(gx - FRAME_W, gy, 2, gh); // highlight edge
+      ctx.fillStyle = '#2a2a30';
+      ctx.fillRect(gx - 1, gy, 1, gh); // dark edge
+
+      // Right jamb
+      ctx.fillStyle = '#3a3a44';
+      ctx.fillRect(gx + gw, gy, FRAME_W, gh);
+      ctx.fillStyle = '#4a4a55';
+      ctx.fillRect(gx + gw, gy, 2, gh); // highlight
+      ctx.fillStyle = '#2a2a30';
+      ctx.fillRect(gx + gw + FRAME_W - 1, gy, 1, gh); // dark edge
+
+      // Header bar across top of doorway (inside the wall thickness)
+      ctx.fillStyle = '#444450';
+      ctx.fillRect(gx - FRAME_W, gy, gw + FRAME_W * 2, 4);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(gx - FRAME_W, gy, gw + FRAME_W * 2, 1);
+
+      // Footer bar / threshold strip
+      ctx.fillStyle = '#444450';
+      ctx.fillRect(gx - FRAME_W, gy + gh - 4, gw + FRAME_W * 2, 4);
+      // Threshold floor strip (colored transition)
+      ctx.fillStyle = 'rgba(255,200,0,0.06)';
+      ctx.fillRect(gx - 4, gy + gh, gw + 8, 6);
+      ctx.fillStyle = 'rgba(255,200,0,0.04)';
+      ctx.fillRect(gx - 4, gy - 6, gw + 8, 6);
+
+      // Hazard stripes on threshold (subtle yellow/black alternating)
+      ctx.fillStyle = 'rgba(200,180,0,0.04)';
+      for (let sx = gx; sx < gx + gw; sx += 12) {
+        ctx.fillRect(sx, gy + gh, 6, 4);
+        ctx.fillRect(sx, gy - 4, 6, 4);
+      }
+
+      // Indicator light above doorway (centered, on top edge)
+      const lightX = gx + gw / 2;
+      const lightY = gy + 2;
+      // Light housing
+      ctx.fillStyle = '#222';
+      ctx.beginPath(); ctx.arc(lightX, lightY, 5, 0, Math.PI * 2); ctx.fill();
+      // Green light (blinking)
+      const lightOn = Math.sin(frameCount / 40 + df.x * 0.01) > -0.3;
+      ctx.fillStyle = lightOn ? '#00cc44' : '#003311';
+      ctx.beginPath(); ctx.arc(lightX, lightY, 3, 0, Math.PI * 2); ctx.fill();
+      // Light glow
+      if (lightOn) {
+        ctx.fillStyle = 'rgba(0,200,60,0.08)';
+        ctx.beginPath(); ctx.arc(lightX, lightY, 12, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Door track grooves on floor (two lines running through doorway)
+      ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(gx + 8, gy); ctx.lineTo(gx + 8, gy + gh);
+      ctx.moveTo(gx + gw - 8, gy); ctx.lineTo(gx + gw - 8, gy + gh);
+      ctx.stroke();
+
+    } else {
+      // Vertical wall doorway (gap in a vertical wall)
+      const gx = df.x, gy = df.y, gw = df.w, gh = df.h;
+
+      // Top jamb
+      ctx.fillStyle = '#3a3a44';
+      ctx.fillRect(gx, gy - FRAME_W, gw, FRAME_W);
+      ctx.fillStyle = '#4a4a55';
+      ctx.fillRect(gx, gy - FRAME_W, gw, 2);
+      ctx.fillStyle = '#2a2a30';
+      ctx.fillRect(gx, gy - 1, gw, 1);
+
+      // Bottom jamb
+      ctx.fillStyle = '#3a3a44';
+      ctx.fillRect(gx, gy + gh, gw, FRAME_W);
+      ctx.fillStyle = '#4a4a55';
+      ctx.fillRect(gx, gy + gh, gw, 2);
+      ctx.fillStyle = '#2a2a30';
+      ctx.fillRect(gx, gy + gh + FRAME_W - 1, gw, 1);
+
+      // Left side bar
+      ctx.fillStyle = '#444450';
+      ctx.fillRect(gx, gy - FRAME_W, 4, gh + FRAME_W * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(gx, gy - FRAME_W, 1, gh + FRAME_W * 2);
+
+      // Right side bar
+      ctx.fillStyle = '#444450';
+      ctx.fillRect(gx + gw - 4, gy - FRAME_W, 4, gh + FRAME_W * 2);
+
+      // Threshold strips (left and right of vertical wall)
+      ctx.fillStyle = 'rgba(255,200,0,0.06)';
+      ctx.fillRect(gx + gw, gy - 4, 6, gh + 8);
+      ctx.fillStyle = 'rgba(255,200,0,0.04)';
+      ctx.fillRect(gx - 6, gy - 4, 6, gh + 8);
+
+      // Hazard stripes on threshold
+      ctx.fillStyle = 'rgba(200,180,0,0.04)';
+      for (let sy = gy; sy < gy + gh; sy += 12) {
+        ctx.fillRect(gx + gw, sy, 4, 6);
+        ctx.fillRect(gx - 4, sy, 4, 6);
+      }
+
+      // Indicator light (on left edge, centered vertically)
+      const lightX = gx + 2;
+      const lightY = gy + gh / 2;
+      ctx.fillStyle = '#222';
+      ctx.beginPath(); ctx.arc(lightX, lightY, 5, 0, Math.PI * 2); ctx.fill();
+      const lightOn = Math.sin(frameCount / 40 + df.y * 0.01) > -0.3;
+      ctx.fillStyle = lightOn ? '#00cc44' : '#003311';
+      ctx.beginPath(); ctx.arc(lightX, lightY, 3, 0, Math.PI * 2); ctx.fill();
+      if (lightOn) {
+        ctx.fillStyle = 'rgba(0,200,60,0.08)';
+        ctx.beginPath(); ctx.arc(lightX, lightY, 12, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Door track grooves
+      ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(gx, gy + 8); ctx.lineTo(gx + gw, gy + 8);
+      ctx.moveTo(gx, gy + gh - 8); ctx.lineTo(gx + gw, gy + gh - 8);
+      ctx.stroke();
+    }
+  });
 }
 
 function drawPowerups() {
