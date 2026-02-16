@@ -14,3 +14,10 @@ android/.idea/
 *.apk
 *.aab
 *.keystore
+
+# iOS build artifacts
+ios/App/build/
+ios/App/Pods/
+ios/App/.symlinks/
+*.ipa
+*.xcuserdata
