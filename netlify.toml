@@ -64,6 +64,11 @@
   function = "analyze-story-points"
   path = "/api/analyze-story-points"
 
+# Admin AI Coach Edge Function
+[[edge_functions]]
+  function = "admin-ai-coach"
+  path = "/.netlify/functions/admin-ai-coach"
+
 # Meal Tracking Edge Functions
 [[edge_functions]]
   function = "upload-meal-photo"
