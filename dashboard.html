@@ -9038,7 +9038,7 @@ async function applyAppTheme(themeKey) {
             <div class="meal-journal-card" id="mvmt-workout-journal-section">
                 <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Workout Journal</h3>
                 <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Your recent workouts at a glance</p>
-                <div class="journal-timeline" id="mvmt-workout-journal-timeline">
+                <div class="journal-timeline" id="mvmt-workout-journal-timeline" style="gap: 10px;">
                     <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Loading your workouts...</p>
                 </div>
             </div>
@@ -48665,15 +48665,15 @@ async function loadMovementWorkoutJournal() {
             var detailsHtml = '';
             exercises.forEach(function(ex) {
                 var weightInfo = ex.bestWeight > 0 ? ex.bestWeight + 'kg x ' + ex.bestReps : ex.bestReps + ' reps';
-                detailsHtml += '<div style="display: inline-block; background: #f0f0ff; color: #4338ca; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; margin: 2px 4px 2px 0;">'
-                    + ex.name + ' <span style="opacity:0.7;">(' + ex.sets + 's · ' + weightInfo + ')</span></div>';
+                detailsHtml += '<div style="background: #ededff; color: #4338ca; padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 600;">'
+                    + ex.name + ' <span style="opacity:0.6; font-weight: 500;">(' + ex.sets + 's · ' + weightInfo + ')</span></div>';
             });
 
             acts.forEach(function(a) {
                 var label = a.activity_label || a.activity_type;
                 var mins = a.duration_minutes ? a.duration_minutes + 'min' : '';
-                detailsHtml += '<div style="display: inline-block; background: #f0fdf4; color: #16a34a; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; margin: 2px 4px 2px 0;">'
-                    + label + ' <span style="opacity:0.7;">' + mins + '</span></div>';
+                detailsHtml += '<div style="background: #ecfdf5; color: #16a34a; padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 600;">'
+                    + label + ' <span style="opacity:0.6; font-weight: 500;">' + mins + '</span></div>';
             });
 
             var totalSets = exercises.reduce(function(s, e) { return s + e.sets; }, 0);
@@ -48682,13 +48682,15 @@ async function loadMovementWorkoutJournal() {
             if (totalExercises > 0) summaryParts.push(totalExercises + ' exercise' + (totalExercises !== 1 ? 's' : '') + ' · ' + totalSets + ' sets');
             if (acts.length > 0) summaryParts.push(acts.length + ' activit' + (acts.length !== 1 ? 'ies' : 'y'));
 
-            html += '<div class="journal-day">'
-                + '<div class="journal-date-col">'
-                + '    <div class="journal-date-day">' + dayName + '</div>'
-                + '    <div class="journal-date-num">' + dayNum + '</div>'
-                + '    <div class="journal-day-cals">' + summaryParts.join(', ') + '</div>'
+            html += '<div style="background: #fafafa; border-radius: 12px; padding: 14px 16px; border: 1px solid #f0f0f0;">'
+                + '<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">'
+                + '    <div style="background: #6366f1; color: white; width: 42px; height: 42px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;">'
+                + '        <div style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; line-height: 1; opacity: 0.9;">' + dayName + '</div>'
+                + '        <div style="font-size: 1.1rem; font-weight: 800; line-height: 1.1;">' + dayNum + '</div>'
+                + '    </div>'
+                + '    <div style="flex: 1; font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">' + summaryParts.join(' · ') + '</div>'
                 + '</div>'
-                + '<div style="flex: 1; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0;">'
+                + '<div style="display: flex; flex-wrap: wrap; gap: 6px;">'
                 + detailsHtml
                 + '</div>'
                 + '</div>';
