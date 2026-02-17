@@ -8008,7 +8008,7 @@ async function applyAppTheme(themeKey) {
         </div>
         <!-- Input area -->
         <div style="padding: 8px 14px 12px; display: flex; gap: 8px; align-items: center; border-top: 1px solid #f1f5f9;">
-            <input type="text" id="ai-assistant-input" placeholder="e.g. Move today's workout to tomorrow..." style="flex: 1; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 0.88rem; outline: none; background: #f8fafc; color: var(--text-main); transition: border-color 0.2s;" onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e2e8f0'" onkeypress="if(event.key==='Enter') sendAiAssistantMessage()">
+            <input type="text" id="ai-assistant-input" placeholder="e.g. Create me a meal plan, swap workouts..." style="flex: 1; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 0.88rem; outline: none; background: #f8fafc; color: var(--text-main); transition: border-color 0.2s;" onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e2e8f0'" onkeypress="if(event.key==='Enter') sendAiAssistantMessage()">
             <button id="ai-assistant-send-btn" onclick="sendAiAssistantMessage()" style="width: 38px; height: 38px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.2s;">
                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
             </button>
@@ -60758,7 +60758,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const todayStr = new Date().toISOString().split('T')[0];
 
         // Run all data fetches in parallel for speed
-        const [quizResult, factsResult, nutritionResult, mealsResult, workoutsResult, weighInsResult, replacementsResult, wearableResult] = await Promise.allSettled([
+        const [quizResult, factsResult, nutritionResult, mealsResult, workoutsResult, weighInsResult, replacementsResult, wearableResult, aiMealPlanResult] = await Promise.allSettled([
             // Quiz results
             db.quizResults.getLatest(user.id),
             // User facts
@@ -60805,6 +60805,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                     } catch (e) { /* table may not exist */ }
                 }));
                 return wearables;
+            })(),
+            // Check if user has an AI meal plan
+            (async () => {
+                try {
+                    const { data } = await window.supabaseClient
+                        .from('ai_generated_meal_plans')
+                        .select('id, plan_name, status, created_at')
+                        .eq('user_id', user.id)
+                        .eq('status', 'active')
+                        .limit(1)
+                        .maybeSingle();
+                    return data;
+                } catch (e) {
+                    // Table may not exist yet
+                    return localStorage.getItem('ai_meal_plan') ? { plan_name: 'Local plan', status: 'active' } : null;
+                }
             })()
         ]);
 
@@ -60816,6 +60832,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         context.weighIns = weighInsResult.status === 'fulfilled' ? (weighInsResult.value || []) : [];
         context.activeReplacements = replacementsResult.status === 'fulfilled' ? (replacementsResult.value || []) : [];
         context.wearables = wearableResult.status === 'fulfilled' ? (wearableResult.value || {}) : {};
+        context.hasAiMealPlan = aiMealPlanResult.status === 'fulfilled' && !!aiMealPlanResult.value;
 
         // Adaptive calorie recommendation
         try {

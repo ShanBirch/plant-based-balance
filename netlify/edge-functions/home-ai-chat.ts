@@ -34,6 +34,7 @@ export default async function (request: Request, context: Context) {
     const wearables = userData?.wearables || {};
     const adaptiveResult = userData?.adaptiveResult || null;
     const facts = userData?.facts || {};
+    const hasAiMealPlan = userData?.hasAiMealPlan || false;
 
     // Workout schedule context (this week)
     const weekSchedule = userData?.weekSchedule || [];
@@ -192,6 +193,9 @@ Struggles: ${facts.struggles?.join(', ') || 'None'}
 Preferences: ${facts.preferences?.join(', ') || 'None'}
 Health Notes: ${facts.health_notes?.join(', ') || 'None'}
 Goals: ${facts.goals?.join(', ') || 'None'}
+
+=== AI MEAL PLAN STATUS ===
+Has AI Meal Plan: ${hasAiMealPlan ? 'YES - user already has a personalized meal plan generated' : 'NO - user does NOT have a meal plan yet. If they mention meals, nutrition, or eating, you can proactively offer to generate one!'}
 `;
 
     const systemPrompt = `You are FITGotchi AI, a smart personal fitness and nutrition assistant built into the FITGotchi app. You talk DIRECTLY to the user.
