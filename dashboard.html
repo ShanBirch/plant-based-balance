@@ -9982,7 +9982,7 @@ async function applyAppTheme(themeKey) {
                         🤖
                     </div>
                     <h2 style="margin: 0 0 10px; font-family: 'Playfair Display'; color: var(--primary); font-size: 1.5rem;">Your AI Meal Plan</h2>
-                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">Get a fully personalized 4-week meal plan designed by AI, tailored to your goals, dietary preferences, and nutritional targets. Includes AI-generated meal photos!</p>
+                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">Get a personalized weekly meal plan designed by AI, tailored to your goals and dietary preferences. Generate a fresh plan each week with AI-created meal photos!</p>
                     <button onclick="requestAiMealPlan()" style="background: linear-gradient(135deg, var(--primary) 0%, #10b981 100%); color: white; border: none; padding: 14px 32px; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(123,168,131,0.3);">
                         <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
                         Generate My Meal Plan
@@ -10018,12 +10018,9 @@ async function applyAppTheme(themeKey) {
                         </div>
                     </div>
 
-                    <!-- Week Tabs (inside the plan view) -->
+                    <!-- Week Tabs (dynamically rendered based on generated weeks) -->
                     <div class="week-scroller" id="ai-plan-week-tabs" style="padding: 10px 15px;">
-                        <button class="pill-btn active" onclick="switchAiPlanWeek(1, this)">Week 1</button>
-                        <button class="pill-btn" onclick="switchAiPlanWeek(2, this)">Week 2</button>
-                        <button class="pill-btn" onclick="switchAiPlanWeek(3, this)">Week 3</button>
-                        <button class="pill-btn" onclick="switchAiPlanWeek(4, this)">Week 4</button>
+                        <!-- Tabs rendered by renderAiPlanWeekTabs() -->
                     </div>
 
                     <!-- Week Theme Banner -->
@@ -23750,9 +23747,41 @@ function showAiPlanLoaded(plan) {
     if (nameEl) nameEl.textContent = plan.plan_name || 'Your AI Meal Plan';
     if (descEl) descEl.textContent = plan.plan_description || 'Personalized by AI';
 
+    // Render week tabs dynamically
+    renderAiPlanWeekTabs(plan);
+
+    // Default to the first available week
+    const firstWeek = plan.weeks?.[0]?.week_number || 1;
+    _aiMealPlanCurrentWeek = firstWeek;
+
     // Render current week/day
     renderAiPlanWeek(_aiMealPlanCurrentWeek);
     renderAiPlanDay(_aiMealPlanCurrentDay);
+}
+
+/**
+ * Render week tabs dynamically based on how many weeks exist in the plan.
+ * Also shows a "+ Generate Next Week" button if fewer than 4 weeks exist.
+ */
+function renderAiPlanWeekTabs(plan) {
+    const container = document.getElementById('ai-plan-week-tabs');
+    if (!container) return;
+
+    const weekCount = plan.weeks?.length || 0;
+    let html = '';
+
+    for (let i = 0; i < weekCount; i++) {
+        const w = plan.weeks[i];
+        const isActive = w.week_number === _aiMealPlanCurrentWeek;
+        html += `<button class="pill-btn ${isActive ? 'active' : ''}" onclick="switchAiPlanWeek(${w.week_number}, this)">Week ${w.week_number}</button>`;
+    }
+
+    // Show "+ Next Week" button if under 4 weeks
+    if (weekCount < 4) {
+        html += `<button class="pill-btn" onclick="generateNextWeek()" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; font-size: 0.8rem;">+ Next Week</button>`;
+    }
+
+    container.innerHTML = html;
 }
 
 /**
@@ -23994,7 +24023,7 @@ async function generateAiMealPlan() {
     try {
         // Update progress UI
         if (statusEl) statusEl.textContent = 'Gathering your profile data...';
-        if (progressEl) progressEl.style.width = '10%';
+        if (progressEl) progressEl.style.width = '5%';
 
         // Gather user data
         const db = window.dbHelpers;
@@ -24002,7 +24031,6 @@ async function generateAiMealPlan() {
             db.quizResults.getLatest(user.id),
             db.userFacts.get(user.id),
             (async () => {
-                // Try Supabase first, fallback to localStorage
                 try {
                     const { data } = await window.supabaseClient
                         .from('user_food_preferences')
@@ -24011,7 +24039,6 @@ async function generateAiMealPlan() {
                         .maybeSingle();
                     if (data) return data;
                 } catch (e) {}
-                // Fallback to localStorage
                 try {
                     return JSON.parse(localStorage.getItem('user_food_preferences') || '{}');
                 } catch (e) { return {}; }
@@ -24022,63 +24049,52 @@ async function generateAiMealPlan() {
         const facts = factsResult.status === 'fulfilled' ? (factsResult.value || {}) : {};
         const foodPreferences = prefsResult.status === 'fulfilled' ? (prefsResult.value || {}) : {};
 
-        if (statusEl) statusEl.textContent = 'AI is designing your personalized meals...';
-        if (progressEl) progressEl.style.width = '25%';
+        const userPayload = {
+            profile: { name: user.user_metadata?.name || user.email?.split('@')[0] || 'User' },
+            quizResults,
+            facts,
+            foodPreferences
+        };
 
-        // Call the edge function
+        // Generate Week 1 (users can add more weeks later with "+ Next Week")
+        if (statusEl) statusEl.textContent = 'AI is designing your meals...';
+        if (progressEl) progressEl.style.width = '30%';
+
         const response = await fetch('/.netlify/functions/generate-meal-plan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                userData: {
-                    profile: { name: user.user_metadata?.name || user.email?.split('@')[0] || 'User' },
-                    quizResults,
-                    facts,
-                    foodPreferences
-                }
+                userData: userPayload,
+                weekNumber: 1,
+                previousWeeks: []
             })
         });
 
-        if (statusEl) statusEl.textContent = 'Generating AI meal photos...';
-        if (progressEl) progressEl.style.width = '60%';
-
         if (!response.ok) {
             const errText = await response.text();
-            console.error('Meal plan generation failed:', response.status, errText);
+            console.error('Week 1 generation failed:', response.status, errText);
             throw new Error('Failed to generate meal plan');
         }
 
+        if (progressEl) progressEl.style.width = '70%';
+
         const data = await response.json();
-        if (!data.success || !data.plan) {
+        if (!data.success || !data.week) {
             throw new Error(data.error || 'Invalid response from AI');
         }
 
+        // Assemble the plan with just Week 1
+        const mealPlan = {
+            plan_name: `Your Personalized Plan`,
+            plan_description: 'AI-designed weekly meal plan tailored to your goals',
+            weeks: [data.week]
+        };
+
         if (statusEl) statusEl.textContent = 'Saving your meal plan...';
-        if (progressEl) progressEl.style.width = '80%';
-
-        const mealPlan = data.plan;
-        const images = data.images || {};
-
-        // Merge images into meal data
-        if (mealPlan.weeks) {
-            mealPlan.weeks.forEach(week => {
-                if (!week.days) return;
-                week.days.forEach(day => {
-                    const imageKey = `w${week.week_number}_d${day.day_of_week}`;
-                    if (images[imageKey] && day.meals) {
-                        // Assign image to the dinner/main meal
-                        const mainMeal = day.meals.find(m => m.meal_slot === 'dinner') ||
-                                         day.meals.find(m => m.meal_slot === 'lunch') ||
-                                         day.meals[0];
-                        if (mainMeal) {
-                            mainMeal.image_url = images[imageKey];
-                        }
-                    }
-                });
-            });
-        }
+        if (progressEl) progressEl.style.width = '85%';
 
         // Save to Supabase
+        let planId = null;
         try {
             // Archive any existing active plans
             await window.supabaseClient
@@ -24087,20 +24103,19 @@ async function generateAiMealPlan() {
                 .eq('user_id', user.id)
                 .eq('status', 'active');
 
-            // Insert the new plan
             const { data: planRow, error: planError } = await window.supabaseClient
                 .from('ai_generated_meal_plans')
                 .insert({
                     user_id: user.id,
-                    plan_name: mealPlan.plan_name || 'Your AI Meal Plan',
-                    plan_description: mealPlan.plan_description || 'Personalized by AI',
+                    plan_name: mealPlan.plan_name,
+                    plan_description: mealPlan.plan_description,
                     status: 'active',
                     calorie_goal: quizResults.calorie_goal,
                     protein_goal_g: quizResults.protein_goal_g,
                     carbs_goal_g: quizResults.carbs_goal_g,
                     fat_goal_g: quizResults.fat_goal_g,
                     diet_type: foodPreferences.diet_type || 'vegan',
-                    total_meals: 140,
+                    total_meals: 35,
                     current_week: 1
                 })
                 .select()
@@ -24109,25 +24124,25 @@ async function generateAiMealPlan() {
             if (planError) {
                 console.warn('Could not save plan to Supabase:', planError);
             } else if (planRow) {
+                planId = planRow.id;
                 mealPlan.id = planRow.id;
 
                 // Insert week themes
-                const weekThemes = (mealPlan.weeks || []).map(w => ({
+                const weekThemes = mealPlan.weeks.map(w => ({
                     plan_id: planRow.id,
                     week_number: w.week_number,
                     theme: w.theme || `Week ${w.week_number}`,
                     theme_description: w.theme_description || ''
                 }));
-
                 if (weekThemes.length > 0) {
                     await window.supabaseClient
                         .from('ai_meal_plan_weeks')
                         .insert(weekThemes);
                 }
 
-                // Insert all meals
+                // Insert all meals and collect IDs for image generation
                 const allMeals = [];
-                (mealPlan.weeks || []).forEach(week => {
+                mealPlan.weeks.forEach(week => {
                     (week.days || []).forEach(day => {
                         (day.meals || []).forEach(meal => {
                             allMeals.push({
@@ -24150,19 +24165,25 @@ async function generateAiMealPlan() {
                                 cook_time_mins: meal.cook_time_mins,
                                 tags: meal.tags || [],
                                 cuisine: meal.cuisine,
-                                image_url: meal.image_url
+                                image_url: null
                             });
                         });
                     });
                 });
 
                 // Insert in batches of 50
+                const insertedMealIds = [];
                 for (let i = 0; i < allMeals.length; i += 50) {
                     const batch = allMeals.slice(i, i + 50);
-                    await window.supabaseClient
+                    const { data: inserted } = await window.supabaseClient
                         .from('ai_generated_meals')
-                        .insert(batch);
+                        .insert(batch)
+                        .select('id, name, description, meal_slot, week_number, day_of_week');
+                    if (inserted) insertedMealIds.push(...inserted);
                 }
+
+                // Store inserted meal IDs for background image generation
+                mealPlan._insertedMeals = insertedMealIds;
             }
         } catch (saveErr) {
             console.warn('Could not save to Supabase, storing locally:', saveErr);
@@ -24174,7 +24195,7 @@ async function generateAiMealPlan() {
         if (progressEl) progressEl.style.width = '100%';
         if (statusEl) statusEl.textContent = 'Your meal plan is ready!';
 
-        // Cache and display
+        // Cache and display immediately (images will load in background)
         _aiMealPlanCache = mealPlan;
         _aiMealPlanCurrentWeek = 1;
         _aiMealPlanCurrentDay = 0;
@@ -24182,6 +24203,12 @@ async function generateAiMealPlan() {
         setTimeout(() => {
             showAiPlanLoaded(mealPlan);
         }, 500);
+
+        // Generate images in the background (non-blocking)
+        // One image per day's main meal = 28 images, generated slowly to not overwhelm
+        if (planId && mealPlan._insertedMeals) {
+            generateMealImagesInBackground(planId, mealPlan._insertedMeals, user.id);
+        }
 
     } catch (err) {
         console.error('Meal plan generation error:', err);
@@ -24191,6 +24218,235 @@ async function generateAiMealPlan() {
         setTimeout(() => {
             showAiPlanEmpty();
         }, 2000);
+    }
+}
+
+/**
+ * Generate meal images in the background after plan is created.
+ * Generates one image at a time for the dinner/lunch of each day (28 images).
+ * Each image is uploaded to B2 and the URL is saved to Supabase.
+ */
+async function generateMealImagesInBackground(planId, insertedMeals, userId) {
+    // Pick one main meal per day (dinner or lunch) = 28 images
+    const mealsToImage = [];
+    const seen = new Set();
+    for (const meal of insertedMeals) {
+        const dayKey = `${meal.week_number}_${meal.day_of_week}`;
+        if (seen.has(dayKey)) continue;
+        if (meal.meal_slot === 'dinner' || meal.meal_slot === 'lunch') {
+            mealsToImage.push(meal);
+            seen.add(dayKey);
+        }
+    }
+    // Fill gaps - if a day didn't have dinner/lunch, grab any meal
+    for (const meal of insertedMeals) {
+        const dayKey = `${meal.week_number}_${meal.day_of_week}`;
+        if (!seen.has(dayKey)) {
+            mealsToImage.push(meal);
+            seen.add(dayKey);
+        }
+    }
+
+    console.log(`Starting background image generation for ${mealsToImage.length} meals...`);
+
+    for (let i = 0; i < mealsToImage.length; i++) {
+        const meal = mealsToImage[i];
+
+        // Skip if this meal already has an image URL (from a previous run or B2 storage)
+        if (meal.image_url && meal.image_url.length > 10 && !meal.image_url.startsWith('data:')) {
+            console.log(`Skipping image for "${meal.name}" - already has permanent URL`);
+            continue;
+        }
+
+        try {
+            const response = await fetch('/.netlify/functions/generate-meal-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mealName: meal.name,
+                    mealDescription: meal.description || '',
+                    userId: userId,
+                    planId: planId,
+                    mealId: meal.id
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.imageUrl) {
+                    // Update the meal in Supabase with the permanent image URL
+                    await window.supabaseClient
+                        .from('ai_generated_meals')
+                        .update({ image_url: data.imageUrl })
+                        .eq('id', meal.id);
+
+                    // Update the in-memory cache too
+                    if (_aiMealPlanCache && _aiMealPlanCache.weeks) {
+                        const week = _aiMealPlanCache.weeks.find(w => w.week_number === meal.week_number);
+                        if (week) {
+                            const day = week.days?.find(d => d.day_of_week === meal.day_of_week);
+                            if (day) {
+                                const cachedMeal = day.meals?.find(m => m.name === meal.name);
+                                if (cachedMeal) {
+                                    cachedMeal.image_url = data.imageUrl;
+                                }
+                            }
+                        }
+                    }
+
+                    // Update localStorage backup
+                    try {
+                        localStorage.setItem('ai_meal_plan', JSON.stringify(_aiMealPlanCache));
+                    } catch (e) { /* storage quota */ }
+
+                    console.log(`Image ${i + 1}/${mealsToImage.length} generated for "${meal.name}"`);
+                }
+            }
+        } catch (err) {
+            console.warn(`Image generation failed for "${meal.name}":`, err);
+        }
+
+        // Small delay between requests to avoid rate limiting
+        if (i < mealsToImage.length - 1) {
+            await new Promise(r => setTimeout(r, 1500));
+        }
+    }
+
+    console.log('Background image generation complete!');
+}
+
+/**
+ * Generate the next week of the meal plan.
+ * Appends a new week to the existing plan.
+ */
+async function generateNextWeek() {
+    const user = window.currentUser;
+    if (!user || !_aiMealPlanCache) return;
+
+    const currentWeeks = _aiMealPlanCache.weeks || [];
+    const nextWeekNum = currentWeeks.length + 1;
+    if (nextWeekNum > 4) {
+        alert('You already have 4 weeks generated!');
+        return;
+    }
+
+    showAiPlanGenerating();
+    const statusEl = document.getElementById('ai-plan-gen-status');
+    const progressEl = document.getElementById('ai-plan-gen-progress');
+
+    try {
+        if (statusEl) statusEl.textContent = `Generating Week ${nextWeekNum}...`;
+        if (progressEl) progressEl.style.width = '20%';
+
+        // Gather user data
+        const db = window.dbHelpers;
+        const [quizResult, factsResult, prefsResult] = await Promise.allSettled([
+            db.quizResults.getLatest(user.id),
+            db.userFacts.get(user.id),
+            (async () => {
+                try {
+                    const { data } = await window.supabaseClient
+                        .from('user_food_preferences').select('*').eq('user_id', user.id).maybeSingle();
+                    if (data) return data;
+                } catch (e) {}
+                try { return JSON.parse(localStorage.getItem('user_food_preferences') || '{}'); } catch (e) { return {}; }
+            })()
+        ]);
+
+        // Build previous weeks context
+        const previousWeeks = currentWeeks.map(w => {
+            const mealNames = [];
+            (w.days || []).forEach(d => (d.meals || []).forEach(m => mealNames.push(m.name)));
+            return { weekNumber: w.week_number, theme: w.theme, mealNames };
+        });
+
+        if (progressEl) progressEl.style.width = '40%';
+
+        const response = await fetch('/.netlify/functions/generate-meal-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userData: {
+                    profile: { name: user.user_metadata?.name || user.email?.split('@')[0] || 'User' },
+                    quizResults: quizResult.status === 'fulfilled' ? (quizResult.value || {}) : {},
+                    facts: factsResult.status === 'fulfilled' ? (factsResult.value || {}) : {},
+                    foodPreferences: prefsResult.status === 'fulfilled' ? (prefsResult.value || {}) : {}
+                },
+                weekNumber: nextWeekNum,
+                previousWeeks
+            })
+        });
+
+        if (progressEl) progressEl.style.width = '75%';
+
+        if (!response.ok) throw new Error('Failed to generate week ' + nextWeekNum);
+
+        const data = await response.json();
+        if (!data.success || !data.week) throw new Error(data.error || 'Invalid response');
+
+        // Add the new week to the cache
+        _aiMealPlanCache.weeks.push(data.week);
+
+        // Save to Supabase
+        const planId = _aiMealPlanCache.id;
+        if (planId) {
+            try {
+                // Insert week theme
+                await window.supabaseClient.from('ai_meal_plan_weeks').insert({
+                    plan_id: planId,
+                    week_number: data.week.week_number,
+                    theme: data.week.theme || `Week ${nextWeekNum}`,
+                    theme_description: data.week.theme_description || ''
+                });
+
+                // Insert meals
+                const newMeals = [];
+                (data.week.days || []).forEach(day => {
+                    (day.meals || []).forEach(meal => {
+                        newMeals.push({
+                            plan_id: planId,
+                            week_number: data.week.week_number,
+                            day_of_week: day.day_of_week,
+                            day_name: day.day_name || ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][day.day_of_week],
+                            meal_slot: meal.meal_slot, meal_time: meal.meal_time,
+                            name: meal.name, description: meal.description,
+                            calories: meal.calories, protein_g: meal.protein_g,
+                            carbs_g: meal.carbs_g, fat_g: meal.fat_g, fiber_g: meal.fiber_g,
+                            ingredients: meal.ingredients || [], preparation: meal.preparation,
+                            prep_time_mins: meal.prep_time_mins, cook_time_mins: meal.cook_time_mins,
+                            tags: meal.tags || [], cuisine: meal.cuisine, image_url: null
+                        });
+                    });
+                });
+
+                const { data: inserted } = await window.supabaseClient
+                    .from('ai_generated_meals').insert(newMeals)
+                    .select('id, name, description, meal_slot, week_number, day_of_week');
+
+                // Background image generation for the new week
+                if (inserted) {
+                    generateMealImagesInBackground(planId, inserted, user.id);
+                }
+            } catch (e) {
+                console.warn('Could not save new week to Supabase:', e);
+            }
+        }
+
+        // Update localStorage
+        localStorage.setItem('ai_meal_plan', JSON.stringify(_aiMealPlanCache));
+
+        if (progressEl) progressEl.style.width = '100%';
+        if (statusEl) statusEl.textContent = `Week ${nextWeekNum} is ready!`;
+
+        // Switch to the new week
+        _aiMealPlanCurrentWeek = nextWeekNum;
+        _aiMealPlanCurrentDay = 0;
+        setTimeout(() => showAiPlanLoaded(_aiMealPlanCache), 500);
+
+    } catch (err) {
+        console.error('Next week generation error:', err);
+        if (statusEl) statusEl.textContent = 'Something went wrong. Please try again.';
+        setTimeout(() => showAiPlanLoaded(_aiMealPlanCache), 2000);
     }
 }
 
