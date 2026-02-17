@@ -14,6 +14,12 @@ const config: CapacitorConfig = {
   // Capacitor requires a webDir even when loading remotely
   webDir: 'www',
 
+  ios: {
+    // Append user agent so your JS can detect native app
+    appendUserAgent: 'FitGotchi-Native',
+    backgroundColor: '#1a1a2e',
+  },
+
   android: {
     // Allow mixed content for any HTTP resources
     allowMixedContent: true,

@@ -1,7 +1,8 @@
-// checkout.js - Stripe Integration Logic
+// checkout.js - Payment Integration Logic
+// Web (website): Stripe | iOS (App Store): Apple IAP | Android (Play Store): Google Play Billing
 
 console.log(`
-%c STRIPE INTEGRATION ACTIVE
+%c PAYMENT INTEGRATION ACTIVE
 `, 'font-weight: bold; color: #48864B; font-size: 14px;');
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,6 +13,68 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionStorage.setItem('referralCode', referralCode);
         console.log('Referral code stored:', referralCode);
     }
+
+    // ─── Native App Store / Play Store: use IAP ────────────────────────
+    const isNative = window.Platform && window.Platform.isNative();
+
+    if (isNative) {
+        console.log('[Checkout] Native platform detected — using In-App Purchase');
+
+        // Initialize IAP
+        if (window.NativeIAP) {
+            window.NativeIAP.initialize();
+        }
+
+        // Override checkout buttons for native IAP
+        const checkoutButtons = document.querySelectorAll('.checkout-btn');
+        checkoutButtons.forEach(btn => {
+            // Update button label for native
+            const plan = btn.getAttribute('data-plan');
+            if (plan === '6-month' || plan === '1-month') {
+                btn.innerHTML = `START 14-DAY FREE TRIAL <br/> <span style="font-size:0.8em; font-weight: 700;">Subscribe via ${window.Platform.isIOS() ? 'App Store' : 'Play Store'}</span>`;
+            }
+
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+
+                // CHECK TERMS FIRST
+                const termsBox = document.getElementById('terms-checkbox');
+                if (termsBox && !termsBox.checked) {
+                    alert("Please agree to the Terms & Conditions and Refund Policy to proceed.");
+                    const container = document.getElementById('checkout-terms-container');
+                    if(container) {
+                        container.style.border = "2px solid #ef4444";
+                        container.style.background = "#fef2f2";
+                        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => {
+                            container.style.border = "1px solid #e2e8f0";
+                            container.style.background = "#f8fafc";
+                        }, 3000);
+                    }
+                    return;
+                }
+
+                btn.innerText = "Loading...";
+                try {
+                    const result = await window.purchaseSubscription();
+                    if (result && !result.cancelled) {
+                        window.location.href = '/success.html?amount=30&source=iap';
+                    } else if (result && result.cancelled) {
+                        btn.innerHTML = `START 14-DAY FREE TRIAL <br/> <span style="font-size:0.8em; font-weight: 700;">Subscribe via ${window.Platform.isIOS() ? 'App Store' : 'Play Store'}</span>`;
+                    }
+                } catch (err) {
+                    console.error("IAP Error:", err);
+                    alert("Purchase failed. Please try again.");
+                    btn.innerText = "Try Again";
+                }
+            });
+        });
+
+        return; // Skip all Stripe setup on native
+    }
+
+    // ─── Web (website download): use Stripe ────────────────────────────
+    console.log('[Checkout] Web platform — using Stripe');
 
     // 1. Initialize Stripe
     const stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
@@ -108,14 +171,14 @@ document.addEventListener('DOMContentLoaded', () => {
             btns.forEach(btn => {
                 const plan = btn.getAttribute('data-plan');
                 const originalText = plan.replace('-', ' ').toUpperCase();
-                
-                let walletLabel = "G-Pay"; 
+
+                let walletLabel = "G-Pay";
                 const ua = navigator.userAgent.toLowerCase();
-                
+
                 if (result.applePay) {
-                    walletLabel = " Apple Pay";
+                    walletLabel = " Apple Pay";
                 } else if (ua.includes('safari') && !ua.includes('chrome')) {
-                    walletLabel = " Apple Pay";
+                    walletLabel = " Apple Pay";
                 } else {
                     walletLabel = "G-Pay";
                 }
@@ -131,18 +194,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 5. Order Bump Logic
-    const ACUPRESSURE_PRICE_ID = 'price_1SkOMQCGCyRUsOfKlgfmqUsP'; 
+    const ACUPRESSURE_PRICE_ID = 'price_1SkOMQCGCyRUsOfKlgfmqUsP';
     const BUMP_AMOUNT = 900; // $9.00 in cents
 
     // 3. Attach Event Listeners to Buttons
     const checkoutButtons = document.querySelectorAll('.checkout-btn');
-    
+
     checkoutButtons.forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.preventDefault();
             const plan = btn.getAttribute('data-plan');
-            currentSelectedPlan = plan; 
-            
+            currentSelectedPlan = plan;
+
             const isBumpChecked = document.getElementById('order-bump-check')?.checked || false;
             const utmData = window.getUTMData ? window.getUTMData() : {};
 
@@ -192,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     paymentRequest.update({
                         total: { label: displayLabel, amount: totalAmount }
                     });
-                    
+
                     try {
                         paymentRequest.show();
                         return;
@@ -220,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         priceId: priceId,
                         isTrial: true,
-                        trialDays: 14, 
+                        trialDays: 14,
                         referralCode: referralCode || null,
                         email: sessionStorage.getItem('userEmail'),
                         bump: isBumpChecked,
@@ -253,11 +316,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // CAPI
-            fetch('/.netlify/functions/track-lead', { 
+            fetch('/.netlify/functions/track-lead', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    email: sessionStorage.getItem('userEmail'), 
+                    email: sessionStorage.getItem('userEmail'),
                     event: 'InitiateCheckout',
                     value: totalVal,
                     utm_data: utmData,
@@ -269,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Flat pricing - no discount coupons needed
             const { error } = await stripe.redirectToCheckout({
                 lineItems: lineItems,
-                mode: 'subscription', 
+                mode: 'subscription',
                 successUrl: window.location.origin + '/success.html?amount=' + totalVal + '&bump=' + isBumpChecked,
                 cancelUrl: window.location.origin + '/plantbasedswitch.html',
                 customerEmail: sessionStorage.getItem('userEmail'),
@@ -289,8 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * SYNC CONVERSION (Optional)
-     * You can call your webhook here to mark the lead as "Purchased" 
+     * You can call your webhook here to mark the lead as "Purchased"
      * in your CRM so the abandoned cart emails stop immediately.
      */
 });
-
