@@ -11,6 +11,9 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Register the FitGotchi IAP plugin for in-app purchases
+        registerPlugin(FitGotchiIAPPlugin.class);
+
         super.onCreate(savedInstanceState);
 
         // Make the app edge-to-edge (content goes behind status/nav bars)

@@ -104,6 +104,8 @@
 <script src="lib/nutrition-calculator.js"></script>
 <script src="lib/native-health.js"></script>
 <script src="lib/native-push.js"></script>
+<script src="lib/platform.js"></script>
+<script src="lib/native-iap.js"></script>
 <!-- 2D SVG Avatar system (reserved for future use) -->
 <!-- <script src="lib/avatar.js"></script> -->
 <!-- <link rel="stylesheet" href="lib/avatar.css"> -->
@@ -18742,6 +18744,10 @@ function viewWorkoutHistoryDetail(date) {
                     </div>
                     <div style="background: linear-gradient(135deg, #6366f1, #7c3aed); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$49.99</div>
                 </div>
+            </div>
+            <!-- Restore Purchases (native only) -->
+            <div id="restore-purchases-row" style="display: none; padding: 0 20px 10px; text-align: center;">
+                <button onclick="restoreIAPPurchases()" style="background: none; border: none; color: var(--primary); font-size: 0.82rem; cursor: pointer; text-decoration: underline; font-weight: 600;">Restore Purchases</button>
             </div>
             <!-- What coins are for -->
             <div style="padding: 0 20px 20px;">
@@ -38877,6 +38883,25 @@ function openCoinShop() {
     if (modal) {
         modal.style.display = 'flex';
         loadCoinBalance();
+        // Show "Restore Purchases" button on native platforms (required by Apple)
+        const restoreRow = document.getElementById('restore-purchases-row');
+        if (restoreRow && window.Platform && window.Platform.isNative()) {
+            restoreRow.style.display = 'block';
+        }
+    }
+}
+
+// Restore purchases (Apple requires this)
+async function restoreIAPPurchases() {
+    if (!window.NativeIAP) return;
+    try {
+        showToast('Restoring purchases...', 'info');
+        const result = await window.NativeIAP.restorePurchases();
+        const count = result?.purchases?.length || 0;
+        showToast(count > 0 ? count + ' purchase(s) restored!' : 'No purchases to restore.', count > 0 ? 'success' : 'info');
+    } catch (err) {
+        console.error('Restore failed:', err);
+        alert('Failed to restore purchases. Please try again.');
     }
 }
 
@@ -38887,6 +38912,14 @@ function closeCoinShop() {
 
 async function buyCoinPack(packId) {
     try {
+        // Native app (App Store / Play Store): use IAP
+        if (window.Platform && window.Platform.isNative()) {
+            const result = await purchaseCoinPack(packId);
+            if (result && result.cancelled) return;
+            return;
+        }
+
+        // Web (website): use Stripe
         const response = await fetch('/.netlify/functions/create-coin-pack-checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -53861,6 +53894,21 @@ function completePrefWizard() {
 }
 
 async function initiateMealPlanCheckout(planSlug, preferences) {
+    // Native app (App Store / Play Store): use IAP
+    if (window.Platform && window.Platform.isNative()) {
+        try {
+            const result = await purchaseMealPlan(planSlug, preferences);
+            if (result && !result.cancelled) {
+                showToast('Meal plan unlocked!', 'success');
+            }
+        } catch (error) {
+            console.error('IAP meal plan error:', error);
+            alert('Purchase failed. Please try again.');
+        }
+        return;
+    }
+
+    // Web (website): use Stripe
     // Show loading state
     const loadingDiv = document.createElement('div');
     loadingDiv.id = 'checkout-loading';
