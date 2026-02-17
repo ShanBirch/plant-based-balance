@@ -53210,7 +53210,6 @@ async function doAiFoodScan(videoEl) {
 
     // Don't scan if barcode was already detected (barcode takes priority)
     if (lastBarcodeDetected && document.getElementById('barcode-detected-banner').style.display === 'block') {
-        // Schedule next scan in case barcode banner is dismissed
         if (aiFoodScanActive) {
             aiFoodScanTimeout = setTimeout(() => doAiFoodScan(videoEl), AI_FOOD_SCAN_INTERVAL);
         }
@@ -53218,17 +53217,17 @@ async function doAiFoodScan(videoEl) {
     }
 
     aiFoodScanCount++;
+    console.log(`AI food scan attempt ${aiFoodScanCount}/${AI_FOOD_SCAN_MAX}...`);
 
-    // Show scanning indicator
     const banner = document.getElementById('ai-food-detected-banner');
     const nameEl = document.getElementById('ai-food-detected-name');
     const detailEl = document.getElementById('ai-food-detected-detail');
+
+    // Show scanning indicator
     if (nameEl) nameEl.textContent = 'Identifying food...';
     if (detailEl) detailEl.textContent = '';
     if (banner) {
         banner.style.display = 'block';
-        banner.querySelector('button')?.style.setProperty('display', 'none');
-        // Hide buttons while scanning
         const btns = banner.querySelectorAll('button');
         btns.forEach(b => b.style.display = 'none');
     }
@@ -53236,7 +53235,7 @@ async function doAiFoodScan(videoEl) {
     try {
         // Capture a low-res frame from the video
         const scanCanvas = document.createElement('canvas');
-        const maxDim = 640; // Keep it small for fast upload
+        const maxDim = 640;
         const scale = Math.min(maxDim / videoEl.videoWidth, maxDim / videoEl.videoHeight, 1);
         scanCanvas.width = Math.round(videoEl.videoWidth * scale);
         scanCanvas.height = Math.round(videoEl.videoHeight * scale);
@@ -53247,29 +53246,54 @@ async function doAiFoodScan(videoEl) {
                 if (!blob) { resolve(null); return; }
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result);
+                reader.onerror = () => resolve(null);
                 reader.readAsDataURL(blob);
             }, 'image/jpeg', 0.6);
         });
 
-        if (!base64 || !aiFoodScanActive) return;
+        if (!base64) {
+            console.log('AI food scan: failed to capture frame');
+            if (banner) banner.style.display = 'none';
+            throw new Error('Frame capture failed');
+        }
+
+        if (!aiFoodScanActive) {
+            if (banner) banner.style.display = 'none';
+            return;
+        }
 
         const base64Data = base64.split(',')[1];
+        console.log('AI food scan: sending to API, payload size:', Math.round(base64Data.length / 1024), 'KB');
+
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
         const response = await fetch('/api/identify-food', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageBase64: base64Data, mimeType: 'image/jpeg' })
+            body: JSON.stringify({ imageBase64: base64Data, mimeType: 'image/jpeg' }),
+            signal: controller.signal
         });
 
-        if (!response.ok) throw new Error('API error');
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errText = await response.text().catch(() => '');
+            console.error('AI food scan API error:', response.status, errText.substring(0, 200));
+            throw new Error(`API returned ${response.status}`);
+        }
 
         const result = await response.json();
+        console.log('AI food scan result:', result);
 
-        if (!aiFoodScanActive) return; // Camera may have closed during fetch
+        if (!aiFoodScanActive) {
+            if (banner) banner.style.display = 'none';
+            return;
+        }
 
         if (result.success && result.data && result.data.identified) {
             lastAiFoodResult = result.data;
-            // Show result in banner
             if (nameEl) nameEl.textContent = result.data.name;
             if (detailEl) detailEl.textContent =
                 `~${result.data.approx_calories} cal ${result.data.serving_hint || ''}`.trim();
@@ -53278,24 +53302,21 @@ async function doAiFoodScan(videoEl) {
                 const btns = banner.querySelectorAll('button');
                 btns.forEach(b => b.style.display = '');
             }
-            // Stop auto-scanning once we have a result
             aiFoodScanActive = false;
+            console.log('AI food scan: identified -', result.data.name);
             return;
         } else {
-            // No food identified — hide banner and try again
+            console.log('AI food scan: no food identified in this frame');
             if (banner) banner.style.display = 'none';
         }
     } catch (err) {
-        console.log('AI food scan error (non-critical):', err.message);
+        console.warn('AI food scan error:', err.message);
         if (banner) banner.style.display = 'none';
     }
 
     // Schedule next scan
     if (aiFoodScanActive && aiFoodScanCount < AI_FOOD_SCAN_MAX) {
         aiFoodScanTimeout = setTimeout(() => doAiFoodScan(videoEl), AI_FOOD_SCAN_INTERVAL);
-    } else if (banner && banner.style.display !== 'block') {
-        // All scans exhausted without result
-        banner.style.display = 'none';
     }
 }
 
