@@ -34,6 +34,7 @@ export default async function (request: Request, context: Context) {
     const wearables = userData?.wearables || {};
     const adaptiveResult = userData?.adaptiveResult || null;
     const facts = userData?.facts || {};
+    const hasAiMealPlan = userData?.hasAiMealPlan || false;
 
     // Workout schedule context (this week)
     const weekSchedule = userData?.weekSchedule || [];
@@ -192,6 +193,9 @@ Struggles: ${facts.struggles?.join(', ') || 'None'}
 Preferences: ${facts.preferences?.join(', ') || 'None'}
 Health Notes: ${facts.health_notes?.join(', ') || 'None'}
 Goals: ${facts.goals?.join(', ') || 'None'}
+
+=== AI MEAL PLAN STATUS ===
+Has AI Meal Plan: ${hasAiMealPlan ? 'YES - user already has a personalized meal plan generated' : 'NO - user does NOT have a meal plan yet. If they mention meals, nutrition, or eating, you can proactively offer to generate one!'}
 `;
 
     const systemPrompt = `You are FITGotchi AI, a smart personal fitness and nutrition assistant built into the FITGotchi app. You talk DIRECTLY to the user.
@@ -232,6 +236,10 @@ Available action types:
 
 6. **create_workout** - Build a new custom workout
    { "type": "create_workout", "name": "Upper Body Push", "exercises": [{"name": "Push Ups", "sets": 3, "reps": "10-12"}, ...], "description": "Create a push-focused upper body workout" }
+
+7. **generate_meal_plan** - Generate a personalized 4-week AI meal plan tailored to the user's goals, dietary preferences, and nutritional targets. Use this when the user asks for a meal plan, asks you to create/build/design a meal plan, or says anything like "make me a meal plan", "I need a meal plan", "create a nutrition plan", "help me with meals for the month", etc.
+   { "type": "generate_meal_plan", "description": "Generate your personalized 4-week meal plan" }
+   NOTE: This action triggers a separate AI meal plan generator that will create 140 meals (5 per day x 7 days x 4 weeks) perfectly calibrated to the user's calorie and macro goals, dietary restrictions, and food preferences. It also generates food photos for the meals. Tell the user it will be ready in their Meals tab under "Your Meal Plan" and that it includes AI-generated photos.
 
 === RESPONSE FORMAT ===
 You MUST respond in valid JSON with this exact structure:

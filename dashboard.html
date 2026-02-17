@@ -8008,7 +8008,7 @@ async function applyAppTheme(themeKey) {
         </div>
         <!-- Input area -->
         <div style="padding: 8px 14px 12px; display: flex; gap: 8px; align-items: center; border-top: 1px solid #f1f5f9;">
-            <input type="text" id="ai-assistant-input" placeholder="e.g. Move today's workout to tomorrow..." style="flex: 1; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 0.88rem; outline: none; background: #f8fafc; color: var(--text-main); transition: border-color 0.2s;" onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e2e8f0'" onkeypress="if(event.key==='Enter') sendAiAssistantMessage()">
+            <input type="text" id="ai-assistant-input" placeholder="e.g. Create me a meal plan, swap workouts..." style="flex: 1; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 0.88rem; outline: none; background: #f8fafc; color: var(--text-main); transition: border-color 0.2s;" onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e2e8f0'" onkeypress="if(event.key==='Enter') sendAiAssistantMessage()">
             <button id="ai-assistant-send-btn" onclick="sendAiAssistantMessage()" style="width: 38px; height: 38px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.2s;">
                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
             </button>
@@ -9973,21 +9973,93 @@ async function applyAppTheme(themeKey) {
             </div>
         </div>
 
-        <!-- Meal Plan Store View (for non-quiz users) -->
+        <!-- Your AI Meal Plan View -->
         <div class="view-section" id="meal-plan-store" style="display: none;">
-            <div class="meal-store-container">
-                <div class="meal-store-header">
-                    <h2>Choose Your Meal Plan</h2>
-                    <p>Personalized nutrition plans designed by experts. Pick the plan that matches your goals.</p>
+            <div id="ai-meal-plan-container">
+                <!-- State 1: No plan yet - CTA to generate -->
+                <div id="ai-plan-empty" style="padding: 30px 20px; text-align: center;">
+                    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, rgba(123,168,131,0.15), rgba(99,102,241,0.15)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 2.2rem;">
+                        🤖
+                    </div>
+                    <h2 style="margin: 0 0 10px; font-family: 'Playfair Display'; color: var(--primary); font-size: 1.5rem;">Your AI Meal Plan</h2>
+                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">Get a fully personalized 4-week meal plan designed by AI, tailored to your goals, dietary preferences, and nutritional targets. Includes AI-generated meal photos!</p>
+                    <button onclick="requestAiMealPlan()" style="background: linear-gradient(135deg, var(--primary) 0%, #10b981 100%); color: white; border: none; padding: 14px 32px; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(123,168,131,0.3);">
+                        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        Generate My Meal Plan
+                    </button>
+                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 15px;">Or ask the FITGotchi AI coach: "Create me a meal plan"</p>
                 </div>
 
-                <div class="meal-plan-grid" id="meal-plan-grid">
-                    <!-- Plans will be injected by JavaScript -->
+                <!-- State 2: Generating -->
+                <div id="ai-plan-generating" style="display: none; padding: 40px 20px; text-align: center;">
+                    <div class="learning-spinner" style="margin: 0 auto 20px;"></div>
+                    <h3 style="margin: 0 0 10px; color: var(--text-main);">Creating Your Meal Plan...</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;" id="ai-plan-gen-status">Analyzing your goals and preferences...</p>
+                    <div style="max-width: 300px; margin: 20px auto 0;">
+                        <div style="height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                            <div id="ai-plan-gen-progress" style="height: 100%; background: linear-gradient(90deg, var(--primary), #10b981); width: 10%; transition: width 0.5s ease; border-radius: 2px;"></div>
+                        </div>
+                    </div>
                 </div>
 
-                <div style="text-align: center; padding: 20px; color: var(--text-muted);">
-                    <p style="font-size: 0.9rem;">All plans include 4 weeks of meals, shopping lists, and nutrition tracking.</p>
-                    <p style="font-size: 0.85rem;">Dietary options: Vegan, Vegetarian, Pescatarian, Omnivore</p>
+                <!-- State 3: Plan loaded - week navigation + meals -->
+                <div id="ai-plan-loaded" style="display: none;">
+                    <!-- Plan Header -->
+                    <div id="ai-plan-header" style="padding: 20px; background: linear-gradient(135deg, rgba(123,168,131,0.08), rgba(99,102,241,0.05)); border-bottom: 1px solid #f1f5f9;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h2 id="ai-plan-name" style="margin: 0 0 4px; font-family: 'Playfair Display'; color: var(--primary); font-size: 1.3rem;">Your Meal Plan</h2>
+                                <p id="ai-plan-desc" style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Personalized by AI</p>
+                            </div>
+                            <button onclick="regenerateAiMealPlan()" style="background: none; border: 1px solid var(--primary); color: var(--primary); padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: currentColor;"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                                Regenerate
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Week Tabs (inside the plan view) -->
+                    <div class="week-scroller" id="ai-plan-week-tabs" style="padding: 10px 15px;">
+                        <button class="pill-btn active" onclick="switchAiPlanWeek(1, this)">Week 1</button>
+                        <button class="pill-btn" onclick="switchAiPlanWeek(2, this)">Week 2</button>
+                        <button class="pill-btn" onclick="switchAiPlanWeek(3, this)">Week 3</button>
+                        <button class="pill-btn" onclick="switchAiPlanWeek(4, this)">Week 4</button>
+                    </div>
+
+                    <!-- Week Theme Banner -->
+                    <div id="ai-plan-week-theme" style="padding: 0 15px 10px;">
+                        <div style="background: linear-gradient(to right, #eef2f3, #ffffff); border-radius: 12px; padding: 20px;">
+                            <div style="font-family: 'Inter'; text-transform: uppercase; color: var(--secondary); font-weight: 600; letter-spacing: 1px; margin-bottom: 6px; font-size: 0.75rem;" id="ai-week-label">Week 1</div>
+                            <h3 id="ai-week-theme-title" style="margin: 0 0 6px; font-size: 1.2rem; color: var(--text-main);">Foundation</h3>
+                            <p id="ai-week-theme-desc" style="margin: 0; font-size: 0.9rem; color: #555;"></p>
+                        </div>
+                    </div>
+
+                    <!-- Day Tabs -->
+                    <div class="sub-nav" id="ai-plan-day-tabs" style="padding: 0 15px;">
+                        <button class="sub-btn active" onclick="switchAiPlanDay(0, this)">Mon</button>
+                        <button class="sub-btn" onclick="switchAiPlanDay(1, this)">Tue</button>
+                        <button class="sub-btn" onclick="switchAiPlanDay(2, this)">Wed</button>
+                        <button class="sub-btn" onclick="switchAiPlanDay(3, this)">Thu</button>
+                        <button class="sub-btn" onclick="switchAiPlanDay(4, this)">Fri</button>
+                        <button class="sub-btn" onclick="switchAiPlanDay(5, this)">Sat</button>
+                        <button class="sub-btn" onclick="switchAiPlanDay(6, this)">Sun</button>
+                    </div>
+
+                    <!-- Daily Nutrition Summary -->
+                    <div id="ai-plan-day-nutrition" style="padding: 10px 15px;">
+                        <div style="display: flex; gap: 8px; justify-content: center;">
+                            <div class="ai-plan-macro-pill" id="ai-day-cal" style="background: #f1f5f9; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: var(--text-main);">0 cal</div>
+                            <div class="ai-plan-macro-pill" style="background: rgba(59,130,246,0.1); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: #3b82f6;" id="ai-day-protein">0g protein</div>
+                            <div class="ai-plan-macro-pill" style="background: rgba(245,158,11,0.1); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: #f59e0b;" id="ai-day-carbs">0g carbs</div>
+                            <div class="ai-plan-macro-pill" style="background: rgba(239,68,68,0.1); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: #ef4444;" id="ai-day-fat">0g fat</div>
+                        </div>
+                    </div>
+
+                    <!-- Meals List for the Day -->
+                    <div id="ai-plan-meals-list" style="padding: 0 15px 20px;">
+                        <!-- Meal cards rendered dynamically -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -23256,8 +23328,8 @@ function switchWeek(id, btn) {
                 loadEnhancedNutritionFeatures();
             })();
         } else if (id === 'meal-plan-store') {
-            // Render the meal plan store
-            renderMealPlanStore();
+            // Load the AI meal plan view
+            loadExistingAiMealPlan();
         } else {
             // For week views, add cycle sync indicators
             markCycleSyncMeals();
@@ -23320,8 +23392,8 @@ function checkMealPlanAccess() {
 
 /**
  * Initialize meal plan view based on user access
- * - No meal plan: Show Calorie Tracker + Browse Plans only
- * - Has meal plan: Show Today + Calorie Tracker + Week 1-4
+ * - No meal plan: Show Calorie Tracker + Your Meal Plan tab
+ * - Has meal plan: Show Today + Calorie Tracker + Week 1-4 + Your Meal Plan
  */
 function initializeMealPlanView() {
     const access = checkMealPlanAccess();
@@ -23332,51 +23404,43 @@ function initializeMealPlanView() {
     // Get Today's Priority section on dashboard (only shown with meal plan)
     const todaysPrioritySection = document.getElementById('todays-priority-section');
 
+    // Always add "Your Meal Plan" pill
+    if (navPills && !document.getElementById('browse-plans-pill')) {
+        const mealPlanPill = document.createElement('button');
+        mealPlanPill.id = 'browse-plans-pill';
+        mealPlanPill.className = 'pill-btn';
+        mealPlanPill.innerHTML = '🤖 Your Meal Plan';
+        mealPlanPill.onclick = function() { switchWeek('meal-plan-store', this); };
+        // Insert after Calorie Tracker pill
+        const calorieTrackerPill = Array.from(navPills.querySelectorAll('.pill-btn')).find(p => p.textContent.toLowerCase().includes('calorie'));
+        if (calorieTrackerPill && calorieTrackerPill.nextSibling) {
+            navPills.insertBefore(mealPlanPill, calorieTrackerPill.nextSibling);
+        } else {
+            navPills.appendChild(mealPlanPill);
+        }
+    }
+
     if (!access.hasAccess) {
-        // User needs to buy a plan - hide Today's Priority section on dashboard
+        // User needs a plan - hide Today's Priority section on dashboard
         if (todaysPrioritySection) {
             todaysPrioritySection.style.display = 'none';
         }
 
-        // User needs to buy a plan - show only Calorie Tracker and Browse Plans
+        // Show only Calorie Tracker and Your Meal Plan
         if (navPills) {
             const allPills = navPills.querySelectorAll('.pill-btn');
             allPills.forEach(pill => {
                 const text = pill.textContent.toLowerCase();
-                // Hide everything except Calorie Tracker
                 if (text.includes('calorie')) {
                     pill.style.display = '';
-                    pill.classList.add('active'); // Make calorie tracker active by default
+                    pill.classList.add('active');
                 } else if (pill.id !== 'browse-plans-pill') {
-                    // Hide Today, Week 1-4, Dining Out, Shopping List
                     pill.style.display = 'none';
                 }
             });
-
-            // Add "Browse Plans" pill if not exists
-            if (!document.getElementById('browse-plans-pill')) {
-                const browsePill = document.createElement('button');
-                browsePill.id = 'browse-plans-pill';
-                browsePill.className = 'pill-btn'; // Not active by default - will be styled by CSS
-                browsePill.textContent = '🛒 Browse Plans';
-                browsePill.onclick = function() { switchWeek('meal-plan-store', this); };
-                // Find the Calorie Tracker pill and insert Browse Plans after it
-                const calorieTrackerPill = Array.from(navPills.querySelectorAll('.pill-btn')).find(p => p.textContent.toLowerCase().includes('calorie'));
-                if (calorieTrackerPill && calorieTrackerPill.nextSibling) {
-                    navPills.insertBefore(browsePill, calorieTrackerPill.nextSibling);
-                } else if (calorieTrackerPill) {
-                    navPills.appendChild(browsePill);
-                } else {
-                    navPills.appendChild(browsePill);
-                }
-            } else {
-                // Don't make it active - calorie tracker is default now
-                document.getElementById('browse-plans-pill').classList.remove('active');
-            }
         }
 
-        // Default to calorie tracker (not store) for non-meal-plan users
-        // The store is still accessible via Browse Plans pill
+        // Default to calorie tracker
         document.querySelectorAll('#meals-content-container .view-section').forEach(el => {
             el.classList.remove('active');
             el.style.display = '';
@@ -23387,20 +23451,13 @@ function initializeMealPlanView() {
             const allPills = navPills.querySelectorAll('.pill-btn');
             allPills.forEach(pill => {
                 const text = pill.textContent.toLowerCase();
-                // Show all meal-related pills
                 if (text.includes('week') || text === 'dining out' || text.includes('shopping') || text === 'today' || text.includes('calorie')) {
                     pill.style.display = '';
                 }
             });
-
-            // Remove browse plans pill - user already has a plan
-            const browsePill = document.getElementById('browse-plans-pill');
-            if (browsePill) {
-                browsePill.remove();
-            }
         }
 
-        // Hide store section
+        // Hide store section (it's now "Your Meal Plan" and shown via pill)
         if (storeSection) {
             storeSection.style.display = 'none';
             storeSection.classList.remove('active');
@@ -23416,6 +23473,9 @@ function initializeMealPlanView() {
             todaysPrioritySection.style.display = '';
         }
     }
+
+    // Always try to load existing AI meal plan
+    loadExistingAiMealPlan();
 }
 
 /**
@@ -23524,6 +23584,613 @@ function startMealPlanPurchase(planSlug) {
     } else {
         console.error('Preference wizard not loaded');
         alert('Something went wrong. Please refresh and try again.');
+    }
+}
+
+// ============================================================
+// AI-GENERATED MEAL PLAN SYSTEM
+// ============================================================
+
+// In-memory cache of the current AI meal plan
+let _aiMealPlanCache = null;
+let _aiMealPlanCurrentWeek = 1;
+let _aiMealPlanCurrentDay = 0;
+
+/**
+ * Load existing AI meal plan from Supabase
+ */
+async function loadExistingAiMealPlan() {
+    const user = window.currentUser;
+    if (!user) return;
+
+    // Check cache first
+    if (_aiMealPlanCache) {
+        showAiPlanLoaded(_aiMealPlanCache);
+        return;
+    }
+
+    try {
+        // Fetch the latest active AI meal plan for this user
+        const { data: plan, error } = await window.supabaseClient
+            .from('ai_generated_meal_plans')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (error) {
+            console.warn('Error loading AI meal plan:', error);
+            showAiPlanEmpty();
+            return;
+        }
+
+        if (!plan) {
+            // Also check localStorage for offline/demo plans
+            const localPlan = localStorage.getItem('ai_meal_plan');
+            if (localPlan) {
+                try {
+                    _aiMealPlanCache = JSON.parse(localPlan);
+                    showAiPlanLoaded(_aiMealPlanCache);
+                    return;
+                } catch (e) {}
+            }
+            showAiPlanEmpty();
+            return;
+        }
+
+        // Fetch meals and week themes
+        const [mealsResult, weeksResult] = await Promise.allSettled([
+            window.supabaseClient
+                .from('ai_generated_meals')
+                .select('*')
+                .eq('plan_id', plan.id)
+                .order('week_number', { ascending: true })
+                .order('day_of_week', { ascending: true })
+                .order('meal_slot', { ascending: true }),
+            window.supabaseClient
+                .from('ai_meal_plan_weeks')
+                .select('*')
+                .eq('plan_id', plan.id)
+                .order('week_number', { ascending: true })
+        ]);
+
+        const meals = mealsResult.status === 'fulfilled' ? mealsResult.value.data || [] : [];
+        const weekThemes = weeksResult.status === 'fulfilled' ? weeksResult.value.data || [] : [];
+
+        // Reconstruct the plan structure
+        const fullPlan = {
+            id: plan.id,
+            plan_name: plan.plan_name,
+            plan_description: plan.plan_description,
+            weeks: [1, 2, 3, 4].map(wn => {
+                const weekTheme = weekThemes.find(w => w.week_number === wn) || {};
+                const weekMeals = meals.filter(m => m.week_number === wn);
+                return {
+                    week_number: wn,
+                    theme: weekTheme.theme || `Week ${wn}`,
+                    theme_description: weekTheme.theme_description || '',
+                    days: [0, 1, 2, 3, 4, 5, 6].map(d => {
+                        const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                        const dayMeals = weekMeals.filter(m => m.day_of_week === d);
+                        return {
+                            day_of_week: d,
+                            day_name: dayNames[d],
+                            meals: dayMeals.map(m => ({
+                                meal_slot: m.meal_slot,
+                                meal_time: m.meal_time,
+                                name: m.name,
+                                description: m.description,
+                                calories: m.calories,
+                                protein_g: m.protein_g,
+                                carbs_g: m.carbs_g,
+                                fat_g: m.fat_g,
+                                fiber_g: m.fiber_g,
+                                ingredients: m.ingredients || [],
+                                preparation: m.preparation,
+                                prep_time_mins: m.prep_time_mins,
+                                cook_time_mins: m.cook_time_mins,
+                                tags: m.tags || [],
+                                cuisine: m.cuisine,
+                                image_url: m.image_url
+                            }))
+                        };
+                    })
+                };
+            })
+        };
+
+        _aiMealPlanCache = fullPlan;
+        showAiPlanLoaded(fullPlan);
+    } catch (err) {
+        console.error('Error loading AI meal plan:', err);
+        showAiPlanEmpty();
+    }
+}
+
+/**
+ * Show the empty state (no plan yet)
+ */
+function showAiPlanEmpty() {
+    const empty = document.getElementById('ai-plan-empty');
+    const generating = document.getElementById('ai-plan-generating');
+    const loaded = document.getElementById('ai-plan-loaded');
+    if (empty) empty.style.display = 'block';
+    if (generating) generating.style.display = 'none';
+    if (loaded) loaded.style.display = 'none';
+}
+
+/**
+ * Show the generating state
+ */
+function showAiPlanGenerating() {
+    const empty = document.getElementById('ai-plan-empty');
+    const generating = document.getElementById('ai-plan-generating');
+    const loaded = document.getElementById('ai-plan-loaded');
+    if (empty) empty.style.display = 'none';
+    if (generating) generating.style.display = 'block';
+    if (loaded) loaded.style.display = 'none';
+}
+
+/**
+ * Show the loaded plan
+ */
+function showAiPlanLoaded(plan) {
+    const empty = document.getElementById('ai-plan-empty');
+    const generating = document.getElementById('ai-plan-generating');
+    const loaded = document.getElementById('ai-plan-loaded');
+    if (empty) empty.style.display = 'none';
+    if (generating) generating.style.display = 'none';
+    if (loaded) loaded.style.display = 'block';
+
+    // Set plan header
+    const nameEl = document.getElementById('ai-plan-name');
+    const descEl = document.getElementById('ai-plan-desc');
+    if (nameEl) nameEl.textContent = plan.plan_name || 'Your AI Meal Plan';
+    if (descEl) descEl.textContent = plan.plan_description || 'Personalized by AI';
+
+    // Render current week/day
+    renderAiPlanWeek(_aiMealPlanCurrentWeek);
+    renderAiPlanDay(_aiMealPlanCurrentDay);
+}
+
+/**
+ * Switch AI plan week tab
+ */
+function switchAiPlanWeek(weekNum, btn) {
+    _aiMealPlanCurrentWeek = weekNum;
+    _aiMealPlanCurrentDay = 0;
+
+    // Update week pills
+    if (btn) {
+        document.querySelectorAll('#ai-plan-week-tabs .pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    // Update day pills - reset to Monday
+    document.querySelectorAll('#ai-plan-day-tabs .sub-btn').forEach((b, i) => {
+        b.classList.toggle('active', i === 0);
+    });
+
+    renderAiPlanWeek(weekNum);
+    renderAiPlanDay(0);
+}
+
+/**
+ * Switch AI plan day tab
+ */
+function switchAiPlanDay(dayNum, btn) {
+    _aiMealPlanCurrentDay = dayNum;
+
+    if (btn) {
+        document.querySelectorAll('#ai-plan-day-tabs .sub-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    renderAiPlanDay(dayNum);
+}
+
+/**
+ * Render the week theme banner
+ */
+function renderAiPlanWeek(weekNum) {
+    if (!_aiMealPlanCache || !_aiMealPlanCache.weeks) return;
+
+    const week = _aiMealPlanCache.weeks.find(w => w.week_number === weekNum);
+    if (!week) return;
+
+    const labelEl = document.getElementById('ai-week-label');
+    const titleEl = document.getElementById('ai-week-theme-title');
+    const descEl = document.getElementById('ai-week-theme-desc');
+
+    if (labelEl) labelEl.textContent = `Week ${weekNum}`;
+    if (titleEl) titleEl.textContent = week.theme || `Week ${weekNum}`;
+    if (descEl) descEl.textContent = week.theme_description || '';
+}
+
+/**
+ * Render the meals for a specific day
+ */
+function renderAiPlanDay(dayNum) {
+    if (!_aiMealPlanCache || !_aiMealPlanCache.weeks) return;
+
+    const week = _aiMealPlanCache.weeks.find(w => w.week_number === _aiMealPlanCurrentWeek);
+    if (!week || !week.days) return;
+
+    const day = week.days.find(d => d.day_of_week === dayNum);
+    if (!day || !day.meals) return;
+
+    // Calculate daily totals
+    let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+    day.meals.forEach(m => {
+        totalCal += m.calories || 0;
+        totalProtein += parseFloat(m.protein_g) || 0;
+        totalCarbs += parseFloat(m.carbs_g) || 0;
+        totalFat += parseFloat(m.fat_g) || 0;
+    });
+
+    // Update nutrition summary pills
+    const calEl = document.getElementById('ai-day-cal');
+    const proteinEl = document.getElementById('ai-day-protein');
+    const carbsEl = document.getElementById('ai-day-carbs');
+    const fatEl = document.getElementById('ai-day-fat');
+    if (calEl) calEl.textContent = `${Math.round(totalCal)} cal`;
+    if (proteinEl) proteinEl.textContent = `${Math.round(totalProtein)}g protein`;
+    if (carbsEl) carbsEl.textContent = `${Math.round(totalCarbs)}g carbs`;
+    if (fatEl) fatEl.textContent = `${Math.round(totalFat)}g fat`;
+
+    // Render meal cards
+    const mealSlotOrder = ['breakfast', 'am_snack', 'lunch', 'pm_snack', 'dinner'];
+    const mealSlotLabels = {
+        breakfast: 'Breakfast',
+        am_snack: 'AM Snack',
+        lunch: 'Lunch',
+        pm_snack: 'PM Snack',
+        dinner: 'Dinner'
+    };
+    const mealSlotIcons = {
+        breakfast: '🌅',
+        am_snack: '🍎',
+        lunch: '🥗',
+        pm_snack: '🥜',
+        dinner: '🍽️'
+    };
+
+    const sortedMeals = [...day.meals].sort((a, b) =>
+        mealSlotOrder.indexOf(a.meal_slot) - mealSlotOrder.indexOf(b.meal_slot)
+    );
+
+    const container = document.getElementById('ai-plan-meals-list');
+    if (!container) return;
+
+    container.innerHTML = sortedMeals.map((meal, idx) => {
+        const slotLabel = mealSlotLabels[meal.meal_slot] || meal.meal_slot;
+        const slotIcon = mealSlotIcons[meal.meal_slot] || '🍽️';
+        const time = meal.meal_time || '';
+        const hasImage = meal.image_url && meal.image_url.length > 10;
+
+        // Build ingredients list
+        const ingredientsList = (meal.ingredients || []).map(ing => {
+            if (typeof ing === 'string') return `<li>${ing}</li>`;
+            return `<li>${ing.name}${ing.amount ? ' ' + ing.amount : ''}</li>`;
+        }).join('');
+
+        // Build tags
+        const tagsHtml = (meal.tags || []).map(tag =>
+            `<span style="display: inline-block; background: rgba(123,168,131,0.12); color: var(--primary); padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 500;">${tag}</span>`
+        ).join(' ');
+
+        return `
+        <div class="card" style="margin-bottom: 10px;">
+            <div class="card-header" onclick="toggleCard(this)">
+                <div style="display: flex; align-items: center;">
+                    <div class="meal-icon">${slotIcon}</div>
+                    <div>
+                        <div class="meta">${slotLabel}${time ? '  ' + time : ''}</div>
+                        <div class="meal-title">${meal.name}</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">${meal.calories || '?'} cal</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">P: ${Math.round(meal.protein_g || 0)}g</div>
+                    </div>
+                    <div class="expand-icon">+</div>
+                </div>
+            </div>
+            <div class="card-body">
+                ${hasImage ? `<img alt="${meal.name}" src="${meal.image_url}" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:15px;" onerror="this.style.display='none'"/>` : ''}
+                ${meal.description ? `<p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px; font-style: italic;">${meal.description}</p>` : ''}
+                ${tagsHtml ? `<div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 15px;">${tagsHtml}</div>` : ''}
+                <div style="display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap;">
+                    <div style="background: #f1f5f9; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; text-align: center; min-width: 60px;">
+                        <div style="font-weight: 700; color: var(--text-main);">${meal.calories || '?'}</div>
+                        <div style="color: var(--text-muted); font-size: 0.7rem;">cal</div>
+                    </div>
+                    <div style="background: rgba(59,130,246,0.08); padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; text-align: center; min-width: 60px;">
+                        <div style="font-weight: 700; color: #3b82f6;">${Math.round(meal.protein_g || 0)}g</div>
+                        <div style="color: var(--text-muted); font-size: 0.7rem;">protein</div>
+                    </div>
+                    <div style="background: rgba(245,158,11,0.08); padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; text-align: center; min-width: 60px;">
+                        <div style="font-weight: 700; color: #f59e0b;">${Math.round(meal.carbs_g || 0)}g</div>
+                        <div style="color: var(--text-muted); font-size: 0.7rem;">carbs</div>
+                    </div>
+                    <div style="background: rgba(239,68,68,0.08); padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; text-align: center; min-width: 60px;">
+                        <div style="font-weight: 700; color: #ef4444;">${Math.round(meal.fat_g || 0)}g</div>
+                        <div style="color: var(--text-muted); font-size: 0.7rem;">fat</div>
+                    </div>
+                    ${meal.fiber_g ? `<div style="background: rgba(34,197,94,0.08); padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; text-align: center; min-width: 60px;">
+                        <div style="font-weight: 700; color: #22c55e;">${Math.round(meal.fiber_g)}g</div>
+                        <div style="color: var(--text-muted); font-size: 0.7rem;">fiber</div>
+                    </div>` : ''}
+                </div>
+                ${ingredientsList ? `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h4 style="margin: 0; border: none; padding: 0;">Ingredients</h4></div><ul>${ingredientsList}</ul>` : ''}
+                ${meal.preparation ? `<h4>Preparation</h4><p>${meal.preparation}</p>` : ''}
+                ${meal.prep_time_mins || meal.cook_time_mins ? `<div style="display: flex; gap: 15px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f1f5f9; color: var(--text-muted); font-size: 0.8rem;">
+                    ${meal.prep_time_mins ? `<span>Prep: ${meal.prep_time_mins} min</span>` : ''}
+                    ${meal.cook_time_mins ? `<span>Cook: ${meal.cook_time_mins} min</span>` : ''}
+                </div>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+/**
+ * Request AI meal plan generation (called from the CTA button)
+ */
+async function requestAiMealPlan() {
+    showAiPlanGenerating();
+
+    // Navigate to the meal plan store tab if not already there
+    const storeSection = document.getElementById('meal-plan-store');
+    if (storeSection && !storeSection.classList.contains('active')) {
+        switchWeek('meal-plan-store', document.getElementById('browse-plans-pill'));
+    }
+
+    await generateAiMealPlan();
+}
+
+/**
+ * Regenerate the meal plan
+ */
+async function regenerateAiMealPlan() {
+    if (!confirm('Generate a new meal plan? This will replace your current one.')) return;
+
+    _aiMealPlanCache = null;
+
+    // Archive existing plan in Supabase
+    const user = window.currentUser;
+    if (user) {
+        try {
+            await window.supabaseClient
+                .from('ai_generated_meal_plans')
+                .update({ status: 'archived' })
+                .eq('user_id', user.id)
+                .eq('status', 'active');
+        } catch (e) {
+            console.warn('Could not archive old plan:', e);
+        }
+    }
+
+    showAiPlanGenerating();
+    await generateAiMealPlan();
+}
+
+/**
+ * Core meal plan generation function
+ * Calls the edge function, saves to Supabase, renders the result
+ */
+async function generateAiMealPlan() {
+    const statusEl = document.getElementById('ai-plan-gen-status');
+    const progressEl = document.getElementById('ai-plan-gen-progress');
+    const user = window.currentUser;
+    if (!user) {
+        alert('Please log in to generate a meal plan.');
+        showAiPlanEmpty();
+        return;
+    }
+
+    try {
+        // Update progress UI
+        if (statusEl) statusEl.textContent = 'Gathering your profile data...';
+        if (progressEl) progressEl.style.width = '10%';
+
+        // Gather user data
+        const db = window.dbHelpers;
+        const [quizResult, factsResult, prefsResult] = await Promise.allSettled([
+            db.quizResults.getLatest(user.id),
+            db.userFacts.get(user.id),
+            (async () => {
+                // Try Supabase first, fallback to localStorage
+                try {
+                    const { data } = await window.supabaseClient
+                        .from('user_food_preferences')
+                        .select('*')
+                        .eq('user_id', user.id)
+                        .maybeSingle();
+                    if (data) return data;
+                } catch (e) {}
+                // Fallback to localStorage
+                try {
+                    return JSON.parse(localStorage.getItem('user_food_preferences') || '{}');
+                } catch (e) { return {}; }
+            })()
+        ]);
+
+        const quizResults = quizResult.status === 'fulfilled' ? (quizResult.value || {}) : {};
+        const facts = factsResult.status === 'fulfilled' ? (factsResult.value || {}) : {};
+        const foodPreferences = prefsResult.status === 'fulfilled' ? (prefsResult.value || {}) : {};
+
+        if (statusEl) statusEl.textContent = 'AI is designing your personalized meals...';
+        if (progressEl) progressEl.style.width = '25%';
+
+        // Call the edge function
+        const response = await fetch('/.netlify/functions/generate-meal-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userData: {
+                    profile: { name: user.user_metadata?.name || user.email?.split('@')[0] || 'User' },
+                    quizResults,
+                    facts,
+                    foodPreferences
+                }
+            })
+        });
+
+        if (statusEl) statusEl.textContent = 'Generating AI meal photos...';
+        if (progressEl) progressEl.style.width = '60%';
+
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error('Meal plan generation failed:', response.status, errText);
+            throw new Error('Failed to generate meal plan');
+        }
+
+        const data = await response.json();
+        if (!data.success || !data.plan) {
+            throw new Error(data.error || 'Invalid response from AI');
+        }
+
+        if (statusEl) statusEl.textContent = 'Saving your meal plan...';
+        if (progressEl) progressEl.style.width = '80%';
+
+        const mealPlan = data.plan;
+        const images = data.images || {};
+
+        // Merge images into meal data
+        if (mealPlan.weeks) {
+            mealPlan.weeks.forEach(week => {
+                if (!week.days) return;
+                week.days.forEach(day => {
+                    const imageKey = `w${week.week_number}_d${day.day_of_week}`;
+                    if (images[imageKey] && day.meals) {
+                        // Assign image to the dinner/main meal
+                        const mainMeal = day.meals.find(m => m.meal_slot === 'dinner') ||
+                                         day.meals.find(m => m.meal_slot === 'lunch') ||
+                                         day.meals[0];
+                        if (mainMeal) {
+                            mainMeal.image_url = images[imageKey];
+                        }
+                    }
+                });
+            });
+        }
+
+        // Save to Supabase
+        try {
+            // Archive any existing active plans
+            await window.supabaseClient
+                .from('ai_generated_meal_plans')
+                .update({ status: 'archived' })
+                .eq('user_id', user.id)
+                .eq('status', 'active');
+
+            // Insert the new plan
+            const { data: planRow, error: planError } = await window.supabaseClient
+                .from('ai_generated_meal_plans')
+                .insert({
+                    user_id: user.id,
+                    plan_name: mealPlan.plan_name || 'Your AI Meal Plan',
+                    plan_description: mealPlan.plan_description || 'Personalized by AI',
+                    status: 'active',
+                    calorie_goal: quizResults.calorie_goal,
+                    protein_goal_g: quizResults.protein_goal_g,
+                    carbs_goal_g: quizResults.carbs_goal_g,
+                    fat_goal_g: quizResults.fat_goal_g,
+                    diet_type: foodPreferences.diet_type || 'vegan',
+                    total_meals: 140,
+                    current_week: 1
+                })
+                .select()
+                .single();
+
+            if (planError) {
+                console.warn('Could not save plan to Supabase:', planError);
+            } else if (planRow) {
+                mealPlan.id = planRow.id;
+
+                // Insert week themes
+                const weekThemes = (mealPlan.weeks || []).map(w => ({
+                    plan_id: planRow.id,
+                    week_number: w.week_number,
+                    theme: w.theme || `Week ${w.week_number}`,
+                    theme_description: w.theme_description || ''
+                }));
+
+                if (weekThemes.length > 0) {
+                    await window.supabaseClient
+                        .from('ai_meal_plan_weeks')
+                        .insert(weekThemes);
+                }
+
+                // Insert all meals
+                const allMeals = [];
+                (mealPlan.weeks || []).forEach(week => {
+                    (week.days || []).forEach(day => {
+                        (day.meals || []).forEach(meal => {
+                            allMeals.push({
+                                plan_id: planRow.id,
+                                week_number: week.week_number,
+                                day_of_week: day.day_of_week,
+                                day_name: day.day_name || ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][day.day_of_week],
+                                meal_slot: meal.meal_slot,
+                                meal_time: meal.meal_time,
+                                name: meal.name,
+                                description: meal.description,
+                                calories: meal.calories,
+                                protein_g: meal.protein_g,
+                                carbs_g: meal.carbs_g,
+                                fat_g: meal.fat_g,
+                                fiber_g: meal.fiber_g,
+                                ingredients: meal.ingredients || [],
+                                preparation: meal.preparation,
+                                prep_time_mins: meal.prep_time_mins,
+                                cook_time_mins: meal.cook_time_mins,
+                                tags: meal.tags || [],
+                                cuisine: meal.cuisine,
+                                image_url: meal.image_url
+                            });
+                        });
+                    });
+                });
+
+                // Insert in batches of 50
+                for (let i = 0; i < allMeals.length; i += 50) {
+                    const batch = allMeals.slice(i, i + 50);
+                    await window.supabaseClient
+                        .from('ai_generated_meals')
+                        .insert(batch);
+                }
+            }
+        } catch (saveErr) {
+            console.warn('Could not save to Supabase, storing locally:', saveErr);
+        }
+
+        // Save to localStorage as backup
+        localStorage.setItem('ai_meal_plan', JSON.stringify(mealPlan));
+
+        if (progressEl) progressEl.style.width = '100%';
+        if (statusEl) statusEl.textContent = 'Your meal plan is ready!';
+
+        // Cache and display
+        _aiMealPlanCache = mealPlan;
+        _aiMealPlanCurrentWeek = 1;
+        _aiMealPlanCurrentDay = 0;
+
+        setTimeout(() => {
+            showAiPlanLoaded(mealPlan);
+        }, 500);
+
+    } catch (err) {
+        console.error('Meal plan generation error:', err);
+        if (statusEl) statusEl.textContent = 'Something went wrong. Please try again.';
+        if (progressEl) progressEl.style.width = '0%';
+
+        setTimeout(() => {
+            showAiPlanEmpty();
+        }, 2000);
     }
 }
 
@@ -60091,7 +60758,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const todayStr = new Date().toISOString().split('T')[0];
 
         // Run all data fetches in parallel for speed
-        const [quizResult, factsResult, nutritionResult, mealsResult, workoutsResult, weighInsResult, replacementsResult, wearableResult] = await Promise.allSettled([
+        const [quizResult, factsResult, nutritionResult, mealsResult, workoutsResult, weighInsResult, replacementsResult, wearableResult, aiMealPlanResult] = await Promise.allSettled([
             // Quiz results
             db.quizResults.getLatest(user.id),
             // User facts
@@ -60138,6 +60805,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                     } catch (e) { /* table may not exist */ }
                 }));
                 return wearables;
+            })(),
+            // Check if user has an AI meal plan
+            (async () => {
+                try {
+                    const { data } = await window.supabaseClient
+                        .from('ai_generated_meal_plans')
+                        .select('id, plan_name, status, created_at')
+                        .eq('user_id', user.id)
+                        .eq('status', 'active')
+                        .limit(1)
+                        .maybeSingle();
+                    return data;
+                } catch (e) {
+                    // Table may not exist yet
+                    return localStorage.getItem('ai_meal_plan') ? { plan_name: 'Local plan', status: 'active' } : null;
+                }
             })()
         ]);
 
@@ -60149,6 +60832,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         context.weighIns = weighInsResult.status === 'fulfilled' ? (weighInsResult.value || []) : [];
         context.activeReplacements = replacementsResult.status === 'fulfilled' ? (replacementsResult.value || []) : [];
         context.wearables = wearableResult.status === 'fulfilled' ? (wearableResult.value || {}) : {};
+        context.hasAiMealPlan = aiMealPlanResult.status === 'fulfilled' && !!aiMealPlanResult.value;
 
         // Adaptive calorie recommendation
         try {
@@ -60256,7 +60940,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             make_rest_day: '😴',
             update_calorie_goal: '🔥',
             update_macro_goals: '📊',
-            create_workout: '💪'
+            create_workout: '💪',
+            generate_meal_plan: '🤖'
         };
 
         let html = '';
@@ -60440,6 +61125,29 @@ document.addEventListener('DOMContentLoaded', async function() {
                             exercises: action.exercises,
                             source: 'ai_assistant'
                         });
+                        successCount++;
+                        break;
+                    }
+
+                    case 'generate_meal_plan': {
+                        // Trigger meal plan generation
+                        addAiMessage('Starting your personalized meal plan generation! Head to the **Meals** tab and tap **Your Meal Plan** to watch it come to life.', 'bot');
+
+                        // Navigate to meals tab and trigger generation
+                        if (typeof switchAppTab === 'function') {
+                            switchAppTab('meals');
+                        }
+                        // Show the meal plan store section and start generation
+                        setTimeout(() => {
+                            const pill = document.getElementById('browse-plans-pill');
+                            if (pill) {
+                                switchWeek('meal-plan-store', pill);
+                            }
+                            setTimeout(() => {
+                                requestAiMealPlan();
+                            }, 300);
+                        }, 300);
+
                         successCount++;
                         break;
                     }
