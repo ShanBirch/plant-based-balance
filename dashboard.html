@@ -7970,44 +7970,6 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
-    <!-- Your Performance Card -->
-    <div id="performance-card" style="margin: 15px 25px; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; cursor: pointer;" onclick="openProgressFromHome()">
-        <!-- Header -->
-        <div style="padding: 16px 20px 0; display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 34px; height: 34px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: white;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-                </div>
-                <div style="font-weight: 700; font-size: 1rem; color: var(--text-main);">Your Performance</div>
-            </div>
-            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #94a3b8;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-        </div>
-        <!-- Stats Grid -->
-        <div style="padding: 14px 20px 18px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
-            <!-- Workouts This Week -->
-            <div style="text-align: center; padding: 12px 6px; background: #f0fdf4; border-radius: 14px;">
-                <div style="font-size: 1.4rem; margin-bottom: 2px;">💪</div>
-                <div id="perf-workouts-value" style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
-                <div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Workouts</div>
-                <div id="perf-workouts-sub" style="font-size: 0.65rem; color: #10b981; font-weight: 600; margin-top: 1px;">this week</div>
-            </div>
-            <!-- Body Weight -->
-            <div style="text-align: center; padding: 12px 6px; background: #f5f3ff; border-radius: 14px;">
-                <div style="font-size: 1.4rem; margin-bottom: 2px;">&#9878;</div>
-                <div id="perf-weight-value" style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
-                <div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Weight</div>
-                <div id="perf-weight-sub" style="font-size: 0.65rem; color: #8b5cf6; font-weight: 600; margin-top: 1px;">--</div>
-            </div>
-            <!-- Sleep -->
-            <div style="text-align: center; padding: 12px 6px; background: #eff6ff; border-radius: 14px;">
-                <div style="font-size: 1.4rem; margin-bottom: 2px;">😴</div>
-                <div id="perf-sleep-value" style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
-                <div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Sleep</div>
-                <div id="perf-sleep-sub" style="font-size: 0.65rem; color: #3b82f6; font-weight: 600; margin-top: 1px;">last night</div>
-            </div>
-        </div>
-    </div>
-
     <!-- AI Assistant Card -->
     <div id="ai-assistant-card" style="margin: 15px 25px; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
         <!-- Header -->
@@ -10139,6 +10101,44 @@ async function applyAppTheme(themeKey) {
                 </div>
             </div>
             <div id="home-challenges-list"></div>
+        </div>
+
+        <!-- Your Performance Card -->
+        <div id="performance-card" style="margin: 20px 0 15px 0; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; cursor: pointer;" onclick="openProgressFromHome()">
+            <!-- Header -->
+            <div style="padding: 16px 20px 0; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 34px; height: 34px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: white;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+                    </div>
+                    <div style="font-weight: 700; font-size: 1rem; color: var(--text-main);">Your Performance</div>
+                </div>
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #94a3b8;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+            </div>
+            <!-- Stats Grid -->
+            <div style="padding: 14px 20px 18px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                <!-- Workouts This Week -->
+                <div style="text-align: center; padding: 12px 6px; background: #f0fdf4; border-radius: 14px;">
+                    <div style="font-size: 1.4rem; margin-bottom: 2px;">💪</div>
+                    <div id="perf-workouts-value" style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
+                    <div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Workouts</div>
+                    <div id="perf-workouts-sub" style="font-size: 0.65rem; color: #10b981; font-weight: 600; margin-top: 1px;">this week</div>
+                </div>
+                <!-- Body Weight -->
+                <div style="text-align: center; padding: 12px 6px; background: #f5f3ff; border-radius: 14px;">
+                    <div style="font-size: 1.4rem; margin-bottom: 2px;">&#9878;</div>
+                    <div id="perf-weight-value" style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
+                    <div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Weight</div>
+                    <div id="perf-weight-sub" style="font-size: 0.65rem; color: #8b5cf6; font-weight: 600; margin-top: 1px;">--</div>
+                </div>
+                <!-- Sleep -->
+                <div style="text-align: center; padding: 12px 6px; background: #eff6ff; border-radius: 14px;">
+                    <div style="font-size: 1.4rem; margin-bottom: 2px;">😴</div>
+                    <div id="perf-sleep-value" style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
+                    <div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Sleep</div>
+                    <div id="perf-sleep-sub" style="font-size: 0.65rem; color: #3b82f6; font-weight: 600; margin-top: 1px;">last night</div>
+                </div>
+            </div>
         </div>
 
     </div>
