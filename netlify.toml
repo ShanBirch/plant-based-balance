@@ -83,6 +83,10 @@
   function = "analyze-meal-text"
   path = "/.netlify/functions/analyze-meal-text"
 
+[[edge_functions]]
+  function = "identify-food"
+  path = "/api/identify-food"
+
 # Fitbit Integration Edge Functions
 [[edge_functions]]
   function = "fitbit-auth"
