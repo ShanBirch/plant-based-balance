@@ -788,25 +788,26 @@ async function applyAppTheme(themeKey) {
     }
 
     /* Sub Tabs (Week Days) */
-    .sub-nav { 
-        display: flex; 
-        gap: 10px; 
-        margin-bottom: 30px; 
-        flex-wrap: wrap; 
+    .sub-nav {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 30px;
+        flex-wrap: nowrap;
         justify-content: center;
         padding-bottom: 20px;
         border-bottom: 1px solid rgba(0,0,0,0.05);
     }
-    .sub-btn { 
-        padding: 5px 12px; 
-        border: none; 
-        background: transparent; 
-        border-radius: 6px; 
-        font-size: 0.9rem; 
-        font-weight: 500; 
-        cursor: pointer; 
-        transition: all 0.2s; 
+    .sub-btn {
+        padding: 5px 10px;
+        border: none;
+        background: transparent;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
         color: var(--text-muted);
+        white-space: nowrap;
     }
     
     .sub-btn:hover { color: var(--primary); }
@@ -10021,15 +10022,6 @@ async function applyAppTheme(themeKey) {
                     <!-- Week Tabs (dynamically rendered based on generated weeks) -->
                     <div class="week-scroller" id="ai-plan-week-tabs" style="padding: 10px 15px;">
                         <!-- Tabs rendered by renderAiPlanWeekTabs() -->
-                    </div>
-
-                    <!-- Week Theme Banner -->
-                    <div id="ai-plan-week-theme" style="padding: 0 15px 10px;">
-                        <div style="background: linear-gradient(to right, #eef2f3, #ffffff); border-radius: 12px; padding: 20px;">
-                            <div style="font-family: 'Inter'; text-transform: uppercase; color: var(--secondary); font-weight: 600; letter-spacing: 1px; margin-bottom: 6px; font-size: 0.75rem;" id="ai-week-label">Week 1</div>
-                            <h3 id="ai-week-theme-title" style="margin: 0 0 6px; font-size: 1.2rem; color: var(--text-main);">Foundation</h3>
-                            <p id="ai-week-theme-desc" style="margin: 0; font-size: 0.9rem; color: #555;"></p>
-                        </div>
                     </div>
 
                     <!-- Day Tabs -->
@@ -23821,21 +23813,10 @@ function switchAiPlanDay(dayNum, btn) {
 }
 
 /**
- * Render the week theme banner
+ * Render the week theme (week theme card removed from UI)
  */
 function renderAiPlanWeek(weekNum) {
-    if (!_aiMealPlanCache || !_aiMealPlanCache.weeks) return;
-
-    const week = _aiMealPlanCache.weeks.find(w => w.week_number === weekNum);
-    if (!week) return;
-
-    const labelEl = document.getElementById('ai-week-label');
-    const titleEl = document.getElementById('ai-week-theme-title');
-    const descEl = document.getElementById('ai-week-theme-desc');
-
-    if (labelEl) labelEl.textContent = `Week ${weekNum}`;
-    if (titleEl) titleEl.textContent = week.theme || `Week ${weekNum}`;
-    if (descEl) descEl.textContent = week.theme_description || '';
+    // Week theme card removed - function kept as stub for callers
 }
 
 /**
@@ -23897,7 +23878,7 @@ function renderAiPlanDay(dayNum) {
         const slotLabel = mealSlotLabels[meal.meal_slot] || meal.meal_slot;
         const slotIcon = mealSlotIcons[meal.meal_slot] || '🍽️';
         const time = meal.meal_time || '';
-        const hasImage = meal.image_url && meal.image_url.length > 10;
+        const hasImage = false; // Image generation removed
 
         // Build ingredients list
         const ingredientsList = (meal.ingredients || []).map(ing => {
@@ -24237,11 +24218,7 @@ async function generateAiMealPlan() {
             showAiPlanLoaded(mealPlan);
         }, 500);
 
-        // Generate images in the background (non-blocking)
-        // One image per day's main meal = 28 images, generated slowly to not overwhelm
-        if (planId && mealPlan._insertedMeals) {
-            generateMealImagesInBackground(planId, mealPlan._insertedMeals, user.id);
-        }
+        // Image generation removed
 
     } catch (err) {
         console.error('Meal plan generation error:', err);
@@ -24254,99 +24231,7 @@ async function generateAiMealPlan() {
     }
 }
 
-/**
- * Generate meal images in the background after plan is created.
- * Generates one image at a time for the dinner/lunch of each day (28 images).
- * Each image is uploaded to B2 and the URL is saved to Supabase.
- */
-async function generateMealImagesInBackground(planId, insertedMeals, userId) {
-    // Pick one main meal per day (dinner or lunch) = 28 images
-    const mealsToImage = [];
-    const seen = new Set();
-    for (const meal of insertedMeals) {
-        const dayKey = `${meal.week_number}_${meal.day_of_week}`;
-        if (seen.has(dayKey)) continue;
-        if (meal.meal_slot === 'dinner' || meal.meal_slot === 'lunch') {
-            mealsToImage.push(meal);
-            seen.add(dayKey);
-        }
-    }
-    // Fill gaps - if a day didn't have dinner/lunch, grab any meal
-    for (const meal of insertedMeals) {
-        const dayKey = `${meal.week_number}_${meal.day_of_week}`;
-        if (!seen.has(dayKey)) {
-            mealsToImage.push(meal);
-            seen.add(dayKey);
-        }
-    }
-
-    console.log(`Starting background image generation for ${mealsToImage.length} meals...`);
-
-    for (let i = 0; i < mealsToImage.length; i++) {
-        const meal = mealsToImage[i];
-
-        // Skip if this meal already has an image URL (from a previous run or B2 storage)
-        if (meal.image_url && meal.image_url.length > 10 && !meal.image_url.startsWith('data:')) {
-            console.log(`Skipping image for "${meal.name}" - already has permanent URL`);
-            continue;
-        }
-
-        try {
-            const response = await fetch('/.netlify/functions/generate-meal-image', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    mealName: meal.name,
-                    mealDescription: meal.description || '',
-                    userId: userId,
-                    planId: planId,
-                    mealId: meal.id
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.imageUrl) {
-                    // Update the meal in Supabase with the permanent image URL
-                    await window.supabaseClient
-                        .from('ai_generated_meals')
-                        .update({ image_url: data.imageUrl })
-                        .eq('id', meal.id);
-
-                    // Update the in-memory cache too
-                    if (_aiMealPlanCache && _aiMealPlanCache.weeks) {
-                        const week = _aiMealPlanCache.weeks.find(w => w.week_number === meal.week_number);
-                        if (week) {
-                            const day = week.days?.find(d => d.day_of_week === meal.day_of_week);
-                            if (day) {
-                                const cachedMeal = day.meals?.find(m => m.name === meal.name);
-                                if (cachedMeal) {
-                                    cachedMeal.image_url = data.imageUrl;
-                                }
-                            }
-                        }
-                    }
-
-                    // Update localStorage backup
-                    try {
-                        localStorage.setItem('ai_meal_plan', JSON.stringify(_aiMealPlanCache));
-                    } catch (e) { /* storage quota */ }
-
-                    console.log(`Image ${i + 1}/${mealsToImage.length} generated for "${meal.name}"`);
-                }
-            }
-        } catch (err) {
-            console.warn(`Image generation failed for "${meal.name}":`, err);
-        }
-
-        // Small delay between requests to avoid rate limiting
-        if (i < mealsToImage.length - 1) {
-            await new Promise(r => setTimeout(r, 1500));
-        }
-    }
-
-    console.log('Background image generation complete!');
-}
+// Image generation functionality removed
 
 /**
  * Generate the next week of the meal plan.
@@ -24494,10 +24379,7 @@ async function generateNextWeek() {
                     .from('ai_generated_meals').insert(newMeals)
                     .select('id, name, description, meal_slot, week_number, day_of_week');
 
-                // Background image generation for the new week
-                if (inserted) {
-                    generateMealImagesInBackground(planId, inserted, user.id);
-                }
+                // Image generation removed
             } catch (e) {
                 console.warn('Could not save new week to Supabase:', e);
             }
