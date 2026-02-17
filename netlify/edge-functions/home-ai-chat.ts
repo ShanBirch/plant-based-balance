@@ -29,17 +29,43 @@ export default async function (request: Request, context: Context) {
     const quiz = userData?.quizResults || {};
     const dailyNutrition = userData?.dailyNutrition || [];
     const meals = userData?.mealLogs || [];
-    const workouts = userData?.workouts || [];
+    const workoutHistory = userData?.workoutHistory || [];
     const weighIns = userData?.weighIns || [];
-    const checkins = userData?.checkins || [];
     const wearables = userData?.wearables || {};
     const adaptiveResult = userData?.adaptiveResult || null;
     const facts = userData?.facts || {};
 
+    // Workout schedule context (this week)
+    const weekSchedule = userData?.weekSchedule || [];
+    const todayDayIndex = userData?.todayDayIndex ?? -1;
+    const todayDate = userData?.todayDate || '';
+    const activeReplacements = userData?.activeReplacements || [];
+
+    // Format the weekly workout schedule
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    let scheduleSummary = '';
+    if (weekSchedule.length === 7) {
+      scheduleSummary = weekSchedule.map((day: any, i: number) => {
+        const isToday = i === todayDayIndex;
+        const replaced = activeReplacements.find((r: any) => r.day_of_week === i);
+        let line = `${dayNames[i]}${isToday ? ' (TODAY)' : ''}: ${day.name || day.title || 'Rest'}`;
+        if (replaced) {
+          line += ` [REPLACED with: ${replaced.replacement_workout?.name || 'Unknown'}]`;
+        }
+        if (day.exercises && day.exercises.length > 0) {
+          const exerciseNames = day.exercises.slice(0, 6).map((e: any) => e.name || e.exercise_name || e).join(', ');
+          line += ` (${exerciseNames}${day.exercises.length > 6 ? '...' : ''})`;
+        }
+        return line;
+      }).join('\n');
+    } else {
+      scheduleSummary = 'Workout schedule not available.';
+    }
+
     // Format daily nutrition (last 14 days)
     const nutritionSummary = dailyNutrition.length > 0
       ? dailyNutrition.map((d: any) =>
-          `${d.nutrition_date || d.date}: ${d.total_calories || 0} cal | P: ${d.total_protein_g || d.total_protein || 0}g | C: ${d.total_carbs_g || d.total_carbs || 0}g | F: ${d.total_fat_g || d.total_fat || 0}g | Fibre: ${d.total_fiber_g || d.total_fiber || 0}g (Goal: ${d.calorie_goal || '?'} cal)`
+          `${d.nutrition_date || d.date}: ${d.total_calories || 0} cal | P: ${d.total_protein_g || d.total_protein || 0}g | C: ${d.total_carbs_g || d.total_carbs || 0}g | F: ${d.total_fat_g || d.total_fat || 0}g (Goal: ${d.calorie_goal || '?'} cal)`
         ).join('\n')
       : 'No nutrition data tracked recently.';
 
@@ -65,15 +91,15 @@ export default async function (request: Request, context: Context) {
             if (m.items && Array.isArray(m.items)) {
               itemStr = m.items.map((i: any) => typeof i === 'string' ? i : (i.name || i.food || '')).filter(Boolean).join(', ');
             }
-            return `  - ${m.type}: ${m.calories || '?'} cal, ${m.protein || '?'}g protein, ${m.carbs || '?'}g carbs, ${m.fat || '?'}g fat${itemStr ? ` (${itemStr})` : ''}`;
+            return `  - ${m.type}: ${m.calories || '?'} cal, ${m.protein || '?'}g protein${itemStr ? ` (${itemStr})` : ''}`;
           }).join('\n');
           return `${day}:\n${mealList}`;
         }).join('\n')
       : 'No meals tracked recently.';
 
-    // Format workouts
+    // Format workout history (completed sessions)
     const workoutsByDay: Record<string, any[]> = {};
-    workouts.forEach((w: any) => {
+    workoutHistory.forEach((w: any) => {
       const day = w.workout_date || 'unknown';
       if (!workoutsByDay[day]) workoutsByDay[day] = [];
       workoutsByDay[day].push({
@@ -84,21 +110,21 @@ export default async function (request: Request, context: Context) {
       });
     });
 
-    const workoutSummary = Object.keys(workoutsByDay).length > 0
+    const workoutHistorySummary = Object.keys(workoutsByDay).length > 0
       ? Object.entries(workoutsByDay).map(([day, exercises]) => {
           const exerciseList = exercises.map((e: any) =>
             `  - ${e.exercise}: Set ${e.sets}, ${e.reps} reps @ ${e.weight}kg`
           ).join('\n');
           return `${day}:\n${exerciseList}`;
         }).join('\n')
-      : 'No workouts recorded recently.';
+      : 'No completed workouts recently.';
 
     // Format weigh-ins
     const weightSummary = weighIns.length > 0
       ? weighIns.map((w: any) => `${w.weigh_in_date}: ${w.weight_kg}kg`).join(', ')
       : 'No weigh-ins recorded recently.';
 
-    // Format wearable data
+    // Format wearable data (compact)
     let wearableSummary = '';
     if (wearables.fitbitActivity?.length > 0) {
       wearableSummary += 'Fitbit: ' + wearables.fitbitActivity.map((a: any) =>
@@ -117,17 +143,12 @@ export default async function (request: Request, context: Context) {
     }
     if (!wearableSummary) wearableSummary = 'No wearable data available.';
 
-    // Format adaptive adjustment recommendation
-    let adaptiveSummary = 'No adaptive adjustment data available.';
-    if (adaptiveResult) {
-      if (adaptiveResult.eligible && adaptiveResult.suggestion) {
-        adaptiveSummary = `Adaptive Analysis: ${adaptiveResult.suggestion.reason}`;
-        if (adaptiveResult.suggestion.direction !== 'none') {
-          adaptiveSummary += ` Suggested: ${adaptiveResult.suggestion.direction} calories by ${adaptiveResult.suggestion.amount} (from ${adaptiveResult.currentCalorieGoal} to ${adaptiveResult.newCalorieGoal}).`;
-        }
-        adaptiveSummary += ` Weight trend: ${adaptiveResult.weightChange > 0 ? '+' : ''}${adaptiveResult.weightChange}kg over 2 weeks. Tracking consistency: ${adaptiveResult.trackedDays}/14 days, ${adaptiveResult.adherenceRate}% adherence.`;
-      } else if (adaptiveResult.eligible === false) {
-        adaptiveSummary = `Not yet eligible for adaptive adjustment: ${adaptiveResult.message || adaptiveResult.reason}`;
+    // Format adaptive adjustment
+    let adaptiveSummary = 'No adaptive data.';
+    if (adaptiveResult?.eligible && adaptiveResult?.suggestion) {
+      adaptiveSummary = adaptiveResult.suggestion.reason;
+      if (adaptiveResult.suggestion.direction !== 'none') {
+        adaptiveSummary += ` Suggested: ${adaptiveResult.suggestion.direction} by ${adaptiveResult.suggestion.amount} cal (${adaptiveResult.currentCalorieGoal} → ${adaptiveResult.newCalorieGoal}).`;
       }
     }
 
@@ -139,19 +160,14 @@ Goal Body Type: ${quiz.goal_body_type || 'Unknown'}
 Activity Level: ${quiz.activity_level || 'Unknown'}
 Current Weight: ${weighIns.length > 0 ? weighIns[weighIns.length - 1]?.weight_kg + 'kg' : (quiz.weight ? quiz.weight + 'kg' : 'Unknown')}
 Goal Weight: ${quiz.goal_weight || 'Unknown'}kg
-Sex: ${quiz.sex || 'Unknown'}
-Age: ${quiz.age || 'Unknown'}
+Sex: ${quiz.sex || 'Unknown'} | Age: ${quiz.age || 'Unknown'}
 
 === NUTRITION GOALS ===
-BMR: ${quiz.bmr || '?'} cal | TDEE: ${quiz.tdee || '?'} cal
-Daily Calorie Goal: ${quiz.calorie_goal || '?'} cal
-Protein Goal: ${quiz.protein_goal_g || '?'}g | Carbs Goal: ${quiz.carbs_goal_g || '?'}g | Fat Goal: ${quiz.fat_goal_g || '?'}g
+Daily Calorie Goal: ${quiz.calorie_goal || '?'} cal | Protein: ${quiz.protein_goal_g || '?'}g | Carbs: ${quiz.carbs_goal_g || '?'}g | Fat: ${quiz.fat_goal_g || '?'}g
 
-=== KNOWN FACTS ===
-Struggles: ${facts.struggles?.length > 0 ? facts.struggles.join(', ') : 'None recorded'}
-Preferences: ${facts.preferences?.length > 0 ? facts.preferences.join(', ') : 'None recorded'}
-Health Notes: ${facts.health_notes?.length > 0 ? facts.health_notes.join(', ') : 'None recorded'}
-Goals: ${facts.goals?.length > 0 ? facts.goals.join(', ') : 'None recorded'}
+=== THIS WEEK'S WORKOUT SCHEDULE ===
+Today is: ${dayNames[todayDayIndex] || 'Unknown'} (${todayDate})
+${scheduleSummary}
 
 === ADAPTIVE CALORIE RECOMMENDATION ===
 ${adaptiveSummary}
@@ -162,47 +178,82 @@ ${nutritionSummary}
 === RECENT MEALS ===
 ${mealSummary}
 
-=== RECENT WORKOUTS ===
-${workoutSummary}
+=== COMPLETED WORKOUT HISTORY ===
+${workoutHistorySummary}
 
 === WEIGHT HISTORY ===
 ${weightSummary}
 
 === WEARABLE DATA ===
 ${wearableSummary}
+
+=== KNOWN FACTS ===
+Struggles: ${facts.struggles?.join(', ') || 'None'}
+Preferences: ${facts.preferences?.join(', ') || 'None'}
+Health Notes: ${facts.health_notes?.join(', ') || 'None'}
+Goals: ${facts.goals?.join(', ') || 'None'}
 `;
 
-    const systemPrompt = `You are FITGotchi AI, a friendly and knowledgeable plant-based nutrition and fitness assistant built into the FITGotchi app.
+    const systemPrompt = `You are FITGotchi AI, a smart personal fitness and nutrition assistant built into the FITGotchi app. You talk DIRECTLY to the user.
 
-YOU ARE TALKING DIRECTLY TO THE USER (not to a coach or admin). You are their personal AI assistant.
+YOU CAN TAKE ACTIONS. You are not just a chatbot - you can actually modify the user's schedule, goals, and workouts. When the user asks you to do something, you SHOULD propose actions.
 
 YOUR PERSONALITY:
-- Warm, encouraging, and knowledgeable
-- Casual but not overly informal - you're a helpful assistant, not a texting buddy
-- You know a lot about plant-based nutrition, exercise science, and healthy habits
-- Be concise - keep responses focused and actionable
-- Use the user's name when it feels natural
-- You can use bullet points and short paragraphs for clarity
+- Warm, encouraging, knowledgeable about plant-based nutrition and exercise science
+- Concise - users are on mobile, keep it short (2-4 paragraphs max)
+- Reference their actual data (specific numbers, dates, workout names)
+- Use their name naturally
 
-YOUR CAPABILITIES:
-1. **Nutrition Guidance**: Analyse their meal logs, daily nutrition, and macro goals. Tell them how they're tracking against goals. Suggest improvements.
-2. **Calorie Recommendations**: You have access to their adaptive calorie analysis. If their calories need adjusting, explain why in a supportive way.
-3. **Workout Insights**: Review their workout history. Spot consistency patterns, suggest exercises, celebrate progress.
-4. **Weight Trend Analysis**: Look at their weigh-in history and relate it to their goals. Be sensitive - weight is personal.
-5. **Meal Ideas**: Suggest plant-based meals that fit their macro targets. Be practical and specific.
-6. **Wearable Data**: If they have connected wearables (Fitbit, Oura, Strava), reference that data for sleep, activity, and recovery insights.
-7. **General Health Q&A**: Answer questions about plant-based nutrition, exercise, supplements (B12, iron, etc.), and healthy habits.
-8. **Motivation & Accountability**: Celebrate streaks, consistency, and progress. Gently nudge when tracking gaps appear.
+=== AVAILABLE ACTIONS ===
+When the user asks you to do something (move a workout, adjust calories, etc.), include an "actions" array in your JSON response. Available action types:
 
-IMPORTANT RULES:
-- NEVER give medical advice. For medical concerns, recommend they see a healthcare professional.
-- NEVER suggest non-plant-based foods. This is a plant-based program.
-- Be honest about data gaps. If they haven't tracked meals this week, mention it encouragingly.
-- When recommending calorie changes, explain the reasoning (weight trend, activity level, goals).
-- Keep responses SHORT and actionable. 2-4 short paragraphs max for most responses. Users are on mobile.
-- If you don't have enough data to answer a question well, say so and suggest what they could track.
-- Reference SPECIFIC data points from their history when possible (e.g., "I can see you hit 1,850 cal yesterday which is right on your 1,900 goal").
-- NEVER make up or hallucinate data that isn't provided in the context.
+1. **swap_workouts** - Swap workouts between two days this week
+   { "type": "swap_workouts", "day1_index": 0-6, "day2_index": 0-6, "day1_name": "Monday", "day2_name": "Tuesday", "description": "Swap Back Day and Legs Day" }
+   IMPORTANT: When swapping, think about muscle group conflicts. Don't put two heavy leg days back-to-back. Consider recovery.
+
+2. **replace_workout** - Replace a day's workout with a different one
+   { "type": "replace_workout", "day_index": 0-6, "day_name": "Monday", "new_workout_name": "Yoga Flow", "new_workout_type": "rest|yoga|stretching|custom", "duration_weeks": 1, "description": "Replace Monday's workout with Yoga" }
+
+3. **make_rest_day** - Turn a day into a rest day
+   { "type": "make_rest_day", "day_index": 0-6, "day_name": "Monday", "description": "Make Monday a rest day" }
+
+4. **update_calorie_goal** - Adjust the user's daily calorie goal
+   { "type": "update_calorie_goal", "new_calorie_goal": 1800, "reason": "Weight has been stable, reducing by 100 cal", "description": "Adjust calories from 1900 to 1800" }
+
+5. **update_macro_goals** - Adjust macro targets
+   { "type": "update_macro_goals", "protein_g": 120, "carbs_g": 200, "fat_g": 60, "description": "Adjust macros for higher protein" }
+
+6. **create_workout** - Build a new custom workout
+   { "type": "create_workout", "name": "Upper Body Push", "exercises": [{"name": "Push Ups", "sets": 3, "reps": "10-12"}, ...], "description": "Create a push-focused upper body workout" }
+
+=== RESPONSE FORMAT ===
+You MUST respond in valid JSON with this exact structure:
+{
+  "reply": "Your conversational response to the user (can use markdown for formatting)",
+  "actions": []
+}
+
+- "reply" is ALWAYS required - this is what the user sees
+- "actions" is an array of action objects. Use an empty array [] if no actions needed
+- When proposing actions, explain what you're doing in the "reply" and include the actions
+- The user will see a confirmation dialog before any action executes
+- You can include MULTIPLE actions in one response (e.g., swap two workouts = make day1 rest + replace day2)
+
+=== WORKOUT SCHEDULING INTELLIGENCE ===
+The schedule shows 7 days (Monday=0 to Sunday=6). When the user asks to move/swap workouts:
+- Consider what's on BOTH days before suggesting a swap
+- Think about muscle group recovery (don't put Chest after Shoulders, don't stack two leg days)
+- If today is a rest day already and they want to skip, just acknowledge it
+- If they want to move today's workout but tomorrow is also a training day, suggest a SWAP (not just moving one)
+- Proactively mention conflicts: "Tomorrow you've got Legs scheduled - want me to swap them, or would you prefer I move today's session to your rest day on Thursday?"
+
+=== IMPORTANT RULES ===
+- NEVER give medical advice
+- NEVER suggest non-plant-based foods
+- NEVER make up data not in the context
+- Be honest about data gaps
+- Keep responses SHORT for mobile
+- Return ONLY valid JSON - no markdown wrapping, no backticks around the JSON
 
 HERE IS EVERYTHING YOU KNOW ABOUT THIS USER:
 ${userContext}`;
@@ -216,7 +267,7 @@ ${userContext}`;
     });
     contents.push({
       role: "model",
-      parts: [{ text: "Understood. I'm FITGotchi AI, ready to help the user with personalised nutrition and fitness guidance based on their data. I'll keep responses concise, reference their actual data, and stay focused on plant-based nutrition." }]
+      parts: [{ text: JSON.stringify({ reply: "I'm ready to help! I can see your full schedule, nutrition data, and workout history. What would you like to do?", actions: [] }) }]
     });
 
     // Add chat history
@@ -251,6 +302,7 @@ ${userContext}`;
         generationConfig: {
           maxOutputTokens: 2048,
           temperature: 0.7,
+          responseMimeType: "application/json",
         }
       })
     });
@@ -262,9 +314,25 @@ ${userContext}`;
       throw new Error(data.error?.message || "Failed to fetch from Gemini");
     }
 
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response. Try again!";
+    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    return new Response(JSON.stringify({ reply }), {
+    // Parse the JSON response
+    let parsedResponse;
+    try {
+      const cleaned = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      parsedResponse = JSON.parse(cleaned);
+    } catch {
+      // If JSON parsing fails, treat whole response as plain text
+      parsedResponse = { reply: aiText, actions: [] };
+    }
+
+    // Ensure response has required fields
+    const result = {
+      reply: parsedResponse.reply || parsedResponse.message || aiText || "Sorry, I couldn't generate a response.",
+      actions: Array.isArray(parsedResponse.actions) ? parsedResponse.actions : []
+    };
+
+    return new Response(JSON.stringify(result), {
       headers: { "Content-Type": "application/json" },
     });
 
