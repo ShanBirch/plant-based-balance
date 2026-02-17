@@ -9677,18 +9677,6 @@ async function applyAppTheme(themeKey) {
              </div>
         </div>
 
-         <!-- Your Workout Actions -->
-         <h3 style="margin: 30px 0 15px 0;">Your Workout</h3>
-         <div class="card" onclick="switchAppTab('movement-tab', this);" style="cursor: pointer; border-left: 5px solid var(--secondary);">
-            <div class="card-body" style="max-height: none; padding: 25px; opacity: 1; display: flex; align-items: center; gap: 20px;">
-                <div id="dashboard-workout-icon" style="background: var(--accent-green); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🧘‍♀️</div>
-                <div>
-                    <h4 style="margin: 0 0 5px 0; border: none; padding: 0;">Today's Movement</h4>
-                    <p id="dashboard-workout-title" style="margin: 0; font-weight: 500; color: var(--primary);">Loading...</p>
-                    <p id="dashboard-workout-sub" style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Tap to view →</p>
-                </div>
-            </div>
-         </div>
 
         <!-- Fitbit Activity Card (hidden until connected) -->
         <div id="fitbit-dashboard-card" style="display: none; margin: 20px 0 15px 0;">
@@ -10756,7 +10744,6 @@ async function applyAppTheme(themeKey) {
             updateLoginProgress(80, 'Almost there...');
 
             // Phase 4: Non-critical UI updates (fire-and-forget, don't block)
-            if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
             if(typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
             if(typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
             if(typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
@@ -19828,7 +19815,6 @@ function viewWorkoutHistoryDetail(date) {
             // Refresh ALL views to reflect new equipment settings
             if(typeof renderMovementView === 'function') setTimeout(renderMovementView, 100);
             if(typeof renderWeeklyCalendar === 'function') setTimeout(renderWeeklyCalendar, 150); // Refresh calendar
-            if(typeof updateDashboardWorkoutCard === 'function') setTimeout(updateDashboardWorkoutCard, 200); // Refresh home page hero
             if(typeof loadProfileData === 'function') loadProfileData(); // Refresh profile display logic
         }
 
@@ -21534,8 +21520,6 @@ function renderCycleStatus() {
     const recCard = document.getElementById('today-workout-rec');
     if(recCard) recCard.style.background = phase.color;
     
-    // Keep dashboard in sync
-    if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
 }
 
 // --- CYCLE & CALENDAR ACTIONS ---
@@ -23159,26 +23143,6 @@ function openAvatarCustomizer() {
 function initializeAvatar() { return Promise.resolve(); }
 function openAvatarCustomizer() { console.log('Avatar system disabled'); }
 function updateAvatarMessage() { }
-
-// Update Dashboard workout card
-function updateDashboardWorkoutCard() {
-    const workout = getTodaysWorkout();
-    
-    const titleEl = document.getElementById('dashboard-workout-title');
-    const subEl = document.getElementById('dashboard-workout-sub');
-    const iconEl = document.getElementById('dashboard-workout-icon');
-    
-    if (titleEl) titleEl.innerText = workout.name;
-    if (iconEl) iconEl.innerText = workout.icon;
-    
-    if (subEl) {
-        if (workout.phaseInfo && workout.cycleDay > 0) {
-            subEl.innerText = `${workout.phaseInfo.name} (Day ${workout.cycleDay}) →`;
-        } else {
-            subEl.innerText = `${workout.dayName}'s workout →`;
-        }
-    }
-}
 
 
 // --- DAILY WELLNESS CHECK-IN LOGIC ---
@@ -41668,7 +41632,6 @@ async function submitDailyCycleSync() {
             localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
         }
 
-        if (typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
         if (typeof switchAppTab === 'function') switchAppTab('dashboard');
         if (typeof showCycleSyncBanner === 'function') showCycleSyncBanner();
 
@@ -44101,10 +44064,6 @@ window._submitDailyCycleSyncImpl = async function() {
                     saveUserCycleData(userCycleData);
                 }
 
-                // Refresh dashboard card to show yoga
-                if (typeof updateDashboardWorkoutCard === 'function') {
-                    updateDashboardWorkoutCard();
-                }
 
                 // NO POPUP - continue to dashboard display
                 // Let it fall through to normal flow (don't return here)
@@ -44121,8 +44080,6 @@ window._submitDailyCycleSyncImpl = async function() {
         localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
     }
 
-    // Refresh views to show normal workout (not yoga)
-    if (typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
 
     // 7. Redirect to Dashboard with Animation
     switchAppTab('dashboard');
@@ -44229,7 +44186,6 @@ function acceptYogaRecommendation() {
 
     // Refresh views to show yoga
     if (typeof renderMovementView === 'function') renderMovementView();
-    if (typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
     if (typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
 
     // Navigate to dashboard
@@ -44272,8 +44228,6 @@ function applyCycleSync(data) {
     // For now, we save it to session state or global
     window.cycleSyncState = data;
     
-    // Force Dashboard Refresh
-    if(typeof updateDashboardWorkoutCard === 'function') updateDashboardWorkoutCard();
 }
 
 function showCycleSyncBanner() {
