@@ -49655,9 +49655,18 @@ async function loadMicronutrientInsights() {
             calcium: ['calcium_mg', 'calcium'],
             b12: ['b12_mcg', 'b12'],
             omega3: ['omega3_g', 'omega3'],
-            zinc: ['zinc_mg', 'zinc']
+            zinc: ['zinc_mg', 'zinc'],
+            vitamin_d: ['vitamin_d_mcg', 'vitamin_d'],
+            iodine: ['iodine_mcg', 'iodine'],
+            selenium: ['selenium_mcg', 'selenium'],
+            folate: ['folate_mcg', 'folate'],
+            potassium: ['potassium_mg', 'potassium'],
+            magnesium: ['magnesium_mg', 'magnesium'],
+            vitamin_a: ['vitamin_a_mcg', 'vitamin_a'],
+            vitamin_e: ['vitamin_e_mg', 'vitamin_e'],
+            vitamin_k: ['vitamin_k_mcg', 'vitamin_k']
         };
-        const totals = { iron: 0, vitamin_c: 0, calcium: 0, b12: 0, omega3: 0, zinc: 0 };
+        const totals = { iron: 0, vitamin_c: 0, calcium: 0, b12: 0, omega3: 0, zinc: 0, vitamin_d: 0, iodine: 0, selenium: 0, folate: 0, potassium: 0, magnesium: 0, vitamin_a: 0, vitamin_e: 0, vitamin_k: 0 };
         let mealCount = 0;
 
         (meals || []).forEach(meal => {
