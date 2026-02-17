@@ -69,6 +69,11 @@
   function = "admin-ai-coach"
   path = "/.netlify/functions/admin-ai-coach"
 
+# Home AI Chat (User-Facing Assistant)
+[[edge_functions]]
+  function = "home-ai-chat"
+  path = "/.netlify/functions/home-ai-chat"
+
 # Meal Tracking Edge Functions
 [[edge_functions]]
   function = "upload-meal-photo"
