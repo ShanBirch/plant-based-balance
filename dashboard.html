@@ -59814,23 +59814,39 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Gather the user's weekly workout schedule from the rendered calendar DOM
     function gatherWeekSchedule() {
         const schedule = [];
+
+        // Try reading from the weekly calendar DOM (works when Movement tab has been visited)
         const grid = document.getElementById('weekly-calendar');
-        if (!grid) return schedule;
-
-        const rows = grid.querySelectorAll('.cal-row, [class*="cal-"]');
-        // Read from the cal-workout-tag elements
-        const tags = grid.querySelectorAll('.cal-workout-tag');
-        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        tags.forEach((tag, i) => {
-            const text = tag.textContent.replace('🔄', '').trim();
-            schedule.push({ name: text, dayIndex: i });
-        });
-
-        // If DOM didn't have 7 entries, pad with unknown
-        while (schedule.length < 7) {
-            schedule.push({ name: 'Unknown', dayIndex: schedule.length });
+        if (grid) {
+            const tags = grid.querySelectorAll('.cal-workout-tag');
+            if (tags.length >= 7) {
+                tags.forEach((tag, i) => {
+                    const text = tag.textContent.replace('🔄', '').trim();
+                    schedule.push({ name: text, dayIndex: i });
+                });
+                return schedule.slice(0, 7);
+            }
         }
-        return schedule.slice(0, 7);
+
+        // Fallback: try to build schedule from the active custom program cache
+        const activeProgram = window.activeCustomProgramCache;
+        if (activeProgram && activeProgram.weekly_schedule && activeProgram.weekly_schedule.length === 7) {
+            activeProgram.weekly_schedule.forEach((item, i) => {
+                if (!item.workout || item.workout.type === 'rest') {
+                    schedule.push({ name: 'Rest', dayIndex: i });
+                } else {
+                    schedule.push({ name: item.workout.name || item.workout.subcategory || 'Workout', dayIndex: i });
+                }
+            });
+            return schedule;
+        }
+
+        // Fallback: return empty schedule (the AI will still have context from other data)
+        const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        for (let i = 0; i < 7; i++) {
+            schedule.push({ name: 'Schedule not loaded', dayIndex: i });
+        }
+        return schedule;
     }
 
     // Gather all user context data for the AI
@@ -59841,86 +59857,64 @@ document.addEventListener('DOMContentLoaded', async function() {
         const db = window.dbHelpers;
         const context = {};
 
-        try {
-            // Profile
-            context.profile = { name: user.user_metadata?.name || user.email?.split('@')[0] || 'User' };
+        // Profile
+        context.profile = { name: user.user_metadata?.name || user.email?.split('@')[0] || 'User' };
 
-            // Quiz results (goals, body type, etc.)
-            try {
-                const quiz = await db.quizResults.getLatest(user.id);
-                context.quizResults = quiz || {};
-            } catch { context.quizResults = {}; }
-
-            // User facts (struggles, preferences, etc.)
-            try {
-                const facts = await db.userFacts.get(user.id);
-                context.facts = facts || {};
-            } catch { context.facts = {}; }
-
+        // Run all data fetches in parallel for speed
+        const [quizResult, factsResult, nutritionResult, mealsResult, workoutsResult, weighInsResult, replacementsResult] = await Promise.allSettled([
+            // Quiz results
+            db.quizResults.getLatest(user.id),
+            // User facts
+            db.userFacts.get(user.id),
             // Daily nutrition (last 14 days)
-            try {
+            (async () => {
                 const endDate = new Date().toISOString().split('T')[0];
-                const startDate = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                const nutrition = await db.nutrition.getRange(user.id, startDate, endDate);
-                context.dailyNutrition = nutrition || [];
-            } catch { context.dailyNutrition = []; }
-
+                const startDate = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
+                return db.nutrition.getRange(user.id, startDate, endDate);
+            })(),
             // Recent meals (last 7 days)
-            try {
-                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                const { data: meals } = await window.supabaseClient
-                    .from('meal_logs')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .gte('meal_date', sevenDaysAgo)
-                    .order('meal_date', { ascending: false })
-                    .limit(50);
-                context.mealLogs = meals || [];
-            } catch { context.mealLogs = []; }
-
+            (async () => {
+                const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+                const { data } = await window.supabaseClient
+                    .from('meal_logs').select('*').eq('user_id', user.id)
+                    .gte('meal_date', sevenDaysAgo).order('meal_date', { ascending: false }).limit(50);
+                return data;
+            })(),
             // Recent workout history (last 14 days)
-            try {
-                const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                const { data: workouts } = await window.supabaseClient
-                    .from('workouts')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .eq('workout_type', 'history')
-                    .gte('workout_date', twoWeeksAgo)
-                    .order('workout_date', { ascending: false })
-                    .limit(100);
-                context.workoutHistory = workouts || [];
-            } catch { context.workoutHistory = []; }
-
+            (async () => {
+                const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
+                const { data } = await window.supabaseClient
+                    .from('workouts').select('*').eq('user_id', user.id).eq('workout_type', 'history')
+                    .gte('workout_date', twoWeeksAgo).order('workout_date', { ascending: false }).limit(100);
+                return data;
+            })(),
             // Weigh-ins (last 14 days)
-            try {
-                const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                const { data: weighIns } = await window.supabaseClient
-                    .from('daily_weigh_ins')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .gte('weigh_in_date', twoWeeksAgo)
-                    .order('weigh_in_date', { ascending: true });
-                context.weighIns = weighIns || [];
-            } catch { context.weighIns = []; }
-
-            // Workout schedule (this week from DOM)
-            context.weekSchedule = gatherWeekSchedule();
-
-            // Today info
-            const today = new Date();
-            context.todayDayIndex = (today.getDay() + 6) % 7; // Monday=0
-            context.todayDate = today.toISOString().split('T')[0];
-
+            (async () => {
+                const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
+                const { data } = await window.supabaseClient
+                    .from('daily_weigh_ins').select('*').eq('user_id', user.id)
+                    .gte('weigh_in_date', twoWeeksAgo).order('weigh_in_date', { ascending: true });
+                return data;
+            })(),
             // Active replacements
-            try {
-                const replacements = await db.workoutReplacements.getActive(user.id);
-                context.activeReplacements = replacements || [];
-            } catch { context.activeReplacements = []; }
+            db.workoutReplacements.getActive(user.id)
+        ]);
 
-        } catch (err) {
-            console.error('Error gathering AI context:', err);
-        }
+        context.quizResults = quizResult.status === 'fulfilled' ? (quizResult.value || {}) : {};
+        context.facts = factsResult.status === 'fulfilled' ? (factsResult.value || {}) : {};
+        context.dailyNutrition = nutritionResult.status === 'fulfilled' ? (nutritionResult.value || []) : [];
+        context.mealLogs = mealsResult.status === 'fulfilled' ? (mealsResult.value || []) : [];
+        context.workoutHistory = workoutsResult.status === 'fulfilled' ? (workoutsResult.value || []) : [];
+        context.weighIns = weighInsResult.status === 'fulfilled' ? (weighInsResult.value || []) : [];
+        context.activeReplacements = replacementsResult.status === 'fulfilled' ? (replacementsResult.value || []) : [];
+
+        // Workout schedule (this week)
+        context.weekSchedule = gatherWeekSchedule();
+
+        // Today info
+        const today = new Date();
+        context.todayDayIndex = (today.getDay() + 6) % 7; // Monday=0
+        context.todayDate = today.toISOString().split('T')[0];
 
         return context;
     }
@@ -59998,7 +59992,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
 
         let html = '';
-        actions.forEach((action, idx) => {
+        actions.forEach((action) => {
             const icon = actionIcons[action.type] || '⚡';
             html += `<div class="ai-action-card">
                 <div class="ai-action-title">${icon} ${action.description || action.type}</div>
@@ -60013,6 +60007,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         container.innerHTML = html;
     }
 
+    // Helper to calculate start date for a replacement
+    function calcReplacementStartDate(dayIndex) {
+        const today = new Date();
+        const todayDayIdx = (today.getDay() + 6) % 7;
+        let daysUntil = dayIndex - todayDayIdx;
+        if (daysUntil < 0) daysUntil += 7;
+        const startDate = new Date(today);
+        startDate.setDate(today.getDate() + daysUntil);
+        return startDate.toISOString().split('T')[0];
+    }
+
     // Execute confirmed actions
     async function executeActions() {
         const user = window.currentUser;
@@ -60024,69 +60029,59 @@ document.addEventListener('DOMContentLoaded', async function() {
             actionsContainer.innerHTML = '<div style="text-align: center; padding: 10px; color: var(--text-muted); font-size: 0.85rem;">Applying changes...</div>';
         }
 
-        try {
-            for (const action of aiPendingActions) {
+        let successCount = 0;
+        let errors = [];
+
+        for (const action of aiPendingActions) {
+            try {
                 switch (action.type) {
                     case 'swap_workouts': {
-                        // Swap = replace day1 with day2's workout and vice versa
-                        const schedule = gatherWeekSchedule();
-                        const day1Workout = schedule[action.day1_index]?.name || 'Rest';
-                        const day2Workout = schedule[action.day2_index]?.name || 'Rest';
+                        // Use workout names from the action itself (provided by the AI)
+                        const day1Workout = action.day1_workout || action.day1_name || 'Workout';
+                        const day2Workout = action.day2_workout || action.day2_name || 'Workout';
 
-                        const today = new Date();
-                        const todayDayIdx = (today.getDay() + 6) % 7;
+                        // Replace day1 with day2's workout
+                        await db.workoutReplacements.deleteForDay(user.id, action.day1_index);
+                        await db.workoutReplacements.create(user.id, {
+                            dayOfWeek: action.day1_index,
+                            workout: { name: day2Workout, type: 'swap' },
+                            durationWeeks: 1,
+                            startDate: calcReplacementStartDate(action.day1_index)
+                        });
 
-                        // Calculate start dates for each replacement
-                        for (const [fromIdx, toWorkoutName] of [[action.day1_index, day2Workout], [action.day2_index, day1Workout]]) {
-                            let daysUntil = fromIdx - todayDayIdx;
-                            if (daysUntil < 0) daysUntil += 7;
-                            const startDate = new Date(today);
-                            startDate.setDate(today.getDate() + daysUntil);
-
-                            await db.workoutReplacements.deleteForDay(user.id, fromIdx);
-                            await db.workoutReplacements.create(user.id, {
-                                dayOfWeek: fromIdx,
-                                workout: { name: toWorkoutName, type: 'swap' },
-                                durationWeeks: 1,
-                                startDate: startDate.toISOString().split('T')[0]
-                            });
-                        }
+                        // Replace day2 with day1's workout
+                        await db.workoutReplacements.deleteForDay(user.id, action.day2_index);
+                        await db.workoutReplacements.create(user.id, {
+                            dayOfWeek: action.day2_index,
+                            workout: { name: day1Workout, type: 'swap' },
+                            durationWeeks: 1,
+                            startDate: calcReplacementStartDate(action.day2_index)
+                        });
+                        successCount++;
                         break;
                     }
 
                     case 'replace_workout': {
-                        const today = new Date();
-                        const todayDayIdx = (today.getDay() + 6) % 7;
-                        let daysUntil = action.day_index - todayDayIdx;
-                        if (daysUntil < 0) daysUntil += 7;
-                        const startDate = new Date(today);
-                        startDate.setDate(today.getDate() + daysUntil);
-
                         await db.workoutReplacements.deleteForDay(user.id, action.day_index);
                         await db.workoutReplacements.create(user.id, {
                             dayOfWeek: action.day_index,
                             workout: { name: action.new_workout_name, type: action.new_workout_type || 'custom' },
                             durationWeeks: action.duration_weeks || 1,
-                            startDate: startDate.toISOString().split('T')[0]
+                            startDate: calcReplacementStartDate(action.day_index)
                         });
+                        successCount++;
                         break;
                     }
 
                     case 'make_rest_day': {
-                        const today = new Date();
-                        const todayDayIdx = (today.getDay() + 6) % 7;
-                        let daysUntil = action.day_index - todayDayIdx;
-                        if (daysUntil < 0) daysUntil += 7;
-                        const startDate = new Date(today);
-                        startDate.setDate(today.getDate() + daysUntil);
-
                         await db.workoutReplacements.deleteForDay(user.id, action.day_index);
                         await db.workoutReplacements.create(user.id, {
                             dayOfWeek: action.day_index,
                             workout: { name: 'Rest Day', type: 'rest' },
                             durationWeeks: 1,
-                            startDate: startDate.toISOString().split('T')[0]
+                            startDate: calcReplacementStartDate(action.day_index)
                         });
+                        successCount++;
                         break;
                     }
 
@@ -60095,6 +60090,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         await db.nutrition.updateGoals(user.id, todayStr, {
                             calorie_goal: action.new_calorie_goal
                         });
+                        successCount++;
                         break;
                     }
 
@@ -60106,6 +60102,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (action.fat_g) goals.fat_goal_g = action.fat_g;
                         if (action.new_calorie_goal) goals.calorie_goal = action.new_calorie_goal;
                         await db.nutrition.updateGoals(user.id, todayStr, goals);
+                        successCount++;
                         break;
                     }
 
@@ -60116,33 +60113,42 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 exercises: action.exercises,
                                 source: 'ai_assistant'
                             });
+                            successCount++;
                         }
                         break;
                     }
+
+                    default:
+                        console.warn('Unknown AI action type:', action.type);
                 }
+            } catch (err) {
+                console.error('Error executing AI action:', action.type, err);
+                errors.push(action.type + ': ' + (err.message || 'unknown error'));
             }
+        }
 
-            // Success - refresh calendar and show confirmation
+        // Clear pending
+        aiPendingActions = [];
+        if (actionsContainer) {
+            actionsContainer.style.display = 'none';
+            actionsContainer.innerHTML = '';
+        }
+
+        if (errors.length === 0) {
             addAiMessage('Done! I\'ve made those changes for you. Your schedule has been updated.', 'bot');
-            aiPendingActions = [];
+        } else if (successCount > 0) {
+            addAiMessage('Partially done - some changes were applied but there were issues with: ' + errors.join(', '), 'bot');
+        } else {
+            addAiMessage('Sorry, something went wrong applying those changes. Error: ' + errors.join(', '), 'bot');
+        }
 
-            if (actionsContainer) {
-                actionsContainer.style.display = 'none';
-                actionsContainer.innerHTML = '';
-            }
-
-            // Refresh the calendar views
+        // Refresh the calendar views
+        try {
             if (typeof loadActiveReplacements === 'function') await loadActiveReplacements();
             if (typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
             if (typeof renderMonthlyCalendar === 'function') renderMonthlyCalendar();
-
-        } catch (err) {
-            console.error('Error executing AI actions:', err);
-            addAiMessage('Sorry, something went wrong applying those changes. Please try again or make the changes manually.', 'bot');
-            if (actionsContainer) {
-                actionsContainer.style.display = 'none';
-                actionsContainer.innerHTML = '';
-            }
+        } catch (e) {
+            console.warn('Could not refresh calendar:', e);
         }
     }
 
@@ -60180,7 +60186,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         aiChatHistory.push({ role: 'user', text: text });
 
         try {
-            // Gather context (in parallel where possible)
+            // Gather context
             const userData = await gatherUserContext();
 
             // Call the edge function
@@ -60190,19 +60196,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 body: JSON.stringify({
                     message: text,
                     userData: userData,
-                    chatHistory: aiChatHistory.slice(-20) // Last 20 messages for context
+                    chatHistory: aiChatHistory.slice(-20)
                 })
             });
 
             removeTypingIndicator();
 
             if (!response.ok) {
-                throw new Error('AI request failed');
+                const errText = await response.text();
+                console.error('AI response error:', response.status, errText);
+                throw new Error('AI request failed: ' + response.status);
             }
 
             const data = await response.json();
 
             if (data.error) {
+                console.error('AI returned error:', data.error, data.details);
                 addAiMessage('Sorry, I ran into an issue. Please try again!', 'bot');
             } else {
                 // Show the reply
