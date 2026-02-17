@@ -4981,6 +4981,33 @@ async function applyAppTheme(themeKey) {
         color: #666;
     }
 
+    .meal-photo-type-pill {
+        flex: 1;
+        padding: 8px 4px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 20px;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: rgba(255,255,255,0.7);
+        text-align: center;
+        transition: all 0.2s ease;
+        font-family: inherit;
+    }
+
+    .meal-photo-type-pill.active {
+        border-color: var(--primary);
+        background: rgba(123, 168, 131, 0.35);
+        color: white;
+    }
+
+    .meal-photo-type-pill:hover:not(.active) {
+        border-color: rgba(255,255,255,0.5);
+        color: white;
+    }
+
     .simple-meal-type-row {
         display: flex;
         gap: 8px;
@@ -42300,6 +42327,12 @@ window.submitWeighInModal = submitWeighInModal;
 
     <!-- Food Description Input -->
     <div style="position:absolute; bottom:110px; left:20px; right:20px; z-index:13;">
+        <div id="meal-photo-type-row" style="display:flex; gap:8px; max-width:500px; margin:0 auto 10px auto;">
+            <button class="meal-photo-type-pill active" data-type="breakfast" onclick="selectPhotoMealType('breakfast')">Breakfast</button>
+            <button class="meal-photo-type-pill" data-type="lunch" onclick="selectPhotoMealType('lunch')">Lunch</button>
+            <button class="meal-photo-type-pill" data-type="dinner" onclick="selectPhotoMealType('dinner')">Dinner</button>
+            <button class="meal-photo-type-pill" data-type="snack" onclick="selectPhotoMealType('snack')">Snack</button>
+        </div>
         <input type="text" id="meal-photo-description" placeholder="What did you have? e.g. 200g oats, 100ml milk" style="width:100%; max-width:500px; margin:0 auto; display:block; background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.3); border-radius:15px; color:white; padding:14px 20px; font-size:1rem; backdrop-filter:blur(10px); font-family:inherit; outline:none; box-sizing:border-box;" />
     </div>
 
@@ -47483,6 +47516,13 @@ function selectSimpleMealType(type) {
     });
 }
 
+function selectPhotoMealType(type) {
+    selectedMealType = type;
+    document.querySelectorAll('.meal-photo-type-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === type);
+    });
+}
+
 function openMealTextInput(source) {
     mealCameraSource = source || 'widget';
     selectedMealType = autoDetectMealType();
@@ -48638,6 +48678,12 @@ function showMealPhotoPreview(dataUrl) {
         console.error('Preview modal elements not found');
         return;
     }
+
+    // Auto-detect meal type and highlight the correct pill
+    selectedMealType = autoDetectMealType();
+    document.querySelectorAll('.meal-photo-type-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === selectedMealType);
+    });
 
     // Show modal with preview
     previewPhoto.src = dataUrl;
