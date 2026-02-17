@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.fitgotchi.app',
-  appName: 'FitGotchi',
+  appName: 'Balance',
 
   // Load from live Netlify site — means you deploy as normal
   // and the app always shows the latest version
