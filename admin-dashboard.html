@@ -727,84 +727,122 @@
             border-radius: 16px 16px 0 0;
         }
 
-        .ai-coach-user-bar input {
+        .ai-client-select {
             flex: 1;
             padding: 10px 16px;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
             font-size: 0.95rem;
             font-family: 'Inter', sans-serif;
+            background: white;
+            cursor: pointer;
+            color: #1e293b;
+            appearance: auto;
         }
 
-        .ai-coach-user-bar input:focus {
+        .ai-client-select:focus {
             outline: none;
             border-color: #48864B;
         }
 
-        .ai-user-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
+        /* Client Profile Summary Panel */
+        .ai-client-profile {
+            padding: 16px 20px;
             background: white;
-            border: 2px solid #e2e8f0;
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            max-height: 240px;
-            overflow-y: auto;
-            z-index: 100;
-            display: none;
+            border-bottom: 1px solid #e2e8f0;
+            overflow-x: auto;
         }
 
-        .ai-user-dropdown.show {
-            display: block;
-        }
-
-        .ai-user-option {
-            padding: 10px 16px;
-            cursor: pointer;
+        .ai-profile-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            transition: background 0.15s;
+            gap: 14px;
+            margin-bottom: 14px;
         }
 
-        .ai-user-option:hover {
-            background: #f1f5f9;
+        .ai-profile-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #48864B;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            flex-shrink: 0;
         }
 
-        .ai-user-option .name {
-            font-weight: 600;
+        .ai-profile-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .ai-profile-name {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
             color: #1e293b;
         }
 
-        .ai-user-option .email {
+        .ai-profile-email {
             font-size: 0.8rem;
             color: #64748b;
         }
 
-        .ai-selected-user {
+        .ai-profile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .ai-profile-stat {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            text-align: center;
+        }
+
+        .ai-profile-stat .stat-value {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #48864B;
+        }
+
+        .ai-profile-stat .stat-label {
+            font-size: 0.7rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .ai-profile-details {
+            margin-top: 12px;
             display: flex;
-            align-items: center;
+            flex-wrap: wrap;
             gap: 8px;
-            padding: 6px 14px;
-            background: #48864B;
-            color: white;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            white-space: nowrap;
         }
 
-        .ai-selected-user .remove-user {
-            cursor: pointer;
-            opacity: 0.8;
-            font-size: 1.1rem;
-            line-height: 1;
+        .ai-profile-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 0.75rem;
+            color: #475569;
         }
 
-        .ai-selected-user .remove-user:hover {
-            opacity: 1;
+        .ai-profile-tag strong {
+            color: #1e293b;
         }
 
         .ai-timeframe-select {
@@ -1224,17 +1262,20 @@
                     <div class="ai-coach-container">
                         <!-- User Selection Bar -->
                         <div class="ai-coach-user-bar">
-                            <div style="position: relative; flex: 1;">
-                                <input type="text" id="ai-user-search" placeholder="Search for a client by name or email..." oninput="aiSearchUsers(this.value)" onfocus="aiSearchUsers(this.value)" autocomplete="off">
-                                <div class="ai-user-dropdown" id="ai-user-dropdown"></div>
-                            </div>
-                            <div id="ai-selected-user-badge" style="display: none;"></div>
+                            <select id="ai-client-select" class="ai-client-select" onchange="aiClientSelected(this.value)">
+                                <option value="">-- Select a client --</option>
+                            </select>
                             <select class="ai-timeframe-select" id="ai-timeframe" onchange="aiTimeframeChanged()">
                                 <option value="7">Last 7 days</option>
                                 <option value="14">Last 14 days</option>
                                 <option value="30">Last 30 days</option>
+                                <option value="60">Last 60 days</option>
+                                <option value="90">Last 90 days</option>
                             </select>
                         </div>
+
+                        <!-- Client Profile Summary (hidden until client selected) -->
+                        <div id="ai-client-profile" class="ai-client-profile" style="display: none;"></div>
 
                         <!-- Chat Messages -->
                         <div class="ai-coach-chat" id="ai-coach-chat">
@@ -1243,7 +1284,7 @@
                                 <h3>AI Coach Assistant</h3>
                                 <p>Select a client above, then ask me anything about their progress.</p>
                                 <div class="suggestions">
-                                    <div class="suggestion-chip" onclick="aiUseSuggestion('Tell me about their week')">Tell me about their week</div>
+                                    <div class="suggestion-chip" onclick="aiUseSuggestion('Give me a full weekly review')">Full weekly review</div>
                                     <div class="suggestion-chip" onclick="aiUseSuggestion('Write a check-in review')">Write a check-in review</div>
                                     <div class="suggestion-chip" onclick="aiUseSuggestion('How is their nutrition tracking?')">Nutrition tracking?</div>
                                     <div class="suggestion-chip" onclick="aiUseSuggestion('Are they hitting their protein goals?')">Hitting protein goals?</div>
@@ -1302,6 +1343,7 @@
 
                 renderUsersList();
                 renderRecentUsers();
+                aiPopulateClientDropdown();
 
                 // Load activity data (non-blocking)
                 loadActivityData();
@@ -1870,38 +1912,30 @@
         let aiUserData = null;
         let aiChatHistory = [];
         let aiIsLoading = false;
-        let aiSearchTimeout = null;
 
-        // Search users for the AI coach user picker
-        async function aiSearchUsers(term) {
-            const dropdown = document.getElementById('ai-user-dropdown');
-            if (!term || term.length < 2) {
-                dropdown.classList.remove('show');
+        // Populate the client dropdown from allUsers
+        function aiPopulateClientDropdown() {
+            const select = document.getElementById('ai-client-select');
+            if (!select) return;
+            select.innerHTML = '<option value="">-- Select a client --</option>';
+            const sorted = [...allUsers].sort((a, b) => (a.name || a.email || '').localeCompare(b.name || b.email || ''));
+            sorted.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = (u.name || 'No name') + ' — ' + (u.email || '');
+                select.appendChild(opt);
+            });
+        }
+
+        // Handle client selection from dropdown
+        async function aiClientSelected(userId) {
+            if (!userId) {
+                aiClearUser();
                 return;
             }
-
-            clearTimeout(aiSearchTimeout);
-            aiSearchTimeout = setTimeout(async () => {
-                try {
-                    const results = await dbHelpers.admin.searchUsers(term);
-                    if (results.length === 0) {
-                        dropdown.innerHTML = '<div style="padding: 12px 16px; color: #94a3b8;">No users found</div>';
-                    } else {
-                        dropdown.innerHTML = results.map(u => `
-                            <div class="ai-user-option" onclick="aiSelectUser('${u.id}', '${(u.name || u.email).replace(/'/g, "\\'")}', '${u.email}')">
-                                <div class="activity-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">${getInitials(u.name || u.email)}</div>
-                                <div>
-                                    <div class="name">${u.name || 'No name'}</div>
-                                    <div class="email">${u.email}</div>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                    dropdown.classList.add('show');
-                } catch (err) {
-                    console.error('AI user search error:', err);
-                }
-            }, 300);
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+            await aiSelectUser(userId, user.name || user.email, user.email);
         }
 
         // Select a user for the AI coach
@@ -1910,24 +1944,17 @@
             aiChatHistory = [];
             aiUserData = null;
 
-            // Update UI
-            document.getElementById('ai-user-dropdown').classList.remove('show');
-            document.getElementById('ai-user-search').style.display = 'none';
-
-            const badge = document.getElementById('ai-selected-user-badge');
-            badge.innerHTML = `
-                <div class="ai-selected-user">
-                    <span>${userName}</span>
-                    <span class="remove-user" onclick="aiClearUser()">&times;</span>
-                </div>
-            `;
-            badge.style.display = 'block';
-
             // Enable input
             const input = document.getElementById('ai-coach-input');
             input.disabled = false;
             input.placeholder = `Ask about ${userName}...`;
+            input.focus();
             document.getElementById('ai-send-btn').disabled = false;
+
+            // Show loading in profile panel
+            const profilePanel = document.getElementById('ai-client-profile');
+            profilePanel.style.display = 'block';
+            profilePanel.innerHTML = '<div style="padding: 10px; color: #64748b; text-align: center;">Loading client data...</div>';
 
             // Clear chat and show loading state for data fetch
             const chat = document.getElementById('ai-coach-chat');
@@ -1939,12 +1966,14 @@
                 aiUserData = await dbHelpers.admin.getUserWeekData(userId, days);
                 aiUserData._days = days;
 
-                // Show empty state with data loaded confirmation
+                // Render the profile summary panel
+                aiRenderProfileSummary(userName, userEmail, aiUserData, days);
+
+                // Show ready message in chat
                 chat.innerHTML = '';
                 const emptyEl = document.getElementById('ai-coach-empty');
                 if (emptyEl) emptyEl.remove();
 
-                // Show ready message
                 const readyMsg = document.createElement('div');
                 readyMsg.className = 'ai-msg ai-msg-response';
                 readyMsg.innerHTML = `<strong>${userName}'s</strong> data loaded (last ${days} days). I have their workouts, meals, check-ins, conversations, and wearable data ready.<br><br>What would you like to know?`;
@@ -1952,8 +1981,119 @@
                 chat.scrollTop = chat.scrollHeight;
             } catch (err) {
                 console.error('Failed to load user data:', err);
+                profilePanel.style.display = 'none';
                 chat.innerHTML = `<div style="padding: 20px; color: #ef4444;">Failed to load client data. Please try again.</div>`;
             }
+        }
+
+        // Render client profile summary
+        function aiRenderProfileSummary(name, email, data, days) {
+            const panel = document.getElementById('ai-client-profile');
+            const profile = data.profile || {};
+            const facts = data.facts || {};
+            const quiz = data.quizResults || {};
+            const workouts = data.workouts || [];
+            const meals = data.mealLogs || [];
+            const nutrition = data.dailyNutrition || [];
+            const checkins = data.checkins || [];
+            const pbs = data.personalBests || [];
+            const wearables = data.wearables || {};
+
+            // Calculate stats
+            const totalWorkouts = new Set(workouts.map(w => w.workout_date)).size;
+            const totalMealDays = new Set(meals.map(m => m.meal_date)).size;
+            const totalCheckins = checkins.length;
+
+            // Avg nutrition
+            let avgCalories = 0, avgProtein = 0;
+            if (nutrition.length > 0) {
+                avgCalories = Math.round(nutrition.reduce((s, n) => s + (n.total_calories || 0), 0) / nutrition.length);
+                avgProtein = Math.round(nutrition.reduce((s, n) => s + (n.total_protein || 0), 0) / nutrition.length);
+            }
+
+            // Avg energy & sleep from checkins
+            let avgEnergy = '--', avgSleep = '--';
+            const energyCheckins = checkins.filter(c => c.energy != null);
+            const sleepCheckins = checkins.filter(c => c.sleep != null);
+            if (energyCheckins.length > 0) avgEnergy = (energyCheckins.reduce((s, c) => s + c.energy, 0) / energyCheckins.length).toFixed(1);
+            if (sleepCheckins.length > 0) avgSleep = (sleepCheckins.reduce((s, c) => s + c.sleep, 0) / sleepCheckins.length).toFixed(1);
+
+            // Wearable data counts
+            const hasWearableData = Object.values(wearables).some(arr => arr && arr.length > 0);
+
+            // Profile photo or initials
+            const avatarHtml = profile.profile_photo
+                ? `<img src="${profile.profile_photo}" alt="${name}">`
+                : getInitials(name);
+
+            // Build tags from facts and quiz
+            let tags = [];
+            if (quiz.menopause_status) tags.push(`Menopause: <strong>${quiz.menopause_status}</strong>`);
+            if (quiz.hormone_profile) tags.push(`Hormones: <strong>${quiz.hormone_profile}</strong>`);
+            if (quiz.calorie_goal) tags.push(`Cal goal: <strong>${quiz.calorie_goal}</strong>`);
+            if (quiz.protein_goal_g) tags.push(`Protein goal: <strong>${quiz.protein_goal_g}g</strong>`);
+            if (facts.goals) tags.push(`Goals: <strong>${facts.goals}</strong>`);
+            if (facts.struggles) tags.push(`Struggles: <strong>${facts.struggles}</strong>`);
+            if (facts.health_notes) tags.push(`Health: <strong>${facts.health_notes}</strong>`);
+            if (facts.sleep_quality) tags.push(`Sleep quality: <strong>${facts.sleep_quality}</strong>`);
+            if (facts.energy_level) tags.push(`Energy level: <strong>${facts.energy_level}</strong>`);
+            if (profile.subscription_status) tags.push(`Sub: <strong>${profile.subscription_status}</strong>`);
+
+            // Joined date
+            const joined = profile.created_at ? new Date(profile.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '--';
+            const lastLogin = profile.last_login ? timeAgo(profile.last_login) : 'Never';
+
+            // Personal bests
+            let pbHtml = '';
+            if (pbs.length > 0) {
+                pbHtml = `<div class="ai-profile-details" style="margin-top: 8px;">
+                    ${pbs.slice(0, 5).map(pb => `<span class="ai-profile-tag" style="background: #f0fdf4; border-color: #bbf7d0;">🏆 ${pb.exercise_name}: <strong>${pb.weight_kg}kg x${pb.reps}</strong></span>`).join('')}
+                </div>`;
+            }
+
+            panel.innerHTML = `
+                <div class="ai-profile-header">
+                    <div class="ai-profile-avatar">${avatarHtml}</div>
+                    <div>
+                        <div class="ai-profile-name">${name}</div>
+                        <div class="ai-profile-email">${email} &middot; Joined ${joined} &middot; Last seen ${lastLogin}</div>
+                    </div>
+                </div>
+                <div class="ai-profile-grid">
+                    <div class="ai-profile-stat">
+                        <div class="stat-value">${totalWorkouts}</div>
+                        <div class="stat-label">Workout Days</div>
+                    </div>
+                    <div class="ai-profile-stat">
+                        <div class="stat-value">${totalMealDays}</div>
+                        <div class="stat-label">Meal Log Days</div>
+                    </div>
+                    <div class="ai-profile-stat">
+                        <div class="stat-value">${totalCheckins}</div>
+                        <div class="stat-label">Check-ins</div>
+                    </div>
+                    <div class="ai-profile-stat">
+                        <div class="stat-value">${avgCalories}</div>
+                        <div class="stat-label">Avg Calories</div>
+                    </div>
+                    <div class="ai-profile-stat">
+                        <div class="stat-value">${avgProtein}g</div>
+                        <div class="stat-label">Avg Protein</div>
+                    </div>
+                    <div class="ai-profile-stat">
+                        <div class="stat-value">${avgEnergy}/10</div>
+                        <div class="stat-label">Avg Energy</div>
+                    </div>
+                    <div class="ai-profile-stat">
+                        <div class="stat-value">${avgSleep}/10</div>
+                        <div class="stat-label">Avg Sleep</div>
+                    </div>
+                    ${hasWearableData ? `<div class="ai-profile-stat"><div class="stat-value" style="font-size: 0.9rem;">Connected</div><div class="stat-label">Wearables</div></div>` : ''}
+                </div>
+                ${tags.length > 0 ? `<div class="ai-profile-details">${tags.map(t => `<span class="ai-profile-tag">${t}</span>`).join('')}</div>` : ''}
+                ${pbHtml}
+            `;
+            panel.style.display = 'block';
         }
 
         // Clear selected user
@@ -1962,10 +2102,8 @@
             aiUserData = null;
             aiChatHistory = [];
 
-            document.getElementById('ai-selected-user-badge').style.display = 'none';
-            const searchInput = document.getElementById('ai-user-search');
-            searchInput.style.display = 'block';
-            searchInput.value = '';
+            document.getElementById('ai-client-select').value = '';
+            document.getElementById('ai-client-profile').style.display = 'none';
 
             const input = document.getElementById('ai-coach-input');
             input.disabled = true;
@@ -1980,7 +2118,7 @@
                     <h3>AI Coach Assistant</h3>
                     <p>Select a client above, then ask me anything about their progress.</p>
                     <div class="suggestions">
-                        <div class="suggestion-chip" onclick="aiUseSuggestion('Tell me about their week')">Tell me about their week</div>
+                        <div class="suggestion-chip" onclick="aiUseSuggestion('Give me a full weekly review')">Full weekly review</div>
                         <div class="suggestion-chip" onclick="aiUseSuggestion('Write a check-in review')">Write a check-in review</div>
                         <div class="suggestion-chip" onclick="aiUseSuggestion('How is their nutrition tracking?')">Nutrition tracking?</div>
                         <div class="suggestion-chip" onclick="aiUseSuggestion('Are they hitting their protein goals?')">Hitting protein goals?</div>
@@ -2001,7 +2139,7 @@
         // Use a suggestion chip
         function aiUseSuggestion(text) {
             if (!aiSelectedUser) {
-                document.getElementById('ai-user-search').focus();
+                document.getElementById('ai-client-select').focus();
                 return;
             }
             document.getElementById('ai-coach-input').value = text;
