@@ -24056,58 +24056,71 @@ async function generateAiMealPlan() {
             foodPreferences
         };
 
-        // Generate Week 1 (users can add more weeks later with "+ Next Week")
-        if (statusEl) statusEl.textContent = 'Tailoring Day 1 — Monday...';
-        if (progressEl) progressEl.style.width = '10%';
-
-        // Animated day-by-day progress while waiting for the API
+        // Generate Week 1 day-by-day (7 fast API calls instead of 1 slow one)
         const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         const cookingVerbs = ['Tailoring', 'Cooking up', 'Preparing', 'Crafting', 'Plating', 'Seasoning', 'Finishing'];
-        let _progressDay = 0;
-        const _progressInterval = setInterval(() => {
-            _progressDay++;
-            if (_progressDay >= 7) {
-                clearInterval(_progressInterval);
-                if (statusEl) statusEl.textContent = 'Finalizing your meal plan...';
-                if (progressEl) progressEl.style.width = '65%';
-                return;
-            }
-            const pct = 10 + Math.round((_progressDay / 7) * 55);
-            if (statusEl) statusEl.textContent = `Day ${_progressDay} complete ✓ ${cookingVerbs[_progressDay]} Day ${_progressDay + 1} — ${dayLabels[_progressDay]}...`;
+        const generatedDays = [];
+        let weekMeta = null;
+
+        for (let d = 0; d < 7; d++) {
+            const pct = 5 + Math.round((d / 7) * 65);
+            if (statusEl) statusEl.textContent = `${cookingVerbs[d]} Day ${d + 1} — ${dayLabels[d]}...`;
             if (progressEl) progressEl.style.width = `${pct}%`;
-        }, 3000);
 
-        const response = await fetch('/.netlify/functions/generate-meal-plan', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userData: userPayload,
-                weekNumber: 1,
-                previousWeeks: []
-            })
-        });
+            // Build context of already-generated days for variety
+            const previousDays = generatedDays.map(day => ({
+                day_name: day.day_name,
+                mealNames: (day.meals || []).map(m => m.name)
+            }));
 
-        clearInterval(_progressInterval);
+            const response = await fetch('/.netlify/functions/generate-meal-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userData: userPayload,
+                    weekNumber: 1,
+                    dayNumber: d,
+                    previousDays,
+                    previousWeeks: []
+                })
+            });
 
-        if (!response.ok) {
-            const errText = await response.text();
-            console.error('Week 1 generation failed:', response.status, errText);
-            throw new Error('Failed to generate meal plan');
+            if (!response.ok) {
+                const errText = await response.text();
+                console.error(`Day ${d + 1} generation failed:`, response.status, errText);
+                throw new Error(`Failed to generate Day ${d + 1}`);
+            }
+
+            const dayResult = await response.json();
+            if (!dayResult.success || !dayResult.day) {
+                throw new Error(dayResult.error || `Invalid response for Day ${d + 1}`);
+            }
+
+            generatedDays.push(dayResult.day);
+
+            // Capture week metadata from the first day's response
+            if (d === 0 && dayResult.weekMeta) {
+                weekMeta = dayResult.weekMeta;
+            }
+
+            const donePct = 5 + Math.round(((d + 1) / 7) * 65);
+            if (statusEl) statusEl.textContent = `Day ${d + 1} — ${dayLabels[d]} complete ✓`;
+            if (progressEl) progressEl.style.width = `${donePct}%`;
         }
 
-        if (statusEl) statusEl.textContent = 'All 7 days ready! Saving your plan...';
-        if (progressEl) progressEl.style.width = '75%';
-
-        const data = await response.json();
-        if (!data.success || !data.week) {
-            throw new Error(data.error || 'Invalid response from AI');
-        }
+        // Assemble the week from individual days
+        const weekData = {
+            week_number: 1,
+            theme: weekMeta?.theme || 'Foundation & Reset',
+            theme_description: weekMeta?.theme_description || 'Simple, nourishing meals to establish healthy habits',
+            days: generatedDays
+        };
 
         // Assemble the plan with just Week 1
         const mealPlan = {
             plan_name: `Your Tailored Meal Plan`,
             plan_description: 'Tailored weekly meal plan designed for your goals',
-            weeks: [data.week]
+            weeks: [weekData]
         };
 
         if (statusEl) statusEl.textContent = 'Plating up — saving your meal plan...';
@@ -24380,50 +24393,70 @@ async function generateNextWeek() {
             return { weekNumber: w.week_number, theme: w.theme, mealNames };
         });
 
-        // Animated day-by-day progress for next week generation
+        const nwUserPayload = {
+            profile: { name: user.user_metadata?.name || user.email?.split('@')[0] || 'User' },
+            quizResults: quizResult.status === 'fulfilled' ? (quizResult.value || {}) : {},
+            facts: factsResult.status === 'fulfilled' ? (factsResult.value || {}) : {},
+            foodPreferences: prefsResult.status === 'fulfilled' ? (prefsResult.value || {}) : {}
+        };
+
+        // Generate day-by-day for the new week
         const nwDayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         const nwVerbs = ['Tailoring', 'Cooking up', 'Preparing', 'Crafting', 'Plating', 'Seasoning', 'Finishing'];
-        let _nwDay = 0;
-        const _nwInterval = setInterval(() => {
-            _nwDay++;
-            if (_nwDay >= 7) {
-                clearInterval(_nwInterval);
-                if (statusEl) statusEl.textContent = `Finalizing Week ${nextWeekNum}...`;
-                if (progressEl) progressEl.style.width = '65%';
-                return;
-            }
-            const pct = 10 + Math.round((_nwDay / 7) * 55);
-            if (statusEl) statusEl.textContent = `Week ${nextWeekNum} — Day ${_nwDay} complete ✓ ${nwVerbs[_nwDay]} Day ${_nwDay + 1} — ${nwDayLabels[_nwDay]}...`;
+        const nwGeneratedDays = [];
+        let nwWeekMeta = null;
+
+        for (let d = 0; d < 7; d++) {
+            const pct = 5 + Math.round((d / 7) * 65);
+            if (statusEl) statusEl.textContent = `Week ${nextWeekNum} — ${nwVerbs[d]} Day ${d + 1} — ${nwDayLabels[d]}...`;
             if (progressEl) progressEl.style.width = `${pct}%`;
-        }, 3000);
 
-        const response = await fetch('/.netlify/functions/generate-meal-plan', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userData: {
-                    profile: { name: user.user_metadata?.name || user.email?.split('@')[0] || 'User' },
-                    quizResults: quizResult.status === 'fulfilled' ? (quizResult.value || {}) : {},
-                    facts: factsResult.status === 'fulfilled' ? (factsResult.value || {}) : {},
-                    foodPreferences: prefsResult.status === 'fulfilled' ? (prefsResult.value || {}) : {}
-                },
-                weekNumber: nextWeekNum,
-                previousWeeks
-            })
-        });
+            const nwPreviousDays = nwGeneratedDays.map(day => ({
+                day_name: day.day_name,
+                mealNames: (day.meals || []).map(m => m.name)
+            }));
 
-        clearInterval(_nwInterval);
+            const response = await fetch('/.netlify/functions/generate-meal-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userData: nwUserPayload,
+                    weekNumber: nextWeekNum,
+                    dayNumber: d,
+                    previousDays: nwPreviousDays,
+                    previousWeeks
+                })
+            });
 
-        if (!response.ok) throw new Error('Failed to generate week ' + nextWeekNum);
+            if (!response.ok) throw new Error(`Failed to generate Week ${nextWeekNum} Day ${d + 1}`);
 
-        if (statusEl) statusEl.textContent = `Week ${nextWeekNum} — All 7 days ready!`;
-        if (progressEl) progressEl.style.width = '75%';
+            const dayResult = await response.json();
+            if (!dayResult.success || !dayResult.day) throw new Error(dayResult.error || `Invalid response for Day ${d + 1}`);
 
-        const data = await response.json();
-        if (!data.success || !data.week) throw new Error(data.error || 'Invalid response');
+            nwGeneratedDays.push(dayResult.day);
+
+            if (d === 0 && dayResult.weekMeta) {
+                nwWeekMeta = dayResult.weekMeta;
+            }
+
+            const donePct = 5 + Math.round(((d + 1) / 7) * 65);
+            if (statusEl) statusEl.textContent = `Week ${nextWeekNum} — Day ${d + 1} — ${nwDayLabels[d]} complete ✓`;
+            if (progressEl) progressEl.style.width = `${donePct}%`;
+        }
+
+        // Assemble the week from individual days
+        const newWeekData = {
+            week_number: nextWeekNum,
+            theme: nwWeekMeta?.theme || `Week ${nextWeekNum}`,
+            theme_description: nwWeekMeta?.theme_description || '',
+            days: nwGeneratedDays
+        };
 
         // Add the new week to the cache
-        _aiMealPlanCache.weeks.push(data.week);
+        _aiMealPlanCache.weeks.push(newWeekData);
+
+        if (statusEl) statusEl.textContent = `Week ${nextWeekNum} — All 7 days ready! Saving...`;
+        if (progressEl) progressEl.style.width = '75%';
 
         // Save to Supabase
         const planId = _aiMealPlanCache.id;
@@ -24432,18 +24465,18 @@ async function generateNextWeek() {
                 // Insert week theme
                 await window.supabaseClient.from('ai_meal_plan_weeks').insert({
                     plan_id: planId,
-                    week_number: data.week.week_number,
-                    theme: data.week.theme || `Week ${nextWeekNum}`,
-                    theme_description: data.week.theme_description || ''
+                    week_number: newWeekData.week_number,
+                    theme: newWeekData.theme || `Week ${nextWeekNum}`,
+                    theme_description: newWeekData.theme_description || ''
                 });
 
                 // Insert meals
                 const newMeals = [];
-                (data.week.days || []).forEach(day => {
+                (newWeekData.days || []).forEach(day => {
                     (day.meals || []).forEach(meal => {
                         newMeals.push({
                             plan_id: planId,
-                            week_number: data.week.week_number,
+                            week_number: newWeekData.week_number,
                             day_of_week: day.day_of_week,
                             day_name: day.day_name || ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][day.day_of_week],
                             meal_slot: meal.meal_slot, meal_time: meal.meal_time,

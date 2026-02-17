@@ -2,15 +2,17 @@
 import type { Context } from "https://edge.netlify.com";
 
 /**
- * Generate a personalized meal plan for a SINGLE WEEK using Gemini AI.
- * Called 4 times by the frontend (once per week) to avoid edge function timeouts.
+ * Generate meals for a SINGLE DAY of a meal plan using Gemini AI.
+ * Called 7 times by the frontend (once per day) for fast, reliable generation.
  *
  * POST body: {
  *   userData: { profile, quizResults, facts, foodPreferences },
  *   weekNumber: 1-4,
- *   previousWeeks: [{ theme, mealNames[] }]  // summary of prior weeks for continuity
+ *   dayNumber: 0-6,
+ *   previousDays: [{ day_name, mealNames[] }],  // prior days in this week for variety
+ *   previousWeeks: [{ theme, mealNames[] }]      // prior weeks for continuity
  * }
- * Returns: { success, week: { week_number, theme, theme_description, days: [...] } }
+ * Returns: { success, day: { day_of_week, day_name, meals: [...] }, weekMeta?: {...} }
  */
 
 export default async function (request: Request, context: Context) {
@@ -20,7 +22,7 @@ export default async function (request: Request, context: Context) {
 
   try {
     const body = await request.json();
-    const { userData, weekNumber, previousWeeks } = body;
+    const { userData, weekNumber, dayNumber, previousDays, previousWeeks } = body;
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!apiKey) {
@@ -37,6 +39,17 @@ export default async function (request: Request, context: Context) {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    const day = parseInt(dayNumber) || 0;
+    if (day < 0 || day > 6) {
+      return new Response(JSON.stringify({ error: "dayNumber must be 0-6" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const dayName = dayNames[day];
 
     const profile = userData?.profile || {};
     const quiz = userData?.quizResults || {};
@@ -59,23 +72,31 @@ export default async function (request: Request, context: Context) {
 
     const currentTheme = weekThemes[week] || weekThemes[1];
 
-    // Build context about previous weeks to avoid meal repetition
-    let previousContext = '';
-    if (previousWeeks && Array.isArray(previousWeeks) && previousWeeks.length > 0) {
-      previousContext = `\n\nPREVIOUS WEEKS (DO NOT repeat these meals - create NEW ones):\n`;
-      previousWeeks.forEach((pw: any) => {
-        previousContext += `Week ${pw.weekNumber}: ${pw.theme} - Meals included: ${(pw.mealNames || []).slice(0, 20).join(', ')}\n`;
+    // Build context about previous days in this week to avoid repetition
+    let previousDayContext = '';
+    if (previousDays && Array.isArray(previousDays) && previousDays.length > 0) {
+      previousDayContext = `\n\nALREADY GENERATED THIS WEEK (do NOT repeat these meals - make ${dayName} different):\n`;
+      previousDays.forEach((pd: any) => {
+        previousDayContext += `${pd.day_name}: ${(pd.mealNames || []).join(', ')}\n`;
       });
     }
 
-    const prompt = `You are an expert plant-based nutritionist. Generate WEEK ${week} of a personalized meal plan.
+    // Build context about previous weeks
+    let previousWeekContext = '';
+    if (previousWeeks && Array.isArray(previousWeeks) && previousWeeks.length > 0) {
+      previousWeekContext = `\n\nPREVIOUS WEEKS (avoid repeating these meals too):\n`;
+      previousWeeks.forEach((pw: any) => {
+        previousWeekContext += `Week ${pw.weekNumber}: ${(pw.mealNames || []).slice(0, 15).join(', ')}\n`;
+      });
+    }
+
+    const prompt = `You are an expert plant-based nutritionist. Generate meals for ${dayName} (Day ${day + 1} of 7) in Week ${week}.
 
 === USER PROFILE ===
 Name: ${profile.name || 'User'}
 Sex: ${quiz.sex || 'Unknown'} | Age: ${quiz.age || 'Unknown'}
 Weight: ${quiz.weight || '?'}kg -> Goal: ${quiz.goal_weight || '?'}kg | Height: ${quiz.height || '?'}cm
 Activity: ${quiz.activity_level || 'moderate'} | Goal: ${quiz.goal_body_type || 'lean and toned'}
-Hormone Profile: ${quiz.hormone_profile || 'N/A'}
 
 === NUTRITION TARGETS (per day) ===
 Calories: ~${calorieGoal} | Protein: ~${proteinGoal}g | Carbs: ~${carbsGoal}g | Fat: ~${fatGoal}g
@@ -91,70 +112,45 @@ Equipment: ${[foodPrefs.has_blender ? 'Blender' : '', foodPrefs.has_air_fryer ? 
 
 === GOALS ===
 ${facts.goals?.join(', ') || 'General wellness'}
-Struggles: ${facts.struggles?.join(', ') || 'None'}
-${previousContext}
+${previousDayContext}${previousWeekContext}
 
 === WEEK ${week} THEME: "${currentTheme.theme}" ===
 Focus: ${currentTheme.focus}
 
-Generate EXACTLY 7 days, 5 meals each (breakfast, am_snack, lunch, pm_snack, dinner) = 35 meals total.
-Each day's meals should sum to approximately ${calorieGoal} calories and ${proteinGoal}g protein.
+Generate EXACTLY 5 meals for ${dayName}: breakfast, am_snack, lunch, pm_snack, dinner.
+The 5 meals should sum to approximately ${calorieGoal} calories and ${proteinGoal}g protein.
 All meals must be ${dietType} / plant-based. NO animal products.
-Make meals varied, delicious, and practical. Different cuisines across days.
 
-=== CRITICAL: CALORIE & PORTION ACCURACY ===
-You MUST follow these per-meal calorie ranges strictly. These are for ONE PERSON, standard portion sizes:
-- Breakfast: ${Math.round(calorieGoal * 0.25)}-${Math.round(calorieGoal * 0.3)} calories (roughly 25-30% of daily goal)
-- AM Snack: ${Math.round(calorieGoal * 0.08)}-${Math.round(calorieGoal * 0.12)} calories (roughly 8-12% of daily goal)
-- Lunch: ${Math.round(calorieGoal * 0.28)}-${Math.round(calorieGoal * 0.32)} calories (roughly 28-32% of daily goal)
-- PM Snack: ${Math.round(calorieGoal * 0.08)}-${Math.round(calorieGoal * 0.12)} calories (roughly 8-12% of daily goal)
-- Dinner: ${Math.round(calorieGoal * 0.25)}-${Math.round(calorieGoal * 0.3)} calories (roughly 25-30% of daily goal)
-
-ABSOLUTE RULES:
-1. NO meal may exceed 700 calories. A meal over 700 cal is ALWAYS wrong - reduce the portion.
-2. NO snack may exceed 300 calories. Snacks are small - a handful of nuts, a piece of fruit, a small smoothie.
-3. Portion sizes must be realistic for ONE person (e.g., 1 cup soup NOT 4 cups, 1 serving pasta NOT 3 servings).
-4. Cross-check: calories must match the ingredients and amounts listed. A simple lentil soup (1.5 cups) is ~250-350 cal, NOT 800+.
-5. Macros must add up: (protein_g × 4) + (carbs_g × 4) + (fat_g × 9) should approximately equal the stated calories (within 10%).
-6. Common calorie references for accuracy:
-   - 1 cup cooked lentils = ~230 cal
-   - 1 cup cooked rice = ~200 cal
-   - 1 cup cooked quinoa = ~220 cal
-   - 1 tbsp olive oil = ~120 cal
-   - 1 medium banana = ~105 cal
-   - 1 block tofu (14oz) = ~350 cal (a serving is usually 1/3 to 1/2 block)
-   - 1 cup cooked chickpeas = ~270 cal
-   - 1 avocado = ~320 cal (half = ~160 cal)
-Double-check every meal's calories against the ingredient amounts before finalizing.
+=== CALORIE RULES ===
+- Breakfast: ${Math.round(calorieGoal * 0.25)}-${Math.round(calorieGoal * 0.3)} cal
+- AM Snack: ${Math.round(calorieGoal * 0.08)}-${Math.round(calorieGoal * 0.12)} cal
+- Lunch: ${Math.round(calorieGoal * 0.28)}-${Math.round(calorieGoal * 0.32)} cal
+- PM Snack: ${Math.round(calorieGoal * 0.08)}-${Math.round(calorieGoal * 0.12)} cal
+- Dinner: ${Math.round(calorieGoal * 0.25)}-${Math.round(calorieGoal * 0.3)} cal
+- NO meal over 700 cal. NO snack over 300 cal.
+- Macros must add up: (protein×4)+(carbs×4)+(fat×9) ≈ stated calories (±10%).
 
 RESPOND WITH VALID JSON:
 {
-  "week_number": ${week},
-  "theme": "${currentTheme.theme}",
-  "theme_description": "string",
-  "days": [
+  "day_of_week": ${day},
+  "day_name": "${dayName}",
+  "meals": [
     {
-      "day_of_week": 0,
-      "day_name": "Monday",
-      "meals": [
-        {
-          "meal_slot": "breakfast",
-          "meal_time": "7:30 AM",
-          "name": "string",
-          "description": "short appetizing one-liner",
-          "calories": number,
-          "protein_g": number,
-          "carbs_g": number,
-          "fat_g": number,
-          "fiber_g": number,
-          "ingredients": [{"name": "string", "amount": "string"}],
-          "preparation": "brief cooking steps",
-          "prep_time_mins": number,
-          "cook_time_mins": number,
-          "tags": ["string"],
-          "cuisine": "string"
-        }
-      ]
+      "meal_slot": "breakfast",
+      "meal_time": "7:30 AM",
+      "name": "string",
+      "description": "short appetizing one-liner",
+      "calories": number,
+      "protein_g": number,
+      "carbs_g": number,
+      "fat_g": number,
+      "fiber_g": number,
+      "ingredients": [{"name": "string", "amount": "string"}],
+      "preparation": "brief cooking steps",
+      "prep_time_mins": number,
+      "cook_time_mins": number,
+      "tags": ["string"],
+      "cuisine": "string"
     }
   ]
 }`;
@@ -167,7 +163,7 @@ RESPOND WITH VALID JSON:
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
-          maxOutputTokens: 65536,
+          maxOutputTokens: 4096,
           temperature: 0.7,
           responseMimeType: "application/json",
         }
@@ -176,44 +172,25 @@ RESPOND WITH VALID JSON:
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error(`Gemini error for week ${week}:`, errText);
+      console.error(`Gemini error for week ${week} day ${day}:`, errText);
       throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    let weekData;
+    let dayData;
     try {
       const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      weekData = JSON.parse(cleaned);
+      dayData = JSON.parse(cleaned);
     } catch (parseErr) {
-      console.error("Failed to parse week JSON:", parseErr, text.substring(0, 500));
+      console.error("Failed to parse day JSON:", parseErr, text.substring(0, 500));
       throw new Error("Failed to parse meal plan response");
     }
 
     // Ensure required fields
-    weekData.week_number = week;
-    weekData.theme = weekData.theme || currentTheme.theme;
-    weekData.theme_description = weekData.theme_description || currentTheme.focus;
-
-    // Ensure we have 7 days - if Gemini returned fewer, log a warning
-    if (!weekData.days || !Array.isArray(weekData.days)) {
-      weekData.days = [];
-    }
-    if (weekData.days.length < 7) {
-      console.warn(`Gemini only returned ${weekData.days.length} days for week ${week}, expected 7`);
-    }
-    // Normalize day_of_week values
-    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    weekData.days.forEach((day: any, idx: number) => {
-      if (day.day_of_week === undefined || day.day_of_week === null) {
-        day.day_of_week = idx;
-      }
-      if (!day.day_name) {
-        day.day_name = dayNames[day.day_of_week] || dayNames[idx];
-      }
-    });
+    dayData.day_of_week = day;
+    dayData.day_name = dayData.day_name || dayName;
 
     // Post-generation calorie validation & correction
     const maxCalories: Record<string, number> = {
@@ -232,51 +209,54 @@ RESPOND WITH VALID JSON:
     };
 
     let correctedCount = 0;
-    if (weekData.days && Array.isArray(weekData.days)) {
-      for (const day of weekData.days) {
-        if (!day.meals || !Array.isArray(day.meals)) continue;
-        for (const meal of day.meals) {
-          const slot = meal.meal_slot || 'lunch';
-          const max = maxCalories[slot] || 700;
-          const min = minCalories[slot] || 50;
-          const cal = parseInt(meal.calories) || 0;
+    if (dayData.meals && Array.isArray(dayData.meals)) {
+      for (const meal of dayData.meals) {
+        const slot = meal.meal_slot || 'lunch';
+        const max = maxCalories[slot] || 700;
+        const min = minCalories[slot] || 50;
+        const cal = parseInt(meal.calories) || 0;
 
-          // Macro cross-check: (P×4 + C×4 + F×9)
-          const p = parseFloat(meal.protein_g) || 0;
-          const c = parseFloat(meal.carbs_g) || 0;
-          const f = parseFloat(meal.fat_g) || 0;
-          const macroCalc = Math.round(p * 4 + c * 4 + f * 9);
+        // Macro cross-check: (P×4 + C×4 + F×9)
+        const p = parseFloat(meal.protein_g) || 0;
+        const c = parseFloat(meal.carbs_g) || 0;
+        const f = parseFloat(meal.fat_g) || 0;
+        const macroCalc = Math.round(p * 4 + c * 4 + f * 9);
 
-          // If stated calories are way off from macros, use macro-calculated value
-          if (macroCalc > 0 && Math.abs(cal - macroCalc) > cal * 0.3) {
-            meal.calories = macroCalc;
-            correctedCount++;
-          }
+        // If stated calories are way off from macros, use macro-calculated value
+        if (macroCalc > 0 && Math.abs(cal - macroCalc) > cal * 0.3) {
+          meal.calories = macroCalc;
+          correctedCount++;
+        }
 
-          // Hard clamp: no meal over absolute max, no snack over 300
-          if (meal.calories > max) {
-            // Scale macros proportionally
-            const scale = max / meal.calories;
-            meal.protein_g = Math.round((parseFloat(meal.protein_g) || 0) * scale * 10) / 10;
-            meal.carbs_g = Math.round((parseFloat(meal.carbs_g) || 0) * scale * 10) / 10;
-            meal.fat_g = Math.round((parseFloat(meal.fat_g) || 0) * scale * 10) / 10;
-            meal.calories = max;
-            correctedCount++;
-          } else if (meal.calories < min) {
-            meal.calories = min;
-            correctedCount++;
-          }
+        // Hard clamp
+        if (meal.calories > max) {
+          const scale = max / meal.calories;
+          meal.protein_g = Math.round((parseFloat(meal.protein_g) || 0) * scale * 10) / 10;
+          meal.carbs_g = Math.round((parseFloat(meal.carbs_g) || 0) * scale * 10) / 10;
+          meal.fat_g = Math.round((parseFloat(meal.fat_g) || 0) * scale * 10) / 10;
+          meal.calories = max;
+          correctedCount++;
+        } else if (meal.calories < min) {
+          meal.calories = min;
+          correctedCount++;
         }
       }
     }
     if (correctedCount > 0) {
-      console.log(`Corrected ${correctedCount} meals with unrealistic calorie values in week ${week}`);
+      console.log(`Corrected ${correctedCount} meals with unrealistic calorie values in week ${week} day ${day}`);
     }
 
-    return new Response(JSON.stringify({
-      success: true,
-      week: weekData,
-    }), {
+    // Include week metadata on the first day's response
+    const result: any = { success: true, day: dayData };
+    if (day === 0) {
+      result.weekMeta = {
+        week_number: week,
+        theme: currentTheme.theme,
+        theme_description: currentTheme.focus,
+      };
+    }
+
+    return new Response(JSON.stringify(result), {
       headers: { "Content-Type": "application/json" },
     });
 
