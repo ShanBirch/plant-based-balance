@@ -1,5 +1,5 @@
 {
-  "name": "plant-based-balance",
+  "name": "balance",
   "version": "1.0.0",
   "scripts": {
     "cap:sync": "npx cap sync android",

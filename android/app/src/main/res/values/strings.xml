@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">FitGotchi</string>
-    <string name="title_activity_main">FitGotchi</string>
+    <string name="app_name">Balance</string>
+    <string name="title_activity_main">Balance</string>
     <string name="package_name">com.fitgotchi.app</string>
     <string name="custom_url_scheme">com.fitgotchi.app</string>
 </resources>
