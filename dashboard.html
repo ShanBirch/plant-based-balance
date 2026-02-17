@@ -4956,6 +4956,38 @@ async function applyAppTheme(themeKey) {
         color: #666;
     }
 
+    .simple-meal-type-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    .simple-meal-type-bubble {
+        flex: 1;
+        padding: 8px 4px;
+        border: 2px solid #e0e0e0;
+        border-radius: 20px;
+        background: white;
+        cursor: pointer;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #999;
+        text-align: center;
+        transition: all 0.2s ease;
+        font-family: inherit;
+    }
+
+    .simple-meal-type-bubble.active {
+        border-color: var(--primary);
+        background: rgba(123, 168, 131, 0.12);
+        color: var(--primary);
+    }
+
+    .simple-meal-type-bubble:hover:not(.active) {
+        border-color: #ccc;
+        color: #666;
+    }
+
     .simple-meal-textarea {
         width: 100%;
         min-height: 120px;
@@ -5370,6 +5402,20 @@ async function applyAppTheme(themeKey) {
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-bottom: 4px;
+    }
+
+    .meal-type-tag {
+        display: inline-block;
+        background: rgba(123, 168, 131, 0.12);
+        color: var(--primary);
+        font-size: 0.6rem;
+        font-weight: 700;
+        padding: 1px 6px;
+        border-radius: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        vertical-align: middle;
+        margin-right: 2px;
     }
 
     .meal-log-foods {
@@ -42422,6 +42468,12 @@ window.submitWeighInModal = submitWeighInModal;
             <h3>What did you eat?</h3>
             <button class="meal-text-modal-close" onclick="closeMealTextModal()">&times;</button>
         </div>
+        <div class="simple-meal-type-row" id="simple-meal-type-row">
+            <button class="simple-meal-type-bubble active" data-type="breakfast" onclick="selectSimpleMealType('breakfast')">Breakfast</button>
+            <button class="simple-meal-type-bubble" data-type="lunch" onclick="selectSimpleMealType('lunch')">Lunch</button>
+            <button class="simple-meal-type-bubble" data-type="dinner" onclick="selectSimpleMealType('dinner')">Dinner</button>
+            <button class="simple-meal-type-bubble" data-type="snack" onclick="selectSimpleMealType('snack')">Snack</button>
+        </div>
         <textarea
             id="simple-meal-input"
             class="simple-meal-textarea"
@@ -47236,9 +47288,21 @@ function autoDetectMealType() {
 // Simple text input modal functions
 let simpleMealInputInitialized = false;
 
+function selectSimpleMealType(type) {
+    selectedMealType = type;
+    document.querySelectorAll('.simple-meal-type-bubble').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === type);
+    });
+}
+
 function openMealTextInput(source) {
     mealCameraSource = source || 'widget';
     selectedMealType = autoDetectMealType();
+
+    // Update simple modal meal type bubbles
+    document.querySelectorAll('.simple-meal-type-bubble').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === selectedMealType);
+    });
 
     const modal = document.getElementById('meal-text-modal');
     const textarea = document.getElementById('simple-meal-input');
@@ -52194,12 +52258,14 @@ function renderMealsList(meals) {
         const isVerified = Array.isArray(meal.food_items) && meal.food_items.some(item => item.verified);
         const verifiedTag = isVerified ? `<span class="verified-badge">✓ Verified</span>` : '';
 
+        const mealTypeLabel = meal.meal_type ? meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1) : '';
+
         html += `
             <div class="meal-log-card" onclick="openMealDetailPopup(${index})">
                 ${imageHtml}
                 <div class="meal-log-content">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px;">
-                        <div class="meal-log-time">${time}</div>
+                        <div class="meal-log-time">${mealTypeLabel ? `<span class="meal-type-tag">${mealTypeLabel}</span> ` : ''}${time}</div>
                         ${verifiedTag}
                     </div>
                     <div class="meal-log-foods">${foodItemsText}</div>
