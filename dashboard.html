@@ -17550,12 +17550,16 @@ function viewWorkoutHistoryDetail(date) {
         <div id="share-section-combined" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin: 10px 0; position: relative;">
             <button onclick="this.parentElement.style.display='none'; localStorage.setItem('share_section_dismissed','true');" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.25); border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: white; line-height: 1;">×</button>
             <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; padding-right: 20px;">Share Your Workout</div>
-            <p style="font-size: 0.85rem; opacity: 0.85; margin-bottom: 15px;">Snap a gym photo and share a beautiful workout card to your feed!</p>
+            <p style="font-size: 0.85rem; opacity: 0.85; margin-bottom: 15px;">Earn up to 2 XP! Share to your feed and your group chat.</p>
 
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <button id="share-workout-card-btn" onclick="shareWorkoutCardToFeed()" style="width: 100%; background: linear-gradient(135deg, #ffffff, #f0fdf4); color: var(--primary); padding: 14px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <span style="font-size: 1.3rem;">💪</span>
                     <span style="font-size: 0.95rem;">Share Workout Card (+1 XP)</span>
+                </button>
+                <button id="share-workout-groupchat-btn" onclick="shareWorkoutToGroupChat()" style="width: 100%; background: linear-gradient(135deg, #ffffff, #eff6ff); color: #2563eb; padding: 14px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span style="font-size: 1.3rem;">💬</span>
+                    <span style="font-size: 0.95rem;">Share to Group Chat (+1 XP)</span>
                 </button>
                 <button onclick="shareWorkoutToStory()" style="width: 100%; background: rgba(255,255,255,0.15); color: white; padding: 12px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <span style="font-size: 1.1rem;">📸</span>
@@ -30413,6 +30417,16 @@ function closeSuccessScreen(skipRating) {
     const pointsAwarded = document.getElementById('workout-points-awarded');
     if (pointsAwarded) pointsAwarded.style.display = 'none';
 
+    // Reset group chat share button state for next workout
+    const gcBtn = document.getElementById('share-workout-groupchat-btn');
+    if (gcBtn) {
+        gcBtn.disabled = false;
+        gcBtn.style.opacity = '1';
+        gcBtn.style.cursor = 'pointer';
+        const gcBtnText = gcBtn.querySelector('span:last-child');
+        if (gcBtnText) gcBtnText.textContent = 'Share to Group Chat (+1 XP)';
+    }
+
     // Refresh challenges to show any updated points
     if (typeof loadHomeChallenges === 'function') {
         loadHomeChallenges();
@@ -38666,25 +38680,116 @@ async function loadGroupChatMessages(chatId) {
             if (msg.is_win_share) {
                 const winDetails = msg.win_details || {};
                 const typeConfig = {
-                    'workout_complete': { icon: '💪', bg: '#dcfce7' },
-                    'personal_best': { icon: '🏆', bg: '#fef3c7' },
-                    'milestone': { icon: '🌟', bg: '#e0e7ff' },
-                    'custom': { icon: '✨', bg: '#fdf4ff' }
+                    'workout_complete': { icon: '💪', bg: 'linear-gradient(135deg, #dcfce7, #f0fdf4)', border: '#86efac', label: 'Workout Complete' },
+                    'entire_workout': { icon: '📋', bg: 'linear-gradient(135deg, #dcfce7, #f0fdf4)', border: '#86efac', label: 'Full Workout' },
+                    'exercise_all_sets': { icon: '📊', bg: 'linear-gradient(135deg, #dbeafe, #eff6ff)', border: '#93c5fd', label: 'Exercise' },
+                    'specific_lift': { icon: '💪', bg: 'linear-gradient(135deg, #dcfce7, #f0fdf4)', border: '#86efac', label: 'Lift' },
+                    'multi_sets': { icon: '🏋️', bg: 'linear-gradient(135deg, #dbeafe, #eff6ff)', border: '#93c5fd', label: 'Sets' },
+                    'personal_best': { icon: '🏆', bg: 'linear-gradient(135deg, #fef3c7, #fffbeb)', border: '#fcd34d', label: 'Personal Best' },
+                    'milestone': { icon: '🌟', bg: 'linear-gradient(135deg, #e0e7ff, #eef2ff)', border: '#a5b4fc', label: 'Milestone' },
+                    'custom': { icon: '✨', bg: 'linear-gradient(135deg, #fdf4ff, #faf5ff)', border: '#d8b4fe', label: 'Win' }
                 };
                 const config = typeConfig[msg.win_type] || typeConfig.custom;
+
+                // Build rich details HTML based on win type
+                let detailsHtml = '';
+
+                if (msg.win_type === 'entire_workout' && winDetails.exercises) {
+                    // Full workout card: show exercise list with sets
+                    const exerciseEntries = typeof winDetails.exercises === 'object' ? Object.entries(winDetails.exercises) : [];
+                    if (exerciseEntries.length > 0) {
+                        const exerciseRows = exerciseEntries.slice(0, 6).map(([name, sets]) => {
+                            const setsArr = Array.isArray(sets) ? sets : [];
+                            const setsInfo = setsArr.map(s => {
+                                const w = s.kg || s.weight_kg || s.weight || 0;
+                                const r = s.reps || 0;
+                                return `${w}kg×${r}`;
+                            }).join(', ');
+                            return `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(0,0,0,0.05);">
+                                <span style="font-weight:600; font-size:0.85rem; color:var(--text-main);">${escapeHtml(name)}</span>
+                                <span style="font-size:0.8rem; color:var(--text-muted); font-weight:500;">${setsInfo}</span>
+                            </div>`;
+                        }).join('');
+                        const remaining = exerciseEntries.length - 6;
+                        detailsHtml = `<div style="margin-top:10px;">${exerciseRows}${remaining > 0 ? `<div style="font-size:0.8rem; color:var(--text-muted); padding-top:4px;">+${remaining} more</div>` : ''}</div>`;
+                    }
+                    // Duration / stats row
+                    if (winDetails.duration || winDetails.totalSets) {
+                        detailsHtml += `<div style="display:flex; gap:12px; margin-top:8px;">
+                            ${winDetails.duration ? `<span style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">⏱ ${escapeHtml(String(winDetails.duration))}</span>` : ''}
+                            ${winDetails.totalSets ? `<span style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">${winDetails.totalSets} sets</span>` : ''}
+                        </div>`;
+                    }
+                } else if (msg.win_type === 'exercise_all_sets' && winDetails.sets) {
+                    // Exercise card: show all sets in a compact grid
+                    const setsArr = Array.isArray(winDetails.sets) ? winDetails.sets : [];
+                    if (setsArr.length > 0) {
+                        const setRows = setsArr.map((s, i) => {
+                            const w = s.weight || s.kg || 0;
+                            const r = s.reps || 0;
+                            return `<div style="display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid rgba(0,0,0,0.05);">
+                                <span style="width:24px; height:24px; background:#e2e8f0; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:var(--text-muted);">${i + 1}</span>
+                                <span style="font-size:0.9rem; font-weight:600; color:var(--text-main);">${w}kg × ${r} reps</span>
+                            </div>`;
+                        }).join('');
+                        detailsHtml = `<div style="margin-top:10px;">${setRows}</div>`;
+                    }
+                } else if ((msg.win_type === 'multi_sets' || msg.win_type === 'specific_lift') && winDetails.exercises) {
+                    // Multi-set or specific lift: show selected sets grouped by exercise
+                    const exerciseEntries = typeof winDetails.exercises === 'object' ? Object.entries(winDetails.exercises) : [];
+                    if (exerciseEntries.length > 0) {
+                        const rows = exerciseEntries.map(([name, sets]) => {
+                            const setsArr = Array.isArray(sets) ? sets : [];
+                            const setsInfo = setsArr.map(s => {
+                                const w = s.kg || s.weight_kg || s.weight || 0;
+                                const r = s.reps || 0;
+                                return `${w}kg×${r}`;
+                            }).join(', ');
+                            return `<div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid rgba(0,0,0,0.05);">
+                                <span style="font-weight:600; font-size:0.85rem; color:var(--text-main);">${escapeHtml(name)}</span>
+                                <span style="font-size:0.8rem; color:var(--text-muted); font-weight:500;">${setsInfo}</span>
+                            </div>`;
+                        }).join('');
+                        detailsHtml = `<div style="margin-top:10px;">${rows}</div>`;
+                    }
+                } else if (msg.win_type === 'specific_lift' && winDetails.exercise) {
+                    // Single lift without exercises object
+                    const w = winDetails.weight || 0;
+                    const r = winDetails.reps || 0;
+                    if (w > 0 || r > 0) {
+                        detailsHtml = `<div style="margin-top:10px; background:rgba(0,0,0,0.04); border-radius:10px; padding:12px; text-align:center;">
+                            <div style="font-size:1.4rem; font-weight:800; color:var(--text-main);">${w}kg × ${r} reps</div>
+                        </div>`;
+                    }
+                } else if (msg.win_type === 'personal_best') {
+                    // PB card: show improvement prominently
+                    let pbHtml = '';
+                    if (winDetails.currentWeight || winDetails.currentReps) {
+                        pbHtml += `<div style="background:rgba(0,0,0,0.04); border-radius:10px; padding:12px; text-align:center; margin-top:10px;">
+                            <div style="font-size:1.3rem; font-weight:800; color:var(--text-main);">${winDetails.currentWeight || 0}kg × ${winDetails.currentReps || 0} reps</div>
+                            ${winDetails.previousWeight != null ? `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Previous: ${winDetails.previousWeight}kg × ${winDetails.previousReps || 0} reps</div>` : ''}
+                        </div>`;
+                    }
+                    if (winDetails.improvement) {
+                        pbHtml += `<div style="margin-top:8px; text-align:center;"><span style="font-size:0.95rem; font-weight:700; color:#16a34a; background:rgba(22,163,74,0.1); padding:4px 12px; border-radius:20px; display:inline-block;">${escapeHtml(winDetails.improvement)}</span></div>`;
+                    }
+                    detailsHtml = pbHtml;
+                }
 
                 return `
                     <div style="display: flex; flex-direction: column; align-items: ${isOwn ? 'flex-end' : 'flex-start'}; margin-bottom: 15px;">
                         ${!isOwn ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; margin-left: 4px;">${escapeHtml(msg.sender_name)}</div>` : ''}
-                        <div id="win-card-${msg.message_id}" style="max-width: 85%; background: ${config.bg}; padding: 16px; border-radius: ${isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; border: 2px solid ${isOwn ? 'var(--primary)' : '#e2e8f0'}; position: relative;">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <div id="win-card-${msg.message_id}" style="max-width: 85%; background: ${config.bg}; padding: 16px; border-radius: ${isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; border: 2px solid ${config.border}; position: relative; overflow: hidden;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                                 <span style="font-size: 1.6rem;">${config.icon}</span>
-                                <span style="font-weight: 700; color: var(--text-main); font-size: 1rem;">Shared a win!</span>
+                                <div>
+                                    <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">${escapeHtml(config.label)}</div>
+                                    ${winDetails.workoutName ? `<div style="font-size: 0.8rem; color: var(--text-muted);">${escapeHtml(winDetails.workoutName)}</div>` : ''}
+                                </div>
                             </div>
-                            <div style="font-size: 1rem; color: var(--text-main); line-height: 1.5; font-weight: 500;">${escapeHtml(msg.message)}</div>
-                            ${winDetails.workoutName ? `<div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">${escapeHtml(winDetails.workoutName)}</div>` : ''}
-                            ${winDetails.improvement ? `<div style="font-size: 0.95rem; font-weight: 700; color: #16a34a; margin-top: 6px; background: rgba(22, 163, 74, 0.1); padding: 4px 10px; border-radius: 6px; display: inline-block;">${escapeHtml(winDetails.improvement)}</div>` : ''}
-                            
+                            <div style="font-size: 0.95rem; color: var(--text-main); line-height: 1.5; font-weight: 500; white-space: pre-line;">${escapeHtml(msg.message)}</div>
+                            ${detailsHtml}
+
                             <!-- Internal logo for share capture -->
                             <div class="share-only" style="display: none; margin-top: 15px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 10px; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">
                                 BALANCE
@@ -47157,6 +47262,14 @@ async function awardWorkoutSharePoint(shareType, photoTimestamp, photoHash) {
                 workoutPointsEarnedThisSession.story = true;
             } else {
                 workoutPointsEarnedThisSession.groupchat = true;
+                // Disable group chat share button on success screen
+                const gcBtn = document.getElementById('share-workout-groupchat-btn');
+                if (gcBtn) {
+                    gcBtn.disabled = true;
+                    gcBtn.style.opacity = '0.5';
+                    gcBtn.style.cursor = 'default';
+                    gcBtn.querySelector('span:last-child').textContent = 'Shared! +1 XP Earned';
+                }
             }
 
             // Update UI
@@ -47169,7 +47282,7 @@ async function awardWorkoutSharePoint(shareType, photoTimestamp, photoHash) {
                 }
             }
 
-            showToast('+1 XP for posting your workout photo!', 'success');
+            showToast(`+1 XP for sharing your workout${shareType === 'groupchat' ? ' to group chat' : ''}!`, 'success');
 
             // Refresh tamagotchi display to sync XP with database
             if (typeof window.refreshLevelDisplay === 'function') {
