@@ -102,6 +102,31 @@ Each day's meals should sum to approximately ${calorieGoal} calories and ${prote
 All meals must be ${dietType} / plant-based. NO animal products.
 Make meals varied, delicious, and practical. Different cuisines across days.
 
+=== CRITICAL: CALORIE & PORTION ACCURACY ===
+You MUST follow these per-meal calorie ranges strictly. These are for ONE PERSON, standard portion sizes:
+- Breakfast: ${Math.round(calorieGoal * 0.25)}-${Math.round(calorieGoal * 0.3)} calories (roughly 25-30% of daily goal)
+- AM Snack: ${Math.round(calorieGoal * 0.08)}-${Math.round(calorieGoal * 0.12)} calories (roughly 8-12% of daily goal)
+- Lunch: ${Math.round(calorieGoal * 0.28)}-${Math.round(calorieGoal * 0.32)} calories (roughly 28-32% of daily goal)
+- PM Snack: ${Math.round(calorieGoal * 0.08)}-${Math.round(calorieGoal * 0.12)} calories (roughly 8-12% of daily goal)
+- Dinner: ${Math.round(calorieGoal * 0.25)}-${Math.round(calorieGoal * 0.3)} calories (roughly 25-30% of daily goal)
+
+ABSOLUTE RULES:
+1. NO meal may exceed 700 calories. A meal over 700 cal is ALWAYS wrong - reduce the portion.
+2. NO snack may exceed 300 calories. Snacks are small - a handful of nuts, a piece of fruit, a small smoothie.
+3. Portion sizes must be realistic for ONE person (e.g., 1 cup soup NOT 4 cups, 1 serving pasta NOT 3 servings).
+4. Cross-check: calories must match the ingredients and amounts listed. A simple lentil soup (1.5 cups) is ~250-350 cal, NOT 800+.
+5. Macros must add up: (protein_g × 4) + (carbs_g × 4) + (fat_g × 9) should approximately equal the stated calories (within 10%).
+6. Common calorie references for accuracy:
+   - 1 cup cooked lentils = ~230 cal
+   - 1 cup cooked rice = ~200 cal
+   - 1 cup cooked quinoa = ~220 cal
+   - 1 tbsp olive oil = ~120 cal
+   - 1 medium banana = ~105 cal
+   - 1 block tofu (14oz) = ~350 cal (a serving is usually 1/3 to 1/2 block)
+   - 1 cup cooked chickpeas = ~270 cal
+   - 1 avocado = ~320 cal (half = ~160 cal)
+Double-check every meal's calories against the ingredient amounts before finalizing.
+
 RESPOND WITH VALID JSON:
 {
   "week_number": ${week},
@@ -171,6 +196,64 @@ RESPOND WITH VALID JSON:
     weekData.week_number = week;
     weekData.theme = weekData.theme || currentTheme.theme;
     weekData.theme_description = weekData.theme_description || currentTheme.focus;
+
+    // Post-generation calorie validation & correction
+    const maxCalories: Record<string, number> = {
+      breakfast: Math.round(calorieGoal * 0.35),
+      am_snack: 300,
+      lunch: Math.round(calorieGoal * 0.38),
+      pm_snack: 300,
+      dinner: Math.round(calorieGoal * 0.35),
+    };
+    const minCalories: Record<string, number> = {
+      breakfast: Math.round(calorieGoal * 0.15),
+      am_snack: 50,
+      lunch: Math.round(calorieGoal * 0.18),
+      pm_snack: 50,
+      dinner: Math.round(calorieGoal * 0.18),
+    };
+
+    let correctedCount = 0;
+    if (weekData.days && Array.isArray(weekData.days)) {
+      for (const day of weekData.days) {
+        if (!day.meals || !Array.isArray(day.meals)) continue;
+        for (const meal of day.meals) {
+          const slot = meal.meal_slot || 'lunch';
+          const max = maxCalories[slot] || 700;
+          const min = minCalories[slot] || 50;
+          const cal = parseInt(meal.calories) || 0;
+
+          // Macro cross-check: (P×4 + C×4 + F×9)
+          const p = parseFloat(meal.protein_g) || 0;
+          const c = parseFloat(meal.carbs_g) || 0;
+          const f = parseFloat(meal.fat_g) || 0;
+          const macroCalc = Math.round(p * 4 + c * 4 + f * 9);
+
+          // If stated calories are way off from macros, use macro-calculated value
+          if (macroCalc > 0 && Math.abs(cal - macroCalc) > cal * 0.3) {
+            meal.calories = macroCalc;
+            correctedCount++;
+          }
+
+          // Hard clamp: no meal over absolute max, no snack over 300
+          if (meal.calories > max) {
+            // Scale macros proportionally
+            const scale = max / meal.calories;
+            meal.protein_g = Math.round((parseFloat(meal.protein_g) || 0) * scale * 10) / 10;
+            meal.carbs_g = Math.round((parseFloat(meal.carbs_g) || 0) * scale * 10) / 10;
+            meal.fat_g = Math.round((parseFloat(meal.fat_g) || 0) * scale * 10) / 10;
+            meal.calories = max;
+            correctedCount++;
+          } else if (meal.calories < min) {
+            meal.calories = min;
+            correctedCount++;
+          }
+        }
+      }
+    }
+    if (correctedCount > 0) {
+      console.log(`Corrected ${correctedCount} meals with unrealistic calorie values in week ${week}`);
+    }
 
     return new Response(JSON.stringify({
       success: true,
