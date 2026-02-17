@@ -30693,7 +30693,28 @@ function enableDynamicSwipeBackNavigation(viewId, getBackHandler) {
 function initializeLearningSwipeNavigation() {
     enableDynamicSwipeBackNavigation('view-learning', () => {
         if (typeof window.getLearningBackAction === 'function') {
-            return window.getLearningBackAction();
+            const backAction = window.getLearningBackAction();
+            if (backAction) {
+                // Wrap the back action to also pop the browser history state,
+                // keeping the custom swipe handler in sync with history.pushState
+                // entries pushed by the learning navigation functions.
+                return () => {
+                    // Prevent the back action from pushing new history states
+                    if (typeof window._setLearningNavigatingBack === 'function') {
+                        window._setLearningNavigatingBack(true);
+                    }
+                    backAction();
+                    if (typeof window._setLearningNavigatingBack === 'function') {
+                        window._setLearningNavigatingBack(false);
+                    }
+                    // Pop the corresponding history entry
+                    if (typeof window._popLearningHistoryState === 'function') {
+                        window._learningSwipeHandledBack = true;
+                        window._popLearningHistoryState();
+                        history.back();
+                    }
+                };
+            }
         }
         return null;
     });
