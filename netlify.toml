@@ -79,6 +79,11 @@
   function = "generate-meal-plan"
   path = "/.netlify/functions/generate-meal-plan"
 
+# AI Meal Image Generator (single image + B2 upload)
+[[edge_functions]]
+  function = "generate-meal-image"
+  path = "/.netlify/functions/generate-meal-image"
+
 # Meal Tracking Edge Functions
 [[edge_functions]]
   function = "upload-meal-photo"
