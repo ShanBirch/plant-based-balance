@@ -21138,6 +21138,11 @@ function _switchAppTabReal(tabName, btn) {
         if (typeof checkAndShowWorkoutTrendCard === 'function') {
             checkAndShowWorkoutTrendCard();
         }
+
+        // Load adaptive calorie adjustment prompt into FITGotchi AI card
+        if (typeof loadAdaptiveAdjustment === 'function') {
+            loadAdaptiveAdjustment();
+        }
     } else if (tabName === 'meals') {
         document.getElementById('view-meals').style.display = 'block';
 
@@ -51325,10 +51330,7 @@ let _pendingAdaptiveAdjustment = null;
 
 /**
  * Load and check adaptive calorie adjustment eligibility.
- * Called when the Weekly Trends page opens.
- */
-/**
- * Load and check adaptive calorie adjustment eligibility.
+ * Called when the Home page (dashboard) loads.
  * Injects a proactive message into the FITGotchi AI card if adjustment is needed.
  */
 async function loadAdaptiveAdjustment() {
@@ -52217,8 +52219,7 @@ function openWeeklyTrendsPage() {
         loadWeeklyMetrics(window.currentUser?.id),
         loadMultiWeekData(4),
         loadMealPatterns(),
-        loadMealJournal(),
-        loadAdaptiveAdjustment()
+        loadMealJournal()
     ]);
 
 }
