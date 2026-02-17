@@ -167,8 +167,8 @@ RESPOND WITH VALID JSON:
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
-          maxOutputTokens: 16384,
-          temperature: 0.8,
+          maxOutputTokens: 65536,
+          temperature: 0.7,
           responseMimeType: "application/json",
         }
       })
@@ -196,6 +196,24 @@ RESPOND WITH VALID JSON:
     weekData.week_number = week;
     weekData.theme = weekData.theme || currentTheme.theme;
     weekData.theme_description = weekData.theme_description || currentTheme.focus;
+
+    // Ensure we have 7 days - if Gemini returned fewer, log a warning
+    if (!weekData.days || !Array.isArray(weekData.days)) {
+      weekData.days = [];
+    }
+    if (weekData.days.length < 7) {
+      console.warn(`Gemini only returned ${weekData.days.length} days for week ${week}, expected 7`);
+    }
+    // Normalize day_of_week values
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    weekData.days.forEach((day: any, idx: number) => {
+      if (day.day_of_week === undefined || day.day_of_week === null) {
+        day.day_of_week = idx;
+      }
+      if (!day.day_name) {
+        day.day_name = dayNames[day.day_of_week] || dayNames[idx];
+      }
+    });
 
     // Post-generation calorie validation & correction
     const maxCalories: Record<string, number> = {
