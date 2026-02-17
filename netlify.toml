@@ -74,6 +74,11 @@
   function = "home-ai-chat"
   path = "/.netlify/functions/home-ai-chat"
 
+# AI Meal Plan Generator
+[[edge_functions]]
+  function = "generate-meal-plan"
+  path = "/.netlify/functions/generate-meal-plan"
+
 # Meal Tracking Edge Functions
 [[edge_functions]]
   function = "upload-meal-photo"
