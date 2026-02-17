@@ -19115,17 +19115,22 @@ function viewWorkoutHistoryDetail(date) {
 
         </div>
 
-        <!-- Weekly/Monthly Calendar -->
+        <!-- Day/Weekly/Monthly Calendar -->
         <div style="padding: 0 25px 25px 25px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="color: var(--primary); margin: 0; font-size: 1.1rem;">Your Predictions</h3>
+                <h3 id="calendar-heading" style="color: var(--primary); margin: 0; font-size: 1.1rem;">Your Predictions</h3>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div class="calendar-view-toggle" id="calendar-view-toggle">
+                        <button class="toggle-btn" data-view="daily" onclick="switchCalendarView('daily')">Day</button>
                         <button class="toggle-btn active" data-view="weekly" onclick="switchCalendarView('weekly')">Week</button>
                         <button class="toggle-btn" data-view="monthly" onclick="switchCalendarView('monthly')">Month</button>
                     </div>
                     <span onclick="switchAppTab('profile')" style="font-size: 0.8rem; color: var(--secondary); cursor: pointer; font-weight: 600;">Edit Dates</span>
                 </div>
+            </div>
+
+            <div id="daily-calendar" style="display: none;">
+                <!-- Daily calendar view inserted via JS -->
             </div>
 
             <div id="weekly-calendar" style="display: flex; flex-direction: column; gap: 10px;">
@@ -19197,7 +19202,119 @@ function viewWorkoutHistoryDetail(date) {
         .cal-phase-dot {
             width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px;
         }
-        
+
+        /* Daily Calendar View */
+        .daily-calendar-container {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #eee;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .daily-calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #eee;
+        }
+        .daily-calendar-header .day-nav-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px 10px;
+            color: var(--primary);
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .daily-calendar-header .day-nav-btn:hover {
+            background: #eee;
+        }
+        .daily-calendar-header .day-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--primary);
+            text-align: center;
+        }
+        .daily-calendar-header .day-subtitle {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+        .daily-calendar-body {
+            padding: 20px;
+        }
+        .daily-phase-banner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+        .daily-phase-icon {
+            font-size: 1.5rem;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+        .daily-phase-info {
+            flex: 1;
+        }
+        .daily-phase-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .daily-phase-day {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        .daily-workout-card {
+            background: var(--surface);
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .daily-workout-card:hover {
+            border-color: var(--secondary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .daily-workout-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+        .daily-workout-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+        .daily-workout-program {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        .daily-today-badge {
+            display: inline-block;
+            background: var(--secondary);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
         .cycle-settings {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -19218,10 +19335,10 @@ function viewWorkoutHistoryDetail(date) {
             padding: 3px;
         }
         .calendar-view-toggle .toggle-btn {
-            padding: 6px 12px;
+            padding: 6px 10px;
             border: none;
             background: transparent;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 600;
             color: #64748b;
             cursor: pointer;
@@ -21366,10 +21483,15 @@ async function initCalendarView() {
     renderCycleStatus();
     renderWeeklyCalendar();
 
-    // Restore saved calendar view preference (weekly/monthly)
+    // Update heading based on gender
+    updateCalendarHeading(localStorage.getItem('calendarViewPreference') || 'weekly');
+
+    // Restore saved calendar view preference (daily/weekly/monthly)
     const savedViewPref = localStorage.getItem('calendarViewPreference');
     if (savedViewPref === 'monthly') {
         switchCalendarView('monthly');
+    } else if (savedViewPref === 'daily') {
+        switchCalendarView('daily');
     }
 }
 
@@ -21577,6 +21699,7 @@ window.logPeriodStart = function() {
     // If renderCycleStatus exists, call it.
     if(typeof renderCycleStatus === 'function') renderCycleStatus();
     renderWeeklyCalendar();
+    if(typeof renderDailyCalendar === 'function') renderDailyCalendar();
     
     // Visual Confirmation
     const btn = document.querySelector('button[onclick="logPeriodStart()"]');
@@ -22066,13 +22189,201 @@ function renderWeeklyCalendar() {
     }
 }
 
+// --- CALENDAR HEADING ---
+
+function updateCalendarHeading(view) {
+    const heading = document.getElementById('calendar-heading');
+    if (!heading) return;
+
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+
+    if (isMale) {
+        // Males: context-aware heading instead of "Your Predictions"
+        if (view === 'daily') {
+            heading.textContent = 'Your Day';
+        } else if (view === 'monthly') {
+            heading.textContent = 'Your Calendar';
+        } else {
+            heading.textContent = 'Your Week';
+        }
+    } else {
+        // Females: keep "Your Predictions" as it relates to cycle predictions
+        heading.textContent = 'Your Predictions';
+    }
+}
+
+// --- DAILY CALENDAR VIEW ---
+
+// Track current displayed day for daily calendar
+let dailyCalendarDate = new Date();
+
+window.navigateDay = function(direction) {
+    dailyCalendarDate.setDate(dailyCalendarDate.getDate() + direction);
+    renderDailyCalendar();
+};
+
+window.goToToday = function() {
+    dailyCalendarDate = new Date();
+    renderDailyCalendar();
+};
+
+function renderDailyCalendar() {
+    const container = document.getElementById('daily-calendar');
+    if (!container) return;
+
+    const today = new Date();
+    const viewDate = new Date(dailyCalendarDate);
+
+    const isToday = viewDate.toDateString() === today.toDateString();
+
+    // Day name and formatted date
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const dayName = dayNames[viewDate.getDay()];
+    const formattedDate = `${viewDate.getDate()} ${monthNames[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
+
+    // Calculate which day of the week (Mon=0 ... Sun=6) for workout schedule
+    const dayOfWeek = viewDate.getDay();
+    const dayIndex = (dayOfWeek + 6) % 7; // Convert to Mon=0 index
+
+    // Self-healing: sync period data
+    const inputVal = document.getElementById('last-period-input-profile')?.value;
+    if (!userCycleData.lastPeriod && inputVal) {
+        userCycleData.lastPeriod = inputVal;
+    }
+
+    const isBaseline = !userCycleData.lastPeriod;
+    const isMale = (typeof isMaleUser === 'function' && isMaleUser());
+
+    // Phase calculation
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const start = userCycleData.lastPeriod ? new Date(userCycleData.lastPeriod) : new Date();
+    let phase = PHASE_INFO.wellness;
+    let phaseKey = 'wellness';
+    let currentDayLoop = 0;
+
+    if (!isBaseline) {
+        const daysSinceStart = Math.floor((viewDate - start) / msPerDay);
+        let mod = daysSinceStart % userCycleData.cycleLength;
+        if (mod < 0) mod += userCycleData.cycleLength;
+        currentDayLoop = mod + 1;
+        phaseKey = getCyclePhase(currentDayLoop, userCycleData.cycleLength);
+        phase = PHASE_INFO[phaseKey];
+    }
+
+    // Get workout for this day - reuse weekly calendar's logic by calling renderWeeklyCalendar internally
+    // We need the workout info, so we replicate the getWorkoutForDay approach
+    const viewDateStr = viewDate.toISOString().split('T')[0];
+
+    // Build phase banner HTML
+    let phaseBannerHtml = '';
+    if (isMale) {
+        const perfPhase = PHASE_INFO['performance'];
+        phaseBannerHtml = `
+            <div class="daily-phase-banner" style="background: ${perfPhase.color}15; border: 1px solid ${perfPhase.color}30;">
+                <div class="daily-phase-icon" style="background: ${perfPhase.color}25; color: ${perfPhase.color};">${perfPhase.icon}</div>
+                <div class="daily-phase-info">
+                    <div class="daily-phase-name" style="color: ${perfPhase.color};">${perfPhase.name}</div>
+                    <div class="daily-phase-day" style="color: ${perfPhase.color};">Train based on energy & recovery</div>
+                </div>
+            </div>`;
+    } else if (isBaseline) {
+        phaseBannerHtml = `
+            <div class="daily-phase-banner" style="background: #f1f5f920; border: 1px solid #e2e8f0;">
+                <div class="daily-phase-icon" style="background: #f1f5f9; color: #94a3b8;">🌿</div>
+                <div class="daily-phase-info">
+                    <div class="daily-phase-name" style="color: #64748b;">Standard Schedule</div>
+                    <div class="daily-phase-day" style="color: #94a3b8;">No cycle data configured</div>
+                </div>
+            </div>`;
+    } else if (userCycleData.noPeriodMode) {
+        const wellPhase = PHASE_INFO.wellness;
+        phaseBannerHtml = `
+            <div class="daily-phase-banner" style="background: ${wellPhase.color}15; border: 1px solid ${wellPhase.color}30;">
+                <div class="daily-phase-icon" style="background: ${wellPhase.color}25; color: ${wellPhase.color};">${wellPhase.icon}</div>
+                <div class="daily-phase-info">
+                    <div class="daily-phase-name" style="color: ${wellPhase.color};">${wellPhase.name}</div>
+                    <div class="daily-phase-day" style="color: ${wellPhase.color};">Balanced Wellness</div>
+                </div>
+            </div>`;
+    } else {
+        phaseBannerHtml = `
+            <div class="daily-phase-banner" style="background: ${phase.color}15; border: 1px solid ${phase.color}30;">
+                <div class="daily-phase-icon" style="background: ${phase.color}25; color: ${phase.color};">${phase.icon}</div>
+                <div class="daily-phase-info">
+                    <div class="daily-phase-name" style="color: ${phase.color};">${phase.name}</div>
+                    <div class="daily-phase-day" style="color: ${phase.color};">Day ${currentDayLoop} of ${userCycleData.cycleLength}</div>
+                </div>
+            </div>`;
+    }
+
+    // Get workout name from the weekly calendar row for this day index
+    // We'll read it from the rendered weekly calendar if available, or compute it
+    let workoutName = 'Rest Day';
+    let workoutProgram = '';
+    let hasReplacement = false;
+
+    // Try to get workout info from the weekly calendar grid
+    const weeklyGrid = document.getElementById('weekly-calendar');
+    if (weeklyGrid) {
+        const rows = weeklyGrid.querySelectorAll('.calendar-day-row');
+        // Find which row corresponds to our viewDate
+        const todayReal = new Date();
+        const todayDow = todayReal.getDay();
+        const distToMonToday = (todayDow + 6) % 7;
+        const mondayOfThisWeek = new Date(todayReal);
+        mondayOfThisWeek.setDate(todayReal.getDate() - distToMonToday);
+        mondayOfThisWeek.setHours(0, 0, 0, 0);
+
+        const viewMon = new Date(viewDate);
+        const viewDow = viewDate.getDay();
+        const distToMonView = (viewDow + 6) % 7;
+        viewMon.setDate(viewDate.getDate() - distToMonView);
+        viewMon.setHours(0, 0, 0, 0);
+
+        // If viewing current week, read directly from rendered rows
+        if (viewMon.getTime() === mondayOfThisWeek.getTime() && rows.length > dayIndex) {
+            const tag = rows[dayIndex]?.querySelector('.cal-workout-tag');
+            if (tag) {
+                workoutName = tag.textContent.trim().replace('🔄', '').trim();
+                hasReplacement = tag.innerHTML.includes('🔄');
+            }
+        }
+    }
+
+    // Today badge
+    const todayBadge = isToday ? '<span class="daily-today-badge">Today</span>' : '';
+
+    container.innerHTML = `
+        <div class="daily-calendar-container">
+            <div class="daily-calendar-header">
+                <button class="day-nav-btn" onclick="navigateDay(-1)">&#8249;</button>
+                <div>
+                    <div class="day-title">${dayName}${todayBadge}</div>
+                    <div class="day-subtitle">${formattedDate}</div>
+                </div>
+                <button class="day-nav-btn" onclick="navigateDay(1)">&#8250;</button>
+            </div>
+            <div class="daily-calendar-body">
+                ${phaseBannerHtml}
+                <div class="daily-workout-card" onclick="openCalendarActionModal(${dayIndex}, '${workoutName.replace(/'/g, "\\'")}')">
+                    <div class="daily-workout-label">Scheduled Workout</div>
+                    <div class="daily-workout-name">${workoutName}${hasReplacement ? ' <span style="font-size: 0.75rem; color: #f59e0b;" title="Replacement active">🔄</span>' : ''}</div>
+                    <div style="margin-top: 10px; font-size: 0.8rem; color: var(--secondary); font-weight: 600;">Tap to view or swap workout</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 // --- MONTHLY CALENDAR VIEW ---
 
 // Track current displayed month for monthly calendar
 let monthlyCalendarDate = new Date();
 
-// Switch between weekly and monthly calendar views
+// Switch between daily, weekly and monthly calendar views
 window.switchCalendarView = function(view) {
+    const dailyCalendar = document.getElementById('daily-calendar');
     const weeklyCalendar = document.getElementById('weekly-calendar');
     const monthlyCalendar = document.getElementById('monthly-calendar');
     const toggleBtns = document.querySelectorAll('#calendar-view-toggle .toggle-btn');
@@ -22083,15 +22394,25 @@ window.switchCalendarView = function(view) {
         btn.classList.toggle('active', btn.dataset.view === view);
     });
 
-    if (view === 'weekly') {
+    // Hide all views first
+    if (dailyCalendar) dailyCalendar.style.display = 'none';
+    weeklyCalendar.style.display = 'none';
+    monthlyCalendar.style.display = 'none';
+
+    if (view === 'daily') {
+        if (dailyCalendar) dailyCalendar.style.display = 'block';
+        dailyCalendarDate = new Date(); // Reset to today when switching
+        renderDailyCalendar();
+    } else if (view === 'weekly') {
         weeklyCalendar.style.display = 'flex';
-        monthlyCalendar.style.display = 'none';
     } else {
-        weeklyCalendar.style.display = 'none';
         monthlyCalendar.style.display = 'block';
         monthlyCalendarDate = new Date(); // Reset to current month when switching
         renderMonthlyCalendar();
     }
+
+    // Update heading based on view and gender
+    updateCalendarHeading(view);
 
     // Save preference
     localStorage.setItem('calendarViewPreference', view);
