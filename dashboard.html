@@ -10147,7 +10147,7 @@ async function applyAppTheme(themeKey) {
                         <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
                     </button>
                     <p id="daily-log-hint" style="margin: 8px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
-                        Hit within 10% of your calorie &amp; macro goals to earn 2 bonus points
+                        Hit within 20% of your calorie &amp; macro goals to earn 2 bonus points
                     </p>
                 </div>
 
@@ -10197,7 +10197,28 @@ async function applyAppTheme(themeKey) {
                             <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
                         </button>
                         <p id="popup-claim-hint" style="margin: 8px 0 0 0; font-size: 0.8rem; color: var(--text-muted); text-align: center;">
-                            Hit within 10% of your calorie &amp; macro goals to earn 2 bonus points
+                            Hit within 20% of your calorie &amp; macro goals to earn 2 bonus points
+                        </p>
+                        <button id="popup-finish-day-btn" onclick="finishDayWithoutBonus()" style="
+                            display: none;
+                            width: 100%;
+                            padding: 12px 24px;
+                            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 0.95rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 10px;
+                            margin-top: 10px;
+                        ">
+                            <span>Finish Day Without Bonus</span>
+                        </button>
+                        <p id="popup-finish-hint" style="display: none; margin: 6px 0 0 0; font-size: 0.75rem; color: var(--text-muted); text-align: center;">
+                            This marks all your meals as tracked for today so your AI coach knows you're done
                         </p>
                     </div>
                 </div>
@@ -45369,7 +45390,7 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
     }
 }
 
-// Claim daily nutrition bonus (2 points for hitting within 10% of cal/macro goals)
+// Claim daily nutrition bonus (2 points for hitting within 20% of cal/macro goals)
 async function claimDailyNutritionBonus() {
     // Use popup button if available, fall back to main button
     const btn = document.getElementById('popup-claim-btn') || document.getElementById('daily-log-btn');
@@ -45465,8 +45486,13 @@ async function claimDailyNutritionBonus() {
                     <span style="font-size: 1.3rem;">&#x274C;</span>
                     <span>Goals Not Met Yet</span>
                 `;
-                if (hint) hint.textContent = result.reason || 'Get closer to your calorie & macro goals and try again.';
-                // Re-enable after 3 seconds so they can try again
+                if (hint) hint.textContent = result.reason || 'Get closer to your calorie & macro goals, or finish your day without the bonus.';
+                // Show "Finish Day Without Bonus" button in popup
+                const finishDayBtn = document.getElementById('popup-finish-day-btn');
+                const finishHint = document.getElementById('popup-finish-hint');
+                if (finishDayBtn) finishDayBtn.style.display = 'flex';
+                if (finishHint) finishHint.style.display = 'block';
+                // Re-enable claim button after 3 seconds so they can try again
                 setTimeout(() => {
                     resetDailyLogButton();
                 }, 3000);
@@ -45502,6 +45528,99 @@ async function claimDailyNutritionBonus() {
             resetDailyLogButton();
         }, 3000);
     }
+}
+
+// Finish day without bonus points (marks all meals as tracked for AI coach)
+async function finishDayWithoutBonus() {
+    const btn = document.getElementById('popup-finish-day-btn');
+    const claimBtn = document.getElementById('popup-claim-btn') || document.getElementById('daily-log-btn');
+    const hint = document.getElementById('popup-claim-hint') || document.getElementById('daily-log-hint');
+    if (!btn) return;
+
+    try {
+        const session = await window.authHelpers?.getSession();
+        if (!session?.user) return;
+
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.querySelector('span').textContent = 'Finishing...';
+
+        const today = getLocalDateString();
+
+        const response = await fetch('/api/award-points', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: session.user.id,
+                type: 'daily_log',
+                referenceId: `daily_${today}`,
+                nutritionDate: today,
+                finishDay: true
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success || result.dayCompleted) {
+            // Mark both buttons as day completed (no bonus)
+            setDailyLogButtonDayCompleted();
+            // Hide the finish day button
+            btn.style.display = 'none';
+            const finishHint = document.getElementById('popup-finish-hint');
+            if (finishHint) finishHint.style.display = 'none';
+        } else if (result.error === 'Already claimed') {
+            setDailyLogButtonClaimed();
+            btn.style.display = 'none';
+        } else {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.querySelector('span').textContent = 'Finish Day Without Bonus';
+            if (hint) hint.textContent = result.reason || 'Something went wrong. Please try again.';
+        }
+    } catch (error) {
+        console.error('Error finishing day:', error);
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.querySelector('span').textContent = 'Finish Day Without Bonus';
+    }
+}
+
+// Set buttons to "Day Completed" state (no bonus earned)
+function setDailyLogButtonDayCompleted() {
+    const btn = document.getElementById('daily-log-btn');
+    const hint = document.getElementById('daily-log-hint');
+    if (btn) {
+        btn.disabled = true;
+        btn.style.background = 'linear-gradient(135deg, #6c757d 0%, #495057 100%)';
+        btn.style.opacity = '0.7';
+        btn.style.boxShadow = 'none';
+        btn.style.cursor = 'default';
+        btn.innerHTML = `
+            <span style="font-size: 1.3rem;">&#x2705;</span>
+            <span>Day Completed</span>
+        `;
+    }
+    if (hint) hint.textContent = 'Your meals are tracked for today. Try to hit your macros tomorrow for bonus points!';
+
+    const popupBtn = document.getElementById('popup-claim-btn');
+    const popupHint = document.getElementById('popup-claim-hint');
+    if (popupBtn) {
+        popupBtn.disabled = true;
+        popupBtn.style.background = 'linear-gradient(135deg, #6c757d 0%, #495057 100%)';
+        popupBtn.style.opacity = '0.7';
+        popupBtn.style.cursor = 'default';
+        popupBtn.innerHTML = `
+            <span style="font-size: 1.3rem;">&#x2705;</span>
+            <span>Day Completed</span>
+        `;
+    }
+    if (popupHint) popupHint.textContent = 'Your meals are tracked for today. Try to hit your macros tomorrow for bonus points!';
+
+    // Hide finish day button
+    const finishDayBtn = document.getElementById('popup-finish-day-btn');
+    const finishHint = document.getElementById('popup-finish-hint');
+    if (finishDayBtn) finishDayBtn.style.display = 'none';
+    if (finishHint) finishHint.style.display = 'none';
 }
 
 function setDailyLogButtonClaimed() {
@@ -45551,7 +45670,7 @@ function resetDailyLogButton() {
             <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
         `;
     }
-    if (hint) hint.textContent = 'Hit within 10% of your calorie & macro goals to earn 2 bonus points';
+    if (hint) hint.textContent = 'Hit within 20% of your calorie & macro goals to earn 2 bonus points';
 
     // Also reset popup claim button
     const popupBtn = document.getElementById('popup-claim-btn');
@@ -45567,7 +45686,7 @@ function resetDailyLogButton() {
             <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
         `;
     }
-    if (popupHint) popupHint.textContent = 'Hit within 10% of your calorie & macro goals to earn 2 bonus points';
+    if (popupHint) popupHint.textContent = 'Hit within 20% of your calorie & macro goals to earn 2 bonus points';
 }
 
 // Check if daily log bonus has already been claimed today (called from loadTodayNutrition)
@@ -45578,6 +45697,7 @@ async function checkDailyLogBonusStatus() {
 
         const today = getLocalDateString();
 
+        // Check for points bonus claim
         const { data: existingClaim } = await window.supabaseClient
             .from('point_transactions')
             .select('id')
@@ -45590,6 +45710,19 @@ async function checkDailyLogBonusStatus() {
 
         if (existingClaim) {
             setDailyLogButtonClaimed();
+            return;
+        }
+
+        // Check if day was completed without bonus (finish day flow)
+        const { data: dailyNutrition } = await window.supabaseClient
+            .from('daily_nutrition')
+            .select('day_completed')
+            .eq('user_id', session.user.id)
+            .eq('nutrition_date', today)
+            .single();
+
+        if (dailyNutrition?.day_completed) {
+            setDailyLogButtonDayCompleted();
         }
     } catch (error) {
         console.error('Error checking daily log bonus status:', error);

@@ -13,7 +13,7 @@ const POINTS_CONFIG = {
   POINTS_PER_WORKOUT: 1,
   POINTS_PER_PERSONAL_BEST: 1,
   POINTS_PER_DAILY_LOG: 2,
-  DAILY_LOG_TOLERANCE: 0.10,  // 10% tolerance for hitting macro/calorie goals
+  DAILY_LOG_TOLERANCE: 0.20,  // 20% tolerance for hitting macro/calorie goals
   MAX_PHOTO_AGE_MINUTES: 5,
   STREAK_BONUSES: [
     { days: 7, points: 5, label: '7-day streak!' },
@@ -50,6 +50,7 @@ interface AwardPointsRequest {
   value?: number;           // For personal_best: the new PB value
   improvement?: number;     // For personal_best: improvement amount
   nutritionDate?: string;   // For daily_log: the date being logged (YYYY-MM-DD)
+  finishDay?: boolean;      // For daily_log: mark day complete without requiring goals met
 }
 
 interface PointsResult {
@@ -211,8 +212,29 @@ export default async (request: Request, context: Context): Promise<Response> => 
     // === DAILY LOG VALIDATION ===
     if (type === 'daily_log') {
       const nutritionDate = body.nutritionDate || new Date().toISOString().split('T')[0];
+      const finishDay = body.finishDay || false;
 
-      // Check if already claimed today
+      // Check if day already completed (either via bonus claim or finish-day)
+      const { data: dailyNutritionCheck } = await supabase
+        .from('daily_nutrition')
+        .select('day_completed')
+        .eq('user_id', userId)
+        .eq('nutrition_date', nutritionDate)
+        .single();
+
+      if (dailyNutritionCheck?.day_completed) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Already claimed',
+          reason: 'You already completed your nutrition tracking for today!',
+          pointsAwarded: 0
+        }), {
+          status: 200,
+          headers
+        });
+      }
+
+      // Also check point_transactions for existing bonus claim
       const { data: existingClaim } = await supabase
         .from('point_transactions')
         .select('id')
@@ -247,7 +269,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
         return new Response(JSON.stringify({
           success: false,
           error: 'No meals logged',
-          reason: 'Log at least one meal before claiming your daily nutrition bonus.',
+          reason: 'Log at least one meal before completing your nutrition day.',
           pointsAwarded: 0
         }), {
           status: 200,
@@ -255,7 +277,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
         });
       }
 
-      // Check if within 10% tolerance for calories and macros
+      // Check if within 20% tolerance for calories and macros
       const tolerance = POINTS_CONFIG.DAILY_LOG_TOLERANCE;
       const checks = [
         { name: 'Calories', actual: dailyNutrition.total_calories || 0, goal: dailyNutrition.calorie_goal || 0 },
@@ -275,10 +297,43 @@ export default async (request: Request, context: Context): Promise<Response> => 
       }
 
       if (failedChecks.length > 0) {
+        if (finishDay) {
+          // User chose to finish their day without hitting goals - mark complete but no points
+          await supabase
+            .from('daily_nutrition')
+            .update({
+              day_completed: true,
+              day_completed_at: new Date().toISOString()
+            })
+            .eq('user_id', userId)
+            .eq('nutrition_date', nutritionDate);
+
+          return new Response(JSON.stringify({
+            success: true,
+            dayCompleted: true,
+            goalsMetBonus: false,
+            pointsAwarded: 0,
+            basePoints: 0,
+            xpMultiplier: 1,
+            doubleXpActive: false,
+            bonusPoints: 0,
+            bonusDescription: null,
+            newTotal: 0,
+            currentStreak: 0,
+            milestonesUnlocked: [],
+            canRedeem: false,
+            failedChecks,
+            reason: `Day completed! Macros weren't within 20% for: ${failedChecks.join(', ')} — no bonus points, but your meals are tracked.`
+          }), {
+            status: 200,
+            headers
+          });
+        }
+
         return new Response(JSON.stringify({
           success: false,
           error: 'Goals not met',
-          reason: `Not within 10% of your goals for: ${failedChecks.join(', ')}. Keep going!`,
+          reason: `Not within 20% of your goals for: ${failedChecks.join(', ')}. You can still finish your day without the bonus.`,
           failedChecks,
           pointsAwarded: 0
         }), {
@@ -286,6 +341,16 @@ export default async (request: Request, context: Context): Promise<Response> => 
           headers
         });
       }
+
+      // Goals met - mark day as completed (points will be awarded below)
+      await supabase
+        .from('daily_nutrition')
+        .update({
+          day_completed: true,
+          day_completed_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .eq('nutrition_date', nutritionDate);
     }
 
     // === CHECK FOR DOUBLE XP ===
