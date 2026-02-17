@@ -3814,6 +3814,63 @@ async function applyAppTheme(themeKey) {
         border-color: rgba(34, 197, 94, 0.3);
         background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
     }
+    .adaptive-coach-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 6px;
+    }
+    .adaptive-coach-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    .adaptive-snooze-options {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 10px;
+    }
+    .adaptive-snooze-btn {
+        display: block;
+        width: 100%;
+        padding: 10px 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        color: var(--text-main);
+        font-size: 0.82rem;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s;
+        line-height: 1.3;
+    }
+    .adaptive-snooze-btn:active {
+        background: #f1f5f9;
+        transform: scale(0.98);
+    }
+    .adaptive-snooze-btn .snooze-label {
+        font-weight: 600;
+        display: block;
+    }
+    .adaptive-snooze-btn .snooze-desc {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+        display: block;
+    }
+    .adaptive-coach-message {
+        font-size: 0.88rem;
+        color: var(--text-main);
+        line-height: 1.55;
+        margin-top: 4px;
+    }
     .adaptive-progress-bar {
         width: 100%;
         height: 8px;
@@ -10459,14 +10516,19 @@ async function applyAppTheme(themeKey) {
 
             <!-- Adaptive Calorie Adjustment -->
             <div class="adaptive-adjustment-card" id="adaptive-adjustment-section" style="display: none;">
-                <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 1.3rem;">&#x1F4CA;</span> Adaptive Adjustment
-                </h3>
-                <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Based on your last 2 weeks of tracking &amp; weigh-ins</p>
+                <div class="adaptive-coach-header">
+                    <div class="adaptive-coach-avatar">
+                        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.05rem; color: var(--text-main);">FITGotchi AI</h3>
+                        <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted);">Based on your last 2 weeks of tracking</p>
+                    </div>
+                </div>
 
                 <!-- Progress toward eligibility (shown when not yet eligible) -->
                 <div id="adaptive-progress-section" style="display: none;">
-                    <div style="margin-top: 14px; font-size: 0.85rem; color: var(--text-main);">
+                    <div style="margin-top: 10px; font-size: 0.85rem; color: var(--text-main);">
                         <span id="adaptive-progress-label">Tracking progress</span>
                     </div>
                     <div class="adaptive-progress-bar">
@@ -10475,23 +10537,8 @@ async function applyAppTheme(themeKey) {
                     <p id="adaptive-progress-message" style="margin: 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.4;"></p>
                 </div>
 
-                <!-- Stats + suggestion (shown when eligible) -->
+                <!-- AI coach message + options (shown when eligible) -->
                 <div id="adaptive-eligible-section" style="display: none;">
-                    <div class="adaptive-stats-grid">
-                        <div class="adaptive-stat">
-                            <div class="adaptive-stat-value" id="adaptive-stat-tracked">0</div>
-                            <div class="adaptive-stat-label">Days Tracked</div>
-                        </div>
-                        <div class="adaptive-stat">
-                            <div class="adaptive-stat-value" id="adaptive-stat-adherence">0%</div>
-                            <div class="adaptive-stat-label">On Target</div>
-                        </div>
-                        <div class="adaptive-stat">
-                            <div class="adaptive-stat-value" id="adaptive-stat-weight-change">0</div>
-                            <div class="adaptive-stat-label">Weight Change</div>
-                        </div>
-                    </div>
-
                     <div id="adaptive-suggestion-container"></div>
                 </div>
             </div>
@@ -10501,10 +10548,15 @@ async function applyAppTheme(themeKey) {
     <!-- Adaptive Calorie Adjustment Confirmation Modal -->
     <div class="adaptive-modal-overlay" id="adaptive-modal-overlay">
         <div class="adaptive-modal">
-            <div class="adaptive-modal-icon" id="adaptive-modal-icon">&#x2696;&#xFE0F;</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
+                <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                </div>
+                <span id="adaptive-modal-icon" style="font-size: 1.5rem;"></span>
+            </div>
             <div class="adaptive-modal-title" id="adaptive-modal-title">Adjust Your Calories?</div>
             <div class="adaptive-modal-body" id="adaptive-modal-body">
-                Based on your tracking data and weight trends, we suggest updating your daily calorie goal.
+                Based on your tracking data and weight trends, I'd suggest updating your daily calorie goal.
             </div>
             <div class="adaptive-modal-change">
                 <span class="adaptive-modal-old" id="adaptive-modal-old">2000 kcal</span>
@@ -10515,7 +10567,7 @@ async function applyAppTheme(themeKey) {
                 Your macros (protein, carbs, fat) will be recalculated proportionally.
             </p>
             <button class="adaptive-modal-confirm" onclick="confirmAdaptiveAdjustment()">Yes, update my goals</button>
-            <button class="adaptive-modal-cancel" onclick="closeAdaptiveModal()">No thanks, keep current goals</button>
+            <button class="adaptive-modal-cancel" onclick="closeAdaptiveModal()">Not right now</button>
         </div>
     </div>
 
@@ -51285,7 +51337,18 @@ async function loadAdaptiveAdjustment() {
         const card = document.getElementById('adaptive-adjustment-section');
         if (!card) return;
 
-        // Check if user dismissed this today
+        // Check if user snoozed this card
+        const snoozeUntil = localStorage.getItem('adaptiveAdjustmentSnoozeUntil');
+        if (snoozeUntil) {
+            const snoozeDate = new Date(snoozeUntil);
+            if (new Date() < snoozeDate) {
+                card.style.display = 'none';
+                return;
+            }
+            // Snooze expired, clear it
+            localStorage.removeItem('adaptiveAdjustmentSnoozeUntil');
+        }
+        // Legacy: check old single-day dismiss key
         const dismissedDate = localStorage.getItem('adaptiveAdjustmentDismissedDate');
         const today = getLocalDateString();
         if (dismissedDate === today) {
@@ -51393,22 +51456,6 @@ function renderAdaptiveAdjustment(result, quizData) {
     progressSection.style.display = 'none';
     eligibleSection.style.display = '';
 
-    // Update stats
-    document.getElementById('adaptive-stat-tracked').textContent = result.trackedDays;
-    document.getElementById('adaptive-stat-adherence').textContent = result.adherenceRate + '%';
-
-    const weightChangeEl = document.getElementById('adaptive-stat-weight-change');
-    const weightUnitPref = localStorage.getItem('weightUnitPreference') || 'kg';
-    let weightChangeDisplay;
-    if (weightUnitPref === 'lbs') {
-        weightChangeDisplay = (result.weightChange * 2.20462).toFixed(1) + ' lbs';
-    } else {
-        weightChangeDisplay = result.weightChange.toFixed(1) + ' kg';
-    }
-    if (result.weightChange > 0) weightChangeDisplay = '+' + weightChangeDisplay;
-    weightChangeEl.textContent = weightChangeDisplay;
-
-    // Build suggestion
     const container = document.getElementById('adaptive-suggestion-container');
     const suggestion = result.suggestion;
 
@@ -51418,32 +51465,37 @@ function renderAdaptiveAdjustment(result, quizData) {
     }
 
     if (suggestion.direction === 'none') {
-        // On track - positive reinforcement
+        // On track - positive reinforcement, just the AI talking
         card.classList.add('on-track');
         card.classList.remove('has-suggestion');
         container.innerHTML = `
-            <div class="adaptive-suggestion-box positive">
-                <div class="adaptive-suggestion-text">${suggestion.reason}</div>
-            </div>
+            <div class="adaptive-coach-message">${suggestion.reason}</div>
         `;
     } else {
-        // Has a suggestion
+        // Has a suggestion - conversational message with options
         card.classList.add('has-suggestion');
         card.classList.remove('on-track');
 
-        const directionWord = suggestion.direction === 'increase' ? 'Increase' : 'Decrease';
-        const directionIcon = suggestion.direction === 'increase' ? '&#x1F4C8;' : '&#x1F4C9;';
+        const directionWord = suggestion.direction === 'increase' ? 'Increase' : 'Reduce';
+        const newCal = result.newCalorieGoal;
 
         container.innerHTML = `
-            <div class="adaptive-suggestion-box">
-                <div class="adaptive-suggestion-text">${suggestion.reason}</div>
-                ${suggestion.question ? `<div class="adaptive-suggestion-question">${suggestion.question}</div>` : ''}
+            <div class="adaptive-coach-message">${suggestion.reason}</div>
+            ${suggestion.question ? `<div class="adaptive-coach-message" style="margin-top: 8px; color: var(--text-muted);">${suggestion.question}</div>` : ''}
+            <div class="adaptive-snooze-options">
+                <button class="adaptive-snooze-btn" onclick="openAdaptiveModal()" style="background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08)); border-color: rgba(99,102,241,0.2);">
+                    <span class="snooze-label">${directionWord} my calories to ${newCal} kcal/day</span>
+                    <span class="snooze-desc">Update my target now and check in again in 2 weeks</span>
+                </button>
+                <button class="adaptive-snooze-btn" onclick="snoozeAdaptiveAdjustment(7)">
+                    <span class="snooze-label">Give me another week</span>
+                    <span class="snooze-desc">Keep my current calories and I'll focus on tracking accurately</span>
+                </button>
+                <button class="adaptive-snooze-btn" onclick="snoozeAdaptiveAdjustment(14)">
+                    <span class="snooze-label">Check again in 2 weeks</span>
+                    <span class="snooze-desc">I'll keep going at my current level for now</span>
+                </button>
             </div>
-            <button class="adaptive-adjust-btn" onclick="openAdaptiveModal()">
-                <span>${directionIcon}</span>
-                <span>${directionWord} to ${result.newCalorieGoal} kcal/day</span>
-            </button>
-            <button class="adaptive-dismiss-btn" onclick="dismissAdaptiveAdjustment()">Not right now</button>
         `;
 
         // Store pending adjustment data for the modal
@@ -51472,8 +51524,8 @@ function openAdaptiveModal() {
     const diff = Math.abs(newCalorieGoal - currentCalorieGoal);
     document.getElementById('adaptive-modal-body').textContent =
         direction === 'increase'
-            ? `Based on your 2-week tracking data, we suggest adding ${diff} calories per day to support your weight gain goals.`
-            : `Based on your 2-week tracking data, we suggest reducing ${diff} calories per day to support your weight loss goals.`;
+            ? `Based on your last 2 weeks, I'd suggest adding ${diff} calories per day to help with your goals.`
+            : `Based on your last 2 weeks, I'd suggest reducing by ${diff} calories per day to help get things moving.`;
 
     document.getElementById('adaptive-modal-old').textContent = currentCalorieGoal + ' kcal';
     document.getElementById('adaptive-modal-new').textContent = newCalorieGoal + ' kcal';
@@ -51551,14 +51603,17 @@ async function confirmAdaptiveAdjustment() {
         card.classList.remove('has-suggestion');
         card.classList.add('on-track');
         container.innerHTML = `
-            <div class="adaptive-suggestion-box positive">
-                <div class="adaptive-suggestion-text">
-                    <strong>Goals updated!</strong> Your new daily target is <strong>${newGoals.calorie_goal} kcal</strong>
-                    (${newGoals.protein_goal_g}g protein, ${newGoals.carbs_goal_g}g carbs, ${newGoals.fat_goal_g}g fat).
-                    Keep tracking and we'll check in again in 2 weeks.
-                </div>
+            <div class="adaptive-coach-message">
+                <strong>Done!</strong> Your new daily target is <strong>${newGoals.calorie_goal} kcal</strong>
+                (${newGoals.protein_goal_g}g protein, ${newGoals.carbs_goal_g}g carbs, ${newGoals.fat_goal_g}g fat).
+                I'll check in again in 2 weeks to see how you're going.
             </div>
         `;
+
+        // Snooze for 14 days after applying adjustment
+        const snoozeUntil = new Date();
+        snoozeUntil.setDate(snoozeUntil.getDate() + 14);
+        localStorage.setItem('adaptiveAdjustmentSnoozeUntil', snoozeUntil.toISOString());
 
         // Reload nutrition UI to reflect new goals
         _pendingAdaptiveAdjustment = null;
@@ -51576,12 +51631,39 @@ async function confirmAdaptiveAdjustment() {
 }
 
 /**
- * Dismiss the adaptive adjustment suggestion for today.
+ * Snooze the adaptive adjustment for a specified number of days.
+ * @param {number} days - Number of days to snooze (7 = one week, 14 = two weeks)
+ */
+function snoozeAdaptiveAdjustment(days) {
+    const snoozeUntil = new Date();
+    snoozeUntil.setDate(snoozeUntil.getDate() + days);
+    localStorage.setItem('adaptiveAdjustmentSnoozeUntil', snoozeUntil.toISOString());
+
+    const card = document.getElementById('adaptive-adjustment-section');
+    if (!card) return;
+
+    // Show a brief confirmation message
+    const container = document.getElementById('adaptive-suggestion-container');
+    const label = days === 7 ? 'one week' : '2 weeks';
+    card.classList.remove('has-suggestion');
+    card.classList.add('on-track');
+    container.innerHTML = `
+        <div class="adaptive-coach-message">
+            No worries! I'll check in again in ${label}. Keep tracking and we'll see how things go.
+        </div>
+    `;
+
+    // Hide the card after a moment
+    setTimeout(() => {
+        card.style.display = 'none';
+    }, 3000);
+}
+
+/**
+ * Dismiss the adaptive adjustment suggestion for today (legacy compat).
  */
 function dismissAdaptiveAdjustment() {
-    localStorage.setItem('adaptiveAdjustmentDismissedDate', getLocalDateString());
-    const card = document.getElementById('adaptive-adjustment-section');
-    if (card) card.style.display = 'none';
+    snoozeAdaptiveAdjustment(1);
 }
 
 // --- 6. Photo Meal Journal ---
