@@ -189,9 +189,25 @@ IMPORTANT:
         ).join('\n')
       : 'No daily nutrition summaries.';
 
-    // Format check-ins
-    const checkinSummary = checkins.length > 0
-      ? checkins.map((c: any) => {
+    // Format check-ins (separate weekly check-ins from daily ones)
+    const weeklyCheckins = checkins.filter((c: any) => c.additional_data?.type === 'weekly_checkin');
+    const dailyCheckins = checkins.filter((c: any) => c.additional_data?.type !== 'weekly_checkin');
+
+    const weeklyCheckinSummary = weeklyCheckins.length > 0
+      ? weeklyCheckins.map((c: any) => {
+          const d = c.additional_data;
+          const parts = [`Week of: ${c.checkin_date}`];
+          if (d.week_rating) parts.push(`Rating: ${d.week_rating.replace(/_/g, ' ')}`);
+          if (d.motivation) parts.push(`Motivation: ${d.motivation.replace(/_/g, ' ')}`);
+          if (d.biggest_win) parts.push(`Win: "${d.biggest_win}"`);
+          if (d.biggest_struggle) parts.push(`Struggle: "${d.biggest_struggle}"`);
+          if (d.coach_note) parts.push(`Note to Shannon: "${d.coach_note}"`);
+          return parts.join(' | ');
+        }).join('\n')
+      : 'No weekly check-ins submitted yet.';
+
+    const checkinSummary = dailyCheckins.length > 0
+      ? dailyCheckins.map((c: any) => {
           const parts = [`Date: ${c.checkin_date}`];
           if (c.energy) parts.push(`Energy: ${c.energy}`);
           if (c.sleep) parts.push(`Sleep: ${c.sleep}`);
@@ -200,7 +216,7 @@ IMPORTANT:
           if (c.additional_data) parts.push(`Extra: ${JSON.stringify(c.additional_data)}`);
           return parts.join(' | ');
         }).join('\n')
-      : 'No check-ins recorded.';
+      : 'No daily check-ins recorded.';
 
     // Format recent conversations (last 30 messages)
     const recentConvos = conversations.slice(-30);
@@ -294,6 +310,9 @@ ${mealSummary}
 
 === DAILY NUTRITION TOTALS ===
 ${nutritionSummary}
+
+=== WEEKLY CHECK-INS (client's own words — great for personalising reviews) ===
+${weeklyCheckinSummary}
 
 === DAILY CHECK-INS ===
 ${checkinSummary}

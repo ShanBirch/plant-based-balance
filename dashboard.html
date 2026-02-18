@@ -8090,6 +8090,98 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
+    <!-- Weekly Check-In Card (appears on Sundays) -->
+    <div id="weekly-checkin-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+        <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+
+        <div style="position: relative; z-index: 1;">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div>
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; font-weight: 700;">Weekly Check-In</h3>
+                    <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Quick reflection — helps Shannon coach you better!</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
+                    +5 XP
+                </div>
+            </div>
+
+            <!-- Collapsed state (tap to expand) -->
+            <div id="weekly-checkin-collapsed" onclick="expandWeeklyCheckin()" style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x1F4AC;</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 0.95rem;">How was your week?</div>
+                    <div style="font-size: 0.8rem; opacity: 0.85; margin-top: 2px;">Tap to check in — takes 30 seconds</div>
+                </div>
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: rgba(255,255,255,0.7);"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+            </div>
+
+            <!-- Expanded form (hidden until tapped) -->
+            <div id="weekly-checkin-form" style="display: none;">
+                <!-- Q1: How did your week feel? -->
+                <div style="margin-bottom: 16px;">
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">How did your week feel overall?</div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="wcheckin-chip" data-group="week_rating" data-value="crushed_it" onclick="selectWeeklyCheckinOption('week_rating','crushed_it',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Crushed it</button>
+                        <button class="wcheckin-chip" data-group="week_rating" data-value="pretty_good" onclick="selectWeeklyCheckinOption('week_rating','pretty_good',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Pretty good</button>
+                        <button class="wcheckin-chip" data-group="week_rating" data-value="meh" onclick="selectWeeklyCheckinOption('week_rating','meh',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Meh</button>
+                        <button class="wcheckin-chip" data-group="week_rating" data-value="rough" onclick="selectWeeklyCheckinOption('week_rating','rough',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Rough</button>
+                    </div>
+                </div>
+
+                <!-- Q2: Biggest win -->
+                <div style="margin-bottom: 16px;">
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Biggest win this week?</div>
+                    <input type="text" id="wcheckin-win" placeholder="e.g. Hit the gym 3 times, nailed my protein..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
+                </div>
+
+                <!-- Q3: Biggest struggle -->
+                <div style="margin-bottom: 16px;">
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">What was hardest?</div>
+                    <input type="text" id="wcheckin-struggle" placeholder="e.g. Snacking at night, skipped workouts..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
+                </div>
+
+                <!-- Q4: Motivation level -->
+                <div style="margin-bottom: 16px;">
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">How's your motivation right now?</div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="wcheckin-chip" data-group="motivation" data-value="on_fire" onclick="selectWeeklyCheckinOption('motivation','on_fire',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">On fire</button>
+                        <button class="wcheckin-chip" data-group="motivation" data-value="steady" onclick="selectWeeklyCheckinOption('motivation','steady',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Steady</button>
+                        <button class="wcheckin-chip" data-group="motivation" data-value="slipping" onclick="selectWeeklyCheckinOption('motivation','slipping',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Slipping</button>
+                        <button class="wcheckin-chip" data-group="motivation" data-value="need_a_push" onclick="selectWeeklyCheckinOption('motivation','need_a_push',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Need a push</button>
+                    </div>
+                </div>
+
+                <!-- Q5: Anything Shannon should know? -->
+                <div style="margin-bottom: 16px;">
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Anything else Shannon should know?</div>
+                    <input type="text" id="wcheckin-note" placeholder="Optional — injuries, life stuff, questions..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
+                </div>
+
+                <button onclick="submitWeeklyCheckin()" style="width: 100%; background: white; color: #6366f1; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                    Submit Check-In
+                </button>
+            </div>
+
+            <!-- Success state -->
+            <div id="weekly-checkin-success" style="display: none; text-align: center; padding: 10px 0;">
+                <div style="font-size: 2rem; margin-bottom: 8px;">+5 XP</div>
+                <p style="margin: 0; font-weight: 600;">Check-in submitted! Shannon will review this week.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Check-In Completed Card -->
+    <div id="weekly-checkin-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
+        <button onclick="dismissWeeklyCheckinDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
+        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
+        <div style="flex: 1;">
+            <div style="font-weight: 700; font-size: 1rem;">Weekly Check-In Done!</div>
+            <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+5 XP earned. See you next Sunday!</div>
+        </div>
+    </div>
+
     <!-- Daily Quiz Card (disappears after completion) -->
     <div id="daily-quiz-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden; cursor: pointer;">
         <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
@@ -8390,6 +8482,187 @@ async function applyAppTheme(themeKey) {
     window.submitDailyWeighIn = submitDailyWeighIn;
     window.checkAndShowWeighInCard = checkAndShowWeighInCard;
 
+    // ===== WEEKLY CHECK-IN CARD (Sundays) =====
+
+    window._weeklyCheckinData = { week_rating: null, motivation: null };
+
+    function getWeekStartSunday() {
+        var d = new Date();
+        // Get this week's Sunday (if today is Sunday, use today; otherwise go back)
+        var day = d.getDay(); // 0 = Sunday
+        var sundayDate = new Date(d);
+        sundayDate.setDate(d.getDate() - day);
+        return sundayDate.getFullYear() + '-' + String(sundayDate.getMonth()+1).padStart(2,'0') + '-' + String(sundayDate.getDate()).padStart(2,'0');
+    }
+
+    async function checkAndShowWeeklyCheckinCard() {
+        if (!window.currentUser) return;
+        // Don't show if onboarding wizard is active
+        if (window._onboardingWizardPending) return;
+        var wizard = document.getElementById('onboarding-wizard');
+        if (wizard && wizard.style.display !== 'none') return;
+
+        var card = document.getElementById('weekly-checkin-card');
+        var doneCard = document.getElementById('weekly-checkin-done-card');
+        if (!card) return;
+
+        // Only show on Sundays
+        var today = new Date();
+        if (today.getDay() !== 0) {
+            card.style.display = 'none';
+            if (doneCard) doneCard.style.display = 'none';
+            return;
+        }
+
+        // Check if already completed this week
+        var weekKey = getWeekStartSunday();
+        var lsKey = 'weeklyCheckinDone_' + weekKey;
+
+        if (localStorage.getItem(lsKey)) {
+            // Already done — show done card (unless dismissed)
+            card.style.display = 'none';
+            if (doneCard) {
+                var dismissKey = 'weeklyCheckinDoneDismissed_' + weekKey;
+                doneCard.style.display = localStorage.getItem(dismissKey) ? 'none' : 'flex';
+            }
+            return;
+        }
+
+        // Show the check-in card
+        card.style.display = 'block';
+        if (doneCard) doneCard.style.display = 'none';
+
+        // Reset form state
+        var collapsed = document.getElementById('weekly-checkin-collapsed');
+        var form = document.getElementById('weekly-checkin-form');
+        var success = document.getElementById('weekly-checkin-success');
+        if (collapsed) collapsed.style.display = 'flex';
+        if (form) form.style.display = 'none';
+        if (success) success.style.display = 'none';
+        window._weeklyCheckinData = { week_rating: null, motivation: null };
+    }
+
+    function expandWeeklyCheckin() {
+        var collapsed = document.getElementById('weekly-checkin-collapsed');
+        var form = document.getElementById('weekly-checkin-form');
+        if (collapsed) collapsed.style.display = 'none';
+        if (form) form.style.display = 'block';
+    }
+
+    function selectWeeklyCheckinOption(group, value, el) {
+        window._weeklyCheckinData[group] = value;
+        var chips = document.querySelectorAll('.wcheckin-chip[data-group="' + group + '"]');
+        chips.forEach(function(c) {
+            c.style.background = 'rgba(255,255,255,0.15)';
+            c.style.borderColor = 'transparent';
+            c.style.fontWeight = '400';
+        });
+        el.style.background = 'rgba(255,255,255,0.35)';
+        el.style.borderColor = 'white';
+        el.style.fontWeight = '700';
+    }
+
+    async function submitWeeklyCheckin() {
+        if (!window.currentUser) return;
+
+        if (!window._weeklyCheckinData.week_rating) {
+            alert('Please select how your week felt!');
+            return;
+        }
+
+        var form = document.getElementById('weekly-checkin-form');
+        var success = document.getElementById('weekly-checkin-success');
+        var card = document.getElementById('weekly-checkin-card');
+
+        var winInput = document.getElementById('wcheckin-win');
+        var struggleInput = document.getElementById('wcheckin-struggle');
+        var noteInput = document.getElementById('wcheckin-note');
+
+        var checkinPayload = {
+            type: 'weekly_checkin',
+            week_rating: window._weeklyCheckinData.week_rating,
+            motivation: window._weeklyCheckinData.motivation,
+            biggest_win: (winInput && winInput.value.trim()) || null,
+            biggest_struggle: (struggleInput && struggleInput.value.trim()) || null,
+            coach_note: (noteInput && noteInput.value.trim()) || null
+        };
+
+        try {
+            // Save to daily_checkins using the existing upsert with additional_data
+            var weekKey = getWeekStartSunday();
+            await db.checkins.upsert(window.currentUser.id, weekKey, {
+                energy: window._weeklyCheckinData.week_rating,
+                additional_data: checkinPayload
+            });
+
+            // Award 5 XP
+            try {
+                var { data: currentPoints } = await supabaseClient
+                    .from('user_points')
+                    .select('lifetime_points')
+                    .eq('user_id', window.currentUser.id)
+                    .maybeSingle();
+
+                if (currentPoints) {
+                    await supabaseClient
+                        .from('user_points')
+                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 5 })
+                        .eq('user_id', window.currentUser.id);
+                } else {
+                    await supabaseClient
+                        .from('user_points')
+                        .insert({ user_id: window.currentUser.id, lifetime_points: 5, current_points: 0 });
+                }
+
+                if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+            } catch (xpErr) {
+                console.log('Weekly check-in XP award skipped:', xpErr);
+            }
+
+            // Show success
+            if (form) form.style.display = 'none';
+            if (success) success.style.display = 'block';
+
+            // Mark as done in localStorage
+            localStorage.setItem('weeklyCheckinDone_' + weekKey, '1');
+
+            // Transition to done card
+            setTimeout(function() {
+                if (card) {
+                    card.style.transition = 'opacity 0.5s, transform 0.5s';
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(-20px)';
+                    setTimeout(function() {
+                        card.style.display = 'none';
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                        var doneCard = document.getElementById('weekly-checkin-done-card');
+                        if (doneCard) doneCard.style.display = 'flex';
+                    }, 500);
+                }
+            }, 2000);
+
+            if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
+
+        } catch (err) {
+            console.error('Error submitting weekly check-in:', err);
+            alert('Failed to submit check-in. Please try again.');
+        }
+    }
+
+    function dismissWeeklyCheckinDoneCard() {
+        var weekKey = getWeekStartSunday();
+        localStorage.setItem('weeklyCheckinDoneDismissed_' + weekKey, '1');
+        document.getElementById('weekly-checkin-done-card').style.display = 'none';
+    }
+
+    window.checkAndShowWeeklyCheckinCard = checkAndShowWeeklyCheckinCard;
+    window.expandWeeklyCheckin = expandWeeklyCheckin;
+    window.selectWeeklyCheckinOption = selectWeeklyCheckinOption;
+    window.submitWeeklyCheckin = submitWeeklyCheckin;
+    window.dismissWeeklyCheckinDoneCard = dismissWeeklyCheckinDoneCard;
+
     // PWA resume: re-check weigh-in when app comes back to foreground
     // (e.g., user opens PWA the next day without a hard refresh)
     let _lastWeighInCheckDate = new Date().toDateString();
@@ -8402,6 +8675,7 @@ async function applyAppTheme(themeKey) {
                 console.log('🔄 New day detected on PWA resume, refreshing daily cards');
                 if (typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
                 if (typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
+                if (typeof checkAndShowWeeklyCheckinCard === 'function') checkAndShowWeeklyCheckinCard();
                 if (typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
                 if (typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
                 if (typeof checkAndShowProgressPhotoCard === 'function') checkAndShowProgressPhotoCard();
@@ -11053,6 +11327,7 @@ async function applyAppTheme(themeKey) {
             // Phase 4: Non-critical UI updates (fire-and-forget, don't block)
             if(typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
             if(typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
+            if(typeof checkAndShowWeeklyCheckinCard === 'function') checkAndShowWeeklyCheckinCard();
             if(typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
             if(typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
             if(typeof checkAndShowProgressPhotoCard === 'function') checkAndShowProgressPhotoCard();
@@ -21431,6 +21706,9 @@ function _switchAppTabReal(tabName, btn) {
         }
         if (typeof checkAndShowWeighInCard === 'function') {
             checkAndShowWeighInCard();
+        }
+        if (typeof checkAndShowWeeklyCheckinCard === 'function') {
+            checkAndShowWeeklyCheckinCard();
         }
         if (typeof checkAndShowDailyQuizCard === 'function') {
             checkAndShowDailyQuizCard();
