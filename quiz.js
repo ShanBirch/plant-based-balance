@@ -154,6 +154,22 @@ const coreQuestions = [
         ]
     },
     {
+        id: "meal_timing",
+        text: "When do you plan to eat your meals?",
+        subtext: "We'll reward you with bonus XP when you eat on schedule. Consistent meal timing supports hormone balance and metabolism.",
+        type: "meal_timing",
+        defaults: {
+            breakfast: "08:00",
+            lunch: "12:30",
+            dinner: "18:30"
+        },
+        recommendations: {
+            breakfast: { time: "08:00", reason: "Eating within 1 hour of waking supports cortisol regulation" },
+            lunch: { time: "12:30", reason: "A midday meal keeps blood sugar stable and prevents afternoon crashes" },
+            dinner: { time: "18:30", reason: "Eating 3+ hours before bed improves sleep quality and digestion" }
+        }
+    },
+    {
         id: "diet_type",
         text: "Which best describes your diet?",
         type: "choice",
@@ -3545,6 +3561,116 @@ function renderQuestion(q, container) {
             infoBox.appendChild(infoText);
             optionsDiv.appendChild(infoBox);
         }
+    } else if (q.type === 'meal_timing') {
+        // Meal timing picker with recommended defaults
+        const meals = [
+            { key: 'breakfast', label: 'Breakfast', emoji: '🌅' },
+            { key: 'lunch', label: 'Lunch', emoji: '☀️' },
+            { key: 'dinner', label: 'Dinner', emoji: '🌙' }
+        ];
+
+        const timingContainer = document.createElement('div');
+        timingContainer.style.width = '100%';
+        timingContainer.style.maxWidth = '360px';
+        timingContainer.style.margin = '0 auto';
+
+        // XP bonus info banner
+        const xpBanner = document.createElement('div');
+        xpBanner.style.background = 'linear-gradient(135deg, #f0f9f0, #e8f5e8)';
+        xpBanner.style.border = '1px solid rgba(72, 134, 75, 0.3)';
+        xpBanner.style.borderRadius = '12px';
+        xpBanner.style.padding = '12px 15px';
+        xpBanner.style.marginBottom = '20px';
+        xpBanner.style.textAlign = 'center';
+        xpBanner.innerHTML = '<span style="font-weight: 700; color: #1a4d2e; font-size: 14px;">+1 XP per meal eaten on time</span><br><span style="font-size: 12px; color: #666;">Log within 30 minutes of your scheduled time</span>';
+        timingContainer.appendChild(xpBanner);
+
+        meals.forEach(meal => {
+            const rec = q.recommendations[meal.key];
+            const defaultTime = q.defaults[meal.key];
+            // Check if user already set a value
+            const existingValue = answers['meal_time_' + meal.key];
+
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.alignItems = 'center';
+            row.style.justifyContent = 'space-between';
+            row.style.padding = '15px';
+            row.style.marginBottom = '12px';
+            row.style.background = '#fff';
+            row.style.borderRadius = '12px';
+            row.style.border = '1px solid #e0e0e0';
+            row.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+
+            const labelDiv = document.createElement('div');
+            labelDiv.style.display = 'flex';
+            labelDiv.style.flexDirection = 'column';
+            labelDiv.innerHTML = `
+                <span style="font-size: 16px; font-weight: 700; color: #333;">${meal.emoji} ${meal.label}</span>
+                <span style="font-size: 11px; color: #888; margin-top: 3px; max-width: 200px; line-height: 1.3;">${rec.reason}</span>
+            `;
+
+            const timeInput = document.createElement('input');
+            timeInput.type = 'time';
+            timeInput.id = 'meal_time_' + meal.key;
+            timeInput.value = existingValue || defaultTime;
+            timeInput.style.padding = '8px 12px';
+            timeInput.style.borderRadius = '8px';
+            timeInput.style.border = '2px solid #48864B';
+            timeInput.style.fontSize = '16px';
+            timeInput.style.fontWeight = '600';
+            timeInput.style.color = '#1a4d2e';
+            timeInput.style.background = '#f0f9f0';
+            timeInput.style.cursor = 'pointer';
+            timeInput.style.minWidth = '100px';
+
+            row.appendChild(labelDiv);
+            row.appendChild(timeInput);
+            timingContainer.appendChild(row);
+        });
+
+        // Use Recommended button
+        const recBtn = document.createElement('button');
+        recBtn.className = 'option-btn';
+        recBtn.style.width = '100%';
+        recBtn.style.marginTop = '10px';
+        recBtn.style.background = 'transparent';
+        recBtn.style.color = '#48864B';
+        recBtn.style.border = '1px solid #48864B';
+        recBtn.style.fontSize = '14px';
+        recBtn.innerText = 'USE RECOMMENDED TIMES';
+        recBtn.onclick = () => {
+            meals.forEach(meal => {
+                const input = document.getElementById('meal_time_' + meal.key);
+                if (input) input.value = q.recommendations[meal.key].time;
+            });
+        };
+        timingContainer.appendChild(recBtn);
+
+        // Continue button
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'option-btn';
+        nextBtn.style.width = '100%';
+        nextBtn.style.marginTop = '10px';
+        nextBtn.innerText = 'SET MY MEAL TIMES';
+        nextBtn.onclick = () => {
+            // Save each meal time
+            meals.forEach(meal => {
+                const input = document.getElementById('meal_time_' + meal.key);
+                if (input && input.value) {
+                    answers['meal_time_' + meal.key] = input.value;
+                }
+            });
+            // Store combined value for the question ID
+            const combined = meals.map(m => {
+                const input = document.getElementById('meal_time_' + m.key);
+                return m.key + ':' + (input ? input.value : q.defaults[m.key]);
+            }).join(',');
+            selectOption(q.id, combined);
+        };
+        timingContainer.appendChild(nextBtn);
+
+        optionsDiv.appendChild(timingContainer);
     } else if (q.type === 'calendar_builder') {
         // Calendar builder for Design My Own
         renderCalendarBuilder(container, optionsDiv, q);

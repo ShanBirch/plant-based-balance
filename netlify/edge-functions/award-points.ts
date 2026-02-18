@@ -13,6 +13,8 @@ const POINTS_CONFIG = {
   POINTS_PER_WORKOUT: 1,
   POINTS_PER_PERSONAL_BEST: 1,
   POINTS_PER_DAILY_LOG: 2,
+  POINTS_PER_MEAL_TIMING: 1,    // 1 bonus point for logging a meal within 30 minutes of scheduled time
+  MEAL_TIMING_WINDOW_MINUTES: 30,
   DAILY_LOG_TOLERANCE: 0.20,  // 20% tolerance for hitting macro/calorie goals
   MAX_PHOTO_AGE_MINUTES: 5,
   STREAK_BONUSES: [
@@ -49,6 +51,7 @@ interface AwardPointsRequest {
   pbType?: string;          // For personal_best: 'weight' or 'reps'
   value?: number;           // For personal_best: the new PB value
   improvement?: number;     // For personal_best: improvement amount
+  mealTime?: string;        // For meal: HH:MM:SS format for timing bonus check
   nutritionDate?: string;   // For daily_log: the date being logged (YYYY-MM-DD)
   finishDay?: boolean;      // For daily_log: mark day complete without requiring goals met
 }
@@ -63,10 +66,20 @@ interface PointsResult {
   bonusDescription: string | null;
   newTotal: number;
   currentStreak: number;
+  mealTimingBonus: number;
+  mealOnTime: boolean;
   milestonesUnlocked: Array<{ type: string; label: string; points: number }>;
   canRedeem: boolean;
   error?: string;
   reason?: string;
+}
+
+/**
+ * Convert a time string (HH:MM:SS or HH:MM) to minutes since midnight
+ */
+function timeToMinutes(timeStr: string): number {
+  const parts = timeStr.split(':');
+  return parseInt(parts[0]) * 60 + parseInt(parts[1]);
 }
 
 export default async (request: Request, context: Context): Promise<Response> => {
@@ -422,8 +435,54 @@ export default async (request: Request, context: Context): Promise<Response> => 
       }
     }
 
+    // === MEAL TIMING BONUS ===
+    // Check if meal was logged within 30 minutes of the user's scheduled meal time
+    let mealTimingBonus = 0;
+    let mealOnTime = false;
+
+    if (type === 'meal' && body.mealTime) {
+      try {
+        // Get user's meal schedule from meal_reminder_preferences
+        const { data: mealPrefs } = await supabase
+          .from('meal_reminder_preferences')
+          .select('breakfast_time, lunch_time, dinner_time')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (mealPrefs) {
+          // Determine which scheduled time to compare against based on meal time
+          const mealTimeStr = body.mealTime; // HH:MM:SS or HH:MM format
+          const mealMinutes = timeToMinutes(mealTimeStr);
+
+          // Determine meal type from time and get corresponding schedule
+          let scheduledTimeStr: string | null = null;
+          if (mealMinutes < 660) { // Before 11:00 = breakfast
+            scheduledTimeStr = mealPrefs.breakfast_time;
+          } else if (mealMinutes < 900) { // Before 15:00 = lunch
+            scheduledTimeStr = mealPrefs.lunch_time;
+          } else { // 15:00+ = dinner
+            scheduledTimeStr = mealPrefs.dinner_time;
+          }
+
+          if (scheduledTimeStr) {
+            const scheduledMinutes = timeToMinutes(scheduledTimeStr);
+            const diff = Math.abs(mealMinutes - scheduledMinutes);
+
+            if (diff <= POINTS_CONFIG.MEAL_TIMING_WINDOW_MINUTES) {
+              mealTimingBonus = POINTS_CONFIG.POINTS_PER_MEAL_TIMING * xpMultiplier;
+              mealOnTime = true;
+              console.log(`Meal timing bonus! Meal at ${mealTimeStr}, scheduled ${scheduledTimeStr}, diff ${diff}min`);
+            }
+          }
+        }
+      } catch (timingError) {
+        console.error('Error checking meal timing:', timingError);
+        // Non-fatal: don't block points for timing check failure
+      }
+    }
+
     // Calculate new totals
-    const totalPointsEarned = pointsToAward + bonusPoints;
+    const totalPointsEarned = pointsToAward + bonusPoints + mealTimingBonus;
     const newCurrentPoints = (userPoints?.current_points || 0) + totalPointsEarned;
     const newLifetimePoints = (userPoints?.lifetime_points || 0) + totalPointsEarned;
 
@@ -531,6 +590,18 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
+    // Log meal timing bonus transaction if applicable
+    if (mealTimingBonus > 0) {
+      await supabase.from('point_transactions').insert({
+        user_id: userId,
+        transaction_type: 'bonus_meal_timing',
+        points_amount: mealTimingBonus,
+        reference_id: referenceId,
+        reference_type: 'meal_log',
+        description: `Earned ${mealTimingBonus} bonus point for eating on schedule`
+      });
+    }
+
     // Update challenge points for any active challenges
     await supabase.rpc('update_challenge_participant_points', {
       user_uuid: userId
@@ -607,19 +678,23 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
     const result: PointsResult = {
       success: true,
-      pointsAwarded: pointsToAward,
+      pointsAwarded: pointsToAward + mealTimingBonus,
       basePoints: basePoints,
       xpMultiplier: xpMultiplier,
       doubleXpActive: hasDoubleXp,
-      bonusPoints: bonusPoints + milestoneBonus,
-      bonusDescription: bonusDescription || (milestones.length > 0 ? milestones[0].label : null),
+      bonusPoints: bonusPoints + milestoneBonus + mealTimingBonus,
+      bonusDescription: mealOnTime
+        ? (bonusDescription ? bonusDescription + ' + On-time meal!' : 'On-time meal bonus!')
+        : (bonusDescription || (milestones.length > 0 ? milestones[0].label : null)),
+      mealTimingBonus: mealTimingBonus,
+      mealOnTime: mealOnTime,
       newTotal: finalTotal,
       currentStreak: newStreak,
       milestonesUnlocked: milestones,
       canRedeem: finalTotal >= POINTS_CONFIG.POINTS_FOR_FREE_WEEK
     };
 
-    console.log(`Awarded ${totalPointsEarned} points to user ${userId} for ${type}${hasDoubleXp ? ' (2x XP active)' : ''}`);
+    console.log(`Awarded ${totalPointsEarned} points to user ${userId} for ${type}${hasDoubleXp ? ' (2x XP active)' : ''}${mealOnTime ? ' (on-time bonus!)' : ''}`);
 
     return new Response(JSON.stringify(result), {
       status: 200,
