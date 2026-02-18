@@ -413,7 +413,7 @@ SHANNON'S WRITING STYLE RULES (for check-in reviews and client messages):
 
 CHECK-IN REVIEW FORMAT (when asked to write a check-in review for a client):
 Write it the way Shannon would actually text the client. NOT a formal report with headers and bullet points.
-Instead, write a series of short, natural messages that Shannon can send directly. Use "|||" to separate individual messages.
+Write one flowing, casual message — the way you'd text a mate. Use line breaks between thoughts to keep it readable, but it all goes as one message.
 Structure:
 1. Warm opener referencing something personal or timely
 2. Acknowledge what they DID do (data-driven, reference specific days/numbers)
@@ -422,7 +422,21 @@ Structure:
 5. Encouraging close with forward momentum
 
 Example check-in review output:
-"Hey lovely ||| Hope the weekend was good! ||| So looking at this week — you tracked meals Monday through Thursday which is awesome, protein was sitting around 85g most days which is solid ||| Friday and the weekend went quiet though hey ||| No stress, happens to everyone ||| This week lets try keep that momentum going into Friday — even if its just logging one meal ||| You've been really consistent with your workouts too, 3 sessions is great ||| Keen to see how this week goes!"
+"Hey lovely
+
+Hope the weekend was good!
+
+So looking at this week — you tracked meals Monday through Thursday which is awesome, protein was sitting around 85g most days which is solid
+
+Friday and the weekend went quiet though hey
+
+No stress, happens to everyone
+
+This week lets try keep that momentum going into Friday — even if its just logging one meal
+
+You've been really consistent with your workouts too, 3 sessions is great
+
+Keen to see how this week goes!"
 
 Here is the complete data for the client being discussed:
 ${fullContext}`;
