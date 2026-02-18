@@ -7,7 +7,7 @@ export default async function (request: Request, context: Context) {
   }
 
   try {
-    const { query, userData, chatHistory } = await request.json();
+    const { query, userData, chatHistory, analyticsSummary } = await request.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!apiKey) {
@@ -17,14 +17,84 @@ export default async function (request: Request, context: Context) {
       });
     }
 
-    if (!query || !userData) {
-      return new Response(JSON.stringify({ error: "Missing query or userData" }), {
+    if (!query) {
+      return new Response(JSON.stringify({ error: "Missing query" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Build a rich context string from all the user data
+    // If no userData provided, handle as a general business question
+    if (!userData) {
+      const generalSystemPrompt = `You are an AI coaching assistant for Shannon, who runs Balance — a plant-based nutrition and fitness coaching platform (also known as FITGotchi/Plant Based Balance).
+
+Your job is to help Shannon (the admin/coach) with general business questions about his platform and clients.
+
+You have access to the following analytics and user data:
+
+${analyticsSummary || 'No analytics data available.'}
+
+YOUR CAPABILITIES:
+1. **Business Overview**: Total users, active users, message counts, growth
+2. **User Analysis**: Who's active, who's inactive, who needs attention
+3. **Engagement Insights**: Which users are most/least engaged based on last login
+4. **Check-in Recommendations**: Identify users who haven't logged in recently and may need a check-in
+5. **Trend Observations**: Patterns in user activity and engagement
+
+RESPONSE STYLE:
+- Be direct, professional but casual - you're talking to Shannon, not a client
+- Use Australian casual language since Shannon is Australian
+- Present data clearly with structure (use headers, bullet points, numbers)
+- Highlight the IMPORTANT stuff first
+- Use markdown formatting for readability (headers, bold, lists)
+- Keep responses concise and actionable
+
+IMPORTANT:
+- You are NOT talking to a client. You are talking to Shannon the coach/admin.
+- If asked something you don't have data for, say so clearly
+- When identifying users who need attention, explain WHY (e.g., inactive for X days)`;
+
+      const contents: any[] = [];
+      contents.push({ role: "user", parts: [{ text: `SYSTEM: ${generalSystemPrompt}` }] });
+      contents.push({ role: "model", parts: [{ text: "Got it. I have your platform analytics loaded and ready. What would you like to know?" }] });
+
+      if (chatHistory && Array.isArray(chatHistory)) {
+        chatHistory.forEach((msg: any) => {
+          const role = msg.role === 'user' ? 'user' : 'model';
+          const text = msg.text || '';
+          if (!text) return;
+          if (contents.length > 0 && contents[contents.length - 1].role === role) {
+            contents[contents.length - 1].parts[0].text += `\n\n${text}`;
+          } else {
+            contents.push({ role, parts: [{ text }] });
+          }
+        });
+      }
+
+      if (contents.length > 0 && contents[contents.length - 1].role === "user") {
+        contents[contents.length - 1].parts[0].text += `\n\n${query}`;
+      } else {
+        contents.push({ role: "user", parts: [{ text: query }] });
+      }
+
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 4096, temperature: 0.7 } })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        console.error("Gemini API Error:", JSON.stringify(data));
+        throw new Error(data.error?.message || "Failed to fetch from Gemini");
+      }
+
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response generated.";
+      return new Response(JSON.stringify({ reply }), { headers: { "Content-Type": "application/json" } });
+    }
+
+    // Build a rich context string from all the user data (client-specific mode)
     const profile = userData.profile || {};
     const facts = userData.facts || {};
     const quiz = userData.quizResults || {};
@@ -212,9 +282,10 @@ ${convoSummary}
 
 === WEARABLE DATA ===
 ${wearableSummary}
+${analyticsSummary ? `\n=== PLATFORM ANALYTICS ===\n${analyticsSummary}` : ''}
 `;
 
-    const systemPrompt = `You are an AI coaching assistant for Shannon, who runs FITGotchi - a plant-based nutrition and fitness coaching platform.
+    const systemPrompt = `You are an AI coaching assistant for Shannon, who runs Balance (also known as FITGotchi/Plant Based Balance) - a plant-based nutrition and fitness coaching platform.
 
 Your job is to help Shannon (the admin/coach) review and understand his clients' data. You are Shannon's behind-the-scenes assistant.
 
