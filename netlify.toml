@@ -200,6 +200,31 @@
   function = "strava-sync"
   path = "/api/strava/data"
 
+# Spotify Integration Edge Functions
+[[edge_functions]]
+  function = "spotify-auth"
+  path = "/api/spotify/auth"
+
+[[edge_functions]]
+  function = "spotify-auth"
+  path = "/api/spotify/callback"
+
+[[edge_functions]]
+  function = "spotify-auth"
+  path = "/api/spotify/disconnect"
+
+[[edge_functions]]
+  function = "spotify-sync"
+  path = "/api/spotify/sync"
+
+[[edge_functions]]
+  function = "spotify-sync"
+  path = "/api/spotify/sync-all"
+
+[[edge_functions]]
+  function = "spotify-sync"
+  path = "/api/spotify/data"
+
 # Client Import Edge Function
 [[edge_functions]]
   function = "import-clients"

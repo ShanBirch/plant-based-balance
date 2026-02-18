@@ -9235,6 +9235,155 @@ async function applyAppTheme(themeKey) {
     </script>
 
     <script>
+    // ===== SPOTIFY INTEGRATION =====
+    (function() {
+        let spotifyConnected = false;
+
+        async function initSpotifyDashboard() {
+            if (!window.currentUser) return;
+            try {
+                const res  = await fetch(`/api/spotify/data?user_id=${window.currentUser.id}`);
+                const data = await res.json();
+                updateSpotifyDisplay(data);
+            } catch (err) {
+                console.warn('Spotify data fetch error:', err);
+            }
+        }
+
+        function updateSpotifyDisplay(data) {
+            spotifyConnected = !!data.connected;
+            const btn  = document.getElementById('spotify-connect-btn');
+            const text = document.getElementById('spotify-status-text');
+            if (!btn) return;
+
+            if (data.connected) {
+                btn.textContent  = 'Disconnect';
+                btn.style.background = '#ef4444';
+                if (text) {
+                    const name = data.display_name ? `${data.display_name} · ` : '';
+                    const sync = data.last_sync ? formatTimeAgo(data.last_sync) : 'never';
+                    text.textContent = `${name}Last sync: ${sync}`;
+                }
+            } else {
+                btn.textContent  = 'Connect';
+                btn.style.background = '#1DB954';
+                if (text) text.textContent = 'Sync listening habits & music data';
+            }
+        }
+
+        async function toggleSpotifyConnection() {
+            if (!window.currentUser) return;
+
+            if (spotifyConnected) {
+                if (!confirm('Disconnect Spotify? Your listening history will be kept.')) return;
+                const btn = document.getElementById('spotify-connect-btn');
+                btn.disabled = true; btn.textContent = 'Disconnecting...';
+                try {
+                    await fetch('/api/spotify/disconnect', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: window.currentUser.id }),
+                    });
+                    updateSpotifyDisplay({ connected: false });
+                } catch (err) {
+                    console.error('Spotify disconnect error:', err);
+                    alert('Failed to disconnect. Please try again.');
+                } finally {
+                    btn.disabled = false;
+                }
+            } else {
+                window.location.href = `/api/spotify/auth?user_id=${window.currentUser.id}`;
+            }
+        }
+
+        function checkSpotifyOAuthResult() {
+            const params = new URLSearchParams(window.location.search);
+            const result = params.get('spotify');
+            if (result) {
+                window.history.replaceState({}, '', window.location.pathname);
+                if (result === 'connected') {
+                    showWearableToast('Spotify connected! Syncing your listening data...');
+                    setTimeout(() => initSpotifyDashboard(), 2000);
+                } else if (result === 'denied') {
+                    alert('Spotify connection was cancelled. You can connect anytime from Settings.');
+                } else if (result === 'error') {
+                    alert('There was a problem connecting to Spotify. Please try again.');
+                }
+            }
+        }
+
+        window.toggleSpotifyConnection = toggleSpotifyConnection;
+        window.initSpotifyDashboard    = initSpotifyDashboard;
+        initSpotifyDashboard();
+        checkSpotifyOAuthResult();
+    })();
+    </script>
+
+    <script>
+    // ===== WEATHER AUTO-FETCH =====
+    // Silently fetches today's weather via Open-Meteo (no API key) and stores it in weather_logs.
+    (function() {
+        const WMO_LABELS = {
+            0:'Clear sky', 1:'Mainly clear', 2:'Partly cloudy', 3:'Overcast',
+            45:'Fog', 48:'Icy fog', 51:'Light drizzle', 53:'Drizzle', 55:'Heavy drizzle',
+            61:'Light rain', 63:'Rain', 65:'Heavy rain', 71:'Light snow', 73:'Snow',
+            75:'Heavy snow', 77:'Snow grains', 80:'Light showers', 81:'Showers',
+            82:'Heavy showers', 85:'Snow showers', 86:'Heavy snow showers',
+            95:'Thunderstorm', 96:'Thunderstorm+hail', 99:'Thunderstorm+heavy hail',
+        };
+
+        async function fetchAndStoreWeather() {
+            if (!window.currentUser) return;
+            if (sessionStorage.getItem('weather_fetched')) return;
+            if (!navigator.geolocation) return;
+
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                try {
+                    const { latitude: lat, longitude: lon } = pos.coords;
+                    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+                        `&current=temperature_2m,apparent_temperature,weather_code,is_day,` +
+                        `relative_humidity_2m,precipitation,wind_speed_10m,uv_index` +
+                        `&timezone=auto&forecast_days=1`;
+
+                    const res  = await fetch(url);
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    const c    = data.current;
+                    const tz   = data.timezone || null;
+                    const today = new Date().toISOString().split('T')[0];
+                    const code  = c.weather_code ?? null;
+
+                    await supabase.from('weather_logs').upsert({
+                        user_id:          window.currentUser.id,
+                        log_date:         today,
+                        temp_c:           c.temperature_2m           ?? null,
+                        feels_like_c:     c.apparent_temperature      ?? null,
+                        weather_code:     code,
+                        condition:        WMO_LABELS[code] || null,
+                        is_day:           c.is_day === 1,
+                        humidity_pct:     Math.round(c.relative_humidity_2m) || null,
+                        precipitation_mm: c.precipitation             ?? null,
+                        wind_speed_kmh:   c.wind_speed_10m            ?? null,
+                        uv_index:         c.uv_index                  ?? null,
+                        latitude:         parseFloat(lat.toFixed(6)),
+                        longitude:        parseFloat(lon.toFixed(6)),
+                        timezone:         tz,
+                        fetched_at:       new Date().toISOString(),
+                    }, { onConflict: 'user_id,log_date' });
+
+                    sessionStorage.setItem('weather_fetched', '1');
+                } catch (err) {
+                    console.warn('Weather fetch error:', err);
+                }
+            }, () => { /* permission denied — silent */ }, { timeout: 8000, maximumAge: 3600000 });
+        }
+
+        // Delay to allow currentUser to be set after auth
+        setTimeout(fetchAndStoreWeather, 3000);
+    })();
+    </script>
+
+    <script>
     // ===== SHARED WEARABLE HELPERS =====
 
     function formatTimeAgo(dateStr) {
@@ -20028,6 +20177,10 @@ function viewWorkoutHistoryDetail(date) {
                     <svg viewBox="0 0 24 24" width="18" height="18" style="fill:var(--primary);"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
                     Screen Time Tracker
                 </button>
+                <button onclick="window.location.href='mood.html'" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" style="fill:var(--primary);"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
+                    Mood Tracker
+                </button>
             </div>
         </div>
 
@@ -20191,6 +20344,19 @@ function viewWorkoutHistoryDetail(date) {
                         <div id="strava-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync workouts, runs & rides</div>
                     </div>
                     <button id="strava-connect-btn" onclick="toggleStravaConnection()" style="padding:8px 16px; border-radius:8px; border:none; background:#FC4C02; color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
+                        Connect
+                    </button>
+                </div>
+                <!-- Spotify Connection -->
+                <div id="settings-spotify-connect" style="padding:15px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#1DB954;"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                            Spotify
+                        </div>
+                        <div id="spotify-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync listening habits & music data</div>
+                    </div>
+                    <button id="spotify-connect-btn" onclick="toggleSpotifyConnection()" style="padding:8px 16px; border-radius:8px; border:none; background:#1DB954; color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
                         Connect
                     </button>
                 </div>

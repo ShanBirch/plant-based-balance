@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Mood Tracker - Balance</title>
+<meta name="description" content="Track your daily mood, energy, and stress levels">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet"/>
+<link href="manifest.json" rel="manifest"/>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="lib/supabase.js?v=3"></script>
+<script src="lib/auth-guard.js?v=3"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+:root {
+    --primary: #7BA883;
+    --primary-light: #98C9A3;
+    --secondary: #E8D68E;
+    --accent-green: #f2f7f4;
+    --bg: #f9f9f7;
+    --surface: #ffffff;
+    --text-main: #1a202c;
+    --text-muted: #718096;
+    --border: #e2e8f0;
+    --radius: 16px;
+    --shadow: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.04);
+
+    --mood-color: #7BA883;
+    --energy-color: #E8D68E;
+    --stress-color: #F4A261;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+    min-height: 100vh;
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── Loading overlay ── */
+#loading-overlay {
+    position: fixed; inset: 0;
+    background: white;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px; z-index: 999;
+    transition: opacity 0.3s;
+}
+#loading-overlay.hidden { opacity: 0; pointer-events: none; }
+.loading-spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--accent-green);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Header ── */
+.page-header {
+    position: sticky; top: 0;
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    padding-top: calc(16px + env(safe-area-inset-top));
+    display: flex; align-items: center; gap: 12px;
+    z-index: 100;
+}
+.back-btn {
+    width: 36px; height: 36px;
+    background: var(--accent-green);
+    border: none; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+}
+.back-btn svg { fill: var(--primary); }
+.page-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem; color: var(--primary); flex: 1;
+}
+.header-subtitle {
+    font-size: 0.75rem; color: var(--text-muted); margin-top: 1px;
+}
+
+/* ── Main content ── */
+.content { max-width: 480px; margin: 0 auto; padding: 20px 16px; }
+
+/* ── Cards ── */
+.card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+.card-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+}
+.card-header h2 {
+    font-size: 1rem; font-weight: 600; color: var(--text-main);
+}
+.card-header .emoji { font-size: 1.1rem; }
+.card-body { padding: 20px; }
+
+/* ── Score sliders ── */
+.score-group { margin-bottom: 24px; }
+.score-group:last-of-type { margin-bottom: 0; }
+
+.score-label {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+}
+.score-label-left {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.9rem; font-weight: 600;
+}
+.score-label-left .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+}
+.score-value {
+    font-size: 1.5rem; font-weight: 700; line-height: 1;
+    min-width: 36px; text-align: right;
+}
+
+.slider-track {
+    position: relative; height: 6px;
+    background: var(--border); border-radius: 3px;
+    margin-bottom: 6px;
+}
+.slider-fill {
+    position: absolute; left: 0; top: 0; height: 100%;
+    border-radius: 3px; transition: width 0.1s;
+}
+.score-slider {
+    position: absolute; left: 0; top: 50%;
+    width: 100%; height: 28px;
+    transform: translateY(-50%);
+    opacity: 0; cursor: pointer;
+    -webkit-appearance: none; appearance: none;
+    margin: 0;
+}
+
+.slider-labels {
+    display: flex; justify-content: space-between;
+    font-size: 0.7rem; color: var(--text-muted);
+    padding: 0 2px;
+}
+
+/* Emoji display row */
+.emoji-row {
+    display: flex; justify-content: space-between;
+    margin-top: 6px;
+    font-size: 1.2rem;
+}
+.emoji-row span { opacity: 0.3; transition: opacity 0.15s, transform 0.15s; }
+.emoji-row span.active { opacity: 1; transform: scale(1.3); }
+
+/* ── Context buttons ── */
+.context-group {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; margin-bottom: 20px;
+}
+.context-btn {
+    padding: 10px 12px;
+    border: 2px solid var(--border);
+    background: white;
+    border-radius: 10px;
+    font-size: 0.85rem; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+    justify-content: center;
+}
+.context-btn:hover { border-color: var(--primary); color: var(--primary); }
+.context-btn.active {
+    border-color: var(--primary);
+    background: var(--accent-green);
+    color: var(--primary);
+}
+
+/* ── Notes ── */
+.notes-area {
+    width: 100%; resize: none;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    color: var(--text-main);
+    outline: none; transition: border-color 0.2s;
+    line-height: 1.5;
+}
+.notes-area:focus { border-color: var(--primary); }
+.notes-area::placeholder { color: var(--text-muted); }
+
+/* ── Section label ── */
+.section-label {
+    font-size: 0.75rem; font-weight: 600;
+    color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 10px;
+}
+
+/* ── Submit button ── */
+.submit-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #7BA883, #5a9464);
+    color: white; border: none;
+    border-radius: 12px;
+    font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.submit-btn:hover { opacity: 0.92; }
+.submit-btn:active { transform: scale(0.98); }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Success toast ── */
+.toast {
+    position: fixed; bottom: calc(24px + env(safe-area-inset-bottom));
+    left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1a202c; color: white;
+    padding: 12px 20px; border-radius: 12px;
+    font-size: 0.875rem; font-weight: 500;
+    transition: transform 0.3s ease; z-index: 200;
+    white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── Chart card ── */
+.chart-container { position: relative; height: 200px; }
+
+/* ── Trend stats ── */
+.trend-stats {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px; margin-bottom: 20px;
+}
+.trend-stat {
+    text-align: center; padding: 12px 8px;
+    background: var(--accent-green);
+    border-radius: 12px;
+}
+.trend-stat .stat-val {
+    font-size: 1.6rem; font-weight: 700; line-height: 1;
+    margin-bottom: 4px;
+}
+.trend-stat .stat-label {
+    font-size: 0.7rem; color: var(--text-muted); font-weight: 500;
+}
+
+/* ── Recent logs ── */
+.log-list { display: flex; flex-direction: column; gap: 10px; }
+
+.log-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    background: var(--accent-green);
+    border-radius: 12px;
+}
+.log-item-time {
+    font-size: 0.75rem; color: var(--text-muted);
+    min-width: 48px;
+}
+.log-item-scores {
+    display: flex; gap: 8px; flex: 1; flex-wrap: wrap;
+}
+.score-pill {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 0.78rem; font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+.score-pill.mood   { background: rgba(123,168,131,0.15); color: #5a9464; }
+.score-pill.energy { background: rgba(232,214,142,0.3);  color: #a07c0a; }
+.score-pill.stress { background: rgba(244,162,97,0.15);  color: #c0612a; }
+
+.log-item-context {
+    font-size: 0.7rem; color: var(--text-muted);
+    text-transform: capitalize;
+}
+
+.empty-state {
+    text-align: center; padding: 32px 20px;
+    color: var(--text-muted); font-size: 0.875rem;
+}
+.empty-state .emoji { font-size: 2.5rem; display: block; margin-bottom: 12px; }
+
+/* ── Today's summary pill (shown if already logged today) ── */
+.today-banner {
+    background: linear-gradient(135deg, #e8f5eb, #f2f7f4);
+    border: 1px solid rgba(123,168,131,0.3);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 4px;
+}
+.today-banner .icon { font-size: 1.4rem; }
+.today-banner-text { flex: 1; }
+.today-banner-text strong { font-size: 0.875rem; display: block; }
+.today-banner-text span { font-size: 0.75rem; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p style="color:var(--text-muted);font-size:0.875rem">Loading...</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ── Header ── -->
+<header class="page-header">
+    <button class="back-btn" onclick="window.location.href='dashboard.html'" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <div>
+        <h1>Mood Tracker</h1>
+        <div class="header-subtitle" id="header-subtitle">Loading...</div>
+    </div>
+</header>
+
+<div class="content">
+
+    <!-- ── Log entry card ── -->
+    <div class="card">
+        <div class="card-header">
+            <span class="emoji">✏️</span>
+            <h2>How are you feeling?</h2>
+        </div>
+        <div class="card-body">
+
+            <!-- Today banner (shown when already logged) -->
+            <div class="today-banner" id="today-banner" style="display:none">
+                <span class="icon">✅</span>
+                <div class="today-banner-text">
+                    <strong id="today-banner-text">Already logged today</strong>
+                    <span>Tap to log again — you can log multiple times per day</span>
+                </div>
+            </div>
+
+            <!-- Mood score -->
+            <div class="score-group">
+                <div class="score-label">
+                    <div class="score-label-left">
+                        <div class="dot" style="background:var(--mood-color)"></div>
+                        Mood
+                    </div>
+                    <div class="score-value" id="mood-val" style="color:var(--mood-color)">7</div>
+                </div>
+                <div class="slider-track">
+                    <div class="slider-fill" id="mood-fill" style="background:var(--mood-color);width:60%"></div>
+                    <input class="score-slider" type="range" min="1" max="10" value="7" id="mood-slider"
+                        oninput="updateScore('mood', this.value)">
+                </div>
+                <div class="slider-labels"><span>1 — Low</span><span>10 — Great</span></div>
+                <div class="emoji-row" id="mood-emojis">
+                    <span data-v="1">😞</span><span data-v="2">😔</span><span data-v="3">😟</span>
+                    <span data-v="4">😐</span><span data-v="5">🙂</span><span data-v="6">😊</span>
+                    <span data-v="7">😄</span><span data-v="8">😁</span><span data-v="9">🥰</span>
+                    <span data-v="10">🤩</span>
+                </div>
+            </div>
+
+            <!-- Energy score -->
+            <div class="score-group">
+                <div class="score-label">
+                    <div class="score-label-left">
+                        <div class="dot" style="background:var(--energy-color)"></div>
+                        Energy
+                    </div>
+                    <div class="score-value" id="energy-val" style="color:#a07c0a">7</div>
+                </div>
+                <div class="slider-track">
+                    <div class="slider-fill" id="energy-fill" style="background:var(--energy-color);width:60%"></div>
+                    <input class="score-slider" type="range" min="1" max="10" value="7" id="energy-slider"
+                        oninput="updateScore('energy', this.value)">
+                </div>
+                <div class="slider-labels"><span>1 — Drained</span><span>10 — Energised</span></div>
+                <div class="emoji-row" id="energy-emojis">
+                    <span data-v="1">🥱</span><span data-v="2">😴</span><span data-v="3">🫠</span>
+                    <span data-v="4">😑</span><span data-v="5">😐</span><span data-v="6">🙂</span>
+                    <span data-v="7">💪</span><span data-v="8">⚡</span><span data-v="9">🔥</span>
+                    <span data-v="10">🚀</span>
+                </div>
+            </div>
+
+            <!-- Stress score -->
+            <div class="score-group" style="margin-bottom:20px">
+                <div class="score-label">
+                    <div class="score-label-left">
+                        <div class="dot" style="background:var(--stress-color)"></div>
+                        Stress
+                    </div>
+                    <div class="score-value" id="stress-val" style="color:var(--stress-color)">3</div>
+                </div>
+                <div class="slider-track">
+                    <div class="slider-fill" id="stress-fill" style="background:var(--stress-color);width:20%"></div>
+                    <input class="score-slider" type="range" min="1" max="10" value="3" id="stress-slider"
+                        oninput="updateScore('stress', this.value)">
+                </div>
+                <div class="slider-labels"><span>1 — Calm</span><span>10 — Overwhelmed</span></div>
+                <div class="emoji-row" id="stress-emojis">
+                    <span data-v="1">😌</span><span data-v="2">🧘</span><span data-v="3">😊</span>
+                    <span data-v="4">🙂</span><span data-v="5">😐</span><span data-v="6">😕</span>
+                    <span data-v="7">😬</span><span data-v="8">😰</span><span data-v="9">😨</span>
+                    <span data-v="10">🤯</span>
+                </div>
+            </div>
+
+            <!-- Context -->
+            <div class="section-label">Time of Day</div>
+            <div class="context-group" id="context-group">
+                <button class="context-btn" data-ctx="morning"   onclick="setContext('morning')">  🌅 Morning</button>
+                <button class="context-btn" data-ctx="afternoon" onclick="setContext('afternoon')">☀️ Afternoon</button>
+                <button class="context-btn" data-ctx="evening"   onclick="setContext('evening')">  🌆 Evening</button>
+                <button class="context-btn" data-ctx="night"     onclick="setContext('night')">    🌙 Night</button>
+            </div>
+
+            <!-- Notes -->
+            <div class="section-label">Notes (optional)</div>
+            <textarea class="notes-area" id="mood-notes" rows="3"
+                placeholder="What's on your mind? Anything that might be affecting your mood..."></textarea>
+
+            <button class="submit-btn" id="submit-btn" onclick="saveLog()" style="margin-top:16px">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                </svg>
+                Save Entry
+            </button>
+        </div>
+    </div>
+
+    <!-- ── 7-day trend chart ── -->
+    <div class="card">
+        <div class="card-header">
+            <span class="emoji">📈</span>
+            <h2>7-Day Trend</h2>
+        </div>
+        <div class="card-body">
+            <div class="trend-stats" id="trend-stats" style="display:none">
+                <div class="trend-stat">
+                    <div class="stat-val" id="avg-mood" style="color:var(--mood-color)">–</div>
+                    <div class="stat-label">Avg Mood</div>
+                </div>
+                <div class="trend-stat">
+                    <div class="stat-val" id="avg-energy" style="color:#a07c0a">–</div>
+                    <div class="stat-label">Avg Energy</div>
+                </div>
+                <div class="trend-stat">
+                    <div class="stat-val" id="avg-stress" style="color:var(--stress-color)">–</div>
+                    <div class="stat-label">Avg Stress</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="trend-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Recent logs ── -->
+    <div class="card">
+        <div class="card-header">
+            <span class="emoji">📋</span>
+            <h2>Recent Entries</h2>
+        </div>
+        <div class="card-body" style="padding:16px">
+            <div id="log-list" class="log-list">
+                <div class="empty-state">
+                    <span class="emoji">🌱</span>
+                    No entries yet — log your first mood above!
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /content -->
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let currentUser = null;
+let selectedContext = null;
+let trendChart = null;
+
+const scores = { mood: 7, energy: 7, stress: 3 };
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { window.location.href = 'index.html'; return; }
+        currentUser = session.user;
+
+        autoSetContext();
+        updateAllEmojis();
+        await Promise.all([loadTrend(), loadRecentLogs()]);
+    } catch (err) {
+        console.error('Init error:', err);
+    } finally {
+        document.getElementById('loading-overlay').classList.add('hidden');
+    }
+});
+
+function autoSetContext() {
+    const h = new Date().getHours();
+    if (h >= 5  && h < 12) setContext('morning');
+    else if (h >= 12 && h < 17) setContext('afternoon');
+    else if (h >= 17 && h < 21) setContext('evening');
+    else setContext('night');
+}
+
+// ── Sliders ──────────────────────────────────────────────────────────────────
+function updateScore(type, val) {
+    scores[type] = parseInt(val);
+    document.getElementById(`${type}-val`).textContent = val;
+    const pct = ((val - 1) / 9 * 100).toFixed(1);
+    document.getElementById(`${type}-fill`).style.width = pct + '%';
+    updateEmojis(type, parseInt(val));
+}
+
+function updateEmojis(type, val) {
+    const row = document.getElementById(`${type}-emojis`);
+    if (!row) return;
+    row.querySelectorAll('span').forEach(s => {
+        s.classList.toggle('active', parseInt(s.dataset.v) === val);
+    });
+}
+
+function updateAllEmojis() {
+    Object.entries(scores).forEach(([type, val]) => {
+        updateScore(type, val);
+        document.getElementById(`${type}-slider`).value = val;
+    });
+}
+
+// ── Context ───────────────────────────────────────────────────────────────────
+function setContext(ctx) {
+    selectedContext = ctx;
+    document.querySelectorAll('.context-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.ctx === ctx);
+    });
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+async function saveLog() {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = `<div class="loading-spinner" style="width:18px;height:18px;border-width:2px"></div> Saving...`;
+
+    const now    = new Date();
+    const logDate = now.toISOString().split('T')[0];
+    const notes  = document.getElementById('mood-notes').value.trim() || null;
+
+    const { error } = await supabase.from('mood_logs').insert({
+        user_id:      currentUser.id,
+        logged_at:    now.toISOString(),
+        log_date:     logDate,
+        mood_score:   scores.mood,
+        energy_score: scores.energy,
+        stress_score: scores.stress,
+        context:      selectedContext,
+        notes:        notes,
+    });
+
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg> Save Entry`;
+
+    if (error) {
+        showToast('❌ Failed to save. Please try again.');
+        console.error('Save error:', error);
+        return;
+    }
+
+    showToast('✅ Mood logged!');
+    document.getElementById('mood-notes').value = '';
+    document.getElementById('today-banner').style.display = 'flex';
+    document.getElementById('today-banner-text').textContent =
+        `Logged ${scores.mood}/10 mood · ${scores.energy}/10 energy · ${scores.stress}/10 stress`;
+
+    await Promise.all([loadTrend(), loadRecentLogs()]);
+}
+
+// ── Load trend (7-day daily averages) ────────────────────────────────────────
+async function loadTrend() {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    const fromDate = sevenDaysAgo.toISOString().split('T')[0];
+
+    const { data: logs } = await supabase
+        .from('mood_logs')
+        .select('log_date, mood_score, energy_score, stress_score')
+        .eq('user_id', currentUser.id)
+        .gte('log_date', fromDate)
+        .order('log_date', { ascending: true });
+
+    // Build 7-day date array
+    const labels = [];
+    const byDate = {};
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        labels.push(key);
+        byDate[key] = { mood: [], energy: [], stress: [] };
+    }
+
+    for (const log of (logs || [])) {
+        if (!byDate[log.log_date]) continue;
+        if (log.mood_score   != null) byDate[log.log_date].mood.push(log.mood_score);
+        if (log.energy_score != null) byDate[log.log_date].energy.push(log.energy_score);
+        if (log.stress_score != null) byDate[log.log_date].stress.push(log.stress_score);
+    }
+
+    const avg = arr => arr.length ? (arr.reduce((a,b) => a+b, 0) / arr.length).toFixed(1) : null;
+
+    const moodData   = labels.map(l => avg(byDate[l].mood));
+    const energyData = labels.map(l => avg(byDate[l].energy));
+    const stressData = labels.map(l => avg(byDate[l].stress));
+
+    const shortLabels = labels.map(l => {
+        const d = new Date(l + 'T12:00:00');
+        return d.toLocaleDateString('en', { weekday: 'short' });
+    });
+
+    // Averages for stat pills
+    const allMood   = Object.values(byDate).flatMap(d => d.mood);
+    const allEnergy = Object.values(byDate).flatMap(d => d.energy);
+    const allStress = Object.values(byDate).flatMap(d => d.stress);
+
+    if (allMood.length > 0) {
+        document.getElementById('trend-stats').style.display = 'grid';
+        document.getElementById('avg-mood').textContent   = avg(allMood);
+        document.getElementById('avg-energy').textContent = avg(allEnergy);
+        document.getElementById('avg-stress').textContent = avg(allStress);
+
+        document.getElementById('header-subtitle').textContent =
+            `7-day avg: 😊 ${avg(allMood)} · ⚡ ${avg(allEnergy)} · 😰 ${avg(allStress)}`;
+    } else {
+        document.getElementById('header-subtitle').textContent = 'Start logging to see your trends';
+    }
+
+    renderChart(shortLabels, moodData, energyData, stressData);
+}
+
+function renderChart(labels, moodData, energyData, stressData) {
+    const ctx = document.getElementById('trend-chart').getContext('2d');
+    if (trendChart) trendChart.destroy();
+
+    const makeDataset = (label, data, color, fill) => ({
+        label, data,
+        borderColor: color,
+        backgroundColor: fill,
+        borderWidth: 2.5,
+        tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: color,
+        spanGaps: true,
+    });
+
+    trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                makeDataset('Mood',   moodData,   '#7BA883', 'rgba(123,168,131,0.1)'),
+                makeDataset('Energy', energyData, '#c9a417', 'rgba(201,164,23,0.08)'),
+                makeDataset('Stress', stressData, '#F4A261', 'rgba(244,162,97,0.08)'),
+            ],
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: 'top',
+                    labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8,
+                              font: { size: 11 }, color: '#718096' }
+                },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                y: { min: 0, max: 10, ticks: { stepSize: 2, color: '#718096', font: { size: 11 } },
+                     grid: { color: 'rgba(0,0,0,0.05)' } },
+                x: { ticks: { color: '#718096', font: { size: 11 } },
+                     grid: { display: false } },
+            },
+        },
+    });
+}
+
+// ── Recent logs (last 20 entries) ────────────────────────────────────────────
+async function loadRecentLogs() {
+    const { data: logs } = await supabase
+        .from('mood_logs')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('logged_at', { ascending: false })
+        .limit(20);
+
+    const container = document.getElementById('log-list');
+    if (!logs?.length) {
+        container.innerHTML = `<div class="empty-state">
+            <span class="emoji">🌱</span>
+            No entries yet — log your first mood above!
+        </div>`;
+        return;
+    }
+
+    // Check today's logs for banner
+    const todayKey = new Date().toISOString().split('T')[0];
+    const todayLogs = logs.filter(l => l.log_date === todayKey);
+    if (todayLogs.length > 0) {
+        const latest = todayLogs[0];
+        document.getElementById('today-banner').style.display = 'flex';
+        document.getElementById('today-banner-text').textContent =
+            `Logged ${latest.mood_score}/10 mood · ${latest.energy_score ?? '–'}/10 energy · ${latest.stress_score ?? '–'}/10 stress`;
+    }
+
+    container.innerHTML = logs.map(log => {
+        const dt = new Date(log.logged_at);
+        const isToday = log.log_date === todayKey;
+        const timeStr = isToday
+            ? dt.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
+            : dt.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+
+        return `<div class="log-item">
+            <span class="log-item-time">${timeStr}</span>
+            <div class="log-item-scores">
+                <span class="score-pill mood">😊 ${log.mood_score}/10</span>
+                ${log.energy_score != null ? `<span class="score-pill energy">⚡ ${log.energy_score}/10</span>` : ''}
+                ${log.stress_score != null ? `<span class="score-pill stress">😰 ${log.stress_score}/10</span>` : ''}
+            </div>
+            ${log.context ? `<span class="log-item-context">${log.context}</span>` : ''}
+        </div>`;
+    }).join('');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
