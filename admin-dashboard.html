@@ -228,6 +228,36 @@
         .import-results-stats .result-stat .result-num.red { color: #dc2626; }
         .import-results-stats .result-stat .result-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
         @media (max-width: 768px) { .import-modal { width: 95%; max-height: 90vh; } .import-source-grid { grid-template-columns: 1fr 1fr; } .import-field-row { flex-direction: column; align-items: stretch; } .import-field-row label { width: auto; } .import-btn-row { flex-direction: column; } .import-btn { width: 100%; text-align: center; } }
+        /* AI Personality Modal */
+        .personality-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; }
+        .personality-modal-overlay.active { display: flex; }
+        .personality-modal { background: white; border-radius: 16px; width: 90%; max-width: 640px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .personality-modal-header { padding: 24px 28px 0; display: flex; justify-content: space-between; align-items: center; }
+        .personality-modal-header h2 { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+        .personality-modal-header h2 .header-icon { width: 28px; height: 28px; background: #f3e8ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #9333ea; }
+        .personality-modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b; padding: 4px 8px; border-radius: 6px; }
+        .personality-modal-close:hover { background: #f1f5f9; color: #1e293b; }
+        .personality-modal-body { padding: 20px 28px 28px; }
+        .personality-section { margin-bottom: 20px; }
+        .personality-section label { display: block; font-weight: 600; font-size: 0.9rem; color: #1e293b; margin-bottom: 6px; }
+        .personality-section .hint { font-size: 0.8rem; color: #64748b; margin-bottom: 10px; line-height: 1.5; }
+        .personality-textarea { width: 100%; min-height: 140px; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem; font-family: 'Inter', sans-serif; resize: vertical; color: #1e293b; line-height: 1.6; transition: border-color 0.2s; }
+        .personality-textarea:focus { outline: none; border-color: #9333ea; }
+        .personality-textarea::placeholder { color: #94a3b8; }
+        .personality-traits { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+        .personality-trait { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; border: 2px solid #e2e8f0; background: white; cursor: pointer; transition: all 0.2s; color: #475569; }
+        .personality-trait:hover { border-color: #9333ea; color: #9333ea; }
+        .personality-trait.selected { background: #9333ea; color: white; border-color: #9333ea; }
+        .personality-btn-row { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+        .personality-btn { padding: 10px 24px; border-radius: 8px; border: none; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+        .personality-btn-secondary { background: #f1f5f9; color: #475569; }
+        .personality-btn-secondary:hover { background: #e2e8f0; }
+        .personality-btn-primary { background: #9333ea; color: white; }
+        .personality-btn-primary:hover { background: #7e22ce; }
+        .personality-btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+        .personality-saved { display: none; align-items: center; gap: 6px; color: #16a34a; font-size: 0.85rem; font-weight: 600; }
+        .personality-saved.show { display: flex; }
+        @media (max-width: 768px) { .personality-modal { width: 95%; max-height: 90vh; } .personality-btn-row { flex-direction: column; } .personality-btn { width: 100%; text-align: center; } }
     </style>
 </head>
 <body>
@@ -240,6 +270,7 @@
             <div class="nav-item" onclick="showSection('conversations', this)"><i data-lucide="message-circle"></i><span>Conversations</span></div>
             <div class="nav-item" onclick="showSection('analytics', this)"><i data-lucide="bar-chart"></i><span>Analytics</span></div>
             <div class="sidebar-footer">
+                <button class="dashboard-btn" onclick="openPersonalityModal()" style="background:#9333ea;"><i data-lucide="sparkles"></i> AI Personality</button>
                 <button class="dashboard-btn" onclick="openImportModal()" style="background:#2563eb;"><i data-lucide="upload"></i> Import Clients</button>
                 <button class="dashboard-btn" onclick="switchToDashboard()"><i data-lucide="home"></i> Dashboard</button>
                 <button class="logout-btn" onclick="handleLogout()"><i data-lucide="log-out"></i> Logout</button>
@@ -313,6 +344,60 @@
             </div>
         </div>
     </div>
+    <!-- AI Personality Modal -->
+    <div class="personality-modal-overlay" id="personality-modal-overlay" onclick="if(event.target===this) closePersonalityModal()">
+        <div class="personality-modal">
+            <div class="personality-modal-header">
+                <h2><span class="header-icon"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></span> AI Personality</h2>
+                <button class="personality-modal-close" onclick="closePersonalityModal()">&times;</button>
+            </div>
+            <div class="personality-modal-body">
+                <p style="color: #64748b; margin-bottom: 20px; font-size: 0.9rem; line-height: 1.6;">Customise how your AI coach communicates with clients. Paste in real texts or check-in messages you've sent so the AI learns your unique voice.</p>
+
+                <div class="personality-section">
+                    <label>Your Coaching Tone</label>
+                    <p class="hint">Select the traits that best describe your coaching style.</p>
+                    <div class="personality-traits" id="personality-traits">
+                        <div class="personality-trait" onclick="toggleTrait(this)">Casual & friendly</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Direct & honest</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Warm & supportive</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Motivational</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Tough love</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Professional</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Humorous</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Data-driven</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Empathetic</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">No-nonsense</div>
+                    </div>
+                </div>
+
+                <div class="personality-section">
+                    <label>Example Messages & Check-ins</label>
+                    <p class="hint">Paste in real messages you've sent to clients — check-in texts, progress reviews, motivational messages, tough love moments. The more examples, the better the AI will match your voice.</p>
+                    <textarea class="personality-textarea" id="personality-examples" placeholder="Example:&#10;Hey! Hope the weekend was good! So looking at this week — you tracked meals Monday through Thursday which is awesome, protein was sitting around 85g most days which is solid. Friday and the weekend went quiet though hey. No stress, happens to everyone.&#10;&#10;Paste as many real conversations as you like..."></textarea>
+                </div>
+
+                <div class="personality-section">
+                    <label>Phrases & Language Style</label>
+                    <p class="hint">Any specific phrases, slang, or language quirks you use? (e.g., "lesgo", "how good is that", "nah we need a better reason")</p>
+                    <textarea class="personality-textarea" id="personality-phrases" style="min-height: 80px;" placeholder="e.g., I say 'ya' instead of 'you', I use 'n' instead of 'and', I often end sentences with 'hey'..."></textarea>
+                </div>
+
+                <div class="personality-section">
+                    <label>Things to Avoid</label>
+                    <p class="hint">Anything the AI should never say or do when speaking as you?</p>
+                    <textarea class="personality-textarea" id="personality-avoid" style="min-height: 80px;" placeholder="e.g., Don't use emojis, never say 'Great question!', avoid being too formal..."></textarea>
+                </div>
+
+                <div class="personality-btn-row">
+                    <div class="personality-saved" id="personality-saved-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Saved!</div>
+                    <button class="personality-btn personality-btn-secondary" onclick="closePersonalityModal()">Cancel</button>
+                    <button class="personality-btn personality-btn-primary" id="personality-save-btn" onclick="savePersonality()">Save Personality</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Import Clients Modal -->
     <div class="import-modal-overlay" id="import-modal-overlay" onclick="if(event.target===this) closeImportModal()">
         <div class="import-modal">
@@ -512,7 +597,7 @@
             const ch=document.getElementById('ai-coach-chat'),emp=document.getElementById('ai-coach-empty');if(emp)emp.remove();
             const um=document.createElement('div');um.className='ai-msg user-msg';um.textContent=q;ch.appendChild(um);
             const ld=document.createElement('div');ld.className='ai-msg-loading';ld.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';ch.appendChild(ld);ch.scrollTop=ch.scrollHeight;
-            try{const body={query:q,chatHistory:aiChatHistory,analyticsSummary:buildAnalyticsSummary()};if(aiSelectedUser&&aiUserData)body.userData=aiUserData;
+            try{const body={query:q,chatHistory:aiChatHistory,analyticsSummary:buildAnalyticsSummary()};if(coachPersonality)body.coachPersonality=coachPersonality;if(aiSelectedUser&&aiUserData)body.userData=aiUserData;
             const r=await fetch('/.netlify/functions/admin-ai-coach',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Failed');ld.remove();
             const am=document.createElement('div');am.className='ai-msg ai-msg-response';am.innerHTML=aiFormatMarkdown(d.reply);
             if(aiSelectedUser){const msgId='ai-resp-'+Date.now();am.id=msgId;am.dataset.rawText=d.reply;const ab=document.createElement('div');ab.className='ai-msg-actions';ab.innerHTML=`<button class="ai-action-edit" onclick="aiEditResponse('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${aiSelectedUser.name.split(' ')[0]}</button>`;am.appendChild(ab);}
@@ -719,6 +804,89 @@
             }
         }
         function aiFormatMarkdown(t){if(!t)return'';return t.replace(/```([\s\S]*?)```/g,'<pre style="background:#f1f5f9;padding:12px;border-radius:8px;overflow-x:auto;font-size:0.85rem;"><code>$1</code></pre>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>').replace(/^---$/gm,'<hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0;">').replace(/^- (.+)$/gm,'<li>$1</li>').replace(/(<li>.*<\/li>\n?)+/g,'<ul>$&</ul>').replace(/^\d+\. (.+)$/gm,'<li>$1</li>').replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');}
+
+        // ==========================================
+        // AI PERSONALITY
+        // ==========================================
+        let coachPersonality = null;
+
+        function toggleTrait(el) { el.classList.toggle('selected'); }
+
+        function getSelectedTraits() {
+            return Array.from(document.querySelectorAll('#personality-traits .personality-trait.selected')).map(el => el.textContent.trim());
+        }
+
+        function setSelectedTraits(traits) {
+            document.querySelectorAll('#personality-traits .personality-trait').forEach(el => {
+                el.classList.toggle('selected', traits.includes(el.textContent.trim()));
+            });
+        }
+
+        async function openPersonalityModal() {
+            document.getElementById('personality-modal-overlay').classList.add('active');
+            document.getElementById('personality-saved-badge').classList.remove('show');
+            // Load existing personality data
+            try {
+                const session = await authHelpers.getSession();
+                if (!session?.session?.user?.id) return;
+                const { data } = await window.supabaseClient.from('coach_personality').select('*').eq('coach_id', session.session.user.id).maybeSingle();
+                if (data) {
+                    coachPersonality = data;
+                    setSelectedTraits(data.traits || []);
+                    document.getElementById('personality-examples').value = data.example_messages || '';
+                    document.getElementById('personality-phrases').value = data.phrases || '';
+                    document.getElementById('personality-avoid').value = data.avoid || '';
+                } else {
+                    coachPersonality = null;
+                    setSelectedTraits([]);
+                    document.getElementById('personality-examples').value = '';
+                    document.getElementById('personality-phrases').value = '';
+                    document.getElementById('personality-avoid').value = '';
+                }
+            } catch (e) { console.error('Failed to load personality:', e); }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closePersonalityModal() { document.getElementById('personality-modal-overlay').classList.remove('active'); }
+
+        async function savePersonality() {
+            const btn = document.getElementById('personality-save-btn');
+            btn.disabled = true; btn.textContent = 'Saving...';
+            try {
+                const session = await authHelpers.getSession();
+                if (!session?.session?.user?.id) throw new Error('Not logged in');
+                const coachId = session.session.user.id;
+                const payload = {
+                    coach_id: coachId,
+                    traits: getSelectedTraits(),
+                    example_messages: document.getElementById('personality-examples').value.trim(),
+                    phrases: document.getElementById('personality-phrases').value.trim(),
+                    avoid: document.getElementById('personality-avoid').value.trim(),
+                    updated_at: new Date().toISOString()
+                };
+                const { error } = await window.supabaseClient.from('coach_personality').upsert(payload, { onConflict: 'coach_id' });
+                if (error) throw error;
+                coachPersonality = payload;
+                document.getElementById('personality-saved-badge').classList.add('show');
+                setTimeout(() => { document.getElementById('personality-saved-badge').classList.remove('show'); }, 3000);
+            } catch (e) {
+                console.error('Failed to save personality:', e);
+                alert('Failed to save: ' + (e.message || 'Unknown error'));
+            }
+            btn.disabled = false; btn.textContent = 'Save Personality';
+        }
+
+        // Load personality on init (for passing to AI)
+        async function loadCoachPersonality() {
+            try {
+                const session = await authHelpers.getSession();
+                if (!session?.session?.user?.id) return;
+                const { data } = await window.supabaseClient.from('coach_personality').select('*').eq('coach_id', session.session.user.id).maybeSingle();
+                if (data) coachPersonality = data;
+            } catch (e) { console.error('Failed to load coach personality:', e); }
+        }
+        loadCoachPersonality();
+
         lucide.createIcons();
     </script>
 </body>
