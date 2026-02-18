@@ -200,6 +200,11 @@
   function = "strava-sync"
   path = "/api/strava/data"
 
+# Client Import Edge Function
+[[edge_functions]]
+  function = "import-clients"
+  path = "/api/import-clients"
+
 # Fitbit scheduled sync - runs every 2 hours
 [functions."sync-fitbit-data"]
   schedule = "0 */2 * * *"
