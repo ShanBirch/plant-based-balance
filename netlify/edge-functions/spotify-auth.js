@@ -26,7 +26,11 @@ export default async (request, context) => {
     const SPOTIFY_CLIENT_SECRET = Deno.env.get("SPOTIFY_CLIENT_SECRET");
     const SUPABASE_URL          = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const SITE_URL              = Deno.env.get("URL") || "https://plantbased-balance.org";
+    // Derive SITE_URL from the incoming request so the redirect_uri always
+    // matches the domain the user is actually on, avoiding Spotify's
+    // INVALID_CLIENT: Invalid redirect URI error when the Netlify URL env
+    // variable doesn't match the domain registered in the Spotify app.
+    const SITE_URL              = `${url.protocol}//${url.host}`;
 
     if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
         return new Response(JSON.stringify({ error: "Spotify integration not configured" }), {
