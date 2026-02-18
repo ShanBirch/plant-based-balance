@@ -29,6 +29,26 @@
   }
 </script>
 
+<!-- CRITICAL: Clear cached data BEFORE any localStorage reads when in admin view-as mode -->
+<script>
+(function() {
+    if (new URLSearchParams(window.location.search).get('view_as')) {
+        [
+            'userProfile', 'dashboardInitialized',
+            'fitgotchi_model_src', 'fitgotchi_camera_orbit', 'fitgotchi_fov', 'fitgotchi_scale',
+            'fitgotchi_level', 'fitgotchi_rank', 'fitgotchi_xp_text', 'fitgotchi_xp_percent', 'fitgotchi_streak',
+            'profile_photo', 'userGender', 'userThemePreference', 'dietaryPreference',
+            'pbb_water_goal_ml', 'weighInDoneCardDismissedDate', 'quizDoneCardDismissedDate',
+            'dailyQuizLessonToday', 'progressPhotoDoneCardDismissedDate', 'mealTipCardDismissedDate',
+            'workoutTrendCardDismissedDate', 'movementTrendCardDismissedDate', 'myCurrentWorkout',
+            'weightUnitPreference', 'lastWellnessCheck', 'pbb_points_data', 'pbb_points_level',
+            'onboardingComplete', 'program_start_date'
+        ].forEach(function(k) { localStorage.removeItem(k); });
+        sessionStorage.clear();
+    }
+})();
+</script>
+
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
 (function() {
