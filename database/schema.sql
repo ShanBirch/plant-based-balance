@@ -482,6 +482,52 @@ CREATE POLICY "Admins can view all conversations" ON public.conversations
     )
   );
 
+-- Admin read access to all user data tables (for admin "view account" feature)
+CREATE POLICY "Admins can view all user_facts" ON public.user_facts
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.admin_users WHERE admin_users.user_id = auth.uid())
+  );
+
+CREATE POLICY "Admins can view all quiz_results" ON public.quiz_results
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.admin_users WHERE admin_users.user_id = auth.uid())
+  );
+
+CREATE POLICY "Admins can view all workouts" ON public.workouts
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.admin_users WHERE admin_users.user_id = auth.uid())
+  );
+
+CREATE POLICY "Admins can view all custom_workout_programs" ON public.custom_workout_programs
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.admin_users WHERE admin_users.user_id = auth.uid())
+  );
+
+CREATE POLICY "Admins can view all daily_checkins" ON public.daily_checkins
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.admin_users WHERE admin_users.user_id = auth.uid())
+  );
+
+CREATE POLICY "Admins can view all reflections" ON public.reflections
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.admin_users WHERE admin_users.user_id = auth.uid())
+  );
+
+CREATE POLICY "Admins can view all uploads" ON public.uploads
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.admin_users WHERE admin_users.user_id = auth.uid())
+  );
+
+CREATE POLICY "Admins can view all chat_stats" ON public.chat_stats
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.admin_users WHERE admin_users.user_id = auth.uid())
+  );
+
+CREATE POLICY "Admins can view all user_activity" ON public.user_activity
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.admin_users WHERE admin_users.user_id = auth.uid())
+  );
+
 -- Insert trigger to create user_facts entry when user is created
 CREATE OR REPLACE FUNCTION create_user_facts_on_signup()
 RETURNS TRIGGER AS $$
