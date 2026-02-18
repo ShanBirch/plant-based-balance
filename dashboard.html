@@ -29,6 +29,53 @@
   }
 </script>
 
+<!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
+<script>
+(function() {
+    var ADMIN_BACKUP_KEY = '_admin_ls_backup';
+    var isViewAs = new URLSearchParams(window.location.search).get('view_as');
+
+    // All user-specific localStorage keys that must be isolated
+    var USER_KEYS = [
+        'userProfile', 'dashboardInitialized',
+        'fitgotchi_model_src', 'fitgotchi_camera_orbit', 'fitgotchi_fov', 'fitgotchi_scale',
+        'fitgotchi_level', 'fitgotchi_rank', 'fitgotchi_xp_text', 'fitgotchi_xp_percent', 'fitgotchi_streak',
+        'profile_photo', 'userGender', 'userThemePreference', 'dietaryPreference',
+        'pbb_water_goal_ml', 'weighInDoneCardDismissedDate', 'quizDoneCardDismissedDate',
+        'dailyQuizLessonToday', 'progressPhotoDoneCardDismissedDate', 'mealTipCardDismissedDate',
+        'workoutTrendCardDismissedDate', 'movementTrendCardDismissedDate', 'myCurrentWorkout',
+        'myCurrentWorkoutId', 'weightUnitPreference', 'lastWellnessCheck', 'pbb_points_data',
+        'pbb_points_level', 'onboardingComplete', 'program_start_date',
+        'battleStats', 'unallocatedStatPoints', 'previousLifetimePoints', 'pendingLevelUpCelebration',
+        'selectedBackground', 'myChatStats'
+    ];
+
+    if (isViewAs) {
+        // ENTERING view-as mode: backup admin's localStorage, then clear
+        var backup = {};
+        USER_KEYS.forEach(function(k) {
+            var v = localStorage.getItem(k);
+            if (v !== null) backup[k] = v;
+        });
+        localStorage.setItem(ADMIN_BACKUP_KEY, JSON.stringify(backup));
+        USER_KEYS.forEach(function(k) { localStorage.removeItem(k); });
+        sessionStorage.clear();
+    } else if (localStorage.getItem(ADMIN_BACKUP_KEY)) {
+        // RETURNING from view-as mode: restore admin's localStorage
+        try {
+            var backup = JSON.parse(localStorage.getItem(ADMIN_BACKUP_KEY));
+            // Clear any viewed-user data that may have been written
+            USER_KEYS.forEach(function(k) { localStorage.removeItem(k); });
+            // Restore admin's original values
+            Object.keys(backup).forEach(function(k) {
+                localStorage.setItem(k, backup[k]);
+            });
+        } catch (e) { /* ignore parse errors */ }
+        localStorage.removeItem(ADMIN_BACKUP_KEY);
+    }
+})();
+</script>
+
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
 (function() {
@@ -10945,6 +10992,17 @@ async function applyAppTheme(themeKey) {
 
         await waitForAuth();
 
+        // Show admin viewing banner if in view_as mode
+        if (window.isAdminViewing) {
+            const banner = document.createElement('div');
+            banner.id = 'admin-view-banner';
+            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:linear-gradient(135deg,#1e293b,#334155);color:white;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,sans-serif;font-size:0.85rem;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+            banner.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:1.1rem;">👁️</span><span><strong>Admin View</strong> — Viewing ' + (window.adminViewUserName || 'user') + '\'s account (read-only)</span></div><button onclick="window.close()" style="background:white;color:#1e293b;border:none;padding:6px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;">Close</button>';
+            document.body.prepend(banner);
+            // Push page content down so banner doesn't overlap
+            document.body.style.paddingTop = '48px';
+        }
+
         if(window.currentUser) {
             try {
             updateLoginProgress(25, 'Loading your profile...');
@@ -20810,6 +20868,24 @@ async function _syncQuizDataToDbRealImpl() {
                             sex: metricData.sex
                         });
                         console.log("User sex field saved to users table:", metricData.sex);
+                    }
+
+                    // Save meal timing schedule if set during quiz
+                    if (quizData.meal_time_breakfast || quizData.meal_time_lunch || quizData.meal_time_dinner) {
+                        try {
+                            await dbHelpers.mealSchedule.upsert(user.id, {
+                                breakfast: quizData.meal_time_breakfast || '08:00',
+                                lunch: quizData.meal_time_lunch || '12:30',
+                                dinner: quizData.meal_time_dinner || '18:30'
+                            });
+                            console.log("Meal schedule saved:", {
+                                breakfast: quizData.meal_time_breakfast,
+                                lunch: quizData.meal_time_lunch,
+                                dinner: quizData.meal_time_dinner
+                            });
+                        } catch (mealScheduleError) {
+                            console.error("Failed to save meal schedule:", mealScheduleError);
+                        }
                     }
                 } catch (nutritionError) {
                     console.error("Failed to calculate/save nutrition goals:", nutritionError);
@@ -46103,6 +46179,7 @@ function triggerXPBarRainbow() {
  * Persists pending celebration to localStorage so it survives page reloads.
  */
 function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifetimePoints = 0, currentStreak = 0, previousProgress = 0) {
+    if (window.isAdminViewing) return; // Admin view-as is read-only
     console.log('🎉 Level Up Celebration triggered!', { newLevel, title, previousLevel });
 
     // Persist celebration data so it can be recovered if page reloads mid-flow
@@ -46548,12 +46625,16 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
         const previousLevel = previousLevelData.level;
         const previousProgress = previousLevelData.progress || 0;
 
+        // Get current time in HH:MM:SS format for meal timing bonus check
+        const now = new Date();
+        const mealTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
+
         console.log('Calling window.db.points.awardPoints...');
         const result = await window.db?.points?.awardPoints(
             session.user.id,
             'meal',
             mealLogId,
-            { photoTimestamp, aiConfidence, photoHash }
+            { photoTimestamp, aiConfidence, photoHash, mealTime }
         );
         console.log('awardPoints result:', result);
 
@@ -46564,6 +46645,13 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
                 result.bonusPoints,
                 result.currentStreak
             );
+
+            // Show meal timing bonus toast if earned
+            if (result.mealOnTime && result.mealTimingBonus > 0) {
+                setTimeout(() => {
+                    showToast(`On-time meal! +${result.mealTimingBonus} bonus XP`, 'success');
+                }, 400);
+            }
 
             // Show milestone toasts
             if (result.milestonesUnlocked?.length > 0) {
@@ -57920,6 +58008,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         async function saveBattleStatsToDb(stats) {
+            if (window.isAdminViewing) return; // Admin view-as is read-only
             if (!window.currentUser || !window.dbHelpers) return;
             try {
                 const userId = window.currentUser.id || window.currentUser.user_id;
@@ -57996,6 +58085,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Called when user levels up - grants stat points
         function grantStatPoints(previousLevel, newLevel) {
+            if (window.isAdminViewing) return; // Admin view-as is read-only
             let totalNewPoints = 0;
             for (let lvl = previousLevel + 1; lvl <= newLevel; lvl++) {
                 totalNewPoints += getStatPointsForLevel(lvl);
@@ -58014,6 +58104,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         function showStatAllocationModal() {
+            if (window.isAdminViewing) return; // Admin view-as is read-only
             const pointsLeft = getUnallocatedPoints();
             if (pointsLeft <= 0) return;
 
@@ -58151,6 +58242,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Grant any missing stat points for users who leveled before the stat system existed
         function ensureRetroactiveStatPoints() {
+            if (window.isAdminViewing) return; // Admin view-as is read-only
             const level = window.getCurrentUserLevel ? window.getCurrentUserLevel() : 1;
             const expectedTotal = getTotalExpectedPointsForLevel(level);
 

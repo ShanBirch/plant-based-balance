@@ -1214,7 +1214,6 @@
                 <i data-lucide="bot"></i>
                 <span>AI Coach</span>
             </div>
-
             <!-- Logout at bottom -->
             <div class="sidebar-footer">
                 <button class="dashboard-btn" onclick="switchToDashboard()">
@@ -1405,6 +1404,7 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 
@@ -1761,6 +1761,7 @@
                             <th>Joined</th>
                             <th>Last Active</th>
                             <th>Status</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1778,6 +1779,7 @@
                         <td>${joinedDate}</td>
                         <td>${lastActive}</td>
                         <td><span class="badge ${isActive ? 'active' : 'inactive'}">${isActive ? 'Active' : 'Inactive'}</span></td>
+                        <td><button class="badge active" style="cursor:pointer; border:none; font-weight:600;" onclick="event.stopPropagation(); window.open('/dashboard.html?view_as=${user.id}', '_blank')">View Account</button></td>
                     </tr>
                 `;
             });
@@ -1859,6 +1861,7 @@
                             <th>Joined</th>
                             <th>Last Active</th>
                             <th>Status</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1876,6 +1879,7 @@
                         <td>${joinedDate}</td>
                         <td>${lastActive}</td>
                         <td><span class="badge ${isActive ? 'active' : 'inactive'}">${isActive ? 'Active' : 'Inactive'}</span></td>
+                        <td><button class="badge active" style="cursor:pointer; border:none; font-weight:600;" onclick="event.stopPropagation(); window.open('/dashboard.html?view_as=${user.id}', '_blank')">View Account</button></td>
                     </tr>
                 `;
             });
