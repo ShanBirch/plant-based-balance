@@ -114,6 +114,12 @@
         .chat-message.user { background: #48864B; color: white; margin-left: auto; }
         .chat-message.bot { background: white; color: #1e293b; border: 1px solid #e2e8f0; }
         .chat-message .timestamp { font-size: 0.65rem; opacity: 0.7; margin-top: 4px; }
+        .admin-reply-bar { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .admin-reply-bar input { flex: 1; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 24px; font-size: 0.9rem; font-family: 'Inter', sans-serif; }
+        .admin-reply-bar input:focus { outline: none; border-color: #48864B; }
+        .admin-reply-send { background: #48864B; color: white; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+        .admin-reply-send:hover { background: #3a6d3c; }
+        .admin-reply-send:disabled { background: #94a3b8; cursor: not-allowed; }
         .loading { text-align: center; padding: 30px; color: #64748b; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .stat-card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
@@ -141,7 +147,7 @@
         .usage-bar-value { width: 50px; text-align: right; font-weight: 700; font-size: 0.85rem; color: #1e293b; flex-shrink: 0; }
         @media (max-width: 768px) {
             .hamburger { display: flex; }
-            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; width: 240px; }
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; width: 240px; padding-top: 72px; }
             .sidebar.active { transform: translateX(0); }
             .main-content { margin-left: 0; padding: 70px 12px 12px 12px; }
             .ai-coach-container { height: calc(100vh - 82px); }
@@ -217,6 +223,10 @@
                     <div id="conversation-detail-view" style="display:none;">
                         <div class="content-card-header"><button class="back-btn" onclick="backToConversationList()">&larr;</button><h2 id="conversation-user-name">Conversations</h2></div>
                         <div id="conversation-messages" class="chat-container"><div class="loading">Loading...</div></div>
+                        <div class="admin-reply-bar">
+                            <input type="text" id="admin-reply-input" placeholder="Send a message as Shannon..." onkeydown="if(event.key==='Enter') adminSendReply()">
+                            <button class="admin-reply-send" id="admin-reply-send" onclick="adminSendReply()"><i data-lucide="send" style="width:18px;height:18px;"></i></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -242,7 +252,7 @@
     </div>
     <script src="/lib/supabase.js?v=3"></script>
     <script>
-        let allUsers = [], currentView = 'ai-coach', analyticsData = null;
+        let allUsers = [], currentView = 'ai-coach', analyticsData = null, currentConvoUserId = null;
         (async function() { const s = await authHelpers.getSession(); if (!s) { window.location.href = '/login.html?redirect=/admin-dashboard.html'; return; } loadDashboardData(); })();
         async function loadDashboardData() {
             try {
@@ -287,13 +297,23 @@
         }
         function filterConvoUsers(){const t=document.getElementById('convo-search').value.toLowerCase();document.querySelectorAll('.convo-user-row').forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(t)?'':'none';});}
         async function viewUserConversations(userId,userName){
+            currentConvoUserId=userId;
             document.getElementById('conversation-list-view').style.display='none';document.getElementById('conversation-detail-view').style.display='block';document.getElementById('conversation-user-name').textContent=userName;
             const c=document.getElementById('conversation-messages');c.innerHTML='<div class="loading">Loading conversations...</div>';
             try{const convos=await dbHelpers.admin.getUserConversations(userId);if(!convos.length){c.innerHTML='<p style="color:#64748b;text-align:center;padding:20px;">No conversations found.</p>';return;}
-            let h='';convos.forEach(m=>{h+=`<div class="chat-message ${m.role==='user'?'user':'bot'}"><div><strong>${m.role==='user'?'User':'Shannon'}</strong></div><div>${m.message_text}</div><div class="timestamp">${new Date(m.timestamp).toLocaleString()}</div></div>`;});c.innerHTML=h;
+            let h='';convos.forEach(m=>{h+=`<div class="chat-message ${m.role==='user'?'user':'bot'}"><div><strong>${m.role==='user'?'User':'Shannon'}</strong></div><div>${m.message_text}</div><div class="timestamp">${new Date(m.timestamp).toLocaleString()}</div></div>`;});c.innerHTML=h;c.scrollTop=c.scrollHeight;
             }catch(e){console.error('Failed to load conversations:',e);c.innerHTML='<p style="color:#ef4444;padding:20px;">Failed to load conversations.</p>';}
+            lucide.createIcons();
         }
-        function backToConversationList(){document.getElementById('conversation-detail-view').style.display='none';document.getElementById('conversation-list-view').style.display='block';}
+        function backToConversationList(){currentConvoUserId=null;document.getElementById('conversation-detail-view').style.display='none';document.getElementById('conversation-list-view').style.display='block';}
+        async function adminSendReply(){
+            const inp=document.getElementById('admin-reply-input'),msg=inp.value.trim();if(!msg||!currentConvoUserId)return;
+            const btn=document.getElementById('admin-reply-send');btn.disabled=true;inp.disabled=true;
+            try{await dbHelpers.conversations.create(currentConvoUserId,'shannon','assistant',msg,'Shannon');
+            const ch=document.getElementById('conversation-messages'),md=document.createElement('div');md.className='chat-message bot';md.innerHTML=`<div><strong>Shannon</strong></div><div>${msg}</div><div class="timestamp">${new Date().toLocaleString()}</div>`;ch.appendChild(md);ch.scrollTop=ch.scrollHeight;inp.value='';
+            }catch(e){console.error('Failed to send message:',e);alert('Failed to send message: '+e.message);}
+            btn.disabled=false;inp.disabled=false;inp.focus();
+        }
         function getInitials(s){if(!s)return'?';const p=s.trim().split(/\s+/);return p.length>=2?(p[0][0]+p[1][0]).toUpperCase():s.substring(0,2).toUpperCase();}
         function timeAgo(iso){const d=Date.now()-new Date(iso).getTime(),m=Math.floor(d/60000);if(m<1)return'Just now';if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';const dy=Math.floor(h/24);if(dy===1)return'Yesterday';if(dy<30)return dy+'d ago';return Math.floor(dy/30)+'mo ago';}
         async function handleLogout(){if(confirm('Are you sure you want to logout?')){await authHelpers.signOut();window.location.href='/login.html';}}
