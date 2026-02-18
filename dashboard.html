@@ -11100,7 +11100,7 @@ async function applyAppTheme(themeKey) {
                     updateLoginProgress(100, 'Ready!');
                     // Mark that the user has completed their first dashboard load,
                     // so the loading overlay won't show on subsequent page reloads.
-                    try { localStorage.setItem('dashboardInitialized', 'true'); } catch(e) {}
+                    if (!window.isAdminViewing) { try { localStorage.setItem('dashboardInitialized', 'true'); } catch(e) {} }
                     setTimeout(() => {
                         overlay.classList.add('fade-out');
                         // Remove from DOM after transition
@@ -21124,13 +21124,15 @@ async function _loadProfileDataRealImpl() {
         if (currentLocalGender !== genderFromDb) {
             console.log("Gender mismatch detected - DB:", genderFromDb, "localStorage:", currentLocalGender);
         }
-        localStorage.setItem('userGender', genderFromDb);
+        // Skip localStorage write in admin view-as mode to prevent state leakage
+        if (!window.isAdminViewing) localStorage.setItem('userGender', genderFromDb);
         console.log("Synced gender from DB to localStorage:", genderFromDb);
     }
 
     // CRITICAL: Restore theme preference from database to localStorage
     // This ensures theme persists even when cache is cleared
-    if (profile?.theme_preference && !localStorage.getItem('userThemePreference')) {
+    // Skip in admin view-as mode to prevent theme leakage to admin's localStorage
+    if (profile?.theme_preference && !localStorage.getItem('userThemePreference') && !window.isAdminViewing) {
         localStorage.setItem('userThemePreference', profile.theme_preference);
         console.log("Restored theme preference from DB to localStorage:", profile.theme_preference);
     }
@@ -41383,36 +41385,42 @@ async function _applyAppThemeRealImpl(themeKey) {
         for (const [key, value] of Object.entries(defaultTheme.colors)) {
             document.documentElement.style.setProperty(key, value);
         }
-        localStorage.setItem('userThemePreference', 'default');
-        const selector = document.getElementById('theme-selector');
-        if(selector) selector.value = 'default';
-
-        // Save to Supabase
-        if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
-            try {
-                await dbHelpers.users.update(window.currentUser.id, { theme_preference: 'default' });
-                console.log("Theme preference saved to DB: default");
-            } catch (e) {
-                console.warn("Failed to save theme preference to DB:", e);
+        // Skip localStorage and DB writes in admin view-as mode
+        if (!window.isAdminViewing) {
+            localStorage.setItem('userThemePreference', 'default');
+            if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
+                try {
+                    await dbHelpers.users.update(window.currentUser.id, { theme_preference: 'default' });
+                    console.log("Theme preference saved to DB: default");
+                } catch (e) {
+                    console.warn("Failed to save theme preference to DB:", e);
+                }
             }
         }
+        const selector = document.getElementById('theme-selector');
+        if(selector) selector.value = 'default';
         return;
     }
 
     for (const [key, value] of Object.entries(theme.colors)) { document.documentElement.style.setProperty(key, value); }
-    localStorage.setItem('userThemePreference', themeKey);
-    const selector = document.getElementById('theme-selector');
-    if(selector) selector.value = themeKey;
 
-    // CRITICAL: Save theme preference to Supabase for persistence across cache clears
-    if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
-        try {
-            await dbHelpers.users.update(window.currentUser.id, { theme_preference: themeKey });
-            console.log("Theme preference saved to DB:", themeKey);
-        } catch (e) {
-            console.warn("Failed to save theme preference to DB:", e);
+    // Skip localStorage and DB writes in admin view-as mode to prevent theme leakage
+    if (!window.isAdminViewing) {
+        localStorage.setItem('userThemePreference', themeKey);
+
+        // CRITICAL: Save theme preference to Supabase for persistence across cache clears
+        if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
+            try {
+                await dbHelpers.users.update(window.currentUser.id, { theme_preference: themeKey });
+                console.log("Theme preference saved to DB:", themeKey);
+            } catch (e) {
+                console.warn("Failed to save theme preference to DB:", e);
+            }
         }
     }
+
+    const selector = document.getElementById('theme-selector');
+    if(selector) selector.value = themeKey;
 
     // Update dashboard-welcome background - keep gradient for all themes
     const welcomeSection = document.querySelector('.dashboard-welcome');
@@ -57213,23 +57221,29 @@ document.addEventListener('DOMContentLoaded', async function() {
                 modelViewer.style.transformOrigin = 'center center';
 
                 // Cache current model state for instant restore on next page load
-                try {
-                    var finalSrc = modelViewer.getAttribute('src');
-                    if (finalSrc) localStorage.setItem('fitgotchi_model_src', finalSrc);
-                    localStorage.setItem('fitgotchi_camera_orbit', `0deg 85deg ${cameraDist}m`);
-                    localStorage.setItem('fitgotchi_fov', `${fov}deg`);
-                    localStorage.setItem('fitgotchi_scale', 'scale(0.75)');
-                } catch(e) {}
+                // Skip in admin view-as mode to prevent character state leakage
+                if (!window.isAdminViewing) {
+                    try {
+                        var finalSrc = modelViewer.getAttribute('src');
+                        if (finalSrc) localStorage.setItem('fitgotchi_model_src', finalSrc);
+                        localStorage.setItem('fitgotchi_camera_orbit', `0deg 85deg ${cameraDist}m`);
+                        localStorage.setItem('fitgotchi_fov', `${fov}deg`);
+                        localStorage.setItem('fitgotchi_scale', 'scale(0.75)');
+                    } catch(e) {}
+                }
             }
 
             // Cache stats for instant restore on next page load
-            try {
-                localStorage.setItem('fitgotchi_level', String(level));
-                localStorage.setItem('fitgotchi_rank', currentEvolution.title);
-                localStorage.setItem('fitgotchi_streak', String(currentStreak));
-                if (xpBarEl) localStorage.setItem('fitgotchi_xp_percent', xpBarEl.style.width);
-                if (xpTextEl) localStorage.setItem('fitgotchi_xp_text', xpTextEl.textContent);
-            } catch(e) {}
+            // Skip in admin view-as mode to prevent state leakage
+            if (!window.isAdminViewing) {
+                try {
+                    localStorage.setItem('fitgotchi_level', String(level));
+                    localStorage.setItem('fitgotchi_rank', currentEvolution.title);
+                    localStorage.setItem('fitgotchi_streak', String(currentStreak));
+                    if (xpBarEl) localStorage.setItem('fitgotchi_xp_percent', xpBarEl.style.width);
+                    if (xpTextEl) localStorage.setItem('fitgotchi_xp_text', xpTextEl.textContent);
+                } catch(e) {}
+            }
         };
 
         // Animation unlock system - animations unlocked at specific levels
@@ -57699,8 +57713,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (floor) floor.style.display = 'block';
             }
 
-            // Save selection to localStorage
-            localStorage.setItem('selectedBackground', bgName);
+            // Save selection to localStorage (skip in admin view-as mode)
+            if (!window.isAdminViewing) {
+                localStorage.setItem('selectedBackground', bgName);
+            }
 
             // Update the selected state in the UI
             document.querySelectorAll('.bg-selector-item').forEach(el => {
