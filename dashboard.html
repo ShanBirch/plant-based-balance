@@ -47,7 +47,7 @@
         'myCurrentWorkoutId', 'weightUnitPreference', 'lastWellnessCheck', 'pbb_points_data',
         'pbb_points_level', 'onboardingComplete', 'program_start_date',
         'battleStats', 'unallocatedStatPoints', 'previousLifetimePoints', 'pendingLevelUpCelebration',
-        'selectedBackground', 'myChatStats'
+        'selectedBackground', 'myChatStats', 'plant_based_learning_progress'
     ];
 
     if (isViewAs) {
@@ -9404,8 +9404,7 @@ async function applyAppTheme(themeKey) {
             if (card) card.style.display = 'none';
             if (uploadingCard) uploadingCard.style.display = 'block';
 
-            const user = await window.supabaseClient.auth.getUser();
-            const userId = user?.data?.user?.id;
+            const userId = window.currentUser?.id;
 
             if (!userId) {
                 throw new Error('User not authenticated');
@@ -48365,8 +48364,7 @@ async function uploadStory() {
     }
 
     try {
-        const user = await window.supabaseClient.auth.getUser();
-        const userId = user?.data?.user?.id;
+        const userId = window.currentUser?.id;
 
         if (!userId) {
             throw new Error('Please sign in to share stories');
@@ -48635,8 +48633,7 @@ async function saveVerifiedWorkoutPhoto(analysisData) {
     if (loadingText) loadingText.textContent = 'Saving workout...';
 
     try {
-        const user = await window.supabaseClient.auth.getUser();
-        const userId = user?.data?.user?.id;
+        const userId = window.currentUser?.id;
 
         if (!userId) {
             throw new Error('User not authenticated');
@@ -48735,8 +48732,7 @@ async function saveVerifiedWorkoutPhoto(analysisData) {
 
 // Upload workout photo to B2 storage
 async function uploadWorkoutPhoto(file) {
-    const user = await window.supabaseClient.auth.getUser();
-    const userId = user?.data?.user?.id;
+    const userId = window.currentUser?.id;
 
     if (!userId) {
         throw new Error('User not authenticated');
@@ -49265,8 +49261,7 @@ async function loadRecentMeals() {
 
     try {
         if (!window.supabaseClient) return;
-        var user = await window.supabaseClient.auth.getUser();
-        var userId = user?.data?.user?.id;
+        var userId = window.currentUser?.id;
         if (!userId) return;
 
         var thirtyDaysAgo = new Date();
@@ -49542,8 +49537,7 @@ async function analyzeMealInBackground({ description, mealType, inputMethod, sav
 
 // Save meal log with meal type and input method
 async function saveMealLogWithType(mealData) {
-    const user = await window.supabaseClient.auth.getUser();
-    const userId = user?.data?.user?.id;
+    const userId = window.currentUser?.id;
 
     if (!userId) {
         throw new Error('User not authenticated');
@@ -50333,8 +50327,7 @@ async function compressMealImage(file) {
 
 // Upload meal photo to Backblaze B2
 async function uploadMealPhoto(file) {
-    const user = await window.supabaseClient.auth.getUser();
-    const userId = user?.data?.user?.id;
+    const userId = window.currentUser?.id;
 
     if (!userId) {
         throw new Error('User not authenticated');
@@ -50387,8 +50380,7 @@ function getLocalDateString(date = new Date()) {
 
 // Save meal log to database
 async function saveMealLog(mealData) {
-    const user = await window.supabaseClient.auth.getUser();
-    const userId = user?.data?.user?.id;
+    const userId = window.currentUser?.id;
 
     if (!userId) {
         throw new Error('User not authenticated');
@@ -50437,8 +50429,7 @@ async function saveMealLog(mealData) {
 async function recalculateDailyNutrition() {
     try {
         if (!window.supabaseClient) { console.log('Supabase not initialized'); return; }
-        const user = await window.supabaseClient.auth.getUser();
-        const userId = user?.data?.user?.id;
+        const userId = window.currentUser?.id;
 
         if (!userId) {
             console.log('User not authenticated');
@@ -50625,8 +50616,7 @@ async function loadTodayNutrition() {
         checkAndResetNewDay();
 
         if (!window.supabaseClient) { console.log('Supabase not initialized'); return; }
-        const user = await window.supabaseClient.auth.getUser();
-        const userId = user?.data?.user?.id;
+        const userId = window.currentUser?.id;
 
         if (!userId) {
             console.log('User not authenticated');
@@ -54251,8 +54241,7 @@ async function updateMealWithNewNutrition(nutritionData) {
         throw new Error('Invalid meal data');
     }
 
-    const { data: userData } = await window.supabaseClient.auth.getUser();
-    if (!userData?.user?.id) {
+    if (!window.currentUser?.id) {
         throw new Error('User not authenticated');
     }
 
@@ -54274,7 +54263,7 @@ async function updateMealWithNewNutrition(nutritionData) {
         .from('meal_logs')
         .update(updateData)
         .eq('id', meal.id)
-        .eq('user_id', userData.user.id);
+        .eq('user_id', window.currentUser.id);
 
     if (error) {
         console.error('Database update error:', error);
