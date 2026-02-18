@@ -13,6 +13,8 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         // Register the FitGotchi IAP plugin for in-app purchases
         registerPlugin(FitGotchiIAPPlugin.class);
+        // Register the Screen Time plugin for Android usage stats sync
+        registerPlugin(ScreenTimePlugin.class);
 
         super.onCreate(savedInstanceState);
 
