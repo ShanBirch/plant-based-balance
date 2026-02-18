@@ -1,5 +1,6 @@
 
 import type { Context } from "https://edge.netlify.com";
+import { createClient } from '@supabase/supabase-js';
 
 export default async function (request: Request, context: Context) {
   if (request.method !== "POST") {
@@ -22,6 +23,38 @@ export default async function (request: Request, context: Context) {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    // Fetch coach personality from database (if configured)
+    let coachPersonalityPrompt = '';
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (supabaseUrl && supabaseKey) {
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        // Get the first coach personality (single-coach setup)
+        const { data: personality } = await supabase.from('coach_personality').select('*').limit(1).maybeSingle();
+        if (personality) {
+          const parts: string[] = [];
+          if (personality.traits?.length > 0) {
+            parts.push(`Coaching tone/style: ${personality.traits.join(', ')}`);
+          }
+          if (personality.example_messages?.trim()) {
+            parts.push(`REAL EXAMPLE MESSAGES FROM YOUR COACH (match this voice):\n${personality.example_messages.trim()}`);
+          }
+          if (personality.phrases?.trim()) {
+            parts.push(`LANGUAGE STYLE & PHRASES to use:\n${personality.phrases.trim()}`);
+          }
+          if (personality.avoid?.trim()) {
+            parts.push(`NEVER do these:\n${personality.avoid.trim()}`);
+          }
+          if (parts.length > 0) {
+            coachPersonalityPrompt = `\n\n=== COACH'S CUSTOM VOICE ===\nYour personality and tone should match the coach who runs this platform. Study these examples carefully and adopt their communication style:\n\n${parts.join('\n\n')}`;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch coach personality:', e);
     }
 
     // Build rich user context from all available data
@@ -293,7 +326,7 @@ The schedule shows 7 days (Monday=0 to Sunday=6). When the user asks to move/swa
 - Return ONLY valid JSON - no markdown wrapping, no backticks around the JSON
 
 HERE IS EVERYTHING YOU KNOW ABOUT THIS USER:
-${userContext}`;
+${userContext}${coachPersonalityPrompt}`;
 
     // Build chat contents for Gemini
     const contents: any[] = [];

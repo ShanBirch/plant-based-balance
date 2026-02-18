@@ -7,7 +7,7 @@ export default async function (request: Request, context: Context) {
   }
 
   try {
-    const { query, userData, chatHistory, analyticsSummary } = await request.json();
+    const { query, userData, chatHistory, analyticsSummary, coachPersonality } = await request.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!apiKey) {
@@ -22,6 +22,27 @@ export default async function (request: Request, context: Context) {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    // Build coach personality context if provided
+    let personalityPrompt = '';
+    if (coachPersonality) {
+      const parts: string[] = [];
+      if (coachPersonality.traits?.length > 0) {
+        parts.push(`Coaching tone/style traits: ${coachPersonality.traits.join(', ')}`);
+      }
+      if (coachPersonality.example_messages?.trim()) {
+        parts.push(`REAL EXAMPLE MESSAGES FROM THE COACH (learn their exact voice from these):\n${coachPersonality.example_messages.trim()}`);
+      }
+      if (coachPersonality.phrases?.trim()) {
+        parts.push(`SPECIFIC PHRASES & LANGUAGE STYLE the coach uses:\n${coachPersonality.phrases.trim()}`);
+      }
+      if (coachPersonality.avoid?.trim()) {
+        parts.push(`THINGS THE COACH WANTS TO AVOID (never do these):\n${coachPersonality.avoid.trim()}`);
+      }
+      if (parts.length > 0) {
+        personalityPrompt = `\n\n=== COACH'S CUSTOM VOICE & PERSONALITY ===\nWhen writing draft messages or check-in reviews for clients, use this coach's unique voice. Study the examples and style below carefully and match them:\n\n${parts.join('\n\n')}`;
+      }
     }
 
     // If no userData provided, handle as a general business question
@@ -52,7 +73,7 @@ RESPONSE STYLE:
 IMPORTANT:
 - You are NOT talking to a client. You are talking to Shannon the coach/admin.
 - If asked something you don't have data for, say so clearly
-- When identifying users who need attention, explain WHY (e.g., inactive for X days)`;
+- When identifying users who need attention, explain WHY (e.g., inactive for X days)${personalityPrompt}`;
 
       const contents: any[] = [];
       contents.push({ role: "user", parts: [{ text: `SYSTEM: ${generalSystemPrompt}` }] });
@@ -406,7 +427,7 @@ Example check-in review output:
 "Hey lovely ||| Hope the weekend was good! ||| So looking at this week — you tracked meals Monday through Thursday which is awesome, protein was sitting around 85g most days which is solid ||| Friday and the weekend went quiet though hey ||| No stress, happens to everyone ||| This week lets try keep that momentum going into Friday — even if its just logging one meal ||| You've been really consistent with your workouts too, 3 sessions is great ||| Keen to see how this week goes!"
 
 Here is the complete data for the client being discussed:
-${fullContext}`;
+${fullContext}${personalityPrompt ? `\n\n=== CUSTOM VOICE OVERRIDE ===\nThe coach has configured a custom voice/personality below. Use THIS voice instead of the default Shannon voice examples above when writing draft messages and check-in reviews. Study the custom examples and style carefully:\n${personalityPrompt}` : ''}`;
 
     // Build chat contents for Gemini
     const contents: any[] = [];
