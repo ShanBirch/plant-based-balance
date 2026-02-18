@@ -9535,7 +9535,7 @@ async function applyAppTheme(themeKey) {
             const { data: meals, error } = await window.supabaseClient
                 .from('meal_logs')
                 .select('meal_date, meal_time, meal_type, calories, protein_g, carbs_g, fat_g, fiber_g, micronutrients')
-                .eq('user_id', session.user.id)
+                .eq('user_id', window.currentUser.id)
                 .gte('meal_date', getLocalDateString(sevenDaysAgo))
                 .order('meal_date', { ascending: true });
 
@@ -30211,7 +30211,7 @@ async function saveWorkoutRating() {
 
         const notes = document.getElementById('rating-notes-input')?.value?.trim() || null;
 
-        await window.dbHelpers?.workoutRatings?.create(session.user.id, {
+        await window.dbHelpers?.workoutRatings?.create(window.currentUser.id, {
             workout_date: new Date().toISOString().split('T')[0],
             workout_name: workoutRatingState.workoutName,
             source_type: workoutRatingState.sourceType,
@@ -45782,7 +45782,7 @@ async function loadPointsWidget() {
             return;
         }
 
-        const userId = session.user.id;
+        const userId = window.currentUser.id;
 
         // Try to get points data, fall back to defaults if table doesn't exist
         let pointsData = { current_points: 0, current_streak: 0 };
@@ -45907,7 +45907,7 @@ async function redeemPointsForFreeWeek() {
             redeemBtn.textContent = 'Redeeming...';
         }
 
-        const result = await window.db?.points?.redeemPoints(session.user.id);
+        const result = await window.db?.points?.redeemPoints(window.currentUser.id);
 
         if (result?.success) {
             showMilestoneToast({
@@ -46617,7 +46617,7 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
         // Get current points to track level before awarding
         let pointsBefore = null;
         try {
-            pointsBefore = await window.db?.points?.getPoints(session.user.id);
+            pointsBefore = await window.db?.points?.getPoints(window.currentUser.id);
         } catch (e) {
             console.log('Could not get previous points');
         }
@@ -46631,7 +46631,7 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
 
         console.log('Calling window.db.points.awardPoints...');
         const result = await window.db?.points?.awardPoints(
-            session.user.id,
+            window.currentUser.id,
             'meal',
             mealLogId,
             { photoTimestamp, aiConfidence, photoHash, mealTime }
@@ -46722,7 +46722,7 @@ async function claimDailyNutritionBonus() {
         // Get current points to track level before awarding
         let pointsBefore = null;
         try {
-            pointsBefore = await window.db?.points?.getPoints(session.user.id);
+            pointsBefore = await window.db?.points?.getPoints(window.currentUser.id);
         } catch (e) {
             console.log('Could not get previous points');
         }
@@ -46735,7 +46735,7 @@ async function claimDailyNutritionBonus() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                userId: session.user.id,
+                userId: window.currentUser.id,
                 type: 'daily_log',
                 referenceId: `daily_${today}`,
                 nutritionDate: today
@@ -46859,7 +46859,7 @@ async function finishDayWithoutBonus() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                userId: session.user.id,
+                userId: window.currentUser.id,
                 type: 'daily_log',
                 referenceId: `daily_${today}`,
                 nutritionDate: today,
@@ -47009,7 +47009,7 @@ async function checkDailyLogBonusStatus() {
         const { data: existingClaim } = await window.supabaseClient
             .from('point_transactions')
             .select('id')
-            .eq('user_id', session.user.id)
+            .eq('user_id', window.currentUser.id)
             .eq('transaction_type', 'earn_daily_log')
             .gte('created_at', today + 'T00:00:00')
             .lte('created_at', today + 'T23:59:59')
@@ -47025,7 +47025,7 @@ async function checkDailyLogBonusStatus() {
         const { data: dailyNutrition } = await window.supabaseClient
             .from('daily_nutrition')
             .select('day_completed')
-            .eq('user_id', session.user.id)
+            .eq('user_id', window.currentUser.id)
             .eq('nutrition_date', today)
             .single();
 
@@ -47046,7 +47046,7 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
         // Get current points to track level before awarding
         let pointsBefore = null;
         try {
-            pointsBefore = await window.db?.points?.getPoints(session.user.id);
+            pointsBefore = await window.db?.points?.getPoints(window.currentUser.id);
         } catch (e) {
             console.log('Could not get previous points');
         }
@@ -47055,7 +47055,7 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
         const previousProgress = previousLevelData.progress || 0;
 
         const result = await window.db?.points?.awardPoints(
-            session.user.id,
+            window.currentUser.id,
             'workout',
             workoutId,
             { photoTimestamp, aiConfidence, photoHash }
@@ -47120,7 +47120,7 @@ async function awardPointsForPersonalBest(pbRefId, pbData) {
         // Get current points to track level before awarding
         let pointsBefore = null;
         try {
-            pointsBefore = await window.db?.points?.getPoints(session.user.id);
+            pointsBefore = await window.db?.points?.getPoints(window.currentUser.id);
         } catch (e) {
             console.log('Could not get previous points');
         }
@@ -47130,7 +47130,7 @@ async function awardPointsForPersonalBest(pbRefId, pbData) {
 
         // Award point for personal best (type: 'personal_best')
         const result = await window.db?.points?.awardPoints(
-            session.user.id,
+            window.currentUser.id,
             'personal_best',
             pbRefId,
             {
@@ -47339,7 +47339,7 @@ async function awardWorkoutSharePoint(shareType, photoTimestamp, photoHash) {
 
         const workoutRefId = `workout_${shareType}_${Date.now()}`;
         const result = await window.db?.points?.awardPoints(
-            session.user.id,
+            window.currentUser.id,
             'workout',
             workoutRefId,
             { photoTimestamp, aiConfidence: 'high', photoHash }
@@ -47717,7 +47717,7 @@ async function shareLevelUpToFeed(levelData) {
         try {
             const session = await window.authHelpers?.getSession();
             if (session?.user) {
-                const pointsData = await window.db?.points?.getPoints(session.user.id);
+                const pointsData = await window.db?.points?.getPoints(window.currentUser.id);
                 streak = pointsData?.current_streak || 0;
             }
         } catch (e) {
@@ -47881,7 +47881,7 @@ async function loadUserWeightForActivity() {
     try {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) return;
-        const quiz = await window.dbHelpers?.quizResults?.getLatest(session.user.id);
+        const quiz = await window.dbHelpers?.quizResults?.getLatest(window.currentUser.id);
         if (quiz?.weight) {
             activityFormState.userWeightKg = parseFloat(quiz.weight) || 70;
             updateActivityCalories();
@@ -48041,7 +48041,7 @@ async function saveActivity() {
         saveBtn.textContent = 'Saving...';
 
         // Save to database
-        const activityRecord = await window.dbHelpers?.activityLogs?.create(session.user.id, {
+        const activityRecord = await window.dbHelpers?.activityLogs?.create(window.currentUser.id, {
             activity_type: activityType,
             activity_label: label || null,
             duration_minutes: duration,
@@ -48173,7 +48173,7 @@ async function shareActivityCardToFeed() {
             duration: 5
         };
 
-        await window.dbHelpers?.stories?.create(session.user.id, storyData);
+        await window.dbHelpers?.stories?.create(window.currentUser.id, storyData);
 
         // Award XP if eligible
         if (savedActivityData.xpEligible) {
@@ -50821,7 +50821,7 @@ async function updateCalorieProjection(dailyData) {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) { projectionEl.style.display = 'none'; return; }
 
-        const userId = session.user.id;
+        const userId = window.currentUser.id;
 
         // Get user's quiz data (weight, goal_weight, tdee)
         const quiz = await window.dbHelpers?.quizResults?.getLatest(userId);
@@ -50985,7 +50985,7 @@ async function loadStreakData() {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) return;
 
-        const userId = session.user.id;
+        const userId = window.currentUser.id;
         const today = new Date();
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -51152,7 +51152,7 @@ async function loadMultiWeekData(numWeeks = 4) {
             if (btn.textContent.includes(numWeeks)) btn.classList.add('active');
         });
 
-        const userId = session.user.id;
+        const userId = window.currentUser.id;
         const today = new Date();
         const startDate = new Date(today);
         startDate.setDate(startDate.getDate() - (numWeeks * 7));
@@ -51308,7 +51308,7 @@ async function loadMicronutrientInsights() {
         const { data: meals, error } = await window.supabaseClient
             .from('meal_logs')
             .select('micronutrients, food_items, calories, protein_g')
-            .eq('user_id', session.user.id)
+            .eq('user_id', window.currentUser.id)
             .eq('meal_date', today);
 
         if (error) {
@@ -51443,7 +51443,7 @@ async function loadMealPatterns() {
         const { data: meals, error } = await window.supabaseClient
             .from('meal_logs')
             .select('meal_date, meal_time, meal_type, calories, protein_g, carbs_g, fat_g, fiber_g, micronutrients')
-            .eq('user_id', session.user.id)
+            .eq('user_id', window.currentUser.id)
             .gte('meal_date', getLocalDateString(sevenDaysAgo))
             .order('meal_date', { ascending: true });
 
@@ -51756,7 +51756,7 @@ async function loadAdaptiveAdjustment() {
     try {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) return;
-        const userId = session.user.id;
+        const userId = window.currentUser.id;
 
         // Check if user snoozed adaptive checks
         const snoozeUntil = localStorage.getItem('adaptiveAdjustmentSnoozeUntil');
@@ -52045,7 +52045,7 @@ async function loadMealJournal() {
         const { data: meals, error } = await window.supabaseClient
             .from('meal_logs')
             .select('meal_date, meal_time, photo_url, calories, food_items')
-            .eq('user_id', session.user.id)
+            .eq('user_id', window.currentUser.id)
             .gte('meal_date', getLocalDateString(sevenDaysAgo))
             .order('meal_date', { ascending: false });
 
@@ -52258,7 +52258,7 @@ async function loadScoreHistory() {
         const { data: days, error } = await window.supabaseClient
             .from('daily_nutrition')
             .select('nutrition_date, total_calories, total_protein_g, total_carbs_g, total_fat_g, calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g')
-            .eq('user_id', session.user.id)
+            .eq('user_id', window.currentUser.id)
             .gte('nutrition_date', getLocalDateString(sevenDaysAgo))
             .lte('nutrition_date', getLocalDateString(today))
             .order('nutrition_date', { ascending: true });
@@ -53316,7 +53316,7 @@ async function loadMealPrepScore() {
         const { data: meals, error } = await window.supabaseClient
             .from('meal_logs')
             .select('meal_date, meal_type, photo_url, food_items, ai_confidence')
-            .eq('user_id', session.user.id)
+            .eq('user_id', window.currentUser.id)
             .gte('meal_date', getLocalDateString(sevenDaysAgo))
             .order('meal_date', { ascending: true });
 
@@ -53388,7 +53388,7 @@ async function loadNutritionBadges() {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) return;
 
-        const userId = session.user.id;
+        const userId = window.currentUser.id;
         const today = new Date();
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -53512,7 +53512,7 @@ async function loadSocialComparison() {
         const { data: myDays, error } = await window.supabaseClient
             .from('daily_nutrition')
             .select('total_calories, total_protein_g, total_carbs_g, total_fat_g, calorie_goal')
-            .eq('user_id', session.user.id)
+            .eq('user_id', window.currentUser.id)
             .gte('nutrition_date', getLocalDateString(sevenDaysAgo));
 
         if (error) { console.error('Error loading social comparison:', error); return; }
