@@ -20811,6 +20811,24 @@ async function _syncQuizDataToDbRealImpl() {
                         });
                         console.log("User sex field saved to users table:", metricData.sex);
                     }
+
+                    // Save meal timing schedule if set during quiz
+                    if (quizData.meal_time_breakfast || quizData.meal_time_lunch || quizData.meal_time_dinner) {
+                        try {
+                            await dbHelpers.mealSchedule.upsert(user.id, {
+                                breakfast: quizData.meal_time_breakfast || '08:00',
+                                lunch: quizData.meal_time_lunch || '12:30',
+                                dinner: quizData.meal_time_dinner || '18:30'
+                            });
+                            console.log("Meal schedule saved:", {
+                                breakfast: quizData.meal_time_breakfast,
+                                lunch: quizData.meal_time_lunch,
+                                dinner: quizData.meal_time_dinner
+                            });
+                        } catch (mealScheduleError) {
+                            console.error("Failed to save meal schedule:", mealScheduleError);
+                        }
+                    }
                 } catch (nutritionError) {
                     console.error("Failed to calculate/save nutrition goals:", nutritionError);
                 }
@@ -46547,12 +46565,16 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
         const previousLevel = previousLevelData.level;
         const previousProgress = previousLevelData.progress || 0;
 
+        // Get current time in HH:MM:SS format for meal timing bonus check
+        const now = new Date();
+        const mealTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
+
         console.log('Calling window.db.points.awardPoints...');
         const result = await window.db?.points?.awardPoints(
             session.user.id,
             'meal',
             mealLogId,
-            { photoTimestamp, aiConfidence, photoHash }
+            { photoTimestamp, aiConfidence, photoHash, mealTime }
         );
         console.log('awardPoints result:', result);
 
@@ -46563,6 +46585,13 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
                 result.bonusPoints,
                 result.currentStreak
             );
+
+            // Show meal timing bonus toast if earned
+            if (result.mealOnTime && result.mealTimingBonus > 0) {
+                setTimeout(() => {
+                    showToast(`On-time meal! +${result.mealTimingBonus} bonus XP`, 'success');
+                }, 400);
+            }
 
             // Show milestone toasts
             if (result.milestonesUnlocked?.length > 0) {
