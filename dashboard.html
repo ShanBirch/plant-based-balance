@@ -45637,13 +45637,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 const POINTS_FOR_FREE_WEEK = 200;
 const MAX_LEVEL = 99;
-const LEVEL_CURVE_MULTIPLIER = 1.3;
-const LEVEL_CURVE_EXPONENT = 1.55;
+const LEVEL_CURVE_MULTIPLIER = 0.07;
+const LEVEL_CURVE_EXPONENT = 2.4;
+const LEVEL_LINEAR_BONUS = 0.7;
 
 // Calculate points required for a given level
 function getPointsForLevel(level) {
     if (level <= 1) return 0;
-    return Math.floor(LEVEL_CURVE_MULTIPLIER * Math.pow(level, LEVEL_CURVE_EXPONENT));
+    return Math.floor(LEVEL_CURVE_MULTIPLIER * Math.pow(level, LEVEL_CURVE_EXPONENT) + LEVEL_LINEAR_BONUS * level);
 }
 
 // Calculate user's current level from lifetime points
@@ -56988,10 +56989,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.DEFAULT_CHARACTER_COLORS = DEFAULT_CHARACTER_COLORS;
 
         // Function to calculate XP threshold for a specific level based on the app's curve
-        // Math.floor(1.3 * Math.pow(level, 1.55))
+        // Math.floor(0.07 * Math.pow(level, 2.4) + 0.7 * level)
         function getXPForLevel(lvl) {
             if (lvl <= 1) return 0;
-            return Math.floor(1.3 * Math.pow(lvl, 1.55));
+            return Math.floor(0.07 * Math.pow(lvl, 2.4) + 0.7 * lvl);
         }
 
         window.updateFitGotchi = async function(pointsData) {
@@ -61009,13 +61010,14 @@ document.addEventListener('DOMContentLoaded', async function() {
      * Calculate level info from lifetime points (client-side)
      */
     function calculateLevelFromPoints(lifetimePoints) {
-        const CURVE_MULTIPLIER = 1.3;
-        const CURVE_EXPONENT = 1.55;
+        const CURVE_MULTIPLIER = 0.07;
+        const CURVE_EXPONENT = 2.4;
+        const LINEAR_BONUS = 0.7;
         const MAX_LEVEL = 99;
 
         function getPointsForLevel(level) {
             if (level <= 1) return 0;
-            return Math.floor(CURVE_MULTIPLIER * Math.pow(level, CURVE_EXPONENT));
+            return Math.floor(CURVE_MULTIPLIER * Math.pow(level, CURVE_EXPONENT) + LINEAR_BONUS * level);
         }
 
         let level = 1;

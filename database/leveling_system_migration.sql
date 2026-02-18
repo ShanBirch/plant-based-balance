@@ -1,11 +1,11 @@
 -- Migration: Leveling System
 -- Purpose: Add level calculation functions based on lifetime points
--- 99 levels total, takes ~6 months of daily use to max out
+-- 99 levels total, takes ~10 months of daily use to max out
 -- Created: January 2026
 
 -- ============================================================
 -- LEVEL CALCULATION FUNCTION
--- Mirrors the JS formula: points = 1.3 * level^1.55
+-- Mirrors the JS formula: points = 0.07 * level^2.4 + 0.7 * level
 -- ============================================================
 
 -- Calculate the points required to reach a given level
@@ -15,8 +15,8 @@ BEGIN
   IF p_level <= 1 THEN
     RETURN 0;
   END IF;
-  -- Formula: 1.3 * level^1.55
-  RETURN FLOOR(1.3 * POWER(p_level::NUMERIC, 1.55));
+  -- Formula: 0.07 * level^2.4 + 0.7 * level
+  RETURN FLOOR(0.07 * POWER(p_level::NUMERIC, 2.4) + 0.7 * p_level);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
