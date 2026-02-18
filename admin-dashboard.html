@@ -1172,6 +1172,372 @@
                 display: none;
             }
         }
+
+        /* Import Clients Modal */
+        .import-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .import-modal-overlay.active {
+            display: flex;
+        }
+
+        .import-modal {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 720px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .import-modal-header {
+            padding: 24px 28px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .import-modal-header h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .import-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .import-modal-close:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .import-modal-body {
+            padding: 24px 28px 28px;
+        }
+
+        .import-step {
+            display: none;
+        }
+
+        .import-step.active {
+            display: block;
+        }
+
+        .import-source-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .import-source-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .import-source-card:hover {
+            border-color: #48864B;
+            background: #f0fdf4;
+        }
+
+        .import-source-card.selected {
+            border-color: #48864B;
+            background: #f0fdf4;
+        }
+
+        .import-source-card .source-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .import-source-card .source-name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.95rem;
+        }
+
+        .import-source-card .source-desc {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .import-dropzone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .import-dropzone:hover,
+        .import-dropzone.dragover {
+            border-color: #48864B;
+            background: #f0fdf4;
+        }
+
+        .import-dropzone .dropzone-icon {
+            font-size: 2.5rem;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        .import-dropzone .dropzone-text {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .import-dropzone .dropzone-text strong {
+            color: #48864B;
+        }
+
+        .import-hint {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 20px;
+        }
+
+        .import-field-mapping {
+            margin-bottom: 20px;
+        }
+
+        .import-field-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .import-field-row label {
+            width: 110px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #475569;
+            flex-shrink: 0;
+        }
+
+        .import-field-row select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            background: white;
+        }
+
+        .import-field-row select:focus {
+            outline: none;
+            border-color: #48864B;
+        }
+
+        .import-preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+
+        .import-preview-table th {
+            background: #f8fafc;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #475569;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .import-preview-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #1e293b;
+        }
+
+        .import-preview-table tr.import-skip td {
+            color: #94a3b8;
+            text-decoration: line-through;
+        }
+
+        .import-preview-count {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .import-preview-count strong {
+            color: #48864B;
+        }
+
+        .import-option-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+        }
+
+        .import-option-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #48864B;
+        }
+
+        .import-btn-row {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .import-btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .import-btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .import-btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .import-btn-primary {
+            background: #48864B;
+            color: white;
+        }
+
+        .import-btn-primary:hover {
+            background: #3a6d3c;
+        }
+
+        .import-btn-primary:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .import-results {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .import-results .result-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        .import-results h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 16px;
+        }
+
+        .import-results-stats {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+
+        .import-results-stats .result-stat {
+            text-align: center;
+        }
+
+        .import-results-stats .result-stat .result-num {
+            font-size: 1.8rem;
+            font-weight: 800;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .import-results-stats .result-stat .result-num.green { color: #48864B; }
+        .import-results-stats .result-stat .result-num.yellow { color: #d97706; }
+        .import-results-stats .result-stat .result-num.red { color: #dc2626; }
+
+        .import-results-stats .result-stat .result-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .import-add-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #48864B;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .import-add-btn:hover {
+            background: #3a6d3c;
+        }
+
+        @media (max-width: 768px) {
+            .import-modal {
+                width: 95%;
+                max-height: 90vh;
+            }
+            .import-source-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .import-field-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .import-field-row label {
+                width: auto;
+            }
+            .import-btn-row {
+                flex-direction: column;
+            }
+            .import-btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1261,7 +1627,12 @@
             <!-- Users Section -->
             <div id="users" class="section">
                 <div class="content-card">
-                    <h2>All Users</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 style="margin-bottom: 0;">All Users</h2>
+                        <button class="import-add-btn" onclick="openImportModal()">
+                            <i data-lucide="upload"></i> Import Clients
+                        </button>
+                    </div>
                     <input type="text" class="search-box" id="user-search" placeholder="Search by name or email..." onkeyup="filterUsers()">
                     <div id="users-list" class="loading">Loading users...</div>
                 </div>
@@ -1405,6 +1776,127 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Import Clients Modal -->
+    <div class="import-modal-overlay" id="import-modal-overlay" onclick="if(event.target===this) closeImportModal()">
+        <div class="import-modal">
+            <div class="import-modal-header">
+                <h2 id="import-modal-title">Import Clients</h2>
+                <button class="import-modal-close" onclick="closeImportModal()">&times;</button>
+            </div>
+            <div class="import-modal-body">
+
+                <!-- Step 1: Choose Source -->
+                <div class="import-step active" id="import-step-1">
+                    <p style="color: #64748b; margin-bottom: 16px;">Where are you importing clients from?</p>
+                    <div class="import-source-grid">
+                        <div class="import-source-card" onclick="selectImportSource('trainerize', this)">
+                            <div class="source-icon">&#x1F3CB;</div>
+                            <div class="source-name">Trainerize</div>
+                            <div class="source-desc">ABC Trainerize CSV export</div>
+                        </div>
+                        <div class="import-source-card" onclick="selectImportSource('mypthub', this)">
+                            <div class="source-icon">&#x1F4CB;</div>
+                            <div class="source-name">My PT Hub</div>
+                            <div class="source-desc">Client list export</div>
+                        </div>
+                        <div class="import-source-card" onclick="selectImportSource('truecoach', this)">
+                            <div class="source-icon">&#x1F4CA;</div>
+                            <div class="source-name">TrueCoach</div>
+                            <div class="source-desc">Client data export</div>
+                        </div>
+                        <div class="import-source-card" onclick="selectImportSource('csv', this)">
+                            <div class="source-icon">&#x1F4C4;</div>
+                            <div class="source-name">CSV File</div>
+                            <div class="source-desc">Any app or spreadsheet</div>
+                        </div>
+                    </div>
+                    <div class="import-btn-row">
+                        <button class="import-btn import-btn-secondary" onclick="closeImportModal()">Cancel</button>
+                        <button class="import-btn import-btn-primary" id="import-next-1" disabled onclick="goToImportStep(2)">Next</button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Upload File & Map Fields -->
+                <div class="import-step" id="import-step-2">
+                    <p style="color: #64748b; margin-bottom: 8px;" id="import-source-hint"></p>
+
+                    <div class="import-dropzone" id="import-dropzone" onclick="document.getElementById('import-file-input').click()">
+                        <div class="dropzone-icon">&#x1F4C2;</div>
+                        <div class="dropzone-text"><strong>Click to browse</strong> or drag & drop your CSV file</div>
+                    </div>
+                    <input type="file" id="import-file-input" accept=".csv,.txt" style="display:none" onchange="handleImportFile(this.files[0])">
+                    <div class="import-hint" id="import-file-name"></div>
+
+                    <!-- Field Mapping (shown after file is loaded) -->
+                    <div id="import-mapping-section" style="display:none;">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 12px; color: #1e293b;">Map your columns</h3>
+                        <div class="import-field-mapping">
+                            <div class="import-field-row">
+                                <label>Email *</label>
+                                <select id="import-map-email" onchange="updateImportPreview()"></select>
+                            </div>
+                            <div class="import-field-row">
+                                <label>First Name</label>
+                                <select id="import-map-firstname" onchange="updateImportPreview()"></select>
+                            </div>
+                            <div class="import-field-row">
+                                <label>Last Name</label>
+                                <select id="import-map-lastname" onchange="updateImportPreview()"></select>
+                            </div>
+                            <div class="import-field-row">
+                                <label>Phone</label>
+                                <select id="import-map-phone" onchange="updateImportPreview()"></select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="import-btn-row">
+                        <button class="import-btn import-btn-secondary" onclick="goToImportStep(1)">Back</button>
+                        <button class="import-btn import-btn-primary" id="import-next-2" disabled onclick="goToImportStep(3)">Preview Clients</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Preview & Confirm -->
+                <div class="import-step" id="import-step-3">
+                    <div class="import-preview-count" id="import-preview-count"></div>
+                    <div style="max-height: 300px; overflow-y: auto; margin-bottom: 16px;">
+                        <table class="import-preview-table" id="import-preview-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="import-preview-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="import-option-row">
+                        <input type="checkbox" id="import-send-invite" checked>
+                        <label for="import-send-invite">Send email invitations to new clients</label>
+                    </div>
+                    <p class="import-hint">Invited clients will receive an email with a link to set up their account and start using the app.</p>
+
+                    <div class="import-btn-row">
+                        <button class="import-btn import-btn-secondary" onclick="goToImportStep(2)">Back</button>
+                        <button class="import-btn import-btn-primary" id="import-submit-btn" onclick="executeImport()">Import Clients</button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Results -->
+                <div class="import-step" id="import-step-4">
+                    <div class="import-results" id="import-results"></div>
+                    <div class="import-btn-row" style="justify-content: center;">
+                        <button class="import-btn import-btn-primary" onclick="closeImportModal()">Done</button>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </div>
 
@@ -2544,6 +3036,349 @@
             }
         }
         requestNotificationPermission();
+
+        // ==========================================
+        // IMPORT CLIENTS
+        // ==========================================
+        let importSource = null;
+        let importParsedRows = [];
+        let importHeaders = [];
+        let importMappedClients = [];
+
+        // Known column mappings for popular coaching apps
+        const SOURCE_PRESETS = {
+            trainerize: {
+                hint: 'In Trainerize, go to Clients tab, select all clients, and click Export to CSV.',
+                email: ['email', 'email address', 'e-mail'],
+                firstName: ['first name', 'firstname', 'first'],
+                lastName: ['last name', 'lastname', 'last'],
+                phone: ['phone', 'phone number', 'mobile', 'cell']
+            },
+            mypthub: {
+                hint: 'In My PT Hub, go to Clients, click the export/download icon to get your CSV.',
+                email: ['email', 'email address', 'e-mail'],
+                firstName: ['first name', 'firstname', 'first', 'name'],
+                lastName: ['last name', 'lastname', 'last', 'surname'],
+                phone: ['phone', 'phone number', 'mobile', 'cell', 'telephone']
+            },
+            truecoach: {
+                hint: 'In TrueCoach, go to Settings > Export Data to download your client list.',
+                email: ['email', 'email address', 'e-mail'],
+                firstName: ['first name', 'firstname', 'first', 'name'],
+                lastName: ['last name', 'lastname', 'last'],
+                phone: ['phone', 'phone number', 'mobile', 'cell']
+            },
+            csv: {
+                hint: 'Upload any CSV file with at least an email column. You can export from most apps or create one in a spreadsheet.',
+                email: ['email', 'email address', 'e-mail'],
+                firstName: ['first name', 'firstname', 'first', 'name', 'given name'],
+                lastName: ['last name', 'lastname', 'last', 'surname', 'family name'],
+                phone: ['phone', 'phone number', 'mobile', 'cell', 'telephone']
+            }
+        };
+
+        function openImportModal() {
+            importSource = null;
+            importParsedRows = [];
+            importHeaders = [];
+            importMappedClients = [];
+            document.getElementById('import-modal-overlay').classList.add('active');
+            goToImportStep(1);
+            // Reset source selection
+            document.querySelectorAll('.import-source-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById('import-next-1').disabled = true;
+            document.getElementById('import-file-input').value = '';
+            document.getElementById('import-file-name').textContent = '';
+            document.getElementById('import-mapping-section').style.display = 'none';
+            document.getElementById('import-next-2').disabled = true;
+            // Re-init lucide icons for the import button
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closeImportModal() {
+            document.getElementById('import-modal-overlay').classList.remove('active');
+        }
+
+        function selectImportSource(source, el) {
+            importSource = source;
+            document.querySelectorAll('.import-source-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('import-next-1').disabled = false;
+        }
+
+        function goToImportStep(step) {
+            document.querySelectorAll('.import-step').forEach(s => s.classList.remove('active'));
+            document.getElementById('import-step-' + step).classList.add('active');
+
+            if (step === 2) {
+                const preset = SOURCE_PRESETS[importSource] || SOURCE_PRESETS.csv;
+                document.getElementById('import-source-hint').textContent = preset.hint;
+                setupDropzone();
+            }
+
+            if (step === 3) {
+                buildPreviewTable();
+            }
+
+            // Update title
+            const titles = { 1: 'Import Clients', 2: 'Upload CSV', 3: 'Review & Import', 4: 'Import Complete' };
+            document.getElementById('import-modal-title').textContent = titles[step] || 'Import Clients';
+        }
+
+        function setupDropzone() {
+            const dz = document.getElementById('import-dropzone');
+            dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('dragover'); };
+            dz.ondragleave = () => dz.classList.remove('dragover');
+            dz.ondrop = (e) => {
+                e.preventDefault();
+                dz.classList.remove('dragover');
+                if (e.dataTransfer.files.length) handleImportFile(e.dataTransfer.files[0]);
+            };
+        }
+
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/).filter(line => line.trim());
+            if (lines.length < 2) return { headers: [], rows: [] };
+
+            // Parse CSV handling quoted fields
+            function parseLine(line) {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const ch = line[i];
+                    if (inQuotes) {
+                        if (ch === '"' && line[i+1] === '"') {
+                            current += '"';
+                            i++;
+                        } else if (ch === '"') {
+                            inQuotes = false;
+                        } else {
+                            current += ch;
+                        }
+                    } else {
+                        if (ch === '"') {
+                            inQuotes = true;
+                        } else if (ch === ',') {
+                            result.push(current.trim());
+                            current = '';
+                        } else {
+                            current += ch;
+                        }
+                    }
+                }
+                result.push(current.trim());
+                return result;
+            }
+
+            const headers = parseLine(lines[0]);
+            const rows = lines.slice(1).map(line => {
+                const values = parseLine(line);
+                const obj = {};
+                headers.forEach((h, i) => { obj[h] = values[i] || ''; });
+                return obj;
+            });
+
+            return { headers, rows };
+        }
+
+        function handleImportFile(file) {
+            if (!file) return;
+            document.getElementById('import-file-name').textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const { headers, rows } = parseCSV(text);
+
+                if (headers.length === 0 || rows.length === 0) {
+                    document.getElementById('import-file-name').textContent = file.name + ' — No data found. Check your file format.';
+                    return;
+                }
+
+                importHeaders = headers;
+                importParsedRows = rows;
+
+                // Populate field mapping dropdowns
+                populateFieldMappings(headers);
+                document.getElementById('import-mapping-section').style.display = 'block';
+                document.getElementById('import-file-name').textContent = file.name + ' — ' + rows.length + ' row(s) found';
+                updateImportPreview();
+            };
+            reader.readAsText(file);
+        }
+
+        function populateFieldMappings(headers) {
+            const preset = SOURCE_PRESETS[importSource] || SOURCE_PRESETS.csv;
+            const fields = [
+                { id: 'import-map-email', candidates: preset.email, required: true },
+                { id: 'import-map-firstname', candidates: preset.firstName },
+                { id: 'import-map-lastname', candidates: preset.lastName },
+                { id: 'import-map-phone', candidates: preset.phone }
+            ];
+
+            fields.forEach(field => {
+                const select = document.getElementById(field.id);
+                select.innerHTML = field.required
+                    ? '<option value="">-- Select column --</option>'
+                    : '<option value="">(skip)</option>';
+
+                headers.forEach(h => {
+                    const opt = document.createElement('option');
+                    opt.value = h;
+                    opt.textContent = h;
+                    select.appendChild(opt);
+                });
+
+                // Auto-match by comparing lowercase header names to known candidates
+                const lowerHeaders = headers.map(h => h.toLowerCase().trim());
+                for (const candidate of field.candidates) {
+                    const idx = lowerHeaders.indexOf(candidate);
+                    if (idx !== -1) {
+                        select.value = headers[idx];
+                        break;
+                    }
+                }
+            });
+        }
+
+        function updateImportPreview() {
+            const emailCol = document.getElementById('import-map-email').value;
+            document.getElementById('import-next-2').disabled = !emailCol;
+        }
+
+        function buildPreviewTable() {
+            const emailCol = document.getElementById('import-map-email').value;
+            const firstNameCol = document.getElementById('import-map-firstname').value;
+            const lastNameCol = document.getElementById('import-map-lastname').value;
+            const phoneCol = document.getElementById('import-map-phone').value;
+
+            // Get existing emails for duplicate detection
+            const existingEmails = new Set(allUsers.map(u => (u.email || '').toLowerCase()));
+
+            importMappedClients = [];
+            const tbody = document.getElementById('import-preview-body');
+            tbody.innerHTML = '';
+
+            let newCount = 0;
+            let skipCount = 0;
+
+            importParsedRows.forEach(row => {
+                const email = (row[emailCol] || '').trim().toLowerCase();
+                const firstName = firstNameCol ? (row[firstNameCol] || '').trim() : '';
+                const lastName = lastNameCol ? (row[lastNameCol] || '').trim() : '';
+                const phone = phoneCol ? (row[phoneCol] || '').trim() : '';
+                const fullName = [firstName, lastName].filter(Boolean).join(' ');
+
+                const isInvalid = !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                const isDuplicate = existingEmails.has(email);
+                const skip = isInvalid || isDuplicate;
+
+                let status = '';
+                let statusClass = '';
+                if (isInvalid) {
+                    status = 'Invalid email';
+                    statusClass = 'color:#dc2626';
+                    skipCount++;
+                } else if (isDuplicate) {
+                    status = 'Already exists';
+                    statusClass = 'color:#d97706';
+                    skipCount++;
+                } else {
+                    status = 'New';
+                    statusClass = 'color:#48864B; font-weight:600';
+                    newCount++;
+                    importMappedClients.push({ email, firstName, lastName, phone });
+                }
+
+                const tr = document.createElement('tr');
+                if (skip) tr.classList.add('import-skip');
+                tr.innerHTML = `
+                    <td>${fullName || '—'}</td>
+                    <td>${email || '—'}</td>
+                    <td>${phone || '—'}</td>
+                    <td style="${statusClass}">${status}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('import-preview-count').innerHTML =
+                `<strong>${newCount}</strong> new client${newCount !== 1 ? 's' : ''} to import` +
+                (skipCount > 0 ? ` &middot; ${skipCount} skipped` : '');
+
+            document.getElementById('import-submit-btn').disabled = newCount === 0;
+            document.getElementById('import-submit-btn').textContent = newCount === 0
+                ? 'No clients to import'
+                : `Import ${newCount} Client${newCount !== 1 ? 's' : ''}`;
+        }
+
+        async function executeImport() {
+            const btn = document.getElementById('import-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Importing...';
+
+            const sendInvite = document.getElementById('import-send-invite').checked;
+
+            try {
+                const session = await authHelpers.getSession();
+                const adminUserId = session.session.user.id;
+
+                const response = await fetch('/api/import-clients', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clients: importMappedClients,
+                        sendInvite,
+                        adminUserId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || result.message || 'Import failed');
+                }
+
+                // Show results
+                const r = result.summary;
+                document.getElementById('import-results').innerHTML = `
+                    <div class="result-icon">&#x2705;</div>
+                    <h3>Import Complete</h3>
+                    <div class="import-results-stats">
+                        <div class="result-stat">
+                            <div class="result-num green">${r.imported}</div>
+                            <div class="result-label">Imported</div>
+                        </div>
+                        <div class="result-stat">
+                            <div class="result-num yellow">${r.skipped}</div>
+                            <div class="result-label">Skipped</div>
+                        </div>
+                        <div class="result-stat">
+                            <div class="result-num red">${r.failed}</div>
+                            <div class="result-label">Failed</div>
+                        </div>
+                    </div>
+                    ${sendInvite && r.imported > 0 ? '<p style="color:#64748b; font-size:0.85rem;">Invitation emails have been sent to new clients.</p>' : ''}
+                    ${!sendInvite && r.imported > 0 ? '<p style="color:#64748b; font-size:0.85rem;">Accounts created. Clients can use "Forgot Password" on the login page to set up their account.</p>' : ''}
+                `;
+
+                goToImportStep(4);
+
+                // Refresh the user list
+                allUsers = await dbHelpers.admin.getAllUsers();
+                renderUsersList();
+                renderRecentUsers();
+                aiPopulateClientDropdown();
+
+            } catch (err) {
+                document.getElementById('import-results').innerHTML = `
+                    <div class="result-icon">&#x274C;</div>
+                    <h3>Import Failed</h3>
+                    <p style="color:#dc2626;">${err.message}</p>
+                `;
+                goToImportStep(4);
+            }
+        }
     </script>
 </body>
 </html>
