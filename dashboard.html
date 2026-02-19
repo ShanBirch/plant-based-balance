@@ -10252,14 +10252,92 @@ async function applyAppTheme(themeKey) {
 
     // Set up event listeners
     (function() {
-        // Card click triggers file input
+        // Card click opens getUserMedia camera instead of file input (which opens gallery in Capacitor WebView)
         var photoCard = document.getElementById('weekly-progress-photo-card');
         var photoInput = document.getElementById('progress-photo-input');
-        if (photoCard && photoInput) {
-            photoCard.onclick = function() { photoInput.click(); };
+        if (photoCard) {
+            photoCard.onclick = function() {
+                openWorkoutCamera(function(file) {
+                    handleProgressPhotoCaptureFromFile(file);
+                }, 'Take your progress photo');
+            };
+        }
+        // Keep file input handler as legacy fallback
+        if (photoInput) {
             photoInput.onchange = handleProgressPhotoSelect;
         }
     })();
+
+    // Handle progress photo from a File object (from getUserMedia camera modal)
+    async function handleProgressPhotoCaptureFromFile(file) {
+        if (!file) return;
+
+        var card = document.getElementById('weekly-progress-photo-card');
+        var uploadingCard = document.getElementById('weekly-progress-photo-uploading');
+        var doneCard = document.getElementById('weekly-progress-photo-done-card');
+
+        try {
+            if (card) card.style.display = 'none';
+            if (uploadingCard) uploadingCard.style.display = 'block';
+
+            var userId = window.currentUser?.id;
+            if (!userId) throw new Error('User not authenticated');
+
+            var formData = new FormData();
+            formData.append('file', file);
+            formData.append('userId', userId);
+
+            var uploadResponse = await fetch('/api/upload-progress-photo', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!uploadResponse.ok) {
+                var errorData = await uploadResponse.json();
+                throw new Error(errorData.error || 'Failed to upload photo');
+            }
+
+            var uploadData = await uploadResponse.json();
+            await db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
+
+            try {
+                var { data: currentPoints } = await supabaseClient
+                    .from('user_points')
+                    .select('lifetime_points')
+                    .eq('user_id', userId)
+                    .maybeSingle();
+
+                if (currentPoints) {
+                    await supabaseClient
+                        .from('user_points')
+                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 15 })
+                        .eq('user_id', userId);
+                } else {
+                    await supabaseClient
+                        .from('user_points')
+                        .insert({ user_id: userId, lifetime_points: 15, current_points: 0 });
+                }
+
+                if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+            } catch (xpError) {
+                console.log('XP award skipped:', xpError);
+            }
+
+            if (uploadingCard) uploadingCard.style.display = 'none';
+            if (doneCard) doneCard.style.display = 'flex';
+
+            if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
+            console.log('Progress photo uploaded successfully!');
+
+        } catch (error) {
+            console.error('Error uploading progress photo:', error);
+            if (uploadingCard) uploadingCard.style.display = 'none';
+            if (card) card.style.display = 'block';
+            alert('Failed to upload progress photo. Please try again.');
+        }
+    }
+    window.handleProgressPhotoCaptureFromFile = handleProgressPhotoCaptureFromFile;
 
     // Make functions globally available
     window.dismissProgressPhotoDoneCard = dismissProgressPhotoDoneCard;
@@ -45401,13 +45479,13 @@ window.submitWeighInModal = submitWeighInModal;
     </button>
 </div>
 
-<!-- Workout Camera Modal (simple getUserMedia camera for workout photo sharing) -->
+<!-- Generic Camera Modal (getUserMedia camera for photos - used by workout, story, activity, progress, meal) -->
 <div id="workout-camera-modal" style="display:none; position:fixed; inset:0; background:#000; z-index:10014; flex-direction:column;">
     <!-- Close button -->
     <button onclick="closeWorkoutCamera()" style="position:absolute; top:52px; right:16px; background:rgba(0,0,0,0.5); border:none; color:white; width:48px; height:48px; border-radius:50%; font-size:1.8rem; cursor:pointer; z-index:5; backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center;">&times;</button>
-    <!-- Label -->
+    <!-- Label (dynamic - updated by openWorkoutCamera) -->
     <div style="position:absolute; top:52px; left:0; right:0; z-index:4; text-align:center; pointer-events:none;">
-        <span style="background:rgba(0,0,0,0.5); color:#fff; padding:8px 20px; border-radius:20px; font-size:0.9rem; font-weight:600; backdrop-filter:blur(10px);">Take a workout photo</span>
+        <span id="generic-camera-label" style="background:rgba(0,0,0,0.5); color:#fff; padding:8px 20px; border-radius:20px; font-size:0.9rem; font-weight:600; backdrop-filter:blur(10px);">Take a photo</span>
     </div>
     <!-- Live camera feed -->
     <style>
@@ -49040,10 +49118,14 @@ let workoutCameraStream = null;
 let workoutCameraFacingMode = 'environment';
 let _workoutCameraCallback = null;
 
-async function openWorkoutCamera(callback) {
+async function openWorkoutCamera(callback, label) {
     _workoutCameraCallback = callback;
     const modal = document.getElementById('workout-camera-modal');
     if (!modal) { console.error('workout-camera-modal not found'); return; }
+
+    // Update dynamic label
+    const labelEl = document.getElementById('generic-camera-label');
+    if (labelEl) labelEl.textContent = label || 'Take a photo';
 
     // Enter immersive mode (hide status bar) on native
     if (window.NativePermissions && window.NativePermissions.enterImmersiveMode) {
@@ -49193,7 +49275,7 @@ function shareWorkoutToStory() {
     // Open live camera (getUserMedia) instead of file input which opens gallery in WebView
     openWorkoutCamera((file) => {
         handleWorkoutPhotoCaptureFromFile(file);
-    });
+    }, 'Take a workout photo');
 }
 
 // Share workout to group chat - requires camera photo
@@ -49220,7 +49302,7 @@ function shareWorkoutToGroupChat() {
     // Open live camera (getUserMedia) instead of file input which opens gallery in WebView
     openWorkoutCamera((file) => {
         handleWorkoutPhotoCaptureFromFile(file);
-    });
+    }, 'Take a workout photo');
 }
 
 // Handle the captured workout photo (from file input - legacy/web fallback)
@@ -49390,7 +49472,7 @@ async function shareWorkoutCardToFeed() {
     // Open live camera (getUserMedia) instead of file input which opens gallery in WebView
     openWorkoutCamera((file) => {
         handleWorkoutCardPhotoCaptureFromFile(file);
-    });
+    }, 'Take a workout photo');
 }
 
 // Handle the gym photo captured for workout card share (from file input - legacy/web fallback)
@@ -49899,12 +49981,24 @@ function updateActivityCalories() {
 }
 
 function captureActivityPhoto() {
-    document.getElementById('activity-photo-input').click();
+    // Use getUserMedia camera instead of file input (which opens gallery in Capacitor WebView)
+    openWorkoutCamera((file) => {
+        handleActivityPhotoCaptureFromFile(file);
+    }, 'Take an activity photo');
 }
 window.captureActivityPhoto = captureActivityPhoto;
 
+// Legacy handler for file input (kept for compatibility)
 function handleActivityPhotoCapture(input) {
     const file = input.files?.[0];
+    if (!file) return;
+    input.value = '';
+    handleActivityPhotoCaptureFromFile(file);
+}
+window.handleActivityPhotoCapture = handleActivityPhotoCapture;
+
+// Handle activity photo from a File object (used by both camera modal and file input)
+function handleActivityPhotoCaptureFromFile(file) {
     if (!file) return;
 
     const reader = new FileReader();
@@ -49920,10 +50014,7 @@ function handleActivityPhotoCapture(input) {
         document.getElementById('activity-photo-btn').style.display = 'none';
     };
     reader.readAsDataURL(file);
-    // Reset input so same file can be re-selected
-    input.value = '';
 }
-window.handleActivityPhotoCapture = handleActivityPhotoCapture;
 
 function removeActivityPhoto() {
     activityFormState.photoBase64 = null;
@@ -51320,22 +51411,8 @@ function recentMealAddWithPhoto() {
     // Close modal
     closeRecentMealsModal();
 
-    // Open native camera and wire up the photo flow
-    var fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*';
-    fileInput.capture = 'environment';
-    fileInput.style.display = 'none';
-
-    var hasProcessed = false;
-
-    fileInput.onchange = async function(e) {
-        if (hasProcessed) return;
-        hasProcessed = true;
-
-        var file = e.target.files[0];
-        cleanup();
-
+    // Open getUserMedia camera instead of file input (which opens gallery in Capacitor WebView)
+    openWorkoutCamera(async function(file) {
         if (!file || !file.type.startsWith('image/')) {
             showToast('No valid photo taken. Meal not added.', 'error');
             return;
@@ -51393,21 +51470,7 @@ function recentMealAddWithPhoto() {
             console.error('Error adding recent meal with photo:', err);
             showToast('Failed to add meal. Please try again.', 'error');
         }
-    };
-
-    function cleanup() {
-        try { if (fileInput && fileInput.parentNode) fileInput.parentNode.removeChild(fileInput); } catch(e) {}
-    }
-
-    fileInput.addEventListener('cancel', function() {
-        cleanup();
-        showToast('Photo cancelled. Meal not added.', 'info');
-    });
-
-    document.body.appendChild(fileInput);
-    setTimeout(function() {
-        try { fileInput.click(); } catch(e) { showToast('Camera unavailable.', 'error'); cleanup(); }
-    }, 100);
+    }, 'Take a meal photo');
 }
 
 // "Quick Add" — saves meal without photo (no XP)
