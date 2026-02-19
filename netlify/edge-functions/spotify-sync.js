@@ -117,14 +117,20 @@ export default async (request, context) => {
                 "Content-Type": "application/json",
             };
 
-            let endpoint, method;
-            if (action === "play")     { endpoint = "https://api.spotify.com/v1/me/player/play";     method = "PUT";  }
+            let endpoint, method, fetchBody;
+            if (action === "play")          { endpoint = "https://api.spotify.com/v1/me/player/play";     method = "PUT";  }
             else if (action === "pause")    { endpoint = "https://api.spotify.com/v1/me/player/pause";    method = "PUT";  }
             else if (action === "next")     { endpoint = "https://api.spotify.com/v1/me/player/next";     method = "POST"; }
             else if (action === "previous") { endpoint = "https://api.spotify.com/v1/me/player/previous"; method = "POST"; }
+            else if (action === "play_uri") {
+                if (!body.uri) return jsonResponse({ error: "Missing uri for play_uri action" }, 400);
+                endpoint  = "https://api.spotify.com/v1/me/player/play";
+                method    = "PUT";
+                fetchBody = JSON.stringify({ uris: [body.uri] });
+            }
             else return jsonResponse({ error: "Invalid action" }, 400);
 
-            const res = await fetch(endpoint, { method, headers });
+            const res = await fetch(endpoint, { method, headers, ...(fetchBody ? { body: fetchBody } : {}) });
 
             // 204 = success (no content), 403 = not premium
             if (res.status === 204) return jsonResponse({ success: true });
@@ -268,6 +274,8 @@ async function syncUserSpotifyData(supabase, userId, clientId, clientSecret) {
             artist:        item.track.artists?.[0]?.name || "Unknown",
             album_art_url: item.track.album?.images?.[1]?.url || item.track.album?.images?.[0]?.url || null,
             duration_ms:   durationMs,
+            spotify_id:    item.track.id || null,
+            spotify_uri:   item.track.uri || null,
         });
 
         item.track.artists?.forEach(a => byDate[date].artistNames.add(a.name));
