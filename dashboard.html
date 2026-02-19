@@ -20989,12 +20989,12 @@ function viewWorkoutHistoryDetail(date) {
                      </label>
                      <style> input:checked + .slider { background: var(--primary) !important; } input:checked + .slider + .knob { transform: translateX(16px); } </style>
                  </div>
-                 <!-- Meal Reminders Settings -->
+                 <!-- Meal Timing & Reminders Settings -->
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9;">
                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                          <div>
-                             <div>Meal Reminders</div>
-                             <div style="font-size:0.75rem; color:var(--text-muted);">Get reminded to log your meals</div>
+                             <div>Meal Timing Reminders</div>
+                             <div style="font-size:0.75rem; color:var(--text-muted);">Your FitGotchi will remind you when it's time to eat</div>
                          </div>
                          <label class="toggle-switch" style="display:inline-block; width:40px; height:24px; position:relative;">
                              <input type="checkbox" id="meal-reminders-toggle" onchange="toggleMealReminders(this.checked)">
@@ -21025,7 +21025,10 @@ function viewWorkoutHistoryDetail(date) {
                              </label>
                              <input type="time" id="dinner-reminder-time" value="18:30" onchange="saveMealReminderSettings()" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;">
                          </div>
-                         <p style="margin:12px 0 0 0; font-size:0.75rem; color:var(--text-muted);">Reminders sent ~1 hour after meal time if not logged</p>
+                         <div style="margin:12px 0 0 0; padding:8px 10px; background:linear-gradient(135deg, #e8f5e9, #f1f8e9); border-radius:8px; border:1px solid #c8e6c9;">
+                             <p style="margin:0 0 4px 0; font-size:0.8rem; font-weight:600; color:#2e7d32;">+1 XP Bonus for On-Time Meals!</p>
+                             <p style="margin:0; font-size:0.72rem; color:#558b2f;">Log your meal within 30 minutes of your scheduled time to earn bonus XP. Your FitGotchi will send you a push notification when it's time to eat.</p>
+                         </div>
                      </div>
                  </div>
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
@@ -51854,6 +51857,10 @@ async function loadMealReminderSettings() {
 
         if (data) {
             applyMealReminderSettingsToUI(data);
+            // Schedule local notifications on native app
+            if (window.NativePush && typeof window.NativePush.scheduleMealReminders === 'function') {
+                window.NativePush.scheduleMealReminders(data);
+            }
         } else {
             // No DB data, try localStorage
             loadMealReminderSettingsFromLocalStorage();
@@ -51924,6 +51931,11 @@ async function saveMealReminderSettings() {
     } catch (e) {
         console.error('Error saving meal reminder settings:', e);
         // localStorage save already done above
+    }
+
+    // Schedule local notifications on native app
+    if (window.NativePush && typeof window.NativePush.scheduleMealReminders === 'function') {
+        window.NativePush.scheduleMealReminders(settings);
     }
 }
 

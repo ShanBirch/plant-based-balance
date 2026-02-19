@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS public.meal_reminder_preferences (
   dinner_reminder BOOLEAN DEFAULT true,
 
   -- Reminder delay (minutes after meal time to send reminder if not logged)
-  reminder_delay_minutes INTEGER DEFAULT 60,
+  reminder_delay_minutes INTEGER DEFAULT 30,
 
   -- User timezone (for accurate local time reminders)
   timezone TEXT DEFAULT 'America/New_York',
@@ -152,15 +152,15 @@ BEGIN
     AND (
       (p_meal_type = 'breakfast' AND mrp.breakfast_reminder = true
         AND p_current_time >= mrp.breakfast_time + (mrp.reminder_delay_minutes || ' minutes')::interval
-        AND p_current_time < mrp.breakfast_time + ((mrp.reminder_delay_minutes + 60) || ' minutes')::interval)
+        AND p_current_time < mrp.breakfast_time + ((mrp.reminder_delay_minutes + 30) || ' minutes')::interval)
       OR
       (p_meal_type = 'lunch' AND mrp.lunch_reminder = true
         AND p_current_time >= mrp.lunch_time + (mrp.reminder_delay_minutes || ' minutes')::interval
-        AND p_current_time < mrp.lunch_time + ((mrp.reminder_delay_minutes + 60) || ' minutes')::interval)
+        AND p_current_time < mrp.lunch_time + ((mrp.reminder_delay_minutes + 30) || ' minutes')::interval)
       OR
       (p_meal_type = 'dinner' AND mrp.dinner_reminder = true
         AND p_current_time >= mrp.dinner_time + (mrp.reminder_delay_minutes || ' minutes')::interval
-        AND p_current_time < mrp.dinner_time + ((mrp.reminder_delay_minutes + 60) || ' minutes')::interval)
+        AND p_current_time < mrp.dinner_time + ((mrp.reminder_delay_minutes + 30) || ' minutes')::interval)
     )
     -- Check they haven't already logged this meal today
     AND NOT has_logged_meal_type(mrp.user_id, p_meal_type, CURRENT_DATE)
