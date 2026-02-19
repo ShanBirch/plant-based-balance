@@ -60,6 +60,9 @@
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Camera — required for getUserMedia() barcode scanning & meal photo capture -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <!-- Screen Time / Usage Access — special permission, user grants via Settings -->
     <!-- tools:ignore suppresses the lint warning about this being a protected permission -->
     <uses-permission
