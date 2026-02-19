@@ -1,4 +1,5 @@
 const webpush = require('web-push');
+const crypto = require('crypto');
 
 // Configure web-push with VAPID keys
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -9,8 +10,34 @@ const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@plantbasedbalance.c
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
-// FCM config for native push notifications
-const FCM_SERVER_KEY = process.env.FCM_SERVER_KEY;
+// FCM V1 config — service account JSON stored as an env var string
+const FIREBASE_SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT
+    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    : null;
+
+async function getFCMAccessToken() {
+    const { client_email, private_key, project_id } = FIREBASE_SERVICE_ACCOUNT;
+    const now = Math.floor(Date.now() / 1000);
+    const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify({
+        iss: client_email,
+        scope: 'https://www.googleapis.com/auth/firebase.messaging',
+        aud: 'https://oauth2.googleapis.com/token',
+        iat: now,
+        exp: now + 3600
+    })).toString('base64url');
+    const sign = crypto.createSign('RSA-SHA256');
+    sign.update(`${header}.${payload}`);
+    const signature = sign.sign(private_key, 'base64url');
+    const jwt = `${header}.${payload}.${signature}`;
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
+    });
+    const tokenData = await tokenResponse.json();
+    return tokenData.access_token;
+}
 
 // FitGotchi meal reminder messages with personality
 const FITGOTCHI_MESSAGES = {
@@ -40,46 +67,64 @@ function getRandomMessage(mealType) {
 }
 
 /**
- * Send a push notification to a native device via FCM
+ * Send a push notification to a native device via FCM V1 API
  */
 async function sendNativePush(token, payload) {
-    if (!FCM_SERVER_KEY) {
-        console.log('[NativePush] No FCM_SERVER_KEY configured, skipping native push');
+    if (!FIREBASE_SERVICE_ACCOUNT) {
+        console.log('[NativePush] No FIREBASE_SERVICE_ACCOUNT configured, skipping native push');
         return false;
     }
 
     try {
-        const response = await fetch('https://fcm.googleapis.com/fcm/send', {
-            method: 'POST',
-            headers: {
-                'Authorization': `key=${FCM_SERVER_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                to: token,
-                notification: {
-                    title: payload.title,
-                    body: payload.body,
-                    icon: 'ic_launcher',
-                    sound: 'default',
-                    click_action: 'FCM_PLUGIN_ACTIVITY',
-                    channel_id: 'meal-reminders',
-                },
-                data: payload.data || {},
-                priority: 'high',
-                // Time to live: 30 minutes (matches the XP bonus window)
-                time_to_live: 1800,
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[NativePush] FCM error:', errorText);
+        const accessToken = await getFCMAccessToken();
+        if (!accessToken) {
+            console.error('[NativePush] Failed to get FCM access token');
             return false;
         }
 
-        const result = await response.json();
-        return result.success === 1;
+        const projectId = FIREBASE_SERVICE_ACCOUNT.project_id;
+        // FCM V1 requires all data values to be strings
+        const stringData = Object.fromEntries(
+            Object.entries(payload.data || {}).map(([k, v]) => [k, String(v)])
+        );
+
+        const response = await fetch(
+            `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: {
+                        token,
+                        notification: {
+                            title: payload.title,
+                            body: payload.body
+                        },
+                        android: {
+                            priority: 'high',
+                            ttl: '1800s', // 30 minutes (matches XP bonus window)
+                            notification: {
+                                channel_id: 'meal-reminders',
+                                sound: 'default',
+                                click_action: 'FCM_PLUGIN_ACTIVITY'
+                            }
+                        },
+                        data: stringData
+                    }
+                })
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[NativePush] FCM V1 error:', errorText);
+            return false;
+        }
+
+        return true;
     } catch (err) {
         console.error('[NativePush] FCM send failed:', err.message);
         return false;
