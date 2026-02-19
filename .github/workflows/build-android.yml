@@ -43,9 +43,25 @@ jobs:
         working-directory: android
         run: chmod +x gradlew && ./gradlew assembleDebug
 
+      # Always keep the artifact as a fallback download
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: fitgotchi-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      # Upload to Firebase App Distribution so you get an OTA update on your phone
+      # Requires FIREBASE_APP_ID and FIREBASE_SERVICE_ACCOUNT secrets in GitHub repo settings
+      - name: Upload to Firebase App Distribution
+        if: env.FIREBASE_APP_ID != '' && env.FIREBASE_SERVICE_ACCOUNT != ''
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: testers
+          file: android/app/build/outputs/apk/debug/app-debug.apk
+          releaseNotes: "Build from commit: ${{ github.sha }}"
+        env:
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
