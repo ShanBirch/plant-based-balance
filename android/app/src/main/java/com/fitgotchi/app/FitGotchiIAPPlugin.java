@@ -283,11 +283,7 @@ public class FitGotchiIAPPlugin extends Plugin {
 
                                 JSObject result = new JSObject();
                                 result.put("success", true);
-                                try {
-                                    result.put("purchases", JSArray.from(allPurchases.toString()));
-                                } catch (JSONException e) {
-                                    result.put("purchases", new JSArray());
-                                }
+                                result.put("purchases", JSArray.from(allPurchases.toString()));
                                 call.resolve(result);
                             });
                 });
