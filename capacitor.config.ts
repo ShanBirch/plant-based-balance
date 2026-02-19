@@ -9,6 +9,13 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://plantbased-balance.org/dashboard.html',
     cleartext: false,
+    // Allow OAuth providers to navigate inside the WebView
+    // instead of opening Chrome (which shows the URL bar)
+    allowNavigation: [
+      'accounts.google.com',
+      '*.google.com',
+      '*.supabase.co',
+    ],
   },
 
   // Capacitor requires a webDir even when loading remotely
