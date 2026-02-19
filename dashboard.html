@@ -52445,11 +52445,16 @@ async function loadAdaptiveAdjustment() {
         if (!session?.user) return;
         const userId = window.currentUser.id;
 
+        // Only show the adaptive check-in once per week on Monday mornings
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday, ...
+        if (dayOfWeek !== 1) return; // Only run on Mondays
+
         // Check if user snoozed adaptive checks
         const snoozeUntil = localStorage.getItem('adaptiveAdjustmentSnoozeUntil');
         if (snoozeUntil) {
             const snoozeDate = new Date(snoozeUntil);
-            if (new Date() < snoozeDate) return;
+            if (now < snoozeDate) return;
             // Snooze expired, clear it
             localStorage.removeItem('adaptiveAdjustmentSnoozeUntil');
         }
@@ -52459,7 +52464,6 @@ async function loadAdaptiveAdjustment() {
         if (dismissedDate === today) return;
 
         // Calculate date range: last 14 days
-        const now = new Date();
         const fourteenDaysAgo = new Date(now);
         fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13);
         const startDate = getLocalDateString(fourteenDaysAgo);
@@ -52506,6 +52510,12 @@ async function loadAdaptiveAdjustment() {
 
         // Only show proactive message when there's an actual suggestion
         renderAdaptiveInAiCard(result, quizData);
+
+        // Auto-snooze until next Monday so the message only appears once this week
+        const nextMonday = new Date();
+        nextMonday.setDate(nextMonday.getDate() + 7);
+        nextMonday.setHours(0, 0, 0, 0);
+        localStorage.setItem('adaptiveAdjustmentSnoozeUntil', nextMonday.toISOString());
 
     } catch (err) {
         console.error('Error loading adaptive adjustment:', err);
