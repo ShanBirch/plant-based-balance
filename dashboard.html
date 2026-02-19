@@ -9406,9 +9406,47 @@ async function applyAppTheme(themeKey) {
             if (bar) bar.style.width = pct + '%';
         }
 
+        function updateWorkoutSpotifyBar(data) {
+            const bar = document.getElementById('workout-spotify-bar');
+            if (!bar) return;
+            const workoutView = document.getElementById('view-active-workout');
+            const isWorkoutActive = workoutView && workoutView.style.display !== 'none';
+
+            if (!isWorkoutActive || !data || !data.playing || !data.track) {
+                bar.style.display = 'none';
+                return;
+            }
+
+            const { track } = data;
+            bar.style.display = 'block';
+
+            const wsTrack = document.getElementById('ws-track');
+            const wsArtist = document.getElementById('ws-artist');
+            if (wsTrack) wsTrack.textContent = track.name;
+            if (wsArtist) wsArtist.textContent = track.artist;
+
+            const wsImg = document.getElementById('ws-art');
+            const wsPlaceholder = document.getElementById('ws-art-placeholder');
+            if (track.album_art) {
+                if (wsImg) { wsImg.src = track.album_art; wsImg.style.display = 'block'; }
+                if (wsPlaceholder) wsPlaceholder.style.display = 'none';
+            } else {
+                if (wsImg) wsImg.style.display = 'none';
+                if (wsPlaceholder) wsPlaceholder.style.display = 'flex';
+            }
+
+            const wsPlay = document.getElementById('ws-play-icon');
+            const wsPause = document.getElementById('ws-pause-icon');
+            if (wsPlay) wsPlay.style.display = data.playing ? 'none' : 'block';
+            if (wsPause) wsPause.style.display = data.playing ? 'block' : 'none';
+        }
+
         function updatePlayerUI(data) {
             const widget = document.getElementById('spotify-now-playing');
             if (!widget) return;
+
+            // Also update workout Spotify bar
+            updateWorkoutSpotifyBar(data);
 
             if (!data || !data.playing || !data.track) {
                 widget.style.display = 'none';
@@ -9537,6 +9575,42 @@ async function applyAppTheme(themeKey) {
                 .observe(_navEl, { attributes: true, attributeFilter: ['style'] });
         }
     })();
+
+    // Global function to sync workout Spotify bar on demand (called when workout view opens/closes)
+    window.syncWorkoutSpotifyBar = function() {
+        const bar = document.getElementById('workout-spotify-bar');
+        if (!bar) return;
+        const workoutView = document.getElementById('view-active-workout');
+        const isWorkoutActive = workoutView && workoutView.style.display !== 'none';
+
+        if (!isWorkoutActive || !window._snpPlaying || !window._snpCurrentTrack) {
+            bar.style.display = 'none';
+            return;
+        }
+
+        const track = window._snpCurrentTrack;
+        bar.style.display = 'block';
+
+        const wsTrack = document.getElementById('ws-track');
+        const wsArtist = document.getElementById('ws-artist');
+        if (wsTrack) wsTrack.textContent = track.name;
+        if (wsArtist) wsArtist.textContent = track.artist;
+
+        const wsImg = document.getElementById('ws-art');
+        const wsPlaceholder = document.getElementById('ws-art-placeholder');
+        if (track.album_art) {
+            if (wsImg) { wsImg.src = track.album_art; wsImg.style.display = 'block'; }
+            if (wsPlaceholder) wsPlaceholder.style.display = 'none';
+        } else {
+            if (wsImg) wsImg.style.display = 'none';
+            if (wsPlaceholder) wsPlaceholder.style.display = 'flex';
+        }
+
+        const wsPlay = document.getElementById('ws-play-icon');
+        const wsPause = document.getElementById('ws-pause-icon');
+        if (wsPlay) wsPlay.style.display = window._snpPlaying ? 'none' : 'block';
+        if (wsPause) wsPause.style.display = window._snpPlaying ? 'block' : 'none';
+    };
     </script>
 
     <script>
@@ -17578,6 +17652,9 @@ async function startCustomBuilderWorkout() {
 
     // Show total volume popup and tracker
     showLastVolumePopup();
+
+    // Show workout Spotify bar if music is playing
+    if (typeof syncWorkoutSpotifyBar === 'function') syncWorkoutSpotifyBar();
 }
 </script>
 
@@ -18058,7 +18135,7 @@ function viewWorkoutHistoryDetail(date) {
 <div id="view-active-workout" class="app-view" style="display:none; height: 100vh; background: #f8fafc; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
     
     <!-- Top Nav Bar -->
-    <div style="position: sticky; top: 0; z-index: 100; background: black; color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="position: sticky; top: 0; z-index: 100; background: black; color: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: space-between;">
         <div onclick="quitWorkout()" style="font-weight: 600; cursor: pointer; color: #FF4444; padding: 10px; touch-action: manipulation; user-select: none;">Cancel</div>
         <div style="text-align: center;">
             <div id="workout-timer" style="font-family: monospace; font-size: 1.2rem; font-weight: 700; color: white;">00:00</div>
@@ -18094,6 +18171,37 @@ function viewWorkoutHistoryDetail(date) {
             <div id="popup-last-volume" style="font-size:2rem; font-weight:900; color:var(--primary); margin:10px 0;"></div>
             <p style="font-size:0.85rem; color:#64748b; margin:0 0 20px 0; line-height:1.4;">Can you beat it today? Every rep counts!</p>
             <button onclick="dismissVolumePopup()" style="background:var(--primary); color:white; border:none; padding:12px 30px; border-radius:12px; font-weight:700; font-size:0.9rem; cursor:pointer; width:100%;">Let's Go!</button>
+        </div>
+    </div>
+
+    <!-- Workout Spotify Mini Bar (fixed at bottom of workout view) -->
+    <div id="workout-spotify-bar" style="display:none; position:fixed; bottom:0; left:0; width:100%; z-index:101; background:rgba(18,18,18,0.97); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); padding:10px 16px; padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px)); border-top:1px solid rgba(255,255,255,0.08); box-shadow:0 -4px 20px rgba(0,0,0,0.3);">
+        <div style="display:flex; align-items:center; gap:10px; max-width:600px; margin:0 auto;">
+            <!-- Album art -->
+            <div onclick="openInSpotify()" style="flex-shrink:0; cursor:pointer;">
+                <img id="ws-art" src="" alt="" style="width:40px; height:40px; border-radius:6px; object-fit:cover; background:#333;" onerror="this.style.display='none'">
+                <div id="ws-art-placeholder" style="display:none; width:40px; height:40px; border-radius:6px; background:#1DB954; align-items:center; justify-content:center;">
+                    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                </div>
+            </div>
+            <!-- Track info -->
+            <div onclick="openInSpotify()" style="flex:1; min-width:0; cursor:pointer;">
+                <div id="ws-track" style="font-weight:600; font-size:0.8rem; color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+                <div id="ws-artist" style="font-size:0.7rem; color:rgba(255,255,255,0.55); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;"></div>
+            </div>
+            <!-- Controls -->
+            <div style="display:flex; align-items:center; gap:2px; flex-shrink:0;">
+                <button onclick="spotifyPlayerControl('previous')" style="background:none; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.7;">
+                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+                </button>
+                <button id="ws-playpause" onclick="spotifyPlayerControl(window._snpPlaying ? 'pause' : 'play')" style="background:#1DB954; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                    <svg id="ws-play-icon" viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="ws-pause-icon" viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor; display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <button onclick="spotifyPlayerControl('next')" style="background:none; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.7;">
+                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M6 18l8.5-6L6 6v12zm2-8.14 4.97 3.14L8 16.14V9.86zM16 6h2v12h-2z"/></svg>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -29356,6 +29464,9 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
 
     // Show total volume popup and tracker
     showLastVolumePopup();
+
+    // Show workout Spotify bar if music is playing
+    if (typeof syncWorkoutSpotifyBar === 'function') syncWorkoutSpotifyBar();
 }
 
 // Normalize history records from DB format to local format
@@ -30463,6 +30574,10 @@ async function finishWorkout() {
     clearAllYogaTimers(); // Clear any running yoga timers
     stopWorkoutAutoSave(); // Stop auto-save interval
 
+    // Hide workout Spotify bar
+    const wsBar = document.getElementById('workout-spotify-bar');
+    if (wsBar) wsBar.style.display = 'none';
+
     const timerEl = document.getElementById('workout-timer');
     const duration = timerEl ? timerEl.innerText : '0:00';
     const successDurationEl = document.getElementById('success-duration');
@@ -31136,6 +31251,9 @@ function quitWorkout() {
         window.currentCustomWorkoutId = null; // Reset custom workout tracking
         clearAllYogaTimers(); // Clear any running yoga timers
         document.getElementById('view-active-workout').style.display = 'none'; // Force hide
+        // Hide workout Spotify bar
+        const wsBar = document.getElementById('workout-spotify-bar');
+        if (wsBar) wsBar.style.display = 'none';
         closeSuccessScreen(true); // Skip rating on quit
     }
 }
@@ -33091,6 +33209,9 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
 
     // Show total volume popup and tracker
     showLastVolumePopup();
+
+    // Show workout Spotify bar if music is playing
+    if (typeof syncWorkoutSpotifyBar === 'function') syncWorkoutSpotifyBar();
 }
 
 // Render workout exercises with delete buttons, history summary, and volume tracking
@@ -43336,6 +43457,9 @@ updateCoachUI();
 
         // Show total volume popup and tracker
         showLastVolumePopup();
+
+        // Show workout Spotify bar if music is playing
+        if (typeof syncWorkoutSpotifyBar === 'function') syncWorkoutSpotifyBar();
     }
 
     async function showWorkoutHistoryDetail(dateStr) {
