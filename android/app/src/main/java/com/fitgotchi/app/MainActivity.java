@@ -24,6 +24,8 @@ import com.getcapacitor.BridgeWebChromeClient;
 public class MainActivity extends BridgeActivity {
     private WebView webViewRef;
     private PermissionRequest pendingPermissionRequest;
+    /** Holds OAuth fragment from a cold-start deep link until the WebView is ready. */
+    private String pendingOAuthFragment = null;
 
     /**
      * Launcher that shows the native Android "Allow camera?" dialog.
@@ -81,6 +83,22 @@ public class MainActivity extends BridgeActivity {
         // Android runtime permissions before calling getUserMedia()
         webViewRef = getBridge().getWebView();
         webViewRef.addJavascriptInterface(new PermissionBridge(), "NativePermissions");
+
+        // If the app was cold-started via an OAuth deep link, save the
+        // fragment so we can inject it once the remote page finishes loading.
+        Uri deepLinkData = getIntent().getData();
+        if (deepLinkData != null && "com.fitgotchi.app".equals(deepLinkData.getScheme())) {
+            pendingOAuthFragment = deepLinkData.getFragment();
+            if (pendingOAuthFragment != null && !pendingOAuthFragment.isEmpty()) {
+                // Give the remote page time to load before injecting tokens.
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    if (pendingOAuthFragment != null) {
+                        injectOAuthTokens(pendingOAuthFragment);
+                        pendingOAuthFragment = null;
+                    }
+                }, 3500);
+            }
+        }
 
         // Override onPermissionRequest so that when getUserMedia() fires inside
         // the WebView, we show the native Android "Allow camera?" popup instead
@@ -204,5 +222,47 @@ public class MainActivity extends BridgeActivity {
             // Allow bars to reappear temporarily when the user swipes from the edge
             controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         }
+    }
+
+    // ── OAuth deep-link handling ────────────────────────────────────────
+    // After Google sign-in in the system browser, Supabase redirects to
+    //   com.fitgotchi.app://login-callback#access_token=…&refresh_token=…
+    // Android routes this intent here so we can inject the tokens into
+    // the WebView and let Supabase set the session.
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        handleOAuthDeepLink(intent);
+    }
+
+    /**
+     * Extract the OAuth fragment from a deep-link intent and inject it
+     * into the running WebView. For cold-start launches the fragment is
+     * stored in {@link #pendingOAuthFragment} and injected once the
+     * page finishes loading (see the post-delayed handler in onCreate).
+     */
+    private void handleOAuthDeepLink(Intent intent) {
+        Uri uri = intent.getData();
+        if (uri == null) return;
+
+        String scheme = uri.getScheme();
+        if (!"com.fitgotchi.app".equals(scheme)) return;
+
+        String fragment = uri.getFragment();
+        if (fragment == null || fragment.isEmpty()) return;
+
+        injectOAuthTokens(fragment);
+    }
+
+    /** Evaluate a small JS snippet that hands the token fragment to the page. */
+    private void injectOAuthTokens(String fragment) {
+        WebView wv = getBridge().getWebView();
+        if (wv == null) return;
+
+        // Escape for safe embedding inside a JS string literal
+        String safe = fragment.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "");
+        String js = "if(window._handleOAuthCallback){window._handleOAuthCallback('" + safe + "')}";
+        runOnUiThread(() -> wv.evaluateJavascript(js, null));
     }
 }

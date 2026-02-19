@@ -614,6 +614,26 @@
                 },
 
                 async signInWithGoogle() {
+                    const isNative = navigator.userAgent.includes('FitGotchi-Native');
+
+                    if (isNative) {
+                        // Native app: open OAuth in system browser to avoid
+                        // Google's 403 disallowed_useragent error on WebViews.
+                        // Redirect back to app via custom URL scheme.
+                        const { data, error } = await supabase.auth.signInWithOAuth({
+                            provider: 'google',
+                            options: {
+                                redirectTo: 'com.fitgotchi.app://login-callback',
+                                skipBrowserRedirect: true,
+                            }
+                        });
+                        if (error) throw error;
+                        // Open in system browser (Chrome Custom Tab)
+                        window.open(data.url, '_blank');
+                        return data;
+                    }
+
+                    // Web: use standard redirect flow
                     const { data, error } = await supabase.auth.signInWithOAuth({
                         provider: 'google',
                         options: {
@@ -1014,6 +1034,33 @@
                 }
             }
         }
+
+        // ── Native OAuth deep-link callback ─────────────────────────────
+        // Called from Android's MainActivity when the system browser
+        // redirects back to com.fitgotchi.app://login-callback#access_token=…
+        window._handleOAuthCallback = async function(fragment) {
+            try {
+                const params = new URLSearchParams(fragment);
+                const accessToken = params.get('access_token');
+                const refreshToken = params.get('refresh_token');
+
+                if (accessToken && refreshToken) {
+                    const { error } = await window.supabaseClient.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken,
+                    });
+                    if (!error) {
+                        window.location.href = '/dashboard.html';
+                    } else {
+                        console.error('OAuth setSession error:', error);
+                        showError('Google sign-in failed. Please try again.');
+                    }
+                }
+            } catch (e) {
+                console.error('OAuth callback error:', e);
+                showError('Google sign-in failed. Please try again.');
+            }
+        };
 
         lucide.createIcons();
     </script>
