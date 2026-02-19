@@ -9912,36 +9912,51 @@ async function applyAppTheme(themeKey) {
             console.warn('Performance card - body fat error:', e);
         }
 
-        // --- Fitbit data (calories burned, resting HR, active minutes) ---
+        // --- Fitbit performance card (dedicated card above Your Progress) ---
         try {
+            const connectedEl  = document.getElementById('fitbit-perf-connected');
+            const disconnectedEl = document.getElementById('fitbit-perf-disconnected');
+
+            // Always show the disconnected prompt first so the card is never invisible
+            if (disconnectedEl) disconnectedEl.style.display = 'flex';
+
             const resp = await fetch('/api/fitbit/data?user_id=' + userId);
             if (resp.ok) {
                 const data = await resp.json();
                 if (data.connected) {
                     const activity = data.activity && data.activity[0];
                     const hr = data.heart_rate && data.heart_rate[0];
-                    if (activity || hr) {
-                        const row = document.getElementById('perf-fitbit-row');
-                        if (row) row.style.display = 'block';
 
-                        const calsEl = document.getElementById('perf-fitbit-cals');
-                        if (calsEl && activity && activity.calories_burned) {
-                            calsEl.textContent = Math.round(activity.calories_burned).toLocaleString();
-                        }
+                    // Switch to connected view
+                    if (disconnectedEl) disconnectedEl.style.display = 'none';
+                    if (connectedEl) connectedEl.style.display = 'block';
 
-                        const hrEl = document.getElementById('perf-fitbit-hr');
-                        if (hrEl && hr && hr.resting_heart_rate) {
-                            hrEl.textContent = hr.resting_heart_rate + ' bpm';
-                        }
+                    const calsEl = document.getElementById('fitbit-perf-cals');
+                    if (calsEl && activity && activity.calories_burned) {
+                        calsEl.textContent = Math.round(activity.calories_burned).toLocaleString();
+                    }
 
-                        const activeEl = document.getElementById('perf-fitbit-active');
-                        if (activeEl && activity && activity.active_minutes != null) {
-                            activeEl.textContent = activity.active_minutes + ' min';
-                        }
+                    const hrEl = document.getElementById('fitbit-perf-hr');
+                    if (hrEl && hr && hr.resting_heart_rate) {
+                        hrEl.textContent = hr.resting_heart_rate + ' bpm';
+                    }
+
+                    const activeEl = document.getElementById('fitbit-perf-active');
+                    if (activeEl && activity && activity.active_minutes != null) {
+                        activeEl.textContent = activity.active_minutes + ' min';
+                    }
+
+                    const syncLabel = document.getElementById('fitbit-perf-sync-label');
+                    if (syncLabel && data.last_sync) {
+                        const mins = Math.round((Date.now() - new Date(data.last_sync)) / 60000);
+                        syncLabel.textContent = mins < 60 ? mins + 'm ago' : Math.round(mins/60) + 'h ago';
                     }
                 }
             }
         } catch (e) {
+            // On error still show disconnected prompt so card is visible
+            const disconnectedEl = document.getElementById('fitbit-perf-disconnected');
+            if (disconnectedEl) disconnectedEl.style.display = 'flex';
             console.warn('Performance card - Fitbit error:', e);
         }
     }
@@ -10912,6 +10927,52 @@ async function applyAppTheme(themeKey) {
                 </div>
             </div>
             <div id="home-challenges-list"></div>
+        </div>
+
+        <!-- Fitbit Performance Card (sits above Your Progress) -->
+        <div id="fitbit-performance-card" style="margin: 0 0 14px 0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,176,185,0.2);">
+            <!-- Connected state -->
+            <div id="fitbit-perf-connected" style="display: none; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);">
+                <!-- Header -->
+                <div style="padding: 14px 18px 0; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 30px; height: 30px; background: rgba(255,255,255,0.2); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        </div>
+                        <div style="font-weight: 700; font-size: 0.95rem; color: white;">Today's Activity</div>
+                    </div>
+                    <div id="fitbit-perf-sync-label" style="font-size: 0.65rem; color: rgba(255,255,255,0.55); font-weight: 500;"></div>
+                </div>
+                <!-- Stats row -->
+                <div style="padding: 12px 18px 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                    <div style="text-align: center; padding: 10px 4px; background: rgba(255,255,255,0.15); border-radius: 13px;">
+                        <div style="font-size: 1.2rem; margin-bottom: 2px;">⚡</div>
+                        <div id="fitbit-perf-cals" style="font-size: 1.3rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
+                        <div style="font-size: 0.62rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Cals Burned</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px 4px; background: rgba(255,255,255,0.15); border-radius: 13px;">
+                        <div style="font-size: 1.2rem; margin-bottom: 2px;">❤️</div>
+                        <div id="fitbit-perf-hr" style="font-size: 1.3rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
+                        <div style="font-size: 0.62rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Resting HR</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px 4px; background: rgba(255,255,255,0.15); border-radius: 13px;">
+                        <div style="font-size: 1.2rem; margin-bottom: 2px;">🏃</div>
+                        <div id="fitbit-perf-active" style="font-size: 1.3rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
+                        <div style="font-size: 0.62rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Active Min</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Disconnected prompt -->
+            <div id="fitbit-perf-disconnected" style="display: flex; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 16px 18px; align-items: center; justify-content: space-between; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                    <div style="width: 34px; height: 34px; flex-shrink: 0; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">⌚</div>
+                    <div>
+                        <div style="font-size: 0.88rem; font-weight: 700; color: white; margin-bottom: 2px;">Connect Fitbit Versa</div>
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.55);">See calories burned, HR &amp; active minutes</div>
+                    </div>
+                </div>
+                <button onclick="toggleFitbitConnection()" style="flex-shrink: 0; background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap;">Connect</button>
+            </div>
         </div>
 
         <!-- Your Progress Card -->
