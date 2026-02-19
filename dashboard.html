@@ -9342,9 +9342,9 @@ async function applyAppTheme(themeKey) {
         color: white;
         font-family: inherit;
     ">
-        <!-- Clickable left area opens the full player -->
+        <!-- Clickable left area opens Spotify -->
         <div style="display:flex; align-items:center; gap:12px;">
-            <div onclick="openSpotifyFullPlayer()" style="display:flex; align-items:center; gap:12px; flex:1; min-width:0; cursor:pointer;">
+            <div onclick="openInSpotify()" style="display:flex; align-items:center; gap:12px; flex:1; min-width:0; cursor:pointer;">
                 <!-- Album art -->
                 <div style="position:relative; flex-shrink:0;">
                     <img id="snp-art" src="" alt="" style="width:48px; height:48px; border-radius:8px; object-fit:cover; background:#333;" onerror="this.style.display='none'">
@@ -9352,13 +9352,13 @@ async function applyAppTheme(themeKey) {
                         <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:white;"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
                     </div>
                 </div>
-                <!-- Track info + expand hint -->
+                <!-- Track info + Spotify link hint -->
                 <div style="flex:1; min-width:0;">
                     <div id="snp-track" style="font-weight:600; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
                     <div id="snp-artist" style="font-size:0.75rem; color:rgba(255,255,255,0.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;"></div>
                 </div>
-                <!-- Chevron up hint -->
-                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:rgba(255,255,255,0.4); flex-shrink:0; margin-right:4px;"><path d="M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+                <!-- External link icon -->
+                <svg viewBox="0 0 24 24" style="width:15px; height:15px; fill:rgba(255,255,255,0.35); flex-shrink:0; margin-right:4px;"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
             </div>
             <!-- Controls (separate — don't open full player) -->
             <div style="display:flex; align-items:center; gap:2px; flex-shrink:0;">
@@ -9380,162 +9380,8 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
-    <!-- ===== SPOTIFY FULL PLAYER OVERLAY ===== -->
-    <style>
-    #sfp-volume {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 100%;
-        height: 4px;
-        border-radius: 2px;
-        background: linear-gradient(to right, #1DB954 var(--sfp-vol, 50%), rgba(255,255,255,0.2) var(--sfp-vol, 50%));
-        outline: none;
-        cursor: pointer;
-    }
-    #sfp-volume::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 14px; height: 14px;
-        border-radius: 50%;
-        background: white;
-        cursor: pointer;
-        box-shadow: 0 0 4px rgba(0,0,0,0.5);
-    }
-    #sfp-volume::-moz-range-thumb {
-        width: 14px; height: 14px;
-        border-radius: 50%;
-        background: white;
-        border: none;
-        cursor: pointer;
-    }
-    #sfp-tab-content::-webkit-scrollbar { display: none; }
-    #sfp-tab-content { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
-    <div id="spotify-full-player" style="
-        display: none;
-        position: fixed;
-        inset: 0;
-        z-index: 100002;
-        font-family: inherit;
-    ">
-        <!-- Blurred art background -->
-        <div style="position:absolute; inset:0; overflow:hidden;">
-            <img id="sfp-bg" src="" alt="" style="width:100%; height:100%; object-fit:cover; filter:blur(40px) brightness(0.35) saturate(1.4); transform:scale(1.1);">
-            <div style="position:absolute; inset:0; background:linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);"></div>
-        </div>
-
-        <!-- Slide-up sheet -->
-        <div id="sfp-sheet" style="
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            background: rgba(12,12,12,0.92);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-radius: 24px 24px 0 0;
-            padding: 12px 20px 40px;
-            max-height: 95vh;
-            overflow-y: auto;
-            overscroll-behavior: contain;
-            transform: translateY(100%);
-            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-            color: white;
-        ">
-            <!-- Drag handle -->
-            <div style="width:40px; height:4px; background:rgba(255,255,255,0.25); border-radius:2px; margin:0 auto 16px;"></div>
-
-            <!-- Close + label + Open in Spotify row -->
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <button onclick="closeSpotifyFullPlayer()" style="background:rgba(255,255,255,0.1); border:none; color:white; cursor:pointer; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
-                </button>
-                <div style="font-size:0.7rem; font-weight:700; letter-spacing:0.08em; color:rgba(255,255,255,0.5); text-transform:uppercase;">Now Playing</div>
-                <a id="sfp-spotify-link" href="#" target="_blank" rel="noopener" style="background:rgba(29,185,84,0.15); border:1px solid rgba(29,185,84,0.4); color:#1DB954; text-decoration:none; padding:6px 12px; border-radius:20px; font-size:0.72rem; font-weight:600; display:flex; align-items:center; gap:5px;">
-                    <svg viewBox="0 0 24 24" style="width:12px; height:12px; fill:currentColor;"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-                    Open
-                </a>
-            </div>
-
-            <!-- Large album art -->
-            <div style="margin: 0 auto 20px; width:min(220px, calc(100vw - 80px)); aspect-ratio:1; position:relative;">
-                <img id="sfp-art" src="" alt="" style="width:100%; height:100%; border-radius:16px; object-fit:cover; box-shadow:0 20px 60px rgba(0,0,0,0.6);">
-                <div id="sfp-art-placeholder" style="display:none; width:100%; height:100%; border-radius:16px; background:#1DB954; align-items:center; justify-content:center;">
-                    <svg viewBox="0 0 24 24" style="width:60px; height:60px; fill:white;"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-                </div>
-            </div>
-
-            <!-- Track name & artist + heart -->
-            <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:16px; padding:0 4px;">
-                <div style="flex:1; min-width:0;">
-                    <div id="sfp-track" style="font-size:1.2rem; font-weight:700; line-height:1.2; margin-bottom:4px;"></div>
-                    <div id="sfp-artist" style="font-size:0.9rem; color:rgba(255,255,255,0.6);"></div>
-                </div>
-                <button id="sfp-heart-btn" onclick="toggleLikeCurrentTrack()" title="Like/Unlike" style="background:none; border:none; cursor:pointer; padding:6px; flex-shrink:0; color:rgba(255,255,255,0.5); display:flex; align-items:center; justify-content:center; margin-top:2px;">
-                    <!-- empty heart -->
-                    <svg id="sfp-heart-empty" viewBox="0 0 24 24" style="width:24px; height:24px; fill:currentColor;">
-                        <path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/>
-                    </svg>
-                    <!-- filled heart -->
-                    <svg id="sfp-heart-filled" viewBox="0 0 24 24" style="width:24px; height:24px; fill:#1DB954; display:none;">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Progress bar + timestamps -->
-            <div style="margin-bottom:16px;">
-                <div style="background:rgba(255,255,255,0.15); border-radius:3px; height:4px; overflow:hidden; margin-bottom:6px;">
-                    <div id="sfp-progress" style="height:100%; background:#1DB954; width:0%; transition:width 1s linear; border-radius:3px;"></div>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:rgba(255,255,255,0.45);">
-                    <span id="sfp-elapsed">0:00</span>
-                    <span id="sfp-duration">0:00</span>
-                </div>
-            </div>
-
-            <!-- Playback controls -->
-            <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:20px;">
-                <button onclick="spotifyPlayerControl('previous')" title="Previous" style="background:none; border:none; color:white; cursor:pointer; padding:10px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.7;">
-                    <svg viewBox="0 0 24 24" style="width:26px; height:26px; fill:currentColor;"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
-                </button>
-                <button id="sfp-playpause" onclick="spotifyPlayerControl(window._snpPlaying ? 'pause' : 'play')" title="Play/Pause" style="background:#1DB954; border:none; color:white; cursor:pointer; width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(29,185,84,0.4);">
-                    <svg id="sfp-play-icon" viewBox="0 0 24 24" style="width:26px; height:26px; fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>
-                    <svg id="sfp-pause-icon" viewBox="0 0 24 24" style="width:26px; height:26px; fill:currentColor; display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                </button>
-                <button onclick="spotifyPlayerControl('next')" title="Next" style="background:none; border:none; color:white; cursor:pointer; padding:10px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.7;">
-                    <svg viewBox="0 0 24 24" style="width:26px; height:26px; fill:currentColor;"><path d="M6 18l8.5-6L6 6v12zm2-8.14 4.97 3.14L8 16.14V9.86zM16 6h2v12h-2z"/></svg>
-                </button>
-            </div>
-
-            <!-- Volume slider -->
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:24px; padding:0 4px;">
-                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:rgba(255,255,255,0.5); flex-shrink:0;"><path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5zm7-.17v6.34L9.83 13H7v-2h2.83L12 8.83z"/></svg>
-                <input id="sfp-volume" type="range" min="0" max="100" value="50" oninput="sfpVolumeChanged(this.value)" style="--sfp-vol:50%;">
-                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:rgba(255,255,255,0.5); flex-shrink:0;"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-            </div>
-
-            <!-- 4-tab bar -->
-            <div style="display:flex; gap:4px; margin-bottom:12px; background:rgba(255,255,255,0.05); border-radius:12px; padding:4px;">
-                <button id="sfp-tab-recent" onclick="sfpSwitchTab('recent')" style="flex:1; border:none; cursor:pointer; padding:7px 4px; border-radius:9px; font-size:0.72rem; font-weight:600; background:#1DB954; color:white; transition:all 0.2s;">Recent</button>
-                <button id="sfp-tab-liked"  onclick="sfpSwitchTab('liked')"  style="flex:1; border:none; cursor:pointer; padding:7px 4px; border-radius:9px; font-size:0.72rem; font-weight:600; background:transparent; color:rgba(255,255,255,0.5); transition:all 0.2s;">&#9829; Liked</button>
-                <button id="sfp-tab-top"    onclick="sfpSwitchTab('top')"    style="flex:1; border:none; cursor:pointer; padding:7px 4px; border-radius:9px; font-size:0.72rem; font-weight:600; background:transparent; color:rgba(255,255,255,0.5); transition:all 0.2s;">Top</button>
-                <button id="sfp-tab-search" onclick="sfpSwitchTab('search')" style="flex:1; border:none; cursor:pointer; padding:7px 4px; border-radius:9px; font-size:0.72rem; font-weight:600; background:transparent; color:rgba(255,255,255,0.5); transition:all 0.2s;">Search</button>
-            </div>
-
-            <!-- Search input (hidden unless search tab active) -->
-            <div id="sfp-search-box" style="display:none; margin-bottom:10px;">
-                <input id="sfp-search-input" type="text" placeholder="Search Spotify..." oninput="sfpSearchDebounce(this.value)"
-                    style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:10px 14px; color:white; font-size:0.85rem; outline:none;">
-            </div>
-
-            <!-- Tab content -->
-            <div id="sfp-tab-content" style="display:flex; flex-direction:column; gap:4px; min-height:80px;">
-                <div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">Loading...</div>
-            </div>
-
-            <!-- Load More (shown only on Liked tab when there are more) -->
-            <div id="sfp-load-more-wrap" style="display:none; margin-top:10px; text-align:center;">
-                <button onclick="sfpLoadMoreLiked()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:white; cursor:pointer; padding:9px 24px; border-radius:20px; font-size:0.8rem; font-weight:600;">Load More</button>
-            </div>
-        </div>
+    <!-- ===== SPOTIFY FULL PLAYER OVERLAY (removed — tap bar opens Spotify app) ===== -->
+    <div id="spotify-full-player" style="display:none;"><!-- removed -->
     </div>
 
     <script>
@@ -9547,14 +9393,6 @@ async function applyAppTheme(themeKey) {
         let _progressMs    = 0;
         let _durationMs    = 1;
 
-        // Tab state
-        let _currentTab      = 'recent';
-        let _likedOffset     = 0;
-        let _likedTotal      = 0;
-        const LIKED_PAGE     = 20;
-        let _searchDebTimer  = null;
-        let _currentTrackId  = null;  // Spotify ID of currently playing track
-
         function formatTime(ms) {
             const s   = Math.floor(ms / 1000);
             const min = Math.floor(s / 60);
@@ -9563,15 +9401,9 @@ async function applyAppTheme(themeKey) {
         }
 
         function setProgressBars(currentMs, totalMs) {
-            const pct = Math.min((currentMs / totalMs) * 100, 100);
-            const mini = document.getElementById('snp-progress');
-            const full = document.getElementById('sfp-progress');
-            if (mini) mini.style.width = pct + '%';
-            if (full) full.style.width = pct + '%';
-            const elapsed = document.getElementById('sfp-elapsed');
-            const dur     = document.getElementById('sfp-duration');
-            if (elapsed) elapsed.textContent = formatTime(currentMs);
-            if (dur)     dur.textContent     = formatTime(totalMs);
+            const pct  = Math.min((currentMs / totalMs) * 100, 100);
+            const bar  = document.getElementById('snp-progress');
+            if (bar) bar.style.width = pct + '%';
         }
 
         function updatePlayerUI(data) {
@@ -9616,9 +9448,6 @@ async function applyAppTheme(themeKey) {
             if (mpp)  mpp.style.display  = data.playing ? 'none' : 'block';
             if (mppi) mppi.style.display = data.playing ? 'block' : 'none';
 
-            // Full player: update if open
-            updateFullPlayerTrack(data);
-
             // Progress tracking — reset only when track changes
             if (track.id !== _lastTrackId) {
                 _lastTrackId = track.id;
@@ -9626,12 +9455,6 @@ async function applyAppTheme(themeKey) {
                 _progressMs  = track.progress_ms || 0;
                 _durationMs  = track.duration_ms || 1;
                 setProgressBars(_progressMs, _durationMs);
-
-                // Check if new track is liked
-                if (track.spotify_id || track.id) {
-                    _currentTrackId = track.spotify_id || track.id;
-                    checkIfLiked(_currentTrackId);
-                }
 
                 if (data.playing) {
                     _progressTimer = setInterval(() => {
@@ -9641,39 +9464,6 @@ async function applyAppTheme(themeKey) {
                     }, 1000);
                 }
             }
-        }
-
-        function updateFullPlayerTrack(data) {
-            const fp = document.getElementById('spotify-full-player');
-            if (!fp || fp.style.display === 'none') return;
-            if (!data || !data.track) return;
-
-            const { track } = data;
-
-            const sfpArt = document.getElementById('sfp-art');
-            const sfpBg  = document.getElementById('sfp-bg');
-            const sfpPH  = document.getElementById('sfp-art-placeholder');
-            if (track.album_art) {
-                if (sfpArt) { sfpArt.src = track.album_art; sfpArt.style.display = 'block'; }
-                if (sfpBg)  sfpBg.src = track.album_art;
-                if (sfpPH)  sfpPH.style.display = 'none';
-            } else {
-                if (sfpArt) sfpArt.style.display = 'none';
-                if (sfpPH)  sfpPH.style.display = 'flex';
-            }
-
-            const sfpTrack  = document.getElementById('sfp-track');
-            const sfpArtist = document.getElementById('sfp-artist');
-            const sfpLink   = document.getElementById('sfp-spotify-link');
-            if (sfpTrack)  sfpTrack.textContent  = track.name;
-            if (sfpArtist) sfpArtist.textContent = track.artist + (track.album ? ' · ' + track.album : '');
-            if (sfpLink)   sfpLink.href           = track.spotify_url || '#';
-
-            // Full play/pause icons
-            const fpp  = document.getElementById('sfp-play-icon');
-            const fppi = document.getElementById('sfp-pause-icon');
-            if (fpp)  fpp.style.display  = data.playing ? 'none' : 'block';
-            if (fppi) fppi.style.display = data.playing ? 'block' : 'none';
         }
 
         async function pollNowPlaying() {
@@ -9699,263 +9489,18 @@ async function applyAppTheme(themeKey) {
         }
         tryStart();
 
-        // ── Open/close full player ──────────────────────────────────────────
+        // ── Open in Spotify (native app URI → web fallback) ─────────────────
 
-        window.openSpotifyFullPlayer = function() {
-            const fp    = document.getElementById('spotify-full-player');
-            const sheet = document.getElementById('sfp-sheet');
-            if (!fp || !sheet) return;
-
-            fp.style.display = 'block';
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => { sheet.style.transform = 'translateY(0)'; });
-            });
-
-            if (window._snpCurrentTrack) {
-                updateFullPlayerTrack({ playing: window._snpPlaying, track: window._snpCurrentTrack });
-            }
-
-            sfpSwitchTab(_currentTab, /* forceReload */ true);
-        };
-
-        window.closeSpotifyFullPlayer = function() {
-            const fp    = document.getElementById('spotify-full-player');
-            const sheet = document.getElementById('sfp-sheet');
-            if (!fp || !sheet) return;
-            sheet.style.transform = 'translateY(100%)';
-            setTimeout(() => { fp.style.display = 'none'; }, 360);
-        };
-
-        // Close on backdrop tap
-        document.getElementById('spotify-full-player')?.addEventListener('click', function(e) {
-            if (e.target === this) window.closeSpotifyFullPlayer();
-        });
-
-        // ── Tab switching ───────────────────────────────────────────────────
-
-        window.sfpSwitchTab = function(tab, forceReload) {
-            _currentTab = tab;
-            ['recent','liked','top','search'].forEach(t => {
-                const btn = document.getElementById('sfp-tab-' + t);
-                if (!btn) return;
-                const active = t === tab;
-                btn.style.background = active ? '#1DB954' : 'transparent';
-                btn.style.color      = active ? 'white' : 'rgba(255,255,255,0.5)';
-            });
-
-            const searchBox = document.getElementById('sfp-search-box');
-            if (searchBox) searchBox.style.display = tab === 'search' ? 'block' : 'none';
-
-            const loadMore = document.getElementById('sfp-load-more-wrap');
-            if (loadMore) loadMore.style.display = 'none';
-
-            if (tab === 'recent')       loadTabRecent();
-            else if (tab === 'liked')   { _likedOffset = 0; loadTabLiked(); }
-            else if (tab === 'top')     loadTabTop();
-            else if (tab === 'search')  {
-                const inp = document.getElementById('sfp-search-input');
-                if (inp && inp.value.trim()) loadTabSearch(inp.value.trim());
-                else setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">Type to search Spotify...</div>');
+        window.openInSpotify = function() {
+            const track = window._snpCurrentTrack;
+            const webUrl = window._snpTrackUrl || 'https://open.spotify.com';
+            if (track && track.spotify_uri) {
+                window.location.href = track.spotify_uri;
+                setTimeout(() => { window.open(webUrl, '_blank'); }, 1500);
+            } else {
+                window.open(webUrl, '_blank');
             }
         };
-
-        function setTabContent(html, append) {
-            const c = document.getElementById('sfp-tab-content');
-            if (!c) return;
-            if (append) c.insertAdjacentHTML('beforeend', html);
-            else c.innerHTML = html;
-        }
-
-        // ── Recent tab ──────────────────────────────────────────────────────
-
-        async function loadTabRecent() {
-            setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">Loading...</div>');
-            if (!window.currentUser) return;
-            try {
-                const res  = await fetch(`/api/spotify/data?user_id=${window.currentUser.id}`);
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-                const seen   = new Set();
-                const tracks = [];
-                for (const day of (data.listening || [])) {
-                    for (const t of (day.top_tracks || [])) {
-                        const key = `${t.name}::${t.artist}`;
-                        if (!seen.has(key)) { seen.add(key); tracks.push(t); }
-                        if (tracks.length >= 25) break;
-                    }
-                    if (tracks.length >= 25) break;
-                }
-                if (!tracks.length) {
-                    setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">No recent tracks yet — play some music and sync.</div>');
-                    return;
-                }
-                setTabContent(tracks.map(t => renderTrackRow(t.name, t.artist, t.album_art_url, t.spotify_uri)).join(''));
-            } catch (_) {
-                setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">Could not load recent tracks.</div>');
-            }
-        }
-
-        // ── Liked tab ───────────────────────────────────────────────────────
-
-        async function loadTabLiked() {
-            if (_likedOffset === 0) setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">Loading liked songs...</div>');
-            if (!window.currentUser) return;
-            try {
-                const res  = await fetch(`/api/spotify/library?user_id=${window.currentUser.id}&type=liked&limit=${LIKED_PAGE}&offset=${_likedOffset}`);
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-                const tracks = data.tracks || [];
-                _likedTotal  = data.total || 0;
-
-                if (_likedOffset === 0 && !tracks.length) {
-                    setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">No liked songs found.</div>');
-                    return;
-                }
-                const html = tracks.map(t => renderTrackRow(t.name, t.artist, t.album_art_url, t.spotify_uri)).join('');
-                if (_likedOffset === 0) setTabContent(html);
-                else setTabContent(html, /* append */ true);
-
-                _likedOffset += tracks.length;
-                const lmw = document.getElementById('sfp-load-more-wrap');
-                if (lmw) lmw.style.display = _likedOffset < _likedTotal ? 'block' : 'none';
-            } catch (_) {
-                if (_likedOffset === 0) setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">Could not load liked songs. Re-connect Spotify to grant library access.</div>');
-            }
-        }
-
-        window.sfpLoadMoreLiked = function() { loadTabLiked(); };
-
-        // ── Top tracks tab ──────────────────────────────────────────────────
-
-        async function loadTabTop() {
-            setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">Loading top tracks...</div>');
-            if (!window.currentUser) return;
-            try {
-                const res  = await fetch(`/api/spotify/library?user_id=${window.currentUser.id}&type=top&limit=30`);
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-                const tracks = data.tracks || [];
-                if (!tracks.length) {
-                    setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">No top tracks data yet.</div>');
-                    return;
-                }
-                setTabContent(tracks.map(t => renderTrackRow(t.name, t.artist, t.album_art_url, t.spotify_uri)).join(''));
-            } catch (_) {
-                setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">Could not load top tracks.</div>');
-            }
-        }
-
-        // ── Search tab ──────────────────────────────────────────────────────
-
-        window.sfpSearchDebounce = function(val) {
-            clearTimeout(_searchDebTimer);
-            if (!val.trim()) {
-                setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">Type to search Spotify...</div>');
-                return;
-            }
-            _searchDebTimer = setTimeout(() => loadTabSearch(val.trim()), 450);
-        };
-
-        async function loadTabSearch(q) {
-            setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">Searching...</div>');
-            if (!window.currentUser) return;
-            try {
-                const res  = await fetch(`/api/spotify/library?user_id=${window.currentUser.id}&type=search&q=${encodeURIComponent(q)}&limit=20`);
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-                const tracks = data.tracks || [];
-                if (!tracks.length) {
-                    setTabContent(`<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">No results for "${q}".</div>`);
-                    return;
-                }
-                setTabContent(tracks.map(t => renderTrackRow(t.name, t.artist, t.album_art_url, t.spotify_uri)).join(''));
-            } catch (_) {
-                setTabContent('<div style="color:rgba(255,255,255,0.3); font-size:0.85rem; padding:8px 0;">Search failed. Try again.</div>');
-            }
-        }
-
-        // ── Track row renderer (safe — no inline onclick with URIs) ─────────
-
-        function renderTrackRow(name, artist, artUrl, spotifyUri) {
-            const hasUri  = !!spotifyUri;
-            const dataUri = hasUri ? ` data-uri="${spotifyUri}"` : '';
-            const art     = artUrl
-                ? `<img src="${artUrl}" alt="" style="width:40px; height:40px; border-radius:6px; object-fit:cover; flex-shrink:0;">`
-                : `<div style="width:40px; height:40px; border-radius:6px; background:#1DB954; flex-shrink:0; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:white;"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>`;
-            const playIcon = hasUri
-                ? `<svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:#1DB954;flex-shrink:0;opacity:0.7;"><path d="M8 5v14l11-7z"/></svg>`
-                : '';
-            return `<div class="sfp-track-row"${dataUri} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,0.05); cursor:${hasUri ? 'pointer' : 'default'}; transition:background 0.15s;">${art}<div style="flex:1; min-width:0;"><div style="font-size:0.85rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div><div style="font-size:0.75rem; color:rgba(255,255,255,0.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;">${artist}</div></div>${playIcon}</div>`;
-        }
-
-        // Event delegation for track rows
-        document.getElementById('sfp-tab-content')?.addEventListener('click', function(e) {
-            const row = e.target.closest('.sfp-track-row[data-uri]');
-            if (row) spotifyPlayerControl('play_uri', row.dataset.uri);
-        });
-
-        // ── Volume ──────────────────────────────────────────────────────────
-
-        window.sfpVolumeChanged = function(val) {
-            const input = document.getElementById('sfp-volume');
-            if (input) input.style.setProperty('--sfp-vol', val + '%');
-            clearTimeout(window._sfpVolTimer);
-            window._sfpVolTimer = setTimeout(() => {
-                spotifyPlayerControl_volume(parseInt(val));
-            }, 400);
-        };
-
-        async function spotifyPlayerControl_volume(vol) {
-            if (!window.currentUser) return;
-            try {
-                await fetch('/api/spotify/player', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: window.currentUser.id, action: 'volume', volume: vol }),
-                });
-            } catch (_) {}
-        }
-
-        // ── Heart / like ────────────────────────────────────────────────────
-
-        async function checkIfLiked(trackId) {
-            if (!trackId || !window.currentUser) return;
-            try {
-                const res  = await fetch(`/api/spotify/library?user_id=${window.currentUser.id}&type=check&ids=${trackId}`);
-                if (!res.ok) return;
-                const data = await res.json();
-                setHeartState(data.liked?.[0] === true);
-            } catch (_) {}
-        }
-
-        function setHeartState(liked) {
-            const empty  = document.getElementById('sfp-heart-empty');
-            const filled = document.getElementById('sfp-heart-filled');
-            if (empty)  empty.style.display  = liked ? 'none'  : 'block';
-            if (filled) filled.style.display = liked ? 'block' : 'none';
-            window._sfpIsLiked = liked;
-        }
-
-        window.toggleLikeCurrentTrack = async function() {
-            if (!_currentTrackId || !window.currentUser) return;
-            const nowLiked = !window._sfpIsLiked;
-            setHeartState(nowLiked);  // optimistic update
-            try {
-                await fetch('/api/spotify/library', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: window.currentUser.id,
-                        action:  nowLiked ? 'like' : 'unlike',
-                        ids:     [_currentTrackId],
-                    }),
-                });
-            } catch (_) {
-                setHeartState(!nowLiked);  // revert on failure
-            }
-        };
-
-        // ── Playback control ─────────────────────────────────────────────────
 
         window.spotifyPlayerControl = async function(action, uri) {
             if (!window.currentUser) return;
