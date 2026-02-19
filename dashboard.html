@@ -11728,6 +11728,21 @@ async function applyAppTheme(themeKey) {
             loadChat();
             loadJournalHistory();
 
+            // Preload custom exercises for video matching
+            if (typeof dbHelpers !== 'undefined' && dbHelpers.customExercises) {
+                dbHelpers.customExercises.getAll(window.currentUser.id).then(exercises => {
+                    window._customExercisesCache = exercises || [];
+                    // Also inject custom exercise videos into EXERCISE_VIDEOS for seamless lookup
+                    if (typeof EXERCISE_VIDEOS !== 'undefined') {
+                        exercises.forEach(ex => {
+                            if (ex.video_url && ex.exercise_name) {
+                                EXERCISE_VIDEOS[ex.exercise_name] = ex.video_url;
+                            }
+                        });
+                    }
+                }).catch(e => console.warn('Custom exercises preload:', e));
+            }
+
             // Phase 1: Run independent async operations in parallel for faster startup
             // - syncQuizDataToDb: sync local quiz data to DB (independent)
             // - seedTestAccount: inject test data if test user (independent)
@@ -18224,12 +18239,22 @@ function viewWorkoutHistoryDetail(date) {
         </div>
 
         <!-- Add Exercise Button -->
-        <div style="margin-top: 12px; padding-bottom: 40px;">
+        <div style="margin-top: 12px;">
             <button onclick="openAddExerciseModal()" style="width: 100%; background: transparent; border: 2px dashed var(--primary); color: var(--primary); font-weight: 700; font-size: 0.95rem; padding: 18px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                 <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;">
                     <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                 </svg>
                 Add Exercise
+            </button>
+        </div>
+
+        <!-- Create Custom Exercise Button -->
+        <div style="margin-top: 10px; padding-bottom: 40px;">
+            <button onclick="openCreateCustomExerciseModal('workout')" style="width: 100%; background: transparent; border: 2px dashed #4ade80; color: var(--primary); font-weight: 700; font-size: 0.95rem; padding: 16px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;">
+                    <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                </svg>
+                Create Your Own Exercise
             </button>
         </div>
     </div>
@@ -18249,13 +18274,170 @@ function viewWorkoutHistoryDetail(date) {
 
         <!-- Search Box -->
         <div style="padding: 15px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-            <input type="text" id="add-exercise-search" placeholder="Search exercises..." oninput="searchExercisesForAdd(this.value)" style="width: 100%; padding: 12px 15px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 1rem; background: white;">
+            <input type="text" id="add-exercise-search" placeholder="Search exercises..." oninput="searchExercisesForAdd(this.value)" style="width: 100%; padding: 12px 15px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 1rem; background: white; box-sizing: border-box;">
+
+            <!-- Create Your Own Button -->
+            <div onclick="closeAddExerciseModal(); openCreateCustomExerciseModal('workout');" style="margin-top: 10px; padding: 12px 15px; background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #bbf7d0; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;">
+                        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                    </svg>
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 700; color: var(--primary); font-size: 0.9rem;">Create Your Own Exercise</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Record a video and add it to your library</div>
+                </div>
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--primary);">
+                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                </svg>
+            </div>
         </div>
 
         <!-- Exercise Results -->
         <div id="add-exercise-results" style="padding: 15px 20px; padding-bottom: 100px;">
             <div style="text-align: center; padding: 40px; color: #94a3b8;">
                 Type to search for exercises from your library
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CREATE CUSTOM EXERCISE MODAL -->
+<div id="create-custom-exercise-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 650; overflow-y: auto;">
+    <div style="background: white; min-height: 100%; max-width: 600px; margin: 0 auto; position: relative;">
+        <!-- Modal Header -->
+        <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <div onclick="closeCreateCustomExerciseModal()" style="font-weight: 600; cursor: pointer; color: var(--text-muted); padding: 10px;">Cancel</div>
+            <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Create Exercise</div>
+            <div onclick="saveCustomExercise()" id="save-custom-exercise-btn" style="font-weight: 600; cursor: pointer; color: var(--primary); padding: 10px;">Save</div>
+        </div>
+
+        <div style="padding: 20px;">
+            <!-- Exercise Name -->
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; display: block; margin-bottom: 8px;">Exercise Name *</label>
+                <input type="text" id="custom-exercise-name" placeholder="e.g. Bulgarian Split Squat with Pulse" style="width: 100%; padding: 14px 15px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; box-sizing: border-box; font-family: inherit;" oninput="validateCustomExerciseForm()">
+            </div>
+
+            <!-- Description -->
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; display: block; margin-bottom: 8px;">Description</label>
+                <textarea id="custom-exercise-desc" placeholder="Brief description or form cues..." style="width: 100%; padding: 14px 15px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; min-height: 70px; resize: vertical; box-sizing: border-box; font-family: inherit;"></textarea>
+            </div>
+
+            <!-- Muscle Group & Equipment Row -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                <div>
+                    <label style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; display: block; margin-bottom: 8px;">Muscle Group</label>
+                    <select id="custom-exercise-muscle" style="width: 100%; padding: 14px 10px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.95rem; background: white; color: var(--text-main); font-family: inherit;">
+                        <option value="chest">Chest</option>
+                        <option value="back">Back</option>
+                        <option value="legs">Legs</option>
+                        <option value="shoulders">Shoulders</option>
+                        <option value="arms">Arms</option>
+                        <option value="core">Core</option>
+                        <option value="glutes">Glutes</option>
+                        <option value="full_body">Full Body</option>
+                        <option value="other" selected>Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; display: block; margin-bottom: 8px;">Equipment</label>
+                    <select id="custom-exercise-equipment" style="width: 100%; padding: 14px 10px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.95rem; background: white; color: var(--text-main); font-family: inherit;">
+                        <option value="bodyweight">Bodyweight</option>
+                        <option value="barbell">Barbell</option>
+                        <option value="dumbbell">Dumbbell</option>
+                        <option value="cable">Cable</option>
+                        <option value="machine">Machine</option>
+                        <option value="band">Band</option>
+                        <option value="kettlebell">Kettlebell</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Default Sets & Reps Row -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+                <div>
+                    <label style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; display: block; margin-bottom: 8px;">Default Sets</label>
+                    <input type="number" id="custom-exercise-sets" value="3" min="1" max="10" style="width: 100%; padding: 14px 15px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; text-align: center; box-sizing: border-box; font-family: inherit;">
+                </div>
+                <div>
+                    <label style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; display: block; margin-bottom: 8px;">Default Reps</label>
+                    <input type="text" id="custom-exercise-reps" value="8-12" placeholder="e.g. 8-12" style="width: 100%; padding: 14px 15px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; text-align: center; box-sizing: border-box; font-family: inherit;">
+                </div>
+            </div>
+
+            <!-- Video Recording Section -->
+            <div style="background: #f8fafc; border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+                <label style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; display: block; margin-bottom: 12px;">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--primary);">
+                            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                        </svg>
+                        Record Exercise Video
+                    </span>
+                </label>
+
+                <!-- Video Preview (hidden until recorded/selected) -->
+                <div id="custom-exercise-video-preview" style="display: none; margin-bottom: 15px; border-radius: 12px; overflow: hidden; background: black; position: relative;">
+                    <video id="custom-exercise-video-playback" style="width: 100%; max-height: 300px; object-fit: contain;" playsinline controls></video>
+                    <button onclick="removeCustomExerciseVideo()" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">×</button>
+                </div>
+
+                <!-- Camera/Recording Area (shown when actively recording) -->
+                <div id="custom-exercise-camera-container" style="display: none; margin-bottom: 15px; border-radius: 12px; overflow: hidden; background: black; position: relative;">
+                    <video id="custom-exercise-camera-feed" style="width: 100%; max-height: 400px; object-fit: cover;" autoplay playsinline muted></video>
+                    <div id="custom-exercise-recording-indicator" style="display: none; position: absolute; top: 12px; left: 12px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+                        <div style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: pulse 1s infinite;"></div>
+                        REC <span id="custom-exercise-rec-timer">0:00</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div id="custom-exercise-video-actions" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Record Button -->
+                    <button id="custom-exercise-record-btn" onclick="startCustomExerciseRecording()" style="width: 100%; background: linear-gradient(135deg, var(--primary), #4ade80); border: none; color: white; font-weight: 700; font-size: 0.95rem; padding: 16px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
+                            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                        </svg>
+                        Record Video
+                    </button>
+
+                    <!-- Stop Recording Button (hidden by default) -->
+                    <button id="custom-exercise-stop-btn" onclick="stopCustomExerciseRecording()" style="display: none; width: 100%; background: #ef4444; border: none; color: white; font-weight: 700; font-size: 0.95rem; padding: 16px; border-radius: 12px; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 8px;">
+                        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
+                            <path d="M6 6h12v12H6z"/>
+                        </svg>
+                        Stop Recording
+                    </button>
+
+                    <!-- Or upload from gallery -->
+                    <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">or</div>
+
+                    <label style="width: 100%; background: white; border: 2px dashed #e2e8f0; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; padding: 14px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; box-sizing: border-box;">
+                        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;">
+                            <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/>
+                        </svg>
+                        Upload from Gallery
+                        <input type="file" id="custom-exercise-file-input" accept="video/*" onchange="handleCustomExerciseFileSelect(event)" style="display: none;">
+                    </label>
+                </div>
+
+                <p style="color: #94a3b8; font-size: 0.8rem; margin: 12px 0 0 0; line-height: 1.4;">
+                    Video is optional. You can always add one later.
+                </p>
+            </div>
+
+            <!-- My Custom Exercises List -->
+            <div id="my-custom-exercises-section" style="margin-top: 30px; display: none;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-main);">My Custom Exercises</h3>
+                    <span id="custom-exercises-count" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+                </div>
+                <div id="my-custom-exercises-list" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Populated dynamically -->
+                </div>
             </div>
         </div>
     </div>
@@ -18822,6 +19004,24 @@ function viewWorkoutHistoryDetail(date) {
 
         <div id="library-categories-grid" style="display: grid; gap: 15px;">
             <!-- Categories will be dynamically inserted here -->
+        </div>
+
+        <!-- Create Custom Exercise Section -->
+        <div style="margin-top: 30px; padding-top: 25px; border-top: 2px solid #f1f5f9;">
+            <div onclick="openCreateCustomExerciseModal('library')" style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 2px solid #bbf7d0; border-radius: 16px; padding: 20px; cursor: pointer; display: flex; align-items: center; gap: 15px;">
+                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--primary), #4ade80); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg viewBox="0 0 24 24" style="width: 26px; height: 26px; fill: white;">
+                        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                    </svg>
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 700; color: var(--text-main); font-size: 1.05rem; margin-bottom: 4px;">Create Custom Exercise</div>
+                    <div style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.4;">Record your own exercise with video and add it to your personal library</div>
+                </div>
+                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary);">
+                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                </svg>
+            </div>
         </div>
     </div>
 </div>
@@ -33448,6 +33648,13 @@ function openAddExerciseModal() {
         </div>
     `;
     document.getElementById('add-exercise-search').focus();
+
+    // Preload custom exercises for search
+    if (window.currentUser && typeof dbHelpers !== 'undefined' && dbHelpers.customExercises) {
+        dbHelpers.customExercises.getAll(window.currentUser.id).then(exercises => {
+            window._customExercisesCache = exercises || [];
+        }).catch(() => {});
+    }
 }
 
 // Close add exercise modal
@@ -33885,16 +34092,56 @@ function searchExercisesForAdd(query) {
         return terms.every(term => nameLower.includes(term));
     });
 
-    if (filteredExercises.length === 0) {
+    // Also search user's custom exercises
+    const customMatches = (window._customExercisesCache || []).filter(ex => {
+        const nameLower = ex.exercise_name.toLowerCase();
+        return terms.every(term => nameLower.includes(term));
+    });
+
+    // Build custom exercises HTML (shown first)
+    let customHtml = '';
+    if (customMatches.length > 0) {
+        customHtml = `<div style="padding: 10px 15px 5px 15px; font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">Your Custom Exercises</div>`;
+        customHtml += customMatches.map(ex => {
+            const escapedName = ex.exercise_name.replace(/'/g, "\\'");
+            const hasVideo = ex.video_url ? true : false;
+            return `
+                <div onclick="selectExerciseToAdd('${escapedName}')" style="padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s; background: #f0fdf4;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">
+                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), #4ade80); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        ${hasVideo
+                            ? '<svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M8 5v14l11-7z"/></svg>'
+                            : '<svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'
+                        }
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                            ${ex.exercise_name}
+                            <span style="background: var(--primary); color: white; font-size: 0.6rem; padding: 1px 5px; border-radius: 4px; font-weight: 700;">YOURS</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">${ex.muscle_group ? ex.muscle_group.replace('_', ' ') : ''} ${hasVideo ? '· Has video' : ''}</div>
+                    </div>
+                    <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary);">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                </div>
+            `;
+        }).join('');
+    }
+
+    if (filteredExercises.length === 0 && customMatches.length === 0) {
         resultsContainer.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+            <div style="text-align: center; padding: 30px; color: #94a3b8;">
                 No exercises found matching "${query}"
+            </div>
+            <div onclick="closeAddExerciseModal(); openCreateCustomExerciseModal('workout');" style="margin: 0 15px; padding: 16px; background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 2px dashed var(--primary); border-radius: 12px; cursor: pointer; text-align: center;">
+                <div style="font-weight: 700; color: var(--primary); font-size: 0.95rem; margin-bottom: 4px;">Create "${query}" as custom exercise</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Record a video and save it to your library</div>
             </div>
         `;
         return;
     }
 
-    // Sort by relevance score (highest first)
+    // Sort library exercises by relevance score (highest first)
     filteredExercises.sort((a, b) => {
         const scoreA = scoreExerciseMatch(a, terms, query);
         const scoreB = scoreExerciseMatch(b, terms, query);
@@ -33904,7 +34151,13 @@ function searchExercisesForAdd(query) {
     // Limit to first 50 results
     const displayExercises = filteredExercises.slice(0, 50);
 
-    resultsContainer.innerHTML = displayExercises.map(name => {
+    // Build library results header (only if we also have custom matches)
+    let libraryHeader = '';
+    if (customMatches.length > 0 && displayExercises.length > 0) {
+        libraryHeader = `<div style="padding: 10px 15px 5px 15px; font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; border-top: 2px solid #e2e8f0; margin-top: 5px;">Exercise Library</div>`;
+    }
+
+    const libraryHtml = displayExercises.map(name => {
         const escapedName = name.replace(/'/g, "\\'");
         return `
             <div onclick="selectExerciseToAdd('${escapedName}')" style="padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
@@ -33923,6 +34176,8 @@ function searchExercisesForAdd(query) {
             </div>
         `;
     }).join('');
+
+    resultsContainer.innerHTML = customHtml + libraryHeader + libraryHtml;
 
     if (displayExercises.length < filteredExercises.length) {
         resultsContainer.innerHTML += `
@@ -34105,6 +34360,389 @@ hideAllAppViews = function() {
         }
     });
 };
+
+// ===========================
+// CUSTOM EXERCISE RECORDING
+// ===========================
+
+// In-memory cache of user's custom exercises (loaded on open)
+window._customExercisesCache = [];
+
+let _customExerciseMediaStream = null;
+let _customExerciseMediaRecorder = null;
+let _customExerciseRecordedChunks = [];
+let _customExerciseVideoFile = null;
+let _customExerciseRecTimerInterval = null;
+let _customExerciseRecStartTime = null;
+
+function openCreateCustomExerciseModal(context) {
+    // context: 'workout' (during active workout) or 'library' (from workout library)
+    window._customExerciseContext = context || 'library';
+    document.getElementById('create-custom-exercise-modal').style.display = 'block';
+
+    // Reset form
+    document.getElementById('custom-exercise-name').value = '';
+    document.getElementById('custom-exercise-desc').value = '';
+    document.getElementById('custom-exercise-muscle').value = 'other';
+    document.getElementById('custom-exercise-equipment').value = 'bodyweight';
+    document.getElementById('custom-exercise-sets').value = '3';
+    document.getElementById('custom-exercise-reps').value = '8-12';
+    _customExerciseVideoFile = null;
+    document.getElementById('custom-exercise-video-preview').style.display = 'none';
+    document.getElementById('custom-exercise-camera-container').style.display = 'none';
+    document.getElementById('custom-exercise-record-btn').style.display = 'flex';
+    document.getElementById('custom-exercise-stop-btn').style.display = 'none';
+    document.getElementById('custom-exercise-video-actions').style.display = 'flex';
+
+    // Load existing custom exercises
+    loadMyCustomExercises();
+
+    // Focus on name
+    setTimeout(() => document.getElementById('custom-exercise-name').focus(), 300);
+}
+
+function closeCreateCustomExerciseModal() {
+    document.getElementById('create-custom-exercise-modal').style.display = 'none';
+    stopCameraStream();
+}
+
+function validateCustomExerciseForm() {
+    const name = document.getElementById('custom-exercise-name').value.trim();
+    const btn = document.getElementById('save-custom-exercise-btn');
+    btn.style.opacity = name.length > 0 ? '1' : '0.4';
+    btn.style.pointerEvents = name.length > 0 ? 'auto' : 'none';
+}
+
+async function startCustomExerciseRecording() {
+    try {
+        // Request camera access (prefer back camera on mobile)
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false
+        });
+
+        _customExerciseMediaStream = stream;
+        const cameraFeed = document.getElementById('custom-exercise-camera-feed');
+        cameraFeed.srcObject = stream;
+        cameraFeed.play();
+
+        // Show camera container, hide record button, show stop
+        document.getElementById('custom-exercise-camera-container').style.display = 'block';
+        document.getElementById('custom-exercise-record-btn').style.display = 'none';
+        document.getElementById('custom-exercise-stop-btn').style.display = 'flex';
+        document.getElementById('custom-exercise-video-preview').style.display = 'none';
+
+        // Start MediaRecorder
+        _customExerciseRecordedChunks = [];
+        const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+            ? 'video/webm;codecs=vp9'
+            : MediaRecorder.isTypeSupported('video/webm')
+                ? 'video/webm'
+                : 'video/mp4';
+
+        _customExerciseMediaRecorder = new MediaRecorder(stream, { mimeType });
+
+        _customExerciseMediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) {
+                _customExerciseRecordedChunks.push(e.data);
+            }
+        };
+
+        _customExerciseMediaRecorder.onstop = () => {
+            const blob = new Blob(_customExerciseRecordedChunks, { type: mimeType });
+            const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+            _customExerciseVideoFile = new File([blob], `exercise-recording.${ext}`, { type: mimeType });
+            _customExerciseVideoFile.name = `exercise-recording.${ext}`;
+
+            // Show preview
+            const videoPlayback = document.getElementById('custom-exercise-video-playback');
+            videoPlayback.src = URL.createObjectURL(blob);
+            document.getElementById('custom-exercise-video-preview').style.display = 'block';
+            document.getElementById('custom-exercise-camera-container').style.display = 'none';
+            document.getElementById('custom-exercise-video-actions').style.display = 'flex';
+            document.getElementById('custom-exercise-record-btn').style.display = 'flex';
+            document.getElementById('custom-exercise-record-btn').innerHTML = `
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
+                    <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                </svg>
+                Re-record Video
+            `;
+            document.getElementById('custom-exercise-stop-btn').style.display = 'none';
+
+            stopCameraStream();
+        };
+
+        _customExerciseMediaRecorder.start(200); // Collect data every 200ms
+
+        // Show recording indicator with timer
+        const recIndicator = document.getElementById('custom-exercise-recording-indicator');
+        recIndicator.style.display = 'flex';
+        _customExerciseRecStartTime = Date.now();
+        _customExerciseRecTimerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - _customExerciseRecStartTime) / 1000);
+            const mins = Math.floor(elapsed / 60);
+            const secs = elapsed % 60;
+            document.getElementById('custom-exercise-rec-timer').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        }, 1000);
+
+    } catch (err) {
+        console.error('Camera access error:', err);
+        alert('Could not access camera. Please check permissions and try again, or upload a video file instead.');
+    }
+}
+
+function stopCustomExerciseRecording() {
+    if (_customExerciseMediaRecorder && _customExerciseMediaRecorder.state !== 'inactive') {
+        _customExerciseMediaRecorder.stop();
+    }
+
+    // Stop timer
+    if (_customExerciseRecTimerInterval) {
+        clearInterval(_customExerciseRecTimerInterval);
+        _customExerciseRecTimerInterval = null;
+    }
+
+    const recIndicator = document.getElementById('custom-exercise-recording-indicator');
+    if (recIndicator) recIndicator.style.display = 'none';
+}
+
+function stopCameraStream() {
+    if (_customExerciseMediaStream) {
+        _customExerciseMediaStream.getTracks().forEach(track => track.stop());
+        _customExerciseMediaStream = null;
+    }
+}
+
+function handleCustomExerciseFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate it's a video
+    if (!file.type.startsWith('video/')) {
+        alert('Please select a video file.');
+        return;
+    }
+
+    // Max 100MB
+    if (file.size > 100 * 1024 * 1024) {
+        alert('Video must be under 100MB.');
+        return;
+    }
+
+    _customExerciseVideoFile = file;
+
+    // Show preview
+    const videoPlayback = document.getElementById('custom-exercise-video-playback');
+    videoPlayback.src = URL.createObjectURL(file);
+    document.getElementById('custom-exercise-video-preview').style.display = 'block';
+
+    // Update record button text
+    document.getElementById('custom-exercise-record-btn').innerHTML = `
+        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
+            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+        </svg>
+        Re-record Video
+    `;
+}
+
+function removeCustomExerciseVideo() {
+    _customExerciseVideoFile = null;
+    document.getElementById('custom-exercise-video-preview').style.display = 'none';
+
+    // Reset record button
+    document.getElementById('custom-exercise-record-btn').innerHTML = `
+        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
+            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+        </svg>
+        Record Video
+    `;
+
+    // Reset file input
+    const fileInput = document.getElementById('custom-exercise-file-input');
+    if (fileInput) fileInput.value = '';
+}
+
+async function saveCustomExercise() {
+    const name = document.getElementById('custom-exercise-name').value.trim();
+    if (!name) {
+        alert('Please enter an exercise name.');
+        return;
+    }
+
+    const user = window.currentUser;
+    if (!user) {
+        alert('Please log in to save custom exercises.');
+        return;
+    }
+
+    const btn = document.getElementById('save-custom-exercise-btn');
+    btn.textContent = 'Saving...';
+    btn.style.pointerEvents = 'none';
+
+    try {
+        const exerciseId = crypto.randomUUID ? crypto.randomUUID() : 'ex-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
+        let videoUrl = null;
+        let storagePath = null;
+
+        // Upload video if one was recorded/selected
+        if (_customExerciseVideoFile) {
+            try {
+                const result = await storageHelpers.uploadExerciseVideo(user.id, _customExerciseVideoFile, exerciseId);
+                videoUrl = result.publicUrl;
+                storagePath = result.storagePath;
+            } catch (uploadErr) {
+                console.error('Video upload failed:', uploadErr);
+                // Continue saving without video - don't block the exercise creation
+            }
+        }
+
+        // Save to database
+        const exerciseData = {
+            name: name,
+            description: document.getElementById('custom-exercise-desc').value.trim(),
+            muscleGroup: document.getElementById('custom-exercise-muscle').value,
+            equipment: document.getElementById('custom-exercise-equipment').value,
+            sets: parseInt(document.getElementById('custom-exercise-sets').value) || 3,
+            reps: document.getElementById('custom-exercise-reps').value.trim() || '8-12',
+            videoUrl: videoUrl,
+            storagePath: storagePath
+        };
+
+        const saved = await dbHelpers.customExercises.create(user.id, exerciseData);
+
+        // Add to local cache
+        window._customExercisesCache.unshift(saved);
+
+        // If video was uploaded, add to the in-memory EXERCISE_VIDEOS map for immediate use
+        if (videoUrl) {
+            if (typeof EXERCISE_VIDEOS !== 'undefined') {
+                EXERCISE_VIDEOS[name] = videoUrl;
+            }
+        }
+
+        // If we're in an active workout context, offer to add it right away
+        if (window._customExerciseContext === 'workout') {
+            closeCreateCustomExerciseModal();
+            const addNow = confirm(`"${name}" has been saved!\n\nWould you like to add it to your current workout?`);
+            if (addNow) {
+                const newExercise = {
+                    name: name,
+                    sets: exerciseData.sets,
+                    reps: exerciseData.reps,
+                    desc: exerciseData.description || 'Custom exercise',
+                    isUserAdded: true
+                };
+                addExerciseToUI(newExercise);
+
+                // Also save to workout customizations if in a tracked workout
+                const workoutKey = window.currentWorkoutKey;
+                if (workoutKey) {
+                    try {
+                        await dbHelpers.workoutCustomizations.addExercise(user.id, workoutKey, {
+                            name: name,
+                            sets: exerciseData.sets,
+                            reps: exerciseData.reps,
+                            desc: exerciseData.description || 'Custom exercise'
+                        });
+                    } catch (e) {
+                        console.error('Failed to save to workout customizations:', e);
+                    }
+                }
+            }
+        } else {
+            // Library context - just show success
+            alert(`"${name}" has been created! You can now find it when adding exercises to any workout.`);
+            closeCreateCustomExerciseModal();
+        }
+
+    } catch (err) {
+        console.error('Failed to save custom exercise:', err);
+        alert('Failed to save exercise. Please try again.');
+    } finally {
+        btn.textContent = 'Save';
+        btn.style.pointerEvents = 'auto';
+    }
+}
+
+async function loadMyCustomExercises() {
+    const user = window.currentUser;
+    if (!user) return;
+
+    try {
+        const exercises = await dbHelpers.customExercises.getAll(user.id);
+        window._customExercisesCache = exercises;
+
+        const section = document.getElementById('my-custom-exercises-section');
+        const list = document.getElementById('my-custom-exercises-list');
+        const count = document.getElementById('custom-exercises-count');
+
+        if (exercises.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        count.textContent = `${exercises.length} exercise${exercises.length !== 1 ? 's' : ''}`;
+
+        list.innerHTML = exercises.map(ex => {
+            const muscleLabel = ex.muscle_group ? ex.muscle_group.replace('_', ' ') : '';
+            const equipLabel = ex.equipment || '';
+            const hasVideo = ex.video_url ? true : false;
+
+            return `
+                <div style="background: #f8fafc; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; border: 1px solid #e2e8f0;">
+                    <div style="width: 44px; height: 44px; background: ${hasVideo ? 'linear-gradient(135deg, var(--primary), #4ade80)' : '#e2e8f0'}; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        ${hasVideo
+                            ? '<svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white;"><path d="M8 5v14l11-7z"/></svg>'
+                            : '<svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: #94a3b8;"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg>'
+                        }
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ex.exercise_name}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+                            ${muscleLabel}${muscleLabel && equipLabel ? ' · ' : ''}${equipLabel}
+                            ${hasVideo ? ' · Has video' : ''}
+                        </div>
+                    </div>
+                    <button onclick="deleteCustomExercise('${ex.id}', '${ex.exercise_name.replace(/'/g, "\\'")}')" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 8px; flex-shrink: 0;">
+                        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error('Failed to load custom exercises:', err);
+    }
+}
+
+async function deleteCustomExercise(exerciseId, exerciseName) {
+    if (!confirm(`Delete "${exerciseName}"? This will remove the exercise and its video permanently.`)) return;
+
+    const user = window.currentUser;
+    if (!user) return;
+
+    try {
+        await dbHelpers.customExercises.delete(user.id, exerciseId);
+
+        // Remove from local cache
+        window._customExercisesCache = window._customExercisesCache.filter(ex => ex.id !== exerciseId);
+
+        // Remove from EXERCISE_VIDEOS if it was there
+        if (typeof EXERCISE_VIDEOS !== 'undefined' && EXERCISE_VIDEOS[exerciseName]) {
+            delete EXERCISE_VIDEOS[exerciseName];
+        }
+
+        // Refresh the list
+        loadMyCustomExercises();
+    } catch (err) {
+        console.error('Failed to delete custom exercise:', err);
+        alert('Failed to delete exercise. Please try again.');
+    }
+}
 
 </script>
 <!-- Image Modal HTML -->
@@ -42618,17 +43256,23 @@ let currentVideoUrl = '';
 function findVideoMatch(name) {
     if(EXERCISE_VIDEOS[name]) return EXERCISE_VIDEOS[name];
 
+    // Check user's custom exercises cache for video
+    if (window._customExercisesCache && window._customExercisesCache.length > 0) {
+        const customMatch = window._customExercisesCache.find(ex => ex.exercise_name === name);
+        if (customMatch && customMatch.video_url) return customMatch.video_url;
+    }
+
     // Clean name logic: Remove common prefixes and trim
     const cleanName = name.replace(/(Dumbbell|Barbell|Body Weight|Band|Cable|Machine) /gi, '').trim();
     if(EXERCISE_VIDEOS[cleanName]) return EXERCISE_VIDEOS[cleanName];
 
     // Fuzzy Search (Simple Includes)
     const keys = Object.keys(EXERCISE_VIDEOS);
-    
+
     // 1. Try to find a key that CONTAINS the clean name
     const partialMatch = keys.find(k => k.toLowerCase().includes(cleanName.toLowerCase()));
     if(partialMatch) return EXERCISE_VIDEOS[partialMatch];
-    
+
     // 2. Try to find a key that is CONTAINED BY the clean name
     const reverseMatch = keys.find(k => cleanName.toLowerCase().includes(k.toLowerCase()));
     if(reverseMatch) return EXERCISE_VIDEOS[reverseMatch];
