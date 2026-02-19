@@ -55092,20 +55092,39 @@ async function startUnifiedCamera() {
     // If running inside the native Android APK, request camera permission
     // via the native bridge BEFORE calling getUserMedia(). The bridge shows
     // the standard Android "Allow Balance to use your camera?" dialog.
-    if (window.NativePermissions && !window.NativePermissions.hasCameraPermission()) {
-        const granted = await new Promise((resolve) => {
-            window._onNativeCameraPermission = function(result) {
-                delete window._onNativeCameraPermission;
-                resolve(result);
-            };
-            window.NativePermissions.requestCameraPermission();
-            // Safety timeout so we don't hang forever
-            setTimeout(() => resolve(false), 60000);
-        });
-        if (!granted) {
-            showToast('Camera permission is required to scan food items.', 'error');
-            closeUnifiedCamera();
-            return;
+    if (window.NativePermissions) {
+        try {
+            // Check if permission is permanently denied (user tapped "Don't ask again")
+            if (window.NativePermissions.isPermissionPermanentlyDenied &&
+                window.NativePermissions.isPermissionPermanentlyDenied()) {
+                showCameraPermissionSettingsDialog();
+                return;
+            }
+
+            if (!window.NativePermissions.hasCameraPermission()) {
+                const granted = await new Promise((resolve) => {
+                    window._onNativeCameraPermission = function(result) {
+                        delete window._onNativeCameraPermission;
+                        resolve(result);
+                    };
+                    window.NativePermissions.requestCameraPermission();
+                    // Safety timeout so we don't hang forever
+                    setTimeout(() => {
+                        if (window._onNativeCameraPermission) {
+                            delete window._onNativeCameraPermission;
+                            resolve(false);
+                        }
+                    }, 60000);
+                });
+                if (!granted) {
+                    showCameraPermissionSettingsDialog();
+                    return;
+                }
+            }
+        } catch (bridgeErr) {
+            console.warn('NativePermissions bridge error:', bridgeErr);
+            // Fall through to getUserMedia — the onPermissionRequest handler
+            // on the Java side will show the native dialog as a fallback
         }
     }
 
@@ -55125,13 +55144,64 @@ async function startUnifiedCamera() {
     } catch (err) {
         console.error('Failed to access camera:', err);
         if (err.name === 'NotAllowedError') {
-            showToast('Camera permission denied. Please enable it in your device Settings > Apps > Balance > Permissions.', 'error');
+            // Permission was denied — show a dialog with option to open Settings
+            showCameraPermissionSettingsDialog();
         } else {
             showToast('Could not access camera. Check permissions.', 'error');
+            closeUnifiedCamera();
         }
-        // Close the modal so the user doesn't see a broken video element
-        closeUnifiedCamera();
     }
+}
+
+/**
+ * Shows a modal dialog explaining that camera permission is needed,
+ * with a button to open the device Settings app (native) or instructions
+ * for enabling it manually.
+ */
+function showCameraPermissionSettingsDialog() {
+    closeUnifiedCamera();
+
+    // Check if the native bridge can open settings directly
+    const canOpenSettings = window.NativePermissions &&
+        typeof window.NativePermissions.openAppSettings === 'function';
+
+    const overlay = document.createElement('div');
+    overlay.id = 'camera-permission-dialog-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10020;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML = `
+        <div style="background:#1e1e2e;border-radius:16px;padding:28px 24px;max-width:360px;width:100%;text-align:center;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                    <line x1="1" y1="1" x2="23" y2="23" stroke="#ef4444" stroke-width="2"/>
+                </svg>
+            </div>
+            <h3 style="margin:0 0 8px;font-size:1.15rem;font-weight:700;">Camera Access Needed</h3>
+            <p style="margin:0 0 20px;font-size:0.9rem;color:rgba(255,255,255,0.7);line-height:1.5;">
+                Balance needs camera access to scan barcodes and identify food.
+                ${canOpenSettings
+                    ? 'Tap the button below to open Settings, then enable <b>Camera</b> under Permissions.'
+                    : 'Please go to your device <b>Settings &gt; Apps &gt; Balance &gt; Permissions</b> and enable Camera.'}
+            </p>
+            <div style="display:flex;gap:10px;justify-content:center;">
+                ${canOpenSettings ? `
+                <button onclick="window.NativePermissions.openAppSettings(); document.getElementById('camera-permission-dialog-overlay').remove();"
+                    style="flex:1;padding:12px 20px;border:none;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;font-weight:600;font-size:0.95rem;cursor:pointer;">
+                    Open Settings
+                </button>` : ''}
+                <button onclick="document.getElementById('camera-permission-dialog-overlay').remove();"
+                    style="flex:1;padding:12px 20px;border:1px solid rgba(255,255,255,0.2);border-radius:12px;background:transparent;color:rgba(255,255,255,0.8);font-weight:500;font-size:0.95rem;cursor:pointer;">
+                    ${canOpenSettings ? 'Cancel' : 'OK'}
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    // Close when clicking the backdrop
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.remove();
+    });
 }
 
 function stopUnifiedCamera() {
