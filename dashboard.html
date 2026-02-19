@@ -345,6 +345,7 @@ async function applyAppTheme(themeKey) {
     /* Top Header for Views */
     .app-header {
         padding: 20px 25px;
+        padding-top: calc(20px + env(safe-area-inset-top, 0px));
         background: white;
         display: flex;
         justify-content: space-between;
@@ -1000,6 +1001,7 @@ async function applyAppTheme(themeKey) {
         /* Reduce header padding on mobile */
         .app-header {
             padding: 10px 14px !important;
+            padding-top: calc(10px + env(safe-area-inset-top, 0px)) !important;
         }
         /* Bottom nav compact on smaller screens */
         .bottom-nav {
