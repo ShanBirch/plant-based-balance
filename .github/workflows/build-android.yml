@@ -36,6 +36,21 @@ jobs:
       - name: Install Android SDK platform 36
         run: sdkmanager "platforms;android-36"
 
+      # Write google-services.json from GitHub secret so FCM push notifications work.
+      # Add this secret in: GitHub repo → Settings → Secrets → Actions → GOOGLE_SERVICES_JSON
+      # Value: paste the full contents of your google-services.json from Firebase console.
+      - name: Write google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            echo "✓ google-services.json written — push notifications enabled"
+          else
+            echo "⚠ GOOGLE_SERVICES_JSON secret not set — push notifications won't work in this build"
+            echo "  Add it in: GitHub repo → Settings → Secrets → Actions"
+          fi
+
       - name: Sync Capacitor
         run: npx cap sync android
 
@@ -43,7 +58,7 @@ jobs:
         working-directory: android
         run: chmod +x gradlew && ./gradlew assembleDebug
 
-      # Always keep the artifact as a fallback download
+      # Always keep the artifact as a fallback download from the Actions tab
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -51,17 +66,16 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      # Upload to Firebase App Distribution so you get an OTA update on your phone
-      # Requires FIREBASE_APP_ID and FIREBASE_SERVICE_ACCOUNT secrets in GitHub repo settings
+      # Upload to Firebase App Distribution — testers get an OTA update prompt on their phone.
+      # Add these secrets in: GitHub repo → Settings → Secrets → Actions
+      #   FIREBASE_APP_ID       — from Firebase console → Project Settings → your Android app
+      #   FIREBASE_SERVICE_ACCOUNT — JSON key from Firebase console → Project Settings → Service accounts
       - name: Upload to Firebase App Distribution
-        if: env.FIREBASE_APP_ID != '' && env.FIREBASE_SERVICE_ACCOUNT != ''
+        if: ${{ secrets.FIREBASE_APP_ID != '' && secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           groups: testers
           file: android/app/build/outputs/apk/debug/app-debug.apk
-          releaseNotes: "Build from commit: ${{ github.sha }}"
-        env:
-          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          releaseNotes: "Build from commit ${{ github.sha }}"
