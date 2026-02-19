@@ -1,8 +1,11 @@
 package com.fitgotchi.app;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
@@ -10,11 +13,13 @@ import android.webkit.WebView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.ActionBar;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebChromeClient;
 
 public class MainActivity extends BridgeActivity {
     private WebView webViewRef;
@@ -76,6 +81,44 @@ public class MainActivity extends BridgeActivity {
         // Android runtime permissions before calling getUserMedia()
         webViewRef = getBridge().getWebView();
         webViewRef.addJavascriptInterface(new PermissionBridge(), "NativePermissions");
+
+        // Override onPermissionRequest so that when getUserMedia() fires inside
+        // the WebView, we show the native Android "Allow camera?" popup instead
+        // of silently denying. This is the critical handler that was missing —
+        // without it, the WebView denies camera access at the web-permission
+        // level even when the NativePermissions JS bridge has already been used
+        // to grant the Android runtime permission.
+        webViewRef.setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
+            @Override
+            public void onPermissionRequest(final PermissionRequest request) {
+                runOnUiThread(() -> {
+                    boolean needsCamera = false;
+                    for (String resource : request.getResources()) {
+                        if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) {
+                            needsCamera = true;
+                            break;
+                        }
+                    }
+
+                    if (!needsCamera) {
+                        // Not a camera request — let the parent handle it
+                        super.onPermissionRequest(request);
+                        return;
+                    }
+
+                    if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
+                            == PackageManager.PERMISSION_GRANTED) {
+                        // Android permission already granted — grant to WebView
+                        request.grant(request.getResources());
+                    } else {
+                        // Android permission not yet granted — save the WebView
+                        // request and show the native "Allow camera?" dialog
+                        pendingPermissionRequest = request;
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+                    }
+                });
+            }
+        });
     }
 
     /**
@@ -103,6 +146,34 @@ public class MainActivity extends BridgeActivity {
                     // Show the native Android permission dialog
                     cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
                 }
+            });
+        }
+
+        /**
+         * Returns true if the user has permanently denied the camera permission
+         * (tapped "Don't ask again" or denied twice). In this state, Android
+         * will not show the permission dialog — the user must go to Settings.
+         */
+        @JavascriptInterface
+        public boolean isPermissionPermanentlyDenied() {
+            boolean notGranted = ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
+                    != PackageManager.PERMISSION_GRANTED;
+            boolean cannotAskAgain = !ActivityCompat.shouldShowRequestPermissionRationale(
+                    MainActivity.this, Manifest.permission.CAMERA);
+            return notGranted && cannotAskAgain;
+        }
+
+        /**
+         * Opens the system App Info screen for this app so the user can
+         * manually enable camera permission.
+         */
+        @JavascriptInterface
+        public void openAppSettings() {
+            runOnUiThread(() -> {
+                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                intent.setData(Uri.fromParts("package", getPackageName(), null));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
             });
         }
     }
