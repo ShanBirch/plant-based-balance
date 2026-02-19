@@ -44315,7 +44315,17 @@ window.submitWeighInModal = submitWeighInModal;
         </div>
     </div>
     <!-- Live camera feed -->
-    <video id="unified-camera-video" autoplay playsinline webkit-playsinline muted style="width:100%; height:100%; object-fit:cover;"></video>
+    <style>
+        /* Hide default Android WebView play button overlay on camera video */
+        #unified-camera-video::-webkit-media-controls,
+        #unified-camera-video::-webkit-media-controls-start-playback-button,
+        #unified-camera-video::-webkit-media-controls-panel,
+        #unified-camera-video::-webkit-media-controls-overlay-play-button {
+            display: none !important;
+            -webkit-appearance: none;
+        }
+    </style>
+    <video id="unified-camera-video" autoplay playsinline webkit-playsinline muted style="width:100%; height:100%; object-fit:cover; background:#000;"></video>
     <!-- Hidden canvas for photo capture -->
     <canvas id="unified-camera-canvas" style="display:none;"></canvas>
     <!-- Hidden element for html5-qrcode barcode scanning -->
@@ -55094,6 +55104,8 @@ async function startUnifiedCamera() {
     } catch (err) {
         console.error('Failed to access camera:', err);
         showToast('Could not access camera. Check permissions.', 'error');
+        // Close the modal so the user doesn't see a broken video element
+        closeUnifiedCamera();
     }
 }
 
