@@ -8685,6 +8685,7 @@ async function applyAppTheme(themeKey) {
                 if (typeof initWhoopDashboard === 'function') initWhoopDashboard();
                 if (typeof initOuraDashboard === 'function') initOuraDashboard();
                 if (typeof initStravaDashboard === 'function') initStravaDashboard();
+                if (typeof initSpotifyDashboard === 'function') initSpotifyDashboard();
             }
         }
     });
@@ -9319,6 +9320,187 @@ async function applyAppTheme(themeKey) {
     })();
     </script>
 
+    <!-- ===== SPOTIFY NOW PLAYING MINI PLAYER ===== -->
+    <div id="spotify-now-playing" style="
+        display: none;
+        position: fixed;
+        bottom: 72px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 32px);
+        max-width: 420px;
+        background: rgba(18, 18, 18, 0.96);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.08);
+        padding: 12px 14px;
+        z-index: 9000;
+        color: white;
+        font-family: inherit;
+    ">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <!-- Album art -->
+            <div style="position:relative; flex-shrink:0;">
+                <img id="snp-art" src="" alt="" style="width:48px; height:48px; border-radius:8px; object-fit:cover; background:#333;" onerror="this.style.display='none'">
+                <div id="snp-art-placeholder" style="display:none; width:48px; height:48px; border-radius:8px; background:#1DB954; align-items:center; justify-content:center;">
+                    <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:white;"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                </div>
+            </div>
+            <!-- Track info -->
+            <div style="flex:1; min-width:0;">
+                <div id="snp-track" style="font-weight:600; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+                <div id="snp-artist" style="font-size:0.75rem; color:rgba(255,255,255,0.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;"></div>
+            </div>
+            <!-- Controls -->
+            <div style="display:flex; align-items:center; gap:2px; flex-shrink:0;">
+                <button id="snp-prev" onclick="spotifyPlayerControl('previous')" title="Previous" style="background:none; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.8; transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
+                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+                </button>
+                <button id="snp-playpause" onclick="spotifyPlayerControl(window._snpPlaying ? 'pause' : 'play')" title="Play/Pause" style="background:#1DB954; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:transform 0.1s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                    <svg id="snp-play-icon" viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="snp-pause-icon" viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor; display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <button id="snp-next" onclick="spotifyPlayerControl('next')" title="Next" style="background:none; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.8; transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
+                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M6 18l8.5-6L6 6v12zm2-8.14 4.97 3.14L8 16.14V9.86zM16 6h2v12h-2z"/></svg>
+                </button>
+            </div>
+        </div>
+        <!-- Progress bar -->
+        <div style="margin-top:10px; background:rgba(255,255,255,0.15); border-radius:2px; height:3px; overflow:hidden;">
+            <div id="snp-progress" style="height:100%; background:#1DB954; width:0%; transition:width 1s linear; border-radius:2px;"></div>
+        </div>
+    </div>
+
+    <script>
+    // ===== SPOTIFY NOW PLAYING LOGIC =====
+    (function() {
+        let _pollInterval  = null;
+        let _lastTrackId   = null;
+        let _progressTimer = null;
+
+        function updatePlayerUI(data) {
+            const widget = document.getElementById('spotify-now-playing');
+            if (!widget) return;
+
+            if (!data || !data.playing || !data.track) {
+                widget.style.display = 'none';
+                clearInterval(_progressTimer);
+                window._snpPlaying = false;
+                return;
+            }
+
+            const { track } = data;
+            window._snpPlaying = data.playing;
+
+            // Show widget
+            widget.style.display = 'block';
+
+            // Track name & artist
+            document.getElementById('snp-track').textContent  = track.name;
+            document.getElementById('snp-artist').textContent = track.artist;
+
+            // Album art
+            const img         = document.getElementById('snp-art');
+            const placeholder = document.getElementById('snp-art-placeholder');
+            if (track.album_art) {
+                img.src = track.album_art;
+                img.style.display = 'block';
+                placeholder.style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                placeholder.style.display = 'flex';
+            }
+
+            // Play/pause icon
+            document.getElementById('snp-play-icon').style.display  = data.playing ? 'none' : 'block';
+            document.getElementById('snp-pause-icon').style.display = data.playing ? 'block' : 'none';
+
+            // Progress bar — only reset when track changes
+            if (track.id !== _lastTrackId) {
+                _lastTrackId = track.id;
+                clearInterval(_progressTimer);
+                let progressMs  = track.progress_ms || 0;
+                const durationMs = track.duration_ms || 1;
+
+                function setBar(ms) {
+                    const pct = Math.min((ms / durationMs) * 100, 100);
+                    const el  = document.getElementById('snp-progress');
+                    if (el) el.style.width = pct + '%';
+                }
+                setBar(progressMs);
+
+                if (data.playing) {
+                    _progressTimer = setInterval(() => {
+                        progressMs += 1000;
+                        if (progressMs >= durationMs) clearInterval(_progressTimer);
+                        setBar(progressMs);
+                    }, 1000);
+                }
+            }
+        }
+
+        async function pollNowPlaying() {
+            if (!window.currentUser) return;
+            try {
+                const res  = await fetch(`/api/spotify/now-playing?user_id=${window.currentUser.id}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.connected) return; // not connected, stop polling
+                updatePlayerUI(data);
+            } catch (err) {
+                // silent fail
+            }
+        }
+
+        function startNowPlayingPolling() {
+            if (_pollInterval) return; // already polling
+            pollNowPlaying();
+            _pollInterval = setInterval(pollNowPlaying, 15000);
+        }
+
+        function stopNowPlayingPolling() {
+            clearInterval(_pollInterval);
+            _pollInterval = null;
+        }
+
+        // Start polling once user is available
+        function tryStart() {
+            if (window.currentUser) {
+                startNowPlayingPolling();
+            } else {
+                setTimeout(tryStart, 1000);
+            }
+        }
+        tryStart();
+
+        // Expose globally for playback controls
+        window.spotifyPlayerControl = async function(action) {
+            if (!window.currentUser) return;
+            const btn = document.getElementById('snp-playpause');
+            if (btn) btn.style.opacity = '0.5';
+            try {
+                const res = await fetch('/api/spotify/player', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: window.currentUser.id, action }),
+                });
+                if (res.status === 403) {
+                    alert('Playback controls require Spotify Premium.');
+                    return;
+                }
+                // Refresh display after a short delay to let Spotify update
+                setTimeout(pollNowPlaying, 600);
+            } catch (err) {
+                console.warn('Spotify player control error:', err);
+            } finally {
+                if (btn) btn.style.opacity = '1';
+            }
+        };
+    })();
+    </script>
+
     <script>
     // ===== WEATHER AUTO-FETCH =====
     // Silently fetches today's weather via Open-Meteo (no API key) and stores it in weather_logs.
@@ -9409,6 +9591,7 @@ async function applyAppTheme(themeKey) {
         if (typeof initWhoopDashboard === 'function') initWhoopDashboard();
         if (typeof initOuraDashboard === 'function') initOuraDashboard();
         if (typeof initStravaDashboard === 'function') initStravaDashboard();
+        if (typeof initSpotifyDashboard === 'function') initSpotifyDashboard();
     }
 
     // Call after user is loaded (piggyback on Fitbit init timing)

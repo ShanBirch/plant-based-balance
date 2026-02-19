@@ -33,6 +33,114 @@ export default async (request, context) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
+    // ── GET /api/spotify/now-playing ─────────────────────────────────────────
+    if (path === "/api/spotify/now-playing" && request.method === "GET") {
+        const userId = url.searchParams.get("user_id");
+        if (!userId) return jsonResponse({ error: "Missing user_id" }, 400);
+
+        const { data: connection } = await supabase
+            .from("spotify_connections")
+            .select("*")
+            .eq("user_id", userId)
+            .eq("is_active", true)
+            .single();
+
+        if (!connection) return jsonResponse({ connected: false });
+
+        let accessToken = connection.access_token;
+        if (new Date(connection.expires_at) <= new Date(Date.now() + 60_000)) {
+            const refreshed = await refreshSpotifyToken(supabase, connection, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET);
+            if (refreshed.error) return jsonResponse({ connected: true, playing: false });
+            accessToken = refreshed.access_token;
+        }
+
+        try {
+            const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
+                headers: { "Authorization": `Bearer ${accessToken}` },
+            });
+
+            if (res.status === 204 || res.status === 404) {
+                return jsonResponse({ connected: true, playing: false });
+            }
+            if (!res.ok) return jsonResponse({ connected: true, playing: false });
+
+            const data = await res.json();
+            if (!data || !data.item) return jsonResponse({ connected: true, playing: false });
+
+            return jsonResponse({
+                connected: true,
+                playing: data.is_playing,
+                track: {
+                    id:        data.item.id,
+                    name:      data.item.name,
+                    artist:    data.item.artists?.map(a => a.name).join(", ") || "Unknown",
+                    album:     data.item.album?.name || null,
+                    album_art: data.item.album?.images?.[1]?.url || data.item.album?.images?.[0]?.url || null,
+                    duration_ms:  data.item.duration_ms,
+                    progress_ms:  data.progress_ms,
+                    spotify_url:  data.item.external_urls?.spotify || null,
+                },
+            });
+        } catch (err) {
+            console.error("Now playing fetch error:", err);
+            return jsonResponse({ connected: true, playing: false });
+        }
+    }
+
+    // ── POST /api/spotify/player ──────────────────────────────────────────────
+    // action: "play" | "pause" | "next" | "previous"
+    if (path === "/api/spotify/player" && request.method === "POST") {
+        try {
+            const body   = await request.json();
+            const userId = body.user_id;
+            const action = body.action;
+            if (!userId || !action) return jsonResponse({ error: "Missing user_id or action" }, 400);
+
+            const { data: connection } = await supabase
+                .from("spotify_connections")
+                .select("*")
+                .eq("user_id", userId)
+                .eq("is_active", true)
+                .single();
+
+            if (!connection) return jsonResponse({ error: "No active Spotify connection" }, 401);
+
+            let accessToken = connection.access_token;
+            if (new Date(connection.expires_at) <= new Date(Date.now() + 60_000)) {
+                const refreshed = await refreshSpotifyToken(supabase, connection, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET);
+                if (refreshed.error) return jsonResponse({ error: "Token refresh failed" }, 500);
+                accessToken = refreshed.access_token;
+            }
+
+            const headers = {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            };
+
+            let endpoint, method;
+            if (action === "play")     { endpoint = "https://api.spotify.com/v1/me/player/play";     method = "PUT";  }
+            else if (action === "pause")    { endpoint = "https://api.spotify.com/v1/me/player/pause";    method = "PUT";  }
+            else if (action === "next")     { endpoint = "https://api.spotify.com/v1/me/player/next";     method = "POST"; }
+            else if (action === "previous") { endpoint = "https://api.spotify.com/v1/me/player/previous"; method = "POST"; }
+            else return jsonResponse({ error: "Invalid action" }, 400);
+
+            const res = await fetch(endpoint, { method, headers });
+
+            // 204 = success (no content), 403 = not premium
+            if (res.status === 204) return jsonResponse({ success: true });
+            if (res.status === 403) return jsonResponse({ error: "Spotify Premium required for playback control" }, 403);
+            if (!res.ok) {
+                const text = await res.text();
+                console.error(`Spotify player control error (${action}):`, text);
+                return jsonResponse({ error: "Player control failed" }, 500);
+            }
+            return jsonResponse({ success: true });
+        } catch (err) {
+            console.error("Spotify player control error:", err);
+            return jsonResponse({ error: "Player control failed" }, 500);
+        }
+    }
+
     // ── GET /api/spotify/data ────────────────────────────────────────────────
     if (path === "/api/spotify/data" && request.method === "GET") {
         const userId = url.searchParams.get("user_id");
