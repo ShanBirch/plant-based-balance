@@ -3,6 +3,7 @@ package com.fitgotchi.app;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
+import androidx.appcompat.app.ActionBar;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
@@ -17,6 +18,12 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ScreenTimePlugin.class);
 
         super.onCreate(savedInstanceState);
+
+        // Explicitly hide any action bar that may persist after splash screen
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.hide();
+        }
 
         // Make the app edge-to-edge (content goes behind status/nav bars)
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
@@ -36,11 +43,23 @@ public class MainActivity extends BridgeActivity {
         hideSystemBars();
     }
 
+    @Override
+    public void setTitle(CharSequence title) {
+        // Always use app name — prevents the remote URL from showing as the title
+        super.setTitle("Balance");
+    }
+
+    @Override
+    public void setTitle(int titleId) {
+        super.setTitle("Balance");
+    }
+
     private void hideSystemBars() {
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         if (controller != null) {
             // Hide the navigation bar but keep the status bar visible
-            // This prevents the URL/address bar look while keeping time/battery visible
+            controller.hide(WindowInsetsCompat.Type.navigationBars());
+            // Allow bars to reappear temporarily when the user swipes from the edge
             controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         }
     }
