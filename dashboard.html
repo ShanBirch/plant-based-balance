@@ -9336,7 +9336,7 @@ async function applyAppTheme(themeKey) {
         box-shadow: 0 8px 32px rgba(0,0,0,0.4);
         border: 1px solid rgba(255,255,255,0.08);
         padding: 12px 14px;
-        z-index: 9000;
+        z-index: 100001;
         color: white;
         font-family: inherit;
     ">
@@ -9383,7 +9383,7 @@ async function applyAppTheme(themeKey) {
         display: none;
         position: fixed;
         inset: 0;
-        z-index: 10000;
+        z-index: 100002;
         font-family: inherit;
     ">
         <!-- Blurred art background -->
@@ -9746,6 +9746,22 @@ async function applyAppTheme(themeKey) {
         };
         // Re-expose pollNowPlaying result handler
         Object.defineProperty(window, 'updatePlayerUI', { value: _patchedUpdatePlayerUI, writable: true });
+
+        // ── Track bottom-nav visibility so mini player repositions itself ──────
+        function syncMiniPlayerBottom() {
+            const player = document.getElementById('spotify-now-playing');
+            if (!player) return;
+            const nav = document.querySelector('.bottom-nav');
+            const navHidden = !nav || nav.style.display === 'none';
+            player.style.bottom = navHidden ? '16px' : '72px';
+        }
+
+        // Observe the bottom-nav for inline style changes (display toggles)
+        const _navEl = document.querySelector('.bottom-nav');
+        if (_navEl) {
+            new MutationObserver(syncMiniPlayerBottom)
+                .observe(_navEl, { attributes: true, attributeFilter: ['style'] });
+        }
     })();
     </script>
 
