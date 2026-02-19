@@ -56027,10 +56027,10 @@ function renderEditItemsList() {
             <div class="edit-item-row" data-index="${index}">
                 <div class="edit-item-inputs">
                     <input type="text" class="edit-item-input edit-item-name" value="${escapeHtml(item.name)}"
-                           onchange="updateItemName(${index}, this.value)"
+                           oninput="updateItemName(${index}, this.value)"
                            placeholder="Food item">
                     <input type="text" class="edit-item-input edit-item-portion" value="${escapeHtml(portion)}"
-                           onchange="updateItemPortion(${index}, this.value)"
+                           oninput="updateItemPortion(${index}, this.value)"
                            placeholder="Amount (e.g., 200g)">
                 </div>
                 <button class="edit-item-delete" onclick="deleteEditItem(${index})" title="Remove item">🗑️</button>
@@ -56152,7 +56152,10 @@ async function recalculateWithGemini() {
     loadingSpan.style.display = 'inline';
 
     try {
-        // Call Gemini text analysis endpoint
+        // Call Gemini text analysis endpoint with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
         const response = await fetch('/.netlify/functions/analyze-meal-text', {
             method: 'POST',
             headers: {
@@ -56161,12 +56164,21 @@ async function recalculateWithGemini() {
             body: JSON.stringify({
                 description: description,
                 mealType: null
-            })
+            }),
+            signal: controller.signal
         });
 
+        clearTimeout(timeoutId);
+
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to analyze meal');
+            let errorMsg = 'Failed to analyze meal';
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.error || errorMsg;
+            } catch (e) {
+                // Response wasn't JSON
+            }
+            throw new Error(errorMsg);
         }
 
         const result = await response.json();
@@ -56190,7 +56202,10 @@ async function recalculateWithGemini() {
 
     } catch (error) {
         console.error('Error recalculating nutrition:', error);
-        showToast(error.message || 'Failed to recalculate. Please try again.', 'error');
+        const msg = error.name === 'AbortError'
+            ? 'Request timed out. Please try again.'
+            : (error.message || 'Failed to recalculate. Please try again.');
+        showToast(msg, 'error');
     } finally {
         // Reset button state
         btn.disabled = false;
