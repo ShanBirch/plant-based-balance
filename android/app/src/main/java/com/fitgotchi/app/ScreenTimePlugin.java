@@ -6,7 +6,10 @@ import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.InstallSourceInfo;
 import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Process;
 import android.provider.Settings;
 
@@ -72,6 +75,51 @@ public class ScreenTimePlugin extends Plugin {
             call.resolve(result);
         } catch (Exception e) {
             call.reject("Could not open usage access settings: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Returns info about the install source and Android version so the JS layer
+     * can detect whether the "Restricted Settings" workaround is needed.
+     *
+     * On Android 13+ (API 33), sideloaded apps (installed outside the Play Store)
+     * have sensitive permissions like Usage Access blocked by default. The user must
+     * go to App Info → "Allow restricted settings" before they can grant Usage Access.
+     *
+     * Returns: { sdkVersion: int, isSideloaded: boolean, needsRestrictedUnlock: boolean }
+     */
+    @PluginMethod
+    public void getInstallInfo(PluginCall call) {
+        JSObject result = new JSObject();
+        int sdk = Build.VERSION.SDK_INT;
+        result.put("sdkVersion", sdk);
+
+        boolean sideloaded = isSideloaded();
+        result.put("isSideloaded", sideloaded);
+
+        // Restricted Settings only applies on Android 13+ for sideloaded apps
+        result.put("needsRestrictedUnlock", sdk >= 33 && sideloaded);
+
+        call.resolve(result);
+    }
+
+    /**
+     * Open this app's system App Info page (Settings > Apps > Balance).
+     * This is where the user can find "Allow restricted settings" on Android 13+.
+     * Returns: { opened: boolean }
+     */
+    @PluginMethod
+    public void openAppSettings(PluginCall call) {
+        try {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            JSObject result = new JSObject();
+            result.put("opened", true);
+            call.resolve(result);
+        } catch (Exception e) {
+            call.reject("Could not open app settings: " + e.getMessage());
         }
     }
 
@@ -228,6 +276,39 @@ public class ScreenTimePlugin extends Plugin {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Detect whether this app was installed from a source other than the
+     * Google Play Store (i.e. sideloaded via APK).
+     */
+    private boolean isSideloaded() {
+        try {
+            PackageManager pm = getContext().getPackageManager();
+            String pkg = getContext().getPackageName();
+
+            if (Build.VERSION.SDK_INT >= 30) {
+                // API 30+ provides structured install source info
+                InstallSourceInfo source = pm.getInstallSourceInfo(pkg);
+                String installer = source.getInstallingPackageName();
+                return !isKnownStore(installer);
+            } else {
+                // Fallback for older APIs
+                String installer = pm.getInstallerPackageName(pkg);
+                return !isKnownStore(installer);
+            }
+        } catch (Exception e) {
+            // If we can't determine the installer, assume sideloaded to be safe
+            return true;
+        }
+    }
+
+    private boolean isKnownStore(String installer) {
+        if (installer == null) return false;
+        return installer.equals("com.android.vending")        // Google Play Store
+            || installer.equals("com.google.android.packageinstaller")
+            || installer.equals("com.amazon.venezia")          // Amazon Appstore
+            || installer.equals("com.sec.android.app.samsungapps"); // Samsung Galaxy Store
     }
 
     private boolean isUserLaunchableApp(PackageManager pm, String pkg) {
