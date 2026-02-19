@@ -55543,6 +55543,27 @@ function closeUnifiedCamera() {
 
 async function startUnifiedCamera() {
     stopUnifiedCamera();
+
+    // If running inside the native Android APK, request camera permission
+    // via the native bridge BEFORE calling getUserMedia(). The bridge shows
+    // the standard Android "Allow Balance to use your camera?" dialog.
+    if (window.NativePermissions && !window.NativePermissions.hasCameraPermission()) {
+        const granted = await new Promise((resolve) => {
+            window._onNativeCameraPermission = function(result) {
+                delete window._onNativeCameraPermission;
+                resolve(result);
+            };
+            window.NativePermissions.requestCameraPermission();
+            // Safety timeout so we don't hang forever
+            setTimeout(() => resolve(false), 60000);
+        });
+        if (!granted) {
+            showToast('Camera permission is required to scan food items.', 'error');
+            closeUnifiedCamera();
+            return;
+        }
+    }
+
     try {
         unifiedCameraStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: unifiedFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
@@ -55558,7 +55579,11 @@ async function startUnifiedCamera() {
         startAiFoodScanLoop(video);
     } catch (err) {
         console.error('Failed to access camera:', err);
-        showToast('Could not access camera. Check permissions.', 'error');
+        if (err.name === 'NotAllowedError') {
+            showToast('Camera permission denied. Please enable it in your device Settings > Apps > Balance > Permissions.', 'error');
+        } else {
+            showToast('Could not access camera. Check permissions.', 'error');
+        }
         // Close the modal so the user doesn't see a broken video element
         closeUnifiedCamera();
     }
