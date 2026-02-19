@@ -23,7 +23,7 @@ export default async function (request: Request, context: Context) {
       });
     }
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
     const systemPrompt = `You are a quick food identification AI. Look at this image and identify what food or drink is shown.
 
