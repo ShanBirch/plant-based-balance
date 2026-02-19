@@ -54,6 +54,31 @@ public class MainActivity extends BridgeActivity {
             }
         });
 
+    /**
+     * Launcher for the native Android "Allow microphone?" dialog.
+     * Used by the Web Speech API (voice meal logging) and any audio capture.
+     */
+    private final ActivityResultLauncher<String> microphonePermissionLauncher =
+        registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+            if (pendingPermissionRequest != null) {
+                if (isGranted) {
+                    pendingPermissionRequest.grant(pendingPermissionRequest.getResources());
+                } else {
+                    pendingPermissionRequest.deny();
+                }
+                pendingPermissionRequest = null;
+            }
+            // Notify JavaScript so the voice recording flow can continue
+            if (webViewRef != null) {
+                final boolean granted = isGranted;
+                runOnUiThread(() ->
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeMicrophonePermission) window._onNativeMicrophonePermission(" + granted + ")",
+                        null)
+                );
+            }
+        });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Register the FitGotchi IAP plugin for in-app purchases
@@ -117,28 +142,35 @@ public class MainActivity extends BridgeActivity {
             public void onPermissionRequest(final PermissionRequest request) {
                 runOnUiThread(() -> {
                     boolean needsCamera = false;
+                    boolean needsAudio = false;
                     for (String resource : request.getResources()) {
-                        if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) {
-                            needsCamera = true;
-                            break;
-                        }
+                        if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) needsCamera = true;
+                        if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)) needsAudio = true;
                     }
 
-                    if (!needsCamera) {
-                        // Not a camera request — let the parent handle it
+                    if (!needsCamera && !needsAudio) {
+                        // Neither camera nor audio — let the parent handle it
                         super.onPermissionRequest(request);
                         return;
                     }
 
-                    if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
-                            == PackageManager.PERMISSION_GRANTED) {
-                        // Android permission already granted — grant to WebView
+                    boolean cameraGranted = !needsCamera || ContextCompat.checkSelfPermission(
+                            MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+                    boolean audioGranted = !needsAudio || ContextCompat.checkSelfPermission(
+                            MainActivity.this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+
+                    if (cameraGranted && audioGranted) {
+                        // All needed permissions already granted — give WebView access
                         request.grant(request.getResources());
-                    } else {
-                        // Android permission not yet granted — save the WebView
-                        // request and show the native "Allow camera?" dialog
+                    } else if (!cameraGranted) {
+                        // Camera not yet granted — show the native "Allow camera?" dialog
+                        // (audio will be granted next time if also needed)
                         pendingPermissionRequest = request;
                         cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+                    } else {
+                        // Only audio needed — show the native "Allow microphone?" dialog
+                        pendingPermissionRequest = request;
+                        microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
                     }
                 });
             }
@@ -189,7 +221,7 @@ public class MainActivity extends BridgeActivity {
 
         /**
          * Opens the system App Info screen for this app so the user can
-         * manually enable camera permission.
+         * manually enable camera or microphone permission.
          */
         @JavascriptInterface
         public void openAppSettings() {
@@ -198,6 +230,27 @@ public class MainActivity extends BridgeActivity {
                 intent.setData(Uri.fromParts("package", getPackageName(), null));
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
+            });
+        }
+
+        @JavascriptInterface
+        public boolean hasMicrophonePermission() {
+            return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
+                    == PackageManager.PERMISSION_GRANTED;
+        }
+
+        @JavascriptInterface
+        public void requestMicrophonePermission() {
+            runOnUiThread(() -> {
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    // Already granted — notify JS immediately
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeMicrophonePermission) window._onNativeMicrophonePermission(true)",
+                        null);
+                } else {
+                    microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
+                }
             });
         }
 

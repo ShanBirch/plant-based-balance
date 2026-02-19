@@ -51137,6 +51137,28 @@ function startVoiceRecording() {
         return;
     }
 
+    // On native Android, request microphone permission before starting speech recognition
+    // so the native "Allow microphone?" dialog appears instead of a silent denial.
+    if (window.NativePermissions && typeof window.NativePermissions.hasMicrophonePermission === 'function') {
+        if (!window.NativePermissions.hasMicrophonePermission()) {
+            const statusText = document.getElementById('voice-status');
+            if (statusText) statusText.textContent = 'Requesting microphone access...';
+            // Set up callback for when permission result comes back
+            window._onNativeMicrophonePermission = function(granted) {
+                window._onNativeMicrophonePermission = null;
+                if (granted) {
+                    startVoiceRecording();
+                } else {
+                    if (statusText) statusText.textContent = 'Microphone access denied. Tap here to open Settings.';
+                    if (statusText) statusText.style.cursor = 'pointer';
+                    if (statusText) statusText.onclick = () => window.NativePermissions.openAppSettings();
+                }
+            };
+            window.NativePermissions.requestMicrophonePermission();
+            return;
+        }
+    }
+
     speechRecognition = new SpeechRecognition();
     speechRecognition.continuous = true;
     speechRecognition.interimResults = true;
