@@ -225,6 +225,14 @@
   function = "spotify-sync"
   path = "/api/spotify/data"
 
+[[edge_functions]]
+  function = "spotify-sync"
+  path = "/api/spotify/now-playing"
+
+[[edge_functions]]
+  function = "spotify-sync"
+  path = "/api/spotify/player"
+
 # Client Import Edge Function
 [[edge_functions]]
   function = "import-clients"
