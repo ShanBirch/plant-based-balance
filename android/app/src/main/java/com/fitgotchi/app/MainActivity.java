@@ -176,6 +176,39 @@ public class MainActivity extends BridgeActivity {
                 startActivity(intent);
             });
         }
+
+        /**
+         * Enters full immersive mode — hides both the status bar and
+         * navigation bar. Used when the camera view opens so that
+         * media controls (e.g. Spotify) and other status bar items
+         * don't obscure the camera UI.
+         */
+        @JavascriptInterface
+        public void enterImmersiveMode() {
+            runOnUiThread(() -> {
+                WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                if (controller != null) {
+                    controller.hide(WindowInsetsCompat.Type.systemBars());
+                    controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                }
+            });
+        }
+
+        /**
+         * Exits full immersive mode — restores the status bar while
+         * keeping the navigation bar hidden (matching the app's default).
+         */
+        @JavascriptInterface
+        public void exitImmersiveMode() {
+            runOnUiThread(() -> {
+                WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                if (controller != null) {
+                    controller.show(WindowInsetsCompat.Type.statusBars());
+                    controller.hide(WindowInsetsCompat.Type.navigationBars());
+                    controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                }
+            });
+        }
     }
 
     @Override

@@ -44295,7 +44295,7 @@ window.submitWeighInModal = submitWeighInModal;
 <!-- Unified Camera Modal (Photo + Barcode) -->
 <div id="unified-camera-modal" style="display:none; position:fixed; inset:0; background:#000; z-index:10013; flex-direction:column;">
     <!-- Close button -->
-    <button onclick="closeUnifiedCamera()" style="position:absolute; top:16px; right:16px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:5; backdrop-filter:blur(10px);">&times;</button>
+    <button onclick="closeUnifiedCamera()" style="position:absolute; top:52px; right:16px; background:rgba(0,0,0,0.5); border:none; color:white; width:48px; height:48px; border-radius:50%; font-size:1.8rem; cursor:pointer; z-index:5; backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center;">&times;</button>
     <!-- Barcode detected banner (hidden by default) -->
     <div id="barcode-detected-banner" style="display:none; position:absolute; top:0; left:0; right:0; z-index:4; padding:14px 20px; background:linear-gradient(135deg, #22c55e, #16a34a); color:#fff; text-align:center; animation:fadeInUp 0.3s ease-out;">
         <div style="font-weight:700; font-size:1rem;" id="barcode-detected-name">Product found!</div>
@@ -55077,6 +55077,11 @@ async function openUnifiedCamera() {
     const modal = document.getElementById('unified-camera-modal');
     if (!modal) return;
 
+    // Enter immersive mode to hide status bar (Spotify controls, etc.)
+    if (window.NativePermissions && window.NativePermissions.enterImmersiveMode) {
+        try { window.NativePermissions.enterImmersiveMode(); } catch(e) {}
+    }
+
     // Reset state
     lastBarcodeDetected = null;
     lastAiFoodResult = null;
@@ -55094,6 +55099,11 @@ function closeUnifiedCamera() {
     stopUnifiedCamera();
     const modal = document.getElementById('unified-camera-modal');
     if (modal) modal.style.display = 'none';
+
+    // Exit immersive mode to restore status bar
+    if (window.NativePermissions && window.NativePermissions.exitImmersiveMode) {
+        try { window.NativePermissions.exitImmersiveMode(); } catch(e) {}
+    }
 }
 
 async function startUnifiedCamera() {
