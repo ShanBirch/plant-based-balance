@@ -72,15 +72,20 @@ public class MainActivity extends BridgeActivity {
         // Make the app edge-to-edge (content goes behind status/nav bars)
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
-        // Set status bar and nav bar to transparent so the app fills the whole screen
-        getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        // Use a solid white status bar so dark icons are always visible.
+        // A transparent status bar relies on web content behind it for contrast,
+        // which breaks when the splash immersive mode resets icon appearance.
+        getWindow().setStatusBarColor(android.graphics.Color.WHITE);
         getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
 
-        // Use dark status bar icons so they are visible on light/white backgrounds
+        // Use dark status bar icons so they are visible on the white status bar
         WindowInsetsControllerCompat insetsController = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         if (insetsController != null) {
             insetsController.setAppearanceLightStatusBars(true);
         }
+
+        // Re-apply after a delay to survive splash screen immersive mode exit
+        getWindow().getDecorView().postDelayed(this::applyStatusBarStyle, 1500);
 
         // Keep the screen on while the app is active
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -230,6 +235,8 @@ public class MainActivity extends BridgeActivity {
                     controller.show(WindowInsetsCompat.Type.statusBars());
                     controller.hide(WindowInsetsCompat.Type.navigationBars());
                     controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                    // Restore dark icons so they remain visible on the white status bar
+                    controller.setAppearanceLightStatusBars(true);
                 }
             });
         }
@@ -254,14 +261,22 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void hideSystemBars() {
+        applyStatusBarStyle();
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         if (controller != null) {
-            // Use dark status bar icons so they are visible on light/white backgrounds
-            controller.setAppearanceLightStatusBars(true);
             // Hide the navigation bar but keep the status bar visible
             controller.hide(WindowInsetsCompat.Type.navigationBars());
             // Allow bars to reappear temporarily when the user swipes from the edge
             controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        }
+    }
+
+    /** Ensures the status bar has a white background with dark icons. */
+    private void applyStatusBarStyle() {
+        getWindow().setStatusBarColor(android.graphics.Color.WHITE);
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightStatusBars(true);
         }
     }
 
