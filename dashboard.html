@@ -9726,6 +9726,7 @@ async function applyAppTheme(themeKey) {
      * Opens the progress view from the home page performance card
      */
     function openProgressFromHome() {
+        window._progressViewOrigin = 'home';
         // Use hideAllAppViews if available, otherwise manual hide
         if (typeof hideAllAppViews === 'function') {
             hideAllAppViews();
@@ -17878,7 +17879,11 @@ function closeYourWorkouts() {
     switchAppTab('movement-tab');
 }
 
+// Track where the progress view was opened from ('home' or 'movement')
+window._progressViewOrigin = 'movement';
+
 function openProgressFromMovement() {
+    window._progressViewOrigin = 'movement';
     hideAllAppViews();
 
     const viewEl = document.getElementById('view-progress');
@@ -17910,7 +17915,12 @@ function closeProgressView() {
     if (viewEl) {
         viewEl.style.display = 'none';
     }
-    switchAppTab('movement-tab');
+    // Navigate back to wherever Progress was opened from
+    if (window._progressViewOrigin === 'home') {
+        switchAppTab('dashboard');
+    } else {
+        switchAppTab('movement-tab');
+    }
 }
 
 async function renderYourWorkoutsList() {
