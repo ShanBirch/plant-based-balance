@@ -128,6 +128,11 @@ export default async (request, context) => {
                 method    = "PUT";
                 fetchBody = JSON.stringify({ uris: [body.uri] });
             }
+            else if (action === "volume") {
+                const vol = Math.max(0, Math.min(100, parseInt(body.volume ?? 50)));
+                endpoint  = `https://api.spotify.com/v1/me/player/volume?volume_percent=${vol}`;
+                method    = "PUT";
+            }
             else return jsonResponse({ error: "Invalid action" }, 400);
 
             const res = await fetch(endpoint, { method, headers, ...(fetchBody ? { body: fetchBody } : {}) });
@@ -144,6 +149,98 @@ export default async (request, context) => {
         } catch (err) {
             console.error("Spotify player control error:", err);
             return jsonResponse({ error: "Player control failed" }, 500);
+        }
+    }
+
+    // ── GET /api/spotify/library ─────────────────────────────────────────────
+    // type=liked&offset=N | type=top | type=search&q=... | type=check&id=trackId
+    if (path === "/api/spotify/library" && request.method === "GET") {
+        const userId  = url.searchParams.get("user_id");
+        const type    = url.searchParams.get("type");
+        const offset  = parseInt(url.searchParams.get("offset") || "0");
+        const query   = url.searchParams.get("q") || "";
+        const trackId = url.searchParams.get("id") || "";
+        if (!userId) return jsonResponse({ error: "Missing user_id" }, 400);
+
+        const { data: libConn } = await supabase
+            .from("spotify_connections").select("*")
+            .eq("user_id", userId).eq("is_active", true).single();
+        if (!libConn) return jsonResponse({ error: "No active connection" }, 401);
+
+        let libToken = libConn.access_token;
+        if (new Date(libConn.expires_at) <= new Date(Date.now() + 60_000)) {
+            const refreshed = await refreshSpotifyToken(supabase, libConn, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET);
+            if (refreshed.error) return jsonResponse({ error: "Token expired" }, 401);
+            libToken = refreshed.access_token;
+        }
+        const libHeaders = { "Authorization": `Bearer ${libToken}` };
+
+        if (type === "liked") {
+            const res = await spotifyFetch(
+                `https://api.spotify.com/v1/me/tracks?limit=50&offset=${offset}`, libHeaders);
+            if (!res) return jsonResponse({ tracks: [], total: 0, offset: 0 });
+            return jsonResponse({
+                tracks: (res.items || []).map(i => mapTrack(i.track)).filter(Boolean),
+                total:  res.total  || 0,
+                offset: res.offset || 0,
+            });
+        }
+        if (type === "top") {
+            const res = await spotifyFetch(
+                "https://api.spotify.com/v1/me/top/tracks?time_range=short_term&limit=20", libHeaders);
+            if (!res) return jsonResponse({ tracks: [] });
+            return jsonResponse({ tracks: (res.items || []).map(mapTrack).filter(Boolean) });
+        }
+        if (type === "search") {
+            if (!query.trim()) return jsonResponse({ tracks: [] });
+            const res = await spotifyFetch(
+                `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=20`,
+                libHeaders);
+            if (!res) return jsonResponse({ tracks: [] });
+            return jsonResponse({ tracks: (res.tracks?.items || []).map(mapTrack).filter(Boolean) });
+        }
+        if (type === "check") {
+            if (!trackId) return jsonResponse({ liked: false });
+            const res = await spotifyFetch(
+                `https://api.spotify.com/v1/me/tracks/contains?ids=${encodeURIComponent(trackId)}`,
+                libHeaders);
+            return jsonResponse({ liked: Array.isArray(res) ? res[0] === true : false });
+        }
+        return jsonResponse({ error: "Invalid type" }, 400);
+    }
+
+    // ── POST /api/spotify/library (like / unlike) ─────────────────────────────
+    if (path === "/api/spotify/library" && request.method === "POST") {
+        try {
+            const body    = await request.json();
+            const userId  = body.user_id;
+            const action  = body.action; // "like" | "unlike"
+            const trackId = body.track_id;
+            if (!userId || !action || !trackId) return jsonResponse({ error: "Missing params" }, 400);
+
+            const { data: libConn2 } = await supabase
+                .from("spotify_connections").select("*")
+                .eq("user_id", userId).eq("is_active", true).single();
+            if (!libConn2) return jsonResponse({ error: "No active connection" }, 401);
+
+            let libToken2 = libConn2.access_token;
+            if (new Date(libConn2.expires_at) <= new Date(Date.now() + 60_000)) {
+                const refreshed = await refreshSpotifyToken(supabase, libConn2, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET);
+                if (refreshed.error) return jsonResponse({ error: "Token expired" }, 401);
+                libToken2 = refreshed.access_token;
+            }
+
+            const method = action === "like" ? "PUT" : "DELETE";
+            const res = await fetch("https://api.spotify.com/v1/me/tracks", {
+                method,
+                headers: { "Authorization": `Bearer ${libToken2}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ ids: [trackId] }),
+            });
+            if (res.status === 200 || res.status === 204) return jsonResponse({ success: true });
+            return jsonResponse({ error: "Failed to update liked status" }, 500);
+        } catch (err) {
+            console.error("Spotify library action error:", err);
+            return jsonResponse({ error: "Failed" }, 500);
         }
     }
 
@@ -393,6 +490,20 @@ async function spotifyFetch(url, headers) {
         console.error(`Spotify API fetch error (${url}):`, err);
         return null;
     }
+}
+
+function mapTrack(t) {
+    if (!t) return null;
+    return {
+        name:          t.name,
+        artist:        t.artists?.map(a => a.name).join(", ") || "Unknown",
+        album:         t.album?.name || null,
+        album_art_url: t.album?.images?.[1]?.url || t.album?.images?.[0]?.url || null,
+        duration_ms:   t.duration_ms || 0,
+        spotify_uri:   t.uri  || null,
+        spotify_id:    t.id   || null,
+        spotify_url:   t.external_urls?.spotify || null,
+    };
 }
 
 function jsonResponse(data, status = 200) {
