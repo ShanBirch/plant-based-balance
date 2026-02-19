@@ -57,6 +57,8 @@ export default async (request, context) => {
             "user-read-currently-playing",
             "user-read-playback-state",
             "user-modify-playback-state",
+            "user-library-read",
+            "user-library-modify",
         ].join(" "));
         authUrl.searchParams.set("state", state);
 
