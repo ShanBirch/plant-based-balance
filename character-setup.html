@@ -252,8 +252,15 @@
             onboardingDeferredPrompt = e;
         });
 
-        // Check if already installed as PWA
-        const isAlreadyInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        // Check if already installed as PWA or inside an APK (TWA/WebView)
+        const isAlreadyInstalled = (function() {
+            if (window.matchMedia('(display-mode: standalone)').matches) return true;
+            if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+            if (window.navigator.standalone) return true;
+            if (document.referrer.includes('android-app://')) return true;
+            if (/; wv\)/.test(navigator.userAgent || '')) return true;
+            return false;
+        })();
 
         function onboardingInstallPWA() {
             const btn = document.getElementById('onboarding-install-btn');

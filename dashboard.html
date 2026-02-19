@@ -36835,8 +36835,18 @@ window.submitCoachMessage = async function() {
 let deferredPrompt;
 let installBannerDismissed = localStorage.getItem('pwa_banner_dismissed_v2') === 'true';
 
-// Detect if running as installed PWA
-const isInstalledPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+// Detect if running as installed PWA or inside an APK (TWA/WebView)
+const isInstalledPWA = (function() {
+    // Standard PWA detection
+    if (window.matchMedia('(display-mode: standalone)').matches) return true;
+    if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+    if (window.navigator.standalone) return true; // iOS
+    // TWA (Trusted Web Activity) detection
+    if (document.referrer.includes('android-app://')) return true;
+    // Android WebView detection (APK wrapper)
+    if (/; wv\)/.test(navigator.userAgent || '')) return true;
+    return false;
+})();
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
