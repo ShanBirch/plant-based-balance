@@ -76,6 +76,12 @@ public class MainActivity extends BridgeActivity {
         getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
         getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
 
+        // Use dark status bar icons so they are visible on light/white backgrounds
+        WindowInsetsControllerCompat insetsController = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (insetsController != null) {
+            insetsController.setAppearanceLightStatusBars(true);
+        }
+
         // Keep the screen on while the app is active
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -250,6 +256,8 @@ public class MainActivity extends BridgeActivity {
     private void hideSystemBars() {
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         if (controller != null) {
+            // Use dark status bar icons so they are visible on light/white backgrounds
+            controller.setAppearanceLightStatusBars(true);
             // Hide the navigation bar but keep the status bar visible
             controller.hide(WindowInsetsCompat.Type.navigationBars());
             // Allow bars to reappear temporarily when the user swipes from the edge
