@@ -45419,7 +45419,7 @@ window.submitWeighInModal = submitWeighInModal;
             -webkit-appearance: none;
         }
     </style>
-    <video id="workout-camera-video" autoplay playsinline webkit-playsinline muted style="width:100%; height:100%; object-fit:cover; background:#000;"></video>
+    <video id="workout-camera-video" autoplay playsinline webkit-playsinline muted style="width:100%; height:100%; object-fit:cover; background:#000; opacity:0; transition:opacity 0.15s ease;"></video>
     <canvas id="workout-camera-canvas" style="display:none;"></canvas>
     <!-- Bottom controls -->
     <div style="position:absolute; bottom:0; left:0; right:0; z-index:3; padding:20px 20px 40px; background:linear-gradient(transparent, rgba(0,0,0,0.8) 40%);">
@@ -45476,7 +45476,7 @@ window.submitWeighInModal = submitWeighInModal;
             -webkit-appearance: none;
         }
     </style>
-    <video id="unified-camera-video" autoplay playsinline webkit-playsinline muted style="width:100%; height:100%; object-fit:cover; background:#000;"></video>
+    <video id="unified-camera-video" autoplay playsinline webkit-playsinline muted style="width:100%; height:100%; object-fit:cover; background:#000; opacity:0; transition:opacity 0.15s ease;"></video>
     <!-- Hidden canvas for photo capture -->
     <canvas id="unified-camera-canvas" style="display:none;"></canvas>
     <!-- Hidden element for html5-qrcode barcode scanning -->
@@ -49098,7 +49098,9 @@ async function startWorkoutCamera() {
         });
         const video = document.getElementById('workout-camera-video');
         video.srcObject = workoutCameraStream;
+        video.style.opacity = '0';
         await video.play();
+        video.style.opacity = '1';
     } catch (err) {
         console.error('Workout camera failed:', err);
         if (err.name === 'NotAllowedError') {
@@ -49123,6 +49125,8 @@ function closeWorkoutCamera() {
     stopWorkoutCamera();
     const modal = document.getElementById('workout-camera-modal');
     if (modal) modal.style.display = 'none';
+    const video = document.getElementById('workout-camera-video');
+    if (video) video.style.opacity = '0';
     // Exit immersive mode
     if (window.NativePermissions && window.NativePermissions.exitImmersiveMode) {
         try { window.NativePermissions.exitImmersiveMode(); } catch(e) {}
@@ -56376,6 +56380,8 @@ function closeUnifiedCamera() {
     stopUnifiedCamera();
     const modal = document.getElementById('unified-camera-modal');
     if (modal) modal.style.display = 'none';
+    const video = document.getElementById('unified-camera-video');
+    if (video) video.style.opacity = '0';
 
     // Exit immersive mode to restore status bar
     if (window.NativePermissions && window.NativePermissions.exitImmersiveMode) {
@@ -56432,7 +56438,9 @@ async function startUnifiedCamera() {
         });
         const video = document.getElementById('unified-camera-video');
         video.srcObject = unifiedCameraStream;
+        video.style.opacity = '0';
         await video.play();
+        video.style.opacity = '1';
 
         // Start background barcode scanning on the live video frames
         startBarcodeScanLoop(video);
