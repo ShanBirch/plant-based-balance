@@ -45060,6 +45060,48 @@ window.submitWeighInModal = submitWeighInModal;
     </button>
 </div>
 
+<!-- Workout Camera Modal (simple getUserMedia camera for workout photo sharing) -->
+<div id="workout-camera-modal" style="display:none; position:fixed; inset:0; background:#000; z-index:10014; flex-direction:column;">
+    <!-- Close button -->
+    <button onclick="closeWorkoutCamera()" style="position:absolute; top:52px; right:16px; background:rgba(0,0,0,0.5); border:none; color:white; width:48px; height:48px; border-radius:50%; font-size:1.8rem; cursor:pointer; z-index:5; backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center;">&times;</button>
+    <!-- Label -->
+    <div style="position:absolute; top:52px; left:0; right:0; z-index:4; text-align:center; pointer-events:none;">
+        <span style="background:rgba(0,0,0,0.5); color:#fff; padding:8px 20px; border-radius:20px; font-size:0.9rem; font-weight:600; backdrop-filter:blur(10px);">Take a workout photo</span>
+    </div>
+    <!-- Live camera feed -->
+    <style>
+        #workout-camera-video::-webkit-media-controls,
+        #workout-camera-video::-webkit-media-controls-start-playback-button,
+        #workout-camera-video::-webkit-media-controls-panel,
+        #workout-camera-video::-webkit-media-controls-overlay-play-button {
+            display: none !important;
+            -webkit-appearance: none;
+        }
+    </style>
+    <video id="workout-camera-video" autoplay playsinline webkit-playsinline muted style="width:100%; height:100%; object-fit:cover; background:#000;"></video>
+    <canvas id="workout-camera-canvas" style="display:none;"></canvas>
+    <!-- Bottom controls -->
+    <div style="position:absolute; bottom:0; left:0; right:0; z-index:3; padding:20px 20px 40px; background:linear-gradient(transparent, rgba(0,0,0,0.8) 40%);">
+        <div style="display:flex; align-items:center; justify-content:center; gap:24px;">
+            <!-- Spacer -->
+            <div style="width:50px;"></div>
+            <!-- Capture button -->
+            <button onclick="captureWorkoutPhoto()" style="width:72px; height:72px; border-radius:50%; border:4px solid white; background:rgba(255,255,255,0.2); cursor:pointer; backdrop-filter:blur(10px); position:relative; transition:transform 0.15s;" id="workout-capture-btn">
+                <div style="width:56px; height:56px; border-radius:50%; background:white; margin:auto; transition:transform 0.15s;"></div>
+            </button>
+            <!-- Flip camera -->
+            <button onclick="flipWorkoutCamera()" style="background:rgba(255,255,255,0.15); border:none; color:#fff; width:50px; height:50px; border-radius:50%; cursor:pointer; backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center;" title="Flip camera">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 16V7a2 2 0 00-2-2H6"></path>
+                    <polyline points="14 5 20 5 20 11"></polyline>
+                    <path d="M4 8v9a2 2 0 002 2h12"></path>
+                    <polyline points="10 19 4 19 4 13"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Unified Camera Modal (Photo + Barcode) -->
 <div id="unified-camera-modal" style="display:none; position:fixed; inset:0; background:#000; z-index:10013; flex-direction:column;">
     <!-- Close button -->
@@ -48650,6 +48692,138 @@ let workoutPhotoBase64 = null;
 let pendingWorkoutShareType = null;
 let workoutPointsEarnedThisSession = { story: false, groupchat: false };
 
+// --- Workout Camera (getUserMedia) ---
+// Uses live camera feed instead of <input type="file" capture> which opens
+// the gallery instead of the camera inside the Capacitor Android WebView.
+let workoutCameraStream = null;
+let workoutCameraFacingMode = 'environment';
+let _workoutCameraCallback = null;
+
+async function openWorkoutCamera(callback) {
+    _workoutCameraCallback = callback;
+    const modal = document.getElementById('workout-camera-modal');
+    if (!modal) { console.error('workout-camera-modal not found'); return; }
+
+    // Enter immersive mode (hide status bar) on native
+    if (window.NativePermissions && window.NativePermissions.enterImmersiveMode) {
+        try { window.NativePermissions.enterImmersiveMode(); } catch(e) {}
+    }
+
+    modal.style.display = 'flex';
+    await startWorkoutCamera();
+}
+
+async function startWorkoutCamera() {
+    stopWorkoutCamera();
+
+    // Request native Android camera permission via bridge (same as unified camera)
+    if (window.NativePermissions) {
+        try {
+            if (window.NativePermissions.isPermissionPermanentlyDenied &&
+                window.NativePermissions.isPermissionPermanentlyDenied()) {
+                showCameraPermissionSettingsDialog();
+                closeWorkoutCamera();
+                return;
+            }
+            if (!window.NativePermissions.hasCameraPermission()) {
+                const granted = await new Promise((resolve) => {
+                    window._onNativeCameraPermission = function(result) {
+                        delete window._onNativeCameraPermission;
+                        resolve(result);
+                    };
+                    window.NativePermissions.requestCameraPermission();
+                    setTimeout(() => {
+                        if (window._onNativeCameraPermission) {
+                            delete window._onNativeCameraPermission;
+                            resolve(false);
+                        }
+                    }, 60000);
+                });
+                if (!granted) {
+                    showCameraPermissionSettingsDialog();
+                    closeWorkoutCamera();
+                    return;
+                }
+            }
+        } catch (bridgeErr) {
+            console.warn('NativePermissions bridge error:', bridgeErr);
+        }
+    }
+
+    try {
+        workoutCameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: workoutCameraFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+            audio: false
+        });
+        const video = document.getElementById('workout-camera-video');
+        video.srcObject = workoutCameraStream;
+        await video.play();
+    } catch (err) {
+        console.error('Workout camera failed:', err);
+        if (err.name === 'NotAllowedError') {
+            showCameraPermissionSettingsDialog();
+        } else {
+            showToast('Could not access camera. Check permissions.', 'error');
+        }
+        closeWorkoutCamera();
+    }
+}
+
+function stopWorkoutCamera() {
+    if (workoutCameraStream) {
+        workoutCameraStream.getTracks().forEach(t => t.stop());
+        workoutCameraStream = null;
+    }
+    const video = document.getElementById('workout-camera-video');
+    if (video) video.srcObject = null;
+}
+
+function closeWorkoutCamera() {
+    stopWorkoutCamera();
+    const modal = document.getElementById('workout-camera-modal');
+    if (modal) modal.style.display = 'none';
+    // Exit immersive mode
+    if (window.NativePermissions && window.NativePermissions.exitImmersiveMode) {
+        try { window.NativePermissions.exitImmersiveMode(); } catch(e) {}
+    }
+}
+
+function flipWorkoutCamera() {
+    workoutCameraFacingMode = workoutCameraFacingMode === 'environment' ? 'user' : 'environment';
+    startWorkoutCamera();
+}
+
+function captureWorkoutPhoto() {
+    const video = document.getElementById('workout-camera-video');
+    const canvas = document.getElementById('workout-camera-canvas');
+    if (!video || !canvas || video.readyState < 2) {
+        showToast('Camera not ready. Please wait a moment.', 'warning');
+        return;
+    }
+
+    // Animate button
+    const btn = document.getElementById('workout-capture-btn');
+    if (btn) { btn.style.transform = 'scale(0.9)'; setTimeout(() => { btn.style.transform = ''; }, 150); }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+
+    canvas.toBlob((blob) => {
+        if (!blob) {
+            showToast('Failed to capture photo.', 'error');
+            return;
+        }
+        const file = new File([blob], `workout-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        closeWorkoutCamera();
+        if (typeof _workoutCameraCallback === 'function') {
+            _workoutCameraCallback(file);
+            _workoutCameraCallback = null;
+        }
+    }, 'image/jpeg', 0.92);
+}
+// --- End Workout Camera ---
+
 // Share workout to story - requires camera photo
 function shareWorkoutToStory() {
     // Check if already earned story point this session
@@ -48671,19 +48845,10 @@ function shareWorkoutToStory() {
 
     pendingWorkoutShareType = 'story';
 
-    // Create/get hidden camera input and trigger it
-    let cameraInput = document.getElementById('workout-photo-input');
-    if (!cameraInput) {
-        cameraInput = document.createElement('input');
-        cameraInput.type = 'file';
-        cameraInput.id = 'workout-photo-input';
-        cameraInput.accept = 'image/*';
-        cameraInput.capture = 'environment';
-        cameraInput.style.display = 'none';
-        cameraInput.onchange = handleWorkoutPhotoCapture;
-        document.body.appendChild(cameraInput);
-    }
-    cameraInput.click();
+    // Open live camera (getUserMedia) instead of file input which opens gallery in WebView
+    openWorkoutCamera((file) => {
+        handleWorkoutPhotoCaptureFromFile(file);
+    });
 }
 
 // Share workout to group chat - requires camera photo
@@ -48707,44 +48872,34 @@ function shareWorkoutToGroupChat() {
 
     pendingWorkoutShareType = 'groupchat';
 
-    // Create/get hidden camera input and trigger it
-    let cameraInput = document.getElementById('workout-photo-input');
-    if (!cameraInput) {
-        cameraInput = document.createElement('input');
-        cameraInput.type = 'file';
-        cameraInput.id = 'workout-photo-input';
-        cameraInput.accept = 'image/*';
-        cameraInput.capture = 'environment';
-        cameraInput.style.display = 'none';
-        cameraInput.onchange = handleWorkoutPhotoCapture;
-        document.body.appendChild(cameraInput);
-    }
-    cameraInput.click();
+    // Open live camera (getUserMedia) instead of file input which opens gallery in WebView
+    openWorkoutCamera((file) => {
+        handleWorkoutPhotoCaptureFromFile(file);
+    });
 }
 
-// Handle the captured workout photo
+// Handle the captured workout photo (from file input - legacy/web fallback)
 async function handleWorkoutPhotoCapture(event) {
     const file = event.target.files[0];
     if (!file) return;
-
-    // Reset input for next use
     event.target.value = '';
+    handleWorkoutPhotoCaptureFromFile(file);
+}
 
-    // Check photo timestamp (must be recent - within last 5 minutes)
+// Handle workout photo from a File object (used by both camera modal and file input)
+async function handleWorkoutPhotoCaptureFromFile(file) {
+    if (!file) return;
+
     const photoTimestamp = new Date().toISOString();
 
-    // Convert to base64
     const reader = new FileReader();
     reader.onload = async function(e) {
         const base64Data = e.target.result;
-        const base64Only = base64Data.split(',')[1];
 
         try {
-            // Generate photo hash for duplicate detection
             const photoHash = await window.db?.points?.generatePhotoHash(base64Data);
 
             if (pendingWorkoutShareType === 'story') {
-                // Store data and open story upload modal
                 window.pendingStoryFile = file;
                 window.pendingStoryBase64 = base64Data;
                 window.pendingStoryType = 'image';
@@ -48887,31 +49042,29 @@ async function shareWorkoutCardToFeed() {
     // Store context so we know this is a card share
     window._pendingCardShare = true;
 
-    // Trigger camera to capture gym photo first
-    let cameraInput = document.getElementById('workout-card-photo-input');
-    if (!cameraInput) {
-        cameraInput = document.createElement('input');
-        cameraInput.type = 'file';
-        cameraInput.id = 'workout-card-photo-input';
-        cameraInput.accept = 'image/*';
-        cameraInput.capture = 'environment';
-        cameraInput.style.display = 'none';
-        cameraInput.onchange = handleWorkoutCardPhotoCapture;
-        document.body.appendChild(cameraInput);
-    }
-    cameraInput.click();
+    // Open live camera (getUserMedia) instead of file input which opens gallery in WebView
+    openWorkoutCamera((file) => {
+        handleWorkoutCardPhotoCaptureFromFile(file);
+    });
 }
 
-// Handle the gym photo captured for workout card share
+// Handle the gym photo captured for workout card share (from file input - legacy/web fallback)
 async function handleWorkoutCardPhotoCapture(event) {
     const file = event.target.files[0];
     if (!file) {
         window._pendingCardShare = false;
         return;
     }
-
-    // Reset input for next use
     event.target.value = '';
+    handleWorkoutCardPhotoCaptureFromFile(file);
+}
+
+// Handle workout card photo from a File object (used by both camera modal and file input)
+async function handleWorkoutCardPhotoCaptureFromFile(file) {
+    if (!file) {
+        window._pendingCardShare = false;
+        return;
+    }
 
     const btn = document.getElementById('share-workout-card-btn');
     if (btn) {
