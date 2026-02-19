@@ -9897,6 +9897,53 @@ async function applyAppTheme(themeKey) {
         } catch (e) {
             console.warn('Performance card - sleep error:', e);
         }
+
+        // --- Body Fat % from latest weigh-in ---
+        try {
+            const latest = await db.weighIns.getLatest(userId);
+            if (latest && latest.body_fat_pct) {
+                const bfEl = document.getElementById('perf-bf-sub');
+                if (bfEl) {
+                    bfEl.textContent = latest.body_fat_pct.toFixed(1) + '% BF';
+                    bfEl.style.display = 'block';
+                }
+            }
+        } catch (e) {
+            console.warn('Performance card - body fat error:', e);
+        }
+
+        // --- Fitbit data (calories burned, resting HR, active minutes) ---
+        try {
+            const resp = await fetch('/api/fitbit/data?user_id=' + userId);
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data.connected) {
+                    const activity = data.activity && data.activity[0];
+                    const hr = data.heart_rate && data.heart_rate[0];
+                    if (activity || hr) {
+                        const row = document.getElementById('perf-fitbit-row');
+                        if (row) row.style.display = 'block';
+
+                        const calsEl = document.getElementById('perf-fitbit-cals');
+                        if (calsEl && activity && activity.calories_burned) {
+                            calsEl.textContent = Math.round(activity.calories_burned).toLocaleString();
+                        }
+
+                        const hrEl = document.getElementById('perf-fitbit-hr');
+                        if (hrEl && hr && hr.resting_heart_rate) {
+                            hrEl.textContent = hr.resting_heart_rate + ' bpm';
+                        }
+
+                        const activeEl = document.getElementById('perf-fitbit-active');
+                        if (activeEl && activity && activity.active_minutes != null) {
+                            activeEl.textContent = activity.active_minutes + ' min';
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Performance card - Fitbit error:', e);
+        }
     }
 
     window.initPerformanceCard = initPerformanceCard;
@@ -10894,6 +10941,7 @@ async function applyAppTheme(themeKey) {
                     <div id="perf-weight-value" style="font-size: 1.4rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
                     <div style="font-size: 0.68rem; color: rgba(255,255,255,0.85); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Weight</div>
                     <div id="perf-weight-sub" style="font-size: 0.65rem; color: rgba(255,255,255,0.7); font-weight: 600; margin-top: 1px;">--</div>
+                    <div id="perf-bf-sub" style="display:none; font-size: 0.65rem; color: rgba(255,255,255,0.85); font-weight: 700; margin-top: 2px; background: rgba(255,255,255,0.15); border-radius: 6px; padding: 1px 5px;"></div>
                 </div>
                 <!-- Sleep -->
                 <div style="text-align: center; padding: 12px 6px; background: rgba(255,255,255,0.2); border-radius: 14px;">
@@ -10901,6 +10949,33 @@ async function applyAppTheme(themeKey) {
                     <div id="perf-sleep-value" style="font-size: 1.4rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
                     <div style="font-size: 0.68rem; color: rgba(255,255,255,0.85); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Sleep</div>
                     <div id="perf-sleep-sub" style="font-size: 0.65rem; color: rgba(255,255,255,0.7); font-weight: 600; margin-top: 1px;">last night</div>
+                </div>
+            </div>
+
+            <!-- Fitbit data row (shown when Versa 3 / Fitbit is connected) -->
+            <div id="perf-fitbit-row" style="display: none; padding: 0 20px 16px; display: none;">
+                <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                    <!-- Calories Burned -->
+                    <div style="text-align: center; padding: 9px 4px; background: rgba(255,255,255,0.15); border-radius: 12px;">
+                        <div style="font-size: 1.1rem; margin-bottom: 1px;">⚡</div>
+                        <div id="perf-fitbit-cals" style="font-size: 1.05rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
+                        <div style="font-size: 0.63rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 1px;">Cals Burned</div>
+                    </div>
+                    <!-- Resting Heart Rate -->
+                    <div style="text-align: center; padding: 9px 4px; background: rgba(255,255,255,0.15); border-radius: 12px;">
+                        <div style="font-size: 1.1rem; margin-bottom: 1px;">❤️</div>
+                        <div id="perf-fitbit-hr" style="font-size: 1.05rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
+                        <div style="font-size: 0.63rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 1px;">Resting HR</div>
+                    </div>
+                    <!-- Active Minutes -->
+                    <div style="text-align: center; padding: 9px 4px; background: rgba(255,255,255,0.15); border-radius: 12px;">
+                        <div style="font-size: 1.1rem; margin-bottom: 1px;">🏃</div>
+                        <div id="perf-fitbit-active" style="font-size: 1.05rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
+                        <div style="font-size: 0.63rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 1px;">Active Min</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 6px;">
+                    <span style="font-size: 0.62rem; color: rgba(255,255,255,0.5); font-weight: 500;">via Fitbit Versa</span>
                 </div>
             </div>
         </div>
@@ -44538,7 +44613,119 @@ window.submitDailyCycleSync = submitDailyCycleSync;
                     <input type="number" id="weigh-in-modal-input" placeholder="Enter weight" step="0.1" min="20" max="500" style="width: 100%; padding: 16px 60px 16px 20px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.1rem; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='#667eea'" onblur="this.style.borderColor='#e2e8f0'">
                     <span id="weigh-in-modal-unit-label" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #666; font-size: 1rem; font-weight: 600;">kg</span>
                 </div>
-                <p id="weigh-in-modal-last-weight" style="margin: 0 0 20px 0; font-size: 0.85rem; color: var(--text-muted); text-align: center;"></p>
+                <p id="weigh-in-modal-last-weight" style="margin: 0 0 16px 0; font-size: 0.85rem; color: var(--text-muted); text-align: center;"></p>
+
+                <!-- Body Fat Calliper Section (optional) -->
+                <div id="weigh-in-bf-section" style="margin-bottom: 18px;">
+                    <button onclick="toggleBFSection()" id="weigh-in-bf-toggle" style="width: 100%; background: #f8f4ff; border: 1.5px dashed #a78bfa; border-radius: 12px; padding: 10px 14px; font-size: 0.88rem; font-weight: 600; color: #7c3aed; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; transition: background 0.2s;">
+                        <span style="font-size: 1rem;">📏</span>
+                        <span>Also measure body fat % (callipers)</span>
+                        <svg id="weigh-in-bf-chevron" viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #a78bfa; margin-left: auto; transition: transform 0.2s;"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                    </button>
+
+                    <div id="weigh-in-bf-inputs" style="display: none; padding: 14px 2px 0;">
+
+                        <!-- Measurement site diagram -->
+                        <div style="display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start;">
+                            <!-- SVG body diagram -->
+                            <div style="flex-shrink: 0;">
+                                <!-- Male diagram (default, shown when sex=male) -->
+                                <svg id="bf-diagram-male" viewBox="0 0 110 260" width="90" height="208" style="display: block;">
+                                    <!-- Head -->
+                                    <ellipse cx="55" cy="22" rx="14" ry="16" fill="#ddd6fe" stroke="#a78bfa" stroke-width="1.5"/>
+                                    <!-- Neck -->
+                                    <rect x="49" y="36" width="12" height="10" rx="3" fill="#ddd6fe" stroke="#a78bfa" stroke-width="1.5"/>
+                                    <!-- Torso -->
+                                    <path d="M30 46 Q24 50 22 70 L20 140 L90 140 L88 70 Q86 50 80 46 Z" fill="#ddd6fe" stroke="#a78bfa" stroke-width="1.5"/>
+                                    <!-- Left arm -->
+                                    <path d="M30 46 Q18 55 15 90 L18 95 Q22 70 35 58 Z" fill="#ddd6fe" stroke="#a78bfa" stroke-width="1.5"/>
+                                    <!-- Right arm -->
+                                    <path d="M80 46 Q92 55 95 90 L92 95 Q88 70 75 58 Z" fill="#ddd6fe" stroke="#a78bfa" stroke-width="1.5"/>
+                                    <!-- Left leg -->
+                                    <path d="M20 140 L18 225 L40 225 L45 140 Z" fill="#ddd6fe" stroke="#a78bfa" stroke-width="1.5"/>
+                                    <!-- Right leg -->
+                                    <path d="M65 140 L70 225 L92 225 L90 140 Z" fill="#ddd6fe" stroke="#a78bfa" stroke-width="1.5"/>
+                                    <!-- Site 1: Chest (right pec, diagonal) -->
+                                    <circle cx="72" cy="68" r="9" fill="#f59e0b" stroke="white" stroke-width="2"/>
+                                    <text x="72" y="72" text-anchor="middle" fill="white" font-size="9" font-weight="bold">1</text>
+                                    <!-- Site 2: Abdomen (2cm right of navel) -->
+                                    <circle cx="67" cy="108" r="9" fill="#f59e0b" stroke="white" stroke-width="2"/>
+                                    <text x="67" y="112" text-anchor="middle" fill="white" font-size="9" font-weight="bold">2</text>
+                                    <!-- Site 3: Thigh (anterior midline, right leg) -->
+                                    <circle cx="75" cy="175" r="9" fill="#f59e0b" stroke="white" stroke-width="2"/>
+                                    <text x="75" y="179" text-anchor="middle" fill="white" font-size="9" font-weight="bold">3</text>
+                                </svg>
+                                <!-- Female diagram (hidden by default) -->
+                                <svg id="bf-diagram-female" viewBox="0 0 110 260" width="90" height="208" style="display: none;">
+                                    <!-- Head -->
+                                    <ellipse cx="55" cy="22" rx="14" ry="16" fill="#fbcfe8" stroke="#ec4899" stroke-width="1.5"/>
+                                    <!-- Neck -->
+                                    <rect x="49" y="36" width="12" height="10" rx="3" fill="#fbcfe8" stroke="#ec4899" stroke-width="1.5"/>
+                                    <!-- Torso (slightly wider hips) -->
+                                    <path d="M32 46 Q26 52 24 70 L20 140 L90 140 L86 70 Q84 52 78 46 Z" fill="#fbcfe8" stroke="#ec4899" stroke-width="1.5"/>
+                                    <!-- Left arm -->
+                                    <path d="M32 46 Q18 55 14 90 L17 95 Q22 70 36 58 Z" fill="#fbcfe8" stroke="#ec4899" stroke-width="1.5"/>
+                                    <!-- Right arm -->
+                                    <path d="M78 46 Q92 55 96 90 L93 95 Q88 70 74 58 Z" fill="#fbcfe8" stroke="#ec4899" stroke-width="1.5"/>
+                                    <!-- Left leg -->
+                                    <path d="M20 140 L18 225 L40 225 L45 140 Z" fill="#fbcfe8" stroke="#ec4899" stroke-width="1.5"/>
+                                    <!-- Right leg -->
+                                    <path d="M65 140 L70 225 L92 225 L90 140 Z" fill="#fbcfe8" stroke="#ec4899" stroke-width="1.5"/>
+                                    <!-- Site 1: Tricep (posterior upper arm - shown on right arm back) -->
+                                    <circle cx="94" cy="72" r="9" fill="#ec4899" stroke="white" stroke-width="2"/>
+                                    <text x="94" y="76" text-anchor="middle" fill="white" font-size="9" font-weight="bold">1</text>
+                                    <!-- Site 2: Suprailiac (just above right hip bone) -->
+                                    <circle cx="83" cy="128" r="9" fill="#ec4899" stroke="white" stroke-width="2"/>
+                                    <text x="83" y="132" text-anchor="middle" fill="white" font-size="9" font-weight="bold">2</text>
+                                    <!-- Site 3: Thigh (anterior midline, right leg) -->
+                                    <circle cx="75" cy="175" r="9" fill="#ec4899" stroke="white" stroke-width="2"/>
+                                    <text x="75" y="179" text-anchor="middle" fill="white" font-size="9" font-weight="bold">3</text>
+                                </svg>
+                            </div>
+
+                            <!-- Site descriptions -->
+                            <div style="flex: 1; font-size: 0.78rem; color: #4b5563; line-height: 1.5;">
+                                <!-- Male site descriptions -->
+                                <div id="bf-sites-male">
+                                    <div style="margin-bottom: 8px;"><span style="display: inline-block; background: #f59e0b; color: white; border-radius: 50%; width: 16px; height: 16px; text-align: center; line-height: 16px; font-size: 0.7rem; font-weight: 700; margin-right: 4px;">1</span><strong>Chest</strong> — Diagonal fold, halfway between your right nipple and armpit fold</div>
+                                    <div style="margin-bottom: 8px;"><span style="display: inline-block; background: #f59e0b; color: white; border-radius: 50%; width: 16px; height: 16px; text-align: center; line-height: 16px; font-size: 0.7rem; font-weight: 700; margin-right: 4px;">2</span><strong>Abdomen</strong> — Vertical fold, 2 cm to the right of your navel</div>
+                                    <div><span style="display: inline-block; background: #f59e0b; color: white; border-radius: 50%; width: 16px; height: 16px; text-align: center; line-height: 16px; font-size: 0.7rem; font-weight: 700; margin-right: 4px;">3</span><strong>Thigh</strong> — Vertical fold on the front of your thigh, halfway between your hip crease and top of knee</div>
+                                </div>
+                                <!-- Female site descriptions -->
+                                <div id="bf-sites-female" style="display: none;">
+                                    <div style="margin-bottom: 8px;"><span style="display: inline-block; background: #ec4899; color: white; border-radius: 50%; width: 16px; height: 16px; text-align: center; line-height: 16px; font-size: 0.7rem; font-weight: 700; margin-right: 4px;">1</span><strong>Tricep</strong> — Vertical fold on the back of your upper arm, halfway between shoulder and elbow</div>
+                                    <div style="margin-bottom: 8px;"><span style="display: inline-block; background: #ec4899; color: white; border-radius: 50%; width: 16px; height: 16px; text-align: center; line-height: 16px; font-size: 0.7rem; font-weight: 700; margin-right: 4px;">2</span><strong>Suprailiac</strong> — Diagonal fold just above your right hip bone, at the front side</div>
+                                    <div><span style="display: inline-block; background: #ec4899; color: white; border-radius: 50%; width: 16px; height: 16px; text-align: center; line-height: 16px; font-size: 0.7rem; font-weight: 700; margin-right: 4px;">3</span><strong>Thigh</strong> — Vertical fold on the front of your thigh, halfway between your hip crease and top of knee</div>
+                                </div>
+                                <p style="margin: 8px 0 0; font-size: 0.72rem; color: #9ca3af; font-style: italic;">Pinch firmly, pull skin from muscle, measure within 2 sec</p>
+                            </div>
+                        </div>
+
+                        <!-- Measurement inputs -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                            <div>
+                                <label id="bf-label-1" style="display: block; font-size: 0.72rem; font-weight: 600; color: #6b7280; margin-bottom: 4px;">Site 1 (mm)</label>
+                                <input type="number" id="bf-input-1" min="1" max="80" step="0.5" placeholder="e.g. 12" oninput="recalcBF()" style="width: 100%; padding: 9px 8px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; text-align: center; box-sizing: border-box;" onfocus="this.style.borderColor='#a78bfa'" onblur="this.style.borderColor='#e5e7eb'">
+                            </div>
+                            <div>
+                                <label id="bf-label-2" style="display: block; font-size: 0.72rem; font-weight: 600; color: #6b7280; margin-bottom: 4px;">Site 2 (mm)</label>
+                                <input type="number" id="bf-input-2" min="1" max="80" step="0.5" placeholder="e.g. 18" oninput="recalcBF()" style="width: 100%; padding: 9px 8px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; text-align: center; box-sizing: border-box;" onfocus="this.style.borderColor='#a78bfa'" onblur="this.style.borderColor='#e5e7eb'">
+                            </div>
+                            <div>
+                                <label id="bf-label-3" style="display: block; font-size: 0.72rem; font-weight: 600; color: #6b7280; margin-bottom: 4px;">Site 3 (mm)</label>
+                                <input type="number" id="bf-input-3" min="1" max="80" step="0.5" placeholder="e.g. 22" oninput="recalcBF()" style="width: 100%; padding: 9px 8px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; text-align: center; box-sizing: border-box;" onfocus="this.style.borderColor='#a78bfa'" onblur="this.style.borderColor='#e5e7eb'">
+                            </div>
+                        </div>
+
+                        <!-- Live BF% result -->
+                        <div id="bf-result-row" style="display: none; background: linear-gradient(135deg, #f3e8ff, #ede9fe); border-radius: 10px; padding: 10px 14px; text-align: center;">
+                            <span style="font-size: 0.8rem; color: #7c3aed; font-weight: 600;">Estimated Body Fat: </span>
+                            <span id="bf-result-value" style="font-size: 1.15rem; font-weight: 800; color: #6d28d9;"></span>
+                            <span style="font-size: 0.8rem; color: #7c3aed; font-weight: 600;"> %</span>
+                            <div id="bf-result-category" style="font-size: 0.72rem; color: #8b5cf6; margin-top: 2px;"></div>
+                        </div>
+                    </div>
+                </div>
 
                 <div style="display: flex; gap: 10px;">
                     <button onclick="closeWeighInModal()" style="flex: 1; background: #f1f5f9; color: var(--text-main); border: none; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s;">
@@ -44619,6 +44806,18 @@ async function openWeighInModal() {
     if (successSection) successSection.style.display = 'none';
     if (input) input.value = '';
 
+    // Reset calliper section
+    const bfInputs = document.getElementById('weigh-in-bf-inputs');
+    const bfChevron = document.getElementById('weigh-in-bf-chevron');
+    const bfResultRow = document.getElementById('bf-result-row');
+    if (bfInputs) bfInputs.style.display = 'none';
+    if (bfChevron) bfChevron.style.transform = '';
+    if (bfResultRow) bfResultRow.style.display = 'none';
+    ['bf-input-1','bf-input-2','bf-input-3'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
     // Set unit preference
     const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
     if (unitLabel) {
@@ -44688,9 +44887,20 @@ async function submitWeighInModal() {
         weightValue = weightValue * 0.453592;
     }
 
+    // Capture body fat % if calliper section was used
+    let bodyFatPct = null;
+    const bfResult = document.getElementById('bf-result-value');
+    const bfInputsVisible = document.getElementById('weigh-in-bf-inputs')?.style.display !== 'none';
+    if (bfInputsVisible && bfResult && bfResult.textContent) {
+        const parsed = parseFloat(bfResult.textContent);
+        if (!isNaN(parsed) && parsed > 1 && parsed < 60) {
+            bodyFatPct = parsed;
+        }
+    }
+
     try {
-        // Log the weigh-in
-        await db.weighIns.log(window.currentUser.id, weightValue);
+        // Log the weigh-in (with optional body fat %)
+        await db.weighIns.log(window.currentUser.id, weightValue, null, bodyFatPct);
 
         // Award 1 XP
         try {
@@ -44754,6 +44964,127 @@ async function submitWeighInModal() {
         alert('Failed to log weigh-in. Please try again.');
     }
 }
+
+// ===== BODY FAT CALLIPER HELPERS =====
+
+/**
+ * Toggle the body fat calliper section in the weigh-in modal.
+ * Adapts the diagram and labels to the user's sex.
+ */
+function toggleBFSection() {
+    const inputs = document.getElementById('weigh-in-bf-inputs');
+    const chevron = document.getElementById('weigh-in-bf-chevron');
+    if (!inputs) return;
+
+    const isOpen = inputs.style.display !== 'none';
+    inputs.style.display = isOpen ? 'none' : 'block';
+    if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+
+    if (!isOpen) {
+        // Detect sex from session profile (set during login)
+        let sex = 'male';
+        try {
+            const profile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+            sex = (profile.sex || '').toLowerCase().includes('f') ? 'female' : 'male';
+        } catch (e) {}
+
+        const maleDiagram  = document.getElementById('bf-diagram-male');
+        const femaleDiagram = document.getElementById('bf-diagram-female');
+        const maleSites    = document.getElementById('bf-sites-male');
+        const femaleSites  = document.getElementById('bf-sites-female');
+        const label1 = document.getElementById('bf-label-1');
+        const label2 = document.getElementById('bf-label-2');
+        const label3 = document.getElementById('bf-label-3');
+
+        if (sex === 'female') {
+            if (maleDiagram)  maleDiagram.style.display  = 'none';
+            if (femaleDiagram) femaleDiagram.style.display = 'block';
+            if (maleSites)    maleSites.style.display    = 'none';
+            if (femaleSites)  femaleSites.style.display  = 'block';
+            if (label1) label1.textContent = 'Tricep (mm)';
+            if (label2) label2.textContent = 'Suprailiac (mm)';
+            if (label3) label3.textContent = 'Thigh (mm)';
+        } else {
+            if (maleDiagram)  maleDiagram.style.display  = 'block';
+            if (femaleDiagram) femaleDiagram.style.display = 'none';
+            if (maleSites)    maleSites.style.display    = 'block';
+            if (femaleSites)  femaleSites.style.display  = 'none';
+            if (label1) label1.textContent = 'Chest (mm)';
+            if (label2) label2.textContent = 'Abdomen (mm)';
+            if (label3) label3.textContent = 'Thigh (mm)';
+        }
+
+        // Store sex on window for recalcBF()
+        window._bfSex = sex;
+    }
+}
+
+/**
+ * Recalculate body fat % from the 3 skinfold inputs using Jackson-Pollock 3-site formula.
+ * Male:   D = 1.10938 − (0.0008267×S) + (0.0000016×S²) − (0.0002574×age)
+ * Female: D = 1.0994921 − (0.0009929×S) + (0.0000023×S²) − (0.0001392×age)
+ * BF% = (4.95/D − 4.50) × 100
+ */
+function recalcBF() {
+    const s1 = parseFloat(document.getElementById('bf-input-1')?.value) || 0;
+    const s2 = parseFloat(document.getElementById('bf-input-2')?.value) || 0;
+    const s3 = parseFloat(document.getElementById('bf-input-3')?.value) || 0;
+    const resultRow = document.getElementById('bf-result-row');
+    const resultVal = document.getElementById('bf-result-value');
+    const resultCat = document.getElementById('bf-result-category');
+
+    if (!s1 || !s2 || !s3) {
+        if (resultRow) resultRow.style.display = 'none';
+        return;
+    }
+
+    // Get age from session profile
+    let age = 30;
+    try {
+        const profile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        age = parseInt(profile.age) || 30;
+    } catch (e) {}
+
+    const S = s1 + s2 + s3;
+    const sex = window._bfSex || 'male';
+    let D;
+    if (sex === 'female') {
+        D = 1.0994921 - (0.0009929 * S) + (0.0000023 * S * S) - (0.0001392 * age);
+    } else {
+        D = 1.10938 - (0.0008267 * S) + (0.0000016 * S * S) - (0.0002574 * age);
+    }
+
+    const bf = ((4.95 / D) - 4.50) * 100;
+    if (!isFinite(bf) || bf < 1 || bf > 60) {
+        if (resultRow) resultRow.style.display = 'none';
+        return;
+    }
+
+    if (resultVal) resultVal.textContent = bf.toFixed(1);
+    if (resultRow) resultRow.style.display = 'block';
+
+    // Category label (ACE classifications, male/female aware)
+    if (resultCat) {
+        let cat = '';
+        if (sex === 'female') {
+            if (bf < 14) cat = 'Essential fat';
+            else if (bf < 21) cat = 'Athletic';
+            else if (bf < 25) cat = 'Fitness';
+            else if (bf < 32) cat = 'Average';
+            else cat = 'Obese range';
+        } else {
+            if (bf < 6)  cat = 'Essential fat';
+            else if (bf < 14) cat = 'Athletic';
+            else if (bf < 18) cat = 'Fitness';
+            else if (bf < 25) cat = 'Average';
+            else cat = 'Obese range';
+        }
+        resultCat.textContent = cat;
+    }
+}
+
+window.toggleBFSection = toggleBFSection;
+window.recalcBF = recalcBF;
 
 // Make functions globally available
 window.checkAndShowWeighInModal = checkAndShowWeighInModal;
