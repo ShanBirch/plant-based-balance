@@ -98,8 +98,15 @@ saveBtn.addEventListener('click', () => {
     // Suppress weigh-in popup on dashboard — user already entered weight during quiz
     localStorage.setItem('lastWeighInPromptDate', new Date().toDateString());
 
-    // Show app download prompt if not already installed as PWA
-    const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    // Show app download prompt if not already installed as PWA or inside an APK (TWA/WebView)
+    const isInstalled = (function() {
+        if (window.matchMedia('(display-mode: standalone)').matches) return true;
+        if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+        if (window.navigator.standalone) return true;
+        if (document.referrer.includes('android-app://')) return true;
+        if (/; wv\)/.test(navigator.userAgent || '')) return true;
+        return false;
+    })();
     const overlay = document.getElementById('download-app-overlay');
 
     if (!isInstalled && overlay) {
