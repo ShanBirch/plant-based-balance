@@ -4,7 +4,9 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
+import android.webkit.WebView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.ActionBar;
@@ -13,23 +15,35 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
-import com.getcapacitor.BridgeWebChromeClient;
-
-import java.util.ArrayList;
 
 public class MainActivity extends BridgeActivity {
+    private WebView webViewRef;
     private PermissionRequest pendingPermissionRequest;
 
-    private final ActivityResultLauncher<String[]> permissionLauncher =
-        registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), results -> {
+    /**
+     * Launcher that shows the native Android "Allow camera?" dialog.
+     * When the user responds, we notify both the pending WebChromeClient
+     * request (if any) AND JavaScript via a callback.
+     */
+    private final ActivityResultLauncher<String> cameraPermissionLauncher =
+        registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+            // Notify the WebView's pending permission request (if getUserMedia triggered it)
             if (pendingPermissionRequest != null) {
-                boolean allGranted = !results.containsValue(false);
-                if (allGranted) {
+                if (isGranted) {
                     pendingPermissionRequest.grant(pendingPermissionRequest.getResources());
                 } else {
                     pendingPermissionRequest.deny();
                 }
                 pendingPermissionRequest = null;
+            }
+            // Notify JavaScript so the camera flow can continue
+            if (webViewRef != null) {
+                final boolean granted = isGranted;
+                runOnUiThread(() ->
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeCameraPermission) window._onNativeCameraPermission(" + granted + ")",
+                        null)
+                );
             }
         });
 
@@ -58,48 +72,38 @@ public class MainActivity extends BridgeActivity {
         // Keep the screen on while the app is active
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        // Set up WebView to properly prompt for camera/microphone permissions
-        setupWebViewPermissions();
+        // Expose a JavaScript interface so the web page can request
+        // Android runtime permissions before calling getUserMedia()
+        webViewRef = getBridge().getWebView();
+        webViewRef.addJavascriptInterface(new PermissionBridge(), "NativePermissions");
     }
 
     /**
-     * Override the WebView's WebChromeClient so that when JavaScript calls
-     * getUserMedia(), the app actually prompts the user for Android runtime
-     * permissions (CAMERA, RECORD_AUDIO) instead of silently denying.
+     * JavaScript interface exposed as window.NativePermissions.
+     * The web page calls these methods to check / request camera permission
+     * before attempting getUserMedia().
      */
-    private void setupWebViewPermissions() {
-        getBridge().getWebView().setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
-            @Override
-            public void onPermissionRequest(final PermissionRequest request) {
-                runOnUiThread(() -> handleWebPermissionRequest(request));
-            }
-        });
-    }
-
-    private void handleWebPermissionRequest(PermissionRequest request) {
-        ArrayList<String> neededPermissions = new ArrayList<>();
-
-        for (String resource : request.getResources()) {
-            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    neededPermissions.add(Manifest.permission.CAMERA);
-                }
-            } else if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)) {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    neededPermissions.add(Manifest.permission.RECORD_AUDIO);
-                }
-            }
+    private class PermissionBridge {
+        @JavascriptInterface
+        public boolean hasCameraPermission() {
+            return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
+                    == PackageManager.PERMISSION_GRANTED;
         }
 
-        if (neededPermissions.isEmpty()) {
-            // All required permissions are already granted
-            request.grant(request.getResources());
-        } else {
-            // Store the pending request and prompt the user
-            pendingPermissionRequest = request;
-            permissionLauncher.launch(neededPermissions.toArray(new String[0]));
+        @JavascriptInterface
+        public void requestCameraPermission() {
+            runOnUiThread(() -> {
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    // Already granted — notify JS immediately
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeCameraPermission) window._onNativeCameraPermission(true)",
+                        null);
+                } else {
+                    // Show the native Android permission dialog
+                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+                }
+            });
         }
     }
 
