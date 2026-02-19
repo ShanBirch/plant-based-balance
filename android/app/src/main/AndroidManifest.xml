@@ -60,6 +60,11 @@
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Camera access for barcode scanning & food recognition -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
     <!-- Screen Time / Usage Access — special permission, user grants via Settings -->
     <!-- tools:ignore suppresses the lint warning about this being a protected permission -->
     <uses-permission
