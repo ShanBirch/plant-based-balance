@@ -1334,6 +1334,130 @@ async function applyAppTheme(themeKey) {
     #today .meal-title {
         font-size: 1.15rem;
     }
+    /* ===== Native Permissions Modal ===== */
+    .permissions-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(4, 106, 56, 0.7);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 13000;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        padding: 20px;
+    }
+    .permissions-overlay.active { opacity: 1; }
+    .permissions-modal {
+        background: white;
+        border-radius: 24px;
+        width: 100%;
+        max-width: 400px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        padding: 30px 24px;
+    }
+    .permissions-modal h2 {
+        text-align: center;
+        margin: 0 0 6px 0;
+        font-size: 1.4rem;
+        color: var(--primary, #046a38);
+    }
+    .permissions-modal .perm-subtitle {
+        text-align: center;
+        color: #64748b;
+        font-size: 0.88rem;
+        margin: 0 0 24px 0;
+        line-height: 1.4;
+    }
+    .perm-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+    }
+    .perm-card.granted {
+        background: #f0fdf4;
+        border-color: #86efac;
+    }
+    .perm-card.denied {
+        background: #fef2f2;
+        border-color: #fca5a5;
+    }
+    .perm-card-icon {
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+    }
+    .perm-card-info { flex: 1; min-width: 0; }
+    .perm-card-info h4 {
+        margin: 0 0 2px 0;
+        font-size: 0.92rem;
+        color: #1e293b;
+    }
+    .perm-card-info p {
+        margin: 0;
+        font-size: 0.78rem;
+        color: #64748b;
+        line-height: 1.35;
+    }
+    .perm-card-btn {
+        flex-shrink: 0;
+        padding: 7px 14px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 700;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: var(--primary, #046a38);
+        color: white;
+    }
+    .perm-card-btn:hover { opacity: 0.9; transform: scale(1.03); }
+    .perm-card-btn.granted-btn {
+        background: #dcfce7;
+        color: #166534;
+        cursor: default;
+    }
+    .perm-card-btn.denied-btn {
+        background: #fee2e2;
+        color: #991b1b;
+        cursor: default;
+    }
+    .perm-continue-btn {
+        display: block;
+        width: 100%;
+        padding: 14px;
+        margin-top: 20px;
+        border: none;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--primary, #046a38), var(--secondary, #0d9488));
+        color: white;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .perm-continue-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .perm-skip-btn {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        margin-top: 8px;
+        border: none;
+        background: transparent;
+        color: #94a3b8;
+        font-size: 0.82rem;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+
     /* Onboarding Modal Styles */
     .onboarding-overlay {
         position: fixed;
@@ -12038,21 +12162,23 @@ async function applyAppTheme(themeKey) {
             if(typeof initFitbitDashboard === 'function') initFitbitDashboard();
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
 
-            // Native app: init Health Connect/HealthKit + push notifications
-            if (window.NativeHealth && window.NativeHealth.isNativeApp()) {
-                console.log('📱 Native app detected — initializing Health Connect/HealthKit');
-                window.NativeHealth.init().then(ready => {
-                    if (ready) {
-                        console.log('✅ Native health ready — fetching summary');
-                        window.NativeHealth.getSummary().then(summary => {
-                            if (summary) console.log('📊 Native health summary:', summary);
+            // Native app: permissions & health/push initialization
+            if (typeof isNativeApp === 'function' && isNativeApp()) {
+                if (localStorage.getItem('native_permissions_requested')) {
+                    // Permissions already requested — silently init health + push
+                    if (window.NativeHealth) {
+                        window.NativeHealth.init().then(ready => {
+                            if (ready) window.NativeHealth.getSummary().then(s => {
+                                if (s) console.log('📊 Native health summary:', s);
+                            });
                         });
                     }
-                });
-            }
-            if (window.NativePush && window.NativePush.isNativeApp()) {
-                console.log('📱 Native app detected — initializing native push notifications');
-                window.NativePush.init();
+                    if (window.NativePush) window.NativePush.init();
+                } else if (!window._onboardingWizardPending) {
+                    // First time on native & no onboarding wizard pending — show permissions modal
+                    // (If wizard IS pending, permissions modal will show after wizard finishes)
+                    setTimeout(showNativePermissionsModal, 800);
+                }
             }
 
             // Switch to dashboard as default entry point
@@ -26089,6 +26215,130 @@ function switchView(id) {
     switchWeek(id);
 }
 
+// --- NATIVE PERMISSIONS REQUEST FLOW ---
+// Shows a modal after first login on native apps (iOS/Android) to request
+// Camera, Microphone, Health Data, and Notification permissions upfront.
+
+function isNativeApp() {
+    return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+}
+
+/**
+ * Show the native permissions modal if:
+ * 1. Running as a native app (iOS/Android)
+ * 2. Haven't shown it before (first login)
+ */
+function showNativePermissionsModal() {
+    if (!isNativeApp()) return;
+    if (localStorage.getItem('native_permissions_requested')) return;
+
+    const modal = document.getElementById('native-permissions-modal');
+    if (!modal) return;
+
+    modal.style.display = 'flex';
+    // Trigger transition
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            modal.classList.add('active');
+        });
+    });
+}
+
+function closePermissionsModal() {
+    localStorage.setItem('native_permissions_requested', 'true');
+    const modal = document.getElementById('native-permissions-modal');
+    if (!modal) return;
+
+    modal.classList.remove('active');
+    setTimeout(() => { modal.style.display = 'none'; }, 400);
+
+    // After permissions modal closes, initialize any granted services
+    if (window.NativeHealth && window.NativeHealth.isNativeApp()) {
+        window.NativeHealth.init().then(ready => {
+            if (ready) window.NativeHealth.getSummary();
+        });
+    }
+    if (window.NativePush && window.NativePush.isNativeApp()) {
+        window.NativePush.init();
+    }
+}
+
+function updatePermBtn(permId, status) {
+    const card = document.getElementById('perm-card-' + permId);
+    const btn = document.getElementById('perm-btn-' + permId);
+    if (!card || !btn) return;
+
+    if (status === 'granted') {
+        card.classList.add('granted');
+        card.classList.remove('denied');
+        btn.textContent = 'Allowed';
+        btn.classList.add('granted-btn');
+        btn.classList.remove('denied-btn');
+        btn.onclick = null;
+    } else if (status === 'denied') {
+        card.classList.add('denied');
+        card.classList.remove('granted');
+        btn.textContent = 'Denied';
+        btn.classList.add('denied-btn');
+        btn.classList.remove('granted-btn');
+        btn.onclick = null;
+    }
+}
+
+async function requestPermCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // Stop all tracks immediately — we only needed the permission
+        stream.getTracks().forEach(t => t.stop());
+        updatePermBtn('camera', 'granted');
+    } catch (e) {
+        console.log('[Permissions] Camera denied:', e.name);
+        updatePermBtn('camera', 'denied');
+    }
+}
+
+async function requestPermMic() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(t => t.stop());
+        updatePermBtn('mic', 'granted');
+    } catch (e) {
+        console.log('[Permissions] Microphone denied:', e.name);
+        updatePermBtn('mic', 'denied');
+    }
+}
+
+async function requestPermHealth() {
+    try {
+        if (window.NativeHealth) {
+            const ready = await window.NativeHealth.init();
+            updatePermBtn('health', ready ? 'granted' : 'denied');
+        } else {
+            updatePermBtn('health', 'denied');
+        }
+    } catch (e) {
+        console.log('[Permissions] Health denied:', e);
+        updatePermBtn('health', 'denied');
+    }
+}
+
+async function requestPermNotif() {
+    try {
+        if (window.NativePush) {
+            const result = await window.NativePush.requestPermission();
+            updatePermBtn('notif', result === 'granted' ? 'granted' : 'denied');
+        } else {
+            // Fallback: try native Capacitor push directly
+            const { PushNotifications } = await import('@capacitor/push-notifications');
+            const result = await PushNotifications.requestPermissions();
+            updatePermBtn('notif', result.receive === 'granted' ? 'granted' : 'denied');
+        }
+    } catch (e) {
+        console.log('[Permissions] Notifications denied:', e);
+        updatePermBtn('notif', 'denied');
+    }
+}
+
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
 const totalWizardSteps = 21;
@@ -27969,6 +28219,8 @@ async function finishOnboarding() {
         }
     }
 
+    // Show native permissions request modal after onboarding completes
+    setTimeout(showNativePermissionsModal, 600);
 }
 
 async function closeWizardManually() {
@@ -45571,6 +45823,58 @@ window.submitWeighInModal = submitWeighInModal;
     <button onclick="retakeMealPhotoFromPreview()" style="position:absolute; bottom:40px; left:30px; background:rgba(255,255,255,0.2); color:white; padding:14px 28px; border:none; border-radius:25px; font-weight:600; font-size:1.1rem; cursor:pointer; backdrop-filter:blur(10px); z-index:13; transition:transform 0.2s;">
         Retake
     </button>
+</div>
+
+<!-- ===== NATIVE PERMISSIONS REQUEST MODAL ===== -->
+<div class="permissions-overlay" id="native-permissions-modal" style="display:none;">
+    <div class="permissions-modal">
+        <div style="text-align:center; font-size:2.5rem; margin-bottom:10px;">🔐</div>
+        <h2>Enable App Features</h2>
+        <p class="perm-subtitle">Balance works best with these permissions. You can change these any time in your device settings.</p>
+
+        <!-- Camera -->
+        <div class="perm-card" id="perm-card-camera">
+            <div class="perm-card-icon" style="background:#dbeafe;">📷</div>
+            <div class="perm-card-info">
+                <h4>Camera</h4>
+                <p>Take meal photos, progress pics &amp; scan barcodes</p>
+            </div>
+            <button class="perm-card-btn" id="perm-btn-camera" onclick="requestPermCamera()">Allow</button>
+        </div>
+
+        <!-- Microphone -->
+        <div class="perm-card" id="perm-card-mic">
+            <div class="perm-card-icon" style="background:#fce7f3;">🎙️</div>
+            <div class="perm-card-info">
+                <h4>Microphone</h4>
+                <p>Voice-log your meals hands-free</p>
+            </div>
+            <button class="perm-card-btn" id="perm-btn-mic" onclick="requestPermMic()">Allow</button>
+        </div>
+
+        <!-- Health Data -->
+        <div class="perm-card" id="perm-card-health">
+            <div class="perm-card-icon" style="background:#dcfce7;">❤️</div>
+            <div class="perm-card-info">
+                <h4>Health Data</h4>
+                <p>Sync steps, heart rate, sleep &amp; workouts</p>
+            </div>
+            <button class="perm-card-btn" id="perm-btn-health" onclick="requestPermHealth()">Allow</button>
+        </div>
+
+        <!-- Notifications -->
+        <div class="perm-card" id="perm-card-notif">
+            <div class="perm-card-icon" style="background:#fef3c7;">🔔</div>
+            <div class="perm-card-info">
+                <h4>Notifications</h4>
+                <p>Meal reminders, coach messages &amp; FitGotchi alerts</p>
+            </div>
+            <button class="perm-card-btn" id="perm-btn-notif" onclick="requestPermNotif()">Allow</button>
+        </div>
+
+        <button class="perm-continue-btn" onclick="closePermissionsModal()">Continue</button>
+        <button class="perm-skip-btn" onclick="closePermissionsModal()">I'll do this later</button>
+    </div>
 </div>
 
 <!-- Generic Camera Modal (getUserMedia camera for photos - used by workout, story, activity, progress, meal) -->
