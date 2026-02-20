@@ -12123,10 +12123,10 @@ async function applyAppTheme(themeKey) {
                             gap: 10px;
                             margin-top: 10px;
                         ">
-                            <span>Finish Day Without Bonus</span>
+                            <span>Log Your Meals for the Day Anyway</span>
                         </button>
                         <p id="popup-finish-hint" style="display: none; margin: 6px 0 0 0; font-size: 0.75rem; color: var(--text-muted); text-align: center;">
-                            This marks all your meals as tracked for today so your AI coach knows you're done
+                            This logs your meals without the bonus points
                         </p>
                     </div>
                 </div>
@@ -49969,7 +49969,7 @@ async function finishDayWithoutBonus() {
 
         btn.disabled = true;
         btn.style.opacity = '0.6';
-        btn.querySelector('span').textContent = 'Finishing...';
+        btn.querySelector('span').textContent = 'Logging...';
 
         const today = getLocalDateString();
 
@@ -49994,20 +49994,23 @@ async function finishDayWithoutBonus() {
             btn.style.display = 'none';
             const finishHint = document.getElementById('popup-finish-hint');
             if (finishHint) finishHint.style.display = 'none';
+            // Close the modal and return to nutrition page
+            closeDailyScorePopup();
         } else if (result.error === 'Already claimed') {
             setDailyLogButtonClaimed();
             btn.style.display = 'none';
+            closeDailyScorePopup();
         } else {
             btn.disabled = false;
             btn.style.opacity = '1';
-            btn.querySelector('span').textContent = 'Finish Day Without Bonus';
+            btn.querySelector('span').textContent = 'Log Your Meals for the Day Anyway';
             if (hint) hint.textContent = result.reason || 'Something went wrong. Please try again.';
         }
     } catch (error) {
         console.error('Error finishing day:', error);
         btn.disabled = false;
         btn.style.opacity = '1';
-        btn.querySelector('span').textContent = 'Finish Day Without Bonus';
+        btn.querySelector('span').textContent = 'Log Your Meals for the Day Anyway';
     }
 }
 
@@ -50113,6 +50116,17 @@ function resetDailyLogButton() {
         `;
     }
     if (popupHint) popupHint.textContent = 'Hit within 20% of your calorie & macro goals to earn 2 bonus points';
+
+    // Also reset the finish-day button so it doesn't stay stuck on "Logging..."
+    const finishBtn = document.getElementById('popup-finish-day-btn');
+    if (finishBtn) {
+        finishBtn.disabled = false;
+        finishBtn.style.opacity = '1';
+        finishBtn.style.display = 'none';
+        finishBtn.innerHTML = '<span>Log Your Meals for the Day Anyway</span>';
+    }
+    const finishHint = document.getElementById('popup-finish-hint');
+    if (finishHint) finishHint.style.display = 'none';
 }
 
 // Check if daily log bonus has already been claimed today (called from loadTodayNutrition)
@@ -54557,6 +54571,17 @@ function openDailyScorePopup() {
     // Don't open popup if already claimed/completed for the day
     const mainBtn = document.getElementById('daily-log-btn');
     if (mainBtn && mainBtn.disabled) return;
+
+    // Reset the finish-day button state in case it was stuck from a previous attempt
+    const finishBtn = document.getElementById('popup-finish-day-btn');
+    if (finishBtn) {
+        finishBtn.disabled = false;
+        finishBtn.style.opacity = '1';
+        finishBtn.style.display = 'none';
+        finishBtn.innerHTML = '<span>Log Your Meals for the Day Anyway</span>';
+    }
+    const finishHint = document.getElementById('popup-finish-hint');
+    if (finishHint) finishHint.style.display = 'none';
 
     const overlay = document.getElementById('score-popup-overlay');
     if (overlay) {
