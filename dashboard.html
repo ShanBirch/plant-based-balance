@@ -7769,6 +7769,11 @@ async function applyAppTheme(themeKey) {
         transition: width 0.6s ease;
     }
 
+    /* Toggle switch - checked state */
+    .toggle-switch input { position:absolute; opacity:0; width:0; height:0; }
+    .toggle-switch input:checked + .slider { background:#22c55e !important; }
+    .toggle-switch input:checked ~ .knob { left:18px !important; }
+
     </style>
 </head>
 <body>
