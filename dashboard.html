@@ -21313,7 +21313,7 @@ function viewWorkoutHistoryDetail(date) {
                  </div>
                  <!-- Meal Timing & Reminders Settings -->
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9;">
-                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; cursor:pointer;" onclick="toggleMealReminderSection(event)">
                          <div>
                              <div>Meal Timing Reminders</div>
                              <div style="font-size:0.75rem; color:var(--text-muted);">Your FitGotchi will remind you when it's time to eat</div>
@@ -52326,6 +52326,24 @@ if ('serviceWorker' in navigator) {
 // MEAL REMINDER SETTINGS FUNCTIONS
 // ==========================================
 
+// Handle tapping the meal reminders header row to expand/collapse
+function toggleMealReminderSection(event) {
+    // If the click was on the toggle switch itself, let onchange handle it
+    if (event.target.closest('.toggle-switch')) return;
+    const toggle = document.getElementById('meal-reminders-toggle');
+    const timesContainer = document.getElementById('meal-reminder-times');
+    if (!toggle || !timesContainer) return;
+    if (toggle.checked) {
+        // Reminders are on: toggle the section visibility
+        const isVisible = timesContainer.style.display !== 'none';
+        timesContainer.style.display = isVisible ? 'none' : 'block';
+    } else {
+        // Reminders are off: activate the toggle (which will show the section)
+        toggle.checked = true;
+        toggleMealReminders(true);
+    }
+}
+
 // Toggle meal reminders on/off
 async function toggleMealReminders(enabled) {
     const timesContainer = document.getElementById('meal-reminder-times');
@@ -52658,6 +52676,12 @@ async function saveAndConfirmMealReminders() {
     overlay.addEventListener('click', function(e) {
         if (e.target === overlay) overlay.remove();
     });
+
+    // Collapse the reminder settings back after saving
+    const timesContainer = document.getElementById('meal-reminder-times');
+    if (timesContainer) {
+        timesContainer.style.display = 'none';
+    }
 
     // Update the persistent status indicator
     updateActiveRemindersStatus();
