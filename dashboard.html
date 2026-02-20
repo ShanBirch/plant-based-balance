@@ -19367,6 +19367,190 @@ function viewWorkoutHistoryDetail(date) {
 }
 </style>
 
+<!-- INTERVAL TIMER / STOPWATCH VIEW -->
+<div id="view-interval-timer" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: var(--bg); overflow-y: auto;">
+    <div style="padding: 0 20px 120px 20px; max-width: 500px; margin: 0 auto;">
+
+        <!-- Header -->
+        <div style="display: flex; align-items: center; padding: 16px 0; gap: 12px; position: sticky; top: 0; background: var(--bg); z-index: 10;">
+            <div onclick="closeIntervalTimer()" style="cursor:pointer; width: 40px; height: 40px; display:flex; align-items:center; justify-content:center;">
+                <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:var(--text-main);"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.02 0-1.41a.996.996 0 00-1.41 0l-6.59 6.59a.996.996 0 000 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
+            </div>
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; flex: 1; text-align: center;">Interval Timer</h2>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <!-- Setup Section (shown before timer starts) -->
+        <div id="interval-timer-setup">
+            <!-- Natural Language Input -->
+            <div style="margin-bottom: 24px;">
+                <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px;">Describe your timer</div>
+                <input id="interval-timer-input" type="text" placeholder='e.g. "40/20 x6" or "30 on 10 off 8 rounds"'
+                    style="width: 100%; padding: 16px 18px; border-radius: 16px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1.1rem; box-sizing: border-box; outline: none; font-weight: 600;"
+                    onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border)'"
+                    onkeydown="if(event.key==='Enter') parseAndPreviewTimer()">
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 8px; line-height: 1.5;">
+                    Try: <span onclick="document.getElementById('interval-timer-input').value='40/20 x6'; parseAndPreviewTimer();" style="color:#f59e0b; cursor:pointer; font-weight:600;">40/20 x6</span> &middot;
+                    <span onclick="document.getElementById('interval-timer-input').value='30 on 15 off 10 rounds'; parseAndPreviewTimer();" style="color:#f59e0b; cursor:pointer; font-weight:600;">30 on 15 off 10 rounds</span> &middot;
+                    <span onclick="document.getElementById('interval-timer-input').value='tabata'; parseAndPreviewTimer();" style="color:#f59e0b; cursor:pointer; font-weight:600;">tabata</span> &middot;
+                    <span onclick="document.getElementById('interval-timer-input').value='EMOM 10 min'; parseAndPreviewTimer();" style="color:#f59e0b; cursor:pointer; font-weight:600;">EMOM 10 min</span>
+                </div>
+            </div>
+
+            <!-- Preview Card (hidden until parsed) -->
+            <div id="interval-timer-preview" style="display:none; margin-bottom: 24px;">
+                <div style="background: linear-gradient(135deg, #451a03, #78350f); border-radius: 20px; padding: 24px; color: white;">
+                    <div style="text-align: center; margin-bottom: 16px;">
+                        <div id="interval-preview-title" style="font-size: 1.3rem; font-weight: 800; margin-bottom: 4px;">40s Work / 20s Rest</div>
+                        <div id="interval-preview-subtitle" style="font-size: 0.85rem; opacity: 0.8;">6 rounds &middot; 6:00 total</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+                        <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 12px; text-align: center;">
+                            <div id="interval-preview-work" style="font-size: 1.6rem; font-weight: 800;">40s</div>
+                            <div style="font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px;">Work</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 12px; text-align: center;">
+                            <div id="interval-preview-rest" style="font-size: 1.6rem; font-weight: 800;">20s</div>
+                            <div style="font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px;">Rest</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 12px; text-align: center;">
+                            <div id="interval-preview-rounds" style="font-size: 1.6rem; font-weight: 800;">6</div>
+                            <div style="font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px;">Rounds</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Adjust Section -->
+            <div id="interval-timer-manual" style="display:none; margin-bottom: 24px;">
+                <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Adjust</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                    <!-- Work time -->
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">Work (s)</div>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <button onclick="adjustIntervalValue('work', -5)" style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); font-weight: 700;">-</button>
+                            <input id="interval-work-input" type="number" value="40" min="5" max="300" style="width: 100%; text-align: center; padding: 8px 2px; border-radius: 10px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1.1rem; font-weight: 700; box-sizing: border-box; outline: none;" onchange="updateIntervalPreview()">
+                            <button onclick="adjustIntervalValue('work', 5)" style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); font-weight: 700;">+</button>
+                        </div>
+                    </div>
+                    <!-- Rest time -->
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">Rest (s)</div>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <button onclick="adjustIntervalValue('rest', -5)" style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); font-weight: 700;">-</button>
+                            <input id="interval-rest-input" type="number" value="20" min="0" max="300" style="width: 100%; text-align: center; padding: 8px 2px; border-radius: 10px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1.1rem; font-weight: 700; box-sizing: border-box; outline: none;" onchange="updateIntervalPreview()">
+                            <button onclick="adjustIntervalValue('rest', 5)" style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); font-weight: 700;">+</button>
+                        </div>
+                    </div>
+                    <!-- Rounds -->
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">Rounds</div>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <button onclick="adjustIntervalValue('rounds', -1)" style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); font-weight: 700;">-</button>
+                            <input id="interval-rounds-input" type="number" value="6" min="1" max="100" style="width: 100%; text-align: center; padding: 8px 2px; border-radius: 10px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1.1rem; font-weight: 700; box-sizing: border-box; outline: none;" onchange="updateIntervalPreview()">
+                            <button onclick="adjustIntervalValue('rounds', 1)" style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); font-weight: 700;">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Button -->
+            <button id="interval-start-btn" onclick="startIntervalTimer()" style="display:none; width: 100%; padding: 18px; border-radius: 16px; background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; border: none; font-size: 1.2rem; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px rgba(245,158,11,0.3); letter-spacing: 0.5px;">
+                Start Timer
+            </button>
+
+            <!-- Recent Presets -->
+            <div id="interval-recent-presets" style="margin-top: 30px;">
+                <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Quick Presets</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div onclick="loadIntervalPreset(20, 10, 8, 'Tabata')" style="cursor: pointer; background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; transition: all 0.2s;">
+                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">Tabata</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">20/10 x 8</div>
+                    </div>
+                    <div onclick="loadIntervalPreset(40, 20, 6, '40/20')" style="cursor: pointer; background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; transition: all 0.2s;">
+                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">40/20</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">40/20 x 6</div>
+                    </div>
+                    <div onclick="loadIntervalPreset(30, 30, 10, '30/30')" style="cursor: pointer; background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; transition: all 0.2s;">
+                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">30/30</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">30/30 x 10</div>
+                    </div>
+                    <div onclick="loadIntervalPreset(45, 15, 8, '45/15')" style="cursor: pointer; background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; transition: all 0.2s;">
+                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">45/15</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">45/15 x 8</div>
+                    </div>
+                    <div onclick="loadIntervalPreset(60, 0, 10, 'EMOM')" style="cursor: pointer; background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; transition: all 0.2s;">
+                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">EMOM</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">60s x 10 min</div>
+                    </div>
+                    <div onclick="loadIntervalPreset(50, 10, 5, '50/10')" style="cursor: pointer; background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; transition: all 0.2s;">
+                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">50/10</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">50/10 x 5</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Timer Section (hidden until timer starts) -->
+        <div id="interval-timer-active" style="display:none;">
+            <!-- Timer Ring -->
+            <div style="display: flex; justify-content: center; margin: 20px 0 30px;">
+                <div style="position: relative; width: 260px; height: 260px;">
+                    <svg viewBox="0 0 260 260" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                        <circle cx="130" cy="130" r="115" fill="none" stroke="#e2e8f0" stroke-width="12"/>
+                        <circle id="interval-timer-ring" cx="130" cy="130" r="115" fill="none"
+                            stroke="#f59e0b" stroke-width="12"
+                            stroke-linecap="round"
+                            stroke-dasharray="722.57"
+                            stroke-dashoffset="0"
+                            style="transition: stroke-dashoffset 0.3s linear, stroke 0.3s ease;"/>
+                    </svg>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                        <div id="interval-timer-phase" style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 4px;">WORK</div>
+                        <div id="interval-timer-display" style="font-size: 4rem; font-weight: 800; color: var(--text-main); font-family: monospace; line-height: 1;">00:40</div>
+                        <div id="interval-timer-round" style="font-size: 0.9rem; color: var(--text-muted); margin-top: 6px; font-weight: 600;">Round 1 / 6</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase indicator dots -->
+            <div id="interval-round-dots" style="display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; flex-wrap: wrap; max-width: 300px; margin-left: auto; margin-right: auto;"></div>
+
+            <!-- Controls -->
+            <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 20px;">
+                <button id="interval-pause-btn" onclick="togglePauseIntervalTimer()" style="flex: 1; max-width: 180px; padding: 16px; border-radius: 16px; background: #f59e0b; color: white; border: none; font-size: 1.1rem; font-weight: 800; cursor: pointer;">
+                    Pause
+                </button>
+                <button onclick="resetIntervalTimer()" style="flex: 1; max-width: 180px; padding: 16px; border-radius: 16px; background: var(--border); color: var(--text-main); border: none; font-size: 1.1rem; font-weight: 800; cursor: pointer;">
+                    Reset
+                </button>
+            </div>
+
+            <!-- Skip round -->
+            <div style="text-align: center;">
+                <button onclick="skipIntervalPhase()" style="padding: 10px 24px; border-radius: 12px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                    Skip &raquo;
+                </button>
+            </div>
+        </div>
+
+        <!-- Completed Section (hidden until done) -->
+        <div id="interval-timer-done" style="display:none; text-align: center; padding-top: 60px;">
+            <div style="font-size: 4rem; margin-bottom: 16px;">&#127881;</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">Done!</div>
+            <div id="interval-done-summary" style="font-size: 1rem; color: var(--text-muted); margin-bottom: 40px;">6 rounds completed &middot; 6:00</div>
+            <button onclick="resetIntervalTimer()" style="padding: 16px 40px; border-radius: 16px; background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; border: none; font-size: 1.1rem; font-weight: 800; cursor: pointer; margin-bottom: 12px;">
+                Go Again
+            </button>
+            <br>
+            <button onclick="closeIntervalTimer()" style="padding: 14px 40px; border-radius: 16px; background: var(--border); color: var(--text-main); border: none; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 8px;">
+                Back to Movement
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- WORKOUT LIBRARY CATEGORIES VIEW -->
 <div id="view-workout-library" class="app-view" style="display:none; height: 100vh; background: white; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
@@ -29906,6 +30090,21 @@ async function renderMovementView() {
         <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">💪</div>
     `;
     gridContainer.appendChild(yourWorkoutsDiv);
+
+    // Add 'Interval Timer' Card - stopwatch with natural language input
+    const timerDiv = document.createElement('div');
+    timerDiv.onclick = () => openIntervalTimer();
+    timerDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);";
+    timerDiv.innerHTML = `
+        <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.1), transparent);"></div>
+        <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
+            <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Intervals</div>
+            <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">Stopwatch</div>
+            <div style="font-size: 0.75rem; opacity: 0.9;">Type "40/20 x6" and go</div>
+        </div>
+        <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">&#9201;</div>
+    `;
+    gridContainer.appendChild(timerDiv);
 
     // 'Your Progress' card removed - now on home page
 
@@ -44046,6 +44245,416 @@ function clearAllYogaTimers() {
     });
     window.yogaTimers = {};
 }
+
+// ==========================================
+// INTERVAL TIMER / STOPWATCH
+// ==========================================
+
+window.intervalTimerState = {
+    workSeconds: 40,
+    restSeconds: 20,
+    totalRounds: 6,
+    currentRound: 1,
+    currentPhase: 'work', // 'work', 'rest', 'countdown'
+    secondsLeft: 0,
+    isRunning: false,
+    isPaused: false,
+    interval: null,
+    audioCtx: null
+};
+
+function openIntervalTimer() {
+    const view = document.getElementById('view-interval-timer');
+    if (view) {
+        view.style.display = 'block';
+        document.getElementById('interval-timer-setup').style.display = 'block';
+        document.getElementById('interval-timer-active').style.display = 'none';
+        document.getElementById('interval-timer-done').style.display = 'none';
+        document.getElementById('interval-timer-input').value = '';
+        document.getElementById('interval-timer-preview').style.display = 'none';
+        document.getElementById('interval-timer-manual').style.display = 'none';
+        document.getElementById('interval-start-btn').style.display = 'none';
+    }
+}
+
+function closeIntervalTimer() {
+    // Stop any running timer
+    if (window.intervalTimerState.interval) {
+        clearInterval(window.intervalTimerState.interval);
+        window.intervalTimerState.interval = null;
+    }
+    window.intervalTimerState.isRunning = false;
+    window.intervalTimerState.isPaused = false;
+
+    const view = document.getElementById('view-interval-timer');
+    if (view) view.style.display = 'none';
+}
+
+// Parse natural language timer input
+function parseTimerInput(input) {
+    const text = input.trim().toLowerCase();
+    let work = null, rest = null, rounds = null;
+
+    // Presets
+    if (text === 'tabata') return { work: 20, rest: 10, rounds: 8 };
+    if (/^emom\s*(\d+)\s*(min|minutes?)?$/i.test(text)) {
+        const m = text.match(/^emom\s*(\d+)/i);
+        return { work: 60, rest: 0, rounds: parseInt(m[1]) };
+    }
+
+    // Pattern: "40/20 x6", "40/20 6 rounds", "40/20 6"
+    const slashPattern = /(\d+)\s*\/\s*(\d+)\s*(?:x|×)?\s*(\d+)?(?:\s*rounds?)?/i;
+    const slashMatch = text.match(slashPattern);
+    if (slashMatch) {
+        work = parseInt(slashMatch[1]);
+        rest = parseInt(slashMatch[2]);
+        rounds = slashMatch[3] ? parseInt(slashMatch[3]) : 6;
+        return { work, rest, rounds };
+    }
+
+    // Pattern: "30 on 10 off 8 rounds"
+    const onOffPattern = /(\d+)\s*(?:sec(?:onds?)?\s+)?on\s+(\d+)\s*(?:sec(?:onds?)?\s+)?off\s+(\d+)\s*(?:rounds?|sets?|x|times?)?/i;
+    const onOffMatch = text.match(onOffPattern);
+    if (onOffMatch) {
+        return { work: parseInt(onOffMatch[1]), rest: parseInt(onOffMatch[2]), rounds: parseInt(onOffMatch[3]) };
+    }
+
+    // Pattern: "30 on 10 off" (no rounds)
+    const onOffNoRounds = /(\d+)\s*(?:sec(?:onds?)?\s+)?on\s+(\d+)\s*(?:sec(?:onds?)?\s+)?off/i;
+    const onOffNR = text.match(onOffNoRounds);
+    if (onOffNR) {
+        return { work: parseInt(onOffNR[1]), rest: parseInt(onOffNR[2]), rounds: 6 };
+    }
+
+    // Pattern: "30 work 10 rest 8 rounds"
+    const workRestPattern = /(\d+)\s*(?:sec(?:onds?)?\s+)?(?:work|go|on)\s+(\d+)\s*(?:sec(?:onds?)?\s+)?(?:rest|off|break)\s+(\d+)\s*(?:rounds?|sets?|x|times?)?/i;
+    const workRestMatch = text.match(workRestPattern);
+    if (workRestMatch) {
+        return { work: parseInt(workRestMatch[1]), rest: parseInt(workRestMatch[2]), rounds: parseInt(workRestMatch[3]) };
+    }
+
+    // Pattern: just "X rounds" with numbers already set
+    const justRounds = /^(\d+)\s*(?:rounds?|sets?)$/i;
+    const justRoundsMatch = text.match(justRounds);
+    if (justRoundsMatch) {
+        return { work: 40, rest: 20, rounds: parseInt(justRoundsMatch[1]) };
+    }
+
+    // Pattern: two numbers like "40 20" (work rest)
+    const twoNums = /^(\d+)\s+(\d+)$/;
+    const twoMatch = text.match(twoNums);
+    if (twoMatch) {
+        return { work: parseInt(twoMatch[1]), rest: parseInt(twoMatch[2]), rounds: 6 };
+    }
+
+    // Pattern: three numbers like "40 20 6"
+    const threeNums = /^(\d+)\s+(\d+)\s+(\d+)$/;
+    const threeMatch = text.match(threeNums);
+    if (threeMatch) {
+        return { work: parseInt(threeMatch[1]), rest: parseInt(threeMatch[2]), rounds: parseInt(threeMatch[3]) };
+    }
+
+    return null;
+}
+
+function parseAndPreviewTimer() {
+    const input = document.getElementById('interval-timer-input').value;
+    const parsed = parseTimerInput(input);
+    if (!parsed) return;
+
+    document.getElementById('interval-work-input').value = parsed.work;
+    document.getElementById('interval-rest-input').value = parsed.rest;
+    document.getElementById('interval-rounds-input').value = parsed.rounds;
+    updateIntervalPreview();
+}
+
+function loadIntervalPreset(work, rest, rounds, name) {
+    document.getElementById('interval-timer-input').value = name;
+    document.getElementById('interval-work-input').value = work;
+    document.getElementById('interval-rest-input').value = rest;
+    document.getElementById('interval-rounds-input').value = rounds;
+    updateIntervalPreview();
+}
+
+function adjustIntervalValue(type, delta) {
+    const inputId = type === 'work' ? 'interval-work-input' : type === 'rest' ? 'interval-rest-input' : 'interval-rounds-input';
+    const input = document.getElementById(inputId);
+    const min = type === 'rounds' ? 1 : (type === 'rest' ? 0 : 5);
+    const max = type === 'rounds' ? 100 : 300;
+    let val = parseInt(input.value) || 0;
+    val = Math.max(min, Math.min(max, val + delta));
+    input.value = val;
+    updateIntervalPreview();
+}
+
+function updateIntervalPreview() {
+    const work = parseInt(document.getElementById('interval-work-input').value) || 0;
+    const rest = parseInt(document.getElementById('interval-rest-input').value) || 0;
+    const rounds = parseInt(document.getElementById('interval-rounds-input').value) || 1;
+
+    const totalSec = (work + rest) * rounds;
+    const totalMin = Math.floor(totalSec / 60);
+    const totalRemSec = totalSec % 60;
+    const totalStr = totalRemSec > 0 ? `${totalMin}:${String(totalRemSec).padStart(2, '0')}` : `${totalMin}:00`;
+
+    const restLabel = rest > 0 ? ` / ${rest}s Rest` : ' (no rest)';
+    document.getElementById('interval-preview-title').textContent = `${work}s Work${restLabel}`;
+    document.getElementById('interval-preview-subtitle').textContent = `${rounds} round${rounds > 1 ? 's' : ''} \u00b7 ${totalStr} total`;
+    document.getElementById('interval-preview-work').textContent = `${work}s`;
+    document.getElementById('interval-preview-rest').textContent = `${rest}s`;
+    document.getElementById('interval-preview-rounds').textContent = rounds;
+
+    document.getElementById('interval-timer-preview').style.display = 'block';
+    document.getElementById('interval-timer-manual').style.display = 'block';
+    document.getElementById('interval-start-btn').style.display = 'block';
+}
+
+function formatTimerSeconds(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}:${String(sec).padStart(2, '0')}` : `${sec}`;
+}
+
+// Audio beep using Web Audio API
+function playTimerBeep(type) {
+    try {
+        if (!window.intervalTimerState.audioCtx) {
+            window.intervalTimerState.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        const ctx = window.intervalTimerState.audioCtx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === 'work') {
+            // High double beep for work
+            osc.frequency.value = 880;
+            gain.gain.value = 0.3;
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.15);
+            // Second beep
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.frequency.value = 880;
+            gain2.gain.value = 0.3;
+            osc2.start(ctx.currentTime + 0.2);
+            osc2.stop(ctx.currentTime + 0.35);
+        } else if (type === 'rest') {
+            // Lower single beep for rest
+            osc.frequency.value = 440;
+            gain.gain.value = 0.25;
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.3);
+        } else if (type === 'done') {
+            // Triple high beep for done
+            osc.frequency.value = 1047;
+            gain.gain.value = 0.3;
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.15);
+            for (let i = 1; i <= 2; i++) {
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.frequency.value = 1047;
+                g.gain.value = 0.3;
+                o.start(ctx.currentTime + i * 0.2);
+                o.stop(ctx.currentTime + i * 0.2 + 0.15);
+            }
+        } else if (type === 'tick') {
+            // Soft tick for last 3 seconds
+            osc.frequency.value = 660;
+            gain.gain.value = 0.15;
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.08);
+        }
+
+        // Also vibrate if supported
+        if (navigator.vibrate) {
+            if (type === 'done') navigator.vibrate([200, 100, 200, 100, 200]);
+            else if (type === 'work' || type === 'rest') navigator.vibrate(150);
+        }
+    } catch (e) { /* audio not available */ }
+}
+
+function renderRoundDots() {
+    const st = window.intervalTimerState;
+    const container = document.getElementById('interval-round-dots');
+    if (!container) return;
+    let html = '';
+    for (let i = 1; i <= st.totalRounds; i++) {
+        const isActive = i === st.currentRound;
+        const isComplete = i < st.currentRound;
+        const bg = isComplete ? '#22c55e' : (isActive ? (st.currentPhase === 'work' ? '#f59e0b' : '#3b82f6') : '#e2e8f0');
+        const size = isActive ? '14px' : '10px';
+        html += `<div style="width:${size}; height:${size}; border-radius:50%; background:${bg}; transition: all 0.3s;"></div>`;
+    }
+    container.innerHTML = html;
+}
+
+function updateTimerRing() {
+    const st = window.intervalTimerState;
+    const ring = document.getElementById('interval-timer-ring');
+    if (!ring) return;
+
+    const totalForPhase = st.currentPhase === 'work' ? st.workSeconds : st.restSeconds;
+    const fraction = totalForPhase > 0 ? (totalForPhase - st.secondsLeft) / totalForPhase : 0;
+    const circumference = 2 * Math.PI * 115; // r=115
+    ring.setAttribute('stroke-dashoffset', (fraction * circumference).toFixed(2));
+
+    // Color: amber for work, blue for rest
+    ring.setAttribute('stroke', st.currentPhase === 'work' ? '#f59e0b' : '#3b82f6');
+}
+
+function startIntervalTimer() {
+    const st = window.intervalTimerState;
+
+    st.workSeconds = parseInt(document.getElementById('interval-work-input').value) || 40;
+    st.restSeconds = parseInt(document.getElementById('interval-rest-input').value) || 0;
+    st.totalRounds = parseInt(document.getElementById('interval-rounds-input').value) || 6;
+    st.currentRound = 1;
+    st.currentPhase = 'work';
+    st.secondsLeft = st.workSeconds;
+    st.isRunning = true;
+    st.isPaused = false;
+
+    // Show active timer, hide setup
+    document.getElementById('interval-timer-setup').style.display = 'none';
+    document.getElementById('interval-timer-active').style.display = 'block';
+    document.getElementById('interval-timer-done').style.display = 'none';
+
+    // Init display
+    document.getElementById('interval-timer-phase').textContent = 'WORK';
+    document.getElementById('interval-timer-phase').style.color = '#f59e0b';
+    document.getElementById('interval-timer-display').textContent = formatTimerSeconds(st.secondsLeft);
+    document.getElementById('interval-timer-round').textContent = `Round ${st.currentRound} / ${st.totalRounds}`;
+    document.getElementById('interval-pause-btn').textContent = 'Pause';
+    renderRoundDots();
+    updateTimerRing();
+
+    playTimerBeep('work');
+
+    // Start ticking
+    if (st.interval) clearInterval(st.interval);
+    st.interval = setInterval(tickIntervalTimer, 1000);
+}
+
+function tickIntervalTimer() {
+    const st = window.intervalTimerState;
+    if (!st.isRunning || st.isPaused) return;
+
+    st.secondsLeft--;
+
+    // Countdown ticks for last 3 seconds
+    if (st.secondsLeft > 0 && st.secondsLeft <= 3) {
+        playTimerBeep('tick');
+    }
+
+    if (st.secondsLeft <= 0) {
+        // Phase ended
+        if (st.currentPhase === 'work') {
+            if (st.restSeconds > 0) {
+                // Switch to rest
+                st.currentPhase = 'rest';
+                st.secondsLeft = st.restSeconds;
+                document.getElementById('interval-timer-phase').textContent = 'REST';
+                document.getElementById('interval-timer-phase').style.color = '#3b82f6';
+                playTimerBeep('rest');
+            } else {
+                // No rest - advance round
+                advanceIntervalRound();
+                return;
+            }
+        } else {
+            // Rest ended - advance round
+            advanceIntervalRound();
+            return;
+        }
+    }
+
+    document.getElementById('interval-timer-display').textContent = formatTimerSeconds(st.secondsLeft);
+    updateTimerRing();
+    renderRoundDots();
+}
+
+function advanceIntervalRound() {
+    const st = window.intervalTimerState;
+
+    if (st.currentRound >= st.totalRounds) {
+        // All rounds done
+        completeIntervalTimer();
+        return;
+    }
+
+    st.currentRound++;
+    st.currentPhase = 'work';
+    st.secondsLeft = st.workSeconds;
+
+    document.getElementById('interval-timer-phase').textContent = 'WORK';
+    document.getElementById('interval-timer-phase').style.color = '#f59e0b';
+    document.getElementById('interval-timer-round').textContent = `Round ${st.currentRound} / ${st.totalRounds}`;
+    document.getElementById('interval-timer-display').textContent = formatTimerSeconds(st.secondsLeft);
+    updateTimerRing();
+    renderRoundDots();
+    playTimerBeep('work');
+}
+
+function completeIntervalTimer() {
+    const st = window.intervalTimerState;
+
+    clearInterval(st.interval);
+    st.interval = null;
+    st.isRunning = false;
+
+    playTimerBeep('done');
+
+    // Calculate total time
+    const totalSec = (st.workSeconds + st.restSeconds) * st.totalRounds;
+    const totalMin = Math.floor(totalSec / 60);
+    const totalRemSec = totalSec % 60;
+    const totalStr = totalRemSec > 0 ? `${totalMin}:${String(totalRemSec).padStart(2, '0')}` : `${totalMin}:00`;
+
+    document.getElementById('interval-timer-active').style.display = 'none';
+    document.getElementById('interval-timer-done').style.display = 'block';
+    document.getElementById('interval-done-summary').textContent = `${st.totalRounds} rounds completed \u00b7 ${totalStr}`;
+}
+
+function togglePauseIntervalTimer() {
+    const st = window.intervalTimerState;
+    st.isPaused = !st.isPaused;
+    document.getElementById('interval-pause-btn').textContent = st.isPaused ? 'Resume' : 'Pause';
+    document.getElementById('interval-pause-btn').style.background = st.isPaused ? '#22c55e' : '#f59e0b';
+}
+
+function resetIntervalTimer() {
+    const st = window.intervalTimerState;
+    if (st.interval) {
+        clearInterval(st.interval);
+        st.interval = null;
+    }
+    st.isRunning = false;
+    st.isPaused = false;
+
+    document.getElementById('interval-timer-setup').style.display = 'block';
+    document.getElementById('interval-timer-active').style.display = 'none';
+    document.getElementById('interval-timer-done').style.display = 'none';
+}
+
+function skipIntervalPhase() {
+    const st = window.intervalTimerState;
+    if (!st.isRunning) return;
+
+    st.secondsLeft = 0;
+    // Manually trigger the tick logic
+    tickIntervalTimer();
+}
+
+// ==========================================
+// END INTERVAL TIMER
+// ==========================================
 
 let pendingVideoUrl = '';
 
