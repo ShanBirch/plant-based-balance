@@ -9893,10 +9893,11 @@ async function applyAppTheme(themeKey) {
                         fetched_at:       new Date().toISOString(),
                     };
 
-                    await supabase.from('weather_logs').upsert(row, { onConflict: 'user_id,log_date' });
-
-                    sessionStorage.setItem('weather_fetched', '1');
+                    // Update UI immediately so card shows weather even if DB save fails
                     updateWeatherUI(row);
+                    sessionStorage.setItem('weather_fetched', '1');
+
+                    await supabaseClient.from('weather_logs').upsert(row, { onConflict: 'user_id,log_date' });
                 } catch (err) {
                     console.warn('Weather fetch error:', err);
                 }
@@ -9908,7 +9909,7 @@ async function applyAppTheme(themeKey) {
             if (!window.currentUser) return;
             const today = new Date().toISOString().split('T')[0];
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('weather_logs')
                     .select('*')
                     .eq('user_id', window.currentUser.id)
@@ -10404,13 +10405,15 @@ async function applyAppTheme(themeKey) {
 
         const rows = [];
 
+        // De-duplicate workouts by date (multiple entries per day = one session)
+        const uniqueDates = [...new Set(workouts.map(w => w.workout_date).filter(Boolean))];
+
         // Workout momentum: this 4 weeks vs prior 4 weeks
         const now = new Date();
         const fourWeeksAgo = new Date(now); fourWeeksAgo.setDate(now.getDate() - 28);
         const eightWeeksAgo = new Date(now); eightWeeksAgo.setDate(now.getDate() - 56);
-        const recentCount = workouts.filter(w => w.workout_date >= fourWeeksAgo.toISOString().split('T')[0]).length;
-        const priorCount  = workouts.filter(w => {
-            const d = w.workout_date;
+        const recentCount = uniqueDates.filter(d => d >= fourWeeksAgo.toISOString().split('T')[0]).length;
+        const priorCount  = uniqueDates.filter(d => {
             return d >= eightWeeksAgo.toISOString().split('T')[0] && d < fourWeeksAgo.toISOString().split('T')[0];
         }).length;
 
@@ -28840,7 +28843,7 @@ async function finishOnboarding() {
     if (window.currentUser) {
         try {
             const userId = window.currentUser.id || window.currentUser.user_id;
-            await supabase.rpc('credit_coins', {
+            await supabaseClient.rpc('credit_coins', {
                 p_user_id: userId,
                 p_amount: 1200,
                 p_reason: 'Welcome bonus - starting coins'
@@ -41708,13 +41711,16 @@ async function loadHomeChallenges() {
 
         if (error) throw error;
 
-        // Filter active challenges and pending invites
+        // Filter active challenges, pending challenges (waiting for friends), and pending invites
         const activeChallenges = (challenges || []).filter(c =>
             c.status === 'active' && c.user_status === 'accepted'
         );
+        const pendingChallenges = (challenges || []).filter(c =>
+            c.status === 'pending' && c.user_status === 'accepted'
+        );
         const pendingInvites = (challenges || []).filter(c => c.user_status === 'invited');
 
-        if (activeChallenges.length === 0 && pendingInvites.length === 0) {
+        if (activeChallenges.length === 0 && pendingInvites.length === 0 && pendingChallenges.length === 0) {
             if (emptyState) emptyState.style.display = 'block';
             container.innerHTML = '';
             return;
@@ -41775,6 +41781,28 @@ async function loadHomeChallenges() {
                 </div>
             `}).join('');
         }
+
+        // Show pending challenges (waiting for friends to join)
+        html += pendingChallenges.slice(0, 3).map(challenge => `
+            <div class="card" onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; border-left: 5px solid #f59e0b; margin-bottom: 10px;">
+                <div class="card-body" style="max-height: none; padding: 16px; opacity: 1;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.15)); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                            ⏳
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                <span style="font-weight: 600; color: var(--text-main); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${challenge.challenge_name}</span>
+                                <span style="background: rgba(245,158,11,0.1); color: #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 600;">PENDING</span>
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                Waiting for friends to join · ${challenge.participant_count} so far
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
 
         // Show active challenges
         html += activeChallenges.slice(0, 3).map(challenge => `
