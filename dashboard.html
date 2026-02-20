@@ -12019,7 +12019,7 @@ async function applyAppTheme(themeKey) {
                     <div class="score-popup-modal" onclick="event.stopPropagation()">
                         <button class="score-popup-close" onclick="closeDailyScorePopup()">&times;</button>
                         <div class="score-popup-header">Daily Score</div>
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 20px 0;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 20px 0;">
                             <div class="nutrition-score-ring">
                                 <svg viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="42" fill="none" stroke="#bbf7d0" stroke-width="8"/>
@@ -12028,7 +12028,7 @@ async function applyAppTheme(themeKey) {
                                 </svg>
                                 <div class="nutrition-score-value" id="popup-score-value">--</div>
                             </div>
-                            <div style="text-align: left;">
+                            <div style="text-align: center; margin-top: 10px;">
                                 <div style="font-size: 1.4rem; font-weight: 700; color: var(--text-main);" id="popup-score-grade">Track meals to see score</div>
                             </div>
                         </div>
@@ -49661,10 +49661,12 @@ async function claimDailyNutritionBonus() {
             btn.style.background = 'linear-gradient(135deg, #28a745 0%, #1e7e34 100%)';
             btn.innerHTML = `
                 <span style="font-size: 1.3rem;">&#x1F389;</span>
-                <span>Daily Bonus Claimed!</span>
+                <span>Meals Logged for the Day</span>
                 <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+${result.pointsAwarded} pts</span>
             `;
-            btn.style.opacity = '1';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            btn.style.cursor = 'default';
             if (hint) hint.textContent = 'Great job hitting your nutrition goals today!';
 
             // Also update the main Log button to show claimed state
@@ -49817,7 +49819,7 @@ function setDailyLogButtonDayCompleted() {
         btn.style.cursor = 'default';
         btn.innerHTML = `
             <span style="font-size: 1.3rem;">&#x2705;</span>
-            <span>Day Completed</span>
+            <span>Meals Logged for the Day</span>
         `;
     }
     if (hint) hint.textContent = 'Your meals are tracked for today. Try to hit your macros tomorrow for bonus points!';
@@ -49831,7 +49833,7 @@ function setDailyLogButtonDayCompleted() {
         popupBtn.style.cursor = 'default';
         popupBtn.innerHTML = `
             <span style="font-size: 1.3rem;">&#x2705;</span>
-            <span>Day Completed</span>
+            <span>Meals Logged for the Day</span>
         `;
     }
     if (popupHint) popupHint.textContent = 'Your meals are tracked for today. Try to hit your macros tomorrow for bonus points!';
@@ -49854,7 +49856,7 @@ function setDailyLogButtonClaimed() {
         btn.style.cursor = 'default';
         btn.innerHTML = `
             <span style="font-size: 1.3rem;">&#x2705;</span>
-            <span>Daily Bonus Claimed</span>
+            <span>Meals Logged for the Day</span>
         `;
     }
     if (hint) hint.textContent = 'Come back tomorrow for another chance!';
@@ -49869,7 +49871,7 @@ function setDailyLogButtonClaimed() {
         popupBtn.style.cursor = 'default';
         popupBtn.innerHTML = `
             <span style="font-size: 1.3rem;">&#x2705;</span>
-            <span>Daily Bonus Claimed</span>
+            <span>Meals Logged for the Day</span>
         `;
     }
     if (popupHint) popupHint.textContent = 'Come back tomorrow for another chance!';
@@ -54286,6 +54288,10 @@ function updateNutritionScoreUI(dailyData) {
 
 // --- Daily Score Popup ---
 function openDailyScorePopup() {
+    // Don't open popup if already claimed/completed for the day
+    const mainBtn = document.getElementById('daily-log-btn');
+    if (mainBtn && mainBtn.disabled) return;
+
     const overlay = document.getElementById('score-popup-overlay');
     if (overlay) {
         overlay.style.display = 'flex';
