@@ -336,6 +336,68 @@ public class MainActivity extends BridgeActivity {
         }
 
         /**
+         * Opens Health Connect permissions screen for this app so the user
+         * can grant health data access directly. Used as a fallback when the
+         * Capacitor health plugin can't request permissions inline.
+         * The JS side should recheck permission status when onResume fires.
+         */
+        @JavascriptInterface
+        public void openHealthConnect() {
+            runOnUiThread(() -> {
+                try {
+                    // Open Health Connect permissions page for this specific app
+                    Intent intent = new Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS");
+                    intent.putExtra("android.intent.extra.PACKAGE_NAME", getPackageName());
+                    startActivity(intent);
+                } catch (Exception e) {
+                    try {
+                        // Fallback: open Health Connect home settings
+                        Intent intent = new Intent("android.health.connect.action.HEALTH_HOME_SETTINGS");
+                        startActivity(intent);
+                    } catch (Exception e2) {
+                        // Health Connect not installed — open generic app settings
+                        openAppSettings();
+                    }
+                }
+            });
+        }
+
+        /**
+         * Opens the notification settings screen specifically for this app.
+         * More direct than openAppSettings() when the user needs to toggle
+         * notifications on/off.
+         */
+        @JavascriptInterface
+        public void openNotificationSettings() {
+            runOnUiThread(() -> {
+                try {
+                    Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    // Fallback to generic app settings
+                    openAppSettings();
+                }
+            });
+        }
+
+        /**
+         * Returns true if the POST_NOTIFICATIONS permission has been permanently
+         * denied (user tapped "Don't allow" and the system won't show the dialog
+         * again). Only meaningful on Android 13+ (API 33+).
+         */
+        @JavascriptInterface
+        public boolean isNotificationPermPermanentlyDenied() {
+            if (Build.VERSION.SDK_INT < 33) return true; // Can't request at runtime on older Android
+            boolean notGranted = ContextCompat.checkSelfPermission(MainActivity.this,
+                    "android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED;
+            boolean cannotAskAgain = !ActivityCompat.shouldShowRequestPermissionRationale(
+                    MainActivity.this, "android.permission.POST_NOTIFICATIONS");
+            return notGranted && cannotAskAgain;
+        }
+
+        /**
          * Enters full immersive mode — hides both the status bar and
          * navigation bar. Used when the camera view opens so that
          * media controls (e.g. Spotify) and other status bar items
@@ -377,12 +439,13 @@ public class MainActivity extends BridgeActivity {
         // Hide system bars for immersive experience
         hideSystemBars();
 
-        // Notify JavaScript about current notification permission status
-        // so the UI can update after the user returns from app Settings
+        // Notify JavaScript about current permission status so the UI can
+        // update after the user returns from Health Connect or notification Settings
         if (webViewRef != null) {
             boolean notifEnabled = NotificationManagerCompat.from(this).areNotificationsEnabled();
             webViewRef.evaluateJavascript(
-                "if(window._onPermissionRecheck) window._onPermissionRecheck(" + notifEnabled + ")",
+                "if(window._onPermissionRecheck) window._onPermissionRecheck(" + notifEnabled + ");" +
+                "if(window._recheckHealthPermission) window._recheckHealthPermission()",
                 null);
         }
     }
