@@ -26475,65 +26475,118 @@ function updatePermBtn(permId, status) {
     } else if (status === 'denied') {
         card.classList.add('denied');
         card.classList.remove('granted');
-        btn.textContent = 'Denied';
+        btn.textContent = 'Settings';
         btn.classList.add('denied-btn');
         btn.classList.remove('granted-btn');
-        btn.onclick = null;
+        // Let the user open App Settings to grant the permission manually
+        btn.onclick = () => {
+            if (window.NativePermissions && window.NativePermissions.openAppSettings) {
+                window.NativePermissions.openAppSettings();
+            }
+        };
     }
+}
+
+// Permission request queue — Android can only show one OS permission dialog
+// at a time, and the Java bridge uses a single pendingPermissionRequest field.
+// Without serialization, rapid taps on multiple "Allow" buttons cause the
+// second request to overwrite the first, resulting in silent denials.
+let _permQueue = Promise.resolve();
+
+function _enqueuePerm(fn) {
+    _permQueue = _permQueue.then(fn, fn);
+    return _permQueue;
 }
 
 async function requestPermCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        // Stop all tracks immediately — we only needed the permission
-        stream.getTracks().forEach(t => t.stop());
-        updatePermBtn('camera', 'granted');
-    } catch (e) {
-        console.log('[Permissions] Camera denied:', e.name);
-        updatePermBtn('camera', 'denied');
-    }
+    return _enqueuePerm(async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            // Stop all tracks immediately — we only needed the permission
+            stream.getTracks().forEach(t => t.stop());
+            updatePermBtn('camera', 'granted');
+        } catch (e) {
+            console.log('[Permissions] Camera denied:', e.name);
+            updatePermBtn('camera', 'denied');
+        }
+    });
 }
 
 async function requestPermMic() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(t => t.stop());
-        updatePermBtn('mic', 'granted');
-    } catch (e) {
-        console.log('[Permissions] Microphone denied:', e.name);
-        updatePermBtn('mic', 'denied');
-    }
+    return _enqueuePerm(async () => {
+        try {
+            // On native Android, use the NativePermissions bridge to ensure the
+            // OS dialog shows even if getUserMedia would be blocked by WebView state
+            if (window.NativePermissions && typeof window.NativePermissions.hasMicrophonePermission === 'function') {
+                if (!window.NativePermissions.hasMicrophonePermission()) {
+                    const granted = await new Promise((resolve) => {
+                        let resolved = false;
+                        window._onNativeMicrophonePermission = (result) => {
+                            if (!resolved) { resolved = true; resolve(result); }
+                        };
+                        window.NativePermissions.requestMicrophonePermission();
+                        // Safety timeout — if the callback never fires, don't hang forever
+                        setTimeout(() => { if (!resolved) { resolved = true; resolve(false); } }, 30000);
+                    });
+                    if (!granted) {
+                        updatePermBtn('mic', 'denied');
+                        return;
+                    }
+                }
+                // OS permission granted — now get WebView-level permission via getUserMedia
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(t => t.stop());
+                } catch (_) {
+                    // WebView may still grant it; OS permission is what matters
+                }
+                updatePermBtn('mic', 'granted');
+                return;
+            }
+            // Fallback for non-native or missing bridge
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(t => t.stop());
+            updatePermBtn('mic', 'granted');
+        } catch (e) {
+            console.log('[Permissions] Microphone denied:', e.name);
+            updatePermBtn('mic', 'denied');
+        }
+    });
 }
 
 async function requestPermHealth() {
-    try {
-        if (window.NativeHealth) {
-            const ready = await window.NativeHealth.init();
-            updatePermBtn('health', ready ? 'granted' : 'denied');
-        } else {
+    return _enqueuePerm(async () => {
+        try {
+            if (window.NativeHealth) {
+                const ready = await window.NativeHealth.init();
+                updatePermBtn('health', ready ? 'granted' : 'denied');
+            } else {
+                updatePermBtn('health', 'denied');
+            }
+        } catch (e) {
+            console.log('[Permissions] Health denied:', e);
             updatePermBtn('health', 'denied');
         }
-    } catch (e) {
-        console.log('[Permissions] Health denied:', e);
-        updatePermBtn('health', 'denied');
-    }
+    });
 }
 
 async function requestPermNotif() {
-    try {
-        if (window.NativePush) {
-            const result = await window.NativePush.requestPermission();
-            updatePermBtn('notif', result === 'granted' ? 'granted' : 'denied');
-        } else {
-            // Fallback: try native Capacitor push directly
-            const { PushNotifications } = await import('@capacitor/push-notifications');
-            const result = await PushNotifications.requestPermissions();
-            updatePermBtn('notif', result.receive === 'granted' ? 'granted' : 'denied');
+    return _enqueuePerm(async () => {
+        try {
+            if (window.NativePush) {
+                const result = await window.NativePush.requestPermission();
+                updatePermBtn('notif', result === 'granted' ? 'granted' : 'denied');
+            } else {
+                // Fallback: try native Capacitor push directly
+                const { PushNotifications } = await import('@capacitor/push-notifications');
+                const result = await PushNotifications.requestPermissions();
+                updatePermBtn('notif', result.receive === 'granted' ? 'granted' : 'denied');
+            }
+        } catch (e) {
+            console.log('[Permissions] Notifications denied:', e);
+            updatePermBtn('notif', 'denied');
         }
-    } catch (e) {
-        console.log('[Permissions] Notifications denied:', e);
-        updatePermBtn('notif', 'denied');
-    }
+    });
 }
 
 // --- ONBOARDING WIZARD LOGIC ---
