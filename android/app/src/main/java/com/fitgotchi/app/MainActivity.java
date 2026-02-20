@@ -25,7 +25,7 @@ public class MainActivity extends BridgeActivity {
     private WebView webViewRef;
     private PermissionRequest pendingPermissionRequest;
     /** Holds OAuth fragment from a cold-start deep link until the WebView is ready. */
-    private String pendingOAuthFragment = null;
+    private volatile String pendingOAuthFragment = null;
 
     /**
      * Launcher that shows the native Android "Allow camera?" dialog.
@@ -121,19 +121,13 @@ public class MainActivity extends BridgeActivity {
         webViewRef.addJavascriptInterface(new PermissionBridge(), "NativePermissions");
 
         // If the app was cold-started via an OAuth deep link, save the
-        // fragment so we can inject it once the remote page finishes loading.
+        // fragment so it can be retrieved by JavaScript via
+        // window.NativePermissions.getPendingOAuthFragment().
+        // The auth-guard.js script checks for this on every page load
+        // and sets the Supabase session before deciding to redirect.
         Uri deepLinkData = getIntent().getData();
         if (deepLinkData != null && "com.fitgotchi.app".equals(deepLinkData.getScheme())) {
             pendingOAuthFragment = deepLinkData.getFragment();
-            if (pendingOAuthFragment != null && !pendingOAuthFragment.isEmpty()) {
-                // Give the remote page time to load before injecting tokens.
-                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                    if (pendingOAuthFragment != null) {
-                        injectOAuthTokens(pendingOAuthFragment);
-                        pendingOAuthFragment = null;
-                    }
-                }, 3500);
-            }
         }
 
         // Override onPermissionRequest so that when getUserMedia() fires inside
@@ -236,6 +230,19 @@ public class MainActivity extends BridgeActivity {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
             });
+        }
+
+        /**
+         * Returns a pending OAuth fragment from a cold-start deep link, or
+         * null if there is none.  Called by auth-guard.js on page load so it
+         * can set the Supabase session before the normal "no session → redirect
+         * to login" logic runs.  The fragment is cleared after the first call.
+         */
+        @JavascriptInterface
+        public String getPendingOAuthFragment() {
+            String fragment = pendingOAuthFragment;
+            pendingOAuthFragment = null;
+            return fragment;
         }
 
         /**
@@ -362,9 +369,10 @@ public class MainActivity extends BridgeActivity {
 
     /**
      * Extract the OAuth fragment from a deep-link intent and inject it
-     * into the running WebView. For cold-start launches the fragment is
-     * stored in {@link #pendingOAuthFragment} and injected once the
-     * page finishes loading (see the post-delayed handler in onCreate).
+     * into the running WebView.  This handles the warm-start case where
+     * the app is already running.  Cold-start deep links are handled by
+     * {@link #pendingOAuthFragment} + getPendingOAuthFragment() in the
+     * JavaScript bridge.
      */
     private void handleOAuthDeepLink(Intent intent) {
         Uri uri = intent.getData();

@@ -763,7 +763,7 @@
                     redirect = '/dashboard.html';
                 }
 
-                window.location.href = redirect;
+                window.location.replace(redirect);
                 return;
             }
 
@@ -850,7 +850,7 @@
                     // Just redirect (biometric was either synced from DB or user has it in localStorage)
                     showSuccess('Login successful! Redirecting...');
                     setTimeout(() => {
-                        window.location.href = redirect;
+                        window.location.replace(redirect);
                     }, 1000);
                 }
             } catch (error) {
@@ -957,7 +957,7 @@
 
                 // Redirect to dashboard after successful signup
                 setTimeout(() => {
-                    window.location.href = '/dashboard.html';
+                    window.location.replace('/dashboard.html');
                 }, 1500);
 
             } catch (error) {
@@ -1056,7 +1056,9 @@
                         refresh_token: refreshToken,
                     });
                     if (!error) {
-                        window.location.href = '/dashboard.html';
+                        // Use replace() so login.html is removed from history
+                        // and the URL doesn't linger in the navigation stack.
+                        window.location.replace('/dashboard.html');
                     } else {
                         console.error('OAuth setSession error:', error);
                         showError('Google sign-in failed. Please try again.');
@@ -1185,7 +1187,7 @@
                 showSuccess('Biometric login enabled! Redirecting...');
 
                 setTimeout(() => {
-                    window.location.href = pendingRedirect;
+                    window.location.replace(pendingRedirect);
                 }, 1000);
             } catch (error) {
                 console.error('Biometric setup error:', error);
@@ -1194,7 +1196,7 @@
                 // Still redirect even if biometric setup fails
                 showSuccess('Login successful! Redirecting...');
                 setTimeout(() => {
-                    window.location.href = pendingRedirect;
+                    window.location.replace(pendingRedirect);
                 }, 1000);
             }
         }
@@ -1208,13 +1210,12 @@
 
             showSuccess('Login successful! Redirecting...');
             setTimeout(() => {
-                window.location.href = pendingRedirect;
+                window.location.replace(pendingRedirect);
             }, 1000);
         }
 
         // Redirect after successful login
         async function redirectAfterLogin(user) {
-            // Check if user is an admin
             // Determine redirect URL
             const urlParams = new URLSearchParams(window.location.search);
             let redirect = urlParams.get('redirect');
@@ -1223,7 +1224,7 @@
                 redirect = '/dashboard.html';
             }
 
-            window.location.href = redirect;
+            window.location.replace(redirect);
         }
 
         // Initialize biometric on page load (after Supabase is ready)
