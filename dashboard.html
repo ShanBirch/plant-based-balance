@@ -144,6 +144,34 @@
 <script src="https://js.stripe.com/v3/"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="lib/supabase.js?v=3"></script>
+<script>
+// ── Native OAuth warm-start callback ──────────────────────────────
+// When the app is already running and the user returns from Google
+// OAuth via the com.fitgotchi.app://login-callback deep link,
+// MainActivity.injectOAuthTokens() calls this function.  We set the
+// Supabase session and reload so auth-guard picks up the new session.
+window._handleOAuthCallback = async function(fragment) {
+    try {
+        var params = new URLSearchParams(fragment);
+        var accessToken  = params.get('access_token');
+        var refreshToken = params.get('refresh_token');
+        if (accessToken && refreshToken) {
+            var result = await window.supabaseClient.auth.setSession({
+                access_token:  accessToken,
+                refresh_token: refreshToken,
+            });
+            if (!result.error) {
+                // Reload so auth-guard and dashboard init run with a valid session
+                window.location.replace('/dashboard.html');
+            } else {
+                console.error('OAuth setSession error on dashboard:', result.error);
+            }
+        }
+    } catch (e) {
+        console.error('OAuth callback error on dashboard:', e);
+    }
+};
+</script>
 <script src="lib/auth-guard.js?v=3"></script>
 <script src="lib/migrate-localstorage.js"></script>
 <script src="lib/stories.js"></script>
