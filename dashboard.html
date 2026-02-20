@@ -8490,7 +8490,8 @@ async function applyAppTheme(themeKey) {
                     const latestWeighIn = await db.weighIns.getLatest(window.currentUser.id);
                     if (latestWeighIn) {
                         const input = document.getElementById('weigh-in-weight-input');
-                        if (input) input.placeholder = `Last: ${latestWeighIn.weight_kg} kg`;
+                        var _lwDisplay = isImperial() ? kgToLbs(latestWeighIn.weight_kg).toFixed(1) + ' lbs' : latestWeighIn.weight_kg + ' kg';
+                        if (input) input.placeholder = `Last: ${_lwDisplay}`;
                     }
 
                     // Check user's preferred unit and update label
@@ -17971,7 +17972,7 @@ async function startCustomBuilderWorkout() {
                 </div>
                 <div class="volume-progress-container" style="display: ${previousSummary && previousSummary.totalVolume > 0 ? 'block' : 'none'}; margin-top: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span class="volume-target-label" style="font-size: 0.65rem; font-weight: 600; color: #a16207;">Target: ${previousSummary && previousSummary.totalVolume > 0 ? previousSummary.totalVolume.toLocaleString() + ' kg' : '—'}</span>
+                        <span class="volume-target-label" style="font-size: 0.65rem; font-weight: 600; color: #a16207;">Target: ${previousSummary && previousSummary.totalVolume > 0 ? previousSummary.totalVolume.toLocaleString() + ' ' + displayWeightUnit() : '—'}</span>
                         <span class="volume-percentage" style="font-size: 0.65rem; font-weight: 700; color: #a16207;">0%</span>
                     </div>
                     <div style="height: 6px; background: #fef08a; border-radius: 3px; overflow: hidden;">
@@ -17981,7 +17982,7 @@ async function startCustomBuilderWorkout() {
             </div>
 
             <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
+                <div>Set</div><div>Time</div><div>Reps</div><div>${isImperial() ? 'Lbs' : 'Kg'}</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -17989,16 +17990,18 @@ async function startCustomBuilderWorkout() {
                     const numSets = previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : ex.sets;
                     return Array.from({length: numSets}, (_, setIdx) => {
                         const prevSet = previousSummary && previousSummary.sets[setIdx] ? previousSummary.sets[setIdx] : null;
-                        const prefillKg = prevSet && prevSet.kg && prevSet.kg !== '0' && prevSet.kg !== '' ? prevSet.kg : '';
+                        let prefillKg = prevSet && prevSet.kg && prevSet.kg !== '0' && prevSet.kg !== '' ? prevSet.kg : '';
+                        if (prefillKg && isImperial()) prefillKg = kgToLbs(parseFloat(prefillKg)).toFixed(0);
                         const prefillReps = prevSet && prevSet.reps ? prevSet.reps : '';
                         const hasPrefill = prefillKg || prefillReps;
+                        const _wuLabel = isImperial() ? 'Lbs' : 'Kg';
                         return `
                         <div class="set-wrapper"${hasPrefill ? ' data-prefilled="true"' : ''}>
                             <div class="workout-set-row" style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr 32px 32px; gap: 8px; align-items: center; padding: 10px 15px; border-top: 1px solid #f8fafc;">
                                 <div class="set-number" style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
                                 <input type="text" class="input-time" placeholder="-" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                                 <input type="text" class="input-reps" placeholder="Reps" value="${prefillReps}" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                                <input type="text" class="input-kg" placeholder="Kg" value="${prefillKg}" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                                <input type="text" class="input-kg" placeholder="${_wuLabel}" value="${prefillKg}" data-exercise="${ex.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                                 <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
                                 <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                             </div>
@@ -18007,7 +18010,7 @@ async function startCustomBuilderWorkout() {
                                     <div class="drop-set-row">
                                         <div class="drop-indicator">↓1</div>
                                         <input type="text" class="drop-reps" placeholder="Reps">
-                                        <input type="text" class="drop-kg" placeholder="Kg">
+                                        <input type="text" class="drop-kg" placeholder="${_wuLabel}">
                                         <button class="drop-add-btn" onclick="addDropRow(this)">+</button>
                                     </div>
                                 </div>
@@ -21308,8 +21311,21 @@ function viewWorkoutHistoryDetail(date) {
                      </script>
                  </div>
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
-                     <div>Units</div>
-                     <div style="font-size:0.9rem; font-weight:700; color:var(--primary); cursor:pointer;" onclick="alert('Units toggled (Simulation)')">Metric (kg)</div>
+                     <div>
+                         <div>Units</div>
+                         <div style="font-size:0.75rem; color:var(--text-muted);">Weight &amp; height display</div>
+                     </div>
+                     <select id="unit-preference-selector" onchange="changeUnitPreference(this.value)" style="padding:6px 12px; border:1px solid var(--primary); border-radius:8px; font-size:0.85rem; font-weight:700; color:var(--primary); background:white; font-family:inherit; cursor:pointer;">
+                         <option value="metric">Metric (kg / cm)</option>
+                         <option value="imperial">Imperial (lbs / ft)</option>
+                     </select>
+                     <script>
+                         (function() {
+                             var saved = localStorage.getItem('weightUnitPreference');
+                             var selector = document.getElementById('unit-preference-selector');
+                             if (selector && saved === 'lbs') selector.value = 'imperial';
+                         })();
+                     </script>
                  </div>
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                      <div>
@@ -21544,9 +21560,12 @@ function viewWorkoutHistoryDetail(date) {
                 if(!el) return;
 
                 let currentVal = el.innerText;
-                if(f.id === 'profile-weight-display') currentVal = currentVal.replace(' kg', '');
+                if(f.id === 'profile-weight-display' || f.id === 'profile-goal-display') {
+                    // Strip unit suffix for editing - show value in current display unit
+                    currentVal = currentVal.replace(/\s*(kg|lbs|cm|ft).*$/i, '').trim();
+                }
                 // Use dataset raw for mapped values if available
-                if(el.dataset.raw) currentVal = el.dataset.raw; 
+                if(el.dataset.raw) currentVal = el.dataset.raw;
 
                 el.dataset.original = currentVal;
                 
@@ -21620,9 +21639,20 @@ function viewWorkoutHistoryDetail(date) {
             const input = el.querySelector('input, select');
             if(input) {
                 let val = input.value;
-                quizData[f.key] = val;
-                // Update UI Display properly
-                el.innerText = val + (f.key === 'weight' ? ' kg' : '');
+                // Convert imperial input back to metric for storage
+                if ((f.key === 'weight' || f.key === 'goal_weight') && isImperial()) {
+                    var metricVal = lbsToKg(parseFloat(val));
+                    quizData[f.key] = metricVal;
+                    el.dataset.rawKg = metricVal;
+                    el.innerText = val + ' ' + displayWeightUnit();
+                } else if (f.key === 'weight' || f.key === 'goal_weight') {
+                    quizData[f.key] = parseFloat(val);
+                    el.dataset.rawKg = parseFloat(val);
+                    el.innerText = val + ' ' + displayWeightUnit();
+                } else {
+                    quizData[f.key] = val;
+                    el.innerText = val;
+                }
             }
         });
         
@@ -21750,17 +21780,44 @@ function viewWorkoutHistoryDetail(date) {
                 const ageEl = document.getElementById('recalc-wizard-age');
                 if (ageEl) ageEl.value = profileData.age;
             }
+            // Update labels for current unit preference
+            var hLabel = document.getElementById('recalc-height-label');
+            if (hLabel) hLabel.textContent = 'Height (' + displayHeightUnit() + ')';
+            var wLabel = document.getElementById('recalc-weight-label');
+            if (wLabel) wLabel.textContent = 'Weight (' + displayWeightUnit() + ')';
+            var gwLabel = document.getElementById('recalc-goal-weight-label');
+            if (gwLabel) gwLabel.textContent = 'Goal Weight (' + displayWeightUnit() + ')';
+
             if (profileData.height) {
                 const heightEl = document.getElementById('recalc-wizard-height');
-                if (heightEl) heightEl.value = profileData.height;
+                if (heightEl) {
+                    if (isImperial()) {
+                        var fi = cmToFtIn(parseFloat(profileData.height));
+                        heightEl.value = +(fi.feet + fi.inches / 12).toFixed(1);
+                        heightEl.placeholder = '5.7';
+                        heightEl.step = '0.1';
+                        heightEl.min = '3';
+                        heightEl.max = '8';
+                    } else {
+                        heightEl.value = profileData.height;
+                        heightEl.placeholder = '170';
+                        heightEl.step = '1';
+                        heightEl.min = '100';
+                        heightEl.max = '250';
+                    }
+                }
             }
             if (profileData.weight) {
                 const weightEl = document.getElementById('recalc-wizard-weight');
-                if (weightEl) weightEl.value = profileData.weight;
+                if (weightEl) {
+                    weightEl.value = isImperial() ? kgToLbs(parseFloat(profileData.weight)).toFixed(0) : profileData.weight;
+                }
             }
             if (profileData.goal_weight) {
                 const goalWeightEl = document.getElementById('recalc-wizard-goal-weight');
-                if (goalWeightEl) goalWeightEl.value = profileData.goal_weight;
+                if (goalWeightEl) {
+                    goalWeightEl.value = isImperial() ? kgToLbs(parseFloat(profileData.goal_weight)).toFixed(0) : profileData.goal_weight;
+                }
             }
             if (profileData.activity_level) {
                 const activityEl = document.getElementById('recalc-wizard-activity-level');
@@ -21877,13 +21934,23 @@ function viewWorkoutHistoryDetail(date) {
             }
 
             recalcWizardData.age = parseInt(age);
-            recalcWizardData.height = parseFloat(height);
-            recalcWizardData.weight = parseFloat(weight);
-            recalcWizardData.goal_weight = parseFloat(goalWeight);
+            // Convert imperial input to metric for calculations
+            if (isImperial()) {
+                var ftVal = parseFloat(height);
+                var ftWhole = Math.floor(ftVal);
+                var ftInches = Math.round((ftVal - ftWhole) * 10);
+                recalcWizardData.height = ftInToCm(ftWhole, ftInches);
+                recalcWizardData.weight = lbsToKg(parseFloat(weight));
+                recalcWizardData.goal_weight = lbsToKg(parseFloat(goalWeight));
+            } else {
+                recalcWizardData.height = parseFloat(height);
+                recalcWizardData.weight = parseFloat(weight);
+                recalcWizardData.goal_weight = parseFloat(goalWeight);
+            }
             recalcWizardData.activity_level = activityLevel;
             recalcWizardData.goalBodyType = goalType;
 
-            // Calculate nutrition goals and show results
+            // Calculate nutrition goals and show results (always in metric)
             const nutritionGoals = calculateNutritionGoals({
                 age: recalcWizardData.age,
                 height: recalcWizardData.height,
@@ -21907,12 +21974,15 @@ function viewWorkoutHistoryDetail(date) {
             document.getElementById('recalc-result-carbs').textContent = nutritionGoals.carbs_goal_g + 'g';
             document.getElementById('recalc-result-fat').textContent = nutritionGoals.fat_goal_g + 'g';
 
-            // Update summary text
+            // Update summary text (show in user's preferred units)
             let summaryText = '';
+            var diffKg = Math.abs(recalcWizardData.weight - recalcWizardData.goal_weight);
+            var diffDisplay = isImperial() ? kgToLbs(diffKg).toFixed(0) : diffKg.toFixed(1);
+            var diffUnit = displayWeightUnit();
             if (recalcWizardData.weight > recalcWizardData.goal_weight) {
-                summaryText = `We've set a calorie deficit to help you lose ${(recalcWizardData.weight - recalcWizardData.goal_weight).toFixed(1)}kg.`;
+                summaryText = `We've set a calorie deficit to help you lose ${diffDisplay}${diffUnit}.`;
             } else if (recalcWizardData.weight < recalcWizardData.goal_weight) {
-                summaryText = `We've set a calorie surplus to help you gain ${(recalcWizardData.goal_weight - recalcWizardData.weight).toFixed(1)}kg.`;
+                summaryText = `We've set a calorie surplus to help you gain ${diffDisplay}${diffUnit}.`;
             } else {
                 summaryText = `Your goals are set to maintain your current weight.`;
             }
@@ -22593,13 +22663,26 @@ async function _loadProfileDataRealImpl() {
     if(document.getElementById('profile-email-display')) document.getElementById('profile-email-display').innerText = context.email;
     if(document.getElementById('profile-age-display')) document.getElementById('profile-age-display').innerText = context.age;
     
-    const wStr = String(context.weight).toLowerCase();
-    const weightDisplay = wStr.includes('k') || wStr.includes('l') 
-        ? context.weight 
-        : context.weight + " kg";
+    // Extract raw kg values for weight and goal, then display in preferred units
+    var rawWeightKg = parseFloat(String(context.weight).replace(/[^0-9.]/g, '')) || 0;
+    var rawGoalKg = parseFloat(String(context.goal).replace(/[^0-9.]/g, '')) || 0;
+    var isGoalNumeric = /^\d/.test(String(context.goal).trim());
 
-    if(document.getElementById('profile-weight-display')) document.getElementById('profile-weight-display').innerText = weightDisplay;
-    if(document.getElementById('profile-goal-display')) document.getElementById('profile-goal-display').innerText = context.goal;
+    var weightEl = document.getElementById('profile-weight-display');
+    if (weightEl) {
+        weightEl.dataset.rawKg = rawWeightKg;
+        weightEl.innerText = displayWeight(rawWeightKg, 1) + ' ' + displayWeightUnit();
+    }
+
+    var goalEl = document.getElementById('profile-goal-display');
+    if (goalEl) {
+        if (isGoalNumeric && rawGoalKg > 0) {
+            goalEl.dataset.rawKg = rawGoalKg;
+            goalEl.innerText = displayWeight(rawGoalKg, 1) + ' ' + displayWeightUnit();
+        } else {
+            goalEl.innerText = context.goal;
+        }
+    }
     
     // Updated Protocol Fields
     if(document.getElementById('profile-type-display')) document.getElementById('profile-type-display').innerText = context.profile;
@@ -27215,17 +27298,35 @@ async function wizardNext() {
             wizardAlert("Please enter a valid age (18-100).");
             return;
         }
-        if (!height || height < 100 || height > 250) {
-            wizardAlert("Please enter a valid height in cm (100-250).");
-            return;
+        if (isImperial()) {
+            if (!height || height < 3 || height > 8) {
+                wizardAlert("Please enter a valid height in ft (e.g. 5.7 for 5ft 7in).");
+                return;
+            }
+        } else {
+            if (!height || height < 100 || height > 250) {
+                wizardAlert("Please enter a valid height in cm (100-250).");
+                return;
+            }
         }
-        if (!weight || weight < 30 || weight > 300) {
-            wizardAlert("Please enter a valid weight in kg (30-300).");
-            return;
-        }
-        if (!goalWeight || goalWeight < 30 || goalWeight > 300) {
-            wizardAlert("Please enter a valid goal weight in kg (30-300).");
-            return;
+        if (isImperial()) {
+            if (!weight || weight < 66 || weight > 660) {
+                wizardAlert("Please enter a valid weight in lbs (66-660).");
+                return;
+            }
+            if (!goalWeight || goalWeight < 66 || goalWeight > 660) {
+                wizardAlert("Please enter a valid goal weight in lbs (66-660).");
+                return;
+            }
+        } else {
+            if (!weight || weight < 30 || weight > 300) {
+                wizardAlert("Please enter a valid weight in kg (30-300).");
+                return;
+            }
+            if (!goalWeight || goalWeight < 30 || goalWeight > 300) {
+                wizardAlert("Please enter a valid goal weight in kg (30-300).");
+                return;
+            }
         }
         if (!goalType) {
             wizardAlert("Please select your primary goal.");
@@ -27253,15 +27354,30 @@ async function wizardNext() {
         // Save dietary preference to localStorage for quick access
         localStorage.setItem('dietaryPreference', dietaryPreference);
 
-        // Save to sessionStorage for later processing
+        // Convert imperial to metric for storage and calculations
+        var heightMetric, weightMetric, goalWeightMetric;
+        if (isImperial()) {
+            var ftVal = parseFloat(height);
+            var ftWhole = Math.floor(ftVal);
+            var ftInches = Math.round((ftVal - ftWhole) * 10);
+            heightMetric = ftInToCm(ftWhole, ftInches);
+            weightMetric = lbsToKg(parseFloat(weight));
+            goalWeightMetric = lbsToKg(parseFloat(goalWeight));
+        } else {
+            heightMetric = parseFloat(height);
+            weightMetric = parseFloat(weight);
+            goalWeightMetric = parseFloat(goalWeight);
+        }
+
+        // Save to sessionStorage for later processing (always metric)
         const quizData = {
             name: name,
             age: parseInt(age),
             dietary_preference: dietaryPreference,
             sex: selectedGender, // Use gender from "For Her/For Him" selection
-            height: parseFloat(height),
-            weight: parseFloat(weight),
-            goal_weight: parseFloat(goalWeight),
+            height: heightMetric,
+            weight: weightMetric,
+            goal_weight: goalWeightMetric,
             goalBodyType: goalType, // Maps to: 'Flat' (weight loss), 'Athletic' (toned), 'Body Builder' (muscle gain)
             equipment_access: equipment,
             activity_level: activityLevel,
@@ -30398,7 +30514,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
                 </div>
                 <div class="volume-progress-container" style="display: ${previousSummary && previousSummary.totalVolume > 0 ? 'block' : 'none'}; margin-top: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span class="volume-target-label" style="font-size: 0.65rem; font-weight: 600; color: #a16207;">Target: ${previousSummary && previousSummary.totalVolume > 0 ? previousSummary.totalVolume.toLocaleString() + ' kg' : '—'}</span>
+                        <span class="volume-target-label" style="font-size: 0.65rem; font-weight: 600; color: #a16207;">Target: ${previousSummary && previousSummary.totalVolume > 0 ? previousSummary.totalVolume.toLocaleString() + ' ' + displayWeightUnit() : '—'}</span>
                         <span class="volume-percentage" style="font-size: 0.65rem; font-weight: 700; color: #a16207;">0%</span>
                     </div>
                     <div style="height: 6px; background: #fef08a; border-radius: 3px; overflow: hidden;">
@@ -30408,7 +30524,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
             </div>
 
             <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
+                <div>Set</div><div>Time</div><div>Reps</div><div>${isImperial() ? 'Lbs' : 'Kg'}</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -30482,7 +30598,10 @@ function getPreviousStats(name, set) {
         const h = exerciseHistory[i];
         if (h.set == set) {
              const val = h.reps || h.time;
-             if (h.kg && h.kg !== '0' && h.kg !== '') return `${h.kg}kg x ${val}`;
+             if (h.kg && h.kg !== '0' && h.kg !== '') {
+                 var _dw = isImperial() ? kgToLbs(parseFloat(h.kg)).toFixed(0) : h.kg;
+                 return `${_dw}${displayWeightUnit()} x ${val}`;
+             }
              return `${val}`;
         }
     }
@@ -30500,7 +30619,8 @@ function findPreviousSetData(name) {
     const recent = exerciseHistory[exerciseHistory.length - 1];
     const val = recent.reps || recent.time;
     if (recent.kg && recent.kg !== '0' && recent.kg !== '') {
-        return `${recent.kg}kg x ${val}`;
+        var _dw = isImperial() ? kgToLbs(parseFloat(recent.kg)).toFixed(0) : recent.kg;
+        return `${_dw}${displayWeightUnit()} x ${val}`;
     }
     return val ? `${val}` : null;
 }
@@ -30536,17 +30656,18 @@ function getPreviousWorkoutSummary(exerciseName) {
         return true;
     });
 
-    // Calculate total volume from last workout
+    // Calculate total volume from last workout (convert to display units)
     let totalVolume = 0;
     const sets = uniqueSets.map(s => {
-        const weight = parseFloat(s.kg) || 0;
+        const rawKg = parseFloat(s.kg) || 0;
+        const displayWeight = isImperial() ? kgToLbs(rawKg) : rawKg;
         const reps = parseFloat(s.reps) || 0;
-        const setVolume = weight * reps;
+        const setVolume = displayWeight * reps;
         totalVolume += setVolume;
         return {
             set: s.set,
             reps: s.reps,
-            kg: s.kg,
+            kg: isImperial() ? String(kgToLbs(rawKg).toFixed(0)) : s.kg,
             time: s.time,
             volume: setVolume
         };
@@ -30655,7 +30776,7 @@ function updateVolumeDisplay(card) {
     const percentageLabel = volumeDisplay.querySelector('.volume-percentage');
 
     if (volumeValue) {
-        volumeValue.textContent = totalVolume.toLocaleString() + ' kg';
+        volumeValue.textContent = totalVolume.toLocaleString() + ' ' + displayWeightUnit();
     }
 
     // Compare to previous workout if available
@@ -30670,7 +30791,7 @@ function updateVolumeDisplay(card) {
         // Update progress bar
         if (progressContainer) {
             progressContainer.style.display = 'block';
-            if (targetLabel) targetLabel.textContent = 'Target: ' + targetVolume.toLocaleString() + ' kg';
+            if (targetLabel) targetLabel.textContent = 'Target: ' + targetVolume.toLocaleString() + ' ' + displayWeightUnit();
             if (percentageLabel) {
                 percentageLabel.textContent = totalVolume > 0 ? pct + '%' : '0%';
                 percentageLabel.style.color = totalVolume >= targetVolume ? '#16a34a' : '#a16207';
@@ -30767,7 +30888,7 @@ function updateTotalWorkoutVolume() {
 
     // Update current volume value
     const valueEl = document.getElementById('total-volume-value');
-    if (valueEl) valueEl.textContent = currentTotal.toLocaleString() + ' kg';
+    if (valueEl) valueEl.textContent = currentTotal.toLocaleString() + ' ' + displayWeightUnit();
 
     // Update progress if we have a target
     const progressWrap = document.getElementById('total-volume-progress-wrap');
@@ -30777,7 +30898,7 @@ function updateTotalWorkoutVolume() {
 
     if (lastTotal > 0) {
         if (progressWrap) progressWrap.style.display = 'block';
-        if (targetLabel) targetLabel.textContent = 'Last: ' + lastTotal.toLocaleString() + ' kg';
+        if (targetLabel) targetLabel.textContent = 'Last: ' + lastTotal.toLocaleString() + ' ' + displayWeightUnit();
 
         const pct = currentTotal > 0 ? ((currentTotal / lastTotal) * 100).toFixed(0) : 0;
         const barWidth = Math.min(pct, 100);
@@ -30792,10 +30913,10 @@ function updateTotalWorkoutVolume() {
             if (currentTotal === 0) {
                 diffEl.textContent = '';
             } else if (diff > 0) {
-                diffEl.textContent = '+' + diff.toLocaleString() + ' kg';
+                diffEl.textContent = '+' + diff.toLocaleString() + ' ' + displayWeightUnit();
                 diffEl.style.color = '#22c55e';
             } else if (diff < 0) {
-                diffEl.textContent = Math.abs(diff).toLocaleString() + ' kg to go';
+                diffEl.textContent = Math.abs(diff).toLocaleString() + ' ' + displayWeightUnit() + ' to go';
                 diffEl.style.color = '#fbbf24';
             } else {
                 diffEl.textContent = 'Matched!';
@@ -30822,7 +30943,7 @@ function showLastVolumePopup() {
             const popup = document.getElementById('last-volume-popup');
             const volumeEl = document.getElementById('popup-last-volume');
             if (popup && volumeEl) {
-                volumeEl.textContent = lastTotal.toLocaleString() + ' kg';
+                volumeEl.textContent = lastTotal.toLocaleString() + ' ' + displayWeightUnit();
                 popup.style.display = 'flex';
                 // Auto-dismiss after 4 seconds
                 window._volumePopupTimer = setTimeout(dismissVolumePopup, 4000);
@@ -30857,9 +30978,12 @@ function formatPreviousWorkoutSummary(exerciseName) {
     // PR text
     html += '<div style="flex: 1; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">';
     html += '<span style="font-size: 0.7rem; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">Personal Best</span>';
-    html += '<span style="font-size: 1rem; font-weight: 900; color: #78350f;">' + maxWeight.weight + ' kg x ' + maxWeight.reps + ' reps</span>';
+    var prWt = isImperial() ? kgToLbs(maxWeight.weight).toFixed(0) : maxWeight.weight;
+    var prUnit = displayWeightUnit();
+    html += '<span style="font-size: 1rem; font-weight: 900; color: #78350f;">' + prWt + ' ' + prUnit + ' x ' + maxWeight.reps + ' reps</span>';
     if (maxWeight.bestReps && maxWeight.bestReps > maxWeight.reps) {
-        html += '<span style="font-size: 0.7rem; color: #a16207; font-weight: 600;">(Most reps: ' + maxWeight.bestReps + ' @ ' + maxWeight.bestRepsWeight + 'kg)</span>';
+        var brWt = isImperial() ? kgToLbs(maxWeight.bestRepsWeight).toFixed(0) : maxWeight.bestRepsWeight;
+        html += '<span style="font-size: 0.7rem; color: #a16207; font-weight: 600;">(Most reps: ' + maxWeight.bestReps + ' @ ' + brWt + prUnit + ')</span>';
     }
     html += '</div>';
     if (prDateStr) {
@@ -30892,7 +31016,7 @@ function getVolumeDisplayHtml(exerciseName) {
     // Progress bar
     html += '<div class="volume-progress-container" style="display: ' + (targetVolume > 0 ? 'block' : 'none') + '; margin-top: 8px;">';
     html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">';
-    html += '<span class="volume-target-label" style="font-size: 0.65rem; font-weight: 600; color: #a16207;">Target: ' + (targetVolume > 0 ? targetVolume.toLocaleString() + ' kg' : '—') + '</span>';
+    html += '<span class="volume-target-label" style="font-size: 0.65rem; font-weight: 600; color: #a16207;">Target: ' + (targetVolume > 0 ? targetVolume.toLocaleString() + ' ' + displayWeightUnit() : '—') + '</span>';
     html += '<span class="volume-percentage" style="font-size: 0.65rem; font-weight: 700; color: #a16207;">0%</span>';
     html += '</div>';
     html += '<div style="height: 6px; background: #fef08a; border-radius: 3px; overflow: hidden;">';
@@ -30904,7 +31028,8 @@ function getVolumeDisplayHtml(exerciseName) {
 
 function getSetRowHtml(exName, setNum, isTimeBased, prefillData) {
     // prefillData: optional {kg, reps, time} from previous session
-    const prefillKg = prefillData && prefillData.kg && prefillData.kg !== '0' && prefillData.kg !== '' ? prefillData.kg : '';
+    let prefillKg = prefillData && prefillData.kg && prefillData.kg !== '0' && prefillData.kg !== '' ? prefillData.kg : '';
+    if (prefillKg && isImperial()) prefillKg = kgToLbs(parseFloat(prefillKg)).toFixed(0);
     const prefillReps = prefillData && prefillData.reps ? prefillData.reps : '';
     const prefillTime = prefillData && prefillData.time ? prefillData.time : '';
     const hasPrefill = prefillKg || prefillReps || prefillTime;
@@ -30917,7 +31042,7 @@ function getSetRowHtml(exName, setNum, isTimeBased, prefillData) {
                     ${isTimeBased ? '<svg viewBox="0 0 24 24" style="position:absolute; left:4px; top:50%; transform:translateY(-50%); width:12px; height:12px; fill:#94a3b8;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>' : ''}
                 </div>
                 <input type="text" class="input-reps" placeholder="Reps" value="${prefillReps}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
-                <input type="text" class="input-kg" placeholder="Kg" value="${prefillKg}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
+                <input type="text" class="input-kg" placeholder="${isImperial() ? 'Lbs' : 'Kg'}" value="${prefillKg}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
                 <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
                 <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;">
                     <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -30928,7 +31053,7 @@ function getSetRowHtml(exName, setNum, isTimeBased, prefillData) {
                     <div class="drop-set-row">
                         <div class="drop-indicator">↓1</div>
                         <input type="text" class="drop-reps" placeholder="Reps">
-                        <input type="text" class="drop-kg" placeholder="Kg">
+                        <input type="text" class="drop-kg" placeholder="${isImperial() ? 'Lbs' : 'Kg'}">
                         <button class="drop-add-btn" onclick="addDropRow(this)">+</button>
                     </div>
                 </div>
@@ -31070,7 +31195,7 @@ function addDropRow(btn) {
     newRow.innerHTML = `
         <div class="drop-indicator">↓${dropNum}</div>
         <input type="text" class="drop-reps" placeholder="Reps">
-        <input type="text" class="drop-kg" placeholder="Kg">
+        <input type="text" class="drop-kg" placeholder="${isImperial() ? 'Lbs' : 'Kg'}">
         <button class="drop-add-btn" onclick="addDropRow(this)">+</button>
     `;
     newRow.style.opacity = '0';
@@ -31624,15 +31749,26 @@ async function finishWorkout() {
 
                 // Only save if at least one field is filled
                 if (time || reps || kg || dropSetWeights) {
+                    // Convert lbs to kg if imperial preference
+                    let saveKg = kg;
+                    let saveDropWeights = dropSetWeights;
+                    if (isImperial()) {
+                        if (saveKg) saveKg = String(lbsToKg(parseFloat(saveKg)));
+                        if (saveDropWeights) {
+                            saveDropWeights = saveDropWeights.split(',').map(function(w) {
+                                return w ? String(lbsToKg(parseFloat(w))) : w;
+                            }).join(',');
+                        }
+                    }
                     setsToSave.push({
                         date,
                         exercise: name,
                         set: rIdx + 1,
                         reps: reps,
                         time: time,
-                        kg: kg,
+                        kg: saveKg,
                         isDropSet: isDropSet,
-                        dropSetWeights: dropSetWeights,
+                        dropSetWeights: saveDropWeights,
                         dropSetReps: dropSetReps
                     });
                 }
@@ -32149,10 +32285,16 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
                 let pbText = '';
                 let improvement = '';
                 if (pb.type === 'weight') {
-                    pbText = `${pb.value}kg x ${pb.reps}`;
-                    if (pb.improvement) improvement = `+${pb.improvement}kg`;
+                    var _pbW = isImperial() ? kgToLbs(pb.value).toFixed(0) : pb.value;
+                    var _pbU = displayWeightUnit();
+                    pbText = `${_pbW}${_pbU} x ${pb.reps}`;
+                    if (pb.improvement) {
+                        var _impW = isImperial() ? kgToLbs(pb.improvement).toFixed(1) : pb.improvement;
+                        improvement = `+${_impW}${_pbU}`;
+                    }
                 } else {
-                    pbText = `${pb.value} reps @ ${pb.weight}kg`;
+                    var _pbW2 = isImperial() ? kgToLbs(pb.weight).toFixed(0) : pb.weight;
+                    pbText = `${pb.value} reps @ ${_pbW2}${displayWeightUnit()}`;
                     if (pb.improvement) improvement = `+${pb.improvement}`;
                 }
                 return `
@@ -32855,16 +32997,21 @@ function updateSharePreview() {
             if (improvements && improvements.length > 0) {
                 const imp = improvements[0];
                 let improvementText = '';
+                var _wu = displayWeightUnit();
                 if (imp.weightIncrease > 0 && imp.repsIncrease > 0) {
-                    improvementText = `+${imp.weightIncrease}kg and +${imp.repsIncrease} reps`;
+                    var _wi = isImperial() ? kgToLbs(imp.weightIncrease).toFixed(1) : imp.weightIncrease;
+                    improvementText = `+${_wi}${_wu} and +${imp.repsIncrease} reps`;
                 } else if (imp.weightIncrease > 0) {
-                    improvementText = `+${imp.weightIncrease}kg`;
+                    var _wi2 = isImperial() ? kgToLbs(imp.weightIncrease).toFixed(1) : imp.weightIncrease;
+                    improvementText = `+${_wi2}${_wu}`;
                 } else if (imp.repsIncrease > 0) {
                     improvementText = `+${imp.repsIncrease} reps`;
                 }
                 badge.innerText = '🏆';
                 message.innerText = `Hit a PR on ${imp.exercise}!`;
-                detail.innerText = `${improvementText} (${imp.previousWeight || 0}kg x ${imp.previousReps || 0} → ${imp.currentWeight || 0}kg x ${imp.currentReps || 0})`;
+                var _prevW = isImperial() ? kgToLbs(imp.previousWeight || 0).toFixed(0) : (imp.previousWeight || 0);
+                var _currW = isImperial() ? kgToLbs(imp.currentWeight || 0).toFixed(0) : (imp.currentWeight || 0);
+                detail.innerText = `${improvementText} (${_prevW}${_wu} x ${imp.previousReps || 0} → ${_currW}${_wu} x ${imp.currentReps || 0})`;
             } else if (milestones && milestones.length > 0) {
                 const m = milestones[0];
                 const emoji = m.milestone_value === 1 ? '🎉' : m.milestone_value >= 100 ? '👑' : m.milestone_value >= 50 ? '🏆' : m.milestone_value >= 25 ? '🌟' : m.milestone_value >= 10 ? '🔥' : '💪';
@@ -34243,7 +34390,7 @@ function renderWorkoutExercises(exercises) {
             ${getVolumeDisplayHtml(ex.name)}
 
             <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
+                <div>Set</div><div>Time</div><div>Reps</div><div>${isImperial() ? 'Lbs' : 'Kg'}</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -34662,7 +34809,7 @@ function addExerciseWithSets(exerciseName, sets) {
                     <div style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${idx + 1}</div>
                     <input type="text" class="input-time" placeholder="-" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                     <input type="text" class="input-reps" placeholder="Reps" value="${set.reps || ''}" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                    <input type="text" class="input-kg" placeholder="Kg" value="${set.kg || ''}" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                    <input type="text" class="input-kg" placeholder="${isImperial() ? 'Lbs' : 'Kg'}" value="${set.kg || ''}" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                     <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
                     <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                 </div>
@@ -34671,7 +34818,7 @@ function addExerciseWithSets(exerciseName, sets) {
                         <div class="drop-set-row">
                             <div class="drop-indicator">↓1</div>
                             <input type="text" class="drop-reps" placeholder="Reps">
-                            <input type="text" class="drop-kg" placeholder="Kg">
+                            <input type="text" class="drop-kg" placeholder="${isImperial() ? 'Lbs' : 'Kg'}">
                             <button class="drop-add-btn" onclick="addDropRow(this)">+</button>
                         </div>
                     </div>
@@ -34724,7 +34871,7 @@ function addExerciseWithSets(exerciseName, sets) {
                 </div>
                 <div class="volume-progress-container" style="display: ${previousSummary && previousSummary.totalVolume > 0 ? 'block' : 'none'}; margin-top: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span class="volume-target-label" style="font-size: 0.65rem; font-weight: 600; color: #a16207;">Target: ${previousSummary && previousSummary.totalVolume > 0 ? previousSummary.totalVolume.toLocaleString() + ' kg' : '—'}</span>
+                        <span class="volume-target-label" style="font-size: 0.65rem; font-weight: 600; color: #a16207;">Target: ${previousSummary && previousSummary.totalVolume > 0 ? previousSummary.totalVolume.toLocaleString() + ' ' + displayWeightUnit() : '—'}</span>
                         <span class="volume-percentage" style="font-size: 0.65rem; font-weight: 700; color: #a16207;">0%</span>
                     </div>
                     <div style="height: 6px; background: #fef08a; border-radius: 3px; overflow: hidden;">
@@ -34734,7 +34881,7 @@ function addExerciseWithSets(exerciseName, sets) {
             </div>
 
             <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
+                <div>Set</div><div>Time</div><div>Reps</div><div>${isImperial() ? 'Lbs' : 'Kg'}</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -35048,7 +35195,7 @@ function addExerciseToUI(exercise) {
                 </div>
                 <div class="volume-progress-container" style="display: ${previousSummary && previousSummary.totalVolume > 0 ? 'block' : 'none'}; margin-top: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span class="volume-target-label" style="font-size: 0.65rem; font-weight: 600; color: #a16207;">Target: ${previousSummary && previousSummary.totalVolume > 0 ? previousSummary.totalVolume.toLocaleString() + ' kg' : '—'}</span>
+                        <span class="volume-target-label" style="font-size: 0.65rem; font-weight: 600; color: #a16207;">Target: ${previousSummary && previousSummary.totalVolume > 0 ? previousSummary.totalVolume.toLocaleString() + ' ' + displayWeightUnit() : '—'}</span>
                         <span class="volume-percentage" style="font-size: 0.65rem; font-weight: 700; color: #a16207;">0%</span>
                     </div>
                     <div style="height: 6px; background: #fef08a; border-radius: 3px; overflow: hidden;">
@@ -35058,7 +35205,7 @@ function addExerciseToUI(exercise) {
             </div>
 
             <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
+                <div>Set</div><div>Time</div><div>Reps</div><div>${isImperial() ? 'Lbs' : 'Kg'}</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -35075,7 +35222,7 @@ function addExerciseToUI(exercise) {
                                 <div class="set-number" style="font-weight: 800; color: #94a3b8; font-size: 0.85rem; text-align: center;">${setIdx + 1}</div>
                                 <input type="text" class="input-time" placeholder="-" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                                 <input type="text" class="input-reps" placeholder="Reps" value="${prefillReps}" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                                <input type="text" class="input-kg" placeholder="Kg" value="${prefillKg}" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
+                                <input type="text" class="input-kg" placeholder="${isImperial() ? 'Lbs' : 'Kg'}" value="${prefillKg}" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                                 <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
                                 <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                             </div>
@@ -35084,7 +35231,7 @@ function addExerciseToUI(exercise) {
                                     <div class="drop-set-row">
                                         <div class="drop-indicator">↓1</div>
                                         <input type="text" class="drop-reps" placeholder="Reps">
-                                        <input type="text" class="drop-kg" placeholder="Kg">
+                                        <input type="text" class="drop-kg" placeholder="${isImperial() ? 'Lbs' : 'Kg'}">
                                         <button class="drop-add-btn" onclick="addDropRow(this)">+</button>
                                     </div>
                                 </div>
@@ -36518,18 +36665,18 @@ function openAsClient() {
                 <!-- Height & Weight -->
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px;">
                     <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
-                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Height (cm)</label>
+                        <label id="recalc-height-label" style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Height (cm)</label>
                         <input type="number" id="recalc-wizard-height" class="wizard-input" placeholder="170" min="100" max="250" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                     </div>
                     <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
-                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Weight (kg)</label>
+                        <label id="recalc-weight-label" style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Weight (kg)</label>
                         <input type="number" id="recalc-wizard-weight" class="wizard-input" placeholder="70" min="30" max="300" step="0.1" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                     </div>
                 </div>
 
                 <!-- Goal Weight -->
                 <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
-                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Goal Weight (kg)</label>
+                    <label id="recalc-goal-weight-label" style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Goal Weight (kg)</label>
                     <input type="number" id="recalc-wizard-goal-weight" class="wizard-input" placeholder="65" min="30" max="300" step="0.1" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                 </div>
 
@@ -36674,20 +36821,39 @@ function openAsClient() {
                 <!-- Height & Weight -->
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px;">
                     <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
-                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Height (cm)</label>
+                        <label id="wizard-height-label" style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Height (cm)</label>
                         <input type="number" id="wizard-height" class="wizard-input" placeholder="170" min="100" max="250" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                     </div>
                     <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
-                        <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Weight (kg)</label>
+                        <label id="wizard-weight-label" style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Weight (kg)</label>
                         <input type="number" id="wizard-weight" class="wizard-input" placeholder="70" min="30" max="300" step="0.1" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                     </div>
                 </div>
 
                 <!-- Goal Weight -->
                 <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
-                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Goal Weight (kg)</label>
+                    <label id="wizard-goal-weight-label" style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Goal Weight (kg)</label>
                     <input type="number" id="wizard-goal-weight" class="wizard-input" placeholder="65" min="30" max="300" step="0.1" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                 </div>
+                <script>
+                    (function() {
+                        var imp = localStorage.getItem('weightUnitPreference') === 'lbs';
+                        if (imp) {
+                            var hl = document.getElementById('wizard-height-label');
+                            if (hl) hl.textContent = 'Height (ft)';
+                            var hi = document.getElementById('wizard-height');
+                            if (hi) { hi.placeholder = '5.7'; hi.min = '3'; hi.max = '8'; hi.step = '0.1'; }
+                            var wl = document.getElementById('wizard-weight-label');
+                            if (wl) wl.textContent = 'Weight (lbs)';
+                            var wi = document.getElementById('wizard-weight');
+                            if (wi) { wi.placeholder = '154'; }
+                            var gl = document.getElementById('wizard-goal-weight-label');
+                            if (gl) gl.textContent = 'Goal Weight (lbs)';
+                            var gi = document.getElementById('wizard-goal-weight');
+                            if (gi) { gi.placeholder = '143'; }
+                        }
+                    })();
+                </script>
 
                 <!-- Primary Goal -->
                 <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:15px;">
@@ -41012,9 +41178,10 @@ async function loadGroupChatMessages(chatId) {
                         const setRows = setsArr.map((s, i) => {
                             const w = s.weight || s.kg || 0;
                             const r = s.reps || 0;
+                            const _dw = isImperial() ? kgToLbs(w).toFixed(0) : w;
                             return `<div style="display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid rgba(0,0,0,0.05);">
                                 <span style="width:24px; height:24px; background:#e2e8f0; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:var(--text-muted);">${i + 1}</span>
-                                <span style="font-size:0.9rem; font-weight:600; color:var(--text-main);">${w}kg × ${r} reps</span>
+                                <span style="font-size:0.9rem; font-weight:600; color:var(--text-main);">${_dw}${displayWeightUnit()} × ${r} reps</span>
                             </div>`;
                         }).join('');
                         detailsHtml = `<div style="margin-top:10px;">${setRows}</div>`;
@@ -41050,9 +41217,12 @@ async function loadGroupChatMessages(chatId) {
                     // PB card: show improvement prominently
                     let pbHtml = '';
                     if (winDetails.currentWeight || winDetails.currentReps) {
+                        var _cw = isImperial() ? kgToLbs(winDetails.currentWeight || 0).toFixed(0) : (winDetails.currentWeight || 0);
+                        var _pw = isImperial() ? kgToLbs(winDetails.previousWeight || 0).toFixed(0) : (winDetails.previousWeight || 0);
+                        var _u = displayWeightUnit();
                         pbHtml += `<div style="background:rgba(0,0,0,0.04); border-radius:10px; padding:12px; text-align:center; margin-top:10px;">
-                            <div style="font-size:1.3rem; font-weight:800; color:var(--text-main);">${winDetails.currentWeight || 0}kg × ${winDetails.currentReps || 0} reps</div>
-                            ${winDetails.previousWeight != null ? `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Previous: ${winDetails.previousWeight}kg × ${winDetails.previousReps || 0} reps</div>` : ''}
+                            <div style="font-size:1.3rem; font-weight:800; color:var(--text-main);">${_cw}${_u} × ${winDetails.currentReps || 0} reps</div>
+                            ${winDetails.previousWeight != null ? `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Previous: ${_pw}${_u} × ${winDetails.previousReps || 0} reps</div>` : ''}
                         </div>`;
                     }
                     if (winDetails.improvement) {
@@ -44953,6 +45123,108 @@ async function subscribeUserToPush() {
 }
 
 /**
+ * Unit preference helpers
+ */
+function isImperial() {
+    return localStorage.getItem('weightUnitPreference') === 'lbs';
+}
+
+function kgToLbs(kg) {
+    return +(kg * 2.20462).toFixed(1);
+}
+
+function lbsToKg(lbs) {
+    return +(lbs * 0.453592).toFixed(1);
+}
+
+function cmToFtIn(cm) {
+    const totalInches = cm / 2.54;
+    const feet = Math.floor(totalInches / 12);
+    const inches = Math.round(totalInches % 12);
+    return { feet, inches };
+}
+
+function ftInToCm(feet, inches) {
+    return Math.round((feet * 12 + inches) * 2.54);
+}
+
+function displayWeight(kg, decimals) {
+    if (decimals === undefined) decimals = 1;
+    if (isImperial()) return kgToLbs(parseFloat(kg)).toFixed(decimals);
+    return parseFloat(kg).toFixed(decimals);
+}
+
+function displayWeightUnit() {
+    return isImperial() ? 'lbs' : 'kg';
+}
+
+function displayHeight(cm) {
+    if (isImperial()) {
+        var fi = cmToFtIn(parseFloat(cm));
+        return fi.feet + "'" + fi.inches + '"';
+    }
+    return Math.round(parseFloat(cm)) + ' cm';
+}
+
+function displayHeightUnit() {
+    return isImperial() ? 'ft' : 'cm';
+}
+
+/**
+ * Change unit preference (called from settings selector)
+ */
+window.changeUnitPreference = function(value) {
+    var isImp = (value === 'imperial');
+    localStorage.setItem('weightUnitPreference', isImp ? 'lbs' : 'kg');
+
+    // Update profile weight display
+    var weightEl = document.getElementById('profile-weight-display');
+    if (weightEl) {
+        var raw = weightEl.dataset.rawKg;
+        if (raw) {
+            weightEl.innerText = displayWeight(raw, 1) + ' ' + displayWeightUnit();
+        }
+    }
+
+    // Update profile goal display if it shows weight
+    var goalEl = document.getElementById('profile-goal-display');
+    if (goalEl && goalEl.dataset.rawKg) {
+        goalEl.innerText = displayWeight(goalEl.dataset.rawKg, 1) + ' ' + displayWeightUnit();
+    }
+
+    // Refresh performance cards, weigh-in labels, etc.
+    if (typeof updateWeighInUnitLabel === 'function') updateWeighInUnitLabel();
+    if (typeof loadPerformanceCards === 'function' && window.currentUser) loadPerformanceCards(window.currentUser.id);
+    if (typeof renderWeightTrendChart === 'function') {
+        // Re-render weight trend if data is cached
+        var trendContainer = document.getElementById('weight-trend-chart');
+        if (trendContainer && window._cachedWeighIns) renderWeightTrendChart(window._cachedWeighIns);
+    }
+    if (typeof renderRecentPBs === 'function' && window.currentUser) renderRecentPBs();
+
+    // Update recalc wizard labels if visible
+    var recalcHeightLabel = document.querySelector('#recalc-wizard-height')?.closest('.wizard-input-group')?.querySelector('label');
+    if (recalcHeightLabel) recalcHeightLabel.textContent = 'Height (' + displayHeightUnit() + ')';
+    var recalcWeightLabel = document.querySelector('#recalc-wizard-weight')?.closest('.wizard-input-group')?.querySelector('label');
+    if (recalcWeightLabel) recalcWeightLabel.textContent = 'Weight (' + displayWeightUnit() + ')';
+    var recalcGoalLabel = document.querySelector('#recalc-wizard-goal-weight')?.closest('.wizard-input-group')?.querySelector('label');
+    if (recalcGoalLabel) recalcGoalLabel.textContent = 'Goal Weight (' + displayWeightUnit() + ')';
+
+    // Update onboarding wizard labels
+    var wizHL = document.getElementById('wizard-height-label');
+    if (wizHL) wizHL.textContent = 'Height (' + displayHeightUnit() + ')';
+    var wizWL = document.getElementById('wizard-weight-label');
+    if (wizWL) wizWL.textContent = 'Weight (' + displayWeightUnit() + ')';
+    var wizGL = document.getElementById('wizard-goal-weight-label');
+    if (wizGL) wizGL.textContent = 'Goal Weight (' + displayWeightUnit() + ')';
+
+    // Update kg/lbs placeholders on workout inputs
+    var kgPlaceholder = isImp ? 'Lbs' : 'Kg';
+    document.querySelectorAll('.input-kg').forEach(function(el) { el.placeholder = kgPlaceholder; });
+    document.querySelectorAll('.drop-kg').forEach(function(el) { el.placeholder = kgPlaceholder; });
+};
+
+/**
  * Toggle user notifications preference
  */
 window.toggleUserNotifications = async function(enabled) {
@@ -45253,7 +45525,7 @@ updateCoachUI();
             ${getVolumeDisplayHtml(ex.name)}
 
             <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
+                <div>Set</div><div>Time</div><div>Reps</div><div>${isImperial() ? 'Lbs' : 'Kg'}</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -50629,7 +50901,7 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
             duration: data.duration || durationText,
             exercises: exercises,
             total_sets: data.sets ? data.sets.length : 0,
-            total_volume: totalVolume > 0 ? totalVolume.toLocaleString() + ' kg' : null,
+            total_volume: totalVolume > 0 ? totalVolume.toLocaleString() + ' ' + displayWeightUnit() : null,
             pbs: pbs.length > 0 ? pbs : null
         };
 
@@ -56206,7 +56478,7 @@ function renderMovementMultiWeekUI(weeks) {
     const metrics = [
         { key: 'sessions', label: 'Sessions', color: '#6366f1', suffix: '' },
         { key: 'totalSets', label: 'Sets', color: '#3b82f6', suffix: '' },
-        { key: 'totalVolume', label: 'Volume', color: '#f59e0b', suffix: 'kg' },
+        { key: 'totalVolume', label: 'Volume', color: '#f59e0b', suffix: displayWeightUnit() },
         { key: 'activeMinutes', label: 'Minutes', color: '#ef4444', suffix: '' }
     ];
 
