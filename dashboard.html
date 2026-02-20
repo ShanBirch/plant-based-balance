@@ -1436,6 +1436,12 @@ async function applyAppTheme(themeKey) {
         opacity: 0.7;
         transform: scale(0.97);
     }
+    .perm-card-btn.requesting-btn {
+        background: #e2e8f0;
+        color: #64748b;
+        cursor: wait;
+        pointer-events: none;
+    }
     .perm-continue-btn {
         display: block;
         width: 100%;
@@ -9928,8 +9934,19 @@ async function applyAppTheme(themeKey) {
             fetchAndStoreWeather();
         };
 
-        // Delay to allow currentUser to be set after auth
-        setTimeout(fetchAndStoreWeather, 3000);
+        // Delay to allow currentUser to be set after auth.
+        // On native apps with first-time permissions pending, skip the automatic
+        // weather fetch — it would trigger a standalone OS location dialog that
+        // races with the grouped permissions modal. The modal's close handler
+        // calls requestWeatherLocation() after the user grants location there.
+        setTimeout(function() {
+            if (typeof isNativeApp === 'function' && isNativeApp() &&
+                !localStorage.getItem('native_permissions_requested')) {
+                // Permissions modal will handle weather fetch after it closes
+                return;
+            }
+            fetchAndStoreWeather();
+        }, 3000);
     })();
     </script>
 
@@ -26824,19 +26841,21 @@ function updatePermBtn(permId, status) {
     const btn = document.getElementById('perm-btn-' + permId);
     if (!card || !btn) return;
 
+    // Clear all state classes first
+    card.classList.remove('granted', 'denied');
+    btn.classList.remove('granted-btn', 'denied-btn', 'requesting-btn');
+    card.style.cursor = '';
+    card.onclick = null;
+
     if (status === 'granted') {
         card.classList.add('granted');
-        card.classList.remove('denied');
         btn.textContent = 'Allowed';
         btn.classList.add('granted-btn');
-        btn.classList.remove('denied-btn');
         btn.onclick = null;
     } else if (status === 'denied') {
         card.classList.add('denied');
-        card.classList.remove('granted');
-        btn.textContent = 'Settings ›';
+        btn.textContent = 'Settings \u203a';
         btn.classList.add('denied-btn');
-        btn.classList.remove('granted-btn');
         // Let the user open App Settings to grant the permission manually
         btn.onclick = () => {
             if (window.NativePermissions && window.NativePermissions.openAppSettings) {
@@ -26851,7 +26870,22 @@ function updatePermBtn(permId, status) {
         card.onclick = (e) => {
             if (e.target !== btn) btn.click();
         };
+    } else if (status === 'requesting') {
+        btn.textContent = 'Requesting...';
+        btn.classList.add('requesting-btn');
+        btn.onclick = null;
     }
+}
+
+// Set a button to "requesting" state immediately on tap to prevent double-taps
+// and give visual feedback while the OS dialog is pending
+function setPermRequesting(permId) {
+    const btn = document.getElementById('perm-btn-' + permId);
+    if (!btn) return;
+    // Don't re-request if already granted or already requesting
+    if (btn.classList.contains('granted-btn') || btn.classList.contains('requesting-btn')) return false;
+    updatePermBtn(permId, 'requesting');
+    return true;
 }
 
 // Permission request queue — Android can only show one OS permission dialog
@@ -26866,6 +26900,7 @@ function _enqueuePerm(fn) {
 }
 
 async function requestPermCamera() {
+    if (!setPermRequesting('camera')) return;
     return _enqueuePerm(async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -26880,6 +26915,7 @@ async function requestPermCamera() {
 }
 
 async function requestPermMic() {
+    if (!setPermRequesting('mic')) return;
     return _enqueuePerm(async () => {
         try {
             // On native Android, use the NativePermissions bridge to ensure the
@@ -26922,6 +26958,7 @@ async function requestPermMic() {
 }
 
 async function requestPermHealth() {
+    if (!setPermRequesting('health')) return;
     return _enqueuePerm(async () => {
         try {
             // First try the Capacitor health plugin (opens Health Connect authorization UI)
@@ -26941,9 +26978,9 @@ async function requestPermHealth() {
         try {
             if (window.NativePermissions && typeof window.NativePermissions.openHealthConnect === 'function') {
                 window.NativePermissions.openHealthConnect();
-                // Don't mark as denied — the user is being taken to Health Connect
-                // to grant permission. The button will update when they return
-                // (via _recheckHealthPermission triggered by onResume).
+                // Keep button in "requesting" state — user is being taken to
+                // Health Connect to grant permission. The button will update
+                // when they return (via _recheckHealthPermission in onResume).
                 return;
             }
         } catch (e2) {
@@ -26956,6 +26993,7 @@ async function requestPermHealth() {
 }
 
 async function requestPermLocation() {
+    if (!setPermRequesting('location')) return;
     return _enqueuePerm(async () => {
         try {
             // Prefer the Java bridge for native Android location permission
@@ -26996,6 +27034,7 @@ async function requestPermLocation() {
 }
 
 async function requestPermNotif() {
+    if (!setPermRequesting('notif')) return;
     return _enqueuePerm(async () => {
         try {
             // Prefer the Java bridge for reliable Android notification permission
@@ -52836,6 +52875,27 @@ window._onPermissionRecheck = function(notifEnabled) {
     var permModal = document.getElementById('native-permissions-modal');
     if (permModal && permModal.style.display !== 'none') {
         updatePermBtn('notif', notifEnabled ? 'granted' : 'denied');
+
+        // Also recheck camera and microphone when returning from app settings,
+        // since the user may have toggled those in device settings too.
+        // Use getUserMedia probes that resolve quickly without showing OS dialogs
+        // (permission is already decided at this point).
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(s) { s.getTracks().forEach(function(t){t.stop();}); updatePermBtn('camera', 'granted'); })
+            .catch(function() {
+                var camBtn = document.getElementById('perm-btn-camera');
+                if (camBtn && (camBtn.classList.contains('requesting-btn') || camBtn.classList.contains('denied-btn'))) {
+                    updatePermBtn('camera', 'denied');
+                }
+            });
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(function(s) { s.getTracks().forEach(function(t){t.stop();}); updatePermBtn('mic', 'granted'); })
+            .catch(function() {
+                var micBtn = document.getElementById('perm-btn-mic');
+                if (micBtn && (micBtn.classList.contains('requesting-btn') || micBtn.classList.contains('denied-btn'))) {
+                    updatePermBtn('mic', 'denied');
+                }
+            });
     }
 };
 
@@ -52852,11 +52912,16 @@ window._recheckHealthPermission = async function() {
             var ready = await window.NativeHealth.init();
             if (ready) {
                 updatePermBtn('health', 'granted');
+                return;
             }
         }
     } catch (e) {
-        // Still not available — leave the button in its current state
         console.log('[Permissions] Health recheck:', e);
+    }
+    // User returned without granting — reset from "requesting" to allow retry
+    var btn = document.getElementById('perm-btn-health');
+    if (btn && btn.classList.contains('requesting-btn')) {
+        updatePermBtn('health', 'denied');
     }
 };
 
@@ -52866,6 +52931,40 @@ window._recheckLocationPermission = function(locationEnabled) {
     var permModal = document.getElementById('native-permissions-modal');
     if (permModal && permModal.style.display !== 'none') {
         updatePermBtn('location', locationEnabled ? 'granted' : 'denied');
+    }
+};
+
+// Comprehensive recheck of all permissions when returning from app settings.
+// Called by the Java bridge in onResume() alongside the individual rechecks.
+window._recheckAllPermissions = function() {
+    var permModal = document.getElementById('native-permissions-modal');
+    if (!permModal || permModal.style.display === 'none') return;
+
+    // Notification
+    if (window.NativePermissions && typeof window.NativePermissions.hasNotificationPermission === 'function') {
+        updatePermBtn('notif', window.NativePermissions.hasNotificationPermission() ? 'granted' : 'denied');
+    }
+    // Location
+    if (window.NativePermissions && typeof window.NativePermissions.hasLocationPermission === 'function') {
+        updatePermBtn('location', window.NativePermissions.hasLocationPermission() ? 'granted' : 'denied');
+    }
+    // Camera probe
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function(s) { s.getTracks().forEach(function(t){t.stop();}); updatePermBtn('camera', 'granted'); })
+        .catch(function() {
+            var camBtn = document.getElementById('perm-btn-camera');
+            if (camBtn && !camBtn.classList.contains('granted-btn')) updatePermBtn('camera', 'denied');
+        });
+    // Microphone probe
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(s) { s.getTracks().forEach(function(t){t.stop();}); updatePermBtn('mic', 'granted'); })
+        .catch(function() {
+            var micBtn = document.getElementById('perm-btn-mic');
+            if (micBtn && !micBtn.classList.contains('granted-btn')) updatePermBtn('mic', 'denied');
+        });
+    // Health — delegate to the existing recheck
+    if (typeof window._recheckHealthPermission === 'function') {
+        window._recheckHealthPermission();
     }
 };
 
