@@ -9018,6 +9018,8 @@ async function applyAppTheme(themeKey) {
             return fetch('/api/fitbit/data?user_id=' + window.currentUser.id);
         }).then(r => r.json()).then(data => {
             if (data.connected) updateFitbitDisplay(data);
+            // Refresh challenge progress (steps/sleep challenges may use Fitbit data)
+            if (typeof refreshChallengeProgress === 'function') refreshChallengeProgress();
         }).catch(err => {
             console.warn('Fitbit sync error:', err);
         }).finally(() => {
@@ -9151,7 +9153,11 @@ async function applyAppTheme(themeKey) {
         if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
         fetch('/api/whoop/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: window.currentUser.id }) })
             .then(r => r.json()).then(() => fetch('/api/whoop/data?user_id=' + window.currentUser.id))
-            .then(r => r.json()).then(data => { if (data.connected) updateWhoopDisplay(data); })
+            .then(r => r.json()).then(data => {
+                if (data.connected) updateWhoopDisplay(data);
+                // Refresh challenge progress (sleep challenge uses WHOOP data)
+                if (typeof refreshChallengeProgress === 'function') refreshChallengeProgress();
+            })
             .catch(err => console.warn('WHOOP sync error:', err))
             .finally(() => { if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; } });
     }
@@ -9262,7 +9268,11 @@ async function applyAppTheme(themeKey) {
         if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
         fetch('/api/oura/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: window.currentUser.id }) })
             .then(r => r.json()).then(() => fetch('/api/oura/data?user_id=' + window.currentUser.id))
-            .then(r => r.json()).then(data => { if (data.connected) updateOuraDisplay(data); })
+            .then(r => r.json()).then(data => {
+                if (data.connected) updateOuraDisplay(data);
+                // Refresh challenge progress (sleep + steps challenges use Oura data)
+                if (typeof refreshChallengeProgress === 'function') refreshChallengeProgress();
+            })
             .catch(err => console.warn('Oura sync error:', err))
             .finally(() => { if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; } });
     }
@@ -41892,8 +41902,7 @@ async function loadHomeChallenges() {
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="font-size: 1.2rem; font-weight: 800; color: white;">${challenge.user_points}</div>
-                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.7); font-weight: 600;">pts</div>
+                        <div style="font-size: 1.2rem; font-weight: 800; color: white;">${typeof formatChallengePoints === 'function' ? formatChallengePoints(challenge.user_points, challenge.challenge_type || 'xp') : challenge.user_points}</div>
                     </div>
                 </div>
             </div>
@@ -41954,12 +41963,12 @@ async function loadChallenges() {
                                 <div style="font-size: 1.2rem; font-weight: 700; color: #7c3aed;">#${challenge.user_rank}</div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">Your Points</div>
-                                <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-main);">${challenge.user_points}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Your Score</div>
+                                <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-main);">${typeof formatChallengePoints === 'function' ? formatChallengePoints(challenge.user_points, challenge.challenge_type || 'xp') : challenge.user_points}</div>
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 0.75rem; color: var(--text-muted);">Leader</div>
-                                <div style="font-size: 0.9rem; font-weight: 600; color: #7c3aed;">${challenge.leader_name} (${challenge.leader_points})</div>
+                                <div style="font-size: 0.9rem; font-weight: 600; color: #7c3aed;">${challenge.leader_name} (${typeof formatChallengePoints === 'function' ? formatChallengePoints(challenge.leader_points, challenge.challenge_type || 'xp') : challenge.leader_points})</div>
                             </div>
                         </div>
                     </div>
@@ -42746,7 +42755,11 @@ async function openChallengeLeaderboard(challengeId) {
             .single();
 
         if (challenge) {
-            document.getElementById('challenge-leaderboard-title').textContent = challenge.name;
+            // Store challenge type for chart labels
+            window._currentChallengeType = challenge.challenge_type || 'xp';
+
+            const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
+            document.getElementById('challenge-leaderboard-title').textContent = `${cType.emoji} ${challenge.name}`;
             const endDate = new Date(challenge.end_date);
             const now = new Date();
             const daysRemaining = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
@@ -42795,11 +42808,11 @@ function updatePodium(leaderboard) {
         { rank: 3, prefix: '3rd' }
     ];
 
+    // Get challenge type from first leaderboard entry (all share same type)
+    const challengeType = leaderboard[0]?.challenge_type || 'xp';
+
     positions.forEach(pos => {
         const participant = leaderboard.find(p => p.rank === pos.rank);
-        const nameEl = document.getElementById(`podium-${pos.prefix.toLowerCase().replace('st','st').replace('nd','nd').replace('rd','rd')}-name`);
-        const photoEl = document.getElementById(`podium-${pos.prefix.toLowerCase().replace('st','st').replace('nd','nd').replace('rd','rd')}-photo`);
-        const ptsEl = document.getElementById(`podium-${pos.prefix.toLowerCase().replace('st','st').replace('nd','nd').replace('rd','rd')}-pts`);
 
         // Simpler approach - just use the rank number
         const suffix = pos.rank === 1 ? '1st' : pos.rank === 2 ? '2nd' : '3rd';
@@ -42809,7 +42822,7 @@ function updatePodium(leaderboard) {
 
         if (participant) {
             if (podiumNameEl) podiumNameEl.textContent = participant.user_name;
-            if (podiumPtsEl) podiumPtsEl.textContent = `${participant.challenge_points} PTS`;
+            if (podiumPtsEl) podiumPtsEl.textContent = formatChallengePoints(participant.challenge_points, challengeType);
             if (podiumPhotoEl) {
                 const initials = (participant.user_name || '?').charAt(0).toUpperCase();
                 podiumPhotoEl.innerHTML = participant.user_photo
@@ -42819,7 +42832,7 @@ function updatePodium(leaderboard) {
             }
         } else {
             if (podiumNameEl) podiumNameEl.textContent = '--';
-            if (podiumPtsEl) podiumPtsEl.textContent = '0 PTS';
+            if (podiumPtsEl) podiumPtsEl.textContent = challengeType === 'sleep' ? '0m' : '0';
         }
     });
 }
@@ -42834,10 +42847,14 @@ function updateFullRankings(leaderboard) {
         return;
     }
 
+    // Get challenge type from first entry
+    const challengeType = leaderboard[0]?.challenge_type || 'xp';
+
     container.innerHTML = leaderboard.map(participant => {
         const initials = (participant.user_name || '?').charAt(0).toUpperCase();
         const isCurrentUser = participant.user_id === window.currentUser?.id;
         const rankColor = participant.rank === 1 ? '#fbbf24' : participant.rank === 2 ? '#94a3b8' : participant.rank === 3 ? '#d97706' : '#6b7280';
+        const formattedPts = formatChallengePoints(participant.challenge_points, challengeType);
 
         return `
             <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; ${isCurrentUser ? 'background: #f0fdf4; margin: 0 -15px; padding: 12px 15px;' : ''}">
@@ -42848,7 +42865,7 @@ function updateFullRankings(leaderboard) {
                 <div style="flex: 1;">
                     <div style="font-weight: 600; color: var(--text-main);">${participant.user_name}${isCurrentUser ? ' (You)' : ''}</div>
                 </div>
-                <div style="font-weight: 700; color: var(--text-main);">${participant.challenge_points} pts</div>
+                <div style="font-weight: 700; color: var(--text-main);">${formattedPts}</div>
             </div>
         `;
     }).join('');
@@ -42934,7 +42951,7 @@ function renderChallengeChart(history) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    title: { display: true, text: 'Points' }
+                    title: { display: true, text: CHALLENGE_UNIT_LABELS[window._currentChallengeType] || 'Points' }
                 }
             }
         }
@@ -42975,6 +42992,62 @@ async function leaveCurrentChallenge() {
     } catch (error) {
         console.error('Error leaving challenge:', error);
         alert('Failed to leave challenge');
+    }
+}
+
+// ============================================================
+// CHALLENGE TYPE PROGRESS TRACKING
+// Ensures all 8 challenge types get their scores updated
+// when the user performs relevant actions.
+// ============================================================
+
+// Unit labels for each challenge type (matches DB get_challenge_unit)
+const CHALLENGE_UNIT_LABELS = {
+    xp: 'XP',
+    workouts: 'workouts',
+    volume: 'kg',
+    calories: 'days',
+    steps: 'steps',
+    streak: 'days',
+    sleep: 'min',
+    water: 'days'
+};
+
+// Format challenge points with appropriate unit for display
+function formatChallengePoints(points, challengeType) {
+    const unit = CHALLENGE_UNIT_LABELS[challengeType] || 'pts';
+    if (challengeType === 'volume' && points >= 1000) {
+        return `${(points / 1000).toFixed(1)}t`;
+    }
+    if (challengeType === 'steps' && points >= 10000) {
+        return `${(points / 1000).toFixed(1)}k ${unit}`;
+    }
+    if (challengeType === 'sleep') {
+        // Convert minutes to hours display
+        const hours = Math.floor(points / 60);
+        const mins = points % 60;
+        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+    }
+    return `${points.toLocaleString()} ${unit}`;
+}
+
+// Update challenge progress for the current user
+// Called after workouts, meals, water logging, wearable sync, etc.
+// The DB function handles calculating the correct score per challenge type.
+async function refreshChallengeProgress() {
+    try {
+        if (!window.currentUser?.id || !window.supabaseClient) return;
+
+        await window.supabaseClient.rpc('update_challenge_participant_points', {
+            user_uuid: window.currentUser.id
+        });
+
+        // Refresh the challenge cards on the home screen
+        if (typeof loadHomeChallenges === 'function') {
+            loadHomeChallenges();
+        }
+    } catch (err) {
+        console.error('Error refreshing challenge progress:', err);
     }
 }
 
@@ -49798,9 +49871,9 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
             // Refresh points widget
             await loadPointsWidget();
 
-            // Refresh challenge widgets to show updated points
-            if (typeof loadHomeChallenges === 'function') {
-                loadHomeChallenges();
+            // Refresh all challenge types (calories, XP, streak, etc.)
+            if (typeof refreshChallengeProgress === 'function') {
+                refreshChallengeProgress();
             }
         } else if (result?.error) {
             console.log('Points not awarded:', result.reason || result.error);
@@ -49897,8 +49970,10 @@ async function claimDailyNutritionBonus() {
 
             // Refresh points widget
             await loadPointsWidget();
-            if (typeof loadHomeChallenges === 'function') {
-                loadHomeChallenges();
+
+            // Refresh all challenge types (calories, XP, streak, etc.)
+            if (typeof refreshChallengeProgress === 'function') {
+                refreshChallengeProgress();
             }
         } else {
             // Handle specific errors
@@ -49996,6 +50071,10 @@ async function finishDayWithoutBonus() {
             if (finishHint) finishHint.style.display = 'none';
             // Close the modal and return to nutrition page
             closeDailyScorePopup();
+            // Refresh challenge progress (calories challenge counts completed days)
+            if (typeof refreshChallengeProgress === 'function') {
+                refreshChallengeProgress();
+            }
         } else if (result.error === 'Already claimed') {
             setDailyLogButtonClaimed();
             btn.style.display = 'none';
@@ -50230,9 +50309,9 @@ async function awardPointsForWorkout(workoutId, photoTimestamp = null, aiConfide
             // Refresh points widget
             await loadPointsWidget();
 
-            // Refresh challenge widgets to show updated points
-            if (typeof loadHomeChallenges === 'function') {
-                loadHomeChallenges();
+            // Refresh all challenge types (workouts, volume, XP, etc.)
+            if (typeof refreshChallengeProgress === 'function') {
+                refreshChallengeProgress();
             }
         }
 
@@ -56194,6 +56273,37 @@ function initHydrationTracker() {
     if (hintEl) hintEl.textContent = `Tap to add ${settings.glassSize}ml`;
 
     updateHydrationCircle(glasses);
+
+    // Also load from DB to stay in sync across devices
+    loadHydrationFromDb();
+}
+
+// Load hydration data from DB (for cross-device sync)
+async function loadHydrationFromDb() {
+    try {
+        if (!window.currentUser?.id || !window.supabaseClient) return;
+        const today = getLocalDateString();
+        const storageKey = `pbb_hydration_${today}`;
+
+        const { data } = await window.supabaseClient
+            .from('daily_checkins')
+            .select('water_intake')
+            .eq('user_id', window.currentUser.id)
+            .eq('checkin_date', today)
+            .maybeSingle();
+
+        if (data?.water_intake != null) {
+            const localGlasses = parseInt(localStorage.getItem(storageKey) || '0');
+            // Use whichever is higher (DB or local) to avoid losing data
+            if (data.water_intake > localGlasses) {
+                localStorage.setItem(storageKey, data.water_intake.toString());
+                updateHydrationCircle(data.water_intake);
+            }
+        }
+    } catch (err) {
+        // Non-fatal: localStorage will still work
+        console.error('Error loading hydration from DB:', err);
+    }
 }
 
 function updateHydrationCircle(glasses) {
@@ -56248,6 +56358,34 @@ function addHydrationGlass() {
         wrap.classList.remove('hydration-ripple');
         void wrap.offsetWidth; // trigger reflow
         wrap.classList.add('hydration-ripple');
+    }
+
+    // Persist water intake to DB (for water challenge tracking)
+    saveHydrationToDb(glasses);
+}
+
+// Save hydration count to daily_checkins table so water challenges can track it
+async function saveHydrationToDb(glasses) {
+    try {
+        if (!window.currentUser?.id || !window.supabaseClient) return;
+        const today = getLocalDateString();
+
+        await window.supabaseClient
+            .from('daily_checkins')
+            .upsert({
+                user_id: window.currentUser.id,
+                checkin_date: today,
+                water_intake: glasses
+            }, {
+                onConflict: 'user_id,checkin_date'
+            });
+
+        // Refresh challenge progress (water challenge counts days with water logged)
+        if (typeof refreshChallengeProgress === 'function') {
+            refreshChallengeProgress();
+        }
+    } catch (err) {
+        console.error('Error saving hydration to DB:', err);
     }
 }
 
