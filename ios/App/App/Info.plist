@@ -53,6 +53,8 @@
 	<string>Balance needs camera access to take meal photos, progress photos, and scan barcodes.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Balance needs microphone access for voice meal logging and recording custom exercises.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Balance uses your location to show local weather conditions on your dashboard.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Balance reads your health data (steps, heart rate, sleep, workouts) to track your fitness progress and sync with your FitGotchi.</string>
 	<key>NSHealthUpdateUsageDescription</key>
