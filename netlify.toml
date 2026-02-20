@@ -261,6 +261,13 @@
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 
+# Prevent Android WebView HTTP cache from serving stale HTML to the service worker
+# The SW's Cache API handles offline caching separately — this only affects the HTTP cache layer
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
 # Ensure we redirect legacy URLs
 [[redirects]]
   from = "/quiz"
