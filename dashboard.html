@@ -62921,18 +62921,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
         }
 
-        // Also check for unallocated points on page load (in case user closed before allocating)
-        // Delay longer to avoid interrupting any pending level-up celebration
-        setTimeout(() => {
-            // Skip if a celebration is pending/playing - the celebration cleanup will show the modal
-            const pendingCeleb = localStorage.getItem('pendingLevelUpCelebration');
-            if (pendingCeleb) return;
-
-            const unalloc = getUnallocatedPoints();
-            if (unalloc > 0) {
-                showStatAllocationModal();
-            }
-        }, 8000);
+        // Stat allocation modal is shown only through the level-up celebration flow:
+        // 1. triggerLevelUpCelebration() shows it after the celebration animation ends
+        // 2. checkPendingLevelUpCelebration() replays interrupted celebrations on reload
+        // No need to show it on every page load - that causes a false popup bug.
 
         console.log('🎮 Progression & Battle System loaded!');
     })();
