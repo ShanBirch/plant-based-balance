@@ -26781,6 +26781,11 @@ function showNativePermissionsModal() {
         }
     }
 
+    // Pre-check health permission (if already initialised from a previous session)
+    if (window._nativeHealthReady) {
+        updatePermBtn('health', 'granted');
+    }
+
     modal.style.display = 'flex';
     // Trigger transition
     requestAnimationFrame(() => {
@@ -26914,16 +26919,34 @@ async function requestPermMic() {
 async function requestPermHealth() {
     return _enqueuePerm(async () => {
         try {
+            // First try the Capacitor health plugin (opens Health Connect authorization UI)
             if (window.NativeHealth) {
                 const ready = await window.NativeHealth.init();
-                updatePermBtn('health', ready ? 'granted' : 'denied');
-            } else {
-                updatePermBtn('health', 'denied');
+                if (ready) {
+                    updatePermBtn('health', 'granted');
+                    return;
+                }
             }
         } catch (e) {
-            console.log('[Permissions] Health denied:', e);
-            updatePermBtn('health', 'denied');
+            console.log('[Permissions] Health plugin error:', e);
         }
+
+        // Plugin failed or Health Connect didn't grant — open Health Connect
+        // permissions screen directly so the user can enable access there
+        try {
+            if (window.NativePermissions && typeof window.NativePermissions.openHealthConnect === 'function') {
+                window.NativePermissions.openHealthConnect();
+                // Don't mark as denied — the user is being taken to Health Connect
+                // to grant permission. The button will update when they return
+                // (via _recheckHealthPermission triggered by onResume).
+                return;
+            }
+        } catch (e2) {
+            console.log('[Permissions] openHealthConnect failed:', e2);
+        }
+
+        // Complete fallback — nothing else we can do
+        updatePermBtn('health', 'denied');
     });
 }
 
@@ -26936,6 +26959,23 @@ async function requestPermNotif() {
                     updatePermBtn('notif', 'granted');
                     return;
                 }
+
+                // Check if the native dialog can't be shown (permanently denied
+                // on Android 13+, or Android <13 where runtime request isn't possible)
+                if (typeof window.NativePermissions.isNotificationPermPermanentlyDenied === 'function' &&
+                    window.NativePermissions.isNotificationPermPermanentlyDenied()) {
+                    // Can't show native dialog — open notification settings directly
+                    // so the user can toggle notifications on from there
+                    if (typeof window.NativePermissions.openNotificationSettings === 'function') {
+                        window.NativePermissions.openNotificationSettings();
+                        // Don't mark as denied — user is being taken to settings
+                        // Button will update when they return (via _onPermissionRecheck)
+                        return;
+                    }
+                    updatePermBtn('notif', 'denied');
+                    return;
+                }
+
                 // Request via Java bridge (shows OS dialog on Android 13+)
                 const granted = await new Promise((resolve) => {
                     let resolved = false;
@@ -26945,19 +26985,41 @@ async function requestPermNotif() {
                     window.NativePermissions.requestNotificationPermission();
                     setTimeout(() => { if (!resolved) { resolved = true; resolve(false); } }, 30000);
                 });
-                updatePermBtn('notif', granted ? 'granted' : 'denied');
+
+                if (granted) {
+                    updatePermBtn('notif', 'granted');
+                } else {
+                    // User denied the dialog — open notification settings so they
+                    // can still enable it without hunting through device settings
+                    if (typeof window.NativePermissions.openNotificationSettings === 'function') {
+                        window.NativePermissions.openNotificationSettings();
+                        // Don't mark as denied — user is being taken to settings
+                        return;
+                    }
+                    updatePermBtn('notif', 'denied');
+                }
                 return;
             }
 
             // Fallback: use NativePush (Capacitor plugin)
             if (window.NativePush) {
                 const result = await window.NativePush.requestPermission();
-                updatePermBtn('notif', result === 'granted' ? 'granted' : 'denied');
+                if (result === 'granted') {
+                    updatePermBtn('notif', 'granted');
+                } else if (typeof window.NativePermissions?.openNotificationSettings === 'function') {
+                    window.NativePermissions.openNotificationSettings();
+                } else {
+                    updatePermBtn('notif', 'denied');
+                }
             } else {
                 // Last fallback: try native Capacitor push directly
                 const { PushNotifications } = await import('@capacitor/push-notifications');
                 const result = await PushNotifications.requestPermissions();
-                updatePermBtn('notif', result.receive === 'granted' ? 'granted' : 'denied');
+                if (result.receive === 'granted') {
+                    updatePermBtn('notif', 'granted');
+                } else {
+                    updatePermBtn('notif', 'denied');
+                }
             }
         } catch (e) {
             console.log('[Permissions] Notifications denied:', e);
@@ -52706,6 +52768,27 @@ window._onPermissionRecheck = function(notifEnabled) {
     var permModal = document.getElementById('native-permissions-modal');
     if (permModal && permModal.style.display !== 'none') {
         updatePermBtn('notif', notifEnabled ? 'granted' : 'denied');
+    }
+};
+
+// Recheck health permission when the app resumes (e.g. after returning from
+// Health Connect). Called by the Java bridge in onResume().
+window._recheckHealthPermission = async function() {
+    var permModal = document.getElementById('native-permissions-modal');
+    if (!permModal || permModal.style.display === 'none') return;
+
+    // Try reinitialising the health plugin — if the user just granted
+    // permission in Health Connect, init() should now succeed
+    try {
+        if (window.NativeHealth) {
+            var ready = await window.NativeHealth.init();
+            if (ready) {
+                updatePermBtn('health', 'granted');
+            }
+        }
+    } catch (e) {
+        // Still not available — leave the button in its current state
+        console.log('[Permissions] Health recheck:', e);
     }
 };
 
