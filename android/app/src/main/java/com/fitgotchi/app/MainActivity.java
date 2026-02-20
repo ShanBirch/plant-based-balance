@@ -238,6 +238,21 @@ public class MainActivity extends BridgeActivity {
             });
         }
 
+        /**
+         * Opens a URL in the device's default external browser (e.g. Chrome)
+         * instead of the WebView's in-app browser overlay. Used for Google
+         * OAuth so the browser runs as a separate activity and no URL bar
+         * persists inside the app after authentication completes.
+         */
+        @JavascriptInterface
+        public void openExternalBrowser(String url) {
+            runOnUiThread(() -> {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            });
+        }
+
         @JavascriptInterface
         public boolean hasMicrophonePermission() {
             return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
