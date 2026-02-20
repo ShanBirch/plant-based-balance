@@ -21370,7 +21370,15 @@ function viewWorkoutHistoryDetail(date) {
                              <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:white;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                              Save Reminders
                          </button>
-                         <div style="margin:12px 0 0 0; padding:8px 10px; background:linear-gradient(135deg, #e8f5e9, #f1f8e9); border-radius:8px; border:1px solid #c8e6c9;">
+                         <!-- Active Reminders Status (persists on reload so you always know what's set) -->
+                         <div id="active-reminders-status" style="display:none; margin-top:10px; padding:10px 12px; background:linear-gradient(135deg, #e0f2f1, #e8f5e9); border-radius:8px; border:1px solid #a5d6a7;">
+                             <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:#22c55e; flex-shrink:0;"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                                 <span style="font-size:0.82rem; font-weight:600; color:#2e7d32;">Notifications On</span>
+                             </div>
+                             <div id="active-reminders-list" style="font-size:0.78rem; color:#558b2f; line-height:1.5;"></div>
+                         </div>
+                         <div style="margin:10px 0 0 0; padding:8px 10px; background:linear-gradient(135deg, #e8f5e9, #f1f8e9); border-radius:8px; border:1px solid #c8e6c9;">
                              <p style="margin:0 0 4px 0; font-size:0.8rem; font-weight:600; color:#2e7d32;">+1 XP Bonus for On-Time Meals!</p>
                              <p style="margin:0; font-size:0.72rem; color:#558b2f;">Log your meal within 30 minutes of your scheduled time to earn bonus XP. Your FitGotchi will send you a push notification when it's time to eat.</p>
                          </div>
@@ -52652,7 +52660,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initialize meal reminder settings
-    loadMealReminderSettings().then(() => checkAndShowNotificationStatus());
+    loadMealReminderSettings().then(() => { checkAndShowNotificationStatus(); updateActiveRemindersStatus(); });
 
     // Check for URL parameters to open meal input modal
     const urlParams = new URLSearchParams(window.location.search);
@@ -52740,6 +52748,7 @@ async function toggleMealReminders(enabled) {
     }
 
     await saveMealReminderSettings();
+    updateActiveRemindersStatus();
 }
 
 // Update the notification status banner in the meal reminders UI
@@ -53028,6 +53037,52 @@ async function saveAndConfirmMealReminders() {
     overlay.addEventListener('click', function(e) {
         if (e.target === overlay) overlay.remove();
     });
+
+    // Update the persistent status indicator
+    updateActiveRemindersStatus();
+}
+
+// Show persistent "Notifications On" status so user always knows what reminders are set
+function updateActiveRemindersStatus() {
+    const statusDiv = document.getElementById('active-reminders-status');
+    const listDiv = document.getElementById('active-reminders-list');
+    if (!statusDiv || !listDiv) return;
+
+    const remindersOn = document.getElementById('meal-reminders-toggle')?.checked;
+    if (!remindersOn) {
+        statusDiv.style.display = 'none';
+        return;
+    }
+
+    // Check saved settings from localStorage
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem('meal_reminder_settings')); } catch(e) {}
+    if (!saved) {
+        statusDiv.style.display = 'none';
+        return;
+    }
+
+    function fmtTime(t) {
+        if (!t) return '';
+        var parts = t.replace(':00', '').split(':');
+        var h = parseInt(parts[0]);
+        var m = parts[1] || '00';
+        var ampm = h >= 12 ? 'PM' : 'AM';
+        return (h % 12 || 12) + ':' + m + ' ' + ampm;
+    }
+
+    var lines = [];
+    if (saved.breakfast_reminder) lines.push('Breakfast at ' + fmtTime(saved.breakfast_time));
+    if (saved.lunch_reminder) lines.push('Lunch at ' + fmtTime(saved.lunch_time));
+    if (saved.dinner_reminder) lines.push('Dinner at ' + fmtTime(saved.dinner_time));
+
+    if (lines.length === 0) {
+        statusDiv.style.display = 'none';
+        return;
+    }
+
+    listDiv.textContent = 'You will be reminded: ' + lines.join(' \u2022 ');
+    statusDiv.style.display = 'block';
 }
 
 // Open unified camera for meal photos + barcode scanning
