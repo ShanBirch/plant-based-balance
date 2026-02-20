@@ -26403,6 +26403,13 @@ function showNativePermissionsModal() {
     const modal = document.getElementById('native-permissions-modal');
     if (!modal) return;
 
+    // Pre-check notification permission so the button shows correct state
+    if (window.NativePermissions && typeof window.NativePermissions.hasNotificationPermission === 'function') {
+        if (window.NativePermissions.hasNotificationPermission()) {
+            updatePermBtn('notif', 'granted');
+        }
+    }
+
     modal.style.display = 'flex';
     // Trigger transition
     requestAnimationFrame(() => {
@@ -26552,11 +26559,31 @@ async function requestPermHealth() {
 async function requestPermNotif() {
     return _enqueuePerm(async () => {
         try {
+            // Prefer the Java bridge for reliable Android notification permission
+            if (window.NativePermissions && typeof window.NativePermissions.hasNotificationPermission === 'function') {
+                if (window.NativePermissions.hasNotificationPermission()) {
+                    updatePermBtn('notif', 'granted');
+                    return;
+                }
+                // Request via Java bridge (shows OS dialog on Android 13+)
+                const granted = await new Promise((resolve) => {
+                    let resolved = false;
+                    window._onNativeNotificationPermission = (result) => {
+                        if (!resolved) { resolved = true; resolve(result); }
+                    };
+                    window.NativePermissions.requestNotificationPermission();
+                    setTimeout(() => { if (!resolved) { resolved = true; resolve(false); } }, 30000);
+                });
+                updatePermBtn('notif', granted ? 'granted' : 'denied');
+                return;
+            }
+
+            // Fallback: use NativePush (Capacitor plugin)
             if (window.NativePush) {
                 const result = await window.NativePush.requestPermission();
                 updatePermBtn('notif', result === 'granted' ? 'granted' : 'denied');
             } else {
-                // Fallback: try native Capacitor push directly
+                // Last fallback: try native Capacitor push directly
                 const { PushNotifications } = await import('@capacitor/push-notifications');
                 const result = await PushNotifications.requestPermissions();
                 updatePermBtn('notif', result.receive === 'granted' ? 'granted' : 'denied');
@@ -52181,11 +52208,12 @@ async function toggleMealReminders(enabled) {
         let permissionGranted = false;
 
         if (window.NativePush && window.NativePush.isNativeApp()) {
-            // Native app: use Capacitor permission request (triggers OS dialog)
+            // Native app: use the Java bridge for reliable permission request
             const result = await window.NativePush.requestPermission();
             permissionGranted = (result === 'granted');
             if (!permissionGranted) {
-                alert('Notifications are blocked. Please go to your phone\'s Settings > Apps > Plant Based Balance > Notifications and turn them on.');
+                // Show a nicer dialog with a button to open Settings
+                showNotificationBlockedDialog();
                 const toggle = document.getElementById('meal-reminders-toggle');
                 if (toggle) toggle.checked = false;
                 if (timesContainer) timesContainer.style.display = 'none';
@@ -52227,7 +52255,17 @@ function updateNotificationStatusUI(granted) {
         banner.style.color = '#2e7d32';
         banner.innerHTML = 'Notifications enabled — your FitGotchi will remind you at the times below!';
     } else {
-        banner.style.display = 'none';
+        // Show a warning if the toggle is on but notifications aren't granted
+        const toggle = document.getElementById('meal-reminders-toggle');
+        if (toggle && toggle.checked) {
+            banner.style.display = 'block';
+            banner.style.background = 'linear-gradient(135deg, #fff3e0, #ffe0b2)';
+            banner.style.border = '1px solid #ffcc80';
+            banner.style.color = '#e65100';
+            banner.innerHTML = 'Notifications are turned off in your device settings. <span style="text-decoration:underline; cursor:pointer; font-weight:600;" onclick="showNotificationBlockedDialog()">Tap to fix</span>';
+        } else {
+            banner.style.display = 'none';
+        }
     }
 }
 
@@ -52236,13 +52274,69 @@ async function checkAndShowNotificationStatus() {
     const toggle = document.getElementById('meal-reminders-toggle');
     if (!toggle || !toggle.checked) return;
 
-    if (window.NativePush && window.NativePush.isNativeApp()) {
+    if (window.NativePermissions && typeof window.NativePermissions.hasNotificationPermission === 'function') {
+        // Use the Java bridge for most accurate Android permission state
+        updateNotificationStatusUI(window.NativePermissions.hasNotificationPermission());
+    } else if (window.NativePush && window.NativePush.isNativeApp()) {
         const status = await window.NativePush.checkPermission();
         updateNotificationStatusUI(status === 'granted');
     } else if ('Notification' in window) {
         updateNotificationStatusUI(Notification.permission === 'granted');
     }
 }
+
+// Show a dialog when notifications are blocked, with a button to open Settings
+function showNotificationBlockedDialog() {
+    const overlay = document.createElement('div');
+    overlay.id = 'notif-blocked-dialog';
+    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10020; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.2s ease-out;';
+
+    overlay.innerHTML = '<div style="background:white; border-radius:16px; padding:24px; margin:20px; max-width:320px; width:100%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.2);">'
+        + '<div style="width:56px; height:56px; background:linear-gradient(135deg, #fff3e0, #ffe0b2); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">'
+        + '<svg viewBox="0 0 24 24" style="width:28px; height:28px; fill:#f57c00;"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>'
+        + '</div>'
+        + '<h3 style="margin:0 0 8px; font-size:1.1rem; color:#1a1a1a;">Notifications Blocked</h3>'
+        + '<p style="margin:0 0 16px; font-size:0.85rem; color:#666; line-height:1.5;">To receive meal reminders, you need to allow notifications in your device settings.</p>'
+        + '<button id="notif-open-settings-btn" style="width:100%; padding:10px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; font-size:0.9rem; cursor:pointer; margin-bottom:8px;">Open Settings</button>'
+        + '<button onclick="document.getElementById(\'notif-blocked-dialog\').remove()" style="width:100%; padding:10px 16px; border-radius:8px; border:1px solid #ddd; background:transparent; color:#666; font-weight:500; font-size:0.9rem; cursor:pointer;">Cancel</button>'
+        + '</div>';
+
+    document.body.appendChild(overlay);
+
+    // Wire up the "Open Settings" button
+    document.getElementById('notif-open-settings-btn').onclick = function() {
+        if (window.NativePermissions && window.NativePermissions.openAppSettings) {
+            window.NativePermissions.openAppSettings();
+        } else if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+            window.Capacitor.Plugins.App.openUrl({ url: 'app-settings:' }).catch(function() {});
+        }
+        overlay.remove();
+    };
+
+    // Dismiss on backdrop tap
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.remove();
+    });
+}
+
+// Listen for notification permission changes when the app resumes from Settings.
+// The Java bridge calls window._onPermissionRecheck(bool) in onResume().
+window._onPermissionRecheck = function(notifEnabled) {
+    // Update the meal reminder UI if the toggle is on
+    var toggle = document.getElementById('meal-reminders-toggle');
+    if (toggle && toggle.checked) {
+        updateNotificationStatusUI(notifEnabled);
+        if (notifEnabled) {
+            updateActiveRemindersStatus();
+        }
+    }
+
+    // Update permissions modal buttons if visible
+    var permModal = document.getElementById('native-permissions-modal');
+    if (permModal && permModal.style.display !== 'none') {
+        updatePermBtn('notif', notifEnabled ? 'granted' : 'denied');
+    }
+};
 
 // Check if error indicates missing table (table not created yet)
 function isMealReminderTableMissing(error) {

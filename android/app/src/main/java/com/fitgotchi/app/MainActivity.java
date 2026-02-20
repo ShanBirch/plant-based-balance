@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.WindowManager;
@@ -14,6 +15,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.ActionBar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -74,6 +76,23 @@ public class MainActivity extends BridgeActivity {
                 runOnUiThread(() ->
                     webViewRef.evaluateJavascript(
                         "if(window._onNativeMicrophonePermission) window._onNativeMicrophonePermission(" + granted + ")",
+                        null)
+                );
+            }
+        });
+
+    /**
+     * Launcher for the native Android "Allow notifications?" dialog (API 33+).
+     * Used by the meal reminder and push notification permission flow.
+     */
+    private final ActivityResultLauncher<String> notificationPermissionLauncher =
+        registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+            // Notify JavaScript so the notification settings flow can continue
+            if (webViewRef != null) {
+                final boolean granted = isGranted;
+                runOnUiThread(() ->
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeNotificationPermission) window._onNativeNotificationPermission(" + granted + ")",
                         null)
                 );
             }
@@ -258,6 +277,43 @@ public class MainActivity extends BridgeActivity {
             });
         }
 
+        /**
+         * Returns true if notification permission is granted.
+         * On Android 12 and below, notifications are allowed by default.
+         * On Android 13+ (API 33+), the POST_NOTIFICATIONS runtime permission is required.
+         */
+        @JavascriptInterface
+        public boolean hasNotificationPermission() {
+            return NotificationManagerCompat.from(MainActivity.this).areNotificationsEnabled();
+        }
+
+        /**
+         * Requests the POST_NOTIFICATIONS runtime permission on Android 13+.
+         * On older versions, notifications are allowed by default so this
+         * calls the JS callback with true immediately.
+         * Result is delivered via window._onNativeNotificationPermission(bool).
+         */
+        @JavascriptInterface
+        public void requestNotificationPermission() {
+            runOnUiThread(() -> {
+                if (NotificationManagerCompat.from(MainActivity.this).areNotificationsEnabled()) {
+                    // Already granted — notify JS immediately
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeNotificationPermission) window._onNativeNotificationPermission(true)",
+                        null);
+                } else if (Build.VERSION.SDK_INT >= 33) {
+                    // Android 13+: show the native "Allow notifications?" dialog
+                    notificationPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS");
+                } else {
+                    // Older Android: notifications are controlled at the app level in Settings
+                    // Can't request at runtime, so direct user to Settings
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeNotificationPermission) window._onNativeNotificationPermission(false)",
+                        null);
+                }
+            });
+        }
+
         @JavascriptInterface
         public boolean hasMicrophonePermission() {
             return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
@@ -320,6 +376,15 @@ public class MainActivity extends BridgeActivity {
         super.onResume();
         // Hide system bars for immersive experience
         hideSystemBars();
+
+        // Notify JavaScript about current notification permission status
+        // so the UI can update after the user returns from app Settings
+        if (webViewRef != null) {
+            boolean notifEnabled = NotificationManagerCompat.from(this).areNotificationsEnabled();
+            webViewRef.evaluateJavascript(
+                "if(window._onPermissionRecheck) window._onPermissionRecheck(" + notifEnabled + ")",
+                null);
+        }
     }
 
     @Override
