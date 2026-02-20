@@ -18956,171 +18956,34 @@ function viewWorkoutHistoryDetail(date) {
     </div>
 </div>
 
-<!-- POST-WORKOUT RATING MODAL -->
+<!-- POST-WORKOUT RATING MODAL (Simplified) -->
 <div id="workout-rating-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:600; overflow-y:auto; padding:20px 10px;">
-    <div style="background:white; width:100%; max-width:480px; margin:20px auto; border-radius:24px; overflow:hidden; box-shadow:0 25px 50px rgba(0,0,0,0.3);">
+    <div style="background:white; width:100%; max-width:420px; margin:60px auto 20px; border-radius:24px; overflow:hidden; box-shadow:0 25px 50px rgba(0,0,0,0.3);">
         <!-- Header -->
         <div style="padding:24px 20px 16px; text-align:center; background:linear-gradient(135deg, var(--primary), #4ade80); color:white;">
-            <div style="font-size:2.5rem; margin-bottom:8px;">💬</div>
             <h2 style="margin:0; font-family:'Playfair Display',serif; font-size:1.5rem;">How Was That?</h2>
             <p id="rating-workout-name" style="margin:5px 0 0; opacity:0.9; font-size:0.9rem;">Rate your workout</p>
         </div>
 
-        <div style="padding:20px;">
-            <!-- Overall Feeling -->
-            <div style="margin-bottom:22px;">
-                <div style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px;">How do you feel?</div>
-                <div id="rating-feeling-row" style="display:flex; gap:6px;">
-                    <button onclick="selectRating('feeling',1)" class="rating-btn" data-group="feeling" data-val="1" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">😫</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Terrible</div>
-                    </button>
-                    <button onclick="selectRating('feeling',2)" class="rating-btn" data-group="feeling" data-val="2" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">😕</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Rough</div>
-                    </button>
-                    <button onclick="selectRating('feeling',3)" class="rating-btn" data-group="feeling" data-val="3" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">😐</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">OK</div>
-                    </button>
-                    <button onclick="selectRating('feeling',4)" class="rating-btn" data-group="feeling" data-val="4" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">😊</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Good</div>
-                    </button>
-                    <button onclick="selectRating('feeling',5)" class="rating-btn" data-group="feeling" data-val="5" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">🤩</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Amazing</div>
-                    </button>
+        <div style="padding:28px 24px;">
+            <!-- Difficulty Slider -->
+            <div style="margin-bottom:28px;">
+                <div style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:14px;">How was your workout?</div>
+                <input type="range" id="rating-difficulty-slider" min="1" max="5" value="3" step="1" style="width:100%; height:8px; -webkit-appearance:none; appearance:none; background:linear-gradient(to right, #60a5fa, #f97316); border-radius:4px; outline:none; cursor:pointer;" oninput="updateSliderLabel('difficulty')">
+                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.8rem; font-weight:600;">
+                    <span style="color:#60a5fa;">Easy</span>
+                    <span style="color:#f97316;">Hard</span>
                 </div>
             </div>
 
-            <!-- Difficulty -->
-            <div style="margin-bottom:22px;">
-                <div style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px;">How hard was it?</div>
-                <div id="rating-difficulty-row" style="display:flex; gap:6px;">
-                    <button onclick="selectRating('difficulty',1)" class="rating-btn" data-group="difficulty" data-val="1" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">🥱</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Too Easy</div>
-                    </button>
-                    <button onclick="selectRating('difficulty',2)" class="rating-btn" data-group="difficulty" data-val="2" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">👌</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Easy</div>
-                    </button>
-                    <button onclick="selectRating('difficulty',3)" class="rating-btn" data-group="difficulty" data-val="3" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">💪</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Just Right</div>
-                    </button>
-                    <button onclick="selectRating('difficulty',4)" class="rating-btn" data-group="difficulty" data-val="4" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">😤</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Hard</div>
-                    </button>
-                    <button onclick="selectRating('difficulty',5)" class="rating-btn" data-group="difficulty" data-val="5" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">🤯</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Too Hard</div>
-                    </button>
+            <!-- Energy Slider -->
+            <div style="margin-bottom:28px;">
+                <div style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:14px;">How are you feeling?</div>
+                <input type="range" id="rating-energy-slider" min="1" max="5" value="3" step="1" style="width:100%; height:8px; -webkit-appearance:none; appearance:none; background:linear-gradient(to right, #94a3b8, #22c55e); border-radius:4px; outline:none; cursor:pointer;" oninput="updateSliderLabel('energy')">
+                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.8rem; font-weight:600;">
+                    <span style="color:#94a3b8;">Tired</span>
+                    <span style="color:#22c55e;">Full of Energy</span>
                 </div>
-            </div>
-
-            <!-- Energy Level -->
-            <div style="margin-bottom:22px;">
-                <div style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px;">Energy after workout?</div>
-                <div id="rating-energy-row" style="display:flex; gap:6px;">
-                    <button onclick="selectRating('energy',1)" class="rating-btn" data-group="energy" data-val="1" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">🪫</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Dead</div>
-                    </button>
-                    <button onclick="selectRating('energy',2)" class="rating-btn" data-group="energy" data-val="2" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">😮‍💨</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Low</div>
-                    </button>
-                    <button onclick="selectRating('energy',3)" class="rating-btn" data-group="energy" data-val="3" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">🔋</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Medium</div>
-                    </button>
-                    <button onclick="selectRating('energy',4)" class="rating-btn" data-group="energy" data-val="4" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">⚡</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Good</div>
-                    </button>
-                    <button onclick="selectRating('energy',5)" class="rating-btn" data-group="energy" data-val="5" style="flex:1; padding:12px 4px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.5rem;">🔥</div>
-                        <div style="font-size:0.65rem; font-weight:600; margin-top:3px; color:var(--text-muted);">Buzzing</div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Body Check: Soreness & Tightness side by side -->
-            <div style="display:flex; gap:12px; margin-bottom:22px;">
-                <div style="flex:1;">
-                    <div style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px;">Soreness?</div>
-                    <div id="rating-soreness-row" style="display:flex; gap:4px;">
-                        <button onclick="selectRating('soreness',1)" class="rating-btn" data-group="soreness" data-val="1" style="flex:1; padding:10px 2px; border-radius:10px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                            <div style="font-size:1.2rem;">1</div>
-                        </button>
-                        <button onclick="selectRating('soreness',2)" class="rating-btn" data-group="soreness" data-val="2" style="flex:1; padding:10px 2px; border-radius:10px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                            <div style="font-size:1.2rem;">2</div>
-                        </button>
-                        <button onclick="selectRating('soreness',3)" class="rating-btn" data-group="soreness" data-val="3" style="flex:1; padding:10px 2px; border-radius:10px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                            <div style="font-size:1.2rem;">3</div>
-                        </button>
-                        <button onclick="selectRating('soreness',4)" class="rating-btn" data-group="soreness" data-val="4" style="flex:1; padding:10px 2px; border-radius:10px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                            <div style="font-size:1.2rem;">4</div>
-                        </button>
-                        <button onclick="selectRating('soreness',5)" class="rating-btn" data-group="soreness" data-val="5" style="flex:1; padding:10px 2px; border-radius:10px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                            <div style="font-size:1.2rem;">5</div>
-                        </button>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--text-muted); margin-top:4px; padding:0 2px;">
-                        <span>None</span><span>Very sore</span>
-                    </div>
-                </div>
-                <div style="flex:1;">
-                    <div style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px;">Tightness?</div>
-                    <div id="rating-tightness-row" style="display:flex; gap:4px;">
-                        <button onclick="selectRating('tightness',1)" class="rating-btn" data-group="tightness" data-val="1" style="flex:1; padding:10px 2px; border-radius:10px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                            <div style="font-size:1.2rem;">1</div>
-                        </button>
-                        <button onclick="selectRating('tightness',2)" class="rating-btn" data-group="tightness" data-val="2" style="flex:1; padding:10px 2px; border-radius:10px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                            <div style="font-size:1.2rem;">2</div>
-                        </button>
-                        <button onclick="selectRating('tightness',3)" class="rating-btn" data-group="tightness" data-val="3" style="flex:1; padding:10px 2px; border-radius:10px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                            <div style="font-size:1.2rem;">3</div>
-                        </button>
-                        <button onclick="selectRating('tightness',4)" class="rating-btn" data-group="tightness" data-val="4" style="flex:1; padding:10px 2px; border-radius:10px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                            <div style="font-size:1.2rem;">4</div>
-                        </button>
-                        <button onclick="selectRating('tightness',5)" class="rating-btn" data-group="tightness" data-val="5" style="flex:1; padding:10px 2px; border-radius:10px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                            <div style="font-size:1.2rem;">5</div>
-                        </button>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--text-muted); margin-top:4px; padding:0 2px;">
-                        <span>Loose</span><span>Very tight</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Next time preference -->
-            <div style="margin-bottom:22px;">
-                <div style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px;">Next time I'd go...</div>
-                <div id="rating-intensity-row" style="display:flex; gap:8px;">
-                    <button onclick="selectIntensityPref('lighter')" class="intensity-pref-btn" data-val="lighter" style="flex:1; padding:14px 8px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.3rem;">⬇️</div>
-                        <div style="font-size:0.8rem; font-weight:700; margin-top:4px; color:var(--text-main);">Lighter</div>
-                    </button>
-                    <button onclick="selectIntensityPref('perfect')" class="intensity-pref-btn" data-val="perfect" style="flex:1; padding:14px 8px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.3rem;">✅</div>
-                        <div style="font-size:0.8rem; font-weight:700; margin-top:4px; color:var(--text-main);">Same</div>
-                    </button>
-                    <button onclick="selectIntensityPref('harder')" class="intensity-pref-btn" data-val="harder" style="flex:1; padding:14px 8px; border-radius:12px; border:2px solid #e2e8f0; background:white; cursor:pointer; text-align:center; transition:all 0.2s;">
-                        <div style="font-size:1.3rem;">⬆️</div>
-                        <div style="font-size:0.8rem; font-weight:700; margin-top:4px; color:var(--text-main);">Harder</div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Notes -->
-            <div style="margin-bottom:22px;">
-                <div style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:8px;">Notes <span style="font-weight:400; text-transform:none;">(optional)</span></div>
-                <textarea id="rating-notes-input" placeholder="Anything to remember? e.g. went too heavy on squats, need more stretching..." rows="2" style="width:100%; padding:12px 14px; border-radius:12px; border:2px solid #e2e8f0; background:#f8fafc; color:var(--text-main); font-size:0.9rem; box-sizing:border-box; resize:none; outline:none; font-family:inherit;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
             </div>
 
             <!-- Buttons -->
@@ -19128,13 +18991,46 @@ function viewWorkoutHistoryDetail(date) {
                 <button onclick="skipWorkoutRating()" style="flex:1; padding:14px; border-radius:14px; border:2px solid #e2e8f0; background:white; color:var(--text-muted); font-weight:600; font-size:0.95rem; cursor:pointer;">
                     Skip
                 </button>
-                <button id="save-rating-btn" onclick="saveWorkoutRating()" style="flex:2; padding:14px; border-radius:14px; border:none; background:var(--primary); color:white; font-weight:700; font-size:0.95rem; cursor:pointer; opacity:0.5;" disabled>
-                    Save Rating
+                <button id="save-rating-btn" onclick="saveWorkoutRating()" style="flex:2; padding:14px; border-radius:14px; border:none; background:var(--primary); color:white; font-weight:700; font-size:0.95rem; cursor:pointer;">
+                    Save
                 </button>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    /* Slider thumb styling */
+    #workout-rating-modal input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid var(--primary);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        cursor: pointer;
+        margin-top: -10px;
+    }
+    #workout-rating-modal input[type="range"]::-moz-range-thumb {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid var(--primary);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        cursor: pointer;
+    }
+    #workout-rating-modal input[type="range"]::-webkit-slider-runnable-track {
+        height: 8px;
+        border-radius: 4px;
+    }
+    #workout-rating-modal input[type="range"]::-moz-range-track {
+        height: 8px;
+        border-radius: 4px;
+    }
+</style>
 
 <!-- LOG ACTIVITY VIEW -->
 <div id="view-log-activity" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: var(--bg); color: var(--text-main); overflow-y: auto;">
@@ -21219,14 +21115,6 @@ function viewWorkoutHistoryDetail(date) {
                     <div id="profile-diet-display" style="font-weight: 700; color: var(--primary);">Not set</div>
                 </div>
 
-                <!-- Symptoms -->
-                <div class="setting-row" style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
-                     <div>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Active Symptoms</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">From your latest check-in</div>
-                    </div>
-                    <div id="profile-symptoms-display" style="font-weight: 700; color: var(--primary); max-width: 50%; text-align: right; font-size: 0.9rem;">None</div>
-                </div>
             </div>
         </div>
 
@@ -21255,18 +21143,11 @@ function viewWorkoutHistoryDetail(date) {
                 <button onclick="recalculateCalories()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🔄</span> Recalculate My Calories
                 </button>
-                <button onclick="checkDailyWellness(true)" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <span>☀️</span> Daily Wellness Check-in
-                </button>
                 <button onclick="openCycleTrackingModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🌸</span> Cycle Tracking
                 </button>
                 <button id="settings-allocate-stats-btn" onclick="showStatAllocationModal()" style="display:none; background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; align-items:center; justify-content:center; gap:8px;">
                     <span>⚔️</span> Allocate Battle Stats
-                </button>
-                <button onclick="window.location.href='mood.html'" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <svg viewBox="0 0 24 24" width="18" height="18" style="fill:var(--primary);"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
-                    Mood Tracker
                 </button>
             </div>
         </div>
@@ -25044,35 +24925,10 @@ function openAvatarCustomizer() { console.log('Avatar system disabled'); }
 function updateAvatarMessage() { }
 
 
-// --- DAILY WELLNESS CHECK-IN LOGIC ---
+// --- DAILY WELLNESS CHECK-IN LOGIC (disabled) ---
 function checkDailyWellness(forceShow = false) {
-    // Don't show if onboarding isn't complete
-    const onboardingComplete = localStorage.getItem('onboardingComplete');
-    if (onboardingComplete !== 'true' && !forceShow) {
-        console.log("Skipping daily wellness - onboarding not complete");
-        return;
-    }
-
-    // Don't show if the onboarding wizard is currently visible
-    const wizardModal = document.getElementById('onboarding-wizard');
-    if (wizardModal && wizardModal.style.display !== 'none') {
-        console.log("Skipping daily wellness - onboarding wizard is open");
-        return;
-    }
-
-    const lastCheck = localStorage.getItem('lastWellnessCheck');
-    const today = new Date().toDateString();
-
-    // Show if manually triggered (forceShow=true) OR if it hasn't been shown today
-    if (forceShow || lastCheck !== today) {
-        // Apply gender-specific UI before showing modal
-        if (typeof applyGenderSpecificUI === 'function') {
-            applyGenderSpecificUI();
-        }
-        // Open the detailed check-in modal
-        const modal = document.getElementById('check-in-modal');
-        if(modal) modal.style.display = 'flex';
-    }
+    // Daily wellness check-in has been removed
+    return;
 }
 
 function showPersonalizationMessage() {
@@ -31847,106 +31703,49 @@ async function retryWorkoutSave() {
 }
 
 // ============================================
-// POST-WORKOUT RATING SYSTEM
+// POST-WORKOUT RATING SYSTEM (Simplified)
 // ============================================
 let workoutRatingState = {
-    feeling: null,
-    difficulty: null,
-    energy: null,
-    soreness: null,
-    tightness: null,
-    intensityPref: null,
+    difficulty: 3,
+    energy: 3,
     workoutName: null,
     sourceType: 'workout',
     sourceId: null
 };
 
+function updateSliderLabel(type) {
+    // No-op: labels are static (Easy/Hard, Tired/Full of Energy)
+}
+
 function selectRating(group, value) {
     workoutRatingState[group] = value;
-
-    // Update button styles for this group
-    const buttons = document.querySelectorAll(`.rating-btn[data-group="${group}"]`);
-    buttons.forEach(btn => {
-        const val = parseInt(btn.getAttribute('data-val'));
-        if (val === value) {
-            btn.style.borderColor = 'var(--primary)';
-            btn.style.background = 'rgba(34,197,94,0.1)';
-        } else {
-            btn.style.borderColor = '#e2e8f0';
-            btn.style.background = 'white';
-        }
-    });
-
-    // Enable save button if required fields are filled
-    checkRatingFormValid();
 }
 
 function selectIntensityPref(pref) {
     workoutRatingState.intensityPref = pref;
-
-    document.querySelectorAll('.intensity-pref-btn').forEach(btn => {
-        if (btn.getAttribute('data-val') === pref) {
-            btn.style.borderColor = 'var(--primary)';
-            btn.style.background = 'rgba(34,197,94,0.1)';
-        } else {
-            btn.style.borderColor = '#e2e8f0';
-            btn.style.background = 'white';
-        }
-    });
-
-    checkRatingFormValid();
 }
 
-function checkRatingFormValid() {
-    const valid = workoutRatingState.feeling && workoutRatingState.difficulty && workoutRatingState.energy;
-    const btn = document.getElementById('save-rating-btn');
-    if (btn) {
-        btn.disabled = !valid;
-        btn.style.opacity = valid ? '1' : '0.5';
-    }
-}
+function checkRatingFormValid() {}
 
 function openWorkoutRatingModal(workoutName, sourceType, sourceId) {
-    // Reset state
     workoutRatingState = {
-        feeling: null,
-        difficulty: null,
-        energy: null,
-        soreness: null,
-        tightness: null,
-        intensityPref: null,
+        difficulty: 3,
+        energy: 3,
         workoutName: workoutName || 'Workout',
         sourceType: sourceType || 'workout',
         sourceId: sourceId || null
     };
 
-    // Reset all button styles
-    document.querySelectorAll('#workout-rating-modal .rating-btn').forEach(btn => {
-        btn.style.borderColor = '#e2e8f0';
-        btn.style.background = 'white';
-    });
-    document.querySelectorAll('.intensity-pref-btn').forEach(btn => {
-        btn.style.borderColor = '#e2e8f0';
-        btn.style.background = 'white';
-    });
-
-    // Reset notes
-    const notesInput = document.getElementById('rating-notes-input');
-    if (notesInput) notesInput.value = '';
-
-    // Reset save button
-    const saveBtn = document.getElementById('save-rating-btn');
-    if (saveBtn) {
-        saveBtn.disabled = true;
-        saveBtn.style.opacity = '0.5';
-        saveBtn.textContent = 'Save Rating';
-    }
+    // Reset sliders to center
+    const diffSlider = document.getElementById('rating-difficulty-slider');
+    const energySlider = document.getElementById('rating-energy-slider');
+    if (diffSlider) diffSlider.value = 3;
+    if (energySlider) energySlider.value = 3;
 
     // Set workout name in header
     const nameEl = document.getElementById('rating-workout-name');
     if (nameEl) nameEl.textContent = workoutName || 'Rate your workout';
 
-    // Show modal
     document.getElementById('workout-rating-modal').style.display = 'block';
 }
 
@@ -31964,20 +31763,21 @@ async function saveWorkoutRating() {
             return;
         }
 
-        const notes = document.getElementById('rating-notes-input')?.value?.trim() || null;
+        const difficulty = parseInt(document.getElementById('rating-difficulty-slider')?.value || 3);
+        const energy = parseInt(document.getElementById('rating-energy-slider')?.value || 3);
 
         await window.dbHelpers?.workoutRatings?.create(window.currentUser.id, {
             workout_date: new Date().toISOString().split('T')[0],
             workout_name: workoutRatingState.workoutName,
             source_type: workoutRatingState.sourceType,
             source_id: workoutRatingState.sourceId,
-            overall_feeling: workoutRatingState.feeling,
-            difficulty: workoutRatingState.difficulty,
-            energy_level: workoutRatingState.energy,
-            muscle_soreness: workoutRatingState.soreness,
-            tightness: workoutRatingState.tightness,
-            intensity_preference: workoutRatingState.intensityPref || 'perfect',
-            notes: notes
+            overall_feeling: energy,
+            difficulty: difficulty,
+            energy_level: energy,
+            muscle_soreness: null,
+            tightness: null,
+            intensity_preference: difficulty >= 4 ? 'lighter' : difficulty <= 2 ? 'harder' : 'perfect',
+            notes: null
         });
 
         showToast('Workout rated!', 'success');
@@ -31987,7 +31787,7 @@ async function saveWorkoutRating() {
         showToast('Failed to save rating', 'error');
         if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.textContent = 'Save Rating';
+            saveBtn.textContent = 'Save';
         }
     }
 }
@@ -45558,137 +45358,10 @@ window.closeCheckInModal = closeCheckInModal;
 window.submitDailyCycleSync = submitDailyCycleSync;
 </script>
 
-<!-- SUPERBOOST CHECK-IN MODAL -->
-<div id="check-in-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; padding:15px;">
-    <div class="modal-content" style="background: white; width: 100%; border-radius: 24px; padding: 0; max-width: 480px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: fadeInScale 0.2s ease-out;">
-        
-        <!-- Header (Fixed) -->
-        <div style="padding: 20px 25px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
-            <div>
-                <h3 style="margin:0; font-family:'Playfair Display'; font-size: 1.5rem; color: var(--primary);">Daily Check-in</h3>
-                <p style="margin:5px 0 0 0; color: var(--text-muted); font-size: 0.85rem;">Tailor your plan instantly.</p>
-            </div>
-            <div onclick="closeCheckInModal()" style="width:36px; height:36px; background:#f8fafc; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); font-weight:bold; transition:all 0.2s;">✕</div>
-        </div>
-        
-        <!-- Scrollable Content -->
-        <div id="check-in-questions" style="overflow-y: auto; padding: 25px; flex:1;">
-            
-            <!-- 1. Bleeding (Female Only) -->
-            <div id="check-in-period-section" style="margin-bottom: 25px;">
-                <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Flow Status</label>
-                <div class="check-in-options" style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <div class="check-in-chip" onclick="selectCheckInOption('flow', 'none', this)" data-group="flow">None</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('flow', 'spotting', this)" data-group="flow">Spotting</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('flow', 'light', this)" data-group="flow">Light 🩸</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('flow', 'medium', this)" data-group="flow">Medium 🩸🩸</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('flow', 'heavy', this)" data-group="flow">Heavy 🩸🩸🩸</div>
-                </div>
-            </div>
-
-            <!-- 2. Physical Symptoms -->
-            <div style="margin-bottom: 25px;">
-                <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Physical</label>
-                <div class="check-in-options" style="display:flex; flex-wrap:wrap; gap:8px;">
-                     <div class="check-in-chip female-only-chip" onclick="toggleCheckInOption('symptoms', 'cramps', this)">Cramps ⚡</div>
-                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'bloating', this)">Bloating 🎈</div>
-                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'headache', this)">Headache 🤕</div>
-                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'back_pain', this)">Back Pain 🦴</div>
-                     <div class="check-in-chip female-only-chip" onclick="toggleCheckInOption('symptoms', 'tender_breasts', this)">Tender Breasts 👙</div>
-                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'acne', this)">Acne / Skin 🫧</div>
-                     <div class="check-in-chip" onclick="toggleCheckInOption('symptoms', 'digestion', this)">Digestion Issues 🤢</div>
-                     <div class="check-in-chip male-only-chip" onclick="toggleCheckInOption('symptoms', 'muscle_soreness', this)" style="display:none;">Muscle Soreness 💪</div>
-                </div>
-            </div>
-
-            <!-- 3. Mind & Energy -->
-            <div style="margin-bottom: 25px;">
-                <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Energy & Mood</label>
-                <div class="check-in-options" style="display:flex; flex-wrap:wrap; gap:8px;">
-                     <div class="check-in-chip" onclick="selectCheckInOption('energy', 'high', this)" data-group="energy">High Energy ⚡</div>
-                     <div class="check-in-chip" onclick="selectCheckInOption('energy', 'medium', this)" data-group="energy">Balanced ⚖️</div>
-                     <div class="check-in-chip" onclick="selectCheckInOption('energy', 'low', this)" data-group="energy">Low / Tired 💤</div>
-                     <div style="flex-basis:100%; height:8px;"></div>
-                     <div class="check-in-chip" onclick="selectCheckInOption('mood', 'happy', this)" data-group="mood">Happy / Calm 😌</div>
-                     <div class="check-in-chip" onclick="selectCheckInOption('mood', 'anxious', this)" data-group="mood">Anxious 😰</div>
-                     <div class="check-in-chip" onclick="selectCheckInOption('mood', 'sad', this)" data-group="mood">Sad / Weepy 😢</div>
-                     <div class="check-in-chip" onclick="selectCheckInOption('mood', 'irritated', this)" data-group="mood">Irritated 😠</div>
-                </div>
-            </div>
-
-             <!-- 4. Fluid (Female Only) -->
-             <div id="check-in-cervical-section" style="margin-bottom: 15px;">
-                <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Cervical Fluid</label>
-                <div class="check-in-options" style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <div class="check-in-chip" onclick="selectCheckInOption('fluid', 'dry', this)" data-group="fluid">Dry</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('fluid', 'sticky', this)" data-group="fluid">Sticky</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('fluid', 'creamy', this)" data-group="fluid">Creamy</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('fluid', 'egg_white', this)" data-group="fluid">Egg White 🥚</div>
-                </div>
-            </div>
-
-            <!-- Recovery Section (Male Only - hidden by default) -->
-            <div id="check-in-recovery-section" style="margin-bottom: 15px; display:none;">
-                <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Recovery Status</label>
-                <div class="check-in-options" style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <div class="check-in-chip" onclick="selectCheckInOption('recovery', 'fresh', this)" data-group="recovery">Fully Recovered 💯</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('recovery', 'moderate', this)" data-group="recovery">Slightly Fatigued 😐</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('recovery', 'tired', this)" data-group="recovery">Need Rest 😴</div>
-                </div>
-            </div>
-
-            <!-- Equipment Access Today -->
-            <div style="margin-bottom: 15px;">
-                <label style="display:block; font-weight:700; color:var(--text-main); margin-bottom:12px; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Equipment Access Today</label>
-                <div class="check-in-options" style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'none', this)" data-group="equipment">Mat Only 🧘</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'bands', this)" data-group="equipment">Bands 🔗</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'dumbbells', this)" data-group="equipment">Dumbbells 🏋️</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'gym', this)" data-group="equipment">Full Gym 💪</div>
-                    <div class="check-in-chip" onclick="selectCheckInOption('equipment', 'yoga_only', this)" data-group="equipment">Yoga Only 🧘‍♀️</div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Footer (Fixed) -->
-        <div style="padding: 20px 25px; border-top:1px solid #f1f5f9; background:white; border-radius: 0 0 24px 24px;">
-            <button onclick="submitDailyCycleSync()" style="width:100%; background:var(--primary); color:white; padding:16px; border-radius:50px; border:none; font-weight:700; font-size:1.1rem; box-shadow: 0 4px 15px rgba(45, 74, 62, 0.3); cursor:pointer; transition: transform 0.1s;">
-                SAVE & START DAY ✨
-            </button>
-        </div>
-    </div>
-</div>
+<!-- Check-in modal removed -->
+<div id="check-in-modal" style="display:none;"></div>
 
 <style>
-    .check-in-chip {
-        padding: 10px 18px;
-        background: #f8fafc;
-        border-radius: 12px;
-        font-size: 0.95rem;
-        color: var(--text-main);
-        cursor: pointer;
-        border: 1px solid #e2e8f0;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-grow: 0;
-        text-align: center;
-        justify-content: center;
-    }
-    .check-in-chip:hover {
-        background: #f1f5f9;
-        border-color: #cbd5e0;
-    }
-    .check-in-chip.selected {
-        background: var(--primary); /* Green for wellness vibe */
-        color: white;
-        border-color: var(--primary);
-        box-shadow: 0 4px 10px rgba(43, 61, 38, 0.2);
-    }
-    /* Separate colors for categories if desired, but green is safe/premium */
-    
     @keyframes fadeInScale {
         from { opacity: 0; transform: scale(0.95); }
         to { opacity: 1; transform: scale(1); }
