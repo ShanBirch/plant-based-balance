@@ -20677,11 +20677,11 @@ function viewWorkoutHistoryDetail(date) {
                         </div>
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">2.</span>
-                            <span style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Earn <strong style="color: #4ade80;">double XP</strong> on everything for 30 days.</span>
+                            <span id="challenge-how-step2" style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Earn <strong style="color: #4ade80;">double XP</strong> on everything for 30 days.</span>
                         </div>
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">3.</span>
-                            <span style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Most <strong style="color: #c084fc;">XP</strong> at the end wins.</span>
+                            <span id="challenge-how-step3" style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Most <strong style="color: #c084fc;">XP</strong> at the end wins.</span>
                         </div>
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">4.</span>
@@ -20904,7 +20904,7 @@ function viewWorkoutHistoryDetail(date) {
 
                 <!-- Locked Entry Fee Display -->
                 <div style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; text-align: center;">
-                    <div id="challenge-pass-fee-info" style="font-weight: 700; color: #fbbf24; font-size: 1rem;">🪙 10,000 Coins entry fee</div>
+                    <div id="challenge-pass-fee-info" style="font-weight: 700; color: #fbbf24; font-size: 1rem;">🪙 1,000 Coins entry fee</div>
                     <div style="font-size: 0.7rem; color: rgba(251,191,36,0.6); margin-top: 2px;">Matches the challenger's entry fee</div>
                 </div>
 
@@ -41983,14 +41983,14 @@ async function loadChallenges() {
 
 // Challenge type definitions
 const CHALLENGE_TYPES = {
-    xp:       { emoji: '⚡', name: 'Level Up',  desc: 'Most XP earned', subtitle: '30-day XP battle with friends', color: '#c084fc' },
-    workouts: { emoji: '💪', name: 'Workout',   desc: 'Most workouts logged', subtitle: '30-day workout challenge', color: '#ef4444' },
-    volume:   { emoji: '🏋️', name: 'Volume',    desc: 'Most total kg lifted', subtitle: '30-day volume challenge', color: '#fb923c' },
-    calories: { emoji: '🍎', name: 'Calories',  desc: 'Most days hitting calorie goal', subtitle: '30-day calorie challenge', color: '#4ade80' },
-    steps:    { emoji: '👟', name: 'Steps',     desc: 'Most total steps', subtitle: '30-day step challenge', color: '#3b82f6' },
-    streak:   { emoji: '🔥', name: 'Streak',    desc: 'Longest streak kept', subtitle: '30-day streak challenge', color: '#fbbf24' },
-    sleep:    { emoji: '😴', name: 'Sleep',     desc: 'Most hours slept', subtitle: '30-day sleep challenge', color: '#818cf8' },
-    water:    { emoji: '💧', name: 'Water',     desc: 'Most days hitting water goal', subtitle: '30-day hydration challenge', color: '#0ea5e9' }
+    xp:       { emoji: '⚡', name: 'Level Up',  desc: 'Most XP earned', subtitle: '30-day XP battle with friends', color: '#c084fc', howStep2: 'Earn <strong style="color: #4ade80;">double XP</strong> on everything for 30 days.', howStep3: 'Most <strong style="color: #c084fc;">XP</strong> at the end wins.' },
+    workouts: { emoji: '💪', name: 'Workout',   desc: 'Most workouts logged', subtitle: '30-day workout challenge', color: '#ef4444', howStep2: 'Log your <strong style="color: #4ade80;">workouts</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #ef4444;">workouts logged</strong> wins.' },
+    volume:   { emoji: '🏋️', name: 'Volume',    desc: 'Most total kg lifted', subtitle: '30-day volume challenge', color: '#fb923c', howStep2: 'Track your <strong style="color: #4ade80;">lifting volume</strong> for 30 days.', howStep3: 'Most <strong style="color: #fb923c;">total kg lifted</strong> wins.' },
+    calories: { emoji: '🍎', name: 'Calories',  desc: 'Most days hitting calorie goal', subtitle: '30-day calorie challenge', color: '#4ade80', howStep2: 'Hit your <strong style="color: #4ade80;">calorie goals</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #4ade80;">days hitting goal</strong> wins.' },
+    steps:    { emoji: '👟', name: 'Steps',     desc: 'Most total steps', subtitle: '30-day step challenge', color: '#3b82f6', howStep2: 'Track your <strong style="color: #4ade80;">steps</strong> every day for 30 days.', howStep3: 'Most <strong style="color: #3b82f6;">total steps</strong> wins.' },
+    streak:   { emoji: '🔥', name: 'Streak',    desc: 'Longest streak kept', subtitle: '30-day streak challenge', color: '#fbbf24', howStep2: 'Keep your <strong style="color: #4ade80;">streak alive</strong> for 30 days.', howStep3: 'Longest <strong style="color: #fbbf24;">streak kept</strong> wins.' },
+    sleep:    { emoji: '😴', name: 'Sleep',     desc: 'Most hours slept', subtitle: '30-day sleep challenge', color: '#818cf8', howStep2: 'Track your <strong style="color: #4ade80;">sleep</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #818cf8;">hours slept</strong> wins.' },
+    water:    { emoji: '💧', name: 'Water',     desc: 'Most days hitting water goal', subtitle: '30-day hydration challenge', color: '#0ea5e9', howStep2: 'Hit your <strong style="color: #4ade80;">water goals</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #0ea5e9;">days hitting goal</strong> wins.' }
 };
 
 let selectedChallengeType = 'xp';
@@ -42056,6 +42056,12 @@ function openCreateChallengeModal(featuredRareId = null) {
                 headerTitle.innerHTML = `${rare.emoji} Featured Rare Challenge`;
                 headerTitle.style.color = tierData.color;
             }
+            // Featured rare challenges are always XP-type
+            const xpType = CHALLENGE_TYPES.xp;
+            const howStep2 = document.getElementById('challenge-how-step2');
+            const howStep3 = document.getElementById('challenge-how-step3');
+            if (howStep2) howStep2.innerHTML = xpType.howStep2;
+            if (howStep3) howStep3.innerHTML = xpType.howStep3;
         }
     } else {
         // Generic challenge mode — use selected challenge type
@@ -42066,7 +42072,12 @@ function openCreateChallengeModal(featuredRareId = null) {
         // Reset wager to default
         createChallengeBetAmount = 1000;
         const feeDisplay = document.getElementById('create-challenge-fee-display');
-        if (feeDisplay) feeDisplay.textContent = '10,000 Coins entry fee';
+        if (feeDisplay) feeDisplay.textContent = '1,000 Coins entry fee';
+        // Update "How It Works" steps based on challenge type
+        const howStep2 = document.getElementById('challenge-how-step2');
+        const howStep3 = document.getElementById('challenge-how-step3');
+        if (howStep2) howStep2.innerHTML = typeInfo.howStep2;
+        if (howStep3) howStep3.innerHTML = typeInfo.howStep3;
         // Update header with type info
         if (headerTitle) {
             headerTitle.innerHTML = `${typeInfo.emoji} ${typeInfo.name} Challenge`;
@@ -42245,8 +42256,8 @@ async function createChallenge() {
     try {
         // Validate and get bet amount FIRST (before any DB writes)
         const betAmount = createChallengeBetAmount;
-        if (betAmount < 10000) {
-            alert('Minimum bet is 10,000 coins.');
+        if (betAmount < 1000) {
+            alert('Minimum bet is 1,000 coins.');
             if (btn) { btn.disabled = false; btn.textContent = 'Create Challenge'; }
             return;
         }
@@ -42399,17 +42410,17 @@ async function acceptChallengeInvite(challengeId) {
             .single();
 
         if (challenge) {
-            window._pendingChallengeEntryFee = challenge.entry_fee || 10000;
+            window._pendingChallengeEntryFee = challenge.entry_fee || 1000;
             window._pendingChallengeRareId = challenge.rare_reward_id || null;
             window._pendingChallengeName = challenge.name || 'Challenge';
         } else {
-            window._pendingChallengeEntryFee = 10000;
+            window._pendingChallengeEntryFee = 1000;
             window._pendingChallengeRareId = null;
             window._pendingChallengeName = 'Challenge';
         }
     } catch (e) {
         console.warn('Could not fetch challenge details:', e);
-        window._pendingChallengeEntryFee = 10000;
+        window._pendingChallengeEntryFee = 1000;
         window._pendingChallengeRareId = null;
         window._pendingChallengeName = 'Challenge';
     }
@@ -42444,7 +42455,7 @@ function showChallengePassModal(lockedEntryFee, rareRewardId) {
     const modal = document.getElementById('challenge-pass-modal');
     if (!modal) return;
 
-    const entryFee = lockedEntryFee || 10000;
+    const entryFee = lockedEntryFee || 1000;
     currentChallengeBet = entryFee;
 
     const joinBtn = document.getElementById('buy-challenge-pass-btn');
