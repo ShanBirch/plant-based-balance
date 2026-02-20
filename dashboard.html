@@ -9825,15 +9825,25 @@ async function applyAppTheme(themeKey) {
         }
         window.updateWeatherUI = updateWeatherUI;
 
-        function showWeatherPrompt() {
+        function showWeatherPrompt(permissionDenied) {
             const loading = document.getElementById('weather-card-loading');
             const prompt  = document.getElementById('weather-card-prompt');
             if (loading) loading.style.display = 'none';
             if (prompt)  prompt.style.display  = 'flex';
+
+            const subtitle = document.getElementById('weather-prompt-subtitle');
+            const btn      = document.getElementById('weather-prompt-btn');
+            if (permissionDenied) {
+                if (subtitle) subtitle.textContent = 'Location blocked — enable in browser/device settings, then retry';
+                if (btn) btn.textContent = 'Retry';
+            } else {
+                if (subtitle) subtitle.textContent = 'Allow location for local weather';
+                if (btn) btn.textContent = 'Enable';
+            }
         }
 
         async function fetchAndStoreWeather() {
-            if (!window.currentUser) return;
+            if (!window.currentUser) { showWeatherPrompt(); return; }
             if (sessionStorage.getItem('weather_fetched')) return;
             if (!navigator.geolocation) { showWeatherPrompt(); return; }
 
@@ -9878,7 +9888,7 @@ async function applyAppTheme(themeKey) {
                 } catch (err) {
                     console.warn('Weather fetch error:', err);
                 }
-            }, () => { showWeatherPrompt(); }, { timeout: 8000, maximumAge: 3600000 });
+            }, (err) => { showWeatherPrompt(err && err.code === 1); }, { timeout: 8000, maximumAge: 3600000 });
         }
 
         // Load today's stored weather from DB (runs immediately after user is ready)
@@ -11222,10 +11232,10 @@ async function applyAppTheme(themeKey) {
                     <div style="width: 34px; height: 34px; flex-shrink: 0; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">🌤️</div>
                     <div>
                         <div style="font-size: 0.88rem; font-weight: 700; color: white; margin-bottom: 2px;">Today's Weather</div>
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.55);">Allow location for local weather</div>
+                        <div id="weather-prompt-subtitle" style="font-size: 0.75rem; color: rgba(255,255,255,0.55);">Allow location for local weather</div>
                     </div>
                 </div>
-                <button onclick="requestWeatherLocation()" style="flex-shrink: 0; background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap;">Enable</button>
+                <button id="weather-prompt-btn" onclick="requestWeatherLocation()" style="flex-shrink: 0; background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap;">Enable</button>
             </div>
             <!-- Loaded state -->
             <div id="weather-card-loaded" style="display: none; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(14,165,233,0.25);">
