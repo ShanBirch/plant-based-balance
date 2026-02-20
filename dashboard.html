@@ -10282,31 +10282,27 @@ async function applyAppTheme(themeKey) {
         if (contentEl) contentEl.style.display = 'none';
 
         try {
-            // Load last 8 weeks of workout dates in parallel with wearable sleep data
-            const eightWeeksAgo = new Date();
-            eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
-            const eightWeeksAgoStr = eightWeeksAgo.toISOString().split('T')[0];
-
-            const [workoutsResult, weighInsResult, sleepResult] = await Promise.allSettled([
+            const [exerciseHistoryResult, weighInsResult, sleepResult] = await Promise.allSettled([
                 supabaseClient
                     .from('workouts')
-                    .select('workout_date')
+                    .select('workout_date, exercise_name, weight_kg, reps')
                     .eq('user_id', userId)
                     .eq('workout_type', 'history')
-                    .gte('workout_date', eightWeeksAgoStr)
                     .order('workout_date', { ascending: true }),
                 db.weighIns.getRecent(userId, 30),
                 _loadWearableSleepForInsights(userId),
             ]);
 
-            const workouts = (workoutsResult.status === 'fulfilled' && !workoutsResult.value.error)
-                ? workoutsResult.value.data || []
+            const exerciseHistory = (exerciseHistoryResult.status === 'fulfilled' && !exerciseHistoryResult.value.error)
+                ? exerciseHistoryResult.value.data || []
                 : [];
             const weighIns = weighInsResult.status === 'fulfilled' ? (weighInsResult.value || []) : [];
             const sleepData = sleepResult.status === 'fulfilled' ? sleepResult.value : null;
 
-            renderInsightsFrequencyChart(workouts);
-            renderInsightsCorrelations(workouts, weighIns, sleepData);
+            const strengthGains = _computeStrengthGains(exerciseHistory);
+
+            renderStrengthProgress(strengthGains);
+            renderInsightsCorrelations(strengthGains, weighIns, sleepData);
             renderInsightsSleep(sleepData);
 
             if (loadingEl) loadingEl.style.display = 'none';
@@ -10316,6 +10312,41 @@ async function applyAppTheme(themeKey) {
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
         }
+    }
+
+    /**
+     * Compute strength gains per exercise.
+     * For each exercise, find the best weight on the earliest date vs the best weight on the most recent date.
+     * Returns array sorted by biggest gain: [{ name, firstWeight, lastWeight, gain, firstDate, lastDate, sessions }]
+     */
+    function _computeStrengthGains(exerciseHistory) {
+        const byExercise = {};
+        for (const row of exerciseHistory) {
+            if (!row.exercise_name || !row.weight_kg || parseFloat(row.weight_kg) <= 0) continue;
+            const name = row.exercise_name;
+            if (!byExercise[name]) byExercise[name] = {};
+            const date = row.workout_date;
+            const weight = parseFloat(row.weight_kg);
+            if (!byExercise[name][date] || weight > byExercise[name][date]) {
+                byExercise[name][date] = weight;
+            }
+        }
+
+        const results = [];
+        for (const [name, dateMap] of Object.entries(byExercise)) {
+            const dates = Object.keys(dateMap).sort();
+            if (dates.length < 2) continue;
+            const firstDate = dates[0];
+            const lastDate = dates[dates.length - 1];
+            const firstWeight = dateMap[firstDate];
+            const lastWeight = dateMap[lastDate];
+            const gain = lastWeight - firstWeight;
+            results.push({ name, firstWeight, lastWeight, gain, firstDate, lastDate, sessions: dates.length });
+        }
+
+        // Sort by biggest gain descending
+        results.sort((a, b) => b.gain - a.gain);
+        return results;
     }
 
     // Try each connected wearable for recent sleep data (last 7 nights)
@@ -10337,104 +10368,89 @@ async function applyAppTheme(themeKey) {
         return null;
     }
 
-    function renderInsightsFrequencyChart(workouts) {
-        const container = document.getElementById('insights-frequency-chart');
-        const totalEl   = document.getElementById('insights-freq-total');
+    function renderStrengthProgress(strengthGains) {
+        const container = document.getElementById('insights-strength-progress');
+        const countEl = document.getElementById('insights-strength-count');
         if (!container) return;
 
-        // Build a map of ISO week key → count
-        function isoWeekKey(dateStr) {
-            const d = new Date(dateStr + 'T12:00:00');
-            const day = d.getDay() || 7; // Mon=1
-            d.setDate(d.getDate() + 4 - day);
-            const yearStart = new Date(Date.UTC(d.getFullYear(), 0, 1));
-            const week = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
-            return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        const gainers = strengthGains.filter(e => e.gain > 0);
+
+        if (countEl) countEl.textContent = gainers.length > 0 ? `${gainers.length} exercises improved` : '';
+
+        if (gainers.length === 0) {
+            container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">Keep logging workouts with weights to see your strength gains here.</div>`;
+            return;
         }
 
-        // Collect workouts per week (unique dates only)
-        const weekMap = new Map();
-        const seen = new Set();
-        for (const w of workouts) {
-            if (!w.workout_date || seen.has(w.workout_date)) continue;
-            seen.add(w.workout_date);
-            const key = isoWeekKey(w.workout_date);
-            weekMap.set(key, (weekMap.get(key) || 0) + 1);
-        }
+        // Show top 6 exercises with biggest gains
+        const top = gainers.slice(0, 6);
+        const maxGain = Math.max(...top.map(e => e.gain));
 
-        // Build 8 ordered week slots ending this week
-        const weeks = [];
-        const now = new Date();
-        for (let i = 7; i >= 0; i--) {
-            const d = new Date(now);
-            d.setDate(now.getDate() - i * 7);
-            const key = isoWeekKey(d.toISOString().split('T')[0]);
-            const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            weeks.push({ key, label, count: weekMap.get(key) || 0 });
-        }
-
-        const totalSessions = weeks.reduce((s, w) => s + w.count, 0);
-        if (totalEl) totalEl.textContent = totalSessions + ' total sessions';
-
-        const maxCount = Math.max(...weeks.map(w => w.count), 1);
-        const barWidth = 100 / weeks.length;
-
-        let html = '<div style="display: flex; align-items: flex-end; gap: 4px; height: 100px; padding: 0 0 24px 0; position: relative;">';
-        for (const week of weeks) {
-            const pct = maxCount > 0 ? Math.round((week.count / maxCount) * 100) : 0;
-            const isThisWeek = week === weeks[weeks.length - 1];
-            const barColor = isThisWeek ? 'var(--primary)' : '#cbd5e1';
-            const labelShort = week.label.replace(/\s+\d+$/, ''); // e.g. "Jan"
+        let html = '';
+        for (const ex of top) {
+            const pct = Math.round((ex.gain / maxGain) * 100);
+            const displayGain = preferLbs ? (ex.gain * 2.20462).toFixed(1) : ex.gain.toFixed(1);
+            const displayFirst = preferLbs ? (ex.firstWeight * 2.20462).toFixed(1) : ex.firstWeight.toFixed(1);
+            const displayLast = preferLbs ? (ex.lastWeight * 2.20462).toFixed(1) : ex.lastWeight.toFixed(1);
+            const unit = preferLbs ? 'lbs' : 'kg';
             html += `
-                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%;">
-                    <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;">
-                        <div style="width: 100%; height: ${Math.max(pct, week.count > 0 ? 8 : 3)}%; background: ${barColor}; border-radius: 6px 6px 2px 2px; transition: height 0.3s ease; position: relative;">
-                            ${week.count > 0 ? `<div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.65rem; font-weight: 700; color: ${isThisWeek ? 'var(--primary)' : 'var(--text-muted)'};">${week.count}</div>` : ''}
-                        </div>
+                <div style="margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                        <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%;">${ex.name}</div>
+                        <div style="font-size: 0.78rem; font-weight: 800; color: #10b981;">+${displayGain} ${unit}</div>
                     </div>
-                    <div style="font-size: 0.58rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;">${labelShort}</div>
+                    <div style="width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden;">
+                        <div style="width: ${Math.max(pct, 8)}%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 4px; transition: width 0.4s ease;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 3px;">
+                        <span style="font-size: 0.68rem; color: var(--text-muted);">${displayFirst} → ${displayLast} ${unit}</span>
+                        <span style="font-size: 0.68rem; color: var(--text-muted);">${ex.sessions} sessions</span>
+                    </div>
                 </div>`;
         }
-        html += '</div>';
         container.innerHTML = html;
     }
 
-    function renderInsightsCorrelations(workouts, weighIns, sleepData) {
+    function renderInsightsCorrelations(strengthGains, weighIns, sleepData) {
         const container = document.getElementById('insights-correlations-container');
         if (!container) return;
 
         const rows = [];
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        const unit = preferLbs ? 'lbs' : 'kg';
 
-        // De-duplicate workouts by date (multiple entries per day = one session)
-        const uniqueDates = [...new Set(workouts.map(w => w.workout_date).filter(Boolean))];
+        // Top strength gain
+        const topGainer = strengthGains.find(e => e.gain > 0);
+        if (topGainer) {
+            const displayGain = preferLbs ? (topGainer.gain * 2.20462).toFixed(1) : topGainer.gain.toFixed(1);
+            rows.push({
+                icon: '💪',
+                label: 'Biggest Strength Gain',
+                value: `+${displayGain} ${unit}`,
+                sub: topGainer.name,
+                subColor: '#10b981',
+            });
+        }
 
-        // Workout momentum: this 4 weeks vs prior 4 weeks
-        const now = new Date();
-        const fourWeeksAgo = new Date(now); fourWeeksAgo.setDate(now.getDate() - 28);
-        const eightWeeksAgo = new Date(now); eightWeeksAgo.setDate(now.getDate() - 56);
-        const recentCount = uniqueDates.filter(d => d >= fourWeeksAgo.toISOString().split('T')[0]).length;
-        const priorCount  = uniqueDates.filter(d => {
-            return d >= eightWeeksAgo.toISOString().split('T')[0] && d < fourWeeksAgo.toISOString().split('T')[0];
-        }).length;
-
-        const momentumDiff = recentCount - priorCount;
-        const momentumLabel = momentumDiff > 0 ? `+${momentumDiff} vs prior 4 weeks`
-            : momentumDiff < 0 ? `${momentumDiff} vs prior 4 weeks`
-            : 'Same as prior 4 weeks';
-        const momentumColor = momentumDiff > 0 ? '#10b981' : momentumDiff < 0 ? '#ef4444' : '#8b5cf6';
-        rows.push({
-            icon: '💪',
-            label: 'Workout Momentum',
-            value: `${recentCount} sessions`,
-            sub: momentumLabel,
-            subColor: momentumColor,
-        });
+        // Total exercises with gains
+        const gainCount = strengthGains.filter(e => e.gain > 0).length;
+        if (gainCount > 0) {
+            const totalGain = strengthGains.filter(e => e.gain > 0).reduce((s, e) => s + e.gain, 0);
+            const displayTotal = preferLbs ? (totalGain * 2.20462).toFixed(1) : totalGain.toFixed(1);
+            rows.push({
+                icon: '📈',
+                label: 'Total Strength Added',
+                value: `+${displayTotal} ${unit}`,
+                sub: `across ${gainCount} exercises`,
+                subColor: '#10b981',
+            });
+        }
 
         // Weight trend
         if (weighIns && weighIns.length >= 2) {
             const latest = weighIns[0];
             const oldest = weighIns[weighIns.length - 1];
-            const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
             const diff = latest.weight_kg - oldest.weight_kg;
             const displayDiff = preferLbs
                 ? (diff * 2.20462).toFixed(1) + ' lbs'
@@ -10467,7 +10483,7 @@ async function applyAppTheme(themeKey) {
         }
 
         if (rows.length === 0) {
-            container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">Log workouts to start seeing your correlations here.</div>`;
+            container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">Log workouts with weights to start seeing your strength correlations here.</div>`;
             return;
         }
 
@@ -10478,7 +10494,7 @@ async function applyAppTheme(themeKey) {
                     <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">${r.label}</div>
                     <div style="font-size: 1.05rem; font-weight: 800; color: var(--text-main);">${r.value}</div>
                 </div>
-                <div style="font-size: 0.75rem; font-weight: 700; color: ${r.subColor}; text-align: right; max-width: 100px;">${r.sub}</div>
+                <div style="font-size: 0.75rem; font-weight: 700; color: ${r.subColor}; text-align: right; max-width: 120px;">${r.sub}</div>
             </div>
         `).join('');
         // Remove last border
@@ -21104,15 +21120,15 @@ function viewWorkoutHistoryDetail(date) {
         <!-- Main Content -->
         <div id="insights-main-content" style="display: none; padding-bottom: 40px;">
 
-            <!-- Workout Frequency Chart -->
+            <!-- Strength Progress -->
             <div style="padding: 20px 20px 0;">
                 <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
                     <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px;">
-                        <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Workout Frequency</h3>
-                        <span id="insights-freq-total" style="font-size: 0.8rem; color: var(--primary); font-weight: 700;"></span>
+                        <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Strength Progress</h3>
+                        <span id="insights-strength-count" style="font-size: 0.8rem; color: #10b981; font-weight: 700;"></span>
                     </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Sessions per week · last 8 weeks</div>
-                    <div id="insights-frequency-chart" style="width: 100%; overflow: hidden;"></div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Exercises where you've increased weight</div>
+                    <div id="insights-strength-progress" style="width: 100%;"></div>
                 </div>
             </div>
 
