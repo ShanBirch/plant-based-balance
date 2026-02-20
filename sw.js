@@ -130,26 +130,6 @@ self.addEventListener('notificationclick', (e) => {
           return clients.openWindow('./dashboard.html');
         }
       }
-      // Check if notification is for pending approval
-      else if (notificationData.type === 'pending_approval') {
-        // Try to focus existing window
-        for (let client of clientList) {
-          if (client.url.includes('dashboard.html') && 'focus' in client) {
-            return client.focus().then(client => {
-              client.postMessage({
-                type: 'open_approval_modal',
-                action: action,
-                data: notificationData
-              });
-              return client;
-            });
-          }
-        }
-
-        if (clients.openWindow) {
-          return clients.openWindow('./dashboard.html?openApproval=true');
-        }
-      }
       // Handle meal reminder notifications
       else if (notificationData.type === 'meal_reminder') {
         const mealType = notificationData.mealType || 'meal';

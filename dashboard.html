@@ -21311,18 +21311,6 @@ function viewWorkoutHistoryDetail(date) {
                      <div>Units</div>
                      <div style="font-size:0.9rem; font-weight:700; color:var(--primary); cursor:pointer;" onclick="alert('Units toggled (Simulation)')">Metric (kg)</div>
                  </div>
-                 <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
-                     <div>
-                         <div>Notifications</div>
-                         <div style="font-size:0.75rem; color:var(--text-muted);">Coach message alerts</div>
-                     </div>
-                     <label class="toggle-switch" style="display:inline-block; width:40px; height:24px; position:relative;">
-                         <input type="checkbox" id="user-notifications-toggle" checked onchange="toggleUserNotifications(this.checked)">
-                         <span style="position:absolute; inset:0; background:#ccc; border-radius:24px; transition:0.3s;" class="slider"></span>
-                         <span style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:0.3s;" class="knob"></span>
-                     </label>
-                     <style> input:checked + .slider { background: var(--primary) !important; } input:checked + .slider + .knob { transform: translateX(16px); } </style>
-                 </div>
                  <!-- Meal Timing & Reminders Settings -->
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9;">
                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -21474,18 +21462,6 @@ function viewWorkoutHistoryDetail(date) {
                     <button class="pwa-install-btn" onclick="installPWA(this)" data-original-text="Install" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
                         Install
                     </button>
-                </div>
-                <!-- Admin Notifications (only visible to admins) -->
-                <div id="admin-notifications-setting" style="padding:15px; border-top:1px solid #f1f5f9; display:none;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <div>Coach Notifications</div>
-                            <div style="font-size:0.75rem; color:var(--text-muted);">Get notified when users message</div>
-                        </div>
-                        <button id="admin-notif-btn" onclick="toggleAdminNotifications()" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer;">
-                            Enable
-                        </button>
-                    </div>
                 </div>
                 <!-- Admin Board (only visible to admins) -->
                 <div id="admin-board-setting" style="padding:15px; border-top:1px solid #f1f5f9; display:none;">
@@ -22479,7 +22455,6 @@ async function handleLogout() {
                 'calendarViewPreference',
                 'referral_banner_dismissed',
                 'pwa_banner_dismissed_v2',
-                'user_notifications_enabled',
                 'pbb_biometric_credential',
                 'pbb_biometric_email',
                 'pbb_biometric_user_id'
@@ -38293,167 +38268,16 @@ async function gatherContext() {
 const VAPID_PUBLIC_KEY = 'BLYkAQao_i-6MnaGCpr3hST-GqSEjcAnA3JYOGEEOtVS8dn1LX3FkpFqAbIFNbjsafyPJRoHa6n-dRq6NvT1OBI';
 
 /**
- * Subscribe to push notifications (for admin users)
- */
-window.subscribeToAdminNotifications = async function() {
-    try {
-        // Check if user is admin
-        const isAdmin = await db.pushSubscriptions.isAdmin();
-        if (!isAdmin) {
-            alert('Only admins can subscribe to approval notifications');
-            return false;
-        }
-
-        // Request notification permission
-        if ('Notification' in window) {
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                alert('Notification permission denied. Please enable notifications in your browser settings.');
-                return false;
-            }
-        } else {
-            alert('This browser does not support notifications');
-            return false;
-        }
-
-        // Get service worker registration
-        const registration = await navigator.serviceWorker.ready;
-
-        // Subscribe to push
-        const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-        });
-
-        // Convert subscription to JSON
-        const subscriptionJson = subscription.toJSON();
-
-        // Save to database
-        await db.pushSubscriptions.subscribe({
-            endpoint: subscriptionJson.endpoint,
-            keys: {
-                p256dh: subscriptionJson.keys.p256dh,
-                auth: subscriptionJson.keys.auth
-            }
-        }, true); // isAdmin = true
-
-        console.log('Subscribed to admin notifications!');
-        alert('Push notifications enabled! You will now receive alerts on this device when messages need approval.');
-        return true;
-
-    } catch (error) {
-        console.error('Failed to subscribe to notifications:', error);
-        alert('Failed to enable notifications: ' + error.message);
-        return false;
-    }
-};
-
-/**
- * Unsubscribe from push notifications
- */
-window.unsubscribeFromNotifications = async function() {
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-
-        if (subscription) {
-            await subscription.unsubscribe();
-            await db.pushSubscriptions.unsubscribe(subscription.endpoint);
-            alert('Notifications disabled.');
-        }
-    } catch (error) {
-        console.error('Failed to unsubscribe:', error);
-    }
-};
-
-/**
- * Check if admin is subscribed to notifications
- */
-window.checkAdminNotificationStatus = async function() {
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        return !!subscription;
-    } catch (error) {
-        return false;
-    }
-};
-
-/**
- * Toggle admin notifications (called from settings button)
- */
-window.toggleAdminNotifications = async function() {
-    const btn = document.getElementById('admin-notif-btn');
-    const isSubscribed = await checkAdminNotificationStatus();
-
-    if (isSubscribed) {
-        // Unsubscribe
-        await unsubscribeFromNotifications();
-        btn.textContent = 'Enable';
-        btn.style.background = 'var(--primary)';
-    } else {
-        // Subscribe
-        btn.textContent = 'Enabling...';
-        btn.disabled = true;
-        const success = await subscribeToAdminNotifications();
-        btn.disabled = false;
-        if (success) {
-            btn.textContent = 'Disable';
-            btn.style.background = '#ef4444';
-        } else {
-            btn.textContent = 'Enable';
-        }
-    }
-};
-
-/**
  * Initialize admin settings on page load
- * Auto-subscribes admins to notifications if they have permission
+ * Shows admin-only UI elements
  */
 async function initAdminSettings() {
     try {
         const isAdmin = await db.pushSubscriptions.isAdmin();
         if (isAdmin) {
-            // Show admin-only settings
-            const setting = document.getElementById('admin-notifications-setting');
-            if (setting) {
-                setting.style.display = 'block';
-            }
             const adminBoard = document.getElementById('admin-board-setting');
             if (adminBoard) {
                 adminBoard.style.display = 'block';
-            }
-
-            // Check if already subscribed
-            const isSubscribed = await checkAdminNotificationStatus();
-            const btn = document.getElementById('admin-notif-btn');
-
-            if (isSubscribed) {
-                if (btn) {
-                    btn.textContent = 'Disable';
-                    btn.style.background = '#ef4444';
-                }
-            } else {
-                // Auto-subscribe admin if notification permission is already granted
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    console.log('Auto-subscribing admin to notifications...');
-                    const success = await subscribeToAdminNotifications();
-                    if (success && btn) {
-                        btn.textContent = 'Disable';
-                        btn.style.background = '#ef4444';
-                    }
-                } else if ('Notification' in window && Notification.permission === 'default') {
-                    // Request permission and subscribe if granted
-                    const permission = await Notification.requestPermission();
-                    if (permission === 'granted') {
-                        console.log('Permission granted, auto-subscribing admin...');
-                        const success = await subscribeToAdminNotifications();
-                        if (success && btn) {
-                            btn.textContent = 'Disable';
-                            btn.style.background = '#ef4444';
-                        }
-                    }
-                }
             }
         }
     } catch (error) {
@@ -38482,185 +38306,7 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
-/**
- * Notify admin about pending coach response via server-side push
- */
-async function notifyAdminOfPendingResponse(userId, responseText) {
-    // Get user name for the notification
-    const profile = await window.getUserProfile();
-    const userName = profile?.name || 'A user';
 
-    const notificationTitle = 'Coach Response Pending Approval';
-    const notificationBody = `${userName}: ${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}`;
-
-    // Send push notification via server (reaches admin even when not on site)
-    try {
-        const response = await fetch('/.netlify/functions/send-push-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                title: notificationTitle,
-                body: notificationBody,
-                data: {
-                    type: 'pending_approval',
-                    userId: userId,
-                    url: '/dashboard.html'
-                }
-            })
-        });
-
-        const result = await response.json();
-        console.log('Push notification result:', result);
-    } catch (error) {
-        console.error('Error sending push notification:', error);
-    }
-
-    // Also set app badge locally if we're on the app
-    if ('setAppBadge' in navigator) {
-        const pendingCount = await db.pendingResponses.getPendingCount();
-        navigator.setAppBadge(pendingCount).catch(e => console.error(e));
-    }
-}
-
-/**
- * Open approval modal for a pending response
- */
-window.openApprovalModal = async function(pendingId = null) {
-    let pendingResponse;
-
-    if (pendingId) {
-        // Load specific pending response
-        pendingResponse = await db.pendingResponses.getById(pendingId);
-    } else {
-        // Load the most recent pending response
-        const pending = await db.pendingResponses.getPending(1);
-        if (pending && pending.length > 0) {
-            pendingResponse = pending[0];
-        }
-    }
-
-    if (!pendingResponse) {
-        alert('No pending responses found.');
-        return;
-    }
-
-    // Store current pending response ID
-    window.currentPendingResponseId = pendingResponse.id;
-
-    // Open the approval modal
-    const modal = document.getElementById('approval-modal');
-    if (modal) {
-        // Populate modal with response data
-        const userName = pendingResponse.users?.name || 'User';
-        const userMessage = pendingResponse.user_message_text || '';
-        const responseText = pendingResponse.message_text || '';
-
-        document.getElementById('approval-user-name').textContent = userName;
-        document.getElementById('approval-user-message').textContent = userMessage;
-        document.getElementById('approval-response-text').value = responseText;
-
-        modal.style.display = 'flex';
-    }
-};
-
-/**
- * Close approval modal
- */
-window.closeApprovalModal = function() {
-    const modal = document.getElementById('approval-modal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-};
-
-/**
- * Approve and send the response
- */
-window.approveResponse = async function() {
-    const responseId = window.currentPendingResponseId;
-    if (!responseId) return;
-
-    try {
-        // Get the (possibly edited) response text
-        const editedText = document.getElementById('approval-response-text').value;
-
-        // Get current user (admin)
-        const user = await window.supabaseClient.auth.getUser();
-        const adminId = user?.data?.user?.id;
-
-        // Get the pending response to find the original user_id
-        const pendingResponse = await db.pendingResponses.getById(responseId);
-        const originalUserId = pendingResponse.user_id;
-
-        // Approve the response in pending_coach_responses table
-        await db.pendingResponses.approve(responseId, adminId, editedText);
-
-        // Save the approved message to the conversations table for the ORIGINAL USER
-        // Split by ||| for multi-part messages
-        const parts = editedText.split(/\s*\|\|\|\s*/g).filter(s => s && s.trim());
-
-        for (const part of parts) {
-            await db.conversations.create(
-                originalUserId,  // The user who asked the question
-                'coach',         // chat_type - must match what getChatHistory queries for
-                'assistant',     // role
-                part,           // message text
-                'Coach Shannon'  // author name
-            );
-        }
-
-        // Close the modal
-        closeApprovalModal();
-
-        // Clear app badge if no more pending
-        const pendingCount = await db.pendingResponses.getPendingCount();
-        if ('setAppBadge' in navigator) {
-            if (pendingCount === 0) {
-                navigator.clearAppBadge().catch(e => console.error(e));
-            } else {
-                navigator.setAppBadge(pendingCount).catch(e => console.error(e));
-            }
-        }
-
-        // Show success message
-        alert('Response approved and sent to user!');
-    } catch (error) {
-        console.error('Error approving response:', error);
-        alert('Error approving response: ' + error.message);
-    }
-};
-
-/**
- * Reject the response
- */
-window.rejectResponse = async function() {
-    const responseId = window.currentPendingResponseId;
-    if (!responseId) return;
-
-    const reason = prompt('Why are you rejecting this response? (optional)');
-
-    try {
-        await db.pendingResponses.reject(responseId, reason || 'No reason provided');
-
-        // Close the modal
-        closeApprovalModal();
-
-        // Clear app badge if no more pending
-        const pendingCount = await db.pendingResponses.getPendingCount();
-        if ('setAppBadge' in navigator) {
-            if (pendingCount === 0) {
-                navigator.clearAppBadge().catch(e => console.error(e));
-            } else {
-                navigator.setAppBadge(pendingCount).catch(e => console.error(e));
-            }
-        }
-
-        alert('Response rejected.');
-    } catch (error) {
-        console.error('Error rejecting response:', error);
-        alert('Error rejecting response. Please try again.');
-    }
-};
 
 // ==========================================
 // COMMUNITY CHAT HELPER FUNCTIONS
@@ -44952,86 +44598,12 @@ async function subscribeUserToPush() {
     }
 }
 
-/**
- * Toggle user notifications preference
- */
-window.toggleUserNotifications = async function(enabled) {
-    localStorage.setItem('user_notifications_enabled', enabled ? 'true' : 'false');
-
-    if (enabled) {
-        // Request permission if enabling
-        if ('Notification' in window && Notification.permission === 'default') {
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                // Revert toggle if permission denied
-                const toggle = document.getElementById('user-notifications-toggle');
-                if (toggle) toggle.checked = false;
-                localStorage.setItem('user_notifications_enabled', 'false');
-                alert('Please enable notifications in your browser settings to receive coach message alerts.');
-                return;
-            }
-        }
-    }
-
-    console.log('User notifications:', enabled ? 'enabled' : 'disabled');
-};
-
-/**
- * Initialize user notification toggle state
- */
-function initUserNotificationToggle() {
-    const toggle = document.getElementById('user-notifications-toggle');
-    if (toggle) {
-        const enabled = localStorage.getItem('user_notifications_enabled') !== 'false'; // Default to true
-        toggle.checked = enabled;
-    }
-}
-
-async function sendCoachNotification(messageText) {
-    // Check if user has disabled notifications
-    if (localStorage.getItem('user_notifications_enabled') === 'false') {
-        return;
-    }
-
-    // Check if notifications are supported and permitted
-    if (!('Notification' in window) || Notification.permission !== 'granted') {
-        return;
-    }
-
-    // Only send notification if app is in background
-    if (document.visibilityState === 'hidden') {
-        try {
-            const registration = await navigator.serviceWorker.ready;
-
-            // Truncate long messages for notification
-            const displayText = messageText.length > 100
-                ? messageText.substring(0, 100) + '...'
-                : messageText;
-
-            await registration.showNotification('Coach Shannon', {
-                body: displayText,
-                icon: './assets/coach_shannon.jpg',
-                badge: './assets/Logo_dots.jpg',
-                vibrate: [200, 100, 200],
-                tag: 'coach-message',
-                requireInteraction: false,
-                data: {
-                    url: './dashboard.html'
-                }
-            });
-        } catch (error) {
-            console.error('Error sending notification:', error);
-        }
-    }
-}
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     updateCoachUI();
     setInterval(updateCoachUI, 1000); // Check every second for visibility toggle
-    // Removed: setTimeout(checkCoachGreeting, 2000); - no more automated greetings
     requestNotificationPermission();
-    initUserNotificationToggle();
 });
 
 // Immediate
@@ -58498,79 +58070,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </script>
 
-<script>
-// ==========================================
-// SERVICE WORKER MESSAGE HANDLER
-// ==========================================
-// Listen for messages from service worker (e.g., notification clicks)
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'open_approval_modal') {
-            // Open the approval modal
-            window.openApprovalModal();
-        }
-    });
-}
-
-// Check URL parameters for approval modal trigger
-window.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('openApproval') === 'true') {
-        // Wait a bit for everything to load, then open approval modal
-        setTimeout(() => {
-            window.openApprovalModal();
-            // Clean up URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }, 1000);
-    }
-});
-</script>
-
-<!-- ========================================== -->
-<!-- APPROVAL MODAL -->
-<!-- ========================================== -->
-<div id="approval-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
-    <div style="background: white; border-radius: 16px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
-        <!-- Header -->
-        <div style="padding: 24px; border-bottom: 1px solid #e2e8f0;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; font-size: 1.5rem; color: #1e293b;">Approve Coach Response</h2>
-                <button onclick="closeApprovalModal()" style="background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
-            </div>
-        </div>
-
-        <!-- Content -->
-        <div style="padding: 24px;">
-            <!-- User Info -->
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 8px;">User:</label>
-                <div id="approval-user-name" style="padding: 12px; background: #f1f5f9; border-radius: 8px; color: #1e293b;"></div>
-            </div>
-
-            <!-- User Message -->
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 8px;">User Message:</label>
-                <div id="approval-user-message" style="padding: 12px; background: #f1f5f9; border-radius: 8px; color: #1e293b; white-space: pre-wrap;"></div>
-            </div>
-
-            <!-- AI Response (Editable) -->
-            <div style="margin-bottom: 24px;">
-                <label for="approval-response-text" style="display: block; font-weight: 600; color: #475569; margin-bottom: 8px;">AI Response (Editable):</label>
-                <textarea id="approval-response-text" style="width: 100%; min-height: 200px; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 1rem; resize: vertical; box-sizing: border-box;" placeholder="AI response will appear here..."></textarea>
-            </div>
-
-            <!-- Actions -->
-            <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button onclick="rejectResponse()" style="padding: 12px 24px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                    Reject
-                </button>
-                <button onclick="approveResponse()" style="padding: 12px 24px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                    Approve & Send
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Preference Wizard Modal -->
 <div class="pref-wizard-overlay" id="pref-wizard-overlay">
