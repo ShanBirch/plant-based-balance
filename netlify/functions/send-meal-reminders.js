@@ -10,13 +10,36 @@ const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@plantbasedbalance.c
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
-// FCM V1 config — service account JSON stored as an env var string
-const FIREBASE_SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT
+// FCM V1 config — stored as three individual env vars to stay under AWS Lambda's 4KB env var limit.
+// In Netlify: remove FIREBASE_SERVICE_ACCOUNT and add these three instead:
+//   FIREBASE_PROJECT_ID   — e.g. "my-project-12345"
+//   FIREBASE_CLIENT_EMAIL — e.g. "firebase-adminsdk-xxx@my-project.iam.gserviceaccount.com"
+//   FIREBASE_PRIVATE_KEY  — the raw PEM key from the service account JSON (with literal \n)
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || null;
+const FIREBASE_CLIENT_EMAIL = process.env.FIREBASE_CLIENT_EMAIL || null;
+const FIREBASE_PRIVATE_KEY = process.env.FIREBASE_PRIVATE_KEY
+    ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    : null;
+
+// Keep legacy JSON fallback so existing deploys don't break mid-migration
+const FIREBASE_SERVICE_ACCOUNT = (!FIREBASE_PROJECT_ID && process.env.FIREBASE_SERVICE_ACCOUNT)
     ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
     : null;
 
+function getFirebaseCredentials() {
+    if (FIREBASE_PROJECT_ID && FIREBASE_CLIENT_EMAIL && FIREBASE_PRIVATE_KEY) {
+        return { project_id: FIREBASE_PROJECT_ID, client_email: FIREBASE_CLIENT_EMAIL, private_key: FIREBASE_PRIVATE_KEY };
+    }
+    if (FIREBASE_SERVICE_ACCOUNT) {
+        return FIREBASE_SERVICE_ACCOUNT;
+    }
+    return null;
+}
+
 async function getFCMAccessToken() {
-    const { client_email, private_key, project_id } = FIREBASE_SERVICE_ACCOUNT;
+    const creds = getFirebaseCredentials();
+    if (!creds) return null;
+    const { client_email, private_key, project_id } = creds;
     const now = Math.floor(Date.now() / 1000);
     const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
     const payload = Buffer.from(JSON.stringify({
@@ -70,8 +93,9 @@ function getRandomMessage(mealType) {
  * Send a push notification to a native device via FCM V1 API
  */
 async function sendNativePush(token, payload) {
-    if (!FIREBASE_SERVICE_ACCOUNT) {
-        console.log('[NativePush] No FIREBASE_SERVICE_ACCOUNT configured, skipping native push');
+    const creds = getFirebaseCredentials();
+    if (!creds) {
+        console.log('[NativePush] No Firebase credentials configured, skipping native push');
         return false;
     }
 
@@ -82,7 +106,7 @@ async function sendNativePush(token, payload) {
             return false;
         }
 
-        const projectId = FIREBASE_SERVICE_ACCOUNT.project_id;
+        const projectId = creds.project_id;
         // FCM V1 requires all data values to be strings
         const stringData = Object.fromEntries(
             Object.entries(payload.data || {}).map(([k, v]) => [k, String(v)])
