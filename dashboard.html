@@ -1387,6 +1387,7 @@ async function applyAppTheme(themeKey) {
     .perm-card.denied {
         background: #fef2f2;
         border-color: #fca5a5;
+        cursor: pointer;
     }
     .perm-card-icon {
         width: 44px; height: 44px;
@@ -1428,7 +1429,11 @@ async function applyAppTheme(themeKey) {
     .perm-card-btn.denied-btn {
         background: #fee2e2;
         color: #991b1b;
-        cursor: default;
+        cursor: pointer;
+    }
+    .perm-card-btn.denied-btn:active {
+        opacity: 0.7;
+        transform: scale(0.97);
     }
     .perm-continue-btn {
         display: block;
@@ -26302,14 +26307,22 @@ function updatePermBtn(permId, status) {
     } else if (status === 'denied') {
         card.classList.add('denied');
         card.classList.remove('granted');
-        btn.textContent = 'Settings';
+        btn.textContent = 'Settings ›';
         btn.classList.add('denied-btn');
         btn.classList.remove('granted-btn');
         // Let the user open App Settings to grant the permission manually
         btn.onclick = () => {
             if (window.NativePermissions && window.NativePermissions.openAppSettings) {
                 window.NativePermissions.openAppSettings();
+            } else if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                // Fallback: use Capacitor App plugin to open device settings
+                window.Capacitor.Plugins.App.openUrl({ url: 'app-settings:' }).catch(() => {});
             }
+        };
+        // Also make tapping anywhere on the card open settings
+        card.style.cursor = 'pointer';
+        card.onclick = (e) => {
+            if (e.target !== btn) btn.click();
         };
     }
 }
