@@ -47,7 +47,7 @@
         'myCurrentWorkoutId', 'weightUnitPreference', 'lastWellnessCheck', 'pbb_points_data',
         'pbb_points_level', 'onboardingComplete', 'program_start_date',
         'battleStats', 'unallocatedStatPoints', 'previousLifetimePoints', 'pendingLevelUpCelebration',
-        'selectedBackground', 'myChatStats', 'plant_based_learning_progress',
+        'selectedBackground', 'cachedNutritionStreak', 'myChatStats', 'plant_based_learning_progress',
         'customPBSlots', 'pbSlotsMigratedV2'
     ];
 
@@ -22761,7 +22761,7 @@ async function _syncQuizDataToDbRealImpl() {
             // SPLIT DATA: Users table vs User Facts (personal_details)
             // sex is a core user attribute stored in users table
             // equipment_access is stored in quiz_results table (not users table)
-            const userColumns = ['name', 'email', 'profile_photo', 'program_start_date', 'theme_preference', 'location', 'sex'];
+            const userColumns = ['name', 'email', 'profile_photo', 'program_start_date', 'theme_preference', 'background_preference', 'location', 'sex'];
             const coreData = {};
             const factsData = {};
 
@@ -23159,6 +23159,17 @@ async function _loadProfileDataRealImpl() {
     if (profile?.theme_preference && !localStorage.getItem('userThemePreference') && !window.isAdminViewing) {
         localStorage.setItem('userThemePreference', profile.theme_preference);
         console.log("Restored theme preference from DB to localStorage:", profile.theme_preference);
+    }
+
+    // Restore background preference from database to localStorage
+    // This ensures background persists even when cache/localStorage is cleared
+    if (profile?.background_preference && !localStorage.getItem('selectedBackground') && !window.isAdminViewing) {
+        localStorage.setItem('selectedBackground', profile.background_preference);
+        console.log("Restored background preference from DB to localStorage:", profile.background_preference);
+        // Apply immediately since the 2500ms init may have already run with the wrong background
+        if (window.selectBackground) {
+            window.selectBackground(profile.background_preference);
+        }
     }
 
     // CRITICAL FIX: Restore sex field to sessionStorage for nutrition calculations
@@ -54743,6 +54754,16 @@ function closeDailyScorePopup(event) {
 
 // --- 2. Streak Tracker ---
 async function loadStreakData() {
+    // Immediately show cached streak so UI doesn't flash 0 while loading
+    const cachedStreak = localStorage.getItem('cachedNutritionStreak');
+    if (cachedStreak) {
+        const cached = parseInt(cachedStreak) || 0;
+        const countEl = document.getElementById('streak-count');
+        if (countEl) countEl.textContent = cached;
+        const inlineCountEl = document.getElementById('streak-inline-count');
+        if (inlineCountEl) inlineCountEl.textContent = cached;
+    }
+
     try {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) return;
@@ -54789,8 +54810,14 @@ async function loadStreakData() {
         });
 
         // Calculate streak (consecutive days with logged nutrition)
+        // If today has no data yet, start from yesterday so the streak doesn't
+        // appear as 0 at the beginning of each day before any meals are logged
         let streak = 0;
         const checkDate = new Date(today);
+        const todayStr = getLocalDateString(today);
+        if (!loggedDates.has(todayStr) && !claimedDates.has(todayStr)) {
+            checkDate.setDate(checkDate.getDate() - 1);
+        }
         for (let i = 0; i < 100; i++) {
             const ds = getLocalDateString(checkDate);
             if (loggedDates.has(ds) || claimedDates.has(ds)) {
@@ -54800,6 +54827,9 @@ async function loadStreakData() {
                 break;
             }
         }
+
+        // Cache streak in localStorage for instant display on next load
+        localStorage.setItem('cachedNutritionStreak', String(streak));
 
         renderStreakUI(streak, loggedDates);
     } catch (err) {
@@ -54824,8 +54854,13 @@ async function loadStreakFromNutrition(userId) {
         if (d.total_calories > 0) loggedDates.add(d.nutrition_date);
     });
 
+    // If today has no data yet, start from yesterday so streak doesn't reset to 0
     let streak = 0;
     const checkDate = new Date(today);
+    const todayStr = getLocalDateString(today);
+    if (!loggedDates.has(todayStr)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+    }
     for (let i = 0; i < 100; i++) {
         if (loggedDates.has(getLocalDateString(checkDate))) {
             streak++;
@@ -54834,6 +54869,9 @@ async function loadStreakFromNutrition(userId) {
             break;
         }
     }
+
+    // Cache streak in localStorage for instant display on next load
+    localStorage.setItem('cachedNutritionStreak', String(streak));
 
     renderStreakUI(streak, loggedDates);
 }
@@ -61598,6 +61636,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Save selection to localStorage (skip in admin view-as mode)
             if (!window.isAdminViewing) {
                 localStorage.setItem('selectedBackground', bgName);
+
+                // Save background preference to Supabase for persistence across cache clears
+                if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
+                    try {
+                        dbHelpers.users.update(window.currentUser.id, { background_preference: bgName });
+                    } catch (e) {
+                        console.warn("Failed to save background preference to DB:", e);
+                    }
+                }
             }
 
             // Update the selected state in the UI
