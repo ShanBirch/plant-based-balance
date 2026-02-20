@@ -11604,27 +11604,19 @@ async function applyAppTheme(themeKey) {
             <!-- Featured monthly rare card rendered dynamically by renderFeaturedRareCard() -->
         </div>
 
-        <div style="margin: 20px 0 15px 0; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0;">Friend Challenges</h3>
-            <button onclick="openCreateChallengeModal()" style="background: none; border: none; color: var(--primary); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                Create Challenge
-            </button>
-        </div>
-        <div id="home-challenges-container">
-            <!-- Challenges will be loaded here by loadHomeChallenges() -->
-            <div id="home-challenges-empty" class="card" style="border-left: 5px solid #7c3aed;">
-                <div class="card-body" style="max-height: none; padding: 16px; opacity: 1; display: flex; align-items: center; gap: 12px;">
-                    <div style="background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(99,102,241,0.15)); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🏆</div>
-                    <div style="flex: 1;">
-                        <h4 style="margin: 0 0 4px 0; border: none; padding: 0; font-size: 0.95rem;">Start Level Up Challenge</h4>
-                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Challenge friends, earn 2x XP & win rare drops</p>
+        <div id="home-challenges-container" style="margin: 20px 0 15px 0;">
+            <!-- Empty state: Start an Accountability Challenge card -->
+            <div id="home-challenges-empty" onclick="openCreateChallengeModal()" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);">
+                <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.4rem;">🤝</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 700; font-size: 0.95rem; color: white; margin-bottom: 3px;">Start an Accountability Challenge</div>
+                        <div style="font-size: 0.78rem; color: rgba(255,255,255,0.7);">Invite a friend, earn 2x XP & win rare drops</div>
                     </div>
-                    <button onclick="openCreateChallengeModal()" style="background: linear-gradient(135deg, #7c3aed, #6366f1); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap;">
-                        Start
-                    </button>
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.5); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
                 </div>
             </div>
+            <!-- Active challenge cards rendered here by loadHomeChallenges() -->
             <div id="home-challenges-list"></div>
         </div>
 
@@ -41721,11 +41713,12 @@ async function loadHomeChallenges() {
         const pendingInvites = (challenges || []).filter(c => c.user_status === 'invited');
 
         if (activeChallenges.length === 0 && pendingInvites.length === 0 && pendingChallenges.length === 0) {
-            if (emptyState) emptyState.style.display = 'block';
+            if (emptyState) emptyState.style.display = '';
             container.innerHTML = '';
             return;
         }
 
+        // Hide the "Start" card when there are challenges
         if (emptyState) emptyState.style.display = 'none';
 
         let html = '';
@@ -41753,29 +41746,29 @@ async function loadHomeChallenges() {
                 const tierData = rare ? (RARE_TIERS[rare.tier] || RARE_TIERS.COMMON) : null;
 
                 return `
-                <div class="card" style="border-left: 5px solid #7c3aed; margin-bottom: 10px;">
-                    <div class="card-body" style="max-height: none; padding: 16px; opacity: 1;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(99,102,241,0.15)); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); margin-bottom: 12px;">
+                    <div style="padding: 16px 20px;">
+                        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+                            <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.4rem;">
                                 ${rare ? rare.emoji : '🎯'}
                             </div>
                             <div style="flex: 1; min-width: 0;">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
-                                    <span style="font-weight: 600; color: var(--text-main); font-size: 0.95rem;">${challenge.challenge_name}</span>
-                                    <span style="background: rgba(124,58,237,0.1); color: #7c3aed; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 600;">INVITE</span>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
+                                    <span style="font-weight: 700; color: white; font-size: 0.95rem;">${challenge.challenge_name}</span>
+                                    <span style="background: rgba(255,255,255,0.2); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 700;">INVITE</span>
                                 </div>
-                                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                <div style="font-size: 0.78rem; color: rgba(255,255,255,0.7);">
                                     from ${challenge.creator_name} · 👥 ${challenge.participant_count} joined
                                 </div>
-                                <div style="font-size: 0.75rem; color: #7c3aed; font-weight: 600; margin-top: 2px;">
+                                <div style="font-size: 0.72rem; color: rgba(255,255,255,0.85); font-weight: 600; margin-top: 3px;">
                                     🪙 ${entryFee.toLocaleString()} entry · 2x XP · ${rare ? rare.emoji + ' Win ' + rare.name : 'Win rare drops'}
                                 </div>
                                 ${tierData ? `<span style="display: inline-block; margin-top: 3px; padding: 1px 6px; border-radius: 3px; font-size: 0.55rem; font-weight: 800; background: ${tierData.gradient}; color: white;">${tierData.label}</span>` : ''}
                             </div>
                         </div>
-                        <div style="display: flex; gap: 8px; margin-top: 12px;">
-                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #7c3aed, #6366f1); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">🪙 Join (${entryFee.toLocaleString()})</button>
-                            <button onclick="declineChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: #f1f5f9; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Decline</button>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="acceptChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.95); color: #7c3aed; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem;">🪙 Join (${entryFee.toLocaleString()})</button>
+                            <button onclick="declineChallengeInvite('${challenge.challenge_id}')" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Decline</button>
                         </div>
                     </div>
                 </div>
@@ -41784,45 +41777,40 @@ async function loadHomeChallenges() {
 
         // Show pending challenges (waiting for friends to join)
         html += pendingChallenges.slice(0, 3).map(challenge => `
-            <div class="card" onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; border-left: 5px solid #f59e0b; margin-bottom: 10px;">
-                <div class="card-body" style="max-height: none; padding: 16px; opacity: 1;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.15)); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-                            ⏳
+            <div onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(245,158,11,0.2); background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%); margin-bottom: 12px;">
+                <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.25); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.3rem;">⏳</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
+                            <span style="font-weight: 700; color: white; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${challenge.challenge_name}</span>
+                            <span style="background: rgba(255,255,255,0.25); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 700; flex-shrink: 0;">PENDING</span>
                         </div>
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
-                                <span style="font-weight: 600; color: var(--text-main); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${challenge.challenge_name}</span>
-                                <span style="background: rgba(245,158,11,0.1); color: #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 600;">PENDING</span>
-                            </div>
-                            <div style="font-size: 0.8rem; color: var(--text-muted);">
-                                Waiting for friends to join · ${challenge.participant_count} so far
-                            </div>
+                        <div style="font-size: 0.78rem; color: rgba(255,255,255,0.8);">
+                            Waiting for friends to join · ${challenge.participant_count} so far
                         </div>
                     </div>
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.5); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
                 </div>
             </div>
         `).join('');
 
         // Show active challenges
         html += activeChallenges.slice(0, 3).map(challenge => `
-            <div class="card" onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; border-left: 5px solid #7c3aed; margin-bottom: 10px;">
-                <div class="card-body" style="max-height: none; padding: 16px; opacity: 1;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(99,102,241,0.15)); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; color: #7c3aed;">
-                            #${challenge.user_rank}
+            <div onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); margin-bottom: 12px;">
+                <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.2rem; font-weight: 800; color: white;">
+                        #${challenge.user_rank}
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 700; color: white; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${challenge.challenge_name}</div>
+                        <div style="display: flex; gap: 12px; font-size: 0.78rem; color: rgba(255,255,255,0.7);">
+                            <span>⏱️ ${challenge.days_remaining}d left</span>
+                            <span>👥 ${challenge.participant_count}</span>
                         </div>
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="font-weight: 600; color: var(--text-main); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${challenge.challenge_name}</div>
-                            <div style="display: flex; gap: 12px; font-size: 0.8rem; color: var(--text-muted);">
-                                <span>⏱️ ${challenge.days_remaining}d left</span>
-                                <span>👥 ${challenge.participant_count}</span>
-                            </div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 1.1rem; font-weight: 700; color: #7c3aed;">${challenge.user_points}</div>
-                            <div style="font-size: 0.7rem; color: var(--text-muted);">pts</div>
-                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.2rem; font-weight: 800; color: white;">${challenge.user_points}</div>
+                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.7); font-weight: 600;">pts</div>
                     </div>
                 </div>
             </div>
