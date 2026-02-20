@@ -21162,25 +21162,30 @@ function viewWorkoutHistoryDetail(date) {
                      <div id="meal-reminder-times" style="display:none; margin-top:12px; padding:12px; background:#f8f9fa; border-radius:10px;">
                          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
                              <label style="font-size:0.9rem; display:flex; align-items:center; gap:8px;">
-                                 <input type="checkbox" id="breakfast-reminder-check" checked onchange="saveMealReminderSettings()">
+                                 <input type="checkbox" id="breakfast-reminder-check" checked>
                                  <span>Breakfast</span>
                              </label>
-                             <input type="time" id="breakfast-reminder-time" value="08:00" onchange="saveMealReminderSettings()" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;">
+                             <input type="time" id="breakfast-reminder-time" value="08:00" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;">
                          </div>
                          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
                              <label style="font-size:0.9rem; display:flex; align-items:center; gap:8px;">
-                                 <input type="checkbox" id="lunch-reminder-check" checked onchange="saveMealReminderSettings()">
+                                 <input type="checkbox" id="lunch-reminder-check" checked>
                                  <span>Lunch</span>
                              </label>
-                             <input type="time" id="lunch-reminder-time" value="12:30" onchange="saveMealReminderSettings()" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;">
+                             <input type="time" id="lunch-reminder-time" value="12:30" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;">
                          </div>
                          <div style="display:flex; align-items:center; justify-content:space-between;">
                              <label style="font-size:0.9rem; display:flex; align-items:center; gap:8px;">
-                                 <input type="checkbox" id="dinner-reminder-check" checked onchange="saveMealReminderSettings()">
+                                 <input type="checkbox" id="dinner-reminder-check" checked>
                                  <span>Dinner</span>
                              </label>
-                             <input type="time" id="dinner-reminder-time" value="18:30" onchange="saveMealReminderSettings()" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;">
+                             <input type="time" id="dinner-reminder-time" value="18:30" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;">
                          </div>
+                         <!-- Save Reminders Button -->
+                         <button id="save-meal-reminders-btn" onclick="saveAndConfirmMealReminders()" style="margin-top:12px; width:100%; padding:10px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                             <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:white;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                             Save Reminders
+                         </button>
                          <div style="margin:12px 0 0 0; padding:8px 10px; background:linear-gradient(135deg, #e8f5e9, #f1f8e9); border-radius:8px; border:1px solid #c8e6c9;">
                              <p style="margin:0 0 4px 0; font-size:0.8rem; font-weight:600; color:#2e7d32;">+1 XP Bonus for On-Time Meals!</p>
                              <p style="margin:0; font-size:0.72rem; color:#558b2f;">Log your meal within 30 minutes of your scheduled time to earn bonus XP. Your FitGotchi will send you a push notification when it's time to eat.</p>
@@ -52345,6 +52350,75 @@ async function saveMealReminderSettings() {
     if (window.NativePush && typeof window.NativePush.scheduleMealReminders === 'function') {
         window.NativePush.scheduleMealReminders(settings);
     }
+}
+
+// Save meal reminders with confirmation popup
+async function saveAndConfirmMealReminders() {
+    const btn = document.getElementById('save-meal-reminders-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:white; animation:spin 1s linear infinite;"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg> Saving...';
+    }
+
+    await saveMealReminderSettings();
+
+    // Build confirmation message based on enabled meals
+    const breakfastOn = document.getElementById('breakfast-reminder-check')?.checked;
+    const lunchOn = document.getElementById('lunch-reminder-check')?.checked;
+    const dinnerOn = document.getElementById('dinner-reminder-check')?.checked;
+
+    const breakfastTime = document.getElementById('breakfast-reminder-time')?.value || '08:00';
+    const lunchTime = document.getElementById('lunch-reminder-time')?.value || '12:30';
+    const dinnerTime = document.getElementById('dinner-reminder-time')?.value || '18:30';
+
+    function formatTime(t) {
+        const [h, m] = t.split(':');
+        const hour = parseInt(h);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const h12 = hour % 12 || 12;
+        return h12 + ':' + m + ' ' + ampm;
+    }
+
+    const meals = [];
+    if (breakfastOn) meals.push('Breakfast at ' + formatTime(breakfastTime));
+    if (lunchOn) meals.push('Lunch at ' + formatTime(lunchTime));
+    if (dinnerOn) meals.push('Dinner at ' + formatTime(dinnerTime));
+
+    // Restore button
+    if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:white;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Save Reminders';
+    }
+
+    // Show confirmation popup
+    const overlay = document.createElement('div');
+    overlay.id = 'meal-reminder-confirmation';
+    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10020; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.2s ease-out;';
+
+    const mealListHTML = meals.length > 0
+        ? meals.map(function(m) { return '<div style="display:flex; align-items:center; gap:8px; padding:6px 0; font-size:0.88rem; color:#333;"><svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#22c55e; flex-shrink:0;"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>' + m + '</div>'; }).join('')
+        : '<div style="padding:6px 0; font-size:0.88rem; color:#666;">No meals selected for reminders</div>';
+
+    overlay.innerHTML = '<div style="background:white; border-radius:16px; padding:24px; margin:20px; max-width:320px; width:100%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.2); animation:fadeInUp 0.3s ease-out;">'
+        + '<div style="width:56px; height:56px; background:linear-gradient(135deg, #e8f5e9, #c8e6c9); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">'
+        + '<svg viewBox="0 0 24 24" style="width:28px; height:28px; fill:#22c55e;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
+        + '</div>'
+        + '<h3 style="margin:0 0 6px; font-size:1.1rem; color:#1a1a1a;">Reminders Saved!</h3>'
+        + '<p style="margin:0 0 16px; font-size:0.85rem; color:#666;">You\'ll be reminded for your meals:</p>'
+        + '<div style="text-align:left; background:#f8faf8; border-radius:10px; padding:10px 14px; margin-bottom:16px;">'
+        + mealListHTML
+        + '</div>'
+        + '<button onclick="document.getElementById(\'meal-reminder-confirmation\').remove()" style="width:100%; padding:10px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; font-size:0.9rem; cursor:pointer;">Got it!</button>'
+        + '</div>';
+
+    document.body.appendChild(overlay);
+
+    // Also dismiss if tapping outside the popup
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.remove();
+    });
 }
 
 // Open unified camera for meal photos + barcode scanning
