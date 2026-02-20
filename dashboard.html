@@ -7949,20 +7949,27 @@ async function applyAppTheme(themeKey) {
                 // Check if model-viewer custom element registered (script loaded).
                 // If the ES module script failed (e.g. blocked by privacy settings),
                 // the custom element won't be defined and model-viewer is inert.
-                setTimeout(function() {
+                // Use whenDefined() to wait for actual registration rather than a
+                // fixed timeout — on slow connections the ES module can take >5s to
+                // download, which previously caused a false failure.
+                var ceCheckTimeout = setTimeout(function() {
                     if (!customElements.get('model-viewer')) {
                         showFallback('3D viewer could not load. Please try reloading the page.');
-                        return;
                     }
-                }, 5000);
+                }, 15000);
 
-                // Final timeout: if model hasn't loaded after 20s, show fallback.
-                // Generous timeout to give Safari extra time for WebGL initialization.
+                customElements.whenDefined('model-viewer').then(function() {
+                    clearTimeout(ceCheckTimeout);
+                });
+
+                // Final timeout: if model hasn't loaded after 30s, show fallback.
+                // Generous timeout to give Safari extra time for WebGL initialization
+                // and to allow for slow CDN + slow model download combined.
                 setTimeout(function() {
                     if (!loaded && !fallbackShown) {
                         showFallback('Taking too long to load. Please try reloading the page.');
                     }
-                }, 20000);
+                }, 30000);
             })();
             </script>
 
