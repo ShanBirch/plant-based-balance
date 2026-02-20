@@ -10209,6 +10209,294 @@ async function applyAppTheme(themeKey) {
     </script>
 
     <script>
+    // ===== ACTIVITY INSIGHTS VIEW =====
+
+    function openInsightsView() {
+        if (typeof hideAllAppViews === 'function') hideAllAppViews();
+        const viewEl = document.getElementById('view-insights');
+        if (viewEl) {
+            viewEl.style.display = 'block';
+            viewEl.scrollTop = 0;
+            window.scrollTo(0, 0);
+        }
+        const nav = document.getElementById('bottom-nav');
+        if (nav) nav.style.display = 'none';
+        initInsightsView();
+        if (typeof pushNavigationState === 'function') {
+            pushNavigationState('view-insights', closeInsightsView);
+        } else {
+            history.pushState({ view: 'insights' }, '', '');
+        }
+    }
+
+    function closeInsightsView() {
+        const viewEl = document.getElementById('view-insights');
+        if (viewEl) viewEl.style.display = 'none';
+        const dashEl = document.getElementById('view-dashboard');
+        if (dashEl) dashEl.style.display = 'block';
+        const nav = document.getElementById('bottom-nav');
+        if (nav) nav.style.display = '';
+    }
+
+    async function initInsightsView() {
+        if (!window.currentUser) return;
+        const userId = window.currentUser.id;
+
+        const loadingEl = document.getElementById('insights-loading');
+        const contentEl = document.getElementById('insights-main-content');
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (contentEl) contentEl.style.display = 'none';
+
+        try {
+            // Load last 8 weeks of workout dates in parallel with wearable sleep data
+            const eightWeeksAgo = new Date();
+            eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
+            const eightWeeksAgoStr = eightWeeksAgo.toISOString().split('T')[0];
+
+            const [workoutsResult, weighInsResult, sleepResult] = await Promise.allSettled([
+                supabaseClient
+                    .from('workouts')
+                    .select('workout_date')
+                    .eq('user_id', userId)
+                    .eq('workout_type', 'history')
+                    .gte('workout_date', eightWeeksAgoStr)
+                    .order('workout_date', { ascending: true }),
+                db.weighIns.getRecent(userId, 30),
+                _loadWearableSleepForInsights(userId),
+            ]);
+
+            const workouts = (workoutsResult.status === 'fulfilled' && !workoutsResult.value.error)
+                ? workoutsResult.value.data || []
+                : [];
+            const weighIns = weighInsResult.status === 'fulfilled' ? (weighInsResult.value || []) : [];
+            const sleepData = sleepResult.status === 'fulfilled' ? sleepResult.value : null;
+
+            renderInsightsFrequencyChart(workouts);
+            renderInsightsCorrelations(workouts, weighIns, sleepData);
+            renderInsightsSleep(sleepData);
+
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (contentEl) contentEl.style.display = 'block';
+        } catch (err) {
+            console.warn('Insights load error:', err);
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (contentEl) contentEl.style.display = 'block';
+        }
+    }
+
+    // Try each connected wearable for recent sleep data (last 7 nights)
+    async function _loadWearableSleepForInsights(userId) {
+        const sources = [
+            { name: 'Fitbit',  url: `/api/fitbit/data?user_id=${userId}`,  key: (d) => d.sleep },
+            { name: 'WHOOP',   url: `/api/whoop/data?user_id=${userId}`,   key: (d) => d.sleep },
+            { name: 'Oura',    url: `/api/oura/data?user_id=${userId}`,    key: (d) => d.sleep },
+        ];
+        for (const src of sources) {
+            try {
+                const res = await fetch(src.url);
+                if (!res.ok) continue;
+                const d = await res.json();
+                const sleep = src.key(d);
+                if (sleep && sleep.length > 0) return { source: src.name, records: sleep };
+            } catch (_) { /* silent */ }
+        }
+        return null;
+    }
+
+    function renderInsightsFrequencyChart(workouts) {
+        const container = document.getElementById('insights-frequency-chart');
+        const totalEl   = document.getElementById('insights-freq-total');
+        if (!container) return;
+
+        // Build a map of ISO week key → count
+        function isoWeekKey(dateStr) {
+            const d = new Date(dateStr + 'T12:00:00');
+            const day = d.getDay() || 7; // Mon=1
+            d.setDate(d.getDate() + 4 - day);
+            const yearStart = new Date(Date.UTC(d.getFullYear(), 0, 1));
+            const week = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+            return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
+        }
+
+        // Collect workouts per week (unique dates only)
+        const weekMap = new Map();
+        const seen = new Set();
+        for (const w of workouts) {
+            if (!w.workout_date || seen.has(w.workout_date)) continue;
+            seen.add(w.workout_date);
+            const key = isoWeekKey(w.workout_date);
+            weekMap.set(key, (weekMap.get(key) || 0) + 1);
+        }
+
+        // Build 8 ordered week slots ending this week
+        const weeks = [];
+        const now = new Date();
+        for (let i = 7; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(now.getDate() - i * 7);
+            const key = isoWeekKey(d.toISOString().split('T')[0]);
+            const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            weeks.push({ key, label, count: weekMap.get(key) || 0 });
+        }
+
+        const totalSessions = weeks.reduce((s, w) => s + w.count, 0);
+        if (totalEl) totalEl.textContent = totalSessions + ' total sessions';
+
+        const maxCount = Math.max(...weeks.map(w => w.count), 1);
+        const barWidth = 100 / weeks.length;
+
+        let html = '<div style="display: flex; align-items: flex-end; gap: 4px; height: 100px; padding: 0 0 24px 0; position: relative;">';
+        for (const week of weeks) {
+            const pct = maxCount > 0 ? Math.round((week.count / maxCount) * 100) : 0;
+            const isThisWeek = week === weeks[weeks.length - 1];
+            const barColor = isThisWeek ? 'var(--primary)' : '#cbd5e1';
+            const labelShort = week.label.replace(/\s+\d+$/, ''); // e.g. "Jan"
+            html += `
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%;">
+                    <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;">
+                        <div style="width: 100%; height: ${Math.max(pct, week.count > 0 ? 8 : 3)}%; background: ${barColor}; border-radius: 6px 6px 2px 2px; transition: height 0.3s ease; position: relative;">
+                            ${week.count > 0 ? `<div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.65rem; font-weight: 700; color: ${isThisWeek ? 'var(--primary)' : 'var(--text-muted)'};">${week.count}</div>` : ''}
+                        </div>
+                    </div>
+                    <div style="font-size: 0.58rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;">${labelShort}</div>
+                </div>`;
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function renderInsightsCorrelations(workouts, weighIns, sleepData) {
+        const container = document.getElementById('insights-correlations-container');
+        if (!container) return;
+
+        const rows = [];
+
+        // Workout momentum: this 4 weeks vs prior 4 weeks
+        const now = new Date();
+        const fourWeeksAgo = new Date(now); fourWeeksAgo.setDate(now.getDate() - 28);
+        const eightWeeksAgo = new Date(now); eightWeeksAgo.setDate(now.getDate() - 56);
+        const recentCount = workouts.filter(w => w.workout_date >= fourWeeksAgo.toISOString().split('T')[0]).length;
+        const priorCount  = workouts.filter(w => {
+            const d = w.workout_date;
+            return d >= eightWeeksAgo.toISOString().split('T')[0] && d < fourWeeksAgo.toISOString().split('T')[0];
+        }).length;
+
+        const momentumDiff = recentCount - priorCount;
+        const momentumLabel = momentumDiff > 0 ? `+${momentumDiff} vs prior 4 weeks`
+            : momentumDiff < 0 ? `${momentumDiff} vs prior 4 weeks`
+            : 'Same as prior 4 weeks';
+        const momentumColor = momentumDiff > 0 ? '#10b981' : momentumDiff < 0 ? '#ef4444' : '#8b5cf6';
+        rows.push({
+            icon: '💪',
+            label: 'Workout Momentum',
+            value: `${recentCount} sessions`,
+            sub: momentumLabel,
+            subColor: momentumColor,
+        });
+
+        // Weight trend
+        if (weighIns && weighIns.length >= 2) {
+            const latest = weighIns[0];
+            const oldest = weighIns[weighIns.length - 1];
+            const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+            const diff = latest.weight_kg - oldest.weight_kg;
+            const displayDiff = preferLbs
+                ? (diff * 2.20462).toFixed(1) + ' lbs'
+                : diff.toFixed(1) + ' kg';
+            const sign = diff > 0 ? '+' : '';
+            const weightColor = diff < 0 ? '#10b981' : diff > 0 ? '#ef4444' : '#8b5cf6';
+            rows.push({
+                icon: '⚖️',
+                label: 'Weight Trend',
+                value: sign + displayDiff,
+                sub: `over ${weighIns.length} check-ins`,
+                subColor: weightColor,
+            });
+        }
+
+        // Sleep correlation (if wearable data)
+        if (sleepData && sleepData.records && sleepData.records.length > 0) {
+            const avgMins = sleepData.records.reduce((s, r) => {
+                return s + (r.duration_minutes || r.total_sleep_minutes || 0);
+            }, 0) / sleepData.records.length;
+            const hrs = Math.floor(avgMins / 60);
+            const mins = Math.round(avgMins % 60);
+            rows.push({
+                icon: '😴',
+                label: 'Avg Sleep',
+                value: `${hrs}h ${mins}m`,
+                sub: `via ${sleepData.source} · ${sleepData.records.length} nights`,
+                subColor: '#6366f1',
+            });
+        }
+
+        if (rows.length === 0) {
+            container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">Log workouts to start seeing your correlations here.</div>`;
+            return;
+        }
+
+        container.innerHTML = rows.map(r => `
+            <div style="display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
+                <div style="width: 40px; height: 40px; background: #f8fafc; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">${r.icon}</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">${r.label}</div>
+                    <div style="font-size: 1.05rem; font-weight: 800; color: var(--text-main);">${r.value}</div>
+                </div>
+                <div style="font-size: 0.75rem; font-weight: 700; color: ${r.subColor}; text-align: right; max-width: 100px;">${r.sub}</div>
+            </div>
+        `).join('');
+        // Remove last border
+        container.querySelector('div:last-child') && (container.querySelector('div:last-child').style.borderBottom = 'none');
+    }
+
+    function renderInsightsSleep(sleepData) {
+        const container = document.getElementById('insights-sleep-container');
+        const connectSection = document.getElementById('insights-connect-section');
+        if (!container) return;
+
+        if (!sleepData || !sleepData.records || sleepData.records.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 16px 0;">
+                    <div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.4;">😴</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">No sleep data yet. Connect a fitness tracker below to start seeing sleep trends and how they affect your workouts.</div>
+                </div>`;
+            if (connectSection) connectSection.style.display = 'block';
+            return;
+        }
+
+        if (connectSection) connectSection.style.display = 'none';
+
+        const records = sleepData.records.slice(0, 7).reverse();
+        const maxMins = Math.max(...records.map(r => r.duration_minutes || r.total_sleep_minutes || 0), 1);
+
+        let html = `<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; font-weight: 600;">Last ${records.length} nights via ${sleepData.source}</div>`;
+        html += '<div style="display: flex; align-items: flex-end; gap: 6px; height: 80px; padding-bottom: 20px; position: relative;">';
+
+        for (const r of records) {
+            const mins = r.duration_minutes || r.total_sleep_minutes || 0;
+            const pct = Math.round((mins / maxMins) * 100);
+            const hrs = (mins / 60).toFixed(1);
+            const date = r.date ? new Date(r.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' }) : '';
+            const color = mins >= 420 ? '#6366f1' : mins >= 360 ? '#a78bfa' : '#e2e8f0';
+            html += `
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%;">
+                    <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;">
+                        <div style="width: 100%; height: ${Math.max(pct, 6)}%; background: ${color}; border-radius: 5px 5px 2px 2px; position: relative;">
+                            <div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">${hrs}h</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">${date}</div>
+                </div>`;
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    window.openInsightsView   = openInsightsView;
+    window.closeInsightsView  = closeInsightsView;
+    </script>
+
+    <script>
     // ===== DAILY QUIZ CARD LOGIC =====
 
     /**
@@ -11304,19 +11592,22 @@ async function applyAppTheme(themeKey) {
             <div id="home-challenges-list"></div>
         </div>
 
-        <!-- Fitbit Performance Card (sits above Your Progress) -->
-        <div id="fitbit-performance-card" style="margin: 0 0 14px 0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,176,185,0.2);">
-            <!-- Connected state -->
+        <!-- Activity Insights Card -->
+        <div id="fitbit-performance-card" onclick="openInsightsView()" style="cursor: pointer; margin: 0 0 14px 0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,176,185,0.2);">
+            <!-- Connected state (tracker synced) -->
             <div id="fitbit-perf-connected" style="display: none; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);">
                 <!-- Header -->
                 <div style="padding: 14px 18px 0; display: flex; align-items: center; justify-content: space-between;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div style="width: 30px; height: 30px; background: rgba(255,255,255,0.2); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
                         </div>
-                        <div style="font-weight: 700; font-size: 0.95rem; color: white;">Today's Activity</div>
+                        <div style="font-weight: 700; font-size: 0.95rem; color: white;">Activity Insights</div>
                     </div>
-                    <div id="fitbit-perf-sync-label" style="font-size: 0.65rem; color: rgba(255,255,255,0.55); font-weight: 500;"></div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div id="fitbit-perf-sync-label" style="font-size: 0.65rem; color: rgba(255,255,255,0.55); font-weight: 500;"></div>
+                        <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: rgba(255,255,255,0.5);"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+                    </div>
                 </div>
                 <!-- Stats row -->
                 <div style="padding: 12px 18px 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
@@ -11337,16 +11628,16 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
             </div>
-            <!-- Disconnected prompt -->
+            <!-- No-tracker state — always tappable to open insights -->
             <div id="fitbit-perf-disconnected" style="display: flex; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 16px 18px; align-items: center; justify-content: space-between; gap: 12px;">
                 <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                    <div style="width: 34px; height: 34px; flex-shrink: 0; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">⌚</div>
+                    <div style="width: 34px; height: 34px; flex-shrink: 0; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">📊</div>
                     <div>
-                        <div style="font-size: 0.88rem; font-weight: 700; color: white; margin-bottom: 2px;">Connect Fitbit Versa</div>
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.55);">See calories burned, HR &amp; active minutes</div>
+                        <div style="font-size: 0.88rem; font-weight: 700; color: white; margin-bottom: 2px;">Activity Insights</div>
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.55);">Workout trends, strength &amp; sleep correlation</div>
                     </div>
                 </div>
-                <button onclick="toggleFitbitConnection()" style="flex-shrink: 0; background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap;">Connect</button>
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.5); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
             </div>
         </div>
 
@@ -20767,6 +21058,75 @@ function viewWorkoutHistoryDetail(date) {
     </div>
 
     <!-- PROGRESS / ANALYTICS VIEW -->
+    <!-- ===== ACTIVITY INSIGHTS VIEW ===== -->
+    <div id="view-insights" class="app-view" style="display:none; min-height: 100vh; height: auto; background: #f8fafc; z-index: 100000; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; overflow-y: auto; overflow-x: hidden;">
+        <!-- Header -->
+        <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+            <button onclick="closeInsightsView()" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 0.9rem; font-weight: 600; padding: 0;">
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                Back
+            </button>
+            <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Activity Insights</div>
+            <div style="width: 60px;"></div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="insights-loading" style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">📊</div>
+            <div style="color: var(--text-muted);">Loading insights...</div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="insights-main-content" style="display: none; padding-bottom: 40px;">
+
+            <!-- Workout Frequency Chart -->
+            <div style="padding: 20px 20px 0;">
+                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
+                    <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px;">
+                        <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Workout Frequency</h3>
+                        <span id="insights-freq-total" style="font-size: 0.8rem; color: var(--primary); font-weight: 700;"></span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Sessions per week · last 8 weeks</div>
+                    <div id="insights-frequency-chart" style="width: 100%; overflow: hidden;"></div>
+                </div>
+            </div>
+
+            <!-- Correlations -->
+            <div style="padding: 20px 20px 0;">
+                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
+                    <h3 style="margin: 0 0 16px 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Correlations</h3>
+                    <div id="insights-correlations-container">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sleep & Recovery -->
+            <div style="padding: 20px 20px 0;">
+                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
+                    <h3 style="margin: 0 0 16px 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Sleep &amp; Recovery</h3>
+                    <div id="insights-sleep-container">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connect a Tracker (shown when no wearable synced) -->
+            <div id="insights-connect-section" style="padding: 20px; display: none;">
+                <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 20px; padding: 20px;">
+                    <div style="color: white; font-weight: 700; font-size: 1rem; margin-bottom: 6px;">Unlock Deeper Insights</div>
+                    <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-bottom: 16px;">Connect a fitness tracker to correlate sleep, heart rate &amp; calories with your workouts.</div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="event.stopPropagation(); toggleFitbitConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Fitbit</button>
+                        <button onclick="event.stopPropagation(); toggleWhoopConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">WHOOP</button>
+                        <button onclick="event.stopPropagation(); toggleOuraConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Oura</button>
+                        <button onclick="event.stopPropagation(); toggleStravaConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Strava</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="view-progress" class="app-view" style="display:none; min-height: 100vh; height: auto; background: #f8fafc; z-index: 100000; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; overflow-y: auto; overflow-x: hidden;">
         <!-- Header with back button -->
         <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
