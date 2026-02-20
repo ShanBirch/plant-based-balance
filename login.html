@@ -619,11 +619,15 @@
                     if (isNative) {
                         // Native app: open OAuth in system browser to avoid
                         // Google's 403 disallowed_useragent error on WebViews.
-                        // Redirect back to app via custom URL scheme.
+                        // Redirect to oauth-callback.html which then opens the
+                        // app via the com.fitgotchi.app:// custom URL scheme.
+                        // Using a web URL here (instead of the custom scheme
+                        // directly) ensures Supabase accepts it as a valid
+                        // redirect URL.
                         const { data, error } = await supabase.auth.signInWithOAuth({
                             provider: 'google',
                             options: {
-                                redirectTo: 'com.fitgotchi.app://login-callback',
+                                redirectTo: window.location.origin + '/oauth-callback.html',
                                 skipBrowserRedirect: true,
                             }
                         });
