@@ -47,7 +47,8 @@
         'myCurrentWorkoutId', 'weightUnitPreference', 'lastWellnessCheck', 'pbb_points_data',
         'pbb_points_level', 'onboardingComplete', 'program_start_date',
         'battleStats', 'unallocatedStatPoints', 'previousLifetimePoints', 'pendingLevelUpCelebration',
-        'selectedBackground', 'myChatStats', 'plant_based_learning_progress'
+        'selectedBackground', 'myChatStats', 'plant_based_learning_progress',
+        'customPBSlots', 'pbSlotsMigratedV2'
     ];
 
     if (isViewAs) {
@@ -47299,6 +47300,20 @@ async function initProgressView() {
             console.warn('Failed to load recent exercises:', e);
         }
 
+        // Restore PB display slots from Supabase if localStorage is empty
+        try {
+            const localSlots = localStorage.getItem('customPBSlots');
+            if (!localSlots || localSlots === '[]' || localSlots === 'null') {
+                const savedSlots = await loadPBSlotsFromSupabase();
+                if (savedSlots) {
+                    localStorage.setItem('customPBSlots', JSON.stringify(savedSlots));
+                    console.log('Restored PB display slots from Supabase:', savedSlots.filter(Boolean).length, 'exercises');
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to restore PB slots from Supabase:', e);
+        }
+
         // Load personal bests
         let personalBests = [];
         let recentPBs = [];
@@ -47661,12 +47676,8 @@ function renderPersonalBests(personalBests, recentPBs) {
 
     const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
 
-    // Big 3 always shown
-    const BIG_3 = [
-        { key: 'Barbell Bench Press', label: 'Max Bench Press' },
-        { key: 'Barbell Back Squat', label: 'Max Squat' },
-        { key: 'Barbell Romanian Deadlift', label: 'Max Deadlift' }
-    ];
+    // Default exercises for first 3 slots (user can change all of them)
+    const DEFAULT_SLOTS = ['Barbell Bench Press', 'Barbell Back Squat', 'Barbell Romanian Deadlift', null, null, null];
 
     // Build PB lookup map
     const pbMap = {};
@@ -47674,20 +47685,35 @@ function renderPersonalBests(personalBests, recentPBs) {
         personalBests.forEach(pb => { pbMap[pb.exercise_name] = pb; });
     }
 
-    // Get custom slots from localStorage (3 user-selected exercises)
-    let customSlots = [];
+    // Get all 6 slots from localStorage (all user-configurable)
+    let allSlots = [];
     try {
-        customSlots = JSON.parse(localStorage.getItem('customPBSlots') || '[]');
-    } catch (e) { customSlots = []; }
-    // Ensure exactly 3 slots
-    while (customSlots.length < 3) customSlots.push(null);
-    customSlots = customSlots.slice(0, 3);
+        allSlots = JSON.parse(localStorage.getItem('customPBSlots') || '[]');
+    } catch (e) { allSlots = []; }
+    // If empty (fresh install / cleared), use defaults
+    if (!allSlots || allSlots.length === 0) {
+        allSlots = [...DEFAULT_SLOTS];
+        localStorage.setItem('customPBSlots', JSON.stringify(allSlots));
+    }
+    // Migrate from old 3-slot format: prepend the default Big 3 before the user's custom picks
+    if (allSlots.length <= 3 && !localStorage.getItem('pbSlotsMigratedV2')) {
+        const oldCustom = [...allSlots];
+        allSlots = [...DEFAULT_SLOTS.slice(0, 3), ...oldCustom];
+        while (allSlots.length < 6) allSlots.push(null);
+        allSlots = allSlots.slice(0, 6);
+        localStorage.setItem('customPBSlots', JSON.stringify(allSlots));
+        localStorage.setItem('pbSlotsMigratedV2', 'true');
+        // Also persist the migrated slots to Supabase
+        savePBSlotsToSupabase(allSlots);
+    }
+    // Ensure exactly 6 slots
+    while (allSlots.length < 6) allSlots.push(null);
+    allSlots = allSlots.slice(0, 6);
 
-    function formatPBCard(pb, label, isCustom, slotIndex) {
+    function formatPBCard(pb, label, slotIndex) {
         if (!pb || !pb.best_weight_kg) {
-            // Empty state card
-            if (isCustom && !label) {
-                // Empty custom slot - show add button
+            // Empty slot - show add button
+            if (!label) {
                 return `
                     <div onclick="openCustomPBPicker(${slotIndex})" style="background: white; padding: 18px; border-radius: 18px; box-shadow: var(--card-shadow); border: 2px dashed rgba(0,0,0,0.1); position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 140px; cursor: pointer; transition: border-color 0.2s; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;">
                         <div style="font-size: 1.5rem; opacity: 0.3; margin-bottom: 8px;">+</div>
@@ -47695,9 +47721,9 @@ function renderPersonalBests(personalBests, recentPBs) {
                     </div>
                 `;
             }
-            // Big 3 or custom slot with name but no data
+            // Slot with name but no data yet
             return `
-                <div ${isCustom ? `onclick="openCustomPBPicker(${slotIndex})"` : ''} style="background: white; padding: 18px; border-radius: 18px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; ${isCustom ? 'cursor: pointer; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;' : ''}">
+                <div onclick="openCustomPBPicker(${slotIndex})" style="background: white; padding: 18px; border-radius: 18px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;">
                     <div style="position: absolute; top: 12px; right: 12px; font-size: 1.2rem; opacity: 0.15;">🏆</div>
                     <div style="font-weight: 600; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px; padding-right: 25px; line-height: 1.2;">${label}</div>
                     <div>
@@ -47722,7 +47748,7 @@ function renderPersonalBests(personalBests, recentPBs) {
             : '';
 
         return `
-            <div ${isCustom ? `onclick="openCustomPBPicker(${slotIndex})"` : ''} style="background: white; padding: 18px; border-radius: 18px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; ${isCustom ? 'cursor: pointer; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;' : ''}">
+            <div onclick="openCustomPBPicker(${slotIndex})" style="background: white; padding: 18px; border-radius: 18px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;">
                 <div style="position: absolute; top: 12px; right: 12px; font-size: 1.2rem; opacity: 0.3;">🏆</div>
                 <div style="font-weight: 600; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px; padding-right: 25px; line-height: 1.2;">${label}</div>
                 <div>
@@ -47734,17 +47760,11 @@ function renderPersonalBests(personalBests, recentPBs) {
         `;
     }
 
-    // Render Big 3 cards
+    // Render all 6 configurable slots
     let html = '';
-    BIG_3.forEach(ex => {
-        html += formatPBCard(pbMap[ex.key], ex.label, false, -1);
-    });
-
-    // Render 3 custom slots
-    customSlots.forEach((exerciseName, i) => {
+    allSlots.forEach((exerciseName, i) => {
         const pb = exerciseName ? pbMap[exerciseName] : null;
-        const label = exerciseName || null;
-        html += formatPBCard(pb, label, true, i);
+        html += formatPBCard(pb, exerciseName, i);
     });
 
     pbsContainer.innerHTML = html;
@@ -47775,20 +47795,20 @@ function renderPersonalBests(personalBests, recentPBs) {
 })();
 
 function openCustomPBPicker(slotIndex) {
-    const BIG_3_KEYS = ['Barbell Bench Press', 'Barbell Back Squat', 'Barbell Romanian Deadlift'];
-    let customSlots = [];
+    let allSlots = [];
     try {
-        customSlots = JSON.parse(localStorage.getItem('customPBSlots') || '[]');
-    } catch (e) { customSlots = []; }
-    while (customSlots.length < 3) customSlots.push(null);
+        allSlots = JSON.parse(localStorage.getItem('customPBSlots') || '[]');
+    } catch (e) { allSlots = []; }
+    while (allSlots.length < 6) allSlots.push(null);
 
     // Get all available exercises from the stored PBs
     const allPBs = window._cachedPersonalBests || [];
-    const usedExercises = new Set([...BIG_3_KEYS, ...customSlots.filter(Boolean)]);
+    // Only exclude exercises already used in OTHER slots (allow current slot's exercise to be re-selected)
+    const usedExercises = new Set(allSlots.filter((name, i) => name && i !== slotIndex));
 
     const availableExercises = allPBs
         .map(pb => pb.exercise_name)
-        .filter(name => !usedExercises.has(name) || name === customSlots[slotIndex]);
+        .filter(name => !usedExercises.has(name));
 
     availableExercises.sort();
 
@@ -47803,7 +47823,7 @@ function openCustomPBPicker(slotIndex) {
             <div style="font-size: 0.9rem;">Complete more workouts to unlock exercises for tracking!</div>
         </div>`;
 
-    const clearBtnHtml = customSlots[slotIndex]
+    const clearBtnHtml = allSlots[slotIndex]
         ? `<div onclick="selectCustomPBSlot(${slotIndex}, null)" style="padding: 14px 18px; border-bottom: 1px solid rgba(0,0,0,0.06); cursor: pointer; font-size: 0.95rem; font-weight: 500; color: #ef4444; transition: background 0.15s; touch-action: manipulation;" ontouchstart="this.style.background='#fef2f2'" ontouchend="this.style.background=''" onmouseenter="this.style.background='#fef2f2'" onmouseleave="this.style.background=''">
             Remove this exercise
         </div>`
@@ -47815,14 +47835,17 @@ function openCustomPBPicker(slotIndex) {
 }
 
 function selectCustomPBSlot(slotIndex, exerciseName) {
-    let customSlots = [];
+    let allSlots = [];
     try {
-        customSlots = JSON.parse(localStorage.getItem('customPBSlots') || '[]');
-    } catch (e) { customSlots = []; }
-    while (customSlots.length < 3) customSlots.push(null);
+        allSlots = JSON.parse(localStorage.getItem('customPBSlots') || '[]');
+    } catch (e) { allSlots = []; }
+    while (allSlots.length < 6) allSlots.push(null);
 
-    customSlots[slotIndex] = exerciseName;
-    localStorage.setItem('customPBSlots', JSON.stringify(customSlots));
+    allSlots[slotIndex] = exerciseName;
+    localStorage.setItem('customPBSlots', JSON.stringify(allSlots));
+
+    // Persist to Supabase so selections survive app reinstall
+    savePBSlotsToSupabase(allSlots);
 
     closePBPicker();
 
@@ -47830,6 +47853,38 @@ function selectCustomPBSlot(slotIndex, exerciseName) {
     if (window._cachedPersonalBests) {
         renderPersonalBests(window._cachedPersonalBests, window._cachedRecentPBs || []);
     }
+}
+
+// Save PB slot selections to Supabase user_facts for persistence across reinstalls
+async function savePBSlotsToSupabase(slots) {
+    try {
+        const user = window.currentUser;
+        if (!user) return;
+        let existingFacts = {};
+        try { existingFacts = await dbHelpers.userFacts.get(user.id); } catch(e) {}
+        const currentDetails = existingFacts?.personal_details || {};
+        await dbHelpers.userFacts.upsert(user.id, {
+            personal_details: { ...currentDetails, pb_display_slots: slots }
+        });
+    } catch (e) {
+        console.warn('Failed to save PB slots to Supabase:', e);
+    }
+}
+
+// Load PB slot selections from Supabase (called on progress view init)
+async function loadPBSlotsFromSupabase() {
+    try {
+        const user = window.currentUser;
+        if (!user) return null;
+        const facts = await dbHelpers.userFacts.get(user.id);
+        const slots = facts?.personal_details?.pb_display_slots;
+        if (slots && Array.isArray(slots) && slots.length > 0) {
+            return slots;
+        }
+    } catch (e) {
+        console.warn('Failed to load PB slots from Supabase:', e);
+    }
+    return null;
 }
 
 function closePBPicker() {
