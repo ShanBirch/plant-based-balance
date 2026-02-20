@@ -1,7 +1,7 @@
--- Push Subscriptions for Admin Notifications
+-- Push Subscriptions for Push Notifications (DMs, meal reminders, etc.)
 -- Run this in your Supabase SQL Editor
 
--- Table to store push subscriptions for admin users
+-- Table to store push subscriptions for users
 CREATE TABLE IF NOT EXISTS public.push_subscriptions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
