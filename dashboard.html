@@ -26776,6 +26776,13 @@ function showNativePermissionsModal() {
         }
     }
 
+    // Pre-check location permission so the button shows correct state
+    if (window.NativePermissions && typeof window.NativePermissions.hasLocationPermission === 'function') {
+        if (window.NativePermissions.hasLocationPermission()) {
+            updatePermBtn('location', 'granted');
+        }
+    }
+
     // Pre-check health permission (if already initialised from a previous session)
     if (window._nativeHealthReady) {
         updatePermBtn('health', 'granted');
@@ -26806,6 +26813,10 @@ function closePermissionsModal() {
     }
     if (window.NativePush && window.NativePush.isNativeApp()) {
         window.NativePush.init();
+    }
+    // If location was granted, trigger weather fetch
+    if (typeof window.requestWeatherLocation === 'function') {
+        window.requestWeatherLocation();
     }
 }
 
@@ -26942,6 +26953,46 @@ async function requestPermHealth() {
 
         // Complete fallback — nothing else we can do
         updatePermBtn('health', 'denied');
+    });
+}
+
+async function requestPermLocation() {
+    return _enqueuePerm(async () => {
+        try {
+            // Prefer the Java bridge for native Android location permission
+            if (window.NativePermissions && typeof window.NativePermissions.hasLocationPermission === 'function') {
+                if (window.NativePermissions.hasLocationPermission()) {
+                    updatePermBtn('location', 'granted');
+                    return;
+                }
+
+                // Request via Java bridge (shows native OS dialog)
+                const granted = await new Promise((resolve) => {
+                    let resolved = false;
+                    window._onNativeLocationPermission = (result) => {
+                        if (!resolved) { resolved = true; resolve(result); }
+                    };
+                    window.NativePermissions.requestLocationPermission();
+                    setTimeout(() => { if (!resolved) { resolved = true; resolve(false); } }, 30000);
+                });
+
+                if (granted) {
+                    updatePermBtn('location', 'granted');
+                } else {
+                    updatePermBtn('location', 'denied');
+                }
+                return;
+            }
+
+            // Fallback: use browser geolocation API to trigger permission prompt
+            const pos = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+            });
+            updatePermBtn('location', 'granted');
+        } catch (e) {
+            console.log('[Permissions] Location denied:', e);
+            updatePermBtn('location', 'denied');
+        }
     });
 }
 
@@ -46390,6 +46441,16 @@ window.submitWeighInModal = submitWeighInModal;
             <button class="perm-card-btn" id="perm-btn-health" onclick="requestPermHealth()">Allow</button>
         </div>
 
+        <!-- Location -->
+        <div class="perm-card" id="perm-card-location">
+            <div class="perm-card-icon" style="background:#e0f2fe;">📍</div>
+            <div class="perm-card-info">
+                <h4>Location</h4>
+                <p>Local weather conditions on your dashboard</p>
+            </div>
+            <button class="perm-card-btn" id="perm-btn-location" onclick="requestPermLocation()">Allow</button>
+        </div>
+
         <!-- Notifications -->
         <div class="perm-card" id="perm-card-notif">
             <div class="perm-card-icon" style="background:#fef3c7;">🔔</div>
@@ -52789,6 +52850,15 @@ window._recheckHealthPermission = async function() {
     } catch (e) {
         // Still not available — leave the button in its current state
         console.log('[Permissions] Health recheck:', e);
+    }
+};
+
+// Recheck location permission when the app resumes (e.g. after returning
+// from device Settings). Called by the Java bridge in onResume().
+window._recheckLocationPermission = function(locationEnabled) {
+    var permModal = document.getElementById('native-permissions-modal');
+    if (permModal && permModal.style.display !== 'none') {
+        updatePermBtn('location', locationEnabled ? 'granted' : 'denied');
     }
 };
 

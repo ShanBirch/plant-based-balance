@@ -82,6 +82,22 @@ public class MainActivity extends BridgeActivity {
         });
 
     /**
+     * Launcher for the native Android "Allow location?" dialog.
+     * Used by the weather tracker feature to get the user's location.
+     */
+    private final ActivityResultLauncher<String> locationPermissionLauncher =
+        registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+            if (webViewRef != null) {
+                final boolean granted = isGranted;
+                runOnUiThread(() ->
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeLocationPermission) window._onNativeLocationPermission(" + granted + ")",
+                        null)
+                );
+            }
+        });
+
+    /**
      * Launcher for the native Android "Allow notifications?" dialog (API 33+).
      * Used by the meal reminder and push notification permission flow.
      */
@@ -336,6 +352,33 @@ public class MainActivity extends BridgeActivity {
         }
 
         /**
+         * Returns true if location permission (ACCESS_FINE_LOCATION) is granted.
+         */
+        @JavascriptInterface
+        public boolean hasLocationPermission() {
+            return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED;
+        }
+
+        /**
+         * Requests the ACCESS_FINE_LOCATION runtime permission.
+         * Result is delivered via window._onNativeLocationPermission(bool).
+         */
+        @JavascriptInterface
+        public void requestLocationPermission() {
+            runOnUiThread(() -> {
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeLocationPermission) window._onNativeLocationPermission(true)",
+                        null);
+                } else {
+                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+                }
+            });
+        }
+
+        /**
          * Opens Health Connect permissions screen for this app so the user
          * can grant health data access directly. Used as a fallback when the
          * Capacitor health plugin can't request permissions inline.
@@ -443,9 +486,12 @@ public class MainActivity extends BridgeActivity {
         // update after the user returns from Health Connect or notification Settings
         if (webViewRef != null) {
             boolean notifEnabled = NotificationManagerCompat.from(this).areNotificationsEnabled();
+            boolean locationEnabled = ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
             webViewRef.evaluateJavascript(
                 "if(window._onPermissionRecheck) window._onPermissionRecheck(" + notifEnabled + ");" +
-                "if(window._recheckHealthPermission) window._recheckHealthPermission()",
+                "if(window._recheckHealthPermission) window._recheckHealthPermission();" +
+                "if(window._recheckLocationPermission) window._recheckLocationPermission(" + locationEnabled + ")",
                 null);
         }
     }
