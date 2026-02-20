@@ -628,8 +628,14 @@
                             }
                         });
                         if (error) throw error;
-                        // Open in system browser (Chrome Custom Tab)
-                        window.open(data.url, '_blank');
+                        // Open in the device's external browser so no in-app
+                        // browser overlay (with its URL bar) lingers after login.
+                        if (window.NativePermissions && window.NativePermissions.openExternalBrowser) {
+                            window.NativePermissions.openExternalBrowser(data.url);
+                        } else {
+                            // Fallback for environments without the native bridge
+                            window.open(data.url, '_blank');
+                        }
                         return data;
                     }
 
