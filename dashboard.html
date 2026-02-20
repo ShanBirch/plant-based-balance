@@ -52898,12 +52898,14 @@ window._recheckHealthPermission = async function() {
     var permModal = document.getElementById('native-permissions-modal');
     if (!permModal || permModal.style.display === 'none') return;
 
-    // Try reinitialising the health plugin — if the user just granted
-    // permission in Health Connect, init() should now succeed
+    // Use the lightweight probe (queries steps) instead of init() which
+    // calls requestAuthorization() and may re-open the Health Connect UI
     try {
         if (window.NativeHealth) {
-            var ready = await window.NativeHealth.init();
-            if (ready) {
+            var ok = typeof window.NativeHealth.checkPermission === 'function'
+                ? await window.NativeHealth.checkPermission()
+                : await window.NativeHealth.init();
+            if (ok) {
                 updatePermBtn('health', 'granted');
                 return;
             }
