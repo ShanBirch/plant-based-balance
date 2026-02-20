@@ -60350,8 +60350,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const userId = window.currentUser.id || window.currentUser.user_id;
                 const existing = await window.dbHelpers.userFacts.get(userId) || {};
                 const currentAdditional = existing.additional_data || {};
+                const unalloc = parseInt(localStorage.getItem('unallocatedStatPoints') || '0');
                 await window.dbHelpers.userFacts.upsert(userId, {
-                    additional_data: { ...currentAdditional, battle_stats: stats }
+                    additional_data: { ...currentAdditional, battle_stats: stats, unallocated_stat_points: unalloc }
                 });
             } catch (e) {
                 console.warn('Could not save battle stats to DB:', e);
@@ -60367,6 +60368,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const dbStats = { ...DEFAULT_STATS, ...facts.additional_data.battle_stats };
                     localStorage.setItem('battleStats', JSON.stringify(dbStats));
                     updateStatBarsUI(dbStats);
+                }
+                // Also restore unallocated stat points from DB
+                if (facts?.additional_data?.unallocated_stat_points != null) {
+                    const dbUnalloc = parseInt(facts.additional_data.unallocated_stat_points) || 0;
+                    // Only restore from DB if localStorage doesn't already have a value
+                    // (localStorage is authoritative during a session, DB is for cross-device/reinstall)
+                    if (!localStorage.getItem('unallocatedStatPoints')) {
+                        localStorage.setItem('unallocatedStatPoints', String(dbUnalloc));
+                    }
                 }
             } catch (e) {
                 console.warn('Could not load battle stats from DB:', e);
@@ -60433,6 +60443,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const current = getUnallocatedPoints();
                 setUnallocatedPoints(current + totalNewPoints);
                 console.log(`🎮 Granted ${totalNewPoints} stat points (levels ${previousLevel+1}-${newLevel})`);
+                // Persist unallocated points to DB so they survive app reinstalls
+                saveBattleStatsToDb(getBattleStats());
                 // The stat allocation modal is now shown by the celebration cleanup
                 // in triggerLevelUpCelebration (Step 15) for correct timing.
                 // No separate timeout needed here.
@@ -60577,8 +60589,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // Grant any missing stat points for users who leveled before the stat system existed
-        function ensureRetroactiveStatPoints() {
+        async function ensureRetroactiveStatPoints() {
             if (window.isAdminViewing) return; // Admin view-as is read-only
+
+            // Wait for battle stats to load from DB first to avoid granting
+            // duplicate points when localStorage is empty (e.g. after app reinstall)
+            await loadBattleStatsFromDb();
+
             const level = window.getCurrentUserLevel ? window.getCurrentUserLevel() : 1;
             const expectedTotal = getTotalExpectedPointsForLevel(level);
 
@@ -60591,10 +60608,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const missing = expectedTotal - actualTotal;
                 setUnallocatedPoints(unallocated + missing);
                 console.log(`🎮 Retroactively granted ${missing} stat points (level ${level}, expected ${expectedTotal}, had ${actualTotal})`);
+                // Persist the newly granted unallocated points to DB
+                saveBattleStatsToDb(stats);
             }
         }
 
-        // Run retroactive check on load
+        // Run retroactive check on load (with enough delay for user data to be available)
         setTimeout(() => {
             ensureRetroactiveStatPoints();
         }, 3000);
