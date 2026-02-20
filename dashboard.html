@@ -1388,6 +1388,7 @@ async function applyAppTheme(themeKey) {
     .perm-card.denied {
         background: #fef2f2;
         border-color: #fca5a5;
+        cursor: pointer;
     }
     .perm-card-icon {
         width: 44px; height: 44px;
@@ -1429,7 +1430,11 @@ async function applyAppTheme(themeKey) {
     .perm-card-btn.denied-btn {
         background: #fee2e2;
         color: #991b1b;
-        cursor: default;
+        cursor: pointer;
+    }
+    .perm-card-btn.denied-btn:active {
+        opacity: 0.7;
+        transform: scale(0.97);
     }
     .perm-continue-btn {
         display: block;
@@ -9767,8 +9772,8 @@ async function applyAppTheme(themeKey) {
     </script>
 
     <script>
-    // ===== WEATHER AUTO-FETCH =====
-    // Silently fetches today's weather via Open-Meteo (no API key) and stores it in weather_logs.
+    // ===== WEATHER AUTO-FETCH + DISPLAY =====
+    // Fetches today's weather via Open-Meteo (no API key), stores in weather_logs, and renders the card.
     (function() {
         const WMO_LABELS = {
             0:'Clear sky', 1:'Mainly clear', 2:'Partly cloudy', 3:'Overcast',
@@ -9779,10 +9784,69 @@ async function applyAppTheme(themeKey) {
             95:'Thunderstorm', 96:'Thunderstorm+hail', 99:'Thunderstorm+heavy hail',
         };
 
+        const WMO_ICONS = {
+            0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
+            45:'🌫️', 48:'🌫️',
+            51:'🌦️', 53:'🌧️', 55:'🌧️',
+            61:'🌧️', 63:'🌧️', 65:'🌧️',
+            71:'❄️', 73:'❄️', 75:'❄️', 77:'🌨️',
+            80:'🌦️', 81:'🌧️', 82:'⛈️',
+            85:'🌨️', 86:'🌨️',
+            95:'⛈️', 96:'⛈️', 99:'⛈️',
+        };
+
+        function updateWeatherUI(row) {
+            const loading = document.getElementById('weather-card-loading');
+            const prompt  = document.getElementById('weather-card-prompt');
+            const loaded  = document.getElementById('weather-card-loaded');
+            if (!loaded) return;
+
+            if (loading) loading.style.display = 'none';
+            if (prompt)  prompt.style.display  = 'none';
+            loaded.style.display = 'block';
+
+            const code = row.weather_code;
+            const icon = WMO_ICONS[code] || '🌤️';
+
+            const iconEl   = document.getElementById('weather-icon-main');
+            const condEl   = document.getElementById('weather-condition-label');
+            const tempEl   = document.getElementById('weather-temp');
+            const feelsEl  = document.getElementById('weather-feels-like');
+            const humEl    = document.getElementById('weather-humidity');
+            const windEl   = document.getElementById('weather-wind');
+            const uvEl     = document.getElementById('weather-uv');
+
+            if (iconEl)  iconEl.textContent  = icon;
+            if (condEl)  condEl.textContent  = row.condition || 'Today\'s Weather';
+            if (tempEl)  tempEl.textContent  = (row.temp_c != null ? Math.round(row.temp_c) + '°C' : '--°');
+            if (feelsEl) feelsEl.textContent = 'Feels like ' + (row.feels_like_c != null ? Math.round(row.feels_like_c) + '°C' : '--°');
+            if (humEl)   humEl.textContent   = (row.humidity_pct != null ? row.humidity_pct + '%' : '--');
+            if (windEl)  windEl.textContent  = (row.wind_speed_kmh != null ? Math.round(row.wind_speed_kmh) : '--');
+            if (uvEl)    uvEl.textContent    = (row.uv_index != null ? parseFloat(row.uv_index).toFixed(1) : '--');
+        }
+        window.updateWeatherUI = updateWeatherUI;
+
+        function showWeatherPrompt(permissionDenied) {
+            const loading = document.getElementById('weather-card-loading');
+            const prompt  = document.getElementById('weather-card-prompt');
+            if (loading) loading.style.display = 'none';
+            if (prompt)  prompt.style.display  = 'flex';
+
+            const subtitle = document.getElementById('weather-prompt-subtitle');
+            const btn      = document.getElementById('weather-prompt-btn');
+            if (permissionDenied) {
+                if (subtitle) subtitle.textContent = 'Location blocked — enable in browser/device settings, then retry';
+                if (btn) btn.textContent = 'Retry';
+            } else {
+                if (subtitle) subtitle.textContent = 'Allow location for local weather';
+                if (btn) btn.textContent = 'Enable';
+            }
+        }
+
         async function fetchAndStoreWeather() {
-            if (!window.currentUser) return;
+            if (!window.currentUser) { showWeatherPrompt(); return; }
             if (sessionStorage.getItem('weather_fetched')) return;
-            if (!navigator.geolocation) return;
+            if (!navigator.geolocation) { showWeatherPrompt(); return; }
 
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 try {
@@ -9800,7 +9864,7 @@ async function applyAppTheme(themeKey) {
                     const today = new Date().toISOString().split('T')[0];
                     const code  = c.weather_code ?? null;
 
-                    await supabase.from('weather_logs').upsert({
+                    const row = {
                         user_id:          window.currentUser.id,
                         log_date:         today,
                         temp_c:           c.temperature_2m           ?? null,
@@ -9816,14 +9880,48 @@ async function applyAppTheme(themeKey) {
                         longitude:        parseFloat(lon.toFixed(6)),
                         timezone:         tz,
                         fetched_at:       new Date().toISOString(),
-                    }, { onConflict: 'user_id,log_date' });
+                    };
+
+                    await supabase.from('weather_logs').upsert(row, { onConflict: 'user_id,log_date' });
 
                     sessionStorage.setItem('weather_fetched', '1');
+                    updateWeatherUI(row);
                 } catch (err) {
                     console.warn('Weather fetch error:', err);
                 }
-            }, () => { /* permission denied — silent */ }, { timeout: 8000, maximumAge: 3600000 });
+            }, (err) => { showWeatherPrompt(err && err.code === 1); }, { timeout: 8000, maximumAge: 3600000 });
         }
+
+        // Load today's stored weather from DB (runs immediately after user is ready)
+        async function loadWeatherFromDB() {
+            if (!window.currentUser) return;
+            const today = new Date().toISOString().split('T')[0];
+            try {
+                const { data, error } = await supabase
+                    .from('weather_logs')
+                    .select('*')
+                    .eq('user_id', window.currentUser.id)
+                    .eq('log_date', today)
+                    .maybeSingle();
+                if (data && !error) {
+                    updateWeatherUI(data);
+                    sessionStorage.setItem('weather_fetched', '1');
+                }
+            } catch (err) {
+                console.warn('Weather DB load error:', err);
+            }
+        }
+        window.loadWeatherFromDB = loadWeatherFromDB;
+
+        // Allow the "Enable" button to re-trigger geolocation
+        window.requestWeatherLocation = function() {
+            sessionStorage.removeItem('weather_fetched');
+            const prompt  = document.getElementById('weather-card-prompt');
+            const loading = document.getElementById('weather-card-loading');
+            if (prompt)  prompt.style.display  = 'none';
+            if (loading) loading.style.display = 'flex';
+            fetchAndStoreWeather();
+        };
 
         // Delay to allow currentUser to be set after auth
         setTimeout(fetchAndStoreWeather, 3000);
@@ -9857,6 +9955,7 @@ async function applyAppTheme(themeKey) {
         if (typeof initOuraDashboard === 'function') initOuraDashboard();
         if (typeof initStravaDashboard === 'function') initStravaDashboard();
         if (typeof initSpotifyDashboard === 'function') initSpotifyDashboard();
+        if (typeof window.loadWeatherFromDB === 'function') window.loadWeatherFromDB();
     }
 
     // Call after user is loaded (piggyback on Fitbit init timing)
@@ -10118,6 +10217,294 @@ async function applyAppTheme(themeKey) {
     window.initPerformanceCard = initPerformanceCard;
     window.openProgressFromHome = openProgressFromHome;
     window.closeProgressFromHome = closeProgressFromHome;
+    </script>
+
+    <script>
+    // ===== ACTIVITY INSIGHTS VIEW =====
+
+    function openInsightsView() {
+        if (typeof hideAllAppViews === 'function') hideAllAppViews();
+        const viewEl = document.getElementById('view-insights');
+        if (viewEl) {
+            viewEl.style.display = 'block';
+            viewEl.scrollTop = 0;
+            window.scrollTo(0, 0);
+        }
+        const nav = document.getElementById('bottom-nav');
+        if (nav) nav.style.display = 'none';
+        initInsightsView();
+        if (typeof pushNavigationState === 'function') {
+            pushNavigationState('view-insights', closeInsightsView);
+        } else {
+            history.pushState({ view: 'insights' }, '', '');
+        }
+    }
+
+    function closeInsightsView() {
+        const viewEl = document.getElementById('view-insights');
+        if (viewEl) viewEl.style.display = 'none';
+        const dashEl = document.getElementById('view-dashboard');
+        if (dashEl) dashEl.style.display = 'block';
+        const nav = document.getElementById('bottom-nav');
+        if (nav) nav.style.display = '';
+    }
+
+    async function initInsightsView() {
+        if (!window.currentUser) return;
+        const userId = window.currentUser.id;
+
+        const loadingEl = document.getElementById('insights-loading');
+        const contentEl = document.getElementById('insights-main-content');
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (contentEl) contentEl.style.display = 'none';
+
+        try {
+            // Load last 8 weeks of workout dates in parallel with wearable sleep data
+            const eightWeeksAgo = new Date();
+            eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
+            const eightWeeksAgoStr = eightWeeksAgo.toISOString().split('T')[0];
+
+            const [workoutsResult, weighInsResult, sleepResult] = await Promise.allSettled([
+                supabaseClient
+                    .from('workouts')
+                    .select('workout_date')
+                    .eq('user_id', userId)
+                    .eq('workout_type', 'history')
+                    .gte('workout_date', eightWeeksAgoStr)
+                    .order('workout_date', { ascending: true }),
+                db.weighIns.getRecent(userId, 30),
+                _loadWearableSleepForInsights(userId),
+            ]);
+
+            const workouts = (workoutsResult.status === 'fulfilled' && !workoutsResult.value.error)
+                ? workoutsResult.value.data || []
+                : [];
+            const weighIns = weighInsResult.status === 'fulfilled' ? (weighInsResult.value || []) : [];
+            const sleepData = sleepResult.status === 'fulfilled' ? sleepResult.value : null;
+
+            renderInsightsFrequencyChart(workouts);
+            renderInsightsCorrelations(workouts, weighIns, sleepData);
+            renderInsightsSleep(sleepData);
+
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (contentEl) contentEl.style.display = 'block';
+        } catch (err) {
+            console.warn('Insights load error:', err);
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (contentEl) contentEl.style.display = 'block';
+        }
+    }
+
+    // Try each connected wearable for recent sleep data (last 7 nights)
+    async function _loadWearableSleepForInsights(userId) {
+        const sources = [
+            { name: 'Fitbit',  url: `/api/fitbit/data?user_id=${userId}`,  key: (d) => d.sleep },
+            { name: 'WHOOP',   url: `/api/whoop/data?user_id=${userId}`,   key: (d) => d.sleep },
+            { name: 'Oura',    url: `/api/oura/data?user_id=${userId}`,    key: (d) => d.sleep },
+        ];
+        for (const src of sources) {
+            try {
+                const res = await fetch(src.url);
+                if (!res.ok) continue;
+                const d = await res.json();
+                const sleep = src.key(d);
+                if (sleep && sleep.length > 0) return { source: src.name, records: sleep };
+            } catch (_) { /* silent */ }
+        }
+        return null;
+    }
+
+    function renderInsightsFrequencyChart(workouts) {
+        const container = document.getElementById('insights-frequency-chart');
+        const totalEl   = document.getElementById('insights-freq-total');
+        if (!container) return;
+
+        // Build a map of ISO week key → count
+        function isoWeekKey(dateStr) {
+            const d = new Date(dateStr + 'T12:00:00');
+            const day = d.getDay() || 7; // Mon=1
+            d.setDate(d.getDate() + 4 - day);
+            const yearStart = new Date(Date.UTC(d.getFullYear(), 0, 1));
+            const week = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+            return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
+        }
+
+        // Collect workouts per week (unique dates only)
+        const weekMap = new Map();
+        const seen = new Set();
+        for (const w of workouts) {
+            if (!w.workout_date || seen.has(w.workout_date)) continue;
+            seen.add(w.workout_date);
+            const key = isoWeekKey(w.workout_date);
+            weekMap.set(key, (weekMap.get(key) || 0) + 1);
+        }
+
+        // Build 8 ordered week slots ending this week
+        const weeks = [];
+        const now = new Date();
+        for (let i = 7; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(now.getDate() - i * 7);
+            const key = isoWeekKey(d.toISOString().split('T')[0]);
+            const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            weeks.push({ key, label, count: weekMap.get(key) || 0 });
+        }
+
+        const totalSessions = weeks.reduce((s, w) => s + w.count, 0);
+        if (totalEl) totalEl.textContent = totalSessions + ' total sessions';
+
+        const maxCount = Math.max(...weeks.map(w => w.count), 1);
+        const barWidth = 100 / weeks.length;
+
+        let html = '<div style="display: flex; align-items: flex-end; gap: 4px; height: 100px; padding: 0 0 24px 0; position: relative;">';
+        for (const week of weeks) {
+            const pct = maxCount > 0 ? Math.round((week.count / maxCount) * 100) : 0;
+            const isThisWeek = week === weeks[weeks.length - 1];
+            const barColor = isThisWeek ? 'var(--primary)' : '#cbd5e1';
+            const labelShort = week.label.replace(/\s+\d+$/, ''); // e.g. "Jan"
+            html += `
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%;">
+                    <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;">
+                        <div style="width: 100%; height: ${Math.max(pct, week.count > 0 ? 8 : 3)}%; background: ${barColor}; border-radius: 6px 6px 2px 2px; transition: height 0.3s ease; position: relative;">
+                            ${week.count > 0 ? `<div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.65rem; font-weight: 700; color: ${isThisWeek ? 'var(--primary)' : 'var(--text-muted)'};">${week.count}</div>` : ''}
+                        </div>
+                    </div>
+                    <div style="font-size: 0.58rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;">${labelShort}</div>
+                </div>`;
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function renderInsightsCorrelations(workouts, weighIns, sleepData) {
+        const container = document.getElementById('insights-correlations-container');
+        if (!container) return;
+
+        const rows = [];
+
+        // Workout momentum: this 4 weeks vs prior 4 weeks
+        const now = new Date();
+        const fourWeeksAgo = new Date(now); fourWeeksAgo.setDate(now.getDate() - 28);
+        const eightWeeksAgo = new Date(now); eightWeeksAgo.setDate(now.getDate() - 56);
+        const recentCount = workouts.filter(w => w.workout_date >= fourWeeksAgo.toISOString().split('T')[0]).length;
+        const priorCount  = workouts.filter(w => {
+            const d = w.workout_date;
+            return d >= eightWeeksAgo.toISOString().split('T')[0] && d < fourWeeksAgo.toISOString().split('T')[0];
+        }).length;
+
+        const momentumDiff = recentCount - priorCount;
+        const momentumLabel = momentumDiff > 0 ? `+${momentumDiff} vs prior 4 weeks`
+            : momentumDiff < 0 ? `${momentumDiff} vs prior 4 weeks`
+            : 'Same as prior 4 weeks';
+        const momentumColor = momentumDiff > 0 ? '#10b981' : momentumDiff < 0 ? '#ef4444' : '#8b5cf6';
+        rows.push({
+            icon: '💪',
+            label: 'Workout Momentum',
+            value: `${recentCount} sessions`,
+            sub: momentumLabel,
+            subColor: momentumColor,
+        });
+
+        // Weight trend
+        if (weighIns && weighIns.length >= 2) {
+            const latest = weighIns[0];
+            const oldest = weighIns[weighIns.length - 1];
+            const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+            const diff = latest.weight_kg - oldest.weight_kg;
+            const displayDiff = preferLbs
+                ? (diff * 2.20462).toFixed(1) + ' lbs'
+                : diff.toFixed(1) + ' kg';
+            const sign = diff > 0 ? '+' : '';
+            const weightColor = diff < 0 ? '#10b981' : diff > 0 ? '#ef4444' : '#8b5cf6';
+            rows.push({
+                icon: '⚖️',
+                label: 'Weight Trend',
+                value: sign + displayDiff,
+                sub: `over ${weighIns.length} check-ins`,
+                subColor: weightColor,
+            });
+        }
+
+        // Sleep correlation (if wearable data)
+        if (sleepData && sleepData.records && sleepData.records.length > 0) {
+            const avgMins = sleepData.records.reduce((s, r) => {
+                return s + (r.duration_minutes || r.total_sleep_minutes || 0);
+            }, 0) / sleepData.records.length;
+            const hrs = Math.floor(avgMins / 60);
+            const mins = Math.round(avgMins % 60);
+            rows.push({
+                icon: '😴',
+                label: 'Avg Sleep',
+                value: `${hrs}h ${mins}m`,
+                sub: `via ${sleepData.source} · ${sleepData.records.length} nights`,
+                subColor: '#6366f1',
+            });
+        }
+
+        if (rows.length === 0) {
+            container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">Log workouts to start seeing your correlations here.</div>`;
+            return;
+        }
+
+        container.innerHTML = rows.map(r => `
+            <div style="display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
+                <div style="width: 40px; height: 40px; background: #f8fafc; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">${r.icon}</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">${r.label}</div>
+                    <div style="font-size: 1.05rem; font-weight: 800; color: var(--text-main);">${r.value}</div>
+                </div>
+                <div style="font-size: 0.75rem; font-weight: 700; color: ${r.subColor}; text-align: right; max-width: 100px;">${r.sub}</div>
+            </div>
+        `).join('');
+        // Remove last border
+        container.querySelector('div:last-child') && (container.querySelector('div:last-child').style.borderBottom = 'none');
+    }
+
+    function renderInsightsSleep(sleepData) {
+        const container = document.getElementById('insights-sleep-container');
+        const connectSection = document.getElementById('insights-connect-section');
+        if (!container) return;
+
+        if (!sleepData || !sleepData.records || sleepData.records.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 16px 0;">
+                    <div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.4;">😴</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">No sleep data yet. Connect a fitness tracker below to start seeing sleep trends and how they affect your workouts.</div>
+                </div>`;
+            if (connectSection) connectSection.style.display = 'block';
+            return;
+        }
+
+        if (connectSection) connectSection.style.display = 'none';
+
+        const records = sleepData.records.slice(0, 7).reverse();
+        const maxMins = Math.max(...records.map(r => r.duration_minutes || r.total_sleep_minutes || 0), 1);
+
+        let html = `<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; font-weight: 600;">Last ${records.length} nights via ${sleepData.source}</div>`;
+        html += '<div style="display: flex; align-items: flex-end; gap: 6px; height: 80px; padding-bottom: 20px; position: relative;">';
+
+        for (const r of records) {
+            const mins = r.duration_minutes || r.total_sleep_minutes || 0;
+            const pct = Math.round((mins / maxMins) * 100);
+            const hrs = (mins / 60).toFixed(1);
+            const date = r.date ? new Date(r.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' }) : '';
+            const color = mins >= 420 ? '#6366f1' : mins >= 360 ? '#a78bfa' : '#e2e8f0';
+            html += `
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%;">
+                    <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;">
+                        <div style="width: 100%; height: ${Math.max(pct, 6)}%; background: ${color}; border-radius: 5px 5px 2px 2px; position: relative;">
+                            <div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">${hrs}h</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">${date}</div>
+                </div>`;
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    window.openInsightsView   = openInsightsView;
+    window.closeInsightsView  = closeInsightsView;
     </script>
 
     <script>
@@ -11121,6 +11508,61 @@ async function applyAppTheme(themeKey) {
             <div id="strava-last-sync" style="text-align: right; font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; padding-right: 4px;"></div>
         </div>
 
+        <!-- Weather Card -->
+        <div id="weather-dashboard-card" style="margin: 20px 0 15px 0;">
+            <!-- Loading state (shown by default) -->
+            <div id="weather-card-loading" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); border-radius: 20px; padding: 20px 18px; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(14,165,233,0.25);">
+                <div style="font-size: 1.3rem;">🌤️</div>
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.8);">Fetching weather...</div>
+            </div>
+            <!-- Location permission prompt (shown if geolocation denied) -->
+            <div id="weather-card-prompt" style="display: none; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 20px; padding: 16px 18px; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                    <div style="width: 34px; height: 34px; flex-shrink: 0; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">🌤️</div>
+                    <div>
+                        <div style="font-size: 0.88rem; font-weight: 700; color: white; margin-bottom: 2px;">Today's Weather</div>
+                        <div id="weather-prompt-subtitle" style="font-size: 0.75rem; color: rgba(255,255,255,0.55);">Allow location for local weather</div>
+                    </div>
+                </div>
+                <button id="weather-prompt-btn" onclick="requestWeatherLocation()" style="flex-shrink: 0; background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap;">Enable</button>
+            </div>
+            <!-- Loaded state -->
+            <div id="weather-card-loaded" style="display: none; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(14,165,233,0.25);">
+                <!-- Header: icon + condition + temp -->
+                <div style="padding: 16px 18px 0; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;" id="weather-icon-main">🌤️</div>
+                        <div>
+                            <div style="font-weight: 700; font-size: 0.95rem; color: white;" id="weather-condition-label">Today's Weather</div>
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.7);">Local conditions</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div id="weather-temp" style="font-size: 2.2rem; font-weight: 800; color: white; line-height: 1;">--°</div>
+                        <div id="weather-feels-like" style="font-size: 0.7rem; color: rgba(255,255,255,0.7); white-space: nowrap;">Feels like --°</div>
+                    </div>
+                </div>
+                <!-- Stats row -->
+                <div style="padding: 12px 18px 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px;">
+                    <div style="text-align: center; padding: 10px 4px; background: rgba(255,255,255,0.15); border-radius: 13px;">
+                        <div style="font-size: 1.2rem; margin-bottom: 2px;">💧</div>
+                        <div id="weather-humidity" style="font-size: 1.1rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
+                        <div style="font-size: 0.62rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Humidity</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px 4px; background: rgba(255,255,255,0.15); border-radius: 13px;">
+                        <div style="font-size: 1.2rem; margin-bottom: 2px;">💨</div>
+                        <div id="weather-wind" style="font-size: 1.1rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
+                        <div style="font-size: 0.62rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Wind km/h</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px 4px; background: rgba(255,255,255,0.15); border-radius: 13px;">
+                        <div style="font-size: 1.2rem; margin-bottom: 2px;">🔆</div>
+                        <div id="weather-uv" style="font-size: 1.1rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
+                        <div style="font-size: 0.62rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">UV Index</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Live Challenges Section -->
         <div style="margin: 20px 0 15px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-green); padding-bottom: 8px;">
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -11185,19 +11627,22 @@ async function applyAppTheme(themeKey) {
             <div id="home-partner-challenges-list"></div>
         </div>
 
-        <!-- Fitbit Performance Card (sits above Your Progress) -->
-        <div id="fitbit-performance-card" style="margin: 0 0 14px 0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,176,185,0.2);">
-            <!-- Connected state -->
+        <!-- Activity Insights Card -->
+        <div id="fitbit-performance-card" onclick="openInsightsView()" style="cursor: pointer; margin: 0 0 14px 0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,176,185,0.2);">
+            <!-- Connected state (tracker synced) -->
             <div id="fitbit-perf-connected" style="display: none; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);">
                 <!-- Header -->
                 <div style="padding: 14px 18px 0; display: flex; align-items: center; justify-content: space-between;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div style="width: 30px; height: 30px; background: rgba(255,255,255,0.2); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
                         </div>
-                        <div style="font-weight: 700; font-size: 0.95rem; color: white;">Today's Activity</div>
+                        <div style="font-weight: 700; font-size: 0.95rem; color: white;">Activity Insights</div>
                     </div>
-                    <div id="fitbit-perf-sync-label" style="font-size: 0.65rem; color: rgba(255,255,255,0.55); font-weight: 500;"></div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div id="fitbit-perf-sync-label" style="font-size: 0.65rem; color: rgba(255,255,255,0.55); font-weight: 500;"></div>
+                        <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: rgba(255,255,255,0.5);"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+                    </div>
                 </div>
                 <!-- Stats row -->
                 <div style="padding: 12px 18px 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
@@ -11218,16 +11663,16 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
             </div>
-            <!-- Disconnected prompt -->
+            <!-- No-tracker state — always tappable to open insights -->
             <div id="fitbit-perf-disconnected" style="display: flex; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 16px 18px; align-items: center; justify-content: space-between; gap: 12px;">
                 <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                    <div style="width: 34px; height: 34px; flex-shrink: 0; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">⌚</div>
+                    <div style="width: 34px; height: 34px; flex-shrink: 0; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">📊</div>
                     <div>
-                        <div style="font-size: 0.88rem; font-weight: 700; color: white; margin-bottom: 2px;">Connect Fitbit Versa</div>
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.55);">See calories burned, HR &amp; active minutes</div>
+                        <div style="font-size: 0.88rem; font-weight: 700; color: white; margin-bottom: 2px;">Activity Insights</div>
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.55);">Workout trends, strength &amp; sleep correlation</div>
                     </div>
                 </div>
-                <button onclick="toggleFitbitConnection()" style="flex-shrink: 0; background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap;">Connect</button>
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.5); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
             </div>
         </div>
 
@@ -19293,12 +19738,8 @@ function viewWorkoutHistoryDetail(date) {
     <div style="padding: 0 20px 120px 20px; max-width: 500px; margin: 0 auto;">
 
         <!-- Header -->
-        <div style="display: flex; align-items: center; padding: 16px 0; gap: 12px; position: sticky; top: 0; background: var(--bg); z-index: 10;">
-            <div onclick="closeIntervalTimer()" style="cursor:pointer; width: 40px; height: 40px; display:flex; align-items:center; justify-content:center;">
-                <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:var(--text-main);"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.02 0-1.41a.996.996 0 00-1.41 0l-6.59 6.59a.996.996 0 000 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
-            </div>
-            <h2 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; flex: 1; text-align: center;">Interval Timer</h2>
-            <div style="width: 40px;"></div>
+        <div style="display: flex; align-items: center; justify-content: center; padding: calc(16px + env(safe-area-inset-top, 0px)) 0 16px 0; position: sticky; top: 0; background: var(--bg); z-index: 10;">
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; text-align: center;">Interval Timer</h2>
         </div>
 
         <!-- Setup Section (shown before timer starts) -->
@@ -19695,7 +20136,7 @@ function viewWorkoutHistoryDetail(date) {
     <!-- FRIENDS VIEW (now primarily a Feed view) -->
     <div id="view-friends" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc;">
         <!-- Header -->
-        <div style="padding: 20px 25px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
+        <div style="padding: 20px 25px; padding-top: calc(20px + env(safe-area-inset-top, 0px)); background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
             <div>
                 <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Feed</h2>
             </div>
@@ -20304,10 +20745,8 @@ function viewWorkoutHistoryDetail(date) {
     <!-- Challenge Leaderboard View -->
     <div id="challenge-leaderboard-modal" style="display: none; position: fixed; inset: 0; background: #f0f7ff; z-index: 10009; overflow-y: auto;">
         <!-- Header -->
-        <div style="background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;">
-            <button onclick="closeChallengeLeaderboard()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-main);">&larr;</button>
+        <div style="background: white; padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 15px 20px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;">
             <h3 id="challenge-leaderboard-title" style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Challenge</h3>
-            <div style="width: 24px;"></div>
         </div>
 
         <!-- Podium Section -->
@@ -20816,6 +21255,70 @@ function viewWorkoutHistoryDetail(date) {
     </div>
 
     <!-- PROGRESS / ANALYTICS VIEW -->
+    <!-- ===== ACTIVITY INSIGHTS VIEW ===== -->
+    <div id="view-insights" class="app-view" style="display:none; min-height: 100vh; height: auto; background: #f8fafc; z-index: 100000; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; overflow-y: auto; overflow-x: hidden;">
+        <!-- Header -->
+        <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+            <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Activity Insights</div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="insights-loading" style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">📊</div>
+            <div style="color: var(--text-muted);">Loading insights...</div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="insights-main-content" style="display: none; padding-bottom: 40px;">
+
+            <!-- Workout Frequency Chart -->
+            <div style="padding: 20px 20px 0;">
+                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
+                    <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px;">
+                        <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Workout Frequency</h3>
+                        <span id="insights-freq-total" style="font-size: 0.8rem; color: var(--primary); font-weight: 700;"></span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Sessions per week · last 8 weeks</div>
+                    <div id="insights-frequency-chart" style="width: 100%; overflow: hidden;"></div>
+                </div>
+            </div>
+
+            <!-- Correlations -->
+            <div style="padding: 20px 20px 0;">
+                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
+                    <h3 style="margin: 0 0 16px 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Correlations</h3>
+                    <div id="insights-correlations-container">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sleep & Recovery -->
+            <div style="padding: 20px 20px 0;">
+                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
+                    <h3 style="margin: 0 0 16px 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Sleep &amp; Recovery</h3>
+                    <div id="insights-sleep-container">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connect a Tracker (shown when no wearable synced) -->
+            <div id="insights-connect-section" style="padding: 20px; display: none;">
+                <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 20px; padding: 20px;">
+                    <div style="color: white; font-weight: 700; font-size: 1rem; margin-bottom: 6px;">Unlock Deeper Insights</div>
+                    <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-bottom: 16px;">Connect a fitness tracker to correlate sleep, heart rate &amp; calories with your workouts.</div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="event.stopPropagation(); toggleFitbitConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Fitbit</button>
+                        <button onclick="event.stopPropagation(); toggleWhoopConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">WHOOP</button>
+                        <button onclick="event.stopPropagation(); toggleOuraConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Oura</button>
+                        <button onclick="event.stopPropagation(); toggleStravaConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Strava</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="view-progress" class="app-view" style="display:none; min-height: 100vh; height: auto; background: #f8fafc; z-index: 100000; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; overflow-y: auto; overflow-x: hidden;">
         <!-- Header with back button -->
         <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
@@ -20922,7 +21425,7 @@ function viewWorkoutHistoryDetail(date) {
     <!-- LEARNING / EDUCATION VIEW -->
     <div id="view-learning" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc;">
         <!-- Header -->
-        <div style="padding: 20px 25px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
+        <div style="padding: 20px 25px; padding-top: calc(20px + env(safe-area-inset-top, 0px)); background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
             <div>
                 <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Learn</h2>
             </div>
@@ -20950,7 +21453,7 @@ function viewWorkoutHistoryDetail(date) {
     <!-- CYCLE / HORMONE HUB VIEW -->
     <div id="view-cycle" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc;">
         <!-- Header -->
-        <div style="padding: 20px 25px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
+        <div style="padding: 20px 25px; padding-top: calc(20px + env(safe-area-inset-top, 0px)); background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
             <div>
                 <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Hormone Hub</h2>
             </div>
@@ -26456,6 +26959,25 @@ function showNativePermissionsModal() {
     const modal = document.getElementById('native-permissions-modal');
     if (!modal) return;
 
+    // Pre-check notification permission so the button shows correct state
+    if (window.NativePermissions && typeof window.NativePermissions.hasNotificationPermission === 'function') {
+        if (window.NativePermissions.hasNotificationPermission()) {
+            updatePermBtn('notif', 'granted');
+        }
+    }
+
+    // Pre-check location permission so the button shows correct state
+    if (window.NativePermissions && typeof window.NativePermissions.hasLocationPermission === 'function') {
+        if (window.NativePermissions.hasLocationPermission()) {
+            updatePermBtn('location', 'granted');
+        }
+    }
+
+    // Pre-check health permission (if already initialised from a previous session)
+    if (window._nativeHealthReady) {
+        updatePermBtn('health', 'granted');
+    }
+
     modal.style.display = 'flex';
     // Trigger transition
     requestAnimationFrame(() => {
@@ -26482,6 +27004,10 @@ function closePermissionsModal() {
     if (window.NativePush && window.NativePush.isNativeApp()) {
         window.NativePush.init();
     }
+    // If location was granted, trigger weather fetch
+    if (typeof window.requestWeatherLocation === 'function') {
+        window.requestWeatherLocation();
+    }
 }
 
 function updatePermBtn(permId, status) {
@@ -26499,14 +27025,22 @@ function updatePermBtn(permId, status) {
     } else if (status === 'denied') {
         card.classList.add('denied');
         card.classList.remove('granted');
-        btn.textContent = 'Settings';
+        btn.textContent = 'Settings ›';
         btn.classList.add('denied-btn');
         btn.classList.remove('granted-btn');
         // Let the user open App Settings to grant the permission manually
         btn.onclick = () => {
             if (window.NativePermissions && window.NativePermissions.openAppSettings) {
                 window.NativePermissions.openAppSettings();
+            } else if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                // Fallback: use Capacitor App plugin to open device settings
+                window.Capacitor.Plugins.App.openUrl({ url: 'app-settings:' }).catch(() => {});
             }
+        };
+        // Also make tapping anywhere on the card open settings
+        card.style.cursor = 'pointer';
+        card.onclick = (e) => {
+            if (e.target !== btn) btn.click();
         };
     }
 }
@@ -26581,15 +27115,73 @@ async function requestPermMic() {
 async function requestPermHealth() {
     return _enqueuePerm(async () => {
         try {
+            // First try the Capacitor health plugin (opens Health Connect authorization UI)
             if (window.NativeHealth) {
                 const ready = await window.NativeHealth.init();
-                updatePermBtn('health', ready ? 'granted' : 'denied');
-            } else {
-                updatePermBtn('health', 'denied');
+                if (ready) {
+                    updatePermBtn('health', 'granted');
+                    return;
+                }
             }
         } catch (e) {
-            console.log('[Permissions] Health denied:', e);
-            updatePermBtn('health', 'denied');
+            console.log('[Permissions] Health plugin error:', e);
+        }
+
+        // Plugin failed or Health Connect didn't grant — open Health Connect
+        // permissions screen directly so the user can enable access there
+        try {
+            if (window.NativePermissions && typeof window.NativePermissions.openHealthConnect === 'function') {
+                window.NativePermissions.openHealthConnect();
+                // Don't mark as denied — the user is being taken to Health Connect
+                // to grant permission. The button will update when they return
+                // (via _recheckHealthPermission triggered by onResume).
+                return;
+            }
+        } catch (e2) {
+            console.log('[Permissions] openHealthConnect failed:', e2);
+        }
+
+        // Complete fallback — nothing else we can do
+        updatePermBtn('health', 'denied');
+    });
+}
+
+async function requestPermLocation() {
+    return _enqueuePerm(async () => {
+        try {
+            // Prefer the Java bridge for native Android location permission
+            if (window.NativePermissions && typeof window.NativePermissions.hasLocationPermission === 'function') {
+                if (window.NativePermissions.hasLocationPermission()) {
+                    updatePermBtn('location', 'granted');
+                    return;
+                }
+
+                // Request via Java bridge (shows native OS dialog)
+                const granted = await new Promise((resolve) => {
+                    let resolved = false;
+                    window._onNativeLocationPermission = (result) => {
+                        if (!resolved) { resolved = true; resolve(result); }
+                    };
+                    window.NativePermissions.requestLocationPermission();
+                    setTimeout(() => { if (!resolved) { resolved = true; resolve(false); } }, 30000);
+                });
+
+                if (granted) {
+                    updatePermBtn('location', 'granted');
+                } else {
+                    updatePermBtn('location', 'denied');
+                }
+                return;
+            }
+
+            // Fallback: use browser geolocation API to trigger permission prompt
+            const pos = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+            });
+            updatePermBtn('location', 'granted');
+        } catch (e) {
+            console.log('[Permissions] Location denied:', e);
+            updatePermBtn('location', 'denied');
         }
     });
 }
@@ -26597,14 +27189,73 @@ async function requestPermHealth() {
 async function requestPermNotif() {
     return _enqueuePerm(async () => {
         try {
+            // Prefer the Java bridge for reliable Android notification permission
+            if (window.NativePermissions && typeof window.NativePermissions.hasNotificationPermission === 'function') {
+                if (window.NativePermissions.hasNotificationPermission()) {
+                    updatePermBtn('notif', 'granted');
+                    return;
+                }
+
+                // Check if the native dialog can't be shown (permanently denied
+                // on Android 13+, or Android <13 where runtime request isn't possible)
+                if (typeof window.NativePermissions.isNotificationPermPermanentlyDenied === 'function' &&
+                    window.NativePermissions.isNotificationPermPermanentlyDenied()) {
+                    // Can't show native dialog — open notification settings directly
+                    // so the user can toggle notifications on from there
+                    if (typeof window.NativePermissions.openNotificationSettings === 'function') {
+                        window.NativePermissions.openNotificationSettings();
+                        // Don't mark as denied — user is being taken to settings
+                        // Button will update when they return (via _onPermissionRecheck)
+                        return;
+                    }
+                    updatePermBtn('notif', 'denied');
+                    return;
+                }
+
+                // Request via Java bridge (shows OS dialog on Android 13+)
+                const granted = await new Promise((resolve) => {
+                    let resolved = false;
+                    window._onNativeNotificationPermission = (result) => {
+                        if (!resolved) { resolved = true; resolve(result); }
+                    };
+                    window.NativePermissions.requestNotificationPermission();
+                    setTimeout(() => { if (!resolved) { resolved = true; resolve(false); } }, 30000);
+                });
+
+                if (granted) {
+                    updatePermBtn('notif', 'granted');
+                } else {
+                    // User denied the dialog — open notification settings so they
+                    // can still enable it without hunting through device settings
+                    if (typeof window.NativePermissions.openNotificationSettings === 'function') {
+                        window.NativePermissions.openNotificationSettings();
+                        // Don't mark as denied — user is being taken to settings
+                        return;
+                    }
+                    updatePermBtn('notif', 'denied');
+                }
+                return;
+            }
+
+            // Fallback: use NativePush (Capacitor plugin)
             if (window.NativePush) {
                 const result = await window.NativePush.requestPermission();
-                updatePermBtn('notif', result === 'granted' ? 'granted' : 'denied');
+                if (result === 'granted') {
+                    updatePermBtn('notif', 'granted');
+                } else if (typeof window.NativePermissions?.openNotificationSettings === 'function') {
+                    window.NativePermissions.openNotificationSettings();
+                } else {
+                    updatePermBtn('notif', 'denied');
+                }
             } else {
-                // Fallback: try native Capacitor push directly
+                // Last fallback: try native Capacitor push directly
                 const { PushNotifications } = await import('@capacitor/push-notifications');
                 const result = await PushNotifications.requestPermissions();
-                updatePermBtn('notif', result.receive === 'granted' ? 'granted' : 'denied');
+                if (result.receive === 'granted') {
+                    updatePermBtn('notif', 'granted');
+                } else {
+                    updatePermBtn('notif', 'denied');
+                }
             }
         } catch (e) {
             console.log('[Permissions] Notifications denied:', e);
@@ -33403,6 +34054,16 @@ function initializeMovementSwipeNavigation() {
     // Challenge views
     enableSwipeBackNavigation('challenge-leaderboard-modal', () => {
         closeChallengeLeaderboard();
+    });
+
+    // Activity Insights view
+    enableSwipeBackNavigation('view-insights', () => {
+        closeInsightsView();
+    });
+
+    // Interval Timer view
+    enableSwipeBackNavigation('view-interval-timer', () => {
+        closeIntervalTimer();
     });
 }
 
@@ -42072,6 +42733,7 @@ async function openChallengeLeaderboard(challengeId) {
     if (!modal) return;
 
     modal.style.display = 'block';
+    pushNavigationState('challenge-leaderboard-modal', closeChallengeLeaderboard);
 
     try {
         // Get challenge details
@@ -44723,6 +45385,7 @@ function openIntervalTimer() {
     const view = document.getElementById('view-interval-timer');
     if (view) {
         view.style.display = 'block';
+        pushNavigationState('view-interval-timer', closeIntervalTimer);
         document.getElementById('interval-timer-setup').style.display = 'block';
         document.getElementById('interval-timer-active').style.display = 'none';
         document.getElementById('interval-timer-done').style.display = 'none';
@@ -45367,9 +46030,8 @@ updateCoachUI();
 </script>
 <!-- WORKOUT BUILDER VIEW -->
 <div id="view-workout-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:500; overflow-y:auto; padding-bottom: 100px;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center;">
         <div style="font-weight: 700; font-size: 1.2rem;">Build Workout</div>
-        <div onclick="switchAppTab('movement-tab')" style="cursor:pointer; color:var(--text-muted); font-weight:600;">Close</div>
     </div>
 
     <div style="padding: 20px;">
@@ -46729,6 +47391,16 @@ window.submitWeighInModal = submitWeighInModal;
                 <p>Sync steps, heart rate, sleep &amp; workouts</p>
             </div>
             <button class="perm-card-btn" id="perm-btn-health" onclick="requestPermHealth()">Allow</button>
+        </div>
+
+        <!-- Location -->
+        <div class="perm-card" id="perm-card-location">
+            <div class="perm-card-icon" style="background:#e0f2fe;">📍</div>
+            <div class="perm-card-info">
+                <h4>Location</h4>
+                <p>Local weather conditions on your dashboard</p>
+            </div>
+            <button class="perm-card-btn" id="perm-btn-location" onclick="requestPermLocation()">Allow</button>
         </div>
 
         <!-- Notifications -->
@@ -52985,11 +53657,12 @@ async function toggleMealReminders(enabled) {
         let permissionGranted = false;
 
         if (window.NativePush && window.NativePush.isNativeApp()) {
-            // Native app: use Capacitor permission request (triggers OS dialog)
+            // Native app: use the Java bridge for reliable permission request
             const result = await window.NativePush.requestPermission();
             permissionGranted = (result === 'granted');
             if (!permissionGranted) {
-                alert('Notifications are blocked. Please go to your phone\'s Settings > Apps > Plant Based Balance > Notifications and turn them on.');
+                // Show a nicer dialog with a button to open Settings
+                showNotificationBlockedDialog();
                 const toggle = document.getElementById('meal-reminders-toggle');
                 if (toggle) toggle.checked = false;
                 if (timesContainer) timesContainer.style.display = 'none';
@@ -53031,7 +53704,17 @@ function updateNotificationStatusUI(granted) {
         banner.style.color = '#2e7d32';
         banner.innerHTML = 'Notifications enabled — your FitGotchi will remind you at the times below!';
     } else {
-        banner.style.display = 'none';
+        // Show a warning if the toggle is on but notifications aren't granted
+        const toggle = document.getElementById('meal-reminders-toggle');
+        if (toggle && toggle.checked) {
+            banner.style.display = 'block';
+            banner.style.background = 'linear-gradient(135deg, #fff3e0, #ffe0b2)';
+            banner.style.border = '1px solid #ffcc80';
+            banner.style.color = '#e65100';
+            banner.innerHTML = 'Notifications are turned off in your device settings. <span style="text-decoration:underline; cursor:pointer; font-weight:600;" onclick="showNotificationBlockedDialog()">Tap to fix</span>';
+        } else {
+            banner.style.display = 'none';
+        }
     }
 }
 
@@ -53040,13 +53723,99 @@ async function checkAndShowNotificationStatus() {
     const toggle = document.getElementById('meal-reminders-toggle');
     if (!toggle || !toggle.checked) return;
 
-    if (window.NativePush && window.NativePush.isNativeApp()) {
+    if (window.NativePermissions && typeof window.NativePermissions.hasNotificationPermission === 'function') {
+        // Use the Java bridge for most accurate Android permission state
+        updateNotificationStatusUI(window.NativePermissions.hasNotificationPermission());
+    } else if (window.NativePush && window.NativePush.isNativeApp()) {
         const status = await window.NativePush.checkPermission();
         updateNotificationStatusUI(status === 'granted');
     } else if ('Notification' in window) {
         updateNotificationStatusUI(Notification.permission === 'granted');
     }
 }
+
+// Show a dialog when notifications are blocked, with a button to open Settings
+function showNotificationBlockedDialog() {
+    const overlay = document.createElement('div');
+    overlay.id = 'notif-blocked-dialog';
+    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10020; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.2s ease-out;';
+
+    overlay.innerHTML = '<div style="background:white; border-radius:16px; padding:24px; margin:20px; max-width:320px; width:100%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.2);">'
+        + '<div style="width:56px; height:56px; background:linear-gradient(135deg, #fff3e0, #ffe0b2); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">'
+        + '<svg viewBox="0 0 24 24" style="width:28px; height:28px; fill:#f57c00;"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>'
+        + '</div>'
+        + '<h3 style="margin:0 0 8px; font-size:1.1rem; color:#1a1a1a;">Notifications Blocked</h3>'
+        + '<p style="margin:0 0 16px; font-size:0.85rem; color:#666; line-height:1.5;">To receive meal reminders, you need to allow notifications in your device settings.</p>'
+        + '<button id="notif-open-settings-btn" style="width:100%; padding:10px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; font-size:0.9rem; cursor:pointer; margin-bottom:8px;">Open Settings</button>'
+        + '<button onclick="document.getElementById(\'notif-blocked-dialog\').remove()" style="width:100%; padding:10px 16px; border-radius:8px; border:1px solid #ddd; background:transparent; color:#666; font-weight:500; font-size:0.9rem; cursor:pointer;">Cancel</button>'
+        + '</div>';
+
+    document.body.appendChild(overlay);
+
+    // Wire up the "Open Settings" button
+    document.getElementById('notif-open-settings-btn').onclick = function() {
+        if (window.NativePermissions && window.NativePermissions.openAppSettings) {
+            window.NativePermissions.openAppSettings();
+        } else if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+            window.Capacitor.Plugins.App.openUrl({ url: 'app-settings:' }).catch(function() {});
+        }
+        overlay.remove();
+    };
+
+    // Dismiss on backdrop tap
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.remove();
+    });
+}
+
+// Listen for notification permission changes when the app resumes from Settings.
+// The Java bridge calls window._onPermissionRecheck(bool) in onResume().
+window._onPermissionRecheck = function(notifEnabled) {
+    // Update the meal reminder UI if the toggle is on
+    var toggle = document.getElementById('meal-reminders-toggle');
+    if (toggle && toggle.checked) {
+        updateNotificationStatusUI(notifEnabled);
+        if (notifEnabled) {
+            updateActiveRemindersStatus();
+        }
+    }
+
+    // Update permissions modal buttons if visible
+    var permModal = document.getElementById('native-permissions-modal');
+    if (permModal && permModal.style.display !== 'none') {
+        updatePermBtn('notif', notifEnabled ? 'granted' : 'denied');
+    }
+};
+
+// Recheck health permission when the app resumes (e.g. after returning from
+// Health Connect). Called by the Java bridge in onResume().
+window._recheckHealthPermission = async function() {
+    var permModal = document.getElementById('native-permissions-modal');
+    if (!permModal || permModal.style.display === 'none') return;
+
+    // Try reinitialising the health plugin — if the user just granted
+    // permission in Health Connect, init() should now succeed
+    try {
+        if (window.NativeHealth) {
+            var ready = await window.NativeHealth.init();
+            if (ready) {
+                updatePermBtn('health', 'granted');
+            }
+        }
+    } catch (e) {
+        // Still not available — leave the button in its current state
+        console.log('[Permissions] Health recheck:', e);
+    }
+};
+
+// Recheck location permission when the app resumes (e.g. after returning
+// from device Settings). Called by the Java bridge in onResume().
+window._recheckLocationPermission = function(locationEnabled) {
+    var permModal = document.getElementById('native-permissions-modal');
+    if (permModal && permModal.style.display !== 'none') {
+        updatePermBtn('location', locationEnabled ? 'granted' : 'denied');
+    }
+};
 
 // Check if error indicates missing table (table not created yet)
 function isMealReminderTableMissing(error) {
@@ -59066,12 +59835,8 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
 
 <!-- PROGRAM BUILDER VIEW - Build Your Own Multi-Week Workout Program -->
 <div id="view-program-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#f8fafc; z-index:100001; overflow-y:auto; padding-bottom: 120px;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
-        <button onclick="closeProgramBuilder()" style="width: 40px; height: 40px; border: none; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-main);"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        </button>
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center;">
         <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Build Your Program</div>
-        <div style="width: 40px;"></div>
     </div>
 
     <div style="padding: 20px;">
@@ -63728,18 +64493,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
         }
 
-        // Also check for unallocated points on page load (in case user closed before allocating)
-        // Delay longer to avoid interrupting any pending level-up celebration
-        setTimeout(() => {
-            // Skip if a celebration is pending/playing - the celebration cleanup will show the modal
-            const pendingCeleb = localStorage.getItem('pendingLevelUpCelebration');
-            if (pendingCeleb) return;
-
-            const unalloc = getUnallocatedPoints();
-            if (unalloc > 0) {
-                showStatAllocationModal();
-            }
-        }, 8000);
+        // Stat allocation modal is shown only through the level-up celebration flow:
+        // 1. triggerLevelUpCelebration() shows it after the celebration animation ends
+        // 2. checkPendingLevelUpCelebration() replays interrupted celebrations on reload
+        // No need to show it on every page load - that causes a false popup bug.
 
         console.log('🎮 Progression & Battle System loaded!');
     })();

@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.WindowManager;
@@ -14,6 +15,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.ActionBar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -74,6 +76,39 @@ public class MainActivity extends BridgeActivity {
                 runOnUiThread(() ->
                     webViewRef.evaluateJavascript(
                         "if(window._onNativeMicrophonePermission) window._onNativeMicrophonePermission(" + granted + ")",
+                        null)
+                );
+            }
+        });
+
+    /**
+     * Launcher for the native Android "Allow location?" dialog.
+     * Used by the weather tracker feature to get the user's location.
+     */
+    private final ActivityResultLauncher<String> locationPermissionLauncher =
+        registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+            if (webViewRef != null) {
+                final boolean granted = isGranted;
+                runOnUiThread(() ->
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeLocationPermission) window._onNativeLocationPermission(" + granted + ")",
+                        null)
+                );
+            }
+        });
+
+    /**
+     * Launcher for the native Android "Allow notifications?" dialog (API 33+).
+     * Used by the meal reminder and push notification permission flow.
+     */
+    private final ActivityResultLauncher<String> notificationPermissionLauncher =
+        registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+            // Notify JavaScript so the notification settings flow can continue
+            if (webViewRef != null) {
+                final boolean granted = isGranted;
+                runOnUiThread(() ->
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeNotificationPermission) window._onNativeNotificationPermission(" + granted + ")",
                         null)
                 );
             }
@@ -258,6 +293,43 @@ public class MainActivity extends BridgeActivity {
             });
         }
 
+        /**
+         * Returns true if notification permission is granted.
+         * On Android 12 and below, notifications are allowed by default.
+         * On Android 13+ (API 33+), the POST_NOTIFICATIONS runtime permission is required.
+         */
+        @JavascriptInterface
+        public boolean hasNotificationPermission() {
+            return NotificationManagerCompat.from(MainActivity.this).areNotificationsEnabled();
+        }
+
+        /**
+         * Requests the POST_NOTIFICATIONS runtime permission on Android 13+.
+         * On older versions, notifications are allowed by default so this
+         * calls the JS callback with true immediately.
+         * Result is delivered via window._onNativeNotificationPermission(bool).
+         */
+        @JavascriptInterface
+        public void requestNotificationPermission() {
+            runOnUiThread(() -> {
+                if (NotificationManagerCompat.from(MainActivity.this).areNotificationsEnabled()) {
+                    // Already granted — notify JS immediately
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeNotificationPermission) window._onNativeNotificationPermission(true)",
+                        null);
+                } else if (Build.VERSION.SDK_INT >= 33) {
+                    // Android 13+: show the native "Allow notifications?" dialog
+                    notificationPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS");
+                } else {
+                    // Older Android: notifications are controlled at the app level in Settings
+                    // Can't request at runtime, so direct user to Settings
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeNotificationPermission) window._onNativeNotificationPermission(false)",
+                        null);
+                }
+            });
+        }
+
         @JavascriptInterface
         public boolean hasMicrophonePermission() {
             return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
@@ -277,6 +349,95 @@ public class MainActivity extends BridgeActivity {
                     microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
                 }
             });
+        }
+
+        /**
+         * Returns true if location permission (ACCESS_FINE_LOCATION) is granted.
+         */
+        @JavascriptInterface
+        public boolean hasLocationPermission() {
+            return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED;
+        }
+
+        /**
+         * Requests the ACCESS_FINE_LOCATION runtime permission.
+         * Result is delivered via window._onNativeLocationPermission(bool).
+         */
+        @JavascriptInterface
+        public void requestLocationPermission() {
+            runOnUiThread(() -> {
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeLocationPermission) window._onNativeLocationPermission(true)",
+                        null);
+                } else {
+                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+                }
+            });
+        }
+
+        /**
+         * Opens Health Connect permissions screen for this app so the user
+         * can grant health data access directly. Used as a fallback when the
+         * Capacitor health plugin can't request permissions inline.
+         * The JS side should recheck permission status when onResume fires.
+         */
+        @JavascriptInterface
+        public void openHealthConnect() {
+            runOnUiThread(() -> {
+                try {
+                    // Open Health Connect permissions page for this specific app
+                    Intent intent = new Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS");
+                    intent.putExtra("android.intent.extra.PACKAGE_NAME", getPackageName());
+                    startActivity(intent);
+                } catch (Exception e) {
+                    try {
+                        // Fallback: open Health Connect home settings
+                        Intent intent = new Intent("android.health.connect.action.HEALTH_HOME_SETTINGS");
+                        startActivity(intent);
+                    } catch (Exception e2) {
+                        // Health Connect not installed — open generic app settings
+                        openAppSettings();
+                    }
+                }
+            });
+        }
+
+        /**
+         * Opens the notification settings screen specifically for this app.
+         * More direct than openAppSettings() when the user needs to toggle
+         * notifications on/off.
+         */
+        @JavascriptInterface
+        public void openNotificationSettings() {
+            runOnUiThread(() -> {
+                try {
+                    Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    // Fallback to generic app settings
+                    openAppSettings();
+                }
+            });
+        }
+
+        /**
+         * Returns true if the POST_NOTIFICATIONS permission has been permanently
+         * denied (user tapped "Don't allow" and the system won't show the dialog
+         * again). Only meaningful on Android 13+ (API 33+).
+         */
+        @JavascriptInterface
+        public boolean isNotificationPermPermanentlyDenied() {
+            if (Build.VERSION.SDK_INT < 33) return true; // Can't request at runtime on older Android
+            boolean notGranted = ContextCompat.checkSelfPermission(MainActivity.this,
+                    "android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED;
+            boolean cannotAskAgain = !ActivityCompat.shouldShowRequestPermissionRationale(
+                    MainActivity.this, "android.permission.POST_NOTIFICATIONS");
+            return notGranted && cannotAskAgain;
         }
 
         /**
@@ -320,6 +481,19 @@ public class MainActivity extends BridgeActivity {
         super.onResume();
         // Hide system bars for immersive experience
         hideSystemBars();
+
+        // Notify JavaScript about current permission status so the UI can
+        // update after the user returns from Health Connect or notification Settings
+        if (webViewRef != null) {
+            boolean notifEnabled = NotificationManagerCompat.from(this).areNotificationsEnabled();
+            boolean locationEnabled = ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+            webViewRef.evaluateJavascript(
+                "if(window._onPermissionRecheck) window._onPermissionRecheck(" + notifEnabled + ");" +
+                "if(window._recheckHealthPermission) window._recheckHealthPermission();" +
+                "if(window._recheckLocationPermission) window._recheckLocationPermission(" + locationEnabled + ")",
+                null);
+        }
     }
 
     @Override
