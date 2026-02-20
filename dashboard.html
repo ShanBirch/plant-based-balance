@@ -11603,6 +11603,30 @@ async function applyAppTheme(themeKey) {
             <div id="home-challenges-list"></div>
         </div>
 
+        <!-- Partner Challenges Section -->
+        <div style="margin: 20px 0 15px 0; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">Partner Challenges</h3>
+            <button onclick="openPartnerChallengeModal()" style="background: none; border: none; color: #10b981; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                New Challenge
+            </button>
+        </div>
+        <div id="home-partner-challenges-container">
+            <div id="home-partner-challenges-empty" class="card" style="border-left: 5px solid #10b981;">
+                <div class="card-body" style="max-height: none; padding: 16px; opacity: 1; display: flex; align-items: center; gap: 12px;">
+                    <div style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.15)); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🤝</div>
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 4px 0; border: none; padding: 0; font-size: 0.95rem;">Start a Partner Challenge</h4>
+                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Meal streaks, calorie targets, workout programs — bet coins & hold each other accountable</p>
+                    </div>
+                    <button onclick="openPartnerChallengeModal()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap;">
+                        Start
+                    </button>
+                </div>
+            </div>
+            <div id="home-partner-challenges-list"></div>
+        </div>
+
         <!-- Activity Insights Card -->
         <div id="fitbit-performance-card" onclick="openInsightsView()" style="cursor: pointer; margin: 0 0 14px 0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,176,185,0.2);">
             <!-- Connected state (tracker synced) -->
@@ -20860,6 +20884,174 @@ function viewWorkoutHistoryDetail(date) {
         </div>
     </div>
 
+    <!-- Partner Challenge Create Modal -->
+    <div id="partner-challenge-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10009; align-items: center; justify-content: center; backdrop-filter: blur(6px);">
+        <div style="background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%); border-radius: 24px; max-width: 420px; width: 92%; max-height: 85vh; display: flex; flex-direction: column; animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(16,185,129,0.15);">
+            <!-- Header -->
+            <div style="text-align: center; padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;">
+                <h3 style="margin: 0 0 4px; font-size: 1.3rem; font-weight: 800; color: #6ee7b7; text-shadow: 0 0 20px rgba(110,231,183,0.3);">🤝 Partner Challenge</h3>
+                <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.6);">Hold each other accountable with coin stakes</p>
+            </div>
+            <!-- Content -->
+            <div style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
+                <!-- Challenge Type -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Challenge Type</label>
+                    <div id="pc-type-picker" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <button type="button" onclick="selectPCType('meal_streak', this)" class="pc-type-btn active" style="padding: 14px 10px; background: rgba(255,255,255,0.15); border: 2px solid rgba(110,231,183,0.5); border-radius: 12px; color: white; cursor: pointer; text-align: center; transition: all 0.2s;">
+                            <div style="font-size: 1.5rem; margin-bottom: 4px;">🥗</div>
+                            <div style="font-weight: 700; font-size: 0.8rem;">Meal Streak</div>
+                            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: 2px;">Log meals daily</div>
+                        </button>
+                        <button type="button" onclick="selectPCType('calorie_target', this)" class="pc-type-btn" style="padding: 14px 10px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 12px; color: white; cursor: pointer; text-align: center; transition: all 0.2s;">
+                            <div style="font-size: 1.5rem; margin-bottom: 4px;">🎯</div>
+                            <div style="font-weight: 700; font-size: 0.8rem;">Calorie Target</div>
+                            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: 2px;">Hit daily goals</div>
+                        </button>
+                        <button type="button" onclick="selectPCType('workout_streak', this)" class="pc-type-btn" style="padding: 14px 10px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 12px; color: white; cursor: pointer; text-align: center; transition: all 0.2s;">
+                            <div style="font-size: 1.5rem; margin-bottom: 4px;">💪</div>
+                            <div style="font-weight: 700; font-size: 0.8rem;">Workout Streak</div>
+                            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: 2px;">Train every day</div>
+                        </button>
+                        <button type="button" onclick="selectPCType('workout_program', this)" class="pc-type-btn" style="padding: 14px 10px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 12px; color: white; cursor: pointer; text-align: center; transition: all 0.2s;">
+                            <div style="font-size: 1.5rem; margin-bottom: 4px;">📋</div>
+                            <div style="font-weight: 700; font-size: 0.8rem;">4-Week Program</div>
+                            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: 2px;">Same workout plan</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mode: Competitive vs Cooperative -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Mode</label>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" onclick="selectPCMode('competitive', this)" id="pc-mode-competitive" class="pc-mode-btn active" style="flex: 1; padding: 12px 10px; background: rgba(255,255,255,0.15); border: 2px solid rgba(110,231,183,0.5); border-radius: 10px; color: white; cursor: pointer; text-align: center;">
+                            <div style="font-weight: 700; font-size: 0.85rem;">Competitive</div>
+                            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: 2px;">Most days wins pot</div>
+                        </button>
+                        <button type="button" onclick="selectPCMode('cooperative', this)" id="pc-mode-cooperative" class="pc-mode-btn" style="flex: 1; padding: 12px 10px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 10px; color: white; cursor: pointer; text-align: center;">
+                            <div style="font-weight: 700; font-size: 0.85rem;">Cooperative</div>
+                            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: 2px;">Both hit 80% = both win</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Duration -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Duration</label>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" onclick="selectPCDuration(7, this)" class="pc-duration-btn" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 10px; color: white; cursor: pointer; font-weight: 700; font-size: 0.85rem;">1 Week</button>
+                        <button type="button" onclick="selectPCDuration(14, this)" class="pc-duration-btn" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 10px; color: white; cursor: pointer; font-weight: 700; font-size: 0.85rem;">2 Weeks</button>
+                        <button type="button" onclick="selectPCDuration(28, this)" class="pc-duration-btn active" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.15); border: 2px solid rgba(110,231,183,0.5); border-radius: 10px; color: white; cursor: pointer; font-weight: 700; font-size: 0.85rem;">4 Weeks</button>
+                    </div>
+                </div>
+
+                <!-- Select Friend (single) -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;">Challenge a Friend</label>
+                    <div id="pc-friends-list" style="max-height: 160px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.04);">
+                        <div style="padding: 20px; text-align: center; color: rgba(255,255,255,0.5);">Loading friends...</div>
+                    </div>
+                </div>
+
+                <!-- Coin Wager -->
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Coin Wager</span>
+                        <span style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span class="coin-balance-sync">0</span></span>
+                    </div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <button type="button" onclick="selectPCBet(0, this)" class="pc-bet-btn active" style="flex: 1; min-width: 50px; padding: 9px 4px; background: rgba(255,255,255,0.15); border: 2px solid rgba(110,231,183,0.5); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">Free</button>
+                        <button type="button" onclick="selectPCBet(100, this)" class="pc-bet-btn" style="flex: 1; min-width: 50px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 100</button>
+                        <button type="button" onclick="selectPCBet(500, this)" class="pc-bet-btn" style="flex: 1; min-width: 50px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 500</button>
+                        <button type="button" onclick="selectPCBet(1000, this)" class="pc-bet-btn" style="flex: 1; min-width: 50px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 1K</button>
+                    </div>
+                </div>
+
+                <!-- How it works summary -->
+                <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px; padding: 12px 14px;">
+                    <div id="pc-how-it-works" style="font-size: 0.78rem; color: rgba(255,255,255,0.7); line-height: 1.5;">
+                        <strong style="color: #6ee7b7;">How it works:</strong> Both of you log at least 1 meal every day. Whoever completes more days wins the coin pot. Track each other's progress daily!
+                    </div>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div style="padding: 12px 16px 16px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px; flex-shrink: 0;">
+                <button onclick="closePartnerChallengeModal()" style="flex: 1; padding: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; background: transparent; color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button onclick="sendPartnerChallenge()" id="pc-send-btn" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 12px; font-size: 0.85rem; font-weight: 700; color: white; cursor: pointer; box-shadow: 0 4px 15px rgba(16,185,129,0.4);">Send Challenge</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Partner Challenge Detail View -->
+    <div id="partner-challenge-detail-modal" style="display: none; position: fixed; inset: 0; background: #f0fdf4; z-index: 10009; overflow-y: auto;">
+        <!-- Header -->
+        <div style="background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;">
+            <button onclick="closePartnerChallengeDetail()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-main);">&larr;</button>
+            <h3 id="pc-detail-title" style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Partner Challenge</h3>
+            <div style="width: 24px;"></div>
+        </div>
+
+        <!-- Status Banner -->
+        <div id="pc-detail-status-banner" style="background: linear-gradient(135deg, #10b981, #059669); padding: 20px; text-align: center;">
+            <div id="pc-detail-type-emoji" style="font-size: 2.5rem; margin-bottom: 8px;">🤝</div>
+            <div id="pc-detail-type-label" style="font-weight: 700; font-size: 1.1rem; color: white;">Meal Logging Streak</div>
+            <div id="pc-detail-days-left" style="font-size: 0.85rem; color: rgba(255,255,255,0.8); margin-top: 4px;">28 days remaining</div>
+            <div id="pc-detail-mode-badge" style="display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; background: rgba(255,255,255,0.2); color: white;">COMPETITIVE</div>
+            <div id="pc-detail-bet-info" style="margin-top: 6px; font-size: 0.8rem; color: #fbbf24; font-weight: 600;"></div>
+        </div>
+
+        <!-- Score Comparison -->
+        <div style="background: white; margin: 15px; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="text-align: center; flex: 1;">
+                    <div id="pc-detail-my-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem;">Me</div>
+                    <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-main);">You</div>
+                    <div id="pc-detail-my-days" style="font-size: 2rem; font-weight: 800; color: #10b981;">0</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">days completed</div>
+                </div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-muted);">VS</div>
+                <div style="text-align: center; flex: 1;">
+                    <div id="pc-detail-partner-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #2563eb); margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem; overflow: hidden;">P</div>
+                    <div id="pc-detail-partner-name" style="font-weight: 600; font-size: 0.85rem; color: var(--text-main);">Partner</div>
+                    <div id="pc-detail-partner-days" style="font-size: 2rem; font-weight: 800; color: #3b82f6;">0</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">days completed</div>
+                </div>
+            </div>
+            <!-- Progress bar comparison -->
+            <div style="margin-top: 16px;">
+                <div style="display: flex; gap: 4px; height: 8px; border-radius: 4px; overflow: hidden; background: #f1f5f9;">
+                    <div id="pc-detail-my-bar" style="background: #10b981; height: 100%; border-radius: 4px; transition: width 0.5s ease; width: 0%;"></div>
+                    <div id="pc-detail-partner-bar" style="background: #3b82f6; height: 100%; border-radius: 4px; transition: width 0.5s ease; width: 0%; margin-left: auto;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">
+                    <span id="pc-detail-my-pct">0%</span>
+                    <span id="pc-detail-partner-pct">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Day-by-Day Progress Grid -->
+        <div style="background: white; margin: 0 15px 15px; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <h4 style="margin: 0 0 12px; font-size: 0.95rem; font-weight: 600; color: var(--text-main);">Daily Progress</h4>
+            <div style="display: flex; gap: 20px; margin-bottom: 8px; font-size: 0.7rem; color: var(--text-muted);">
+                <div style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #10b981; display: inline-block;"></span> You</div>
+                <div style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #3b82f6; display: inline-block;"></span> Partner</div>
+                <div style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #e2e8f0; display: inline-block;"></span> Missed</div>
+            </div>
+            <div id="pc-detail-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;">
+                <!-- Day cells rendered dynamically -->
+            </div>
+        </div>
+
+        <!-- Cancel/Leave Button -->
+        <div style="padding: 15px; text-align: center;">
+            <button onclick="cancelPartnerChallenge()" id="pc-detail-cancel-btn" style="background: none; border: none; color: #ef4444; font-size: 0.9rem; cursor: pointer; text-decoration: underline;">
+                Cancel Challenge
+            </button>
+        </div>
+    </div>
+
     <!-- Coin Shop Modal -->
     <div id="coin-shop-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10010; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
         <div style="background: white; border-radius: 24px; max-width: 420px; width: 92%; padding: 0; overflow: hidden; animation: fadeInScale 0.3s ease-out;">
@@ -23318,6 +23510,10 @@ function _switchAppTabReal(tabName, btn) {
         // Load live challenges on home screen
         if (typeof loadHomeChallenges === 'function') {
             loadHomeChallenges();
+        }
+        // Load partner challenges on home screen
+        if (typeof loadHomePartnerChallenges === 'function') {
+            loadHomePartnerChallenges();
         }
 
         // Render featured monthly rare card
@@ -32242,6 +32438,9 @@ async function finishWorkout() {
                      if (sEl && typeof checkStreakBadges === 'function') checkStreakBadges(parseInt(sEl.textContent) || 0);
                  } catch(badgeErr) { console.error('Badge check error:', badgeErr); }
 
+                 // Auto-track partner challenges for workouts (fire and forget)
+                 try { if (typeof checkPartnerChallengesForWorkouts === 'function') checkPartnerChallengesForWorkouts(); } catch(e) {}
+
                  // Display success screen with progress data (include newPBs)
                  await showWorkoutSuccessScreen(duration, improvements, milestones, setsToSave, newPBs);
              } catch(progressError) {
@@ -32691,6 +32890,9 @@ function closeSuccessScreen(skipRating) {
     // Refresh challenges to show any updated points
     if (typeof loadHomeChallenges === 'function') {
         loadHomeChallenges();
+    }
+    if (typeof loadHomePartnerChallenges === 'function') {
+        loadHomePartnerChallenges();
     }
 
     // Show post-workout rating modal (unless explicitly skipped)
@@ -42774,6 +42976,756 @@ async function leaveCurrentChallenge() {
     }
 }
 
+// ============================================================
+// PARTNER CHALLENGES FUNCTIONS
+// 1v1 accountability challenges: meal streaks, calorie targets,
+// workout streaks, 4-week programs
+// ============================================================
+
+// Partner challenge state
+let pcSelectedType = 'meal_streak';
+let pcSelectedMode = 'competitive';
+let pcSelectedDuration = 28;
+let pcSelectedBet = 0;
+let pcSelectedFriendId = null;
+let pcSelectedFriendName = null;
+let currentPartnerChallengeId = null;
+
+const PC_TYPE_INFO = {
+    meal_streak: { emoji: '🥗', label: 'Meal Logging Streak', desc: 'Both of you log at least 1 meal every day. Whoever completes more days wins the coin pot. Track each other\'s progress daily!' },
+    calorie_target: { emoji: '🎯', label: 'Calorie Target', desc: 'Both of you hit within 20% of your calorie goal each day. Consistency is key — whoever nails more days wins!' },
+    workout_streak: { emoji: '💪', label: 'Workout Streak', desc: 'Both of you complete at least 1 workout every day. The grind never stops — most days completed wins!' },
+    workout_program: { emoji: '📋', label: '4-Week Program', desc: 'Both follow the same workout schedule for 4 weeks. Complete your assigned workout each day to score a point.' }
+};
+
+// Open the create modal
+function openPartnerChallengeModal() {
+    const modal = document.getElementById('partner-challenge-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    // Reset state
+    pcSelectedType = 'meal_streak';
+    pcSelectedMode = 'competitive';
+    pcSelectedDuration = 28;
+    pcSelectedBet = 0;
+    pcSelectedFriendId = null;
+    pcSelectedFriendName = null;
+    updatePCHowItWorks();
+    loadFriendsForPartnerChallenge();
+}
+
+function closePartnerChallengeModal() {
+    const modal = document.getElementById('partner-challenge-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function selectPCType(type, btnEl) {
+    pcSelectedType = type;
+    document.querySelectorAll('.pc-type-btn').forEach(b => {
+        b.style.background = 'rgba(255,255,255,0.08)';
+        b.style.borderColor = 'rgba(255,255,255,0.15)';
+        b.classList.remove('active');
+    });
+    btnEl.style.background = 'rgba(255,255,255,0.15)';
+    btnEl.style.borderColor = 'rgba(110,231,183,0.5)';
+    btnEl.classList.add('active');
+    // Force 28 days for workout_program
+    if (type === 'workout_program') {
+        selectPCDuration(28, document.querySelectorAll('.pc-duration-btn')[2]);
+    }
+    updatePCHowItWorks();
+}
+
+function selectPCMode(mode, btnEl) {
+    pcSelectedMode = mode;
+    document.querySelectorAll('.pc-mode-btn').forEach(b => {
+        b.style.background = 'rgba(255,255,255,0.08)';
+        b.style.borderColor = 'rgba(255,255,255,0.15)';
+        b.classList.remove('active');
+    });
+    btnEl.style.background = 'rgba(255,255,255,0.15)';
+    btnEl.style.borderColor = 'rgba(110,231,183,0.5)';
+    btnEl.classList.add('active');
+    updatePCHowItWorks();
+}
+
+function selectPCDuration(days, btnEl) {
+    pcSelectedDuration = days;
+    document.querySelectorAll('.pc-duration-btn').forEach(b => {
+        b.style.background = 'rgba(255,255,255,0.08)';
+        b.style.borderColor = 'rgba(255,255,255,0.15)';
+        b.classList.remove('active');
+    });
+    if (btnEl) {
+        btnEl.style.background = 'rgba(255,255,255,0.15)';
+        btnEl.style.borderColor = 'rgba(110,231,183,0.5)';
+        btnEl.classList.add('active');
+    }
+}
+
+function selectPCBet(amount, btnEl) {
+    pcSelectedBet = amount;
+    document.querySelectorAll('.pc-bet-btn').forEach(b => {
+        b.style.background = 'rgba(255,255,255,0.08)';
+        b.style.borderColor = 'rgba(255,255,255,0.15)';
+        b.classList.remove('active');
+    });
+    btnEl.style.background = 'rgba(255,255,255,0.15)';
+    btnEl.style.borderColor = 'rgba(110,231,183,0.5)';
+    btnEl.classList.add('active');
+}
+
+function updatePCHowItWorks() {
+    const el = document.getElementById('pc-how-it-works');
+    if (!el) return;
+    const info = PC_TYPE_INFO[pcSelectedType];
+    const modeText = pcSelectedMode === 'cooperative'
+        ? 'Both hit 80% of days to win. If only one makes it, they take the pot.'
+        : info.desc;
+    el.innerHTML = `<strong style="color: #6ee7b7;">How it works:</strong> ${modeText}`;
+}
+
+// Load friends list (radio buttons — single select)
+async function loadFriendsForPartnerChallenge() {
+    const container = document.getElementById('pc-friends-list');
+    if (!container || !window.currentUser) return;
+
+    try {
+        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
+
+        if (!friends || friends.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: rgba(255,255,255,0.5);">No friends yet. Add friends first!</div>';
+            return;
+        }
+
+        container.innerHTML = friends.map(friend => {
+            const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
+            return `
+                <label style="display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
+                    <input type="radio" name="pc-friend" value="${friend.friend_id}" data-name="${friend.friend_name || ''}" onchange="pcSelectFriend(this)" style="width: 18px; height: 18px; accent-color: #10b981;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, rgba(16,185,129,0.4), rgba(5,150,105,0.4)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem; overflow: hidden;">
+                        ${friend.friend_photo ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: white; font-size: 0.9rem;">${friend.friend_name}</div>
+                        ${friend.current_streak > 0 ? `<div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">🔥 ${friend.current_streak} day streak</div>` : ''}
+                    </div>
+                </label>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading friends for partner challenge:', error);
+        container.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444;">Failed to load friends</div>';
+    }
+}
+
+function pcSelectFriend(radio) {
+    pcSelectedFriendId = radio.value;
+    pcSelectedFriendName = radio.dataset.name;
+}
+
+// Send the partner challenge
+async function sendPartnerChallenge() {
+    if (!pcSelectedFriendId) {
+        alert('Please select a friend to challenge');
+        return;
+    }
+
+    const btn = document.getElementById('pc-send-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+    try {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() + 1); // Starts tomorrow
+        const startDateStr = startDate.toISOString().split('T')[0];
+
+        const targetConfig = {};
+        if (pcSelectedType === 'meal_streak') targetConfig.min_meals_per_day = 1;
+        if (pcSelectedType === 'calorie_target') targetConfig.tolerance_pct = 20;
+        if (pcSelectedType === 'workout_streak') targetConfig.min_workouts_per_day = 1;
+        if (pcSelectedType === 'workout_program') targetConfig.program_name = 'Custom Program';
+
+        // Debit coins from challenger if betting
+        if (pcSelectedBet > 0) {
+            const { data: newBal, error: coinErr } = await window.supabaseClient
+                .rpc('debit_coins', {
+                    user_uuid: window.currentUser.id,
+                    coin_amount: pcSelectedBet,
+                    txn_type: 'challenge_entry',
+                    txn_description: 'Partner challenge bet: ' + PC_TYPE_INFO[pcSelectedType].label
+                });
+            if (coinErr) throw coinErr;
+            if (newBal === -1) {
+                alert('Not enough coins! You need ' + pcSelectedBet.toLocaleString() + ' coins.');
+                if (typeof openCoinShop === 'function') openCoinShop();
+                if (btn) { btn.disabled = false; btn.textContent = 'Send Challenge'; }
+                return;
+            }
+            if (typeof updateCoinBalanceDisplay === 'function') updateCoinBalanceDisplay(newBal);
+        }
+
+        // Create the challenge in the database
+        const { data: challengeId, error } = await window.supabaseClient
+            .rpc('create_partner_challenge', {
+                p_challenger_id: window.currentUser.id,
+                p_opponent_id: pcSelectedFriendId,
+                p_challenge_type: pcSelectedType,
+                p_mode: pcSelectedMode,
+                p_duration_days: pcSelectedDuration,
+                p_start_date: startDateStr,
+                p_coin_bet: pcSelectedBet,
+                p_target_config: targetConfig
+            });
+
+        if (error) throw error;
+
+        // Send nudge notification
+        const creatorName = window.currentUser?.user_metadata?.name || window.currentUser?.email || 'Someone';
+        const typeInfo = PC_TYPE_INFO[pcSelectedType];
+        let nudgeMsg = `🤝 PARTNER CHALLENGE! ${creatorName} challenged you to a ${typeInfo.label} (${pcSelectedDuration} days)`;
+        if (pcSelectedBet > 0) nudgeMsg += ` 🪙 ${pcSelectedBet.toLocaleString()} coin wager!`;
+
+        try {
+            await window.supabaseClient.from('nudges').insert({
+                sender_id: window.currentUser.id,
+                receiver_id: pcSelectedFriendId,
+                message: nudgeMsg,
+                nudge_type: 'partner_challenge'
+            });
+        } catch (e) { console.warn('Nudge send failed:', e); }
+
+        closePartnerChallengeModal();
+        loadHomePartnerChallenges();
+        showToast(`Partner challenge sent to ${pcSelectedFriendName}!`, 'success');
+
+    } catch (error) {
+        console.error('Error creating partner challenge:', error);
+        alert('Failed to create challenge: ' + (error.message || 'Please try again'));
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Send Challenge'; }
+    }
+}
+
+// Load partner challenges on home screen
+async function loadHomePartnerChallenges() {
+    const container = document.getElementById('home-partner-challenges-list');
+    const emptyState = document.getElementById('home-partner-challenges-empty');
+
+    if (!container || !window.currentUser) return;
+
+    try {
+        const { data: challenges, error } = await window.supabaseClient
+            .rpc('get_user_partner_challenges', { p_user_id: window.currentUser.id });
+
+        if (error) throw error;
+
+        const active = (challenges || []).filter(c => c.status === 'active');
+        const pending = (challenges || []).filter(c => c.status === 'pending');
+        const completed = (challenges || []).filter(c => c.status === 'completed');
+
+        if (active.length === 0 && pending.length === 0) {
+            if (emptyState) emptyState.style.display = 'block';
+            container.innerHTML = '';
+
+            // Check for completed challenges that need settlement
+            for (const ch of completed) {
+                // Already settled on server side
+            }
+            return;
+        }
+
+        if (emptyState) emptyState.style.display = 'none';
+
+        let html = '';
+
+        // Show pending invites (where I'm the opponent)
+        const myInvites = pending.filter(c => !c.is_challenger);
+        if (myInvites.length > 0) {
+            html += myInvites.map(ch => {
+                const typeInfo = PC_TYPE_INFO[ch.challenge_type] || {};
+                return `
+                <div class="card" style="border-left: 5px solid #10b981; margin-bottom: 10px;">
+                    <div class="card-body" style="max-height: none; padding: 16px; opacity: 1;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.15)); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                                ${typeInfo.emoji || '🤝'}
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                    <span style="font-weight: 600; color: var(--text-main); font-size: 0.95rem;">${typeInfo.label || 'Partner Challenge'}</span>
+                                    <span style="background: rgba(16,185,129,0.1); color: #10b981; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 600;">INVITE</span>
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                    from ${ch.partner_name} · ${ch.duration_days} days · ${ch.mode}
+                                </div>
+                                ${ch.coin_bet > 0 ? `<div style="font-size: 0.75rem; color: #fbbf24; font-weight: 600; margin-top: 2px;">🪙 ${ch.coin_bet.toLocaleString()} coin wager</div>` : ''}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button onclick="acceptPartnerChallenge('${ch.challenge_id}')" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">${ch.coin_bet > 0 ? '🪙 Accept (' + ch.coin_bet.toLocaleString() + ')' : 'Accept'}</button>
+                            <button onclick="declinePartnerChallenge('${ch.challenge_id}')" style="flex: 1; padding: 10px; background: #f1f5f9; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Decline</button>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        // Show my pending invites (where I'm the challenger, waiting for response)
+        const myPending = pending.filter(c => c.is_challenger);
+        html += myPending.map(ch => {
+            const typeInfo = PC_TYPE_INFO[ch.challenge_type] || {};
+            return `
+            <div class="card" onclick="openPartnerChallengeDetail('${ch.challenge_id}')" style="cursor: pointer; border-left: 5px solid #94a3b8; margin-bottom: 10px; opacity: 0.7;">
+                <div class="card-body" style="max-height: none; padding: 16px; opacity: 1;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(148,163,184,0.15); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                            ${typeInfo.emoji || '🤝'}
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--text-main); font-size: 0.95rem;">${typeInfo.label}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">Waiting for ${ch.partner_name} to accept...</div>
+                        </div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">⏳</div>
+                    </div>
+                </div>
+            </div>
+        `}).join('');
+
+        // Show active challenges
+        html += active.map(ch => {
+            const typeInfo = PC_TYPE_INFO[ch.challenge_type] || {};
+            const myPct = ch.duration_days > 0 ? Math.round((ch.my_days_completed / ch.duration_days) * 100) : 0;
+            const partnerPct = ch.duration_days > 0 ? Math.round((ch.partner_days_completed / ch.duration_days) * 100) : 0;
+            const winning = ch.my_days_completed > ch.partner_days_completed;
+            const losing = ch.my_days_completed < ch.partner_days_completed;
+            const statusIcon = winning ? '🟢' : losing ? '🔴' : '🟡';
+
+            return `
+            <div class="card" onclick="openPartnerChallengeDetail('${ch.challenge_id}')" style="cursor: pointer; border-left: 5px solid #10b981; margin-bottom: 10px;">
+                <div class="card-body" style="max-height: none; padding: 16px; opacity: 1;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.15)); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                            ${typeInfo.emoji || '🤝'}
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600; color: var(--text-main); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${typeInfo.label} vs ${ch.partner_name}
+                            </div>
+                            <div style="display: flex; gap: 12px; font-size: 0.8rem; color: var(--text-muted);">
+                                <span>⏱️ ${ch.days_remaining}d left</span>
+                                <span>${statusIcon} ${ch.my_days_completed} - ${ch.partner_days_completed}</span>
+                                ${ch.coin_bet > 0 ? `<span>🪙 ${ch.coin_bet.toLocaleString()}</span>` : ''}
+                            </div>
+                            <!-- Mini progress bars -->
+                            <div style="display: flex; gap: 4px; margin-top: 6px; height: 4px;">
+                                <div style="flex: 1; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                                    <div style="width: ${myPct}%; height: 100%; background: #10b981; border-radius: 2px;"></div>
+                                </div>
+                                <div style="flex: 1; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                                    <div style="width: ${partnerPct}%; height: 100%; background: #3b82f6; border-radius: 2px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `}).join('');
+
+        container.innerHTML = html;
+
+        // Check for any active challenges that have ended and need completion
+        for (const ch of active) {
+            if (ch.days_remaining <= 0) {
+                try {
+                    await window.supabaseClient.rpc('complete_partner_challenge', { p_challenge_id: ch.challenge_id });
+                    loadHomePartnerChallenges(); // Reload to show result
+                    return;
+                } catch (e) { console.warn('Auto-complete failed:', e); }
+            }
+        }
+
+    } catch (error) {
+        console.error('Error loading partner challenges:', error);
+    }
+}
+
+// Accept a partner challenge
+async function acceptPartnerChallenge(challengeId) {
+    try {
+        const { data: result, error } = await window.supabaseClient
+            .rpc('accept_partner_challenge', {
+                p_challenge_id: challengeId,
+                p_user_id: window.currentUser.id
+            });
+
+        if (error) throw error;
+        if (result?.error === 'insufficient_coins') {
+            alert('Not enough coins to accept this challenge!');
+            if (typeof openCoinShop === 'function') openCoinShop();
+            return;
+        }
+        if (result?.error) {
+            alert(result.message || 'Could not accept challenge');
+            return;
+        }
+
+        loadHomePartnerChallenges();
+        showToast('Challenge accepted! Game on!', 'success');
+
+    } catch (error) {
+        console.error('Error accepting partner challenge:', error);
+        alert('Failed to accept challenge');
+    }
+}
+
+// Decline a partner challenge
+async function declinePartnerChallenge(challengeId) {
+    if (!confirm('Decline this partner challenge?')) return;
+
+    try {
+        const { error } = await window.supabaseClient
+            .rpc('decline_partner_challenge', {
+                p_challenge_id: challengeId,
+                p_user_id: window.currentUser.id
+            });
+
+        if (error) throw error;
+        loadHomePartnerChallenges();
+        showToast('Challenge declined', 'info');
+
+    } catch (error) {
+        console.error('Error declining partner challenge:', error);
+        alert('Failed to decline challenge');
+    }
+}
+
+// Open detail view for a partner challenge
+async function openPartnerChallengeDetail(challengeId) {
+    currentPartnerChallengeId = challengeId;
+    const modal = document.getElementById('partner-challenge-detail-modal');
+    if (!modal) return;
+    modal.style.display = 'block';
+
+    try {
+        // Get challenge info
+        const { data: challenges } = await window.supabaseClient
+            .rpc('get_user_partner_challenges', { p_user_id: window.currentUser.id });
+
+        const ch = (challenges || []).find(c => c.challenge_id === challengeId);
+        if (!ch) { closePartnerChallengeDetail(); return; }
+
+        const typeInfo = PC_TYPE_INFO[ch.challenge_type] || {};
+
+        // Update header
+        document.getElementById('pc-detail-title').textContent = typeInfo.label + ' vs ' + ch.partner_name;
+        document.getElementById('pc-detail-type-emoji').textContent = typeInfo.emoji;
+        document.getElementById('pc-detail-type-label').textContent = typeInfo.label;
+        document.getElementById('pc-detail-mode-badge').textContent = ch.mode.toUpperCase();
+
+        if (ch.status === 'completed') {
+            const won = ch.winner_id === window.currentUser.id;
+            const draw = !ch.winner_id;
+            document.getElementById('pc-detail-days-left').textContent = draw ? 'Draw!' : (won ? 'You won!' : 'You lost');
+            document.getElementById('pc-detail-status-banner').style.background = won ? 'linear-gradient(135deg, #fbbf24, #f59e0b)' : draw ? 'linear-gradient(135deg, #6b7280, #4b5563)' : 'linear-gradient(135deg, #ef4444, #dc2626)';
+        } else if (ch.status === 'pending') {
+            document.getElementById('pc-detail-days-left').textContent = 'Waiting for ' + ch.partner_name + ' to accept...';
+        } else {
+            document.getElementById('pc-detail-days-left').textContent = ch.days_remaining + ' days remaining';
+        }
+
+        if (ch.coin_bet > 0) {
+            document.getElementById('pc-detail-bet-info').textContent = '🪙 ' + ch.coin_bet.toLocaleString() + ' coins each';
+        } else {
+            document.getElementById('pc-detail-bet-info').textContent = 'Free challenge';
+        }
+
+        // Update scores
+        document.getElementById('pc-detail-my-days').textContent = ch.my_days_completed;
+        document.getElementById('pc-detail-partner-days').textContent = ch.partner_days_completed;
+        document.getElementById('pc-detail-partner-name').textContent = ch.partner_name;
+
+        // Partner avatar
+        const partnerAvatar = document.getElementById('pc-detail-partner-avatar');
+        if (ch.partner_photo) {
+            partnerAvatar.innerHTML = `<img src="${ch.partner_photo}" style="width: 100%; height: 100%; object-fit: cover;">`;
+        } else {
+            partnerAvatar.textContent = (ch.partner_name || '?').charAt(0).toUpperCase();
+        }
+
+        // Progress bars
+        const myPct = ch.duration_days > 0 ? Math.round((ch.my_days_completed / ch.duration_days) * 100) : 0;
+        const partnerPct = ch.duration_days > 0 ? Math.round((ch.partner_days_completed / ch.duration_days) * 100) : 0;
+        document.getElementById('pc-detail-my-bar').style.width = myPct + '%';
+        document.getElementById('pc-detail-partner-bar').style.width = partnerPct + '%';
+        document.getElementById('pc-detail-my-pct').textContent = myPct + '%';
+        document.getElementById('pc-detail-partner-pct').textContent = partnerPct + '%';
+
+        // Load daily progress grid
+        const { data: progress } = await window.supabaseClient
+            .rpc('get_partner_challenge_progress', { p_challenge_id: challengeId });
+
+        renderPartnerChallengeGrid(ch, progress || []);
+
+        // Show/hide cancel button
+        const cancelBtn = document.getElementById('pc-detail-cancel-btn');
+        if (cancelBtn) {
+            cancelBtn.style.display = ch.status === 'completed' ? 'none' : 'inline';
+        }
+
+    } catch (error) {
+        console.error('Error loading partner challenge detail:', error);
+    }
+}
+
+function closePartnerChallengeDetail() {
+    const modal = document.getElementById('partner-challenge-detail-modal');
+    if (modal) modal.style.display = 'none';
+    currentPartnerChallengeId = null;
+}
+
+// Render day-by-day grid
+function renderPartnerChallengeGrid(challenge, progress) {
+    const grid = document.getElementById('pc-detail-grid');
+    if (!grid) return;
+
+    const start = new Date(challenge.start_date);
+    const end = new Date(challenge.end_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Build lookup maps
+    const myProgress = {};
+    const partnerProgress = {};
+    const partnerId = challenge.partner_id;
+
+    progress.forEach(p => {
+        if (p.user_id === window.currentUser.id) {
+            myProgress[p.day_date] = p;
+        } else {
+            partnerProgress[p.day_date] = p;
+        }
+    });
+
+    let html = '';
+    // Header row
+    ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(d => {
+        html += `<div style="text-align: center; font-size: 0.6rem; font-weight: 700; color: var(--text-muted); padding: 4px 0;">${d}</div>`;
+    });
+
+    // Pad start to correct day of week (Mon = 0)
+    const startDay = (start.getDay() + 6) % 7; // Convert Sun=0 to Mon=0
+    for (let i = 0; i < startDay; i++) {
+        html += '<div></div>';
+    }
+
+    // Each day cell
+    const current = new Date(start);
+    while (current <= end) {
+        const dateStr = current.toISOString().split('T')[0];
+        const isPast = current < today;
+        const isToday = current.getTime() === today.getTime();
+        const isFuture = current > today;
+
+        const myDay = myProgress[dateStr];
+        const partnerDay = partnerProgress[dateStr];
+        const myDone = myDay?.completed;
+        const partnerDone = partnerDay?.completed;
+
+        let cellBg = '#f1f5f9'; // future/default
+        let cellContent = current.getDate();
+        let topColor = 'transparent';
+        let bottomColor = 'transparent';
+
+        if (isPast || isToday) {
+            topColor = myDone ? '#10b981' : '#fee2e2';
+            bottomColor = partnerDone ? '#3b82f6' : '#fee2e2';
+        }
+
+        const todayBorder = isToday ? 'border: 2px solid #10b981;' : '';
+        const futureOpacity = isFuture ? 'opacity: 0.4;' : '';
+
+        html += `
+            <div style="aspect-ratio: 1; border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; ${todayBorder} ${futureOpacity}">
+                <div style="flex: 1; background: ${topColor}; display: flex; align-items: center; justify-content: center;">
+                    ${isPast || isToday ? (myDone ? '<span style="font-size: 0.55rem; color: white;">&#10003;</span>' : '<span style="font-size: 0.55rem; color: #ef4444;">&#10007;</span>') : ''}
+                </div>
+                <div style="position: absolute; font-size: 0.55rem; color: var(--text-muted); width: 100%; text-align: center; top: 50%; transform: translateY(-50%); pointer-events: none; font-weight: 600; display: none;">${cellContent}</div>
+                <div style="flex: 1; background: ${bottomColor}; display: flex; align-items: center; justify-content: center;">
+                    ${isPast || isToday ? (partnerDone ? '<span style="font-size: 0.55rem; color: white;">&#10003;</span>' : '<span style="font-size: 0.55rem; color: #ef4444;">&#10007;</span>') : ''}
+                </div>
+            </div>
+        `;
+
+        current.setDate(current.getDate() + 1);
+    }
+
+    grid.innerHTML = html;
+}
+
+// Cancel a partner challenge
+async function cancelPartnerChallenge() {
+    if (!currentPartnerChallengeId) return;
+    if (!confirm('Are you sure you want to cancel this partner challenge? Coins will be refunded.')) return;
+
+    try {
+        // Update status to cancelled and refund both players
+        const { data: ch } = await window.supabaseClient
+            .from('partner_challenges')
+            .select('challenger_id, opponent_id, coin_bet, status')
+            .eq('id', currentPartnerChallengeId)
+            .single();
+
+        if (ch && ch.coin_bet > 0) {
+            // Refund challenger
+            await window.supabaseClient.rpc('credit_coins', {
+                user_uuid: ch.challenger_id,
+                coin_amount: ch.coin_bet,
+                txn_type: 'refund',
+                txn_description: 'Partner challenge cancelled - refund'
+            });
+            // Refund opponent if they already paid (challenge was active)
+            if (ch.status === 'active') {
+                await window.supabaseClient.rpc('credit_coins', {
+                    user_uuid: ch.opponent_id,
+                    coin_amount: ch.coin_bet,
+                    txn_type: 'refund',
+                    txn_description: 'Partner challenge cancelled - refund'
+                });
+            }
+        }
+
+        await window.supabaseClient
+            .from('partner_challenges')
+            .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+            .eq('id', currentPartnerChallengeId);
+
+        closePartnerChallengeDetail();
+        loadHomePartnerChallenges();
+        showToast('Partner challenge cancelled. Coins refunded.', 'info');
+
+    } catch (error) {
+        console.error('Error cancelling partner challenge:', error);
+        alert('Failed to cancel challenge');
+    }
+}
+
+// ============================================================
+// AUTO-TRACKING: Check partner challenges after meal/workout saves
+// ============================================================
+
+// Called after a meal is logged
+async function checkPartnerChallengesForMeals() {
+    if (!window.currentUser) return;
+    const today = getLocalDateString ? getLocalDateString() : new Date().toISOString().split('T')[0];
+
+    try {
+        const { data: challenges } = await window.supabaseClient
+            .rpc('get_user_partner_challenges', { p_user_id: window.currentUser.id });
+
+        const activeMealChallenges = (challenges || []).filter(c =>
+            c.status === 'active' &&
+            (c.challenge_type === 'meal_streak' || c.challenge_type === 'calorie_target') &&
+            today >= c.start_date && today <= c.end_date
+        );
+
+        for (const ch of activeMealChallenges) {
+            if (ch.challenge_type === 'meal_streak') {
+                // Check if user has logged at least 1 meal today
+                const { data: meals } = await window.supabaseClient
+                    .from('meal_logs')
+                    .select('id')
+                    .eq('user_id', window.currentUser.id)
+                    .eq('meal_date', today)
+                    .limit(1);
+
+                if (meals && meals.length > 0) {
+                    await window.supabaseClient.rpc('record_partner_challenge_day', {
+                        p_challenge_id: ch.challenge_id,
+                        p_user_id: window.currentUser.id,
+                        p_day_date: today,
+                        p_completed: true,
+                        p_details: { meals_logged: meals.length }
+                    });
+                }
+            } else if (ch.challenge_type === 'calorie_target') {
+                // Check if within tolerance of calorie goal
+                const { data: nutrition } = await window.supabaseClient
+                    .from('daily_nutrition')
+                    .select('total_calories, calorie_goal')
+                    .eq('user_id', window.currentUser.id)
+                    .eq('nutrition_date', today)
+                    .maybeSingle();
+
+                if (nutrition && nutrition.calorie_goal > 0) {
+                    const tolerance = (ch.target_config?.tolerance_pct || 20) / 100;
+                    const lower = nutrition.calorie_goal * (1 - tolerance);
+                    const upper = nutrition.calorie_goal * (1 + tolerance);
+                    const withinTarget = nutrition.total_calories >= lower && nutrition.total_calories <= upper;
+
+                    await window.supabaseClient.rpc('record_partner_challenge_day', {
+                        p_challenge_id: ch.challenge_id,
+                        p_user_id: window.currentUser.id,
+                        p_day_date: today,
+                        p_completed: withinTarget,
+                        p_details: {
+                            calories: nutrition.total_calories,
+                            goal: nutrition.calorie_goal,
+                            within_target: withinTarget
+                        }
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error checking partner challenges for meals:', error);
+    }
+}
+
+// Called after a workout is saved
+async function checkPartnerChallengesForWorkouts() {
+    if (!window.currentUser) return;
+    const today = getLocalDateString ? getLocalDateString() : new Date().toISOString().split('T')[0];
+
+    try {
+        const { data: challenges } = await window.supabaseClient
+            .rpc('get_user_partner_challenges', { p_user_id: window.currentUser.id });
+
+        const activeWorkoutChallenges = (challenges || []).filter(c =>
+            c.status === 'active' &&
+            (c.challenge_type === 'workout_streak' || c.challenge_type === 'workout_program') &&
+            today >= c.start_date && today <= c.end_date
+        );
+
+        for (const ch of activeWorkoutChallenges) {
+            // Check if user has logged at least 1 workout today
+            const { data: workouts } = await window.supabaseClient
+                .from('workouts')
+                .select('id, exercise_name')
+                .eq('user_id', window.currentUser.id)
+                .eq('workout_date', today)
+                .eq('workout_type', 'history')
+                .limit(5);
+
+            if (workouts && workouts.length > 0) {
+                const workoutNames = [...new Set(workouts.map(w => w.exercise_name))].slice(0, 3);
+                await window.supabaseClient.rpc('record_partner_challenge_day', {
+                    p_challenge_id: ch.challenge_id,
+                    p_user_id: window.currentUser.id,
+                    p_day_date: today,
+                    p_completed: true,
+                    p_details: {
+                        workouts_completed: workouts.length,
+                        workout_names: workoutNames
+                    }
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error checking partner challenges for workouts:', error);
+    }
+}
+
 // Get time ago string
 function getTimeAgo(date) {
     const seconds = Math.floor((new Date() - date) / 1000);
@@ -52616,6 +53568,9 @@ async function saveMealLogWithType(mealData) {
         throw error;
     }
 
+    // Auto-track partner challenges for meals (fire and forget)
+    try { if (typeof checkPartnerChallengesForMeals === 'function') checkPartnerChallengesForMeals(); } catch(e) {}
+
     return data;
 }
 
@@ -53754,6 +54709,9 @@ async function saveMealLog(mealData) {
         console.error('Error saving meal log:', error);
         throw error;
     }
+
+    // Auto-track partner challenges for meals (fire and forget)
+    try { if (typeof checkPartnerChallengesForMeals === 'function') checkPartnerChallengesForMeals(); } catch(e) {}
 
     return data;
 }
