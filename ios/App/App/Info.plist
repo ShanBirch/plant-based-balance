@@ -49,5 +49,13 @@
 	<false/>
 	<key>UIStatusBarStyle</key>
 	<string>UIStatusBarStyleDarkContent</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Balance needs camera access to take meal photos, progress photos, and scan barcodes.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Balance needs microphone access for voice meal logging and recording custom exercises.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Balance reads your health data (steps, heart rate, sleep, workouts) to track your fitness progress and sync with your FitGotchi.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Balance saves your workout and activity data to Apple Health so all your apps stay in sync.</string>
 </dict>
 </plist>
