@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v16'; // v16: fix cache-first strategy causing stale content in native app
+const CACHE_NAME = 'pbb-app-v17'; // v17: force cache bust to fix stale content after updates not showing in Android WebView
 const MODEL_CACHE_NAME = 'pbb-models-v1'; // Separate long-lived cache for 3D models
 const ASSETS = [
   './dashboard.html',
