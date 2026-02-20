@@ -19714,12 +19714,8 @@ function viewWorkoutHistoryDetail(date) {
     <div style="padding: 0 20px 120px 20px; max-width: 500px; margin: 0 auto;">
 
         <!-- Header -->
-        <div style="display: flex; align-items: center; padding: 16px 0; gap: 12px; position: sticky; top: 0; background: var(--bg); z-index: 10;">
-            <div onclick="closeIntervalTimer()" style="cursor:pointer; width: 40px; height: 40px; display:flex; align-items:center; justify-content:center;">
-                <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:var(--text-main);"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.02 0-1.41a.996.996 0 00-1.41 0l-6.59 6.59a.996.996 0 000 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
-            </div>
-            <h2 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; flex: 1; text-align: center;">Interval Timer</h2>
-            <div style="width: 40px;"></div>
+        <div style="display: flex; align-items: center; justify-content: center; padding: calc(16px + env(safe-area-inset-top, 0px)) 0 16px 0; position: sticky; top: 0; background: var(--bg); z-index: 10;">
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; text-align: center;">Interval Timer</h2>
         </div>
 
         <!-- Setup Section (shown before timer starts) -->
@@ -20725,10 +20721,8 @@ function viewWorkoutHistoryDetail(date) {
     <!-- Challenge Leaderboard View -->
     <div id="challenge-leaderboard-modal" style="display: none; position: fixed; inset: 0; background: #f0f7ff; z-index: 10009; overflow-y: auto;">
         <!-- Header -->
-        <div style="background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;">
-            <button onclick="closeChallengeLeaderboard()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-main);">&larr;</button>
+        <div style="background: white; padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 15px 20px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;">
             <h3 id="challenge-leaderboard-title" style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Challenge</h3>
-            <div style="width: 24px;"></div>
         </div>
 
         <!-- Podium Section -->
@@ -33864,6 +33858,11 @@ function initializeMovementSwipeNavigation() {
     enableSwipeBackNavigation('view-insights', () => {
         closeInsightsView();
     });
+
+    // Interval Timer view
+    enableSwipeBackNavigation('view-interval-timer', () => {
+        closeIntervalTimer();
+    });
 }
 
 // Initialize swipe-back for Weekly Trends page (one-time setup)
@@ -42532,6 +42531,7 @@ async function openChallengeLeaderboard(challengeId) {
     if (!modal) return;
 
     modal.style.display = 'block';
+    pushNavigationState('challenge-leaderboard-modal', closeChallengeLeaderboard);
 
     try {
         // Get challenge details
@@ -44433,6 +44433,7 @@ function openIntervalTimer() {
     const view = document.getElementById('view-interval-timer');
     if (view) {
         view.style.display = 'block';
+        pushNavigationState('view-interval-timer', closeIntervalTimer);
         document.getElementById('interval-timer-setup').style.display = 'block';
         document.getElementById('interval-timer-active').style.display = 'none';
         document.getElementById('interval-timer-done').style.display = 'none';
@@ -45077,9 +45078,8 @@ updateCoachUI();
 </script>
 <!-- WORKOUT BUILDER VIEW -->
 <div id="view-workout-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:500; overflow-y:auto; padding-bottom: 100px;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center;">
         <div style="font-weight: 700; font-size: 1.2rem;">Build Workout</div>
-        <div onclick="switchAppTab('movement-tab')" style="cursor:pointer; color:var(--text-muted); font-weight:600;">Close</div>
     </div>
 
     <div style="padding: 20px;">
@@ -58877,12 +58877,8 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
 
 <!-- PROGRAM BUILDER VIEW - Build Your Own Multi-Week Workout Program -->
 <div id="view-program-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#f8fafc; z-index:100001; overflow-y:auto; padding-bottom: 120px;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
-        <button onclick="closeProgramBuilder()" style="width: 40px; height: 40px; border: none; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-main);"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        </button>
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center;">
         <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Build Your Program</div>
-        <div style="width: 40px;"></div>
     </div>
 
     <div style="padding: 20px;">
