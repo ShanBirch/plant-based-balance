@@ -24,7 +24,10 @@ END $$;
 -- Step 3: Add index for filtering by type
 CREATE INDEX IF NOT EXISTS idx_challenges_type ON public.challenges(challenge_type);
 
--- Step 4: Update get_user_challenges to return challenge_type
+-- Step 4: Drop existing function (return type is changing, so CREATE OR REPLACE won't work)
+DROP FUNCTION IF EXISTS get_user_challenges(UUID);
+
+-- Step 5: Recreate get_user_challenges with challenge_type in return table
 CREATE OR REPLACE FUNCTION get_user_challenges(user_uuid UUID)
 RETURNS TABLE(
   challenge_id UUID,
