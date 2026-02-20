@@ -5,15 +5,26 @@
 -- Run this in Supabase SQL Editor
 -- ============================================================
 
--- Add challenge_type column (defaults to 'xp' for existing challenges)
+-- Step 1: Add challenge_type column (defaults to 'xp' for existing challenges)
 ALTER TABLE public.challenges
-ADD COLUMN IF NOT EXISTS challenge_type TEXT NOT NULL DEFAULT 'xp'
-CHECK (challenge_type IN ('xp', 'workouts', 'volume', 'calories', 'steps', 'streak', 'sleep', 'water'));
+ADD COLUMN IF NOT EXISTS challenge_type TEXT NOT NULL DEFAULT 'xp';
 
--- Add index for filtering by type
+-- Step 2: Add named CHECK constraint separately (drop first if it exists to allow re-runs)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'challenges_challenge_type_check'
+  ) THEN
+    ALTER TABLE public.challenges
+    ADD CONSTRAINT challenges_challenge_type_check
+    CHECK (challenge_type IN ('xp', 'workouts', 'volume', 'calories', 'steps', 'streak', 'sleep', 'water'));
+  END IF;
+END $$;
+
+-- Step 3: Add index for filtering by type
 CREATE INDEX IF NOT EXISTS idx_challenges_type ON public.challenges(challenge_type);
 
--- Update get_user_challenges to return challenge_type
+-- Step 4: Update get_user_challenges to return challenge_type
 CREATE OR REPLACE FUNCTION get_user_challenges(user_uuid UUID)
 RETURNS TABLE(
   challenge_id UUID,
