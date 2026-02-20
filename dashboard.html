@@ -11605,13 +11605,13 @@ async function applyAppTheme(themeKey) {
         </div>
 
         <div id="home-challenges-container" style="margin: 20px 0 15px 0;">
-            <!-- Empty state: Start an Accountability Challenge card -->
-            <div id="home-challenges-empty" onclick="openCreateChallengeModal()" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);">
+            <!-- Empty state: Start a Challenge card -->
+            <div id="home-challenges-empty" onclick="openChallengeTypePicker()" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);">
                 <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
-                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.4rem;">🤝</div>
+                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.4rem;">🏆</div>
                     <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 700; font-size: 0.95rem; color: white; margin-bottom: 3px;">Start an Accountability Challenge</div>
-                        <div style="font-size: 0.78rem; color: rgba(255,255,255,0.7);">Invite a friend, earn 2x XP & win rare drops</div>
+                        <div style="font-weight: 700; font-size: 0.95rem; color: white; margin-bottom: 3px;">Start a Challenge</div>
+                        <div style="font-size: 0.78rem; color: rgba(255,255,255,0.7);">Challenge friends, pick a mode & win rare drops</div>
                     </div>
                     <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.5); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
                 </div>
@@ -20560,14 +20560,76 @@ function viewWorkoutHistoryDetail(date) {
         </div>
     </div>
 
+    <!-- Challenge Type Picker Modal -->
+    <div id="challenge-type-picker" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10009; align-items: center; justify-content: center; backdrop-filter: blur(6px);">
+        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 24px; max-width: 420px; width: 92%; max-height: 85vh; display: flex; flex-direction: column; animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(124,58,237,0.15);">
+            <!-- Header -->
+            <div style="text-align: center; padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;">
+                <h3 style="margin: 0 0 4px; font-size: 1.3rem; font-weight: 800; color: #c084fc; text-shadow: 0 0 20px rgba(192,132,252,0.3);">🏆 Choose Challenge</h3>
+                <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.6);">Pick a mode, invite friends & bet coins</p>
+            </div>
+            <!-- Type Grid -->
+            <div style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div onclick="selectChallengeType('xp')" class="challenge-type-card" style="cursor: pointer; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3); border-radius: 16px; padding: 16px; text-align: center; transition: all 0.2s;">
+                        <div style="font-size: 1.8rem; margin-bottom: 6px;">⚡</div>
+                        <div style="font-weight: 700; color: white; font-size: 0.88rem; margin-bottom: 3px;">Level Up</div>
+                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.5);">Most XP earned wins</div>
+                    </div>
+                    <div onclick="selectChallengeType('workouts')" class="challenge-type-card" style="cursor: pointer; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: 16px; padding: 16px; text-align: center; transition: all 0.2s;">
+                        <div style="font-size: 1.8rem; margin-bottom: 6px;">💪</div>
+                        <div style="font-weight: 700; color: white; font-size: 0.88rem; margin-bottom: 3px;">Workout</div>
+                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.5);">Most workouts logged</div>
+                    </div>
+                    <div onclick="selectChallengeType('volume')" class="challenge-type-card" style="cursor: pointer; background: rgba(251,146,60,0.15); border: 1px solid rgba(251,146,60,0.3); border-radius: 16px; padding: 16px; text-align: center; transition: all 0.2s;">
+                        <div style="font-size: 1.8rem; margin-bottom: 6px;">🏋️</div>
+                        <div style="font-weight: 700; color: white; font-size: 0.88rem; margin-bottom: 3px;">Volume</div>
+                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.5);">Most total kg lifted</div>
+                    </div>
+                    <div onclick="selectChallengeType('calories')" class="challenge-type-card" style="cursor: pointer; background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.3); border-radius: 16px; padding: 16px; text-align: center; transition: all 0.2s;">
+                        <div style="font-size: 1.8rem; margin-bottom: 6px;">🍎</div>
+                        <div style="font-weight: 700; color: white; font-size: 0.88rem; margin-bottom: 3px;">Calories</div>
+                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.5);">Most days hitting goal</div>
+                    </div>
+                    <div onclick="selectChallengeType('steps')" class="challenge-type-card" style="cursor: pointer; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); border-radius: 16px; padding: 16px; text-align: center; transition: all 0.2s;">
+                        <div style="font-size: 1.8rem; margin-bottom: 6px;">👟</div>
+                        <div style="font-weight: 700; color: white; font-size: 0.88rem; margin-bottom: 3px;">Steps</div>
+                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.5);">Most total steps</div>
+                    </div>
+                    <div onclick="selectChallengeType('streak')" class="challenge-type-card" style="cursor: pointer; background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); border-radius: 16px; padding: 16px; text-align: center; transition: all 0.2s;">
+                        <div style="font-size: 1.8rem; margin-bottom: 6px;">🔥</div>
+                        <div style="font-weight: 700; color: white; font-size: 0.88rem; margin-bottom: 3px;">Streak</div>
+                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.5);">Longest streak kept</div>
+                    </div>
+                    <div onclick="selectChallengeType('sleep')" class="challenge-type-card" style="cursor: pointer; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); border-radius: 16px; padding: 16px; text-align: center; transition: all 0.2s;">
+                        <div style="font-size: 1.8rem; margin-bottom: 6px;">😴</div>
+                        <div style="font-weight: 700; color: white; font-size: 0.88rem; margin-bottom: 3px;">Sleep</div>
+                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.5);">Most hours slept</div>
+                    </div>
+                    <div onclick="selectChallengeType('water')" class="challenge-type-card" style="cursor: pointer; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); border-radius: 16px; padding: 16px; text-align: center; transition: all 0.2s;">
+                        <div style="font-size: 1.8rem; margin-bottom: 6px;">💧</div>
+                        <div style="font-weight: 700; color: white; font-size: 0.88rem; margin-bottom: 3px;">Water</div>
+                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.5);">Most days hitting goal</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div style="padding: 12px 16px 16px; border-top: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;">
+                <button onclick="closeChallengeTypePicker()" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; background: transparent; color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 600; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Create Challenge Modal -->
     <div id="create-challenge-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10009; align-items: center; justify-content: center; backdrop-filter: blur(6px);">
         <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 24px; max-width: 420px; width: 92%; max-height: 85vh; display: flex; flex-direction: column; animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(59,130,246,0.15);">
             <!-- Header -->
             <div style="text-align: center; padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;">
                 <h3 style="margin: 0 0 4px; font-size: 1.3rem; font-weight: 800; color: #60a5fa; text-shadow: 0 0 20px rgba(96,165,250,0.3);">🏆 Create Challenge</h3>
-                <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.6);">30-day XP battle with friends</p>
+                <p id="create-challenge-subtitle" style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.6);">30-day XP battle with friends</p>
+                <div id="create-challenge-type-badge" style="display: none; margin-top: 8px;"><span style="display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; background: rgba(124,58,237,0.3); color: #c084fc;"></span></div>
             </div>
+            <input type="hidden" id="challenge-type-input" value="xp">
             <!-- Content -->
             <div style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
                 <!-- Featured Rare Preview (shown when opening from featured card) -->
@@ -41776,10 +41838,12 @@ async function loadHomeChallenges() {
         }
 
         // Show pending challenges (waiting for friends to join)
-        html += pendingChallenges.slice(0, 3).map(challenge => `
+        html += pendingChallenges.slice(0, 3).map(challenge => {
+            const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
+            return `
             <div onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(245,158,11,0.2); background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%); margin-bottom: 12px;">
                 <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
-                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.25); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.3rem;">⏳</div>
+                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.25); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.3rem;">${cType.emoji}</div>
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
                             <span style="font-weight: 700; color: white; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${challenge.challenge_name}</span>
@@ -41792,18 +41856,21 @@ async function loadHomeChallenges() {
                     <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.5); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
 
         // Show active challenges
-        html += activeChallenges.slice(0, 3).map(challenge => `
+        html += activeChallenges.slice(0, 3).map(challenge => {
+            const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
+            return `
             <div onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); margin-bottom: 12px;">
                 <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
-                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.2rem; font-weight: 800; color: white;">
-                        #${challenge.user_rank}
+                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.3rem;">
+                        ${cType.emoji}
                     </div>
                     <div style="flex: 1; min-width: 0;">
                         <div style="font-weight: 700; color: white; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${challenge.challenge_name}</div>
                         <div style="display: flex; gap: 12px; font-size: 0.78rem; color: rgba(255,255,255,0.7);">
+                            <span>#${challenge.user_rank}</span>
                             <span>⏱️ ${challenge.days_remaining}d left</span>
                             <span>👥 ${challenge.participant_count}</span>
                         </div>
@@ -41814,7 +41881,7 @@ async function loadHomeChallenges() {
                     </div>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
 
         container.innerHTML = html;
 
@@ -41898,6 +41965,36 @@ async function loadChallenges() {
     }
 }
 
+// Challenge type definitions
+const CHALLENGE_TYPES = {
+    xp:       { emoji: '⚡', name: 'Level Up',  desc: 'Most XP earned', subtitle: '30-day XP battle with friends', color: '#c084fc' },
+    workouts: { emoji: '💪', name: 'Workout',   desc: 'Most workouts logged', subtitle: '30-day workout challenge', color: '#ef4444' },
+    volume:   { emoji: '🏋️', name: 'Volume',    desc: 'Most total kg lifted', subtitle: '30-day volume challenge', color: '#fb923c' },
+    calories: { emoji: '🍎', name: 'Calories',  desc: 'Most days hitting calorie goal', subtitle: '30-day calorie challenge', color: '#4ade80' },
+    steps:    { emoji: '👟', name: 'Steps',     desc: 'Most total steps', subtitle: '30-day step challenge', color: '#3b82f6' },
+    streak:   { emoji: '🔥', name: 'Streak',    desc: 'Longest streak kept', subtitle: '30-day streak challenge', color: '#fbbf24' },
+    sleep:    { emoji: '😴', name: 'Sleep',     desc: 'Most hours slept', subtitle: '30-day sleep challenge', color: '#818cf8' },
+    water:    { emoji: '💧', name: 'Water',     desc: 'Most days hitting water goal', subtitle: '30-day hydration challenge', color: '#0ea5e9' }
+};
+
+let selectedChallengeType = 'xp';
+
+function openChallengeTypePicker() {
+    const picker = document.getElementById('challenge-type-picker');
+    if (picker) picker.style.display = 'flex';
+}
+
+function closeChallengeTypePicker() {
+    const picker = document.getElementById('challenge-type-picker');
+    if (picker) picker.style.display = 'none';
+}
+
+function selectChallengeType(type) {
+    selectedChallengeType = type;
+    closeChallengeTypePicker();
+    openCreateChallengeModal();
+}
+
 // Open create challenge modal (optionally with a featured rare)
 function openCreateChallengeModal(featuredRareId = null) {
     const modal = document.getElementById('create-challenge-modal');
@@ -41945,7 +42042,8 @@ function openCreateChallengeModal(featuredRareId = null) {
             }
         }
     } else {
-        // Generic challenge mode
+        // Generic challenge mode — use selected challenge type
+        const typeInfo = CHALLENGE_TYPES[selectedChallengeType] || CHALLENGE_TYPES.xp;
         if (rarePreview) rarePreview.style.display = 'none';
         if (randomDropInfo) randomDropInfo.style.display = 'block';
         if (wagerSection) wagerSection.style.display = 'block';
@@ -41953,11 +42051,27 @@ function openCreateChallengeModal(featuredRareId = null) {
         createChallengeBetAmount = 1000;
         const feeDisplay = document.getElementById('create-challenge-fee-display');
         if (feeDisplay) feeDisplay.textContent = '10,000 Coins entry fee';
-        // Reset header
+        // Update header with type info
         if (headerTitle) {
-            headerTitle.innerHTML = '🏆 Create Challenge';
-            headerTitle.style.color = '#60a5fa';
+            headerTitle.innerHTML = `${typeInfo.emoji} ${typeInfo.name} Challenge`;
+            headerTitle.style.color = typeInfo.color;
         }
+        const subtitle = document.getElementById('create-challenge-subtitle');
+        if (subtitle) subtitle.textContent = typeInfo.subtitle;
+        // Show type badge
+        const typeBadge = document.getElementById('create-challenge-type-badge');
+        if (typeBadge) {
+            typeBadge.style.display = '';
+            const badgeSpan = typeBadge.querySelector('span');
+            if (badgeSpan) {
+                badgeSpan.textContent = typeInfo.desc.toUpperCase();
+                badgeSpan.style.background = `${typeInfo.color}33`;
+                badgeSpan.style.color = typeInfo.color;
+            }
+        }
+        // Set hidden input
+        const typeInput = document.getElementById('challenge-type-input');
+        if (typeInput) typeInput.value = selectedChallengeType;
         // Reset wager buttons
         document.querySelectorAll('.create-challenge-bet-btn').forEach((b, i) => {
             if (i === 0) {
@@ -42156,6 +42270,7 @@ async function createChallenge() {
         }
 
         // Create challenge (with entry_fee so accepters know the amount)
+        const challengeType = document.getElementById('challenge-type-input')?.value || selectedChallengeType || 'xp';
         const challengeInsert = {
             name: name,
             creator_id: window.currentUser.id,
@@ -42163,7 +42278,8 @@ async function createChallenge() {
             end_date: end.toISOString().split('T')[0],
             duration_days: duration,
             status: 'pending',
-            entry_fee: betAmount
+            entry_fee: betAmount,
+            challenge_type: challengeType
         };
         if (rareRewardId) challengeInsert.rare_reward_id = rareRewardId;
 
@@ -42214,10 +42330,11 @@ async function createChallenge() {
 
         // Send nudge notification to each invited friend
         const creatorName = window.currentUser?.user_metadata?.name || window.currentUser?.email || 'Someone';
+        const typeLabel = (CHALLENGE_TYPES[challengeType] || CHALLENGE_TYPES.xp).name;
         const rareInfo = rareRewardId ? RARE_COLLECTION.find(r => r.id === rareRewardId) : null;
         const nudgeMessage = rareInfo
-            ? `⚔️ CHALLENGE! ${creatorName} challenged you to "${name}" — win ${rareInfo.emoji} ${rareInfo.name}! 🪙 ${betAmount.toLocaleString()} entry`
-            : `⚔️ CHALLENGE! ${creatorName} challenged you to "${name}"! 🪙 ${betAmount.toLocaleString()} entry`;
+            ? `⚔️ ${typeLabel.toUpperCase()} CHALLENGE! ${creatorName} challenged you to "${name}" — win ${rareInfo.emoji} ${rareInfo.name}! 🪙 ${betAmount.toLocaleString()} entry`
+            : `⚔️ ${typeLabel.toUpperCase()} CHALLENGE! ${creatorName} challenged you to "${name}"! 🪙 ${betAmount.toLocaleString()} entry`;
 
         for (const friendId of friendIds) {
             try {
