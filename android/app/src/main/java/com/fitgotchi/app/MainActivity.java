@@ -572,7 +572,7 @@ public class MainActivity extends BridgeActivity {
             WebView wv = getBridge().getWebView();
             if (wv != null) {
                 runOnUiThread(() -> wv.evaluateJavascript(
-                    "if(typeof switchAppTab==='function'){switchAppTab('meals');setTimeout(function(){switchWeek('calorie-tracker')},200)}",
+                    "if(typeof openMealCameraDirect==='function'){openMealCameraDirect('shortcut')}",
                     null));
             }
         }
