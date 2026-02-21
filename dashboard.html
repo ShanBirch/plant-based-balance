@@ -27616,13 +27616,37 @@ function startFitgotchiStory(onComplete) {
     // ---- MAIN STORY SEQUENCE (tap messages + action demos) ----
     function runStorySequence() {
         const sequence = [
-            { type: 'msg', text: "This isn't just a fitness app — it's a <strong>game</strong> designed to help you become the fittest version of yourself." },
-            { type: 'msg', text: "Track your <strong>calories</strong> just by snapping a photo. The AI does the rest — protein, carbs, fats. Instantly." },
+            // Section 1 — The Hook
+            { type: 'msg', text: "This isn't just a fitness app" },
+            { type: 'msg', text: "This is fitness, <strong>gamified</strong>" },
+            { type: 'msg', text: "We're hacking your reward system" },
+            { type: 'msg', text: "With numbers and colours... and challenges with friends" },
+            { type: 'msg', text: "To ultimately change your behaviour and help you become the <strong>fittest, healthiest</strong> version of yourself." },
+            // Section 2 — The AI Pitch
+            { type: 'msg', text: "This is something new" },
+            { type: 'msg', text: "An AI that collects your <strong>personal data</strong>" },
+            { type: 'msg', text: "Analyses it" },
+            { type: 'msg', text: "And finds patterns that humans might not notice" },
+            { type: 'msg', text: "<strong>Your Personal Fitness Expert.</strong>" },
+            // Section 3 — The Data
+            { type: 'msg', text: "Some of the data we can collect: <strong>HR, Sleep, Steps, Strength Progression, Macros, Micros, Body Fat%, Meal Timing, Health IQ, Weather Patterns, Cycle Patterns, Lunar &amp; Solar Phases</strong>" },
+            { type: 'msg', text: "We can <strong>correlate</strong> information about your specific lifestyle — like the fact that <strong>higher Health IQ leads to 35% better consistency</strong>. Connections you'd never spot yourself." },
+            // Section 4 — Concrete Examples
+            { type: 'msg', text: "<strong>You're strongest on Tuesdays. You sleep best after yoga. Your protein dips every weekend.</strong>" },
+            { type: 'msg', text: "Imagine knowing exactly <strong>why</strong> last week worked and this week didn't. That's what I do. The more you track, the <strong>sharper</strong> I get." },
+            // Section 5 — The Future
+            { type: 'msg', text: "As AI evolves" },
+            { type: 'msg', text: "This app will evolve with it" },
+            { type: 'msg', text: "The more data you collect from today onwards" },
+            { type: 'msg', text: "The more opportunity you have to <strong>thrive</strong>" },
+            { type: 'msg', text: "<strong>Mind. Body. Spirit.</strong>" },
+            // Section 6 — Calorie Tracking
+            { type: 'msg', text: "Track your <strong>calories</strong> just by snapping a photo. The AI does the rest — <strong>macros and micros</strong>. Instantly." },
+            // Section 7 — Workouts & Social
             { type: 'msg', text: "Log your <strong>workouts</strong> and complete <strong>quizzes</strong> to earn XP and <strong>level up</strong> your Fitgotchi." },
             { type: 'msg', text: "Invite your mates and <strong>challenge each other</strong> — or even battle Fitgotchis..." },
             { type: 'action', run: runBattleDemo },
-            { type: 'msg', text: "This is something new — <strong>AI that's actually targeted at your health</strong>. I don't just count calories. I learn your habits, spot patterns you'd never see, and tell you exactly what's working." },
-            { type: 'msg', text: "<strong>\"Weeks you trained 4+ days, you lost weight 40% faster.\"</strong> Real insights from your data. This is the future of health and fitness — and you're getting in early." },
+            // Section 8 — Fitgotchi Reveal
             { type: 'msg', text: "I'm the rarest find... but there's others to unlock too 👀" },
             { type: 'action', run: runRareShowcase },
             { type: 'msg', text: "Ready to start? Let's set you up! 🚀" }
