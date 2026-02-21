@@ -23629,9 +23629,8 @@ try {
     if (window.NativePermissions && typeof window.NativePermissions.getPendingShortcutAction === 'function') {
         var _shortcutAction = window.NativePermissions.getPendingShortcutAction();
         if (_shortcutAction === 'calorie-tracker') {
-            console.log('App shortcut: navigating to calorie tracker');
-            switchAppTab('meals');
-            setTimeout(function() { switchWeek('calorie-tracker'); }, 200);
+            console.log('App shortcut: opening calorie tracker camera');
+            setTimeout(function() { openMealCameraDirect('shortcut'); }, 300);
         }
     }
 } catch(e) { console.warn('Shortcut check failed:', e); }
