@@ -39164,6 +39164,120 @@ function openAsClient() {
     background: rgba(4,106,56,0.15) !important;
 }
 
+/* ---- LI / BUTTON / LABEL ELEMENT OVERRIDES ---- */
+/* The selectors above target div elements, but many slides use li, button, and label elements */
+
+/* White backgrounds on li elements → dark glass */
+#onboarding-wizard .wizard-slide li[style*="background:white"],
+#onboarding-wizard .wizard-slide li[style*="background: white"] {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Green gradient backgrounds on li → dark green */
+#onboarding-wizard .wizard-slide li[style*="background:linear-gradient(135deg, #f0fdf4"],
+#onboarding-wizard .wizard-slide li[style*="background: linear-gradient(135deg, #f0fdf4"] {
+    background: linear-gradient(135deg, rgba(4,106,56,0.2), rgba(4,106,56,0.1)) !important;
+}
+
+/* Indigo gradient backgrounds on li → dark indigo */
+#onboarding-wizard .wizard-slide li[style*="background:linear-gradient(135deg, #e0e7ff"],
+#onboarding-wizard .wizard-slide li[style*="background: linear-gradient(135deg, #e0e7ff"] {
+    background: linear-gradient(135deg, rgba(67,56,202,0.2), rgba(67,56,202,0.1)) !important;
+}
+
+/* Yellow gradient backgrounds on li → dark amber */
+#onboarding-wizard .wizard-slide li[style*="background:linear-gradient(135deg, #fef3c7"],
+#onboarding-wizard .wizard-slide li[style*="background: linear-gradient(135deg, #fef3c7"] {
+    background: linear-gradient(135deg, rgba(180,83,9,0.2), rgba(180,83,9,0.1)) !important;
+}
+
+/* Pink gradient backgrounds on li → dark pink */
+#onboarding-wizard .wizard-slide li[style*="background:linear-gradient(135deg, #fce7f3"],
+#onboarding-wizard .wizard-slide li[style*="background: linear-gradient(135deg, #fce7f3"] {
+    background: linear-gradient(135deg, rgba(190,24,93,0.2), rgba(190,24,93,0.1)) !important;
+}
+
+/* Border overrides on li elements */
+#onboarding-wizard .wizard-slide li[style*="border:1px solid #bbf7d0"] {
+    border-color: rgba(4,106,56,0.3) !important;
+}
+#onboarding-wizard .wizard-slide li[style*="border:1px solid #a5b4fc"] {
+    border-color: rgba(67,56,202,0.3) !important;
+}
+#onboarding-wizard .wizard-slide li[style*="border:1px solid #fcd34d"] {
+    border-color: rgba(180,83,9,0.3) !important;
+}
+#onboarding-wizard .wizard-slide li[style*="border:1px solid #f9a8d4"] {
+    border-color: rgba(190,24,93,0.3) !important;
+}
+#onboarding-wizard .wizard-slide li[style*="border:1px solid #eee"],
+#onboarding-wizard .wizard-slide li[style*="border: 1px solid #eee"] {
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Ensure all text inside wizard list items is readable */
+#onboarding-wizard .wizard-slide li {
+    color: rgba(255,255,255,0.9) !important;
+}
+#onboarding-wizard .wizard-slide li strong {
+    color: white !important;
+}
+
+/* Button background:#fff overrides (freq/day/split buttons on slides 4-5) */
+#onboarding-wizard .wizard-slide button[style*="background:#fff"],
+#onboarding-wizard .wizard-slide button[style*="background: #fff"] {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.15) !important;
+}
+
+/* Button text color overrides */
+#onboarding-wizard .wizard-slide button[style*="color:#1a4d2e"] {
+    color: rgba(255,255,255,0.9) !important;
+}
+#onboarding-wizard .wizard-slide button[style*="color:#334155"] {
+    color: rgba(255,255,255,0.9) !important;
+}
+#onboarding-wizard .wizard-slide button[style*="color:#0c4a6e"] {
+    color: #7dd3fc !important;
+}
+
+/* Glass size button active state (background:#e0f2fe) → dark blue */
+#onboarding-wizard .wizard-slide button[style*="background:#e0f2fe"],
+#onboarding-wizard .wizard-slide button[style*="background: #e0f2fe"] {
+    background: rgba(14,116,144,0.2) !important;
+}
+#onboarding-wizard .wizard-slide button[style*="border:2px solid #0284c7"] {
+    border-color: rgba(14,116,144,0.4) !important;
+}
+#onboarding-wizard .wizard-slide button[style*="color:#0284c7"] {
+    color: #38bdf8 !important;
+}
+
+/* Label background overrides (cycle sync radio labels on slide 3) */
+#onboarding-wizard .wizard-slide label[style*="background:white"],
+#onboarding-wizard .wizard-slide label[style*="background: white"] {
+    background: rgba(255,255,255,0.06) !important;
+}
+#onboarding-wizard .wizard-slide label[style*="border:1px solid #e2e8f0"],
+#onboarding-wizard .wizard-slide label[style*="border: 1px solid #e2e8f0"] {
+    border-color: rgba(255,255,255,0.12) !important;
+}
+
+/* Paragraph text color:#334155 override (slide 20 instructions) */
+#onboarding-wizard .wizard-slide p[style*="color:#334155"],
+#onboarding-wizard .wizard-slide p[style*="color: #334155"] {
+    color: rgba(255,255,255,0.9) !important;
+}
+
+/* Blue gradient backgrounds on div (slide 9 hydration) — ensure coverage */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #e0f2fe"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #e0f2fe"] {
+    background: linear-gradient(135deg, rgba(14,116,144,0.2), rgba(14,116,144,0.1)) !important;
+}
+
+/* ---- END LI / BUTTON / LABEL OVERRIDES ---- */
+
 /* DBZ Theme Decorations */
 #dbz-decorations {
     display: none;
