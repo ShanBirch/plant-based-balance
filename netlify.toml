@@ -268,6 +268,25 @@
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 
+# Cache lib/ JS files for 1 day — they use ?v= query params for cache busting
+# This lets the Android WebView and browser serve them from HTTP cache on repeat visits
+[[headers]]
+  for = "/lib/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+# Cache assets (images, models, audio) for 7 days — content rarely changes
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, stale-while-revalidate=2592000"
+
+# Cache external JS files that are bundled locally
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, stale-while-revalidate=86400"
+
 # Ensure we redirect legacy URLs
 [[redirects]]
   from = "/quiz"

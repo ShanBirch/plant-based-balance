@@ -17,7 +17,14 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link rel="preconnect" href="https://f005.backblazeb2.com" crossorigin/>
 <link rel="dns-prefetch" href="https://f005.backblazeb2.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<!-- Preconnect to CDNs used for scripts -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
+<link rel="preconnect" href="https://ajax.googleapis.com" crossorigin/>
+<!-- Primary font: Inter is critical for UI, keep blocking but use display=swap for fast text render -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Playfair Display: secondary decorative font, load non-blocking -->
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
+<noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/></noscript>
 <link href="manifest.json" rel="manifest"/>
 <link rel="apple-touch-icon" href="assets/Logo_dots.jpg">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
@@ -109,6 +116,24 @@
 })();
 </script>
 
+<!-- CRITICAL: Early profile cache restore — populate profile fields instantly from localStorage
+     so returning users see their name, stats and profile icon without waiting for network -->
+<script>
+(function() {
+    if (localStorage.getItem('dashboardInitialized') !== 'true') return;
+    try {
+        var p = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        // Cache profile data globally so DOMContentLoaded handlers can use it immediately
+        window._cachedProfileData = p;
+        // Cache the user's first initial for the profile icon (set in body once DOM is ready)
+        var name = p.name || p.full_name;
+        if (name) {
+            window._cachedProfileInitial = name.charAt(0).toUpperCase();
+        }
+    } catch(e) {}
+})();
+</script>
+
 <!-- CRITICAL: Early theme application to prevent flash of default theme -->
 <script>
 (function() {
@@ -144,10 +169,11 @@
 })();
 </script>
 
-<!-- Supabase & Auth Guard -->
+<!-- Supabase & Auth Guard (critical path - must be synchronous) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://js.stripe.com/v3/"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<!-- Stripe & html2canvas: deferred - only needed for checkout/screenshots, not initial render -->
+<script src="https://js.stripe.com/v3/" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
 <script src="lib/supabase.js?v=3"></script>
 <script>
 // ── Native OAuth warm-start callback ──────────────────────────────
@@ -178,15 +204,17 @@ window._handleOAuthCallback = async function(fragment) {
 };
 </script>
 <script src="lib/auth-guard.js?v=3"></script>
-<script src="lib/migrate-localstorage.js"></script>
-<script src="lib/stories.js"></script>
-<script src="lib/ai-opponents.js"></script>
-<script src="lib/games.js"></script>
-<script src="lib/nutrition-calculator.js"></script>
-<script src="lib/native-health.js"></script>
-<script src="lib/native-push.js"></script>
+<!-- Critical-path scripts: platform detection needed early -->
 <script src="lib/platform.js"></script>
-<script src="lib/native-iap.js"></script>
+<script src="lib/nutrition-calculator.js" defer></script>
+<!-- Deferred scripts: not needed for initial render, load after HTML parsing -->
+<script src="lib/migrate-localstorage.js" defer></script>
+<script src="lib/stories.js" defer></script>
+<script src="lib/ai-opponents.js" defer></script>
+<script src="lib/games.js" defer></script>
+<script src="lib/native-health.js" defer></script>
+<script src="lib/native-push.js" defer></script>
+<script src="lib/native-iap.js" defer></script>
 <!-- 2D SVG Avatar system (reserved for future use) -->
 <!-- <script src="lib/avatar.js"></script> -->
 <!-- <link rel="stylesheet" href="lib/avatar.css"> -->
@@ -198,9 +226,11 @@ if (!window._fitgotchiCachedModel) {
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>');
 }
 </script>
-<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>
+<!-- Defer non-critical preloads: arny.glb only needed when user views that character -->
 <link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" as="image" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
+<!-- Non-blocking font load: Outfit is secondary, load without blocking render -->
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet"></noscript>
 
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script>
@@ -11343,6 +11373,42 @@ async function applyAppTheme(themeKey) {
                 </div>
             </div>
         </div>
+        <!-- Instant nutrition cache restore for returning users -->
+        <script>
+        (function() {
+            if (localStorage.getItem('dashboardInitialized') !== 'true') return;
+            try {
+                var n = JSON.parse(localStorage.getItem('pbb_cached_nutrition') || 'null');
+                if (!n) return;
+                // Only restore if cached today (stale data from yesterday isn't useful for progress)
+                if (n.cached_date === new Date().toDateString()) {
+                    var set = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+                    set('widget-calories-goal', n.calorie_goal);
+                    set('widget-protein-goal', n.protein_goal_g);
+                    set('widget-carbs-goal', n.carbs_goal_g);
+                    set('widget-fat-goal', n.fat_goal_g);
+                    set('widget-calories-current', n.total_calories);
+                    set('widget-protein', n.total_protein_g);
+                    set('widget-carbs', n.total_carbs_g);
+                    set('widget-fat', n.total_fat_g);
+                    // Restore progress bars
+                    var bar = function(id, v, max) { var el = document.getElementById(id); if (el) el.style.width = Math.min(100, Math.round(v/max*100)) + '%'; };
+                    bar('widget-calories-bar', n.total_calories, n.calorie_goal);
+                    bar('widget-protein-bar', n.total_protein_g, n.protein_goal_g);
+                    bar('widget-carbs-bar', n.total_carbs_g, n.carbs_goal_g);
+                    bar('widget-fat-bar', n.total_fat_g, n.fat_goal_g);
+                }
+                // Always restore goals even from older cache
+                else if (n.calorie_goal) {
+                    var set = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+                    set('widget-calories-goal', n.calorie_goal);
+                    set('widget-protein-goal', n.protein_goal_g);
+                    set('widget-carbs-goal', n.carbs_goal_g);
+                    set('widget-fat-goal', n.fat_goal_g);
+                }
+            } catch(e) {}
+        })();
+        </script>
 
         <!-- Avatar Companion Widget - Disabled for now -->
 
@@ -21707,6 +21773,49 @@ function viewWorkoutHistoryDetail(date) {
                 <div id="profile-goal-display" style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Fat Loss</div>
             </div>
         </div>
+        <!-- Instant profile restore from localStorage cache for returning users -->
+        <script>
+        (function() {
+            var p = window._cachedProfileData;
+            if (!p) return;
+            var name = p.name || p.full_name;
+            if (name) {
+                var el = document.getElementById('profile-name-display');
+                if (el) el.textContent = name;
+                var initEl = document.getElementById('profile-default-initial');
+                if (initEl) initEl.textContent = name.charAt(0).toUpperCase();
+            }
+            if (p.email) {
+                var el = document.getElementById('profile-email-display');
+                if (el) el.textContent = p.email;
+            }
+            if (p.age) {
+                var el = document.getElementById('profile-age-display');
+                if (el) el.textContent = p.age;
+            }
+            if (p.weight) {
+                var el = document.getElementById('profile-weight-display');
+                var w = String(p.weight).toLowerCase();
+                if (el) el.textContent = (w.includes('k') || w.includes('l')) ? p.weight : p.weight + ' kg';
+            }
+            if (p.goal_weight || p.goal) {
+                var el = document.getElementById('profile-goal-display');
+                if (el) el.textContent = p.goal_weight || p.goal;
+            }
+            // Restore profile icon initials across all views
+            if (window._cachedProfileInitial) {
+                document.querySelectorAll('.profile-icon').forEach(function(icon) {
+                    icon.textContent = window._cachedProfileInitial;
+                });
+            }
+            // Restore profile photo from localStorage
+            var photo = localStorage.getItem('profile_photo');
+            if (photo) {
+                var img = document.getElementById('profile-photo-img');
+                if (img) { img.src = photo; img.style.opacity = '1'; }
+            }
+        })();
+        </script>
 
         <!-- Professional Protocol Settings -->
         <div class="settings-card" style="margin: 0 25px 25px 25px; background: white; border-radius: 16px; border: 1px solid #f1f5f9; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
@@ -22578,8 +22687,17 @@ function viewWorkoutHistoryDetail(date) {
 </div> <!-- End Main Container (Moved) -->
 
 <script>
-// Initialize Stripe for in-app purchases
-window.stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
+// Initialize Stripe for in-app purchases (lazy — Stripe.js is deferred for faster startup)
+if (typeof Stripe !== 'undefined') {
+    window.stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
+} else {
+    // Stripe.js hasn't loaded yet (deferred), init when it does
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof Stripe !== 'undefined' && !window.stripe) {
+            window.stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
+        }
+    });
+}
 
 // PWA & Navigation Logic
 document.addEventListener('DOMContentLoaded', () => {
@@ -59286,6 +59404,21 @@ function updateNutritionUI(dailyData, mealsData) {
 
     // Update daily nutrition score
     updateNutritionScoreUI(data);
+
+    // Cache nutrition goals in localStorage for instant restore on next launch
+    try {
+        localStorage.setItem('pbb_cached_nutrition', JSON.stringify({
+            calorie_goal: data.calorie_goal || 2000,
+            protein_goal_g: data.protein_goal_g || 50,
+            carbs_goal_g: data.carbs_goal_g || 250,
+            fat_goal_g: data.fat_goal_g || 70,
+            total_calories: Math.round(data.total_calories || 0),
+            total_protein_g: Math.round(data.total_protein_g || 0),
+            total_carbs_g: Math.round(data.total_carbs_g || 0),
+            total_fat_g: Math.round(data.total_fat_g || 0),
+            cached_date: new Date().toDateString()
+        }));
+    } catch(e) {}
 }
 
 // Helper function to update element text

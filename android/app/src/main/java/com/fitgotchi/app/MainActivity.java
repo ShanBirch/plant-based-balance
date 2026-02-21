@@ -151,6 +151,32 @@ public class MainActivity extends BridgeActivity {
         // Expose a JavaScript interface so the web page can request
         // Android runtime permissions before calling getUserMedia()
         webViewRef = getBridge().getWebView();
+
+        // ── WebView Performance Optimizations ─────────────────────────────
+        // These settings dramatically improve load times for the 3.2MB dashboard
+        android.webkit.WebSettings webSettings = webViewRef.getSettings();
+
+        // Enable DOM storage (localStorage/sessionStorage) — critical for cached state
+        webSettings.setDomStorageEnabled(true);
+
+        // Enable database storage for service worker Cache API
+        webSettings.setDatabaseEnabled(true);
+
+        // Cache mode: load from cache when available, reducing network round-trips
+        // LOAD_DEFAULT respects server cache-control headers but uses local cache when valid
+        webSettings.setCacheMode(android.webkit.WebSettings.LOAD_DEFAULT);
+
+        // Enable hardware acceleration for the WebView (smoother 3D model rendering)
+        webViewRef.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
+
+        // Optimize rendering: allow content to render before all resources are loaded
+        webSettings.setBlockNetworkImage(false);
+        webSettings.setLoadsImagesAutomatically(true);
+
+        // Enable wide viewport for proper responsive layout
+        webSettings.setLoadWithOverviewMode(true);
+        webSettings.setUseWideViewPort(true);
+
         webViewRef.addJavascriptInterface(new PermissionBridge(), "NativePermissions");
 
         // If the app was cold-started via an OAuth deep link, save the
