@@ -23624,6 +23624,18 @@ if (_switchAppTabQueue && _switchAppTabQueue.length > 0) {
     _switchAppTabQueue = [];
 }
 
+// Check for pending app shortcut action (long-press icon → Calorie Tracker)
+try {
+    if (window.NativePermissions && typeof window.NativePermissions.getPendingShortcutAction === 'function') {
+        var _shortcutAction = window.NativePermissions.getPendingShortcutAction();
+        if (_shortcutAction === 'calorie-tracker') {
+            console.log('App shortcut: navigating to calorie tracker');
+            switchAppTab('meals');
+            setTimeout(function() { switchWeek('calorie-tracker'); }, 200);
+        }
+    }
+} catch(e) { console.warn('Shortcut check failed:', e); }
+
 // --- CALENDAR & CYCLE LOGIC ---
 const PHASE_INFO = {
     menstrual: { name: 'Menstrual Phase', color: '#E57373', css: 'phase-menstrual', rec: 'Rest, Walking, Yin Yoga', icon: '🩸' },

@@ -4,4 +4,6 @@
     <string name="title_activity_main">Balance</string>
     <string name="package_name">com.fitgotchi.app</string>
     <string name="custom_url_scheme">com.fitgotchi.app</string>
+    <string name="shortcut_calorie_short">Calorie Tracker</string>
+    <string name="shortcut_calorie_long">Open Calorie Tracker</string>
 </resources>
