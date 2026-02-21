@@ -129,15 +129,20 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to get users who need meal reminders
+-- Uses each user's stored timezone to compare NOW() against their local meal times.
+-- The p_current_time parameter is kept for backward compatibility but is ignored;
+-- the function always derives the user's local time from NOW() + their timezone.
 CREATE OR REPLACE FUNCTION get_users_needing_meal_reminders(
   p_meal_type TEXT,
-  p_current_time TIME
+  p_current_time TIME DEFAULT NULL
 )
 RETURNS TABLE (
   user_id UUID,
   push_endpoint TEXT,
   push_p256dh TEXT,
-  push_auth TEXT
+  push_auth TEXT,
+  user_timezone TEXT,
+  user_local_date DATE
 ) AS $$
 BEGIN
   RETURN QUERY
@@ -145,31 +150,40 @@ BEGIN
     mrp.user_id,
     ps.endpoint,
     ps.p256dh,
-    ps.auth
+    ps.auth,
+    COALESCE(mrp.timezone, 'UTC')::TEXT,
+    (NOW() AT TIME ZONE COALESCE(mrp.timezone, 'UTC'))::date
   FROM public.meal_reminder_preferences mrp
   JOIN public.push_subscriptions ps ON ps.user_id = mrp.user_id
   WHERE mrp.reminders_enabled = true
     AND (
       (p_meal_type = 'breakfast' AND mrp.breakfast_reminder = true
-        AND p_current_time >= mrp.breakfast_time + (mrp.reminder_delay_minutes || ' minutes')::interval
-        AND p_current_time < mrp.breakfast_time + ((mrp.reminder_delay_minutes + 30) || ' minutes')::interval)
+        AND (NOW() AT TIME ZONE COALESCE(mrp.timezone, 'UTC'))::time
+            >= mrp.breakfast_time + (mrp.reminder_delay_minutes || ' minutes')::interval
+        AND (NOW() AT TIME ZONE COALESCE(mrp.timezone, 'UTC'))::time
+            < mrp.breakfast_time + ((mrp.reminder_delay_minutes + 30) || ' minutes')::interval)
       OR
       (p_meal_type = 'lunch' AND mrp.lunch_reminder = true
-        AND p_current_time >= mrp.lunch_time + (mrp.reminder_delay_minutes || ' minutes')::interval
-        AND p_current_time < mrp.lunch_time + ((mrp.reminder_delay_minutes + 30) || ' minutes')::interval)
+        AND (NOW() AT TIME ZONE COALESCE(mrp.timezone, 'UTC'))::time
+            >= mrp.lunch_time + (mrp.reminder_delay_minutes || ' minutes')::interval
+        AND (NOW() AT TIME ZONE COALESCE(mrp.timezone, 'UTC'))::time
+            < mrp.lunch_time + ((mrp.reminder_delay_minutes + 30) || ' minutes')::interval)
       OR
       (p_meal_type = 'dinner' AND mrp.dinner_reminder = true
-        AND p_current_time >= mrp.dinner_time + (mrp.reminder_delay_minutes || ' minutes')::interval
-        AND p_current_time < mrp.dinner_time + ((mrp.reminder_delay_minutes + 30) || ' minutes')::interval)
+        AND (NOW() AT TIME ZONE COALESCE(mrp.timezone, 'UTC'))::time
+            >= mrp.dinner_time + (mrp.reminder_delay_minutes || ' minutes')::interval
+        AND (NOW() AT TIME ZONE COALESCE(mrp.timezone, 'UTC'))::time
+            < mrp.dinner_time + ((mrp.reminder_delay_minutes + 30) || ' minutes')::interval)
     )
-    -- Check they haven't already logged this meal today
-    AND NOT has_logged_meal_type(mrp.user_id, p_meal_type, CURRENT_DATE)
-    -- Check we haven't already sent a reminder today for this meal
+    -- Check they haven't already logged this meal today (in their local date)
+    AND NOT has_logged_meal_type(mrp.user_id, p_meal_type,
+        (NOW() AT TIME ZONE COALESCE(mrp.timezone, 'UTC'))::date)
+    -- Check we haven't already sent a reminder today for this meal (in their local date)
     AND NOT EXISTS (
       SELECT 1 FROM public.meal_reminder_log mrl
       WHERE mrl.user_id = mrp.user_id
         AND mrl.meal_type = p_meal_type
-        AND mrl.reminder_date = CURRENT_DATE
+        AND mrl.reminder_date = (NOW() AT TIME ZONE COALESCE(mrp.timezone, 'UTC'))::date
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
