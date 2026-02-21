@@ -27426,6 +27426,184 @@ function initOnboardingWizard() {
 // FITGOTCHI STORY SEQUENCE
 // ============================================
 
+// ---- ONBOARDING AMBIENT MUSIC — Futuristic Space AI Synth (Web Audio API) ----
+const OnboardingMusic = {
+    ctx: null,
+    masterGain: null,
+    nodes: [],
+    isPlaying: false,
+    arpTimer: null,
+
+    start() {
+        if (this.isPlaying) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        this.isPlaying = true;
+        const ctx = new AudioCtx();
+        this.ctx = ctx;
+
+        // Resume context if browser blocks autoplay — will retry on first tap
+        if (ctx.state === 'suspended') {
+            const resume = () => {
+                ctx.resume();
+                document.removeEventListener('touchstart', resume);
+                document.removeEventListener('click', resume);
+            };
+            document.addEventListener('touchstart', resume, { once: true });
+            document.addEventListener('click', resume, { once: true });
+        }
+
+        // Master gain — fade in over 3s
+        this.masterGain = ctx.createGain();
+        this.masterGain.gain.setValueAtTime(0, ctx.currentTime);
+        this.masterGain.gain.linearRampToValueAtTime(0.22, ctx.currentTime + 3);
+        this.masterGain.connect(ctx.destination);
+
+        // --- 1. Deep bass drone (C2 ≈ 65 Hz) ---
+        const bassOsc = ctx.createOscillator();
+        bassOsc.type = 'sawtooth';
+        bassOsc.frequency.value = 65.41;
+        const bassFilter = ctx.createBiquadFilter();
+        bassFilter.type = 'lowpass';
+        bassFilter.frequency.value = 180;
+        bassFilter.Q.value = 3;
+        const bassGain = ctx.createGain();
+        bassGain.gain.value = 0.35;
+        bassOsc.connect(bassFilter);
+        bassFilter.connect(bassGain);
+        bassGain.connect(this.masterGain);
+        bassOsc.start();
+        this.nodes.push(bassOsc);
+
+        // Slow LFO sweeps the bass filter for movement
+        const bassLfo = ctx.createOscillator();
+        bassLfo.frequency.value = 0.08;
+        const bassLfoGain = ctx.createGain();
+        bassLfoGain.gain.value = 80;
+        bassLfo.connect(bassLfoGain);
+        bassLfoGain.connect(bassFilter.frequency);
+        bassLfo.start();
+        this.nodes.push(bassLfo);
+
+        // --- 2. Ambient pad — detuned sine pairs (C3, G3, C4) ---
+        [130.81, 196.00, 261.63].forEach(freq => {
+            const o1 = ctx.createOscillator();
+            o1.type = 'sine';
+            o1.frequency.value = freq;
+            const o2 = ctx.createOscillator();
+            o2.type = 'sine';
+            o2.frequency.value = freq * 1.004; // subtle detune for width
+            const pGain = ctx.createGain();
+            pGain.gain.value = 0.07;
+            const pFilter = ctx.createBiquadFilter();
+            pFilter.type = 'lowpass';
+            pFilter.frequency.value = 700;
+            o1.connect(pFilter);
+            o2.connect(pFilter);
+            pFilter.connect(pGain);
+            pGain.connect(this.masterGain);
+            o1.start();
+            o2.start();
+            this.nodes.push(o1, o2);
+        });
+
+        // --- 3. High shimmer pad — ethereal overtones (E5, B5) ---
+        [659.25, 987.77].forEach(freq => {
+            const osc = ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            const sGain = ctx.createGain();
+            sGain.gain.value = 0.018;
+            // Tremolo LFO
+            const trem = ctx.createOscillator();
+            trem.frequency.value = 0.3 + Math.random() * 0.2;
+            const tremGain = ctx.createGain();
+            tremGain.gain.value = 0.012;
+            trem.connect(tremGain);
+            tremGain.connect(sGain.gain);
+            osc.connect(sGain);
+            sGain.connect(this.masterGain);
+            osc.start();
+            trem.start();
+            this.nodes.push(osc, trem);
+        });
+
+        // --- 4. Arpeggiator — soft pulsing triangle notes (C minor pentatonic) ---
+        const arpNotes = [523.25, 622.25, 698.46, 783.99, 932.33, 783.99, 698.46, 622.25];
+        const arpDelays = [0.6, 0.45, 0.6, 0.9, 0.45, 0.6, 0.75, 0.9];
+        let arpIdx = 0;
+
+        const arpFilter = ctx.createBiquadFilter();
+        arpFilter.type = 'lowpass';
+        arpFilter.frequency.value = 1800;
+        arpFilter.connect(this.masterGain);
+
+        const playArpNote = () => {
+            if (!this.isPlaying || !this.ctx) return;
+            const osc = ctx.createOscillator();
+            osc.type = 'triangle';
+            osc.frequency.value = arpNotes[arpIdx % arpNotes.length];
+            const nGain = ctx.createGain();
+            nGain.gain.setValueAtTime(0.055, ctx.currentTime);
+            nGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.8);
+            osc.connect(nGain);
+            nGain.connect(arpFilter);
+            osc.start();
+            osc.stop(ctx.currentTime + 2);
+            const delay = arpDelays[arpIdx % arpDelays.length] * 1000;
+            arpIdx++;
+            this.arpTimer = setTimeout(playArpNote, delay);
+        };
+        // Let the drone establish before arp enters
+        this.arpTimer = setTimeout(playArpNote, 5000);
+
+        // --- 5. Atmospheric noise texture — filtered wind ---
+        const bufLen = ctx.sampleRate * 2;
+        const noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+        const data = noiseBuf.getChannelData(0);
+        for (let i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
+        const noiseSrc = ctx.createBufferSource();
+        noiseSrc.buffer = noiseBuf;
+        noiseSrc.loop = true;
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.value = 1200;
+        noiseFilter.Q.value = 0.4;
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.value = 0.025;
+        // Slow sweep on noise
+        const noiseLfo = ctx.createOscillator();
+        noiseLfo.frequency.value = 0.04;
+        const noiseLfoGain = ctx.createGain();
+        noiseLfoGain.gain.value = 600;
+        noiseLfo.connect(noiseLfoGain);
+        noiseLfoGain.connect(noiseFilter.frequency);
+        noiseLfo.start();
+        noiseSrc.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(this.masterGain);
+        noiseSrc.start();
+        this.nodes.push(noiseSrc, noiseLfo);
+    },
+
+    fadeOut(duration) {
+        duration = duration || 2000;
+        if (!this.isPlaying || !this.ctx) return;
+        this.isPlaying = false;
+        if (this.arpTimer) { clearTimeout(this.arpTimer); this.arpTimer = null; }
+        const ctx = this.ctx;
+        this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, ctx.currentTime);
+        this.masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration / 1000);
+        setTimeout(() => {
+            this.nodes.forEach(n => { try { n.stop(); } catch(e) {} });
+            this.nodes = [];
+            try { ctx.close(); } catch(e) {}
+            this.ctx = null;
+            this.masterGain = null;
+        }, duration + 200);
+    }
+};
+
 function startFitgotchiStory(onComplete) {
     const overlay = document.getElementById('fitgotchi-story-overlay');
     const modelContainer = document.getElementById('story-model-container');
@@ -27460,6 +27638,9 @@ function startFitgotchiStory(onComplete) {
     requestAnimationFrame(() => {
         overlay.classList.add('active');
     });
+
+    // Start ambient space music
+    OnboardingMusic.start();
 
     // Showcase models preload via hidden <model-viewer> elements in HTML.
     // They load in the background during the binary screen sequence.
@@ -27729,6 +27910,8 @@ function startFitgotchiStory(onComplete) {
         playSection(sections[0]);
 
         function endStory() {
+            // Fade out ambient music as story ends
+            OnboardingMusic.fadeOut(2000);
             overlay.removeEventListener('click', handleTap);
             tapPrompt.style.display = 'none';
             bubble.classList.remove('visible');
