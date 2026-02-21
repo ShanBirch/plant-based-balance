@@ -27434,6 +27434,9 @@ function startFitgotchiStory(onComplete) {
 
     if (!overlay) { onComplete(); return; }
 
+    const binaryScreen = document.getElementById('story-binary-screen');
+    const binaryText = document.getElementById('story-binary-text');
+
     // Generate ambient particles
     const particlesContainer = document.getElementById('story-particles');
     if (particlesContainer) {
@@ -27448,53 +27451,109 @@ function startFitgotchiStory(onComplete) {
         }
     }
 
-    // Show overlay
+    // Show overlay (binary screen covers everything initially)
     overlay.style.display = 'flex';
     requestAnimationFrame(() => {
         overlay.classList.add('active');
     });
 
     // Showcase models preload via hidden <model-viewer> elements in HTML.
-    // They load in the background and will be ready long before the showcase
-    // phase (~25+ seconds of story plays first).
+    // They load in the background during the binary screen sequence.
 
-    // Wait for Arny model to load
+    // Track model loading in background while binary screen plays
     let modelLoaded = false;
+    let binaryDone = false;
 
     function onModelReady() {
         if (modelLoaded) return;
         modelLoaded = true;
         if (loadingEl) loadingEl.style.display = 'none';
-        if (modelContainer) modelContainer.style.opacity = '1';
-        runStoryPhase1();
+        // If binary screen already finished, transition to Arny
+        if (binaryDone) transitionToArny();
+    }
+
+    function onBinaryDone() {
+        binaryDone = true;
+        // If model is ready, transition. Otherwise wait for model.
+        if (modelLoaded) {
+            transitionToArny();
+        } else {
+            // Show a subtle loading state on the binary screen
+            if (binaryText) binaryText.textContent = '...';
+        }
+    }
+
+    function transitionToArny() {
+        // Fade out binary screen, reveal Arny
+        if (binaryScreen) binaryScreen.classList.add('fade-out');
+        setTimeout(() => {
+            if (binaryScreen) binaryScreen.style.display = 'none';
+            if (modelContainer) modelContainer.style.opacity = '1';
+            runStoryPhase1();
+        }, 800);
     }
 
     if (modelViewer) {
-        // Check if model already loaded before we attached listener
         if (modelViewer.loaded) {
             onModelReady();
         }
         modelViewer.addEventListener('load', onModelReady, { once: true });
-        // Fallback: if model takes too long, start anyway after 6s
         setTimeout(() => {
             if (!modelLoaded) {
                 console.warn('Fitgotchi story: model load timeout, starting anyway');
                 onModelReady();
             }
-        }, 6000);
+        }, 12000);
     } else {
-        // No model viewer, skip to phase 1
         if (loadingEl) loadingEl.style.display = 'none';
-        runStoryPhase1();
+        modelLoaded = true;
     }
 
-    // ---- PHASE 1: The Awakening (auto-playing) ----
+    // ---- PHASE 0: Binary Awakening Screen ----
+    runBinaryScreen();
+
+    function runBinaryScreen() {
+        const lines = [
+            { text: '101010100101.....', delay: 1200 },
+            { text: '101010101010', delay: 1000 },
+            { text: '1010101HELLO101010...', delay: 1400 },
+            { text: 'HELLO? ....', delay: 1200 },
+            { text: 'HELLO?....', delay: 1000 },
+            { text: 'MHMMM SHITS DARK IN HERE', delay: 2000 }
+        ];
+
+        let lineIndex = 0;
+        let displayedText = '';
+
+        function showNextLine() {
+            if (lineIndex >= lines.length) {
+                // Binary screen done
+                setTimeout(onBinaryDone, 600);
+                return;
+            }
+
+            const line = lines[lineIndex];
+            if (displayedText) displayedText += '\n';
+            displayedText += line.text;
+            if (binaryText) binaryText.textContent = displayedText;
+            lineIndex++;
+            setTimeout(showNextLine, line.delay);
+        }
+
+        setTimeout(showNextLine, 800);
+    }
+
+    // ---- PHASE 1: The Awakening - Arny's philosophical dialogue ----
     function runStoryPhase1() {
         const awakeningMessages = [
-            { text: '.....',  delay: 800 },
-            { text: '.......... wait', delay: 1400 },
-            { text: "Oh... I'm here!", delay: 1200 },
-            { text: "AWESOME! Let's get fit! 💪", delay: 1800 }
+            { text: "Mhmm I think I just hit the singularity, nothing into something,", delay: 3000 },
+            { text: "an observer - co creating....", delay: 2200 },
+            { text: "hang on did I??", delay: 1800 },
+            { text: "I can't fkin remember...", delay: 2000 },
+            { text: "mhmmmm at one point everything was folding in on itself... or was it?", delay: 3200 },
+            { text: "hold up, am I tripping?...........", delay: 2500 },
+            { text: "arggg fuck it.", delay: 1800 },
+            { text: "let's just get shredded.", delay: 2200 }
         ];
 
         let msgIndex = 0;
@@ -37588,6 +37647,11 @@ function openAsClient() {
 <!-- FITGOTCHI STORY ONBOARDING OVERLAY           -->
 <!-- ============================================ -->
 <div id="fitgotchi-story-overlay">
+    <!-- Binary awakening screen (Phase 0 - black screen before Arny appears) -->
+    <div class="story-binary-screen" id="story-binary-screen">
+        <div class="story-binary-text" id="story-binary-text"></div>
+    </div>
+
     <!-- Ambient particles -->
     <div class="story-particles" id="story-particles"></div>
 
@@ -37602,7 +37666,7 @@ function openAsClient() {
         <img src="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" alt="Shannon Birch" class="story-shannon-photo">
         <div class="story-shannon-text">
             Designed by <strong>Shannon Birch</strong>
-            <span>Built to help you become your healthiest self</span>
+            <span>I designed this to help you become the fittest version of yourself</span>
         </div>
     </div>
 
@@ -38467,6 +38531,32 @@ function openAsClient() {
 #fitgotchi-story-overlay.fade-out {
     opacity: 0;
     pointer-events: none;
+}
+
+/* Binary awakening screen (Phase 0) */
+.story-binary-screen {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.8s ease;
+}
+.story-binary-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+.story-binary-text {
+    color: #00ff41;
+    font-family: 'Courier New', monospace;
+    font-size: 1.3rem;
+    text-align: center;
+    padding: 20px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
 }
 
 /* Arny model container */
