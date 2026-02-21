@@ -9649,8 +9649,13 @@ async function applyAppTheme(themeKey) {
             window._snpTrackUrl     = track.spotify_url || null;
             window._snpCurrentTrack = track;
 
-            // Show mini widget
-            widget.style.display = 'block';
+            // Show mini widget (but not while camera modal is open)
+            const camModal = document.getElementById('unified-camera-modal');
+            if (camModal && camModal.style.display !== 'none' && camModal.style.display !== '') {
+                widget.style.display = 'none';
+            } else {
+                widget.style.display = 'block';
+            }
 
             // Mini player: track name & artist
             const miniTrack  = document.getElementById('snp-track');
@@ -48097,18 +48102,6 @@ window.submitWeighInModal = submitWeighInModal;
         <div style="font-size:0.85rem; opacity:0.9; margin-top:2px;" id="barcode-detected-detail"></div>
         <button onclick="showBarcodeResult()" style="margin-top:8px; background:rgba(255,255,255,0.25); color:#fff; border:none; border-radius:20px; padding:8px 24px; font-weight:600; font-size:0.9rem; cursor:pointer; backdrop-filter:blur(5px);">View & Log Product</button>
     </div>
-    <!-- AI food detected banner (hidden by default) -->
-    <div id="ai-food-detected-banner" style="display:none; position:absolute; top:0; left:0; right:0; z-index:4; padding:14px 20px; background:linear-gradient(135deg, #8b5cf6, #6d28d9); color:#fff; text-align:center; animation:fadeInUp 0.3s ease-out;">
-        <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-            <span style="font-weight:700; font-size:1rem;" id="ai-food-detected-name">Identifying...</span>
-        </div>
-        <div style="font-size:0.85rem; opacity:0.9; margin-top:2px;" id="ai-food-detected-detail"></div>
-        <div style="display:flex; gap:8px; justify-content:center; margin-top:8px;">
-            <button onclick="useAiFoodSuggestion()" style="background:rgba(255,255,255,0.25); color:#fff; border:none; border-radius:20px; padding:8px 20px; font-weight:600; font-size:0.9rem; cursor:pointer; backdrop-filter:blur(5px);">Use this</button>
-            <button onclick="dismissAiFoodBanner()" style="background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.8); border:none; border-radius:20px; padding:8px 16px; font-weight:500; font-size:0.85rem; cursor:pointer;">Dismiss</button>
-        </div>
-    </div>
     <!-- Live camera feed -->
     <style>
         /* Hide default Android WebView play button overlay on camera video */
@@ -59530,14 +59523,6 @@ let barcodeScanInterval = null;
 let lastBarcodeDetected = null;
 let barcodeProductData = null;
 
-// AI food recognition state
-let aiFoodScanTimeout = null;
-let aiFoodScanActive = false;
-let aiFoodScanCount = 0;
-const AI_FOOD_SCAN_MAX = 3;        // Max auto-scans before stopping
-const AI_FOOD_SCAN_DELAY = 2500;   // First scan after 2.5s
-const AI_FOOD_SCAN_INTERVAL = 6000; // Subsequent scans every 6s
-let lastAiFoodResult = null;
 let barcodeServings = 1;
 let barcodeAmountMode = 'servings'; // 'servings' or 'custom'
 let barcodeCustomAmount = '';
@@ -59551,14 +59536,16 @@ async function openUnifiedCamera() {
         try { window.NativePermissions.enterImmersiveMode(); } catch(e) {}
     }
 
+    // Hide Spotify mini player so it doesn't overlap camera controls
+    const spotifyMini = document.getElementById('spotify-now-playing');
+    if (spotifyMini) spotifyMini.style.display = 'none';
+
     // Reset state
     lastBarcodeDetected = null;
-    lastAiFoodResult = null;
     document.getElementById('barcode-detected-banner').style.display = 'none';
-    document.getElementById('ai-food-detected-banner').style.display = 'none';
     document.getElementById('unified-camera-description').value = '';
     document.getElementById('manual-barcode-row').style.display = 'none';
-    document.getElementById('barcode-scan-status').textContent = 'Scanning for barcodes & identifying food...';
+    document.getElementById('barcode-scan-status').textContent = 'Scanning for barcodes...';
 
     modal.style.display = 'flex';
     await startUnifiedCamera();
@@ -59570,6 +59557,12 @@ function closeUnifiedCamera() {
     if (modal) modal.style.display = 'none';
     const video = document.getElementById('unified-camera-video');
     if (video) video.style.opacity = '0';
+
+    // Restore Spotify mini player if music is playing
+    if (window._snpPlaying) {
+        const spotifyMini = document.getElementById('spotify-now-playing');
+        if (spotifyMini) spotifyMini.style.display = 'block';
+    }
 
     // Exit immersive mode to restore status bar
     if (window.NativePermissions && window.NativePermissions.exitImmersiveMode) {
@@ -59632,8 +59625,6 @@ async function startUnifiedCamera() {
 
         // Start background barcode scanning on the live video frames
         startBarcodeScanLoop(video);
-        // Start AI food recognition scanning
-        startAiFoodScanLoop(video);
     } catch (err) {
         console.error('Failed to access camera:', err);
         if (err.name === 'NotAllowedError') {
@@ -59699,7 +59690,6 @@ function showCameraPermissionSettingsDialog() {
 
 function stopUnifiedCamera() {
     stopBarcodeScanLoop();
-    stopAiFoodScanLoop();
     if (unifiedCameraStream) {
         unifiedCameraStream.getTracks().forEach(t => t.stop());
         unifiedCameraStream = null;
@@ -59777,154 +59767,8 @@ function stopBarcodeScanLoop() {
     }
 }
 
-// --- AI Food Recognition on live camera frames ---
-function startAiFoodScanLoop(videoEl) {
-    stopAiFoodScanLoop();
-    aiFoodScanActive = true;
-    aiFoodScanCount = 0;
-    lastAiFoodResult = null;
-
-    // Update status to show AI scanning is active
-    const status = document.getElementById('barcode-scan-status');
-    if (status) status.textContent = 'Scanning for barcodes & identifying food...';
-
-    // First scan after initial delay (let camera stabilise)
-    aiFoodScanTimeout = setTimeout(() => doAiFoodScan(videoEl), AI_FOOD_SCAN_DELAY);
-}
-
-function stopAiFoodScanLoop() {
-    aiFoodScanActive = false;
-    if (aiFoodScanTimeout) {
-        clearTimeout(aiFoodScanTimeout);
-        aiFoodScanTimeout = null;
-    }
-}
-
-async function doAiFoodScan(videoEl) {
-    if (!aiFoodScanActive || !videoEl || videoEl.readyState < 2) return;
-    if (aiFoodScanCount >= AI_FOOD_SCAN_MAX) {
-        aiFoodScanActive = false;
-        return;
-    }
-
-    // Don't scan if barcode was already detected (barcode takes priority)
-    if (lastBarcodeDetected && document.getElementById('barcode-detected-banner').style.display === 'block') {
-        // Schedule next scan in case barcode banner is dismissed
-        if (aiFoodScanActive) {
-            aiFoodScanTimeout = setTimeout(() => doAiFoodScan(videoEl), AI_FOOD_SCAN_INTERVAL);
-        }
-        return;
-    }
-
-    aiFoodScanCount++;
-
-    // Show scanning indicator
-    const banner = document.getElementById('ai-food-detected-banner');
-    const nameEl = document.getElementById('ai-food-detected-name');
-    const detailEl = document.getElementById('ai-food-detected-detail');
-    if (nameEl) nameEl.textContent = 'Identifying food...';
-    if (detailEl) detailEl.textContent = '';
-    if (banner) {
-        banner.style.display = 'block';
-        banner.querySelector('button')?.style.setProperty('display', 'none');
-        // Hide buttons while scanning
-        const btns = banner.querySelectorAll('button');
-        btns.forEach(b => b.style.display = 'none');
-    }
-
-    try {
-        // Capture a low-res frame from the video
-        const scanCanvas = document.createElement('canvas');
-        const maxDim = 640; // Keep it small for fast upload
-        const scale = Math.min(maxDim / videoEl.videoWidth, maxDim / videoEl.videoHeight, 1);
-        scanCanvas.width = Math.round(videoEl.videoWidth * scale);
-        scanCanvas.height = Math.round(videoEl.videoHeight * scale);
-        scanCanvas.getContext('2d').drawImage(videoEl, 0, 0, scanCanvas.width, scanCanvas.height);
-
-        const base64 = await new Promise((resolve) => {
-            scanCanvas.toBlob((blob) => {
-                if (!blob) { resolve(null); return; }
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.readAsDataURL(blob);
-            }, 'image/jpeg', 0.6);
-        });
-
-        if (!base64 || !aiFoodScanActive) return;
-
-        const base64Data = base64.split(',')[1];
-
-        const response = await fetch('/api/identify-food', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageBase64: base64Data, mimeType: 'image/jpeg' })
-        });
-
-        if (!response.ok) throw new Error('API error');
-
-        const result = await response.json();
-
-        if (!aiFoodScanActive) return; // Camera may have closed during fetch
-
-        if (result.success && result.data && result.data.identified) {
-            lastAiFoodResult = result.data;
-            // Show result in banner
-            if (nameEl) nameEl.textContent = result.data.name;
-            if (detailEl) detailEl.textContent =
-                `~${result.data.approx_calories} cal ${result.data.serving_hint || ''}`.trim();
-            if (banner) {
-                banner.style.display = 'block';
-                const btns = banner.querySelectorAll('button');
-                btns.forEach(b => b.style.display = '');
-            }
-            // Stop auto-scanning once we have a result
-            aiFoodScanActive = false;
-            return;
-        } else {
-            // No food identified — hide banner and try again
-            if (banner) banner.style.display = 'none';
-        }
-    } catch (err) {
-        console.log('AI food scan error (non-critical):', err.message);
-        if (banner) banner.style.display = 'none';
-    }
-
-    // Schedule next scan
-    if (aiFoodScanActive && aiFoodScanCount < AI_FOOD_SCAN_MAX) {
-        aiFoodScanTimeout = setTimeout(() => doAiFoodScan(videoEl), AI_FOOD_SCAN_INTERVAL);
-    } else if (banner && banner.style.display !== 'block') {
-        // All scans exhausted without result
-        banner.style.display = 'none';
-    }
-}
-
-function useAiFoodSuggestion() {
-    if (!lastAiFoodResult) return;
-    const descInput = document.getElementById('unified-camera-description');
-    if (descInput) {
-        descInput.value = lastAiFoodResult.suggestion || lastAiFoodResult.name || '';
-        descInput.focus();
-        // Place cursor at end so user can append details
-        descInput.selectionStart = descInput.selectionEnd = descInput.value.length;
-    }
-    // Hide the banner but keep the result available
-    const banner = document.getElementById('ai-food-detected-banner');
-    if (banner) banner.style.display = 'none';
-    showToast('Food identified! Edit the description if needed, then take a photo.', 'success');
-}
-
-function dismissAiFoodBanner() {
-    const banner = document.getElementById('ai-food-detected-banner');
-    if (banner) banner.style.display = 'none';
-    lastAiFoodResult = null;
-}
-
 async function onBarcodeDetected(code) {
     document.getElementById('barcode-scan-status').textContent = 'Barcode found! Looking up...';
-    // Hide AI food banner — barcode takes priority
-    const aiBanner = document.getElementById('ai-food-detected-banner');
-    if (aiBanner) aiBanner.style.display = 'none';
-    stopAiFoodScanLoop();
 
     try {
         const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);
@@ -60049,12 +59893,7 @@ function captureUnifiedPhoto() {
 
         // Get description from the unified camera input
         const desc = document.getElementById('unified-camera-description');
-        let description = desc ? desc.value.trim() : '';
-
-        // If user hasn't typed anything but AI identified food, use the AI suggestion
-        if (!description && lastAiFoodResult && lastAiFoodResult.suggestion) {
-            description = lastAiFoodResult.suggestion;
-        }
+        const description = desc ? desc.value.trim() : '';
 
         // Close camera and show the existing meal preview flow
         closeUnifiedCamera();
