@@ -195,6 +195,7 @@ if (!window._fitgotchiCachedModel) {
 }
 </script>
 <link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>
+<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" as="image" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
 
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
@@ -27226,7 +27227,7 @@ function wizardAlert(message) {
 
     const toast = document.createElement('div');
     toast.id = 'wizard-validation-toast';
-    toast.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:12px 24px; background:#ef4444; color:white; border-radius:12px; font-weight:600; font-size:0.9rem; box-shadow:0 4px 20px rgba(0,0,0,0.3); z-index:13000; text-align:center; max-width:90vw; animation:fadeInUp 0.3s ease-out;';
+    toast.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:12px 24px; background:#ef4444; color:white; border-radius:12px; font-weight:600; font-size:0.9rem; box-shadow:0 4px 20px rgba(0,0,0,0.3); z-index:14000; text-align:center; max-width:90vw; animation:fadeInUp 0.3s ease-out;';
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => {
@@ -27368,11 +27369,225 @@ function initOnboardingWizard() {
     if (!modal) return;
     if (modal.style.display === 'flex') return; // Already showing
 
-    currentWizardStep = 1; // Reset to first step
-    modal.classList.add('active');
-    modal.style.display = 'flex';
-    modal.style.opacity = '1';
-    updateWizardUI();
+    // Check if story has already been shown this session
+    const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
+    if (storyShown) {
+        // Skip story, go straight to wizard
+        currentWizardStep = 1;
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        modal.style.opacity = '1';
+        updateWizardUI();
+        return;
+    }
+
+    // Show Fitgotchi story first, then wizard
+    startFitgotchiStory(() => {
+        currentWizardStep = 1;
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        modal.style.opacity = '1';
+        updateWizardUI();
+    });
+}
+
+// ============================================
+// FITGOTCHI STORY SEQUENCE
+// ============================================
+
+function startFitgotchiStory(onComplete) {
+    const overlay = document.getElementById('fitgotchi-story-overlay');
+    const modelContainer = document.getElementById('story-model-container');
+    const modelViewer = document.getElementById('story-arny-model');
+    const loadingEl = document.getElementById('story-loading');
+    const shannonCard = document.getElementById('story-shannon-card');
+    const bubble = document.getElementById('story-bubble');
+    const tapPrompt = document.getElementById('story-tap-prompt');
+    const speechArea = document.getElementById('story-speech-area');
+
+    if (!overlay) { onComplete(); return; }
+
+    // Generate ambient particles
+    const particlesContainer = document.getElementById('story-particles');
+    if (particlesContainer) {
+        for (let i = 0; i < 20; i++) {
+            const p = document.createElement('div');
+            p.className = 'story-particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.top = (60 + Math.random() * 40) + '%';
+            p.style.animationDelay = Math.random() * 6 + 's';
+            p.style.animationDuration = (4 + Math.random() * 4) + 's';
+            particlesContainer.appendChild(p);
+        }
+    }
+
+    // Show overlay
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => {
+        overlay.classList.add('active');
+    });
+
+    // Wait for model to load
+    let modelLoaded = false;
+
+    function onModelReady() {
+        if (modelLoaded) return;
+        modelLoaded = true;
+        // Hide loading, show model
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (modelContainer) modelContainer.style.opacity = '1';
+        // Start the story sequence
+        runStoryPhase1();
+    }
+
+    if (modelViewer) {
+        // Check if model already loaded before we attached listener
+        if (modelViewer.loaded) {
+            onModelReady();
+        }
+        modelViewer.addEventListener('load', onModelReady, { once: true });
+        // Fallback: if model takes too long, start anyway after 6s
+        setTimeout(() => {
+            if (!modelLoaded) {
+                console.warn('Fitgotchi story: model load timeout, starting anyway');
+                onModelReady();
+            }
+        }, 6000);
+    } else {
+        // No model viewer, skip to phase 1
+        if (loadingEl) loadingEl.style.display = 'none';
+        runStoryPhase1();
+    }
+
+    // ---- PHASE 1: The Awakening (auto-playing) ----
+    function runStoryPhase1() {
+        const awakeningMessages = [
+            { text: '.....',  delay: 800 },
+            { text: '.......... wait', delay: 1400 },
+            { text: "Oh... I'm here!", delay: 1200 },
+            { text: "AWESOME! Let's get fit! 💪", delay: 1800 }
+        ];
+
+        let msgIndex = 0;
+
+        function showNextAwakening() {
+            if (msgIndex >= awakeningMessages.length) {
+                // Phase 1 done, transition to Phase 2
+                setTimeout(() => {
+                    bubble.classList.remove('visible');
+                    bubble.classList.add('exit');
+                    setTimeout(runStoryPhase2, 400);
+                }, awakeningMessages[msgIndex - 1].delay);
+                return;
+            }
+
+            const msg = awakeningMessages[msgIndex];
+            bubble.classList.remove('exit');
+            bubble.textContent = msg.text;
+            bubble.classList.add('visible');
+
+            msgIndex++;
+            setTimeout(() => {
+                if (msgIndex < awakeningMessages.length) {
+                    bubble.classList.remove('visible');
+                    setTimeout(showNextAwakening, 300);
+                } else {
+                    showNextAwakening();
+                }
+            }, msg.delay);
+        }
+
+        // Small delay before first bubble
+        setTimeout(showNextAwakening, 600);
+    }
+
+    // ---- PHASE 2: Shannon Card (2.5s flash) ----
+    function runStoryPhase2() {
+        // Hide model briefly, show Shannon card
+        if (modelContainer) modelContainer.style.opacity = '0.15';
+        bubble.classList.remove('visible', 'exit');
+        bubble.style.display = 'none';
+
+        setTimeout(() => {
+            shannonCard.classList.add('visible');
+        }, 200);
+
+        // Auto-dismiss after 2.5 seconds
+        setTimeout(() => {
+            shannonCard.classList.remove('visible');
+            shannonCard.classList.add('exit');
+            setTimeout(() => {
+                shannonCard.classList.remove('exit');
+                if (modelContainer) modelContainer.style.opacity = '1';
+                bubble.style.display = '';
+                runStoryPhase3();
+            }, 500);
+        }, 2700);
+    }
+
+    // ---- PHASE 3: Tap-through messages ----
+    function runStoryPhase3() {
+        const messages = [
+            "Shannon built this app to help people become their healthiest selves — and actually <strong>enjoy</strong> the journey.",
+            "This isn't just a fitness app. It's a <strong>game</strong> you play with your friends. Challenge each other. Level up. Have fun.",
+            "Tracking food? Just <strong>snap a photo</strong>. The AI does the rest — calories, protein, carbs, fat. Instantly.",
+            "As you use the app, I'll be collecting your data and spotting patterns with <strong>AI</strong>...",
+            "Like: <strong>\"Weeks where you slept more, you lost weight 30% faster.\"</strong>",
+            "Or: <strong>\"Users who invited their friends reached their goals 70% quicker.\"</strong>",
+            "This is a new way to use AI — like having a <strong>personal health assistant</strong> that actually learns about you and helps you improve. It's happening right now, and it's changing lives.",
+            "Ready to start? Let's set you up! 🚀"
+        ];
+
+        let tapIndex = 0;
+        let canTap = false;
+
+        function showMessage(index) {
+            canTap = false;
+            bubble.classList.remove('visible', 'exit');
+
+            setTimeout(() => {
+                bubble.innerHTML = messages[index];
+                bubble.classList.add('visible');
+                tapPrompt.style.display = 'block';
+
+                // Allow tapping after a short delay to prevent accidental skips
+                setTimeout(() => { canTap = true; }, 600);
+            }, 200);
+        }
+
+        function handleTap(e) {
+            if (!canTap) return;
+            canTap = false; // Prevent double-tap
+
+            tapIndex++;
+            if (tapIndex >= messages.length) {
+                // Story complete
+                overlay.removeEventListener('click', handleTap);
+                tapPrompt.style.display = 'none';
+                bubble.classList.remove('visible');
+                bubble.classList.add('exit');
+
+                sessionStorage.setItem('fitgotchi_story_shown', 'true');
+
+                // Fade out overlay
+                setTimeout(() => {
+                    overlay.classList.add('fade-out');
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        overlay.classList.remove('active', 'fade-out');
+                        onComplete();
+                    }, 500);
+                }, 300);
+            } else {
+                showMessage(tapIndex);
+            }
+        }
+
+        overlay.addEventListener('click', handleTap);
+
+        // Show first message
+        showMessage(0);
+    }
 }
 
 function updateWizardUI() {
@@ -27393,12 +27608,20 @@ function updateWizardUI() {
         }
     }
 
-    // 2. Dots
+    // 2. Dots — hide dots for skipped slides
+    const skippedSlides = sessionStorage.getItem('fitgotchi_story_shown') ? [7, 8, 20] : [];
     const dots = document.querySelectorAll('.wizard-progress .dot');
-    dots.forEach((d, i) => {
-        if(i < currentWizardStep) d.classList.add('active');
-        else d.classList.remove('active');
-    });
+    let dotIndex = 0;
+    for (let i = 1; i <= totalWizardSteps; i++) {
+        if (dotIndex >= dots.length) break;
+        if (skippedSlides.includes(i)) {
+            dots[i - 1].style.display = 'none';
+            continue;
+        }
+        dots[i - 1].style.display = '';
+        if (i <= currentWizardStep) dots[i - 1].classList.add('active');
+        else dots[i - 1].classList.remove('active');
+    }
 
     // 2c. Lazy-load 3D models one slide before they appear (preload while user reads current slide)
     if (currentWizardStep >= 6) {
@@ -28125,6 +28348,15 @@ async function wizardNext() {
 
     if(currentWizardStep < totalWizardSteps) {
         currentWizardStep++;
+
+        // Skip slides covered by Fitgotchi story: 7 (Meet FitGotchi), 8 (Calorie Tracking), 20 (Built by Shannon)
+        const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
+        if (storyShown) {
+            while ([7, 8, 20].includes(currentWizardStep) && currentWizardStep < totalWizardSteps) {
+                currentWizardStep++;
+            }
+        }
+
         updateWizardUI();
 
         // Render calendar preview when entering step 6
@@ -28152,6 +28384,15 @@ function wizardPrev() {
         } else {
             currentWizardStep--;
         }
+
+        // Skip slides covered by Fitgotchi story (backwards)
+        const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
+        if (storyShown) {
+            while ([7, 8, 20].includes(currentWizardStep) && currentWizardStep > 1) {
+                currentWizardStep--;
+            }
+        }
+
         updateWizardUI();
     }
 }
@@ -37191,6 +37432,54 @@ function openAsClient() {
 
 <!-- Onboarding Modal -->
 <!-- ONBOARDING WIZARD -->
+<!-- ============================================ -->
+<!-- FITGOTCHI STORY ONBOARDING OVERLAY           -->
+<!-- ============================================ -->
+<div id="fitgotchi-story-overlay">
+    <!-- Ambient particles -->
+    <div class="story-particles" id="story-particles"></div>
+
+    <!-- Loading indicator (shown while model loads) -->
+    <div class="story-loading" id="story-loading">
+        <div style="font-size: 2rem; margin-bottom: 8px;">💪</div>
+        <div>Getting ready<span class="story-loading-dots"></span></div>
+    </div>
+
+    <!-- Shannon card (Phase 2 - flashes briefly) -->
+    <div class="story-shannon-card" id="story-shannon-card">
+        <img src="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" alt="Shannon Birch" class="story-shannon-photo">
+        <div class="story-shannon-text">
+            Designed by <strong>Shannon Birch</strong>
+            <span>Built to help you become your healthiest self</span>
+        </div>
+    </div>
+
+    <!-- Arny 3D model -->
+    <div class="story-model-container" id="story-model-container" style="opacity: 0; transition: opacity 0.6s ease;">
+        <model-viewer
+            id="story-arny-model"
+            src="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb"
+            camera-controls
+            disable-zoom
+            disable-pan
+            auto-rotate
+            rotation-intensity="0.6"
+            shadow-intensity="1"
+            exposure="0.9"
+            camera-orbit="10deg 80deg 18m"
+            field-of-view="32deg"
+            style="width: 100%; height: 100%; --poster-color: transparent;"
+            interaction-prompt="none">
+        </model-viewer>
+    </div>
+
+    <!-- Speech bubble area -->
+    <div class="story-speech-area" id="story-speech-area">
+        <div class="story-bubble" id="story-bubble"></div>
+        <div class="story-tap-prompt" id="story-tap-prompt" style="display:none;">Tap to continue</div>
+    </div>
+</div>
+
 <div class="onboarding-overlay" id="onboarding-wizard" style="display:none; z-index:12000;">
     <div class="onboarding-modal wizard-container" style="max-width: 450px; max-height: 90vh; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
 
@@ -37975,6 +38264,207 @@ function openAsClient() {
     transform: translateY(0);
 }
 
+/* ============================================ */
+/* FITGOTCHI STORY ONBOARDING OVERLAY           */
+/* ============================================ */
+#fitgotchi-story-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 40%, #16213e 100%);
+    z-index: 13000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+#fitgotchi-story-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+#fitgotchi-story-overlay.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Arny model container */
+.story-model-container {
+    position: absolute;
+    top: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 400px;
+    height: 55%;
+}
+.story-model-container model-viewer {
+    width: 100%;
+    height: 100%;
+    --poster-color: transparent;
+}
+
+/* Speech bubble area */
+.story-speech-area {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    padding: 0 24px 40px;
+    z-index: 2;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+/* Individual speech bubble */
+.story-bubble {
+    background: white;
+    color: #1a1a2e;
+    padding: 16px 20px;
+    border-radius: 20px 20px 20px 4px;
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 500;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    margin-bottom: 12px;
+    max-width: 95%;
+}
+.story-bubble.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+.story-bubble.exit {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.story-bubble strong {
+    color: var(--primary, #046a38);
+}
+
+/* Tap to continue prompt */
+.story-tap-prompt {
+    text-align: center;
+    color: rgba(255,255,255,0.5);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 8px 0 0;
+    animation: storyPulse 2s ease-in-out infinite;
+}
+@keyframes storyPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}
+
+/* Shannon card */
+.story-shannon-card {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    z-index: 5;
+    transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.story-shannon-card.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+.story-shannon-card.exit {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.story-shannon-photo {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 4px solid rgba(255,255,255,0.9);
+    box-shadow: 0 0 40px rgba(4, 106, 56, 0.4), 0 8px 32px rgba(0,0,0,0.3);
+    object-fit: cover;
+}
+.story-shannon-text {
+    color: white;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.story-shannon-text span {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.7);
+    margin-top: 4px;
+}
+
+/* Loading state for model */
+.story-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255,255,255,0.6);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: center;
+}
+.story-loading-dots::after {
+    content: '';
+    animation: storyLoadDots 1.5s infinite;
+}
+@keyframes storyLoadDots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+}
+
+/* Typewriter cursor effect */
+.story-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: var(--primary, #046a38);
+    margin-left: 2px;
+    animation: storyCursorBlink 0.8s infinite;
+    vertical-align: text-bottom;
+}
+@keyframes storyCursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Particles / ambient effect */
+.story-particles {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+}
+.story-particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    animation: storyFloat 6s infinite ease-in-out;
+}
+@keyframes storyFloat {
+    0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+}
 
 /* DBZ Theme Decorations */
 #dbz-decorations {
