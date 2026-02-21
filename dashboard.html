@@ -27625,7 +27625,7 @@ function startFitgotchiStory(onComplete) {
         }
     }
 
-    // ---- BATTLE DEMO (auto-play scene) ----
+    // ---- BATTLE DEMO (just show HP bars + stats overlay) ----
     function runBattleDemo(onDone) {
         // Hide bubble
         bubble.classList.remove('visible');
@@ -27645,8 +27645,8 @@ function startFitgotchiStory(onComplete) {
                 <div class="story-battle-vs">⚡</div>
                 <div class="story-battle-hp-box">
                     <div class="story-battle-hp-name">OPPONENT</div>
-                    <div class="story-battle-hp-bar"><div class="story-battle-hp-fill enemy" id="story-enemy-hp" style="width:100%"></div></div>
-                    <div class="story-battle-hp-text" id="story-enemy-hp-text">500 / 500</div>
+                    <div class="story-battle-hp-bar"><div class="story-battle-hp-fill enemy" style="width:72%"></div></div>
+                    <div class="story-battle-hp-text">360 / 500</div>
                 </div>
             </div>
             <div class="story-battle-stats-row">
@@ -27659,81 +27659,18 @@ function startFitgotchiStory(onComplete) {
         battleUI.style.transition = 'opacity 0.5s ease';
         overlay.appendChild(battleUI);
 
-        // Slide model to left side for battle stance
-        modelContainer.style.transition = 'left 0.6s ease, transform 0.6s ease, opacity 0.6s ease';
-        modelContainer.style.left = '15%';
-        modelContainer.style.transform = 'none';
-        if (modelViewer) {
-            modelViewer.cameraOrbit = '20deg 85deg 18m';
-            modelViewer.removeAttribute('auto-rotate');
-        }
-
         // Fade in battle UI
-        setTimeout(() => { battleUI.style.opacity = '1'; }, 200);
+        setTimeout(() => { battleUI.style.opacity = '1'; }, 100);
 
-        // Play kick animation after positioning
+        // Hold for a few seconds then clean up
         setTimeout(() => {
-            if (modelViewer && modelViewer.availableAnimations) {
-                const kickAnim = modelViewer.availableAnimations.find(a => a.toLowerCase().includes('kick'))
-                    || modelViewer.availableAnimations.find(a => a.toLowerCase().includes('karate'));
-                if (kickAnim) {
-                    modelViewer.animationName = kickAnim;
-                    modelViewer.play();
-                }
-            }
-
-            // Spawn fireball after kick connects
+            battleUI.style.opacity = '0';
             setTimeout(() => {
-                const fb = document.createElement('div');
-                fb.innerHTML = '<img src="./assets/fireball.png" style="width:120px;height:120px;filter:drop-shadow(0 0 22px orange);">';
-                fb.style.cssText = 'position:absolute; left:30%; top:48%; transform:translateY(-50%); z-index:100; pointer-events:none;';
-                overlay.appendChild(fb);
-
-                let posX = overlay.clientWidth * 0.3;
-                function moveFireball() {
-                    posX += 6;
-                    fb.style.left = posX + 'px';
-                    if (posX > overlay.clientWidth + 60) {
-                        fb.remove();
-                    } else {
-                        requestAnimationFrame(moveFireball);
-                    }
-                }
-                moveFireball();
-
-                // Enemy HP drops on impact
-                setTimeout(() => {
-                    const enemyHp = document.getElementById('story-enemy-hp');
-                    const enemyText = document.getElementById('story-enemy-hp-text');
-                    if (enemyHp) {
-                        enemyHp.style.transition = 'width 0.4s ease-out';
-                        enemyHp.style.width = '28%';
-                    }
-                    if (enemyText) enemyText.textContent = '140 / 500';
-
-                    // Screen shake
-                    overlay.style.animation = 'battleShake 0.3s ease-in-out';
-                    setTimeout(() => { overlay.style.animation = ''; }, 350);
-
-                    // Clean up after dramatic pause
-                    setTimeout(() => {
-                        battleUI.style.opacity = '0';
-                        modelContainer.style.left = '50%';
-                        modelContainer.style.transform = 'translateX(-50%)';
-                        if (modelViewer) {
-                            modelViewer.cameraOrbit = '10deg 80deg 18m';
-                            modelViewer.setAttribute('auto-rotate', '');
-                        }
-                        setTimeout(() => {
-                            battleUI.remove();
-                            modelContainer.style.transition = 'opacity 0.6s ease';
-                            bubble.classList.remove('exit');
-                            onDone();
-                        }, 700);
-                    }, 1800);
-                }, 500);
-            }, 600);
-        }, 900);
+                battleUI.remove();
+                bubble.classList.remove('exit');
+                onDone();
+            }, 500);
+        }, 3000);
     }
 
     // ---- RARE CHARACTER SHOWCASE (auto-play) ----
