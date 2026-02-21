@@ -23629,8 +23629,22 @@ try {
     if (window.NativePermissions && typeof window.NativePermissions.getPendingShortcutAction === 'function') {
         var _shortcutAction = window.NativePermissions.getPendingShortcutAction();
         if (_shortcutAction === 'calorie-tracker') {
-            console.log('App shortcut: opening calorie tracker camera');
-            setTimeout(function() { openMealCameraDirect('shortcut'); }, 300);
+            console.log('App shortcut: waiting for camera function to be ready');
+            window._pendingShortcutCamera = true;
+            var _shortcutAttempts = 0;
+            var _shortcutInterval = setInterval(function() {
+                _shortcutAttempts++;
+                if (typeof openMealCameraDirect === 'function') {
+                    clearInterval(_shortcutInterval);
+                    console.log('App shortcut: opening calorie tracker camera');
+                    openMealCameraDirect('shortcut');
+                    window._pendingShortcutCamera = false;
+                } else if (_shortcutAttempts > 50) {
+                    clearInterval(_shortcutInterval);
+                    console.warn('App shortcut: camera function never became available');
+                    window._pendingShortcutCamera = false;
+                }
+            }, 200);
         }
     }
 } catch(e) { console.warn('Shortcut check failed:', e); }
