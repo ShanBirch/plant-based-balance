@@ -12699,6 +12699,13 @@ async function applyAppTheme(themeKey) {
                     // (If wizard IS pending, permissions modal will show after wizard finishes)
                     setTimeout(showNativePermissionsModal, 800);
                 }
+            } else if (!window._onboardingWizardPending) {
+                // Web (non-native): request notification permission now that user is logged in
+                // and onboarding is complete. Deferred from DOMContentLoaded to avoid
+                // showing the browser dialog during the onboarding wizard.
+                if (typeof requestNotificationPermission === 'function') {
+                    requestNotificationPermission();
+                }
             }
 
             // Switch to dashboard as default entry point
@@ -29883,8 +29890,19 @@ async function finishOnboarding() {
         }
     }
 
-    // Show native permissions request modal after onboarding completes
-    setTimeout(showNativePermissionsModal, 600);
+    // Show native permissions request modal after onboarding completes.
+    // Delay long enough (4s) for the welcome coins toast to fully display and
+    // auto-dismiss (toast lasts 3.3s) before the permissions overlay covers it.
+    setTimeout(showNativePermissionsModal, 4000);
+
+    // Web (non-native): request notification permission after onboarding finishes
+    if (!(typeof isNativeApp === 'function' && isNativeApp())) {
+        setTimeout(() => {
+            if (typeof requestNotificationPermission === 'function') {
+                requestNotificationPermission();
+            }
+        }, 4500);
+    }
 }
 
 async function closeWizardManually() {
@@ -47218,7 +47236,10 @@ async function subscribeUserToPush() {
 document.addEventListener('DOMContentLoaded', () => {
     updateCoachUI();
     setInterval(updateCoachUI, 1000); // Check every second for visibility toggle
-    requestNotificationPermission();
+    // Don't request notification permission here — it fires before login/onboarding,
+    // causing the browser dialog to overlap the onboarding wizard for new users.
+    // On native apps, notifications are handled by the native permissions modal.
+    // On web, we defer until the user is logged in and onboarding is complete.
 });
 
 // Immediate
