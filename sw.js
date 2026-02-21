@@ -1,5 +1,5 @@
 const CACHE_NAME = 'pbb-app-v17'; // v17: force cache bust to fix stale content after updates not showing in Android WebView
-const MODEL_CACHE_NAME = 'pbb-models-v1'; // Separate long-lived cache for 3D models
+const MODEL_CACHE_NAME = 'pbb-models-v2'; // v2: pre-cache critical onboarding models for fast startup
 const ASSETS = [
   './dashboard.html',
   './assets/Logo_dots.jpg',
@@ -10,11 +10,35 @@ const ASSETS = [
   './login.html'
 ];
 
-// Install - cache assets
+// Critical 3D models to pre-cache for fast onboarding & dashboard startup
+const CRITICAL_MODELS = [
+  'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/goku.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb'
+];
+
+// Install - cache assets + pre-cache critical 3D models
 self.addEventListener('install', (e) => {
   self.skipWaiting(); // Force activation immediately
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    Promise.all([
+      caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)),
+      // Pre-cache critical models (non-blocking — don't fail install if models fail)
+      caches.open(MODEL_CACHE_NAME).then((cache) => {
+        return Promise.allSettled(
+          CRITICAL_MODELS.map(url =>
+            cache.match(url).then(existing => {
+              if (existing) return; // Already cached
+              return fetch(url, { mode: 'cors' }).then(resp => {
+                if (resp.ok) cache.put(url, resp);
+              });
+            })
+          )
+        );
+      })
+    ])
   );
 });
 
