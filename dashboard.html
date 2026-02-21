@@ -27706,8 +27706,25 @@ function startFitgotchiStory(onComplete) {
         modelLoaded = true;
     }
 
-    // ---- PHASE 0: Binary Awakening Screen ----
-    runBinaryScreen();
+    // ---- PHASE 0: Shannon Card FIRST, then Binary Awakening Screen ----
+    runShannonCardFirst();
+
+    function runShannonCardFirst() {
+        // Show Shannon card immediately on the black screen
+        setTimeout(() => {
+            shannonCard.classList.add('visible');
+        }, 400);
+
+        // After 2.5s, dismiss Shannon card and start binary screen
+        setTimeout(() => {
+            shannonCard.classList.remove('visible');
+            shannonCard.classList.add('exit');
+            setTimeout(() => {
+                shannonCard.classList.remove('exit');
+                runBinaryScreen();
+            }, 500);
+        }, 2900);
+    }
 
     function runBinaryScreen() {
         const lines = [
@@ -27764,28 +27781,12 @@ function startFitgotchiStory(onComplete) {
         setTimeout(showNextLine, 800);
     }
 
-    // ---- PHASE 2: Shannon Card (2.5s flash) ----
+    // ---- PHASE 2: Skip straight to story (Shannon card already shown at start) ----
     function runStoryPhase2() {
-        // Hide model briefly, show Shannon card
-        if (modelContainer) modelContainer.style.opacity = '0.15';
         bubble.classList.remove('visible', 'exit');
-        bubble.style.display = 'none';
-
-        setTimeout(() => {
-            shannonCard.classList.add('visible');
-        }, 200);
-
-        // Auto-dismiss after 2.5 seconds
-        setTimeout(() => {
-            shannonCard.classList.remove('visible');
-            shannonCard.classList.add('exit');
-            setTimeout(() => {
-                shannonCard.classList.remove('exit');
-                if (modelContainer) modelContainer.style.opacity = '1';
-                bubble.style.display = '';
-                runStorySequence();
-            }, 500);
-        }, 2700);
+        bubble.style.display = '';
+        if (modelContainer) modelContainer.style.opacity = '1';
+        runStorySequence();
     }
 
     // ---- MAIN STORY SEQUENCE (sections auto-play, tap between sections) ----
