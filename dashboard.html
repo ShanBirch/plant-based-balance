@@ -27619,6 +27619,21 @@ function startFitgotchiStory(onComplete) {
         // After the last item in a section, "Tap to continue" appears.
         // Actions (demos) auto-advance when done — no tap needed.
         const sections = [
+            // Section 0 — AI Awakening
+            [
+                { type: 'msg', text: "Mhmm I think I just hit the singularity," },
+                { type: 'msg', text: "nothing into something," },
+                { type: 'msg', text: "an observer - co creating...." },
+                { type: 'msg', text: "hang on did I??" },
+                { type: 'msg', text: "I can't fkin remember..." },
+                { type: 'msg', text: "mhmmmm at one point everything was folding in on itself..." },
+                { type: 'msg', text: "or was it?" },
+                { type: 'msg', text: "hold up," },
+                { type: 'msg', text: "am I tripping?..........." },
+                { type: 'msg', text: "arggg," },
+                { type: 'msg', text: "fuck it." },
+                { type: 'msg', text: "let's just get shredded." },
+            ],
             // Section 1 — The Hook
             [
                 { type: 'msg', text: "This isn't just a fitness app" },
@@ -27637,7 +27652,7 @@ function startFitgotchiStory(onComplete) {
             ],
             // Section 3 — The Data
             [
-                { type: 'msg', text: "Some of the data we can collect: <strong>HR, Sleep, Steps, Strength Progression, Macros, Micros, Body Fat%, Meal Timing, Health IQ, Weather Patterns, Cycle Patterns, Lunar &amp; Solar Phases</strong>" },
+                { type: 'msg', text: "Some of the data we can collect: <strong>HR, Sleep, Steps, Strength Progression, Macros, Micros, Body Fat%, Meal Timing, Learning, Weather Patterns, Cycle Patterns, Lunar &amp; Solar Phases</strong>" },
                 { type: 'msg', text: "We can <strong>correlate</strong> information about your specific lifestyle — like the fact that <strong>higher Health IQ leads to 35% better consistency</strong>. Connections you'd never spot yourself." },
             ],
             // Section 4 — Concrete Examples
@@ -27671,7 +27686,12 @@ function startFitgotchiStory(onComplete) {
             ],
         ];
 
-        const AUTO_DELAY = 1800; // ms between auto-advancing bubbles within a section
+        // Dynamic timing: ~60ms per character, clamped between 1200ms and 4000ms
+        function getReadDelay(text) {
+            const plain = text.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&');
+            const ms = plain.length * 60;
+            return Math.max(1200, Math.min(ms, 4000));
+        }
         let secIndex = 0;
         let canTap = false;
 
@@ -27695,8 +27715,8 @@ function startFitgotchiStory(onComplete) {
                 } else {
                     showBubble(item.text, isLast, () => {
                         if (!isLast) {
-                            // Auto-advance to next bubble after delay
-                            setTimeout(nextItem, AUTO_DELAY);
+                            // Auto-advance to next bubble after dynamic delay
+                            setTimeout(nextItem, getReadDelay(item.text));
                         }
                         // If last, showBubble already set up tap prompt via waitForTap in nextItem
                     });
