@@ -38486,6 +38486,10 @@ function openAsClient() {
     height: 100%;
     --poster-color: transparent;
 }
+/* Hide model-viewer default loading bar so only our custom loading state shows */
+#story-arny-model::part(default-progress-bar) {
+    display: none;
+}
 
 /* Speech bubble area — positioned above Arny, right side */
 .story-speech-area {
@@ -38804,7 +38808,7 @@ function openAsClient() {
 /* Character label (rare showcase) */
 .story-character-label {
     position: absolute;
-    bottom: 58%;
+    top: calc(12% + env(safe-area-inset-top, 0px));
     left: 50%;
     transform: translateX(-50%);
     text-align: center;
