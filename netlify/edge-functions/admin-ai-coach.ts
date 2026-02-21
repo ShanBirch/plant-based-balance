@@ -189,22 +189,22 @@ IMPORTANT:
         ).join('\n')
       : 'No daily nutrition summaries.';
 
-    // Format check-ins (separate weekly check-ins from daily ones)
-    const weeklyCheckins = checkins.filter((c: any) => c.additional_data?.type === 'weekly_checkin');
-    const dailyCheckins = checkins.filter((c: any) => c.additional_data?.type !== 'weekly_checkin');
+    // Format check-ins (separate fitness diary / weekly check-ins from daily ones)
+    const diaryCheckins = checkins.filter((c: any) => c.additional_data?.type === 'weekly_checkin' || c.additional_data?.type === 'fitness_diary');
+    const dailyCheckins = checkins.filter((c: any) => c.additional_data?.type !== 'weekly_checkin' && c.additional_data?.type !== 'fitness_diary');
 
-    const weeklyCheckinSummary = weeklyCheckins.length > 0
-      ? weeklyCheckins.map((c: any) => {
+    const weeklyCheckinSummary = diaryCheckins.length > 0
+      ? diaryCheckins.map((c: any) => {
           const d = c.additional_data;
-          const parts = [`Week of: ${c.checkin_date}`];
-          if (d.week_rating) parts.push(`Rating: ${d.week_rating.replace(/_/g, ' ')}`);
-          if (d.motivation) parts.push(`Motivation: ${d.motivation.replace(/_/g, ' ')}`);
-          if (d.biggest_win) parts.push(`Win: "${d.biggest_win}"`);
-          if (d.biggest_struggle) parts.push(`Struggle: "${d.biggest_struggle}"`);
-          if (d.coach_note) parts.push(`Note to Shannon: "${d.coach_note}"`);
+          const parts = [`Date: ${c.checkin_date}`];
+          if (d.day_rating || d.week_rating) parts.push(`Rating: ${(d.day_rating || d.week_rating).replace(/_/g, ' ')}`);
+          if (d.energy_level || d.motivation) parts.push(`Energy/Motivation: ${(d.energy_level || d.motivation).replace(/_/g, ' ')}`);
+          if (d.highlight || d.biggest_win) parts.push(`Highlight: "${d.highlight || d.biggest_win}"`);
+          if (d.struggle || d.biggest_struggle) parts.push(`Struggle: "${d.struggle || d.biggest_struggle}"`);
+          if (d.note || d.coach_note) parts.push(`Note: "${d.note || d.coach_note}"`);
           return parts.join(' | ');
         }).join('\n')
-      : 'No weekly check-ins submitted yet.';
+      : 'No fitness diary entries submitted yet.';
 
     const checkinSummary = dailyCheckins.length > 0
       ? dailyCheckins.map((c: any) => {
@@ -311,7 +311,7 @@ ${mealSummary}
 === DAILY NUTRITION TOTALS ===
 ${nutritionSummary}
 
-=== WEEKLY CHECK-INS (client's own words — great for personalising reviews) ===
+=== FITNESS DIARY ENTRIES (client's own words — great for personalising reviews) ===
 ${weeklyCheckinSummary}
 
 === DAILY CHECK-INS ===
