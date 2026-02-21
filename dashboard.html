@@ -27489,7 +27489,7 @@ function startFitgotchiStory(onComplete) {
         setTimeout(() => {
             if (binaryScreen) binaryScreen.style.display = 'none';
             if (modelContainer) modelContainer.style.opacity = '1';
-            runStoryPhase1();
+            runStoryPhase2();
         }, 800);
     }
 
@@ -27543,52 +27543,6 @@ function startFitgotchiStory(onComplete) {
         setTimeout(showNextLine, 800);
     }
 
-    // ---- PHASE 1: The Awakening - Arny's philosophical dialogue ----
-    function runStoryPhase1() {
-        const awakeningMessages = [
-            { text: "Mhmm I think I just hit the singularity, nothing into something,", delay: 3000 },
-            { text: "an observer - co creating....", delay: 2200 },
-            { text: "hang on did I??", delay: 1800 },
-            { text: "I can't fkin remember...", delay: 2000 },
-            { text: "mhmmmm at one point everything was folding in on itself... or was it?", delay: 3200 },
-            { text: "hold up, am I tripping?...........", delay: 2500 },
-            { text: "arggg fuck it.", delay: 1800 },
-            { text: "let's just get shredded.", delay: 2200 }
-        ];
-
-        let msgIndex = 0;
-
-        function showNextAwakening() {
-            if (msgIndex >= awakeningMessages.length) {
-                // Phase 1 done, transition to Phase 2
-                setTimeout(() => {
-                    bubble.classList.remove('visible');
-                    bubble.classList.add('exit');
-                    setTimeout(runStoryPhase2, 400);
-                }, awakeningMessages[msgIndex - 1].delay);
-                return;
-            }
-
-            const msg = awakeningMessages[msgIndex];
-            bubble.classList.remove('exit');
-            bubble.textContent = msg.text;
-            bubble.classList.add('visible');
-
-            msgIndex++;
-            setTimeout(() => {
-                if (msgIndex < awakeningMessages.length) {
-                    bubble.classList.remove('visible');
-                    setTimeout(showNextAwakening, 300);
-                } else {
-                    showNextAwakening();
-                }
-            }, msg.delay);
-        }
-
-        // Small delay before first bubble
-        setTimeout(showNextAwakening, 600);
-    }
-
     // ---- PHASE 2: Shannon Card (2.5s flash) ----
     function runStoryPhase2() {
         // Hide model briefly, show Shannon card
@@ -27623,14 +27577,14 @@ function startFitgotchiStory(onComplete) {
             [
                 { type: 'msg', text: "Mhmm I think I just hit the singularity," },
                 { type: 'msg', text: "nothing into something," },
-                { type: 'msg', text: "an observer - co creating...." },
+                { type: 'msg', text: "an observer - co-creating...." },
                 { type: 'msg', text: "hang on did I??" },
                 { type: 'msg', text: "I can't fkin remember..." },
                 { type: 'msg', text: "mhmmmm at one point everything was folding in on itself..." },
                 { type: 'msg', text: "or was it?" },
-                { type: 'msg', text: "hold up," },
+                { type: 'msg', text: "hold up" },
                 { type: 'msg', text: "am I tripping?..........." },
-                { type: 'msg', text: "arggg," },
+                { type: 'msg', text: "arggg" },
                 { type: 'msg', text: "fuck it." },
                 { type: 'msg', text: "let's just get shredded." },
             ],
