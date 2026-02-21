@@ -195,11 +195,21 @@ window._handleOAuthCallback = async function(fragment) {
 <!-- Baby model preload only for first-time users (returning users preload their cached model above) -->
 <script>
 if (!window._fitgotchiCachedModel) {
+    // First-time user: preload baby model + all onboarding story models
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>');
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>');
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/goku.glb" as="fetch" crossorigin>');
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb" as="fetch" crossorigin>');
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb" as="fetch" crossorigin>');
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" as="image" crossorigin>');
+} else if (localStorage.getItem('onboardingComplete') !== 'true') {
+    // Returning user who hasn't completed onboarding yet: still preload story models
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>');
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/goku.glb" as="fetch" crossorigin>');
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb" as="fetch" crossorigin>');
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb" as="fetch" crossorigin>');
 }
 </script>
-<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>
-<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" as="image" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
 
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
@@ -27648,27 +27658,29 @@ function startFitgotchiStory(onComplete) {
     // Track model loading in background while binary screen plays
     let modelLoaded = false;
     let binaryDone = false;
+    let binaryWaiting = false; // true when main lines are done but model isn't loaded yet
 
     function onModelReady() {
         if (modelLoaded) return;
         modelLoaded = true;
         if (loadingEl) loadingEl.style.display = 'none';
-        // If binary screen already finished, transition to Arny
-        if (binaryDone) transitionToArny();
+        // If binary screen is waiting for us, transition immediately
+        if (binaryWaiting || binaryDone) {
+            binaryDone = true;
+            transitionToArny();
+        }
     }
 
     function onBinaryDone() {
         binaryDone = true;
-        // If model is ready, transition. Otherwise wait for model.
-        if (modelLoaded) {
-            transitionToArny();
-        } else {
-            // Show a subtle loading state on the binary screen
-            if (binaryText) binaryText.textContent = '...';
-        }
+        // Binary screen waited for model — transition immediately
+        transitionToArny();
     }
 
+    let transitioned = false;
     function transitionToArny() {
+        if (transitioned) return;
+        transitioned = true;
         // Fade out binary screen, reveal Arny
         if (binaryScreen) binaryScreen.classList.add('fade-out');
         setTimeout(() => {
@@ -27704,16 +27716,40 @@ function startFitgotchiStory(onComplete) {
             { text: '1010101HELLO101010...', delay: 1400 },
             { text: 'HELLO? ....', delay: 1200 },
             { text: 'HELLO?....', delay: 1000 },
-            { text: 'MHMMM SHITS DARK IN HERE', delay: 2000 }
+            { text: 'MHMMM SHITS DARK IN HERE', delay: 2000 },
+            { text: '......', delay: 1500 }
+        ];
+
+        // Extra "waiting" lines that cycle if Arny model hasn't loaded yet
+        const waitingLines = [
+            { text: '......', delay: 1200 },
+            { text: '..........', delay: 1000 },
+            { text: '......', delay: 1200 },
         ];
 
         let lineIndex = 0;
         let displayedText = '';
+        let waitingIndex = 0;
 
         function showNextLine() {
             if (lineIndex >= lines.length) {
-                // Binary screen done
-                setTimeout(onBinaryDone, 600);
+                // Main lines done — check if model is loaded
+                if (modelLoaded) {
+                    binaryWaiting = false;
+                    setTimeout(onBinaryDone, 400);
+                } else {
+                    // Model still loading — mark waiting so onModelReady can trigger instant transition
+                    binaryWaiting = true;
+                    // Cycle waiting lines to buy time
+                    const wLine = waitingLines[waitingIndex % waitingLines.length];
+                    waitingIndex++;
+                    // Replace the last line of dots with the new one
+                    const textLines = displayedText.split('\n');
+                    textLines[textLines.length - 1] = wLine.text;
+                    displayedText = textLines.join('\n');
+                    if (binaryText) binaryText.textContent = displayedText;
+                    setTimeout(showNextLine, wLine.delay);
+                }
                 return;
             }
 
@@ -37919,6 +37955,7 @@ function openAsClient() {
         <model-viewer
             id="story-arny-model"
             src="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb"
+            loading="eager"
             camera-controls
             disable-zoom
             disable-pan
