@@ -8285,8 +8285,8 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
-    <!-- Weekly Check-In Card (appears on Sundays) -->
-    <div id="weekly-checkin-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden;">
+    <!-- Fitness Diary Card (appears daily from 6 PM) -->
+    <div id="fitness-diary-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden;">
         <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
         <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
 
@@ -8294,86 +8294,86 @@ async function applyAppTheme(themeKey) {
             <!-- Header -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
                 <div>
-                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; font-weight: 700;">Weekly Check-In</h3>
-                    <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Quick reflection — helps Shannon coach you better!</p>
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; font-weight: 700;">Fitness Diary</h3>
+                    <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Quick daily reflection on your fitness journey</p>
                 </div>
                 <div style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
-                    +5 XP
+                    +1 XP
                 </div>
             </div>
 
             <!-- Collapsed state (tap to expand) -->
-            <div id="weekly-checkin-collapsed" onclick="expandWeeklyCheckin()" style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x1F4AC;</div>
+            <div id="fitness-diary-collapsed" onclick="expandFitnessDiary()" style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x1F4D3;</div>
                 <div style="flex: 1;">
-                    <div style="font-weight: 600; font-size: 0.95rem;">How was your week?</div>
-                    <div style="font-size: 0.8rem; opacity: 0.85; margin-top: 2px;">Tap to check in — takes 30 seconds</div>
+                    <div style="font-weight: 600; font-size: 0.95rem;">How was your day?</div>
+                    <div style="font-size: 0.8rem; opacity: 0.85; margin-top: 2px;">Tap to write your diary — takes 30 seconds</div>
                 </div>
                 <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: rgba(255,255,255,0.7);"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
             </div>
 
             <!-- Expanded form (hidden until tapped) -->
-            <div id="weekly-checkin-form" style="display: none;">
-                <!-- Q1: How did your week feel? -->
+            <div id="fitness-diary-form" style="display: none;">
+                <!-- Q1: How did your day feel? -->
                 <div style="margin-bottom: 16px;">
-                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">How did your week feel overall?</div>
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">How did today feel overall?</div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button class="wcheckin-chip" data-group="week_rating" data-value="crushed_it" onclick="selectWeeklyCheckinOption('week_rating','crushed_it',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Crushed it</button>
-                        <button class="wcheckin-chip" data-group="week_rating" data-value="pretty_good" onclick="selectWeeklyCheckinOption('week_rating','pretty_good',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Pretty good</button>
-                        <button class="wcheckin-chip" data-group="week_rating" data-value="meh" onclick="selectWeeklyCheckinOption('week_rating','meh',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Meh</button>
-                        <button class="wcheckin-chip" data-group="week_rating" data-value="rough" onclick="selectWeeklyCheckinOption('week_rating','rough',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Rough</button>
+                        <button class="wcheckin-chip" data-group="day_rating" data-value="crushed_it" onclick="selectFitnessDiaryOption('day_rating','crushed_it',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Crushed it</button>
+                        <button class="wcheckin-chip" data-group="day_rating" data-value="pretty_good" onclick="selectFitnessDiaryOption('day_rating','pretty_good',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Pretty good</button>
+                        <button class="wcheckin-chip" data-group="day_rating" data-value="meh" onclick="selectFitnessDiaryOption('day_rating','meh',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Meh</button>
+                        <button class="wcheckin-chip" data-group="day_rating" data-value="rough" onclick="selectFitnessDiaryOption('day_rating','rough',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Rough</button>
                     </div>
                 </div>
 
-                <!-- Q2: Biggest win -->
+                <!-- Q2: Today's highlight -->
                 <div style="margin-bottom: 16px;">
-                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Biggest win this week?</div>
-                    <input type="text" id="wcheckin-win" placeholder="e.g. Hit the gym 3 times, nailed my protein..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Best thing you did for your health today?</div>
+                    <input type="text" id="diary-highlight" placeholder="e.g. Got my steps in, ate well, trained legs..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
                 </div>
 
-                <!-- Q3: Biggest struggle -->
+                <!-- Q3: What was hardest -->
                 <div style="margin-bottom: 16px;">
-                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">What was hardest?</div>
-                    <input type="text" id="wcheckin-struggle" placeholder="e.g. Snacking at night, skipped workouts..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">What was hardest today?</div>
+                    <input type="text" id="diary-struggle" placeholder="e.g. Cravings, low energy, skipped workout..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
                 </div>
 
-                <!-- Q4: Motivation level -->
+                <!-- Q4: Energy level -->
                 <div style="margin-bottom: 16px;">
-                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">How's your motivation right now?</div>
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">How's your energy right now?</div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button class="wcheckin-chip" data-group="motivation" data-value="on_fire" onclick="selectWeeklyCheckinOption('motivation','on_fire',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">On fire</button>
-                        <button class="wcheckin-chip" data-group="motivation" data-value="steady" onclick="selectWeeklyCheckinOption('motivation','steady',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Steady</button>
-                        <button class="wcheckin-chip" data-group="motivation" data-value="slipping" onclick="selectWeeklyCheckinOption('motivation','slipping',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Slipping</button>
-                        <button class="wcheckin-chip" data-group="motivation" data-value="need_a_push" onclick="selectWeeklyCheckinOption('motivation','need_a_push',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Need a push</button>
+                        <button class="wcheckin-chip" data-group="energy_level" data-value="on_fire" onclick="selectFitnessDiaryOption('energy_level','on_fire',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">On fire</button>
+                        <button class="wcheckin-chip" data-group="energy_level" data-value="steady" onclick="selectFitnessDiaryOption('energy_level','steady',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Steady</button>
+                        <button class="wcheckin-chip" data-group="energy_level" data-value="low" onclick="selectFitnessDiaryOption('energy_level','low',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Low</button>
+                        <button class="wcheckin-chip" data-group="energy_level" data-value="running_on_empty" onclick="selectFitnessDiaryOption('energy_level','running_on_empty',this)" style="background: rgba(255,255,255,0.15); border: 2px solid transparent; color: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">Running on empty</button>
                     </div>
                 </div>
 
-                <!-- Q5: Anything Shannon should know? -->
+                <!-- Q5: Anything else? -->
                 <div style="margin-bottom: 16px;">
-                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Anything else Shannon should know?</div>
-                    <input type="text" id="wcheckin-note" placeholder="Optional — injuries, life stuff, questions..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
+                    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Anything else on your mind?</div>
+                    <input type="text" id="diary-note" placeholder="Optional — how you're feeling, goals for tomorrow..." style="width: 100%; padding: 10px 14px; border: none; border-radius: 10px; font-size: 0.88rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
                 </div>
 
-                <button onclick="submitWeeklyCheckin()" style="width: 100%; background: white; color: #6366f1; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
-                    Submit Check-In
+                <button onclick="submitFitnessDiary()" style="width: 100%; background: white; color: #6366f1; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                    Save Diary Entry
                 </button>
             </div>
 
             <!-- Success state -->
-            <div id="weekly-checkin-success" style="display: none; text-align: center; padding: 10px 0;">
-                <div style="font-size: 2rem; margin-bottom: 8px;">+5 XP</div>
-                <p style="margin: 0; font-weight: 600;">Check-in submitted! Shannon will review this week.</p>
+            <div id="fitness-diary-success" style="display: none; text-align: center; padding: 10px 0;">
+                <div style="font-size: 2rem; margin-bottom: 8px;">+1 XP</div>
+                <p style="margin: 0; font-weight: 600;">Diary entry saved! Nice work today.</p>
             </div>
         </div>
     </div>
 
-    <!-- Weekly Check-In Completed Card -->
-    <div id="weekly-checkin-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
-        <button onclick="dismissWeeklyCheckinDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
+    <!-- Fitness Diary Completed Card -->
+    <div id="fitness-diary-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
+        <button onclick="dismissFitnessDiaryDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
         <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
         <div style="flex: 1;">
-            <div style="font-weight: 700; font-size: 1rem;">Weekly Check-In Done!</div>
-            <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+5 XP earned. See you next Sunday!</div>
+            <div style="font-weight: 700; font-size: 1rem;">Fitness Diary Done!</div>
+            <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back tomorrow!</div>
         </div>
     </div>
 
@@ -8677,75 +8677,74 @@ async function applyAppTheme(themeKey) {
     window.submitDailyWeighIn = submitDailyWeighIn;
     window.checkAndShowWeighInCard = checkAndShowWeighInCard;
 
-    // ===== WEEKLY CHECK-IN CARD (Sundays) =====
+    // ===== FITNESS DIARY CARD (Daily from 6 PM) =====
 
-    window._weeklyCheckinData = { week_rating: null, motivation: null };
+    window._fitnessDiaryData = { day_rating: null, energy_level: null };
 
-    function getWeekStartSunday() {
+    function getTodayDateKey() {
         var d = new Date();
-        // Get this week's Sunday (if today is Sunday, use today; otherwise go back)
-        var day = d.getDay(); // 0 = Sunday
-        var sundayDate = new Date(d);
-        sundayDate.setDate(d.getDate() - day);
-        return sundayDate.getFullYear() + '-' + String(sundayDate.getMonth()+1).padStart(2,'0') + '-' + String(sundayDate.getDate()).padStart(2,'0');
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     }
 
-    async function checkAndShowWeeklyCheckinCard() {
+    async function checkAndShowFitnessDiaryCard() {
         if (!window.currentUser) return;
         // Don't show if onboarding wizard is active
         if (window._onboardingWizardPending) return;
         var wizard = document.getElementById('onboarding-wizard');
         if (wizard && wizard.style.display !== 'none') return;
 
-        var card = document.getElementById('weekly-checkin-card');
-        var doneCard = document.getElementById('weekly-checkin-done-card');
+        var card = document.getElementById('fitness-diary-card');
+        var doneCard = document.getElementById('fitness-diary-done-card');
         if (!card) return;
 
-        // Only show on Sundays
-        var today = new Date();
-        if (today.getDay() !== 0) {
+        // Only show from 6 PM onwards
+        var now = new Date();
+        if (now.getHours() < 18) {
             card.style.display = 'none';
             if (doneCard) doneCard.style.display = 'none';
             return;
         }
 
-        // Check if already completed this week
-        var weekKey = getWeekStartSunday();
-        var lsKey = 'weeklyCheckinDone_' + weekKey;
+        // Check if already completed today
+        var dateKey = getTodayDateKey();
+        var lsKey = 'fitnessDiaryDone_' + dateKey;
 
         if (localStorage.getItem(lsKey)) {
             // Already done — show done card (unless dismissed)
             card.style.display = 'none';
             if (doneCard) {
-                var dismissKey = 'weeklyCheckinDoneDismissed_' + weekKey;
+                var dismissKey = 'fitnessDiaryDoneDismissed_' + dateKey;
                 doneCard.style.display = localStorage.getItem(dismissKey) ? 'none' : 'flex';
             }
             return;
         }
 
-        // Show the check-in card
+        // Show the diary card
         card.style.display = 'block';
         if (doneCard) doneCard.style.display = 'none';
 
         // Reset form state
-        var collapsed = document.getElementById('weekly-checkin-collapsed');
-        var form = document.getElementById('weekly-checkin-form');
-        var success = document.getElementById('weekly-checkin-success');
+        var collapsed = document.getElementById('fitness-diary-collapsed');
+        var form = document.getElementById('fitness-diary-form');
+        var success = document.getElementById('fitness-diary-success');
         if (collapsed) collapsed.style.display = 'flex';
         if (form) form.style.display = 'none';
         if (success) success.style.display = 'none';
-        window._weeklyCheckinData = { week_rating: null, motivation: null };
+        window._fitnessDiaryData = { day_rating: null, energy_level: null };
     }
 
-    function expandWeeklyCheckin() {
-        var collapsed = document.getElementById('weekly-checkin-collapsed');
-        var form = document.getElementById('weekly-checkin-form');
+    // Backwards compatibility alias
+    window.checkAndShowWeeklyCheckinCard = checkAndShowFitnessDiaryCard;
+
+    function expandFitnessDiary() {
+        var collapsed = document.getElementById('fitness-diary-collapsed');
+        var form = document.getElementById('fitness-diary-form');
         if (collapsed) collapsed.style.display = 'none';
         if (form) form.style.display = 'block';
     }
 
-    function selectWeeklyCheckinOption(group, value, el) {
-        window._weeklyCheckinData[group] = value;
+    function selectFitnessDiaryOption(group, value, el) {
+        window._fitnessDiaryData[group] = value;
         var chips = document.querySelectorAll('.wcheckin-chip[data-group="' + group + '"]');
         chips.forEach(function(c) {
             c.style.background = 'rgba(255,255,255,0.15)';
@@ -8757,40 +8756,40 @@ async function applyAppTheme(themeKey) {
         el.style.fontWeight = '700';
     }
 
-    async function submitWeeklyCheckin() {
+    async function submitFitnessDiary() {
         if (!window.currentUser) return;
 
-        if (!window._weeklyCheckinData.week_rating) {
-            alert('Please select how your week felt!');
+        if (!window._fitnessDiaryData.day_rating) {
+            alert('Please select how your day felt!');
             return;
         }
 
-        var form = document.getElementById('weekly-checkin-form');
-        var success = document.getElementById('weekly-checkin-success');
-        var card = document.getElementById('weekly-checkin-card');
+        var form = document.getElementById('fitness-diary-form');
+        var success = document.getElementById('fitness-diary-success');
+        var card = document.getElementById('fitness-diary-card');
 
-        var winInput = document.getElementById('wcheckin-win');
-        var struggleInput = document.getElementById('wcheckin-struggle');
-        var noteInput = document.getElementById('wcheckin-note');
+        var highlightInput = document.getElementById('diary-highlight');
+        var struggleInput = document.getElementById('diary-struggle');
+        var noteInput = document.getElementById('diary-note');
 
-        var checkinPayload = {
-            type: 'weekly_checkin',
-            week_rating: window._weeklyCheckinData.week_rating,
-            motivation: window._weeklyCheckinData.motivation,
-            biggest_win: (winInput && winInput.value.trim()) || null,
-            biggest_struggle: (struggleInput && struggleInput.value.trim()) || null,
-            coach_note: (noteInput && noteInput.value.trim()) || null
+        var dateKey = getTodayDateKey();
+        var diaryPayload = {
+            type: 'fitness_diary',
+            day_rating: window._fitnessDiaryData.day_rating,
+            energy_level: window._fitnessDiaryData.energy_level,
+            highlight: (highlightInput && highlightInput.value.trim()) || null,
+            struggle: (struggleInput && struggleInput.value.trim()) || null,
+            note: (noteInput && noteInput.value.trim()) || null
         };
 
         try {
             // Save to daily_checkins using the existing upsert with additional_data
-            var weekKey = getWeekStartSunday();
-            await db.checkins.upsert(window.currentUser.id, weekKey, {
-                energy: window._weeklyCheckinData.week_rating,
-                additional_data: checkinPayload
+            await db.checkins.upsert(window.currentUser.id, dateKey, {
+                energy: window._fitnessDiaryData.day_rating,
+                additional_data: diaryPayload
             });
 
-            // Award 5 XP
+            // Award 1 XP
             try {
                 var { data: currentPoints } = await supabaseClient
                     .from('user_points')
@@ -8801,18 +8800,18 @@ async function applyAppTheme(themeKey) {
                 if (currentPoints) {
                     await supabaseClient
                         .from('user_points')
-                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 5 })
+                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 1 })
                         .eq('user_id', window.currentUser.id);
                 } else {
                     await supabaseClient
                         .from('user_points')
-                        .insert({ user_id: window.currentUser.id, lifetime_points: 5, current_points: 0 });
+                        .insert({ user_id: window.currentUser.id, lifetime_points: 1, current_points: 0 });
                 }
 
                 if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
                 if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
             } catch (xpErr) {
-                console.log('Weekly check-in XP award skipped:', xpErr);
+                console.log('Fitness diary XP award skipped:', xpErr);
             }
 
             // Show success
@@ -8820,7 +8819,7 @@ async function applyAppTheme(themeKey) {
             if (success) success.style.display = 'block';
 
             // Mark as done in localStorage
-            localStorage.setItem('weeklyCheckinDone_' + weekKey, '1');
+            localStorage.setItem('fitnessDiaryDone_' + dateKey, '1');
 
             // Transition to done card
             setTimeout(function() {
@@ -8832,7 +8831,7 @@ async function applyAppTheme(themeKey) {
                         card.style.display = 'none';
                         card.style.opacity = '1';
                         card.style.transform = 'translateY(0)';
-                        var doneCard = document.getElementById('weekly-checkin-done-card');
+                        var doneCard = document.getElementById('fitness-diary-done-card');
                         if (doneCard) doneCard.style.display = 'flex';
                     }, 500);
                 }
@@ -8841,28 +8840,31 @@ async function applyAppTheme(themeKey) {
             if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
 
         } catch (err) {
-            console.error('Error submitting weekly check-in:', err);
-            alert('Failed to submit check-in. Please try again.');
+            console.error('Error submitting fitness diary:', err);
+            alert('Failed to save diary entry. Please try again.');
         }
     }
 
-    function dismissWeeklyCheckinDoneCard() {
-        var weekKey = getWeekStartSunday();
-        localStorage.setItem('weeklyCheckinDoneDismissed_' + weekKey, '1');
-        document.getElementById('weekly-checkin-done-card').style.display = 'none';
+    function dismissFitnessDiaryDoneCard() {
+        var dateKey = getTodayDateKey();
+        localStorage.setItem('fitnessDiaryDoneDismissed_' + dateKey, '1');
+        document.getElementById('fitness-diary-done-card').style.display = 'none';
     }
 
-    window.checkAndShowWeeklyCheckinCard = checkAndShowWeeklyCheckinCard;
-    window.expandWeeklyCheckin = expandWeeklyCheckin;
-    window.selectWeeklyCheckinOption = selectWeeklyCheckinOption;
-    window.submitWeeklyCheckin = submitWeeklyCheckin;
-    window.dismissWeeklyCheckinDoneCard = dismissWeeklyCheckinDoneCard;
+    window.checkAndShowFitnessDiaryCard = checkAndShowFitnessDiaryCard;
+    window.expandFitnessDiary = expandFitnessDiary;
+    window.selectFitnessDiaryOption = selectFitnessDiaryOption;
+    window.submitFitnessDiary = submitFitnessDiary;
+    window.dismissFitnessDiaryDoneCard = dismissFitnessDiaryDoneCard;
 
     // PWA resume: re-check weigh-in when app comes back to foreground
     // (e.g., user opens PWA the next day without a hard refresh)
     let _lastWeighInCheckDate = new Date().toDateString();
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'visible') {
+            // Always re-check fitness diary on resume (6 PM threshold may have been crossed)
+            if (typeof checkAndShowFitnessDiaryCard === 'function') checkAndShowFitnessDiaryCard();
+
             const today = new Date().toDateString();
             if (today !== _lastWeighInCheckDate) {
                 // It's a new day since last check - refresh weigh-in card, modal & daily quiz
@@ -8870,7 +8872,7 @@ async function applyAppTheme(themeKey) {
                 console.log('🔄 New day detected on PWA resume, refreshing daily cards');
                 if (typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
                 if (typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
-                if (typeof checkAndShowWeeklyCheckinCard === 'function') checkAndShowWeeklyCheckinCard();
+                if (typeof checkAndShowFitnessDiaryCard === 'function') checkAndShowFitnessDiaryCard();
                 if (typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
                 if (typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
                 if (typeof checkAndShowProgressPhotoCard === 'function') checkAndShowProgressPhotoCard();
@@ -12671,7 +12673,7 @@ async function applyAppTheme(themeKey) {
             // Phase 4: Non-critical UI updates (fire-and-forget, don't block)
             if(typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
             if(typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
-            if(typeof checkAndShowWeeklyCheckinCard === 'function') checkAndShowWeeklyCheckinCard();
+            if(typeof checkAndShowFitnessDiaryCard === 'function') checkAndShowFitnessDiaryCard();
             if(typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
             if(typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
             if(typeof checkAndShowProgressPhotoCard === 'function') checkAndShowProgressPhotoCard();
@@ -23487,8 +23489,8 @@ function _switchAppTabReal(tabName, btn) {
         if (typeof checkAndShowWeighInCard === 'function') {
             checkAndShowWeighInCard();
         }
-        if (typeof checkAndShowWeeklyCheckinCard === 'function') {
-            checkAndShowWeeklyCheckinCard();
+        if (typeof checkAndShowFitnessDiaryCard === 'function') {
+            checkAndShowFitnessDiaryCard();
         }
         if (typeof checkAndShowDailyQuizCard === 'function') {
             checkAndShowDailyQuizCard();
