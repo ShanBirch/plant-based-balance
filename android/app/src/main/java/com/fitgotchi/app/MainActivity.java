@@ -28,6 +28,10 @@ public class MainActivity extends BridgeActivity {
     private PermissionRequest pendingPermissionRequest;
     /** Holds OAuth fragment from a cold-start deep link until the WebView is ready. */
     private volatile String pendingOAuthFragment = null;
+    /** Holds a shortcut action (e.g. "calorie-tracker") from a long-press app shortcut until the WebView is ready. */
+    private volatile String pendingShortcutAction = null;
+
+    private static final String ACTION_CALORIE_TRACKER = "com.fitgotchi.app.ACTION_CALORIE_TRACKER";
 
     /**
      * Launcher that shows the native Android "Allow camera?" dialog.
@@ -163,6 +167,11 @@ public class MainActivity extends BridgeActivity {
             pendingOAuthFragment = deepLinkData.getFragment();
         }
 
+        // Check if launched from a long-press app shortcut
+        if (ACTION_CALORIE_TRACKER.equals(getIntent().getAction())) {
+            pendingShortcutAction = "calorie-tracker";
+        }
+
         // Override onPermissionRequest so that when getUserMedia() fires inside
         // the WebView, we show the native Android "Allow camera?" popup instead
         // of silently denying. This is the critical handler that was missing —
@@ -276,6 +285,19 @@ public class MainActivity extends BridgeActivity {
             String fragment = pendingOAuthFragment;
             pendingOAuthFragment = null;
             return fragment;
+        }
+
+        /**
+         * Returns a pending shortcut action from a long-press app shortcut,
+         * or null if there is none. Called by dashboard.html on load so it
+         * can navigate directly to the requested view (e.g. calorie tracker).
+         * The action is cleared after the first call.
+         */
+        @JavascriptInterface
+        public String getPendingShortcutAction() {
+            String action = pendingShortcutAction;
+            pendingShortcutAction = null;
+            return action;
         }
 
         /**
@@ -537,6 +559,23 @@ public class MainActivity extends BridgeActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         handleOAuthDeepLink(intent);
+        handleShortcutIntent(intent);
+    }
+
+    /**
+     * If the intent came from a long-press app shortcut while the app is
+     * already running, inject JS to navigate directly to the target view.
+     */
+    private void handleShortcutIntent(Intent intent) {
+        if (intent == null) return;
+        if (ACTION_CALORIE_TRACKER.equals(intent.getAction())) {
+            WebView wv = getBridge().getWebView();
+            if (wv != null) {
+                runOnUiThread(() -> wv.evaluateJavascript(
+                    "if(typeof switchAppTab==='function'){switchAppTab('meals');setTimeout(function(){switchWeek('calorie-tracker')},200)}",
+                    null));
+            }
+        }
     }
 
     /**

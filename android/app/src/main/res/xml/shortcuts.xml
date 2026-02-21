@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="calorie_tracker"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_calorie"
+        android:shortcutShortLabel="@string/shortcut_calorie_short"
+        android:shortcutLongLabel="@string/shortcut_calorie_long">
+        <intent
+            android:action="com.fitgotchi.app.ACTION_CALORIE_TRACKER"
+            android:targetPackage="com.fitgotchi.app"
+            android:targetClass="com.fitgotchi.app.MainActivity" />
+    </shortcut>
+</shortcuts>
