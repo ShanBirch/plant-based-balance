@@ -27710,6 +27710,8 @@ function startFitgotchiStory(onComplete) {
     runShannonCardFirst();
 
     function runShannonCardFirst() {
+        const shannonTap = document.getElementById('story-shannon-tap');
+
         // Show Shannon card immediately on the black screen
         setTimeout(() => {
             shannonCard.classList.add('visible');
@@ -27717,13 +27719,13 @@ function startFitgotchiStory(onComplete) {
 
         // Show tap prompt after a moment
         setTimeout(() => {
-            tapPrompt.style.display = 'block';
+            if (shannonTap) shannonTap.style.display = 'block';
         }, 1800);
 
         // Wait for user tap to dismiss Shannon card and start binary screen
         function onShannonTap() {
             overlay.removeEventListener('click', onShannonTap);
-            tapPrompt.style.display = 'none';
+            if (shannonTap) shannonTap.style.display = 'none';
             shannonCard.classList.remove('visible');
             shannonCard.classList.add('exit');
             setTimeout(() => {
@@ -37981,13 +37983,14 @@ function openAsClient() {
         <div>Getting ready<span class="story-loading-dots"></span></div>
     </div>
 
-    <!-- Shannon card (Phase 2 - flashes briefly) -->
+    <!-- Shannon card (shown first before binary screen) -->
     <div class="story-shannon-card" id="story-shannon-card">
         <img src="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" alt="Shannon Birch" class="story-shannon-photo">
         <div class="story-shannon-text">
             Designed by <strong>Shannon Birch</strong>
             <span>I designed this to help you become the fittest version of yourself</span>
         </div>
+        <div class="story-shannon-tap" id="story-shannon-tap" style="display:none;">Tap to continue</div>
     </div>
 
     <!-- Arny 3D model -->
@@ -38979,7 +38982,7 @@ function openAsClient() {
     flex-direction: column;
     align-items: center;
     gap: 16px;
-    z-index: 5;
+    z-index: 101;
     transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .story-shannon-card.visible {
@@ -38990,6 +38993,12 @@ function openAsClient() {
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.9);
     transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.story-shannon-tap {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.8rem;
+    font-weight: 500;
+    animation: storyPulse 2s ease-in-out infinite;
 }
 .story-shannon-photo {
     width: 120px;
