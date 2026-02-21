@@ -53,12 +53,16 @@
 
     if (isViewAs) {
         // ENTERING view-as mode: backup admin's localStorage, then clear
-        var backup = {};
-        USER_KEYS.forEach(function(k) {
-            var v = localStorage.getItem(k);
-            if (v !== null) backup[k] = v;
-        });
-        localStorage.setItem(ADMIN_BACKUP_KEY, JSON.stringify(backup));
+        // Only create backup if one doesn't already exist — prevents overwriting
+        // the admin's original data when navigating between viewed users
+        if (!localStorage.getItem(ADMIN_BACKUP_KEY)) {
+            var backup = {};
+            USER_KEYS.forEach(function(k) {
+                var v = localStorage.getItem(k);
+                if (v !== null) backup[k] = v;
+            });
+            localStorage.setItem(ADMIN_BACKUP_KEY, JSON.stringify(backup));
+        }
         USER_KEYS.forEach(function(k) { localStorage.removeItem(k); });
         sessionStorage.clear();
     } else if (localStorage.getItem(ADMIN_BACKUP_KEY)) {
@@ -63385,6 +63389,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         async function loadBattleStatsFromDb() {
+            if (window.isAdminViewing) return; // Don't load viewed user's stats into admin's localStorage
             if (!window.currentUser || !window.dbHelpers) return;
             try {
                 const userId = window.currentUser.id || window.currentUser.user_id;
@@ -63630,6 +63635,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             const actualTotal = allocated + unallocated;
 
             if (actualTotal < expectedTotal) {
+                // Safety check: if allocated stats are 0 but user has a non-trivial level,
+                // something corrupted localStorage/DB. Don't grant retroactive points
+                // based on corrupted data — it would overwrite correct DB values with zeros.
+                if (allocated === 0 && level > 5 && unallocated === 0) {
+                    console.warn(`🎮 Skipping retroactive grant: stats appear corrupted (level ${level} but 0 allocated, 0 unallocated). Will retry on next load.`);
+                    return;
+                }
                 const missing = expectedTotal - actualTotal;
                 setUnallocatedPoints(unallocated + missing);
                 console.log(`🎮 Retroactively granted ${missing} stat points (level ${level}, expected ${expectedTotal}, had ${actualTotal})`);
