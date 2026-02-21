@@ -27383,6 +27383,14 @@ function initOnboardingWizard() {
         }
     }
 
+    // Eagerly preload all wizard model-viewers so they're ready before user reaches those slides
+    ['wizard-fitgotchi-preview', 'wizard-arny-preview', 'wizard-preview-model'].forEach(id => {
+        const mv = document.getElementById(id);
+        if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) {
+            mv.setAttribute('src', mv.dataset.lazySrc);
+        }
+    });
+
     // Check if story has already been shown this session
     const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
     if (storyShown) {
@@ -27441,32 +27449,19 @@ function startFitgotchiStory(onComplete) {
         overlay.classList.add('active');
     });
 
-    // Preload rare showcase models into browser cache
-    const showcaseModelUrls = [
-        'https://f005.backblazeb2.com/file/shannonsvideos/goku.glb',
-        'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb',
-        'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb'
-    ];
-    let showcaseModelsReady = false;
-    const showcasePromise = Promise.all(
-        showcaseModelUrls.map(url => fetch(url).then(r => r.arrayBuffer()).catch(() => null))
-    ).then(() => { showcaseModelsReady = true; });
+    // Showcase models preload via hidden <model-viewer> elements in HTML.
+    // They load in the background and will be ready long before the showcase
+    // phase (~25+ seconds of story plays first).
 
-    // Wait for model to load
+    // Wait for Arny model to load
     let modelLoaded = false;
 
     function onModelReady() {
         if (modelLoaded) return;
         modelLoaded = true;
-        // Hide loading, show model
         if (loadingEl) loadingEl.style.display = 'none';
         if (modelContainer) modelContainer.style.opacity = '1';
-        // Wait for showcase models too before starting
-        if (showcaseModelsReady) {
-            runStoryPhase1();
-        } else {
-            showcasePromise.then(() => runStoryPhase1());
-        }
+        runStoryPhase1();
     }
 
     if (modelViewer) {
@@ -27673,14 +27668,15 @@ function startFitgotchiStory(onComplete) {
         }, 3000);
     }
 
-    // ---- RARE CHARACTER SHOWCASE (auto-play) ----
+    // ---- RARE CHARACTER SHOWCASE (uses pre-loaded model-viewers for instant display) ----
     function runRareShowcase(onDone) {
         const showcaseChars = [
-            { name: 'Goku', tier: 'EPIC', src: 'https://f005.backblazeb2.com/file/shannonsvideos/goku.glb', color: '#a855f7' },
-            { name: 'Steve Irwin', tier: 'RARE', src: 'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb', color: '#3b82f6' },
-            { name: 'Optimus', tier: 'EPIC', src: 'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb', color: '#a855f7' }
+            { name: 'Goku', tier: 'EPIC', viewerId: 'story-preload-0', color: '#a855f7' },
+            { name: 'Steve Irwin', tier: 'RARE', viewerId: 'story-preload-1', color: '#3b82f6' },
+            { name: 'Optimus', tier: 'EPIC', viewerId: 'story-preload-2', color: '#a855f7' }
         ];
 
+        const preloadContainer = document.getElementById('story-preload-models');
         const charLabel = document.getElementById('story-character-label');
         let charIndex = 0;
 
@@ -27689,56 +27685,55 @@ function startFitgotchiStory(onComplete) {
         bubble.classList.add('exit');
         tapPrompt.style.display = 'none';
 
+        // Hide main Arny model, show preload container
+        modelContainer.style.opacity = '0';
+        if (preloadContainer) preloadContainer.classList.add('active');
+
         function showNextChar() {
             if (charIndex >= showcaseChars.length) {
-                // Done — swap back to Arny
+                // Done — hide preload, restore Arny
                 if (charLabel) charLabel.classList.remove('visible');
-                modelContainer.style.opacity = '0';
+                showcaseChars.forEach(c => {
+                    const el = document.getElementById(c.viewerId);
+                    if (el) el.classList.remove('active');
+                });
+                if (preloadContainer) preloadContainer.classList.remove('active');
                 setTimeout(() => {
-                    modelViewer.src = 'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb';
-                    modelViewer.cameraOrbit = '10deg 80deg 18m';
-                    modelViewer.fieldOfView = '32deg';
-                    setTimeout(() => {
-                        modelContainer.style.opacity = '1';
-                        bubble.classList.remove('exit');
-                        onDone();
-                    }, 600);
-                }, 300);
+                    modelContainer.style.opacity = '1';
+                    bubble.classList.remove('exit');
+                    onDone();
+                }, 400);
                 return;
             }
 
             const char = showcaseChars[charIndex];
-            modelContainer.style.opacity = '0';
+
+            // Deactivate previous viewer
+            if (charIndex > 0) {
+                const prev = document.getElementById(showcaseChars[charIndex - 1].viewerId);
+                if (prev) prev.classList.remove('active');
+            }
             if (charLabel) charLabel.classList.remove('visible');
 
             setTimeout(() => {
-                modelViewer.src = char.src;
-                modelViewer.cameraOrbit = '0deg 75deg 20m';
-                modelViewer.fieldOfView = '30deg';
+                // Activate this character's pre-loaded viewer
+                const viewer = document.getElementById(char.viewerId);
+                if (viewer) viewer.classList.add('active');
 
                 if (charLabel) {
                     charLabel.querySelector('.story-char-name').textContent = char.name;
                     const tierEl = charLabel.querySelector('.story-char-tier');
                     tierEl.textContent = char.tier;
                     tierEl.style.color = char.color;
+                    charLabel.classList.add('visible');
                 }
 
-                let loaded = false;
-                const onLoad = () => {
-                    if (loaded) return;
-                    loaded = true;
-                    modelContainer.style.opacity = '1';
-                    if (charLabel) charLabel.classList.add('visible');
-                    charIndex++;
-                    setTimeout(showNextChar, 2500);
-                };
-
-                modelViewer.addEventListener('load', onLoad, { once: true });
-                setTimeout(() => { if (!loaded) onLoad(); }, 3000);
-            }, 400);
+                charIndex++;
+                setTimeout(showNextChar, 2500);
+            }, 300);
         }
 
-        setTimeout(showNextChar, 500);
+        setTimeout(showNextChar, 400);
     }
 }
 
@@ -37625,6 +37620,28 @@ function openAsClient() {
         </model-viewer>
     </div>
 
+    <!-- Pre-loaded showcase character models (load in background, swap visibility for instant display) -->
+    <div class="story-preload-models" id="story-preload-models">
+        <model-viewer class="story-preload-viewer" id="story-preload-0"
+            src="https://f005.backblazeb2.com/file/shannonsvideos/goku.glb"
+            loading="eager" disable-zoom disable-pan shadow-intensity="1" exposure="0.9"
+            camera-orbit="0deg 75deg 20m" field-of-view="30deg"
+            style="width:100%;height:100%;--poster-color:transparent;" interaction-prompt="none">
+        </model-viewer>
+        <model-viewer class="story-preload-viewer" id="story-preload-1"
+            src="https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb"
+            loading="eager" disable-zoom disable-pan shadow-intensity="1" exposure="0.9"
+            camera-orbit="0deg 75deg 20m" field-of-view="30deg"
+            style="width:100%;height:100%;--poster-color:transparent;" interaction-prompt="none">
+        </model-viewer>
+        <model-viewer class="story-preload-viewer" id="story-preload-2"
+            src="https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb"
+            loading="eager" disable-zoom disable-pan shadow-intensity="1" exposure="0.9"
+            camera-orbit="0deg 75deg 20m" field-of-view="30deg"
+            style="width:100%;height:100%;--poster-color:transparent;" interaction-prompt="none">
+        </model-viewer>
+    </div>
+
     <!-- Character name label (shown during rare showcase) -->
     <div class="story-character-label" id="story-character-label">
         <span class="story-char-name"></span>
@@ -38748,6 +38765,35 @@ function openAsClient() {
 .story-stat-fill.hp { background: linear-gradient(90deg, #2ecc71, #4ecdc4); }
 .story-stat-fill.mana { background: linear-gradient(90deg, #3498db, #45b7d1); }
 
+/* Pre-loaded showcase model container */
+.story-preload-models {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 400px;
+    height: 60%;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+.story-preload-models.active {
+    opacity: 1;
+}
+.story-preload-viewer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+.story-preload-viewer.active {
+    opacity: 1;
+}
+
 /* Character label (rare showcase) */
 .story-character-label {
     position: absolute;
@@ -38922,24 +38968,195 @@ function openAsClient() {
     color: rgba(255,255,255,0.6) !important;
 }
 
-/* Emoji icons on dark look fine as-is */
+/* ---- COMPREHENSIVE INLINE COLOR OVERRIDES ---- */
 
-/* Slide background boxes */
+/* ALL white/light backgrounds → dark glass */
 #onboarding-wizard .wizard-slide div[style*="background:white"],
 #onboarding-wizard .wizard-slide div[style*="background: white"],
 #onboarding-wizard .wizard-slide button[style*="background:white"],
+#onboarding-wizard .wizard-slide button[style*="background: white"],
 #onboarding-wizard .wizard-slide div[style*="background:#fff"],
 #onboarding-wizard .wizard-slide div[style*="background: #fff"] {
     background: rgba(255,255,255,0.06) !important;
     border-color: rgba(255,255,255,0.1) !important;
 }
 
-/* Border overrides */
+/* Light gray backgrounds */
+#onboarding-wizard .wizard-slide div[style*="background:#e2e8f0"],
+#onboarding-wizard .wizard-slide div[style*="background: #e2e8f0"] {
+    background: rgba(255,255,255,0.1) !important;
+}
+
+/* Green gradient backgrounds (f0fdf4, dcfce7) → dark green */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #f0fdf4"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #f0fdf4"] {
+    background: linear-gradient(135deg, rgba(4,106,56,0.2), rgba(4,106,56,0.1)) !important;
+}
+
+/* Blue gradient backgrounds (e0f2fe, bae6fd) → dark blue */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #e0f2fe"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #e0f2fe"] {
+    background: linear-gradient(135deg, rgba(14,116,144,0.2), rgba(14,116,144,0.1)) !important;
+}
+
+/* Indigo gradient backgrounds (e0e7ff, c7d2fe) → dark indigo */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #e0e7ff"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #e0e7ff"] {
+    background: linear-gradient(135deg, rgba(67,56,202,0.2), rgba(67,56,202,0.1)) !important;
+}
+
+/* Yellow gradient backgrounds (fef3c7, fde68a) → dark amber */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #fef3c7"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #fef3c7"] {
+    background: linear-gradient(135deg, rgba(180,83,9,0.2), rgba(180,83,9,0.1)) !important;
+}
+
+/* Pink gradient backgrounds (fce7f3, fbcfe8) → dark pink */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #fce7f3"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #fce7f3"] {
+    background: linear-gradient(135deg, rgba(190,24,93,0.2), rgba(190,24,93,0.1)) !important;
+}
+
+/* Profile photo container gradient */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #e2e8f0"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #e2e8f0"] {
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04)) !important;
+}
+
+/* ALL border overrides — every light border pattern */
 #onboarding-wizard .wizard-slide div[style*="border:1px solid #e2e8f0"],
 #onboarding-wizard .wizard-slide div[style*="border: 1px solid #e2e8f0"],
 #onboarding-wizard .wizard-slide button[style*="border:2px solid #e2e8f0"],
 #onboarding-wizard .wizard-slide button[style*="border: 2px solid #e2e8f0"] {
     border-color: rgba(255,255,255,0.12) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #eee"],
+#onboarding-wizard .wizard-slide div[style*="border: 1px solid #eee"] {
+    border-color: rgba(255,255,255,0.1) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #cbd5e1"],
+#onboarding-wizard .wizard-slide button[style*="border:1px solid #cbd5e1"] {
+    border-color: rgba(255,255,255,0.15) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:2px solid #48864B"],
+#onboarding-wizard .wizard-slide button[style*="border:2px solid #48864B"] {
+    border-color: rgba(4,106,56,0.5) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:2px dashed #48864B"],
+#onboarding-wizard .wizard-slide div[style*="border: 2px dashed #48864B"] {
+    border-color: rgba(4,106,56,0.5) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #bbf7d0"] {
+    border-color: rgba(4,106,56,0.3) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #7dd3fc"],
+#onboarding-wizard .wizard-slide div[style*="border:2px solid #0284c7"],
+#onboarding-wizard .wizard-slide button[style*="border:2px solid #0284c7"] {
+    border-color: rgba(14,116,144,0.4) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #a5b4fc"] {
+    border-color: rgba(67,56,202,0.3) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #fcd34d"] {
+    border-color: rgba(180,83,9,0.3) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #f9a8d4"] {
+    border-color: rgba(190,24,93,0.3) !important;
+}
+#onboarding-wizard .wizard-slide button[style*="border:2px solid var(--primary)"] {
+    border-color: rgba(4,106,56,0.5) !important;
+}
+
+/* ---- TEXT COLOR OVERRIDES ---- */
+
+/* Dark greens on light backgrounds → light green/white */
+#onboarding-wizard .wizard-slide div[style*="color:#166534"],
+#onboarding-wizard .wizard-slide span[style*="color:#166534"],
+#onboarding-wizard .wizard-slide p[style*="color:#166534"] {
+    color: #86efac !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#1a4d2e"],
+#onboarding-wizard .wizard-slide span[style*="color:#1a4d2e"],
+#onboarding-wizard .wizard-slide p[style*="color:#1a4d2e"] {
+    color: #86efac !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#48864B"],
+#onboarding-wizard .wizard-slide span[style*="color:#48864B"] {
+    color: #6ee7b7 !important;
+}
+
+/* Dark blues → light blue */
+#onboarding-wizard .wizard-slide div[style*="color:#0369a1"],
+#onboarding-wizard .wizard-slide span[style*="color:#0369a1"],
+#onboarding-wizard .wizard-slide p[style*="color:#0369a1"] {
+    color: #7dd3fc !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#0c4a6e"],
+#onboarding-wizard .wizard-slide span[style*="color:#0c4a6e"] {
+    color: #7dd3fc !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#0284c7"],
+#onboarding-wizard .wizard-slide span[style*="color:#0284c7"] {
+    color: #38bdf8 !important;
+}
+
+/* Dark amber → warm amber */
+#onboarding-wizard .wizard-slide div[style*="color:#92400e"],
+#onboarding-wizard .wizard-slide span[style*="color:#92400e"] {
+    color: #fcd34d !important;
+}
+
+/* Dark indigo → light indigo */
+#onboarding-wizard .wizard-slide div[style*="color:#4338ca"],
+#onboarding-wizard .wizard-slide span[style*="color:#4338ca"] {
+    color: #a5b4fc !important;
+}
+
+/* Dark pink → light pink */
+#onboarding-wizard .wizard-slide div[style*="color:#be185d"],
+#onboarding-wizard .wizard-slide span[style*="color:#be185d"] {
+    color: #f9a8d4 !important;
+}
+
+/* Muted grays → light */
+#onboarding-wizard .wizard-slide div[style*="color:#94a3b8"],
+#onboarding-wizard .wizard-slide span[style*="color:#94a3b8"] {
+    color: rgba(255,255,255,0.5) !important;
+}
+
+/* var(--primary) text in buttons on dark bg */
+#onboarding-wizard .wizard-slide button[style*="color:var(--primary)"] {
+    color: #6ee7b7 !important;
+}
+
+/* Catch-all: any remaining dark text inside wizard */
+#onboarding-wizard .wizard-slide div[style*="color:#1f2937"] {
+    color: rgba(255,255,255,0.9) !important;
+}
+
+/* Calendar/preview white backgrounds */
+#onboarding-wizard .wizard-slide div[style*="background:#fff"],
+#onboarding-wizard .wizard-slide div[style*="background: #fff"],
+#onboarding-wizard .wizard-slide div[style*="background: white"] {
+    background: rgba(255,255,255,0.06) !important;
+}
+
+/* Small colored circle icons — keep their colors */
+#onboarding-wizard .wizard-slide div[style*="background:var(--primary)"],
+#onboarding-wizard .wizard-slide div[style*="background: var(--primary)"],
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(180deg, #1a1a2e"],
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #fbbf24"] {
+    /* These already look good on dark — no override */
+}
+
+/* Active/selected state for buttons with green backgrounds */
+#onboarding-wizard .wizard-slide button[style*="background:#f0fdf4"],
+#onboarding-wizard .wizard-slide button[style*="background: #f0fdf4"] {
+    background: rgba(4,106,56,0.15) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="background:#f0fdf4"],
+#onboarding-wizard .wizard-slide div[style*="background: #f0fdf4"] {
+    background: rgba(4,106,56,0.15) !important;
 }
 
 /* DBZ Theme Decorations */
