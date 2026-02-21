@@ -180,10 +180,8 @@ exports.handler = async (event) => {
             mealTypes = [mealType];
         }
 
-        // Get current time
-        const now = new Date();
-        const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS format
-        const today = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+        // The SQL function now uses NOW() AT TIME ZONE per user's stored timezone,
+        // so we don't need to pass the current time from JavaScript.
 
         let totalSent = 0;
         let totalFailed = 0;
@@ -191,11 +189,11 @@ exports.handler = async (event) => {
 
         for (const mealType of mealTypes) {
             // Query Supabase for users needing meal reminders
-            // The stored function checks:
+            // The stored function uses NOW() + each user's timezone to check:
             // - reminders are enabled
-            // - it's past their meal time + delay
-            // - they haven't logged this meal type today
-            // - we haven't already sent a reminder today
+            // - it's past their meal time + delay (in their local time)
+            // - they haven't logged this meal type today (their local date)
+            // - we haven't already sent a reminder today (their local date)
             const usersResponse = await fetch(
                 `${SUPABASE_URL}/rest/v1/rpc/get_users_needing_meal_reminders`,
                 {
@@ -206,8 +204,7 @@ exports.handler = async (event) => {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        p_meal_type: mealType,
-                        p_current_time: currentTime
+                        p_meal_type: mealType
                     })
                 }
             );
@@ -282,6 +279,10 @@ exports.handler = async (event) => {
 
                         if (sent) {
                             // Log the reminder so we don't send duplicates
+                            // Use the user's local date (returned by SQL function)
+                            // instead of UTC date to avoid date boundary issues
+                            const reminderDate = user.user_local_date
+                                || new Date().toISOString().split('T')[0];
                             await fetch(
                                 `${SUPABASE_URL}/rest/v1/meal_reminder_log`,
                                 {
@@ -294,7 +295,7 @@ exports.handler = async (event) => {
                                     body: JSON.stringify({
                                         user_id: user.user_id,
                                         meal_type: mealType,
-                                        reminder_date: today
+                                        reminder_date: reminderDate
                                     })
                                 }
                             );

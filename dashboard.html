@@ -41024,6 +41024,69 @@ window.appendCoachMessage = function(text) {
 };
 
 /**
+ * Show an in-app notification banner when a DM arrives.
+ * Slides down from the top of the screen like a native push notification.
+ * Tapping it opens the conversation with the sender.
+ */
+window.showDMNotificationBanner = function showDMNotificationBanner(senderName, senderPhoto, messageText, senderId) {
+    // Remove any existing DM notification banner
+    const existing = document.getElementById('dm-notification-banner');
+    if (existing) existing.remove();
+
+    const preview = messageText.length > 80 ? messageText.substring(0, 80) + '...' : messageText;
+    const initials = (senderName || '?').charAt(0).toUpperCase();
+    const avatarHtml = senderPhoto
+        ? '<img src="' + senderPhoto + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
+        : '<div style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0;">' + initials + '</div>';
+
+    const banner = document.createElement('div');
+    banner.id = 'dm-notification-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;padding:calc(10px + env(safe-area-inset-top, 0px)) 16px 12px;background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 4px 24px rgba(0,0,0,0.15);cursor:pointer;animation:dmBannerSlideIn 0.35s ease-out;border-bottom:1px solid #e2e8f0;';
+    banner.innerHTML = '<div style="display:flex;align-items:center;gap:12px;max-width:600px;margin:0 auto;">'
+        + avatarHtml
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-weight:700;font-size:0.9rem;color:#1e293b;">' + (senderName || 'New Message') + '</div>'
+        + '<div style="font-size:0.82rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + preview + '</div>'
+        + '</div>'
+        + '<div style="font-size:0.7rem;color:#94a3b8;flex-shrink:0;">now</div>'
+        + '</div>';
+
+    // Tap to open conversation
+    banner.addEventListener('click', function() {
+        banner.remove();
+        if (senderId) {
+            // Open the DM conversation with this sender
+            if (typeof openDirectMessage === 'function') {
+                openDirectMessage(senderId, senderName || 'User', senderPhoto || '');
+            } else if (typeof window.switchAppTab === 'function') {
+                window.switchAppTab('social');
+            }
+        }
+    });
+
+    // Add slide-in animation if not already defined
+    if (!document.getElementById('dm-banner-animation-style')) {
+        const style = document.createElement('style');
+        style.id = 'dm-banner-animation-style';
+        style.textContent = '@keyframes dmBannerSlideIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes dmBannerSlideOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}';
+        document.head.appendChild(style);
+    }
+
+    document.body.appendChild(banner);
+
+    // Play notification sound (short vibration pattern for native)
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(function() {
+        if (banner.parentNode) {
+            banner.style.animation = 'dmBannerSlideOut 0.3s ease-in forwards';
+            setTimeout(function() { if (banner.parentNode) banner.remove(); }, 300);
+        }
+    }, 5000);
+}
+
+/**
  * Subscribe to Supabase Realtime for new DMs (nudges) to this user
  * Messages appear instantly when coach (or anyone) sends a nudge
  */
@@ -41050,25 +41113,61 @@ window.subscribeToCoachMessages = function(userId) {
                 if (window._shownMessageIds.has(newMessage.id)) return;
                 window._shownMessageIds.add(newMessage.id);
 
+                // Don't notify for our own messages
+                if (newMessage.sender_id === userId) return;
+
                 // Check if the coach chat modal is open and message is from coach
                 const coachId = await getCoachUserId();
                 const modal = document.getElementById('coach-chat-modal');
                 const isCoachChatOpen = modal && modal.style.display === 'flex';
 
-                if (coachId && newMessage.sender_id === coachId && isCoachChatOpen) {
-                    // Display the message in the coach chat
-                    appendCoachMessage(newMessage.message);
-                } else if (coachId && newMessage.sender_id === coachId) {
-                    // Coach message but chat not open - mark as unread
-                    localStorage.setItem('coach_unread_messages', 'true');
-                    if ('setAppBadge' in navigator && document.visibilityState === 'hidden') {
-                        navigator.setAppBadge(1).catch(e => console.error(e));
-                    }
-                }
+                // Check if the DM modal is open for this sender
+                const isDMOpenForSender = typeof currentDMRecipient !== 'undefined'
+                    && currentDMRecipient
+                    && currentDMRecipient.id === newMessage.sender_id;
 
-                // Reload DM if the DM modal is open for this sender
-                if (typeof currentDMRecipient !== 'undefined' && currentDMRecipient && currentDMRecipient.id === newMessage.sender_id) {
+                if (coachId && newMessage.sender_id === coachId && isCoachChatOpen) {
+                    // Display the message in the coach chat (user is already viewing it)
+                    appendCoachMessage(newMessage.message);
+                } else if (isDMOpenForSender) {
+                    // DM modal is open for this sender - reload messages (user is viewing it)
                     loadDirectMessages(currentDMRecipient.id);
+                } else {
+                    // Message arrived but user is NOT viewing this conversation
+                    // Show in-app notification banner
+
+                    // Look up sender info for the notification
+                    let senderName = 'New Message';
+                    let senderPhoto = '';
+
+                    if (coachId && newMessage.sender_id === coachId) {
+                        senderName = 'Coach Shannon';
+                        senderPhoto = 'assets/coach_shannon.jpg';
+                        localStorage.setItem('coach_unread_messages', 'true');
+                    } else {
+                        // Look up sender name from the users table
+                        try {
+                            const { data: senderData } = await window.supabaseClient
+                                .from('users')
+                                .select('name, profile_photo')
+                                .eq('id', newMessage.sender_id)
+                                .maybeSingle();
+                            if (senderData) {
+                                senderName = senderData.name || 'Someone';
+                                senderPhoto = senderData.profile_photo || '';
+                            }
+                        } catch (e) {
+                            console.warn('Could not look up sender:', e);
+                        }
+                    }
+
+                    // Show the in-app notification banner
+                    showDMNotificationBanner(senderName, senderPhoto, newMessage.message, newMessage.sender_id);
+
+                    // Set app badge
+                    if ('setAppBadge' in navigator) {
+                        navigator.setAppBadge(1).catch(function(e) { console.error(e); });
+                    }
                 }
 
                 console.log('Realtime: New DM received from', newMessage.sender_id);

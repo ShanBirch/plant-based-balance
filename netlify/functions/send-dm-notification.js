@@ -1,4 +1,5 @@
 const webpush = require('web-push');
+const crypto = require('crypto');
 
 // Configure web-push with VAPID keys
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -8,6 +9,104 @@ const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@plantbasedbalance.c
 // Supabase config
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hzapaorxqboevxnumxkv.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+
+// FCM V1 config — service account JSON stored as an env var string
+const FIREBASE_SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT
+    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    : null;
+
+/**
+ * Get an OAuth2 access token for FCM V1 API using the service account JWT
+ */
+async function getFCMAccessToken() {
+    if (!FIREBASE_SERVICE_ACCOUNT) return null;
+
+    const { client_email, private_key } = FIREBASE_SERVICE_ACCOUNT;
+    const now = Math.floor(Date.now() / 1000);
+    const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify({
+        iss: client_email,
+        scope: 'https://www.googleapis.com/auth/firebase.messaging',
+        aud: 'https://oauth2.googleapis.com/token',
+        iat: now,
+        exp: now + 3600
+    })).toString('base64url');
+    const sign = crypto.createSign('RSA-SHA256');
+    sign.update(`${header}.${payload}`);
+    const signature = sign.sign(private_key, 'base64url');
+    const jwt = `${header}.${payload}.${signature}`;
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
+    });
+    const tokenData = await tokenResponse.json();
+    return tokenData.access_token;
+}
+
+/**
+ * Send a push notification to a native device via FCM V1 API
+ */
+async function sendNativePush(token, payload) {
+    if (!FIREBASE_SERVICE_ACCOUNT) {
+        console.log('[NativePush] No FIREBASE_SERVICE_ACCOUNT configured, skipping native push');
+        return false;
+    }
+
+    try {
+        const accessToken = await getFCMAccessToken();
+        if (!accessToken) {
+            console.error('[NativePush] Failed to get FCM access token');
+            return false;
+        }
+
+        const projectId = FIREBASE_SERVICE_ACCOUNT.project_id;
+        // FCM V1 requires all data values to be strings
+        const stringData = Object.fromEntries(
+            Object.entries(payload.data || {}).map(([k, v]) => [k, String(v)])
+        );
+
+        const response = await fetch(
+            `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: {
+                        token,
+                        notification: {
+                            title: payload.title,
+                            body: payload.body
+                        },
+                        android: {
+                            priority: 'high',
+                            notification: {
+                                channel_id: 'dm-messages',
+                                sound: 'default',
+                                click_action: 'FCM_PLUGIN_ACTIVITY'
+                            }
+                        },
+                        data: stringData
+                    }
+                })
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[NativePush] FCM V1 error:', errorText);
+            return false;
+        }
+
+        return true;
+    } catch (err) {
+        console.error('[NativePush] FCM send failed:', err.message);
+        return false;
+    }
+}
 
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
@@ -80,38 +179,57 @@ exports.handler = async (event) => {
             ? messageText.substring(0, 120) + '...'
             : messageText;
 
-        const notificationPayload = JSON.stringify({
-            title: senderName || 'New Message',
-            body: displayText,
-            icon: '/assets/Logo_dots.jpg',
-            badge: '/assets/Logo_dots.jpg',
-            vibrate: [200, 100, 200],
-            tag: 'dm-message-' + Date.now(),
-            requireInteraction: false,
-            data: {
-                type: 'dm_message',
-                url: './dashboard.html'
-            }
-        });
-
         // Send to all of the recipient's subscriptions
         const results = await Promise.allSettled(
             subscriptions.map(async (sub) => {
-                const pushSubscription = {
-                    endpoint: sub.endpoint,
-                    keys: {
-                        p256dh: sub.p256dh,
-                        auth: sub.auth
-                    }
-                };
+                const isNative = sub.endpoint && sub.endpoint.startsWith('native://');
 
                 try {
-                    await webpush.sendNotification(pushSubscription, notificationPayload);
-                    return { success: true, endpoint: sub.endpoint };
-                } catch (error) {
-                    console.error(`Failed to send to ${sub.endpoint}:`, error.statusCode, error.message);
+                    if (isNative) {
+                        // Native app — send via FCM
+                        const nativeToken = sub.auth; // Token stored in auth field
+                        const sent = await sendNativePush(nativeToken, {
+                            title: senderName || 'New Message',
+                            body: displayText,
+                            data: {
+                                type: 'dm_message',
+                                senderName: senderName || 'Someone',
+                                url: './dashboard.html'
+                            }
+                        });
+                        return { success: sent, endpoint: sub.endpoint };
+                    } else {
+                        // Web browser — send via Web Push (VAPID)
+                        const notificationPayload = JSON.stringify({
+                            title: senderName || 'New Message',
+                            body: displayText,
+                            icon: '/assets/Logo_dots.jpg',
+                            badge: '/assets/Logo_dots.jpg',
+                            vibrate: [200, 100, 200],
+                            tag: 'dm-message-' + Date.now(),
+                            requireInteraction: false,
+                            data: {
+                                type: 'dm_message',
+                                senderName: senderName || 'Someone',
+                                url: './dashboard.html'
+                            }
+                        });
 
-                    // Clean up invalid subscriptions
+                        const pushSubscription = {
+                            endpoint: sub.endpoint,
+                            keys: {
+                                p256dh: sub.p256dh,
+                                auth: sub.auth
+                            }
+                        };
+
+                        await webpush.sendNotification(pushSubscription, notificationPayload);
+                        return { success: true, endpoint: sub.endpoint };
+                    }
+                } catch (error) {
+                    console.error(`Failed to send to ${sub.endpoint}:`, error.statusCode || '', error.message);
+
+                    // Clean up invalid subscriptions (410 Gone)
                     if (error.statusCode === 410) {
                         await fetch(
                             `${SUPABASE_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(sub.endpoint)}`,
