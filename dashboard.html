@@ -27369,6 +27369,20 @@ function initOnboardingWizard() {
     if (!modal) return;
     if (modal.style.display === 'flex') return; // Already showing
 
+    // Generate ambient particles for wizard dark theme
+    const wizardParticles = document.getElementById('wizard-particles');
+    if (wizardParticles && wizardParticles.children.length === 0) {
+        for (let i = 0; i < 25; i++) {
+            const p = document.createElement('div');
+            p.className = 'wizard-particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.top = Math.random() * 100 + '%';
+            p.style.animationDelay = Math.random() * 6 + 's';
+            p.style.animationDuration = (5 + Math.random() * 5) + 's';
+            wizardParticles.appendChild(p);
+        }
+    }
+
     // Check if story has already been shown this session
     const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
     if (storyShown) {
@@ -27520,21 +27534,98 @@ function startFitgotchiStory(onComplete) {
                 shannonCard.classList.remove('exit');
                 if (modelContainer) modelContainer.style.opacity = '1';
                 bubble.style.display = '';
-                runStoryPhase3();
+                runStoryPhase2b();
             }, 500);
         }, 2700);
+    }
+
+    // ---- PHASE 2b: Rare Character Showcase ----
+    function runStoryPhase2b() {
+        const showcaseChars = [
+            { name: 'Goku', tier: 'EPIC', src: 'https://f005.backblazeb2.com/file/shannonsvideos/goku.glb', color: '#a855f7' },
+            { name: 'Steve Irwin', tier: 'RARE', src: 'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb', color: '#3b82f6' },
+            { name: 'Optimus Prime', tier: 'EPIC', src: 'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb', color: '#a855f7' }
+        ];
+
+        const charLabel = document.getElementById('story-character-label');
+        let charIndex = 0;
+
+        // Show intro bubble
+        bubble.innerHTML = "You're not stuck with just me — check out who you can <strong>unlock</strong>...";
+        bubble.classList.remove('exit');
+        bubble.classList.add('visible');
+
+        function showNextCharacter() {
+            if (charIndex >= showcaseChars.length) {
+                // Done — swap back to Arny
+                if (charLabel) charLabel.classList.remove('visible');
+                modelContainer.style.opacity = '0';
+                setTimeout(() => {
+                    modelViewer.src = 'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb';
+                    modelViewer.cameraOrbit = '10deg 80deg 18m';
+                    modelViewer.fieldOfView = '32deg';
+                    setTimeout(() => {
+                        modelContainer.style.opacity = '1';
+                        bubble.classList.remove('visible');
+                        bubble.classList.add('exit');
+                        setTimeout(() => {
+                            bubble.classList.remove('exit');
+                            runStoryPhase3();
+                        }, 400);
+                    }, 600);
+                }, 300);
+                return;
+            }
+
+            const char = showcaseChars[charIndex];
+
+            // Fade model out
+            modelContainer.style.opacity = '0';
+            if (charLabel) charLabel.classList.remove('visible');
+
+            setTimeout(() => {
+                // Swap model
+                modelViewer.src = char.src;
+                modelViewer.cameraOrbit = '0deg 75deg 20m';
+                modelViewer.fieldOfView = '30deg';
+
+                // Update label
+                if (charLabel) {
+                    charLabel.querySelector('.story-char-name').textContent = char.name;
+                    const tierEl = charLabel.querySelector('.story-char-tier');
+                    tierEl.textContent = char.tier;
+                    tierEl.style.color = char.color;
+                }
+
+                // Wait for model load then fade in
+                let loaded = false;
+                const onLoad = () => {
+                    if (loaded) return;
+                    loaded = true;
+                    modelContainer.style.opacity = '1';
+                    if (charLabel) charLabel.classList.add('visible');
+                    charIndex++;
+                    setTimeout(showNextCharacter, 2500);
+                };
+
+                modelViewer.addEventListener('load', onLoad, { once: true });
+                // Fallback if model takes too long
+                setTimeout(() => { if (!loaded) onLoad(); }, 3500);
+            }, 400);
+        }
+
+        setTimeout(showNextCharacter, 1800);
     }
 
     // ---- PHASE 3: Tap-through messages ----
     function runStoryPhase3() {
         const messages = [
-            "Shannon built this app to help people become their healthiest selves — and actually <strong>enjoy</strong> the journey.",
-            "This isn't just a fitness app. It's a <strong>game</strong> you play with your friends. Challenge each other. Level up. Have fun.",
-            "Tracking food? Just <strong>snap a photo</strong>. The AI does the rest — calories, protein, carbs, fat. Instantly.",
-            "As you use the app, I'll be collecting your data and spotting patterns with <strong>AI</strong>...",
-            "Like: <strong>\"Weeks where you slept more, you lost weight 30% faster.\"</strong>",
-            "Or: <strong>\"Users who invited their friends reached their goals 70% quicker.\"</strong>",
-            "This is a new way to use AI — like having a <strong>personal health assistant</strong> that actually learns about you and helps you improve. It's happening right now, and it's changing lives.",
+            "Track your <strong>calories</strong> just by snapping a photo — the AI handles everything. Protein, carbs, fat. Instantly.",
+            "Log your <strong>workouts</strong> and earn <strong>XP</strong> for every rep, every set, every session you crush.",
+            "The more you train, the more I <strong>level up</strong>. Watch me evolve as you get stronger! 💪",
+            "Complete challenges and battle your mates to unlock <strong>rare characters</strong> like the ones you just saw.",
+            "I'll track your patterns with <strong>AI</strong> — like: <strong>\"Weeks you trained 4+ days, you lost weight 40% faster.\"</strong>",
+            "It's fitness meets gaming. Get fit, earn coins, level up, and become your <strong>healthiest self</strong>.",
             "Ready to start? Let's set you up! 🚀"
         ];
 
@@ -37473,6 +37564,12 @@ function openAsClient() {
         </model-viewer>
     </div>
 
+    <!-- Character name label (shown during rare showcase) -->
+    <div class="story-character-label" id="story-character-label">
+        <span class="story-char-name"></span>
+        <span class="story-char-tier"></span>
+    </div>
+
     <!-- Speech bubble area -->
     <div class="story-speech-area" id="story-speech-area">
         <div class="story-bubble" id="story-bubble"></div>
@@ -37481,6 +37578,7 @@ function openAsClient() {
 </div>
 
 <div class="onboarding-overlay" id="onboarding-wizard" style="display:none; z-index:12000;">
+    <div class="wizard-particles" id="wizard-particles"></div>
     <div class="onboarding-modal wizard-container" style="max-width: 450px; max-height: 90vh; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
 
         <!-- HEADER -->
@@ -38476,6 +38574,200 @@ function openAsClient() {
     10% { opacity: 1; }
     90% { opacity: 1; }
     100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+}
+
+/* Character label (rare showcase) */
+.story-character-label {
+    position: absolute;
+    bottom: 58%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 3;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+.story-character-label.visible {
+    opacity: 1;
+}
+.story-char-name {
+    display: block;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+}
+.story-char-tier {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+/* ============================================ */
+/* DARK STARRY THEME FOR ONBOARDING WIZARD      */
+/* ============================================ */
+#onboarding-wizard.onboarding-overlay {
+    background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 40%, #16213e 100%) !important;
+    backdrop-filter: none !important;
+}
+
+/* Particles in wizard */
+.wizard-particles {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+}
+.wizard-particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 50%;
+    animation: storyFloat 6s infinite ease-in-out;
+}
+
+/* Modal card — frosted glass dark */
+#onboarding-wizard .onboarding-modal.wizard-container {
+    background: rgba(255,255,255,0.07) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5) !important;
+}
+
+/* Header */
+#onboarding-wizard .wizard-header h2,
+#onboarding-wizard #wizard-title {
+    color: white !important;
+}
+
+/* Close button */
+#onboarding-wizard .wizard-header > div[onclick] {
+    background: rgba(255,255,255,0.1) !important;
+    color: rgba(255,255,255,0.7) !important;
+}
+
+/* Progress dots */
+#onboarding-wizard .wizard-progress .dot {
+    background: rgba(255,255,255,0.15) !important;
+}
+#onboarding-wizard .wizard-progress .dot.active {
+    background: var(--primary) !important;
+}
+
+/* Headings */
+#onboarding-wizard h3 {
+    color: white !important;
+}
+
+/* Paragraph text */
+#onboarding-wizard p {
+    color: rgba(255,255,255,0.7) !important;
+}
+#onboarding-wizard p strong {
+    color: white !important;
+}
+
+/* Labels */
+#onboarding-wizard label {
+    color: rgba(255,255,255,0.85) !important;
+}
+
+/* Spans with muted color */
+#onboarding-wizard .wizard-slide span {
+    color: rgba(255,255,255,0.6) !important;
+}
+#onboarding-wizard .wizard-slide span strong {
+    color: white !important;
+}
+
+/* Input groups & info boxes — dark glass */
+#onboarding-wizard .wizard-input-group,
+#onboarding-wizard .wizard-slide div[style*="background:#f8fafc"],
+#onboarding-wizard .wizard-slide div[style*="background: #f8fafc"] {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Text inputs, selects, textareas */
+#onboarding-wizard input,
+#onboarding-wizard select,
+#onboarding-wizard textarea {
+    background: rgba(255,255,255,0.08) !important;
+    border-color: rgba(255,255,255,0.15) !important;
+    color: white !important;
+}
+#onboarding-wizard input::placeholder,
+#onboarding-wizard textarea::placeholder {
+    color: rgba(255,255,255,0.35) !important;
+}
+#onboarding-wizard select option {
+    background: #1a1a2e;
+    color: white;
+}
+
+/* Gender select buttons */
+#onboarding-wizard .gender-select-btn {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.15) !important;
+    color: rgba(255,255,255,0.9) !important;
+}
+#onboarding-wizard .gender-select-btn:hover {
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.25) !important;
+}
+
+/* Footer */
+#onboarding-wizard .wizard-footer {
+    border-top-color: rgba(255,255,255,0.08) !important;
+}
+#onboarding-wizard .wizard-btn.secondary,
+#onboarding-wizard #wizard-back {
+    color: rgba(255,255,255,0.6) !important;
+}
+
+/* Primary button keeps green but add glow */
+#onboarding-wizard .wizard-btn.primary,
+#onboarding-wizard #wizard-next {
+    box-shadow: 0 4px 20px rgba(4,106,56,0.35) !important;
+}
+
+/* Feature list items & icon circles in slides */
+#onboarding-wizard .wizard-slide div[style*="color:#334155"] {
+    color: rgba(255,255,255,0.9) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#64748b"],
+#onboarding-wizard .wizard-slide span[style*="color:#64748b"] {
+    color: rgba(255,255,255,0.5) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#666"],
+#onboarding-wizard .wizard-slide p[style*="color:#666"] {
+    color: rgba(255,255,255,0.6) !important;
+}
+
+/* Emoji icons on dark look fine as-is */
+
+/* Slide background boxes */
+#onboarding-wizard .wizard-slide div[style*="background:white"],
+#onboarding-wizard .wizard-slide div[style*="background: white"],
+#onboarding-wizard .wizard-slide button[style*="background:white"],
+#onboarding-wizard .wizard-slide div[style*="background:#fff"],
+#onboarding-wizard .wizard-slide div[style*="background: #fff"] {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Border overrides */
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #e2e8f0"],
+#onboarding-wizard .wizard-slide div[style*="border: 1px solid #e2e8f0"],
+#onboarding-wizard .wizard-slide button[style*="border:2px solid #e2e8f0"],
+#onboarding-wizard .wizard-slide button[style*="border: 2px solid #e2e8f0"] {
+    border-color: rgba(255,255,255,0.12) !important;
 }
 
 /* DBZ Theme Decorations */
