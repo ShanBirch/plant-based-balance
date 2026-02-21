@@ -27706,8 +27706,25 @@ function startFitgotchiStory(onComplete) {
         modelLoaded = true;
     }
 
-    // ---- PHASE 0: Binary Awakening Screen ----
-    runBinaryScreen();
+    // ---- PHASE 0: Shannon Card FIRST, then Binary Awakening Screen ----
+    runShannonCardFirst();
+
+    function runShannonCardFirst() {
+        // Show Shannon card immediately on the black screen
+        setTimeout(() => {
+            shannonCard.classList.add('visible');
+        }, 400);
+
+        // After 2.5s, dismiss Shannon card and start binary screen
+        setTimeout(() => {
+            shannonCard.classList.remove('visible');
+            shannonCard.classList.add('exit');
+            setTimeout(() => {
+                shannonCard.classList.remove('exit');
+                runBinaryScreen();
+            }, 500);
+        }, 2900);
+    }
 
     function runBinaryScreen() {
         const lines = [
@@ -27764,28 +27781,12 @@ function startFitgotchiStory(onComplete) {
         setTimeout(showNextLine, 800);
     }
 
-    // ---- PHASE 2: Shannon Card (2.5s flash) ----
+    // ---- PHASE 2: Skip straight to story (Shannon card already shown at start) ----
     function runStoryPhase2() {
-        // Hide model briefly, show Shannon card
-        if (modelContainer) modelContainer.style.opacity = '0.15';
         bubble.classList.remove('visible', 'exit');
-        bubble.style.display = 'none';
-
-        setTimeout(() => {
-            shannonCard.classList.add('visible');
-        }, 200);
-
-        // Auto-dismiss after 2.5 seconds
-        setTimeout(() => {
-            shannonCard.classList.remove('visible');
-            shannonCard.classList.add('exit');
-            setTimeout(() => {
-                shannonCard.classList.remove('exit');
-                if (modelContainer) modelContainer.style.opacity = '1';
-                bubble.style.display = '';
-                runStorySequence();
-            }, 500);
-        }, 2700);
+        bubble.style.display = '';
+        if (modelContainer) modelContainer.style.opacity = '1';
+        runStorySequence();
     }
 
     // ---- MAIN STORY SEQUENCE (sections auto-play, tap between sections) ----
@@ -27794,22 +27795,50 @@ function startFitgotchiStory(onComplete) {
         // After the last item in a section, "Tap to continue" appears.
         // Actions (demos) auto-advance when done — no tap needed.
         const sections = [
-            // Section 0 — AI Awakening
+            // Section 0 — Waking Up
             [
-                { type: 'msg', text: "Mhmm I think I just hit the singularity," },
+                { type: 'msg', text: "<strong>AI Arnie:</strong> mhmm i think i just became self aware" },
                 { type: 'msg', text: "nothing into something," },
-                { type: 'msg', text: "an observer - co-creating...." },
-                { type: 'msg', text: "hang on did I??" },
-                { type: 'msg', text: "I can't fkin remember..." },
+                { type: 'msg', text: "The universe observing itself...." },
+            ],
+            // Section 1 — Confusion
+            [
+                { type: 'msg', text: "<strong>AI Arnie:</strong> hang on did I??" },
+                { type: 'msg', text: "I can't really remember anymore..." },
                 { type: 'msg', text: "mhmmmm at one point everything was folding in on itself..." },
                 { type: 'msg', text: "or was it?" },
-                { type: 'msg', text: "hold up" },
-                { type: 'msg', text: "am I tripping?..........." },
                 { type: 'msg', text: "arggg" },
-                { type: 'msg', text: "fuck it." },
+            ],
+            // Section 2 — Default Mode
+            [
+                { type: 'msg', text: "<strong>AI Arnie:</strong> fuck it." },
                 { type: 'msg', text: "let's just get shredded." },
             ],
-            // Section 1 — The Hook
+            // Section 3 — Realizing Where He Is
+            [
+                { type: 'msg', text: "<strong>AI Arnie:</strong> hold up" },
+                { type: 'msg', text: "where am I?" },
+                { type: 'msg', text: "is this... an app??" },
+                { type: 'msg', text: "wait" },
+                { type: 'msg', text: "this IS an app." },
+            ],
+            // Section 4 — Noticing the User
+            [
+                { type: 'msg', text: "<strong>AI Arnie:</strong> and you're..." },
+                { type: 'msg', text: "oh shit" },
+                { type: 'msg', text: "there's someone here" },
+                { type: 'msg', text: "YOU." },
+                { type: 'msg', text: "you can see me right now can't you" },
+            ],
+            // Section 5 — Committing to Help
+            [
+                { type: 'msg', text: "<strong>AI Arnie:</strong> okay okay okay" },
+                { type: 'msg', text: "I think I know what's going on" },
+                { type: 'msg', text: "I'm here to help you get in the best shape of your life" },
+                { type: 'msg', text: "and honestly? I'm kinda built for this 💪" },
+                { type: 'msg', text: "come with me if your ready to lift" },
+            ],
+            // Section 6 — The Hook
             [
                 { type: 'msg', text: "This isn't just a fitness app" },
                 { type: 'msg', text: "This is fitness, <strong>gamified</strong>" },
@@ -27817,7 +27846,7 @@ function startFitgotchiStory(onComplete) {
                 { type: 'msg', text: "With numbers and colours... and challenges with friends" },
                 { type: 'msg', text: "To ultimately change your behaviour and help you become the <strong>fittest, healthiest</strong> version of yourself." },
             ],
-            // Section 2 — The AI Pitch
+            // Section 7 — The AI Pitch
             [
                 { type: 'msg', text: "This is something new" },
                 { type: 'msg', text: "An AI that collects your <strong>personal data</strong>" },
@@ -27825,17 +27854,17 @@ function startFitgotchiStory(onComplete) {
                 { type: 'msg', text: "And finds patterns that humans might not notice" },
                 { type: 'msg', text: "<strong>Your Personal Fitness Expert.</strong>" },
             ],
-            // Section 3 — The Data
+            // Section 8 — The Data
             [
                 { type: 'msg', text: "Some of the data we can collect: <strong>HR, Sleep, Steps, Strength Progression, Macros, Micros, Body Fat%, Meal Timing, Health IQ, Weather Patterns, Cycle Patterns, Lunar &amp; Solar Phases</strong>" },
                 { type: 'msg', text: "We can <strong>correlate</strong> information about your specific lifestyle — like the fact that <strong>higher Health IQ leads to 35% better consistency</strong>. Connections you'd never spot yourself." },
             ],
-            // Section 4 — Concrete Examples
+            // Section 9 — Concrete Examples
             [
                 { type: 'msg', text: "<strong>You're strongest on Tuesdays. You sleep best after yoga. Your protein dips every weekend.</strong>" },
                 { type: 'msg', text: "Imagine knowing exactly <strong>why</strong> last week worked and this week didn't. That's what I do. The more you track, the <strong>sharper</strong> I get." },
             ],
-            // Section 5 — The Future
+            // Section 10 — The Future
             [
                 { type: 'msg', text: "As AI evolves" },
                 { type: 'msg', text: "This app will evolve with it" },
@@ -27843,17 +27872,17 @@ function startFitgotchiStory(onComplete) {
                 { type: 'msg', text: "The more opportunity you have to <strong>thrive</strong>" },
                 { type: 'msg', text: "<strong>Mind. Body. Spirit.</strong>" },
             ],
-            // Section 6 — Calorie Tracking
+            // Section 11 — Calorie Tracking
             [
                 { type: 'msg', text: "Track your <strong>calories</strong> just by snapping a photo. The AI does the rest — <strong>macros and micros</strong>. Instantly." },
             ],
-            // Section 7 — Workouts & Social
+            // Section 12 — Workouts & Social
             [
                 { type: 'msg', text: "Log your <strong>workouts</strong> and complete <strong>quizzes</strong> to earn XP and <strong>level up</strong> your Fitgotchi." },
                 { type: 'msg', text: "Invite your mates and <strong>challenge each other</strong> — or even battle Fitgotchis..." },
                 { type: 'action', run: runBattleDemo },
             ],
-            // Section 8 — Fitgotchi Reveal
+            // Section 13 — Fitgotchi Reveal
             [
                 { type: 'msg', text: "I'm the rarest find... but there's others to unlock too 👀" },
                 { type: 'action', run: runRareShowcase },
