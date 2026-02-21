@@ -27715,15 +27715,26 @@ function startFitgotchiStory(onComplete) {
             shannonCard.classList.add('visible');
         }, 400);
 
-        // After 2.5s, dismiss Shannon card and start binary screen
+        // Show tap prompt after a moment
         setTimeout(() => {
+            tapPrompt.style.display = 'block';
+        }, 1800);
+
+        // Wait for user tap to dismiss Shannon card and start binary screen
+        function onShannonTap() {
+            overlay.removeEventListener('click', onShannonTap);
+            tapPrompt.style.display = 'none';
             shannonCard.classList.remove('visible');
             shannonCard.classList.add('exit');
             setTimeout(() => {
                 shannonCard.classList.remove('exit');
                 runBinaryScreen();
             }, 500);
-        }, 2900);
+        }
+        // Delay adding the listener so the card has time to appear
+        setTimeout(() => {
+            overlay.addEventListener('click', onShannonTap);
+        }, 1800);
     }
 
     function runBinaryScreen() {
