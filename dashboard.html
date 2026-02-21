@@ -27441,6 +27441,17 @@ function startFitgotchiStory(onComplete) {
         overlay.classList.add('active');
     });
 
+    // Preload rare showcase models into browser cache
+    const showcaseModelUrls = [
+        'https://f005.backblazeb2.com/file/shannonsvideos/goku.glb',
+        'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb',
+        'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb'
+    ];
+    let showcaseModelsReady = false;
+    const showcasePromise = Promise.all(
+        showcaseModelUrls.map(url => fetch(url).then(r => r.arrayBuffer()).catch(() => null))
+    ).then(() => { showcaseModelsReady = true; });
+
     // Wait for model to load
     let modelLoaded = false;
 
@@ -27450,8 +27461,12 @@ function startFitgotchiStory(onComplete) {
         // Hide loading, show model
         if (loadingEl) loadingEl.style.display = 'none';
         if (modelContainer) modelContainer.style.opacity = '1';
-        // Start the story sequence
-        runStoryPhase1();
+        // Wait for showcase models too before starting
+        if (showcaseModelsReady) {
+            runStoryPhase1();
+        } else {
+            showcasePromise.then(() => runStoryPhase1());
+        }
     }
 
     if (modelViewer) {
@@ -27534,28 +27549,210 @@ function startFitgotchiStory(onComplete) {
                 shannonCard.classList.remove('exit');
                 if (modelContainer) modelContainer.style.opacity = '1';
                 bubble.style.display = '';
-                runStoryPhase2b();
+                runStorySequence();
             }, 500);
         }, 2700);
     }
 
-    // ---- PHASE 2b: Rare Character Showcase ----
-    function runStoryPhase2b() {
+    // ---- MAIN STORY SEQUENCE (tap messages + action demos) ----
+    function runStorySequence() {
+        const sequence = [
+            { type: 'msg', text: "This isn't just a fitness app — it's a <strong>game</strong> designed to help you become the fittest version of yourself." },
+            { type: 'msg', text: "Track your <strong>calories</strong> just by snapping a photo. The AI does the rest — protein, carbs, fats. Instantly." },
+            { type: 'msg', text: "Log your <strong>workouts</strong> and complete <strong>quizzes</strong> to earn XP and <strong>level up</strong> your Fitgotchi." },
+            { type: 'msg', text: "Invite your mates and <strong>challenge each other</strong> — or even battle Fitgotchis..." },
+            { type: 'action', run: runBattleDemo },
+            { type: 'msg', text: "This is something new — <strong>AI that's actually targeted at your health</strong>. I don't just count calories. I learn your habits, spot patterns you'd never see, and tell you exactly what's working." },
+            { type: 'msg', text: "<strong>\"Weeks you trained 4+ days, you lost weight 40% faster.\"</strong> Real insights from your data. This is the future of health and fitness — and you're getting in early." },
+            { type: 'msg', text: "I'm the rarest find... but there's others to unlock too 👀" },
+            { type: 'action', run: runRareShowcase },
+            { type: 'msg', text: "Ready to start? Let's set you up! 🚀" }
+        ];
+
+        let seqIndex = 0;
+        let canTap = false;
+
+        function advance() {
+            if (seqIndex >= sequence.length) {
+                endStory();
+                return;
+            }
+            const item = sequence[seqIndex];
+            seqIndex++;
+
+            if (item.type === 'action') {
+                canTap = false;
+                item.run(() => advance());
+            } else {
+                showMsg(item.text);
+            }
+        }
+
+        function showMsg(text) {
+            canTap = false;
+            bubble.classList.remove('visible', 'exit');
+            setTimeout(() => {
+                bubble.innerHTML = text;
+                bubble.classList.add('visible');
+                tapPrompt.style.display = 'block';
+                setTimeout(() => { canTap = true; }, 600);
+            }, 200);
+        }
+
+        function handleTap() {
+            if (!canTap) return;
+            canTap = false;
+            advance();
+        }
+
+        overlay.addEventListener('click', handleTap);
+        advance();
+
+        function endStory() {
+            overlay.removeEventListener('click', handleTap);
+            tapPrompt.style.display = 'none';
+            bubble.classList.remove('visible');
+            bubble.classList.add('exit');
+            sessionStorage.setItem('fitgotchi_story_shown', 'true');
+            setTimeout(() => {
+                overlay.classList.add('fade-out');
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    overlay.classList.remove('active', 'fade-out');
+                    onComplete();
+                }, 500);
+            }, 300);
+        }
+    }
+
+    // ---- BATTLE DEMO (auto-play scene) ----
+    function runBattleDemo(onDone) {
+        // Hide bubble
+        bubble.classList.remove('visible');
+        bubble.classList.add('exit');
+        tapPrompt.style.display = 'none';
+
+        // Create battle UI overlay
+        const battleUI = document.createElement('div');
+        battleUI.className = 'story-battle-ui';
+        battleUI.innerHTML = `
+            <div class="story-battle-hp-row">
+                <div class="story-battle-hp-box">
+                    <div class="story-battle-hp-name">ARNY</div>
+                    <div class="story-battle-hp-bar"><div class="story-battle-hp-fill player" style="width:100%"></div></div>
+                    <div class="story-battle-hp-text">500 / 500</div>
+                </div>
+                <div class="story-battle-vs">⚡</div>
+                <div class="story-battle-hp-box">
+                    <div class="story-battle-hp-name">OPPONENT</div>
+                    <div class="story-battle-hp-bar"><div class="story-battle-hp-fill enemy" id="story-enemy-hp" style="width:100%"></div></div>
+                    <div class="story-battle-hp-text" id="story-enemy-hp-text">500 / 500</div>
+                </div>
+            </div>
+            <div class="story-battle-stats-row">
+                <div class="story-battle-stat"><span class="story-stat-icon">⚔️</span><div class="story-stat-info"><span class="story-stat-label">STR</span><div class="story-stat-bar"><div class="story-stat-fill str" style="width:65%"></div></div></div></div>
+                <div class="story-battle-stat"><span class="story-stat-icon">❤️</span><div class="story-stat-info"><span class="story-stat-label">HP</span><div class="story-stat-bar"><div class="story-stat-fill hp" style="width:80%"></div></div></div></div>
+                <div class="story-battle-stat"><span class="story-stat-icon">🔮</span><div class="story-stat-info"><span class="story-stat-label">MANA</span><div class="story-stat-bar"><div class="story-stat-fill mana" style="width:45%"></div></div></div></div>
+            </div>
+        `;
+        battleUI.style.opacity = '0';
+        battleUI.style.transition = 'opacity 0.5s ease';
+        overlay.appendChild(battleUI);
+
+        // Slide model to left side for battle stance
+        modelContainer.style.transition = 'left 0.6s ease, transform 0.6s ease, opacity 0.6s ease';
+        modelContainer.style.left = '15%';
+        modelContainer.style.transform = 'none';
+        if (modelViewer) {
+            modelViewer.cameraOrbit = '20deg 85deg 18m';
+            modelViewer.removeAttribute('auto-rotate');
+        }
+
+        // Fade in battle UI
+        setTimeout(() => { battleUI.style.opacity = '1'; }, 200);
+
+        // Play kick animation after positioning
+        setTimeout(() => {
+            if (modelViewer && modelViewer.availableAnimations) {
+                const kickAnim = modelViewer.availableAnimations.find(a => a.toLowerCase().includes('kick'))
+                    || modelViewer.availableAnimations.find(a => a.toLowerCase().includes('karate'));
+                if (kickAnim) {
+                    modelViewer.animationName = kickAnim;
+                    modelViewer.play();
+                }
+            }
+
+            // Spawn fireball after kick connects
+            setTimeout(() => {
+                const fb = document.createElement('div');
+                fb.innerHTML = '<img src="./assets/fireball.png" style="width:120px;height:120px;filter:drop-shadow(0 0 22px orange);">';
+                fb.style.cssText = 'position:absolute; left:30%; top:48%; transform:translateY(-50%); z-index:100; pointer-events:none;';
+                overlay.appendChild(fb);
+
+                let posX = overlay.clientWidth * 0.3;
+                function moveFireball() {
+                    posX += 6;
+                    fb.style.left = posX + 'px';
+                    if (posX > overlay.clientWidth + 60) {
+                        fb.remove();
+                    } else {
+                        requestAnimationFrame(moveFireball);
+                    }
+                }
+                moveFireball();
+
+                // Enemy HP drops on impact
+                setTimeout(() => {
+                    const enemyHp = document.getElementById('story-enemy-hp');
+                    const enemyText = document.getElementById('story-enemy-hp-text');
+                    if (enemyHp) {
+                        enemyHp.style.transition = 'width 0.4s ease-out';
+                        enemyHp.style.width = '28%';
+                    }
+                    if (enemyText) enemyText.textContent = '140 / 500';
+
+                    // Screen shake
+                    overlay.style.animation = 'battleShake 0.3s ease-in-out';
+                    setTimeout(() => { overlay.style.animation = ''; }, 350);
+
+                    // Clean up after dramatic pause
+                    setTimeout(() => {
+                        battleUI.style.opacity = '0';
+                        modelContainer.style.left = '50%';
+                        modelContainer.style.transform = 'translateX(-50%)';
+                        if (modelViewer) {
+                            modelViewer.cameraOrbit = '10deg 80deg 18m';
+                            modelViewer.setAttribute('auto-rotate', '');
+                        }
+                        setTimeout(() => {
+                            battleUI.remove();
+                            modelContainer.style.transition = 'opacity 0.6s ease';
+                            bubble.classList.remove('exit');
+                            onDone();
+                        }, 700);
+                    }, 1800);
+                }, 500);
+            }, 600);
+        }, 900);
+    }
+
+    // ---- RARE CHARACTER SHOWCASE (auto-play) ----
+    function runRareShowcase(onDone) {
         const showcaseChars = [
             { name: 'Goku', tier: 'EPIC', src: 'https://f005.backblazeb2.com/file/shannonsvideos/goku.glb', color: '#a855f7' },
             { name: 'Steve Irwin', tier: 'RARE', src: 'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb', color: '#3b82f6' },
-            { name: 'Optimus Prime', tier: 'EPIC', src: 'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb', color: '#a855f7' }
+            { name: 'Optimus', tier: 'EPIC', src: 'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb', color: '#a855f7' }
         ];
 
         const charLabel = document.getElementById('story-character-label');
         let charIndex = 0;
 
-        // Show intro bubble
-        bubble.innerHTML = "You're not stuck with just me — check out who you can <strong>unlock</strong>...";
-        bubble.classList.remove('exit');
-        bubble.classList.add('visible');
+        // Hide bubble for showcase
+        bubble.classList.remove('visible');
+        bubble.classList.add('exit');
+        tapPrompt.style.display = 'none';
 
-        function showNextCharacter() {
+        function showNextChar() {
             if (charIndex >= showcaseChars.length) {
                 // Done — swap back to Arny
                 if (charLabel) charLabel.classList.remove('visible');
@@ -27566,30 +27763,22 @@ function startFitgotchiStory(onComplete) {
                     modelViewer.fieldOfView = '32deg';
                     setTimeout(() => {
                         modelContainer.style.opacity = '1';
-                        bubble.classList.remove('visible');
-                        bubble.classList.add('exit');
-                        setTimeout(() => {
-                            bubble.classList.remove('exit');
-                            runStoryPhase3();
-                        }, 400);
+                        bubble.classList.remove('exit');
+                        onDone();
                     }, 600);
                 }, 300);
                 return;
             }
 
             const char = showcaseChars[charIndex];
-
-            // Fade model out
             modelContainer.style.opacity = '0';
             if (charLabel) charLabel.classList.remove('visible');
 
             setTimeout(() => {
-                // Swap model
                 modelViewer.src = char.src;
                 modelViewer.cameraOrbit = '0deg 75deg 20m';
                 modelViewer.fieldOfView = '30deg';
 
-                // Update label
                 if (charLabel) {
                     charLabel.querySelector('.story-char-name').textContent = char.name;
                     const tierEl = charLabel.querySelector('.story-char-tier');
@@ -27597,7 +27786,6 @@ function startFitgotchiStory(onComplete) {
                     tierEl.style.color = char.color;
                 }
 
-                // Wait for model load then fade in
                 let loaded = false;
                 const onLoad = () => {
                     if (loaded) return;
@@ -27605,79 +27793,15 @@ function startFitgotchiStory(onComplete) {
                     modelContainer.style.opacity = '1';
                     if (charLabel) charLabel.classList.add('visible');
                     charIndex++;
-                    setTimeout(showNextCharacter, 2500);
+                    setTimeout(showNextChar, 2500);
                 };
 
                 modelViewer.addEventListener('load', onLoad, { once: true });
-                // Fallback if model takes too long
-                setTimeout(() => { if (!loaded) onLoad(); }, 3500);
+                setTimeout(() => { if (!loaded) onLoad(); }, 3000);
             }, 400);
         }
 
-        setTimeout(showNextCharacter, 1800);
-    }
-
-    // ---- PHASE 3: Tap-through messages ----
-    function runStoryPhase3() {
-        const messages = [
-            "Track your <strong>calories</strong> just by snapping a photo — the AI handles everything. Protein, carbs, fat. Instantly.",
-            "Log your <strong>workouts</strong> and earn <strong>XP</strong> for every rep, every set, every session you crush.",
-            "The more you train, the more I <strong>level up</strong>. Watch me evolve as you get stronger! 💪",
-            "Complete challenges and battle your mates to unlock <strong>rare characters</strong> like the ones you just saw.",
-            "I'll track your patterns with <strong>AI</strong> — like: <strong>\"Weeks you trained 4+ days, you lost weight 40% faster.\"</strong>",
-            "It's fitness meets gaming. Get fit, earn coins, level up, and become your <strong>healthiest self</strong>.",
-            "Ready to start? Let's set you up! 🚀"
-        ];
-
-        let tapIndex = 0;
-        let canTap = false;
-
-        function showMessage(index) {
-            canTap = false;
-            bubble.classList.remove('visible', 'exit');
-
-            setTimeout(() => {
-                bubble.innerHTML = messages[index];
-                bubble.classList.add('visible');
-                tapPrompt.style.display = 'block';
-
-                // Allow tapping after a short delay to prevent accidental skips
-                setTimeout(() => { canTap = true; }, 600);
-            }, 200);
-        }
-
-        function handleTap(e) {
-            if (!canTap) return;
-            canTap = false; // Prevent double-tap
-
-            tapIndex++;
-            if (tapIndex >= messages.length) {
-                // Story complete
-                overlay.removeEventListener('click', handleTap);
-                tapPrompt.style.display = 'none';
-                bubble.classList.remove('visible');
-                bubble.classList.add('exit');
-
-                sessionStorage.setItem('fitgotchi_story_shown', 'true');
-
-                // Fade out overlay
-                setTimeout(() => {
-                    overlay.classList.add('fade-out');
-                    setTimeout(() => {
-                        overlay.style.display = 'none';
-                        overlay.classList.remove('active', 'fade-out');
-                        onComplete();
-                    }, 500);
-                }, 300);
-            } else {
-                showMessage(tapIndex);
-            }
-        }
-
-        overlay.addEventListener('click', handleTap);
-
-        // Show first message
-        showMessage(0);
+        setTimeout(showNextChar, 500);
     }
 }
 
@@ -38575,6 +38699,117 @@ function openAsClient() {
     90% { opacity: 1; }
     100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
 }
+
+/* ============================================ */
+/* STORY BATTLE DEMO UI                         */
+/* ============================================ */
+.story-battle-ui {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+.story-battle-hp-row {
+    position: absolute;
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    left: 12px;
+    right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+.story-battle-hp-box {
+    flex: 1;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    border-radius: 10px;
+    padding: 6px 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.story-battle-vs {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+.story-battle-hp-name {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.story-battle-hp-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.story-battle-hp-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.4s ease-out;
+}
+.story-battle-hp-fill.player {
+    background: linear-gradient(90deg, #2ecc71, #4ecdc4);
+}
+.story-battle-hp-fill.enemy {
+    background: linear-gradient(90deg, #e74c3c, #ff6b6b);
+}
+.story-battle-hp-text {
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.6);
+    margin-top: 2px;
+    font-family: 'Outfit', sans-serif;
+}
+
+/* Stats row under HP bars */
+.story-battle-stats-row {
+    position: absolute;
+    top: calc(65px + env(safe-area-inset-top, 0px));
+    left: 12px;
+    right: 12px;
+    display: flex;
+    gap: 6px;
+}
+.story-battle-stat {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 4px 6px;
+}
+.story-stat-icon {
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+.story-stat-info {
+    flex: 1;
+    min-width: 0;
+}
+.story-stat-label {
+    font-size: 0.5rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.5px;
+}
+.story-stat-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 2px;
+}
+.story-stat-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.story-stat-fill.str { background: linear-gradient(90deg, #ff4444, #ff6b6b); }
+.story-stat-fill.hp { background: linear-gradient(90deg, #2ecc71, #4ecdc4); }
+.story-stat-fill.mana { background: linear-gradient(90deg, #3498db, #45b7d1); }
 
 /* Character label (rare showcase) */
 .story-character-label {
