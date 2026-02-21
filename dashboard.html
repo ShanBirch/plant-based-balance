@@ -38291,12 +38291,12 @@ function openAsClient() {
 /* Arny model container */
 .story-model-container {
     position: absolute;
-    top: 5%;
+    bottom: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
     max-width: 400px;
-    height: 55%;
+    height: 60%;
 }
 .story-model-container model-viewer {
     width: 100%;
@@ -38304,17 +38304,16 @@ function openAsClient() {
     --poster-color: transparent;
 }
 
-/* Speech bubble area */
+/* Speech bubble area — positioned above Arny, right side */
 .story-speech-area {
-    position: relative;
-    width: 100%;
-    max-width: 400px;
-    padding: 0 24px 40px;
+    position: absolute;
+    top: calc(10% + env(safe-area-inset-top, 0px));
+    right: 5%;
+    left: 20%;
     z-index: 2;
-    min-height: 200px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    align-items: flex-start;
 }
 
 /* Individual speech bubble */
@@ -38322,7 +38321,7 @@ function openAsClient() {
     background: white;
     color: #1a1a2e;
     padding: 16px 20px;
-    border-radius: 20px 20px 20px 4px;
+    border-radius: 20px;
     font-size: 1rem;
     line-height: 1.5;
     font-weight: 500;
@@ -38332,6 +38331,19 @@ function openAsClient() {
     transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     margin-bottom: 12px;
     max-width: 95%;
+    position: relative;
+}
+/* Speech bubble tail pointing down toward Arny */
+.story-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 24px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 14px solid white;
 }
 .story-bubble.visible {
     opacity: 1;
@@ -38348,11 +38360,11 @@ function openAsClient() {
 
 /* Tap to continue prompt */
 .story-tap-prompt {
-    text-align: center;
+    text-align: left;
     color: rgba(255,255,255,0.5);
     font-size: 0.8rem;
     font-weight: 500;
-    padding: 8px 0 0;
+    padding: 4px 0 0 4px;
     animation: storyPulse 2s ease-in-out infinite;
 }
 @keyframes storyPulse {
