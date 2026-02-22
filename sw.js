@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v23'; // v23: Skip SW registration on native, fix FCM token save
+const CACHE_NAME = 'pbb-app-v24'; // v24: Fix inbox messages, add unread dots, pass senderId in FCM
 const MODEL_CACHE_NAME = 'pbb-models-v2'; // v2: pre-cache critical onboarding models for fast startup
 const ASSETS = [
   './dashboard.html',

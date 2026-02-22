@@ -192,7 +192,7 @@ window._handleOAuthCallback = async function(fragment) {
 <script src="lib/games.js"></script>
 <script src="lib/nutrition-calculator.js"></script>
 <script src="lib/native-health.js"></script>
-<script src="lib/native-push.js?v=23"></script>
+<script src="lib/native-push.js?v=24"></script>
 <script src="lib/platform.js"></script>
 <script src="lib/native-iap.js"></script>
 <!-- 2D SVG Avatar system (reserved for future use) -->
@@ -40414,7 +40414,7 @@ window.submitCoachMessage = async function() {
         if (error) throw error;
 
         // Push notification is sent automatically by the database trigger
-        // on the nudges table (nudge_push_trigger.sql) — no client call needed
+        // on the nudges table (nudge_push_trigger.sql)
     } catch (error) {
         console.error('Error sending message to coach:', error);
     }
@@ -42139,6 +42139,13 @@ function refreshPanelUnreadDots() {
         dot.style.display = senders.indexOf(sid) !== -1 ? 'block' : 'none';
     });
 }
+
+// Expose messaging functions on window so native-push.js can call them
+window.addUnreadSender = addUnreadSender;
+window.clearUnreadSender = clearUnreadSender;
+window.refreshPanelUnreadDots = refreshPanelUnreadDots;
+window.updateMessageBadges = updateMessageBadges;
+window.clearMessageBadges = clearMessageBadges;
 
 // Restore badge state on load
 (function() {
@@ -45566,6 +45573,11 @@ async function loadDirectMessages(recipientId) {
     }
 }
 
+// Expose messaging functions on window so native-push.js can access them
+window.loadDirectMessages = loadDirectMessages;
+window.openDirectMessage = openDirectMessage;
+window.openMessageInbox = openMessageInbox;
+
 // Send direct message
 async function sendDirectMessage() {
     const input = document.getElementById('dm-input');
@@ -45591,7 +45603,7 @@ async function sendDirectMessage() {
         loadDirectMessages(currentDMRecipient.id);
 
         // Push notification is sent automatically by the database trigger
-        // on the nudges table (nudge_push_trigger.sql) — no client call needed
+        // on the nudges table (nudge_push_trigger.sql)
 
     } catch (error) {
         console.error('Error sending message:', error);
@@ -45613,16 +45625,21 @@ async function openMessageInbox() {
     try {
         // Build list with Coach Shannon first, then friends
         let html = '';
+        const unreadSenders = getUnreadSenderIds();
+
+        // Check if coach has unread messages
+        const coachId = window._coachUserId || await getCoachUserId();
+        const coachHasUnread = (coachId && unreadSenders.indexOf(coachId) !== -1) || localStorage.getItem('coach_unread_messages') === 'true';
 
         // Add Coach Shannon as first option
         html += `
-            <div onclick="closeMessageSelectorModal(); openCoachChatModal();" style="display: flex; align-items: center; gap: 12px; padding: 15px; margin: 5px 0; background: #f8fafc; border-radius: 12px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
-                <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.2rem; flex-shrink: 0;">S</div>
+            <div onclick="closeMessageSelectorModal(); openCoachChatModal();" style="display: flex; align-items: center; gap: 12px; padding: 15px; margin: 5px 0; background: ${coachHasUnread ? '#fef2f2' : '#f8fafc'}; border-radius: 12px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='${coachHasUnread ? '#fee2e2' : '#f1f5f9'}'" onmouseout="this.style.background='${coachHasUnread ? '#fef2f2' : '#f8fafc'}'">
+                <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.2rem; flex-shrink: 0; position: relative;">S${coachHasUnread ? '<div style="position:absolute;top:-1px;right:-1px;width:12px;height:12px;background:#ef4444;border-radius:50%;border:2px solid white;"></div>' : ''}</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 600; color: var(--text-main);">Coach Shannon</div>
-                    <div style="font-size: 0.85rem; color: var(--primary); font-weight: 500;">Your Coach</div>
+                    <div style="font-weight: ${coachHasUnread ? '700' : '600'}; color: var(--text-main);">Coach Shannon</div>
+                    <div style="font-size: 0.85rem; color: ${coachHasUnread ? '#ef4444' : 'var(--primary)'}; font-weight: ${coachHasUnread ? '600' : '500'};">${coachHasUnread ? 'New message' : 'Your Coach'}</div>
                 </div>
-                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-muted); flex-shrink: 0;"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: ${coachHasUnread ? '#ef4444' : 'var(--text-muted)'}; flex-shrink: 0;"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
             </div>
         `;
 
@@ -45631,6 +45648,45 @@ async function openMessageInbox() {
             const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
 
             if (friends && friends.length > 0) {
+                // Fetch last messages for all friends to show previews
+                let lastMessages = {};
+                try {
+                    const friendIds = friends.map(f => f.friend_id);
+                    const { data: recentMsgs } = await window.supabaseClient
+                        .from('nudges')
+                        .select('sender_id, receiver_id, message, created_at')
+                        .or(`sender_id.eq.${window.currentUser.id},receiver_id.eq.${window.currentUser.id}`)
+                        .order('created_at', { ascending: false })
+                        .limit(100);
+
+                    if (recentMsgs) {
+                        recentMsgs.forEach(msg => {
+                            const otherId = msg.sender_id === window.currentUser.id ? msg.receiver_id : msg.sender_id;
+                            if (friendIds.includes(otherId) && !lastMessages[otherId]) {
+                                const isSent = msg.sender_id === window.currentUser.id;
+                                const preview = msg.message.length > 35 ? msg.message.substring(0, 35) + '...' : msg.message;
+                                lastMessages[otherId] = {
+                                    text: (isSent ? 'You: ' : '') + preview,
+                                    time: msg.created_at
+                                };
+                            }
+                        });
+                    }
+                } catch (e) { console.warn('Could not load message previews:', e); }
+
+                // Sort friends: unread first, then by last message time, then alphabetically
+                friends.sort((a, b) => {
+                    const aUnread = unreadSenders.indexOf(a.friend_id) !== -1 ? 1 : 0;
+                    const bUnread = unreadSenders.indexOf(b.friend_id) !== -1 ? 1 : 0;
+                    if (bUnread !== aUnread) return bUnread - aUnread;
+                    const aTime = lastMessages[a.friend_id]?.time || '';
+                    const bTime = lastMessages[b.friend_id]?.time || '';
+                    if (aTime && bTime) return bTime.localeCompare(aTime);
+                    if (aTime) return -1;
+                    if (bTime) return 1;
+                    return (a.friend_name || '').localeCompare(b.friend_name || '');
+                });
+
                 // Add divider
                 html += `<div style="padding: 10px 15px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Friends</div>`;
 
@@ -45639,15 +45695,18 @@ async function openMessageInbox() {
                     const photoHtml = friend.friend_photo
                         ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" onerror="this.parentElement.innerHTML='${initials}'">`
                         : initials;
+                    const hasUnread = unreadSenders.indexOf(friend.friend_id) !== -1;
+                    const lastMsg = lastMessages[friend.friend_id];
+                    const subtitleText = hasUnread ? 'New message' : (lastMsg ? lastMsg.text : 'Tap to message');
 
                     html += `
-                        <div onclick="closeMessageSelectorModal(); openDirectMessage('${friend.friend_id}', '${(friend.friend_name || friend.friend_email || 'Friend').replace(/'/g, "\\'")}', '${friend.friend_photo || ''}');" style="display: flex; align-items: center; gap: 12px; padding: 15px; margin: 5px 0; background: #f8fafc; border-radius: 12px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
-                            <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--secondary); display: flex; align-items: center; justify-content: center; color: var(--text-main); font-weight: 600; font-size: 1.2rem; overflow: hidden; flex-shrink: 0;">${photoHtml}</div>
+                        <div onclick="closeMessageSelectorModal(); openDirectMessage('${friend.friend_id}', '${(friend.friend_name || friend.friend_email || 'Friend').replace(/'/g, "\\'")}', '${friend.friend_photo || ''}');" style="display: flex; align-items: center; gap: 12px; padding: 15px; margin: 5px 0; background: ${hasUnread ? '#fef2f2' : '#f8fafc'}; border-radius: 12px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='${hasUnread ? '#fee2e2' : '#f1f5f9'}'" onmouseout="this.style.background='${hasUnread ? '#fef2f2' : '#f8fafc'}'">
+                            <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--secondary); display: flex; align-items: center; justify-content: center; color: var(--text-main); font-weight: 600; font-size: 1.2rem; overflow: hidden; flex-shrink: 0; position: relative;">${photoHtml}${hasUnread ? '<div class="dm-unread-dot" data-sender-id="' + friend.friend_id + '" style="display:block;position:absolute;top:-1px;right:-1px;width:12px;height:12px;background:#ef4444;border-radius:50%;border:2px solid white;"></div>' : ''}</div>
                             <div style="flex: 1; min-width: 0;">
-                                <div style="font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${friend.friend_name || friend.friend_email || 'Friend'}</div>
-                                <div style="font-size: 0.85rem; color: var(--text-muted);">Tap to message</div>
+                                <div style="font-weight: ${hasUnread ? '700' : '600'}; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${friend.friend_name || friend.friend_email || 'Friend'}</div>
+                                <div style="font-size: 0.85rem; color: ${hasUnread ? '#ef4444' : 'var(--text-muted)'}; font-weight: ${hasUnread ? '600' : 'normal'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${subtitleText}</div>
                             </div>
-                            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-muted); flex-shrink: 0;"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: ${hasUnread ? '#ef4444' : 'var(--text-muted)'}; flex-shrink: 0;"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
                         </div>
                     `;
                 });

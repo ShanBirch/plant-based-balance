@@ -157,7 +157,7 @@ exports.handler = async (event) => {
     webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
     try {
-        const { recipientId, senderName, messageText } = JSON.parse(event.body);
+        const { recipientId, senderName, messageText, senderId } = JSON.parse(event.body);
 
         if (!recipientId || !messageText) {
             return {
@@ -227,6 +227,7 @@ exports.handler = async (event) => {
                             data: {
                                 type: 'dm_message',
                                 senderName: senderName || 'Someone',
+                                senderId: senderId || '',
                                 url: './dashboard.html'
                             }
                         });
@@ -244,6 +245,7 @@ exports.handler = async (event) => {
                             data: {
                                 type: 'dm_message',
                                 senderName: senderName || 'Someone',
+                                senderId: senderId || '',
                                 url: './dashboard.html'
                             }
                         });

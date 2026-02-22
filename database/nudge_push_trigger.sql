@@ -31,6 +31,7 @@ BEGIN
         url := site_url || '/.netlify/functions/send-dm-notification',
         body := json_build_object(
             'recipientId', NEW.receiver_id::text,
+            'senderId', NEW.sender_id::text,
             'senderName', COALESCE(sender_name, 'Someone'),
             'messageText', LEFT(NEW.message, 200)
         )::jsonb,
