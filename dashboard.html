@@ -12703,6 +12703,8 @@ async function applyAppTheme(themeKey) {
                 }
                 // Always init native push (FCM) regardless of permissions modal state
                 // so the FCM token gets registered for background push notifications
+                console.log('[PUSH-DEBUG] Native app detected. NativePush available:', !!window.NativePush);
+                if (typeof showToast === 'function') showToast('🔧 Push debug v23 — NativePush: ' + (!!window.NativePush), 'info');
                 if (window.NativePush) window.NativePush.init();
             } else if (!window._onboardingWizardPending) {
                 // Web (non-native): request notification permission now that user is logged in
