@@ -41817,6 +41817,25 @@ window.showDMNotificationBanner = function showDMNotificationBanner(senderName, 
     // Play notification sound (short vibration pattern for native)
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
+    // Native Android: fire a local notification so the app icon gets a badge dot.
+    // The heads-up display + shade entry triggers the launcher badge dot automatically.
+    if (typeof isNativeApp === 'function' && isNativeApp()) {
+        import('@capacitor/local-notifications').then(function(mod) {
+            mod.LocalNotifications.schedule({
+                notifications: [{
+                    id: 7777 + (Date.now() % 1000),
+                    title: senderName || 'New Message',
+                    body: messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText,
+                    sound: 'default',
+                    smallIcon: 'ic_stat_notification',
+                    channelId: 'dm-messages',
+                    autoCancel: true,
+                    extra: { type: 'dm_message', senderName: senderName || '' }
+                }]
+            }).catch(function(e) { console.warn('[Badge] Local notif error:', e); });
+        }).catch(function() {});
+    }
+
     // Auto-dismiss after 5 seconds
     setTimeout(function() {
         if (banner.parentNode) {
@@ -41858,17 +41877,26 @@ function updateMessageBadges(count) {
         }
     }
 
-    // App icon badge (native + PWA)
+    // App icon badge — PWA uses setAppBadge, native Android uses local notifications
     if (count > 0 && 'setAppBadge' in navigator) {
-        navigator.setAppBadge(count).catch(function(e) { console.error(e); });
+        navigator.setAppBadge(count).catch(function() {});
     } else if (count === 0) {
         if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(function() {});
         if ('setAppBadge' in navigator) navigator.setAppBadge(0).catch(function() {});
+    }
+
+    // Native Android: badge dots come from notifications in the shade.
+    // Cancel the silent badge notification when count hits 0.
+    if (count === 0 && typeof isNativeApp === 'function' && isNativeApp()) {
+        import('@capacitor/local-notifications').then(function(mod) {
+            mod.LocalNotifications.cancel({ notifications: [{ id: 7777 }] }).catch(function() {});
+        }).catch(function() {});
     }
 }
 
 function clearMessageBadges() {
     updateMessageBadges(0);
+    clearAllUnreadSenders();
 }
 
 // Play a short notification chime for in-app DM alerts
@@ -41887,6 +41915,50 @@ function playNotificationSound() {
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.25);
     } catch (e) { /* audio not available */ }
+}
+
+/**
+ * Per-sender unread tracking — stores which sender IDs have unread messages.
+ * Used to show notification dots next to contacts in the messages panel.
+ */
+function getUnreadSenderIds() {
+    try {
+        return JSON.parse(localStorage.getItem('unread_sender_ids') || '[]');
+    } catch (e) { return []; }
+}
+
+function addUnreadSender(senderId) {
+    var senders = getUnreadSenderIds();
+    if (senders.indexOf(senderId) === -1) {
+        senders.push(senderId);
+        localStorage.setItem('unread_sender_ids', JSON.stringify(senders));
+    }
+    // Refresh messages panel dots if it's open
+    refreshPanelUnreadDots();
+}
+
+function clearUnreadSender(senderId) {
+    var senders = getUnreadSenderIds();
+    var idx = senders.indexOf(senderId);
+    if (idx !== -1) {
+        senders.splice(idx, 1);
+        localStorage.setItem('unread_sender_ids', JSON.stringify(senders));
+    }
+    refreshPanelUnreadDots();
+}
+
+function clearAllUnreadSenders() {
+    localStorage.setItem('unread_sender_ids', '[]');
+    refreshPanelUnreadDots();
+}
+
+function refreshPanelUnreadDots() {
+    var senders = getUnreadSenderIds();
+    var dots = document.querySelectorAll('.dm-unread-dot');
+    dots.forEach(function(dot) {
+        var sid = dot.getAttribute('data-sender-id');
+        dot.style.display = senders.indexOf(sid) !== -1 ? 'block' : 'none';
+    });
 }
 
 // Restore badge state on load
@@ -41981,6 +42053,9 @@ window.subscribeToCoachMessages = function(userId) {
 
                     // Update unread badges (inbox icon, nav button, app icon)
                     updateMessageBadges((window._unreadDMCount || 0) + 1);
+
+                    // Track this sender as having unread messages (for dots in messages panel)
+                    addUnreadSender(newMessage.sender_id);
                 }
 
                 console.log('Realtime: New DM received from', newMessage.sender_id);
@@ -42077,6 +42152,7 @@ function startDMPolling(userId) {
                     showDMNotificationBanner(senderName, senderPhoto, msg.message, msg.sender_id);
                     playNotificationSound();
                     updateMessageBadges((window._unreadDMCount || 0) + 1);
+                    addUnreadSender(msg.sender_id);
                 }
             }
         } catch (e) {
@@ -42090,6 +42166,9 @@ window.openCoachChat = function() {
 
     // Clear unread flag
     localStorage.removeItem('coach_unread_messages');
+
+    // Clear coach from unread senders
+    if (window._coachUserId) clearUnreadSender(window._coachUserId);
 
     // Clear all message badges
     clearMessageBadges();
@@ -45175,6 +45254,9 @@ let currentDMRecipient = null;
 function openDirectMessage(userId, userName, userPhoto) {
     currentDMRecipient = { id: userId, name: userName, photo: userPhoto };
 
+    // Clear unread state for this specific sender
+    clearUnreadSender(userId);
+
     // Clear message badges when opening a conversation
     clearMessageBadges();
 
@@ -45590,20 +45672,25 @@ async function loadPanelFriends() {
             return;
         }
 
+        const unreadSenders = getUnreadSenderIds();
         container.innerHTML = friends.map(friend => {
             const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
             const photoHtml = friend.friend_photo
                 ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='${initials}'">`
                 : initials;
+            const hasUnread = unreadSenders.indexOf(friend.friend_id) !== -1;
 
             return `
                 <div onclick="closeFeedMessagesPanel(); openDirectMessage('${friend.friend_id}', '${(friend.friend_name || 'Friend').replace(/'/g, "\\'")}', '${friend.friend_photo || ''}');" style="display: flex; align-items: center; padding: 10px 0; cursor: pointer; border-bottom: 1px solid #f1f5f9;">
-                    <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem; overflow: hidden; margin-right: 12px; flex-shrink: 0;">${photoHtml}</div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${friend.friend_name || 'Friend'}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">Tap to message</div>
+                    <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem; overflow: hidden; margin-right: 12px; flex-shrink: 0; position: relative;">
+                        ${photoHtml}
+                        <div class="dm-unread-dot" data-sender-id="${friend.friend_id}" style="display: ${hasUnread ? 'block' : 'none'}; position: absolute; top: -1px; right: -1px; width: 12px; height: 12px; background: #ef4444; border-radius: 50%; border: 2px solid white;"></div>
                     </div>
-                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted); flex-shrink: 0;"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: ${hasUnread ? '700' : '600'}; color: var(--text-main); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${friend.friend_name || 'Friend'}</div>
+                        <div style="font-size: 0.75rem; color: ${hasUnread ? '#ef4444' : 'var(--text-muted)'}; font-weight: ${hasUnread ? '600' : 'normal'};">${hasUnread ? 'New message' : 'Tap to message'}</div>
+                    </div>
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: ${hasUnread ? '#ef4444' : 'var(--text-muted)'}; flex-shrink: 0;"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
                 </div>
             `;
         }).join('');
