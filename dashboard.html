@@ -12703,8 +12703,6 @@ async function applyAppTheme(themeKey) {
                 }
                 // Always init native push (FCM) regardless of permissions modal state
                 // so the FCM token gets registered for background push notifications
-                console.log('[PUSH-DEBUG] Native app detected. NativePush available:', !!window.NativePush);
-                if (typeof showToast === 'function') showToast('🔧 Push debug v23 — NativePush: ' + (!!window.NativePush), 'info');
                 if (window.NativePush) window.NativePush.init();
             } else if (!window._onboardingWizardPending) {
                 // Web (non-native): request notification permission now that user is logged in
@@ -40415,8 +40413,8 @@ window.submitCoachMessage = async function() {
 
         if (error) throw error;
 
-        // Send push notification to the coach
-        sendDMNotification(coachId, text);
+        // Push notification is sent automatically by the database trigger
+        // on the nudges table (nudge_push_trigger.sql) — no client call needed
     } catch (error) {
         console.error('Error sending message to coach:', error);
     }
@@ -45592,10 +45590,8 @@ async function sendDirectMessage() {
         // Reload messages
         loadDirectMessages(currentDMRecipient.id);
 
-        // Send push notification to recipient
-        if (typeof sendDMNotification === 'function') {
-            sendDMNotification(currentDMRecipient.id, message);
-        }
+        // Push notification is sent automatically by the database trigger
+        // on the nudges table (nudge_push_trigger.sql) — no client call needed
 
     } catch (error) {
         console.error('Error sending message:', error);
