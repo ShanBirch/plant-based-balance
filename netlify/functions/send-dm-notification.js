@@ -10,17 +10,26 @@ const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@plantbasedbalance.c
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hzapaorxqboevxnumxkv.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
-// FCM V1 config — service account JSON stored as an env var string
+// FCM V1 config — supports both a single JSON env var (FIREBASE_SERVICE_ACCOUNT)
+// and individual env vars (FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, FIREBASE_PROJECT_ID)
 let FIREBASE_SERVICE_ACCOUNT = null;
 try {
-    FIREBASE_SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT
-        ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-        : null;
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        FIREBASE_SERVICE_ACCOUNT = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } else if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+        // Build service account object from individual env vars
+        FIREBASE_SERVICE_ACCOUNT = {
+            client_email: process.env.FIREBASE_CLIENT_EMAIL,
+            private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            project_id: process.env.FIREBASE_PROJECT_ID,
+        };
+        console.log('[FCM] Built service account from individual env vars (project:', process.env.FIREBASE_PROJECT_ID, ')');
+    }
 } catch (parseErr) {
-    console.error('[FCM] FIREBASE_SERVICE_ACCOUNT env var is invalid JSON:', parseErr.message);
+    console.error('[FCM] Error parsing Firebase config:', parseErr.message);
 }
 if (!FIREBASE_SERVICE_ACCOUNT) {
-    console.warn('[FCM] FIREBASE_SERVICE_ACCOUNT not configured — native Android push notifications will not be sent');
+    console.warn('[FCM] Firebase not configured — need FIREBASE_SERVICE_ACCOUNT or FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY + FIREBASE_PROJECT_ID');
 }
 
 /**

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v20'; // v20: FCM registration fix (listeners before register), improved logging
+const CACHE_NAME = 'pbb-app-v21'; // v21: Fix FCM - use individual Firebase env vars from Netlify
 const MODEL_CACHE_NAME = 'pbb-models-v2'; // v2: pre-cache critical onboarding models for fast startup
 const ASSETS = [
   './dashboard.html',
