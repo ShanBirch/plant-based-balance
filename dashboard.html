@@ -20409,7 +20409,7 @@ function viewWorkoutHistoryDetail(date) {
     <div id="feed-messages-panel" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10006; backdrop-filter: blur(3px);">
         <div id="feed-messages-panel-content" style="position: absolute; right: 0; top: 0; bottom: 0; width: 100%; max-width: 400px; background: white; box-shadow: -5px 0 20px rgba(0,0,0,0.15); overflow-y: auto; animation: slideInFromRight 0.3s ease-out;">
             <!-- Panel Header -->
-            <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: white; z-index: 5;">
+            <div style="padding: 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: white; z-index: 5;">
                 <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-main);">Messages</h3>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <div onclick="openAddFriendModal(); closeFeedMessagesPanel();" style="width: 36px; height: 36px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
