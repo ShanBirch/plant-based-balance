@@ -192,7 +192,7 @@ window._handleOAuthCallback = async function(fragment) {
 <script src="lib/games.js"></script>
 <script src="lib/nutrition-calculator.js"></script>
 <script src="lib/native-health.js"></script>
-<script src="lib/native-push.js?v=24"></script>
+<script src="lib/native-push.js?v=25"></script>
 <script src="lib/platform.js"></script>
 <script src="lib/native-iap.js"></script>
 <!-- 2D SVG Avatar system (reserved for future use) -->
@@ -41820,6 +41820,16 @@ window.loadChatHistory = async function() {
 
     container.innerHTML = '';
 
+    // Refresh Supabase session so RLS queries work with a valid JWT
+    try {
+        const { data: sessionData } = await window.supabaseClient.auth.getSession();
+        if (!sessionData?.session) {
+            await window.supabaseClient.auth.refreshSession();
+        }
+    } catch (authErr) {
+        console.warn('[CoachChat] Session refresh failed (non-fatal):', authErr.message);
+    }
+
     const coachId = await getCoachUserId();
     if (!coachId) {
         container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted);">Could not load messages.</div>`;
@@ -41827,10 +41837,13 @@ window.loadChatHistory = async function() {
     }
 
     try {
+        const userId = window.currentUser.id;
+        console.log('[CoachChat] Loading messages between', userId.substring(0, 8), 'and coach', coachId.substring(0, 8));
+
         const { data: messages, error } = await window.supabaseClient
             .from('nudges')
             .select('*')
-            .or(`and(sender_id.eq.${window.currentUser.id},receiver_id.eq.${coachId}),and(sender_id.eq.${coachId},receiver_id.eq.${window.currentUser.id})`)
+            .or(`and(sender_id.eq.${userId},receiver_id.eq.${coachId}),and(sender_id.eq.${coachId},receiver_id.eq.${userId})`)
             .order('created_at', { ascending: true })
             .limit(100);
 
@@ -42269,8 +42282,18 @@ function startDMPolling(userId) {
     window._lastDMPollTime = window._lastDMPollTime || new Date().toISOString();
     console.log('[DMPoll] Starting 15s polling for user:', userId, 'from:', window._lastDMPollTime);
 
+    // Periodically refresh the Supabase session so the JWT stays valid.
+    // A stale JWT causes RLS-protected queries to silently return 0 rows.
+    var _lastSessionRefresh = Date.now();
     window._dmPollingInterval = setInterval(async () => {
         try {
+            // Refresh session every 10 minutes to prevent stale JWTs
+            if (Date.now() - _lastSessionRefresh > 10 * 60 * 1000) {
+                try {
+                    await window.supabaseClient.auth.getSession();
+                    _lastSessionRefresh = Date.now();
+                } catch (e) { /* non-fatal */ }
+            }
             const { data: newMessages, error } = await window.supabaseClient
                 .from('nudges')
                 .select('id, sender_id, receiver_id, message, created_at')
@@ -45509,16 +45532,50 @@ async function loadDirectMessages(recipientId) {
 
     container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted);">Loading messages...</div>`;
 
+    // Ensure we have a valid user before querying
+    if (!window.currentUser || !window.currentUser.id) {
+        console.error('[DM] No currentUser — waiting for auth...');
+        // Wait for auth to be ready (e.g. app launched from notification tap)
+        for (let i = 0; i < 10; i++) {
+            await new Promise(r => setTimeout(r, 500));
+            if (window.currentUser && window.currentUser.id) break;
+        }
+        if (!window.currentUser || !window.currentUser.id) {
+            container.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444;">Please log in to view messages</div>`;
+            return;
+        }
+    }
+
     try {
-        // Get messages from nudges table (used as DMs for now)
+        // Refresh the Supabase session to ensure the JWT is valid.
+        // A stale JWT causes RLS-protected queries to silently return 0 rows.
+        try {
+            const { data: sessionData } = await window.supabaseClient.auth.getSession();
+            if (!sessionData?.session) {
+                console.warn('[DM] No active Supabase session — attempting refresh');
+                await window.supabaseClient.auth.refreshSession();
+            }
+        } catch (authErr) {
+            console.warn('[DM] Session refresh failed (non-fatal):', authErr.message);
+        }
+
+        const userId = window.currentUser.id;
+        console.log('[DM] Loading messages between', userId.substring(0, 8), 'and', String(recipientId).substring(0, 8));
+
+        // Get messages from nudges table
         const { data: messages, error } = await window.supabaseClient
             .from('nudges')
             .select('*')
-            .or(`and(sender_id.eq.${window.currentUser.id},receiver_id.eq.${recipientId}),and(sender_id.eq.${recipientId},receiver_id.eq.${window.currentUser.id})`)
+            .or(`and(sender_id.eq.${userId},receiver_id.eq.${recipientId}),and(sender_id.eq.${recipientId},receiver_id.eq.${userId})`)
             .order('created_at', { ascending: true })
             .limit(50);
 
-        if (error) throw error;
+        if (error) {
+            console.error('[DM] Query error:', error.message, error.code, error.hint);
+            throw error;
+        }
+
+        console.log('[DM] Query returned', messages ? messages.length : 0, 'messages');
 
         if (!messages || messages.length === 0) {
             container.innerHTML = `
@@ -45531,7 +45588,7 @@ async function loadDirectMessages(recipientId) {
         }
 
         container.innerHTML = messages.map(msg => {
-            const isSent = msg.sender_id === window.currentUser.id;
+            const isSent = msg.sender_id === userId;
             const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             return `
@@ -45551,13 +45608,13 @@ async function loadDirectMessages(recipientId) {
         await window.supabaseClient
             .from('nudges')
             .update({ read_at: new Date().toISOString() })
-            .eq('receiver_id', window.currentUser.id)
+            .eq('receiver_id', userId)
             .eq('sender_id', recipientId)
             .is('read_at', null);
 
     } catch (error) {
-        console.error('Error loading messages:', error);
-        container.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444;">Failed to load messages</div>`;
+        console.error('[DM] Error loading messages:', error);
+        container.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444;">Failed to load messages. Pull down to retry.</div>`;
     }
 }
 
@@ -45603,6 +45660,16 @@ async function sendDirectMessage() {
 async function openMessageInbox() {
     const modal = document.getElementById('message-selector-modal');
     const listContainer = document.getElementById('message-selector-list');
+
+    // Refresh Supabase session so RLS queries work with a valid JWT
+    try {
+        const { data: sessionData } = await window.supabaseClient.auth.getSession();
+        if (!sessionData?.session) {
+            await window.supabaseClient.auth.refreshSession();
+        }
+    } catch (authErr) {
+        console.warn('[Inbox] Session refresh failed (non-fatal):', authErr.message);
+    }
 
     if (!modal || !listContainer) return;
 
