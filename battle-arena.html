@@ -3811,6 +3811,15 @@ function drawObstacles() {
     if (o.type === 'wall') {
       const rm = getWallRoomColor(o.x, o.y);
       const wallBase = rm ? rm.wallColor : '#1e2538';
+      
+      // Cyberpunk edge glow for bounds
+      if (rm == null) {
+          ctx.shadowColor = '#f20089';
+          ctx.shadowBlur = 20;
+      } else {
+          ctx.shadowColor = rm.trimColor;
+          ctx.shadowBlur = 10;
+      }
       const wallLight = rm ? rm.wallHighlight : '#2a3548';
       const trim = rm ? rm.trimColor : '#4a6a88';
 
@@ -3875,6 +3884,9 @@ function drawObstacles() {
       ctx.beginPath();
       ctx.roundRect(o.x, o.y, o.w, o.h, 3);
       ctx.stroke();
+      
+      // Stop wall glow bleeding into room
+      ctx.shadowBlur = 0;
     } else {
       drawFurnitureItem(o);
     }
