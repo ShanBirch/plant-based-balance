@@ -3960,1618 +3960,217 @@ function drawObstacles() {
 function drawFurnitureItem(o) {
   const x = o.x, y = o.y, w = o.w, h = o.h;
   ctx.save();
-
-  // Neon Cyberpunk Outer Glow
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  
+  // Outer Ambient Drop Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
   ctx.shadowColor = '#00f2fe';
   ctx.shadowBlur = 10;
   ctx.beginPath();
-  ctx.roundRect(x + 2, y + 2, w, h, 6);
+  ctx.roundRect(x + 5, y + 5, w, h + 15, 6);
   ctx.fill();
-  
-  // Clear the shadow blur so the object itself doesn't glow internally
   ctx.shadowBlur = 0;
 
-  switch (o.label) {
+  // Among Us Style 2.5D Renderer Helper
+  function drawIsoProp(px, py, pw, ph, depth, tColor, fColor, isRound=false, customDetail=null) {
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#000000';
+    
+    if (isRound) {
+        // Back half / body extrusion
+        ctx.fillStyle = fColor;
+        ctx.beginPath(); ctx.ellipse(px + pw/2, py + ph/2 + depth, pw/2, ph/2, 0, 0, Math.PI*2);
+        ctx.fill(); ctx.stroke();
+        // Body connection
+        ctx.fillRect(px, py + ph/2, pw, depth);
+        ctx.beginPath(); ctx.moveTo(px, py + ph/2); ctx.lineTo(px, py + ph/2 + depth); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px+pw, py + ph/2); ctx.lineTo(px+pw, py + ph/2 + depth); ctx.stroke();
+        // Top cap
+        ctx.fillStyle = tColor;
+        ctx.beginPath(); ctx.ellipse(px + pw/2, py + ph/2, pw/2, ph/2, 0, 0, Math.PI*2);
+        ctx.fill(); ctx.stroke();
+        
+        // Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.beginPath(); ctx.ellipse(px + pw/2, py + ph/2 - ph*0.1, pw*0.3, ph*0.2, 0, 0, Math.PI*2); ctx.fill();
+        
+        if (customDetail) customDetail(px, py, pw, ph, depth, tColor, fColor);
+        return;
+    }
 
-  // ─── KITCHEN ───
-  case 'Stove': {
-    // Dark metal body
-    ctx.fillStyle = '#2a2a2e';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
-    // Metal texture
-    ctx.fillStyle = 'rgba(255,255,255,0.02)';
-    ctx.fillRect(x + 2, y + 2, w - 4, h * 0.15);
-    ctx.strokeStyle = '#444'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.stroke();
-    // 4 burners (2x2 grid) with flame glow
-    const bx = [x + w * 0.28, x + w * 0.72];
-    const by = [y + h * 0.32, y + h * 0.72];
-    bx.forEach((bcx, bi) => by.forEach((bcy, bj) => {
-      // Burner grate
-      ctx.strokeStyle = '#555'; ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.arc(bcx, bcy, 12, 0, Math.PI * 2); ctx.stroke();
-      // Inner ring
-      ctx.strokeStyle = '#4a4a50'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(bcx, bcy, 7, 0, Math.PI * 2); ctx.stroke();
-      // Flame glow (on first burner)
-      if (bi === 0 && bj === 0) {
-        ctx.fillStyle = 'rgba(100,150,255,0.08)';
-        ctx.beginPath(); ctx.arc(bcx, bcy, 14, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = 'rgba(80,130,255,0.12)';
-        ctx.beginPath(); ctx.arc(bcx, bcy, 8, 0, Math.PI * 2); ctx.fill();
-      }
-      ctx.fillStyle = '#3a3a40';
-      ctx.beginPath(); ctx.arc(bcx, bcy, 3, 0, Math.PI * 2); ctx.fill();
-      // Grate cross
-      ctx.strokeStyle = '#505055'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(bcx - 10, bcy); ctx.lineTo(bcx + 10, bcy); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(bcx, bcy - 10); ctx.lineTo(bcx, bcy + 10); ctx.stroke();
-    }));
-    // Control panel area
-    ctx.fillStyle = '#222228';
-    ctx.beginPath(); ctx.roundRect(x + 4, y + h - 14, w - 8, 10, 2); ctx.fill();
-    // Knobs with indicators
-    for (let i = 0; i < 4; i++) {
-      ctx.fillStyle = '#666';
-      ctx.beginPath(); ctx.arc(x + 18 + i * 22, y + h - 9, 4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#888';
-      ctx.beginPath(); ctx.arc(x + 18 + i * 22, y + h - 9, 2, 0, Math.PI * 2); ctx.fill();
-    }
-    // Oven window
-    ctx.fillStyle = '#1a1a20';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.3, y + h - 12, w * 0.4, 8, 1); ctx.fill();
-    break;
-  }
-  case 'Fridge': {
-    // Tall silver body with gradient
-    const frdGrd = ctx.createLinearGradient(x, y, x + w, y);
-    frdGrd.addColorStop(0, '#b8c0c8');
-    frdGrd.addColorStop(0.3, '#d0d8e0');
-    frdGrd.addColorStop(0.7, '#c8d0d8');
-    frdGrd.addColorStop(1, '#b0b8c0');
-    ctx.fillStyle = frdGrd;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
-    ctx.strokeStyle = '#999'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.stroke();
-    // Door split (recessed line)
-    ctx.strokeStyle = '#a0a0a0'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x + 3, y + h * 0.4); ctx.lineTo(x + w - 3, y + h * 0.4); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(x + 3, y + h * 0.4 + 1); ctx.lineTo(x + w - 3, y + h * 0.4 + 1); ctx.stroke();
-    // Handles (sleek)
-    ctx.fillStyle = '#888';
-    ctx.beginPath(); ctx.roundRect(x + w - 10, y + h * 0.15, 3, 20, 1); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w - 10, y + h * 0.55, 3, 20, 1); ctx.fill();
-    // Top vent
-    ctx.fillStyle = 'rgba(0,0,0,0.06)';
-    ctx.fillRect(x + 6, y + 3, w - 12, 2);
-    // Fridge magnets (decorative)
-    ctx.fillStyle = '#e53935';
-    ctx.beginPath(); ctx.arc(x + 12, y + h * 0.2, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#2196f3';
-    ctx.beginPath(); ctx.roundRect(x + 8, y + h * 0.28, 12, 8, 1); ctx.fill();
-    ctx.fillStyle = '#4caf50';
-    ctx.beginPath(); ctx.arc(x + 18, y + h * 0.12, 3, 0, Math.PI * 2); ctx.fill();
-    // Ice dispenser
-    ctx.fillStyle = '#888';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.3, y + h * 0.5, w * 0.4, 10, 2); ctx.fill();
-    ctx.fillStyle = '#666';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.35, y + h * 0.52, w * 0.3, 6, 1); ctx.fill();
-    break;
-  }
-  case 'Counter': {
-    // Wood top
-    ctx.fillStyle = '#8B6914';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Surface highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.fillRect(x + 3, y + 3, w - 6, h * 0.3);
-    ctx.strokeStyle = '#6B4F12'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
-    // Cabinet handles below
-    for (let i = 0; i < Math.floor(w / 60); i++) {
-      ctx.fillStyle = '#555';
-      ctx.fillRect(x + 20 + i * 60, y + h - 8, 20, 3);
-    }
-    break;
-  }
-  case 'Sink': {
-    // Counter body
-    ctx.fillStyle = '#7a7a80';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
-    // Basin (dark oval)
-    ctx.fillStyle = '#3a3a44';
+    // Front/Side Face (Extrusion)
+    ctx.fillStyle = fColor;
     ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h / 2, w * 0.32, h * 0.35, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Faucet
-    ctx.fillStyle = '#bbb';
-    ctx.fillRect(x + w / 2 - 3, y + 4, 6, 12);
-    ctx.beginPath(); ctx.arc(x + w / 2, y + 16, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.stroke();
-    break;
-  }
-  case 'Bin': {
-    // Cylindrical bin
-    ctx.fillStyle = '#4a4a4e';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, w * 0.3); ctx.fill();
-    // Lid
-    ctx.fillStyle = '#5a5a5e';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + 10, w * 0.42, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, w * 0.3); ctx.stroke();
-    break;
-  }
-
-  // ─── CAFETERIA ───
-  case 'Table': {
-    // Wood table
-    ctx.fillStyle = '#6B4F12';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill();
-    // Surface
-    ctx.fillStyle = '#8B6914';
-    ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 6); ctx.fill();
-    // Wood grain
-    ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 1;
-    for (let i = 1; i < 4; i++) {
-      ctx.beginPath(); ctx.moveTo(x + 10, y + h * i / 4); ctx.lineTo(x + w - 10, y + h * i / 4); ctx.stroke();
-    }
-    // Chairs (small squares at sides)
-    ctx.fillStyle = '#4a3a1a';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.2, y - 14, 20, 12, 3); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w * 0.6, y - 14, 20, 12, 3); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w * 0.2, y + h + 2, 20, 12, 3); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w * 0.6, y + h + 2, 20, 12, 3); ctx.fill();
-    break;
-  }
-  case 'Vending': {
-    // Machine body
-    ctx.fillStyle = '#b71c1c';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
-    // Glass panel with slight reflection
-    const vgGrd = ctx.createLinearGradient(x + 8, y + 10, x + w - 8, y + 10);
-    vgGrd.addColorStop(0, '#0d1b3e');
-    vgGrd.addColorStop(0.5, '#152855');
-    vgGrd.addColorStop(1, '#0d1b3e');
-    ctx.fillStyle = vgGrd;
-    ctx.beginPath(); ctx.roundRect(x + 6, y + 10, w - 12, h * 0.52, 3); ctx.fill();
-    // Product rows with colorful items
-    const vendColors = ['#e53935','#43a047','#1e88e5','#ffb300','#8e24aa','#00acc1'];
-    for (let row = 0; row < 3; row++) {
-      // Shelf
-      ctx.fillStyle = 'rgba(255,255,255,0.08)';
-      ctx.fillRect(x + 10, y + 16 + row * 20, w - 20, 1);
-      // Items
-      for (let col = 0; col < 3; col++) {
-        ctx.fillStyle = vendColors[(row * 3 + col) % vendColors.length];
-        ctx.beginPath(); ctx.roundRect(x + 12 + col * 18, y + 18 + row * 20, 12, 14, 2); ctx.fill();
-        // Label
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.fillRect(x + 14 + col * 18, y + 24 + row * 20, 8, 3);
-      }
-    }
-    // Selection buttons
-    ctx.fillStyle = '#444';
-    ctx.beginPath(); ctx.roundRect(x + w - 18, y + 14, 10, h * 0.48, 2); ctx.fill();
-    for (let i = 0; i < 5; i++) {
-      ctx.fillStyle = '#666';
-      ctx.beginPath(); ctx.arc(x + w - 13, y + 22 + i * 12, 3, 0, Math.PI * 2); ctx.fill();
-    }
-    // Dispenser slot
-    ctx.fillStyle = '#0a0a0a';
-    ctx.beginPath(); ctx.roundRect(x + 10, y + h * 0.68, w - 20, 22, 4); ctx.fill();
-    // Dispenser flap
-    ctx.fillStyle = '#1a1a1a';
-    ctx.beginPath(); ctx.roundRect(x + 14, y + h * 0.7, w - 28, 18, 2); ctx.fill();
-    // Brand name area
-    ctx.fillStyle = '#d32f2f';
-    ctx.beginPath(); ctx.roundRect(x + 8, y + h - 24, w - 16, 16, 2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 6px Inter'; ctx.textAlign = 'center';
-    ctx.fillText('SNACKS', x + w / 2, y + h - 14);
-    // Coin slot
-    ctx.fillStyle = '#888';
-    ctx.beginPath(); ctx.roundRect(x + w - 16, y + h * 0.62, 6, 10, 2); ctx.fill();
-    ctx.strokeStyle = '#8b0000'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.stroke();
-    break;
-  }
-
-  // ─── LIVING ROOM ───
-  case 'Couch': {
-    // Base
-    ctx.fillStyle = '#5c3d2e';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.fill();
-    // Cushions
-    ctx.fillStyle = '#7a4f3a';
-    ctx.beginPath(); ctx.roundRect(x + 6, y + 6, w - 12, h - 16, 8); ctx.fill();
-    // Back rest
-    ctx.fillStyle = '#6a4232';
-    ctx.beginPath(); ctx.roundRect(x + 4, y + h - 14, w - 8, 12, 4); ctx.fill();
-    // Cushion lines
-    ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 1;
-    const seats = 3;
-    for (let i = 1; i < seats; i++) {
-      ctx.beginPath(); ctx.moveTo(x + (w / seats) * i, y + 8); ctx.lineTo(x + (w / seats) * i, y + h - 18); ctx.stroke();
-    }
-    // Arm rests
-    ctx.fillStyle = '#503020';
-    ctx.beginPath(); ctx.roundRect(x, y, 10, h, 5); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w - 10, y, 10, h, 5); ctx.fill();
-    break;
-  }
-  case 'TV': {
-    // Screen glow on floor
-    ctx.fillStyle = 'rgba(60,120,200,0.04)';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h + 20, w * 0.8, 30, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Stand
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(x + w * 0.45, y + h - 14, w * 0.1, 10);
-    ctx.fillStyle = '#333';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.25, y + h - 6, w * 0.5, 6, 2); ctx.fill();
-    // Screen bezel
-    ctx.fillStyle = '#0a0a0a';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h - 10, 5); ctx.fill();
-    // Screen with content
-    const tvGrd = ctx.createLinearGradient(x, y, x + w, y + h * 0.7);
-    tvGrd.addColorStop(0, '#102840');
-    tvGrd.addColorStop(0.3, '#1a4060');
-    tvGrd.addColorStop(0.7, '#0e2a48');
-    tvGrd.addColorStop(1, '#081828');
-    ctx.fillStyle = tvGrd;
-    ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 18, 3); ctx.fill();
-    // Fake scene content on TV
-    ctx.fillStyle = 'rgba(80,160,80,0.1)';
-    ctx.fillRect(x + 8, y + h * 0.5, w - 16, h * 0.2);
-    ctx.fillStyle = 'rgba(200,150,80,0.06)';
-    ctx.beginPath(); ctx.arc(x + w * 0.7, y + h * 0.3, 8, 0, Math.PI * 2); ctx.fill();
-    // Screen reflection
-    ctx.fillStyle = 'rgba(150,200,255,0.06)';
-    ctx.beginPath();
-    ctx.moveTo(x + 6, y + 6); ctx.lineTo(x + (w - 12) * 0.5, y + 6);
-    ctx.lineTo(x + 6, y + (h - 22) * 0.5);
-    ctx.closePath(); ctx.fill();
-    // Power LED
-    ctx.fillStyle = '#00ff44';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h - 14, 1.5, 0, Math.PI * 2); ctx.fill();
-    // LED glow
-    ctx.fillStyle = 'rgba(0,255,68,0.15)';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h - 14, 4, 0, Math.PI * 2); ctx.fill();
-    break;
-  }
-  case 'Armchair': {
-    ctx.fillStyle = '#5c3d2e';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 12); ctx.fill();
-    // Cushion
-    ctx.fillStyle = '#7a4f3a';
-    ctx.beginPath(); ctx.roundRect(x + 10, y + 8, w - 20, h - 20, 8); ctx.fill();
-    // Arms
-    ctx.fillStyle = '#503020';
-    ctx.beginPath(); ctx.roundRect(x, y + 4, 12, h - 8, 6); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w - 12, y + 4, 12, h - 8, 6); ctx.fill();
-    break;
-  }
-  case 'Coffee Table': {
-    ctx.fillStyle = '#5a4020';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
-    ctx.fillStyle = '#7a5a30';
-    ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 4); ctx.fill();
-    // Magazine
-    ctx.fillStyle = '#ddd';
-    ctx.save(); ctx.translate(x + w * 0.6, y + h * 0.3); ctx.rotate(0.2);
-    ctx.fillRect(-10, -7, 20, 14); ctx.restore();
-    break;
-  }
-  case 'Bookshelf': {
-    ctx.fillStyle = '#5a3a1a';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Shelves
-    const shelves = 4;
-    for (let i = 0; i < shelves; i++) {
-      const sy = y + (h / shelves) * i;
-      const sh = h / shelves;
-      // Shelf line
-      ctx.fillStyle = '#4a2a10';
-      ctx.fillRect(x + 2, sy + sh - 3, w - 4, 3);
-      // Books (colored rectangles)
-      const colors = ['#c62828','#1565c0','#2e7d32','#f9a825','#6a1b9a','#e65100'];
-      let bx = x + 4;
-      while (bx < x + w - 8) {
-        const bw = 5 + Math.random() * 7;
-        ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
-        ctx.fillRect(bx, sy + 4, bw, sh - 8);
-        bx += bw + 1;
-      }
-    }
-    ctx.strokeStyle = '#3a2210'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
-    break;
-  }
-  case 'Plant': {
-    // Pot
-    ctx.fillStyle = '#8B4513';
-    ctx.beginPath();
-    ctx.moveTo(x + w * 0.2, y + h * 0.5);
-    ctx.lineTo(x + w * 0.3, y + h);
-    ctx.lineTo(x + w * 0.7, y + h);
-    ctx.lineTo(x + w * 0.8, y + h * 0.5);
-    ctx.closePath(); ctx.fill();
-    // Pot rim
-    ctx.fillStyle = '#a0522d';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.15, y + h * 0.45, w * 0.7, 8, 3); ctx.fill();
-    // Leaves
-    ctx.fillStyle = '#2d8a3e';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.3, w * 0.35, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#3da54e';
-    ctx.beginPath(); ctx.arc(x + w * 0.4, y + h * 0.22, w * 0.2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x + w * 0.65, y + h * 0.25, w * 0.18, 0, Math.PI * 2); ctx.fill();
-    break;
-  }
-
-  // ─── BATHROOM ───
-  case 'Shower': {
-    // Tray with tile pattern
-    ctx.fillStyle = '#e0e0e0';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
-    // Tile grid on floor
-    ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 0.5;
-    for (let tx2 = x + 10; tx2 < x + w - 5; tx2 += 12) {
-      ctx.beginPath(); ctx.moveTo(tx2, y + 5); ctx.lineTo(tx2, y + h - 5); ctx.stroke();
-    }
-    for (let ty2 = y + 10; ty2 < y + h - 5; ty2 += 12) {
-      ctx.beginPath(); ctx.moveTo(x + 5, ty2); ctx.lineTo(x + w - 5, ty2); ctx.stroke();
-    }
-    // Drain
-    ctx.fillStyle = '#888';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.65, 7, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#666';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.65, 4, 0, Math.PI * 2); ctx.fill();
-    // Drain slots
-    ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
-    for (let i = 0; i < 4; i++) {
-      const angle = (i / 4) * Math.PI;
-      ctx.beginPath();
-      ctx.moveTo(x + w / 2 + Math.cos(angle) * 2, y + h * 0.65 + Math.sin(angle) * 2);
-      ctx.lineTo(x + w / 2 + Math.cos(angle) * 5, y + h * 0.65 + Math.sin(angle) * 5);
-      ctx.stroke();
-    }
-    // Glass door panels
-    ctx.strokeStyle = 'rgba(150,200,255,0.35)'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(x + w - 5, y + 5); ctx.lineTo(x + w - 5, y + h - 5); ctx.stroke();
-    ctx.strokeStyle = 'rgba(150,200,255,0.2)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x + w - 10, y + 5); ctx.lineTo(x + w - 10, y + h - 5); ctx.stroke();
-    // Glass reflection
-    ctx.fillStyle = 'rgba(200,230,255,0.04)';
-    ctx.fillRect(x + w - 12, y + 10, 8, h - 20);
-    // Shower head (detailed)
-    ctx.fillStyle = '#ccc';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.4, y + 4, w * 0.2, 6, 2); ctx.fill();
-    ctx.fillStyle = '#bbb';
-    ctx.beginPath();
-    ctx.ellipse(x + w * 0.5, y + 12, w * 0.14, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Shower arm
-    ctx.strokeStyle = '#bbb'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x + w * 0.5, y + 7); ctx.lineTo(x + w * 0.7, y + 5); ctx.stroke();
-    // Water drops (seeded positions so they don't flicker)
-    ctx.fillStyle = 'rgba(100,180,255,0.12)';
-    for (let i = 0; i < 8; i++) {
-      const hash = ((i * 7919 + 3) & 0xFF) / 255;
-      const dpx = x + w * 0.25 + hash * w * 0.5;
-      const dpy = y + 22 + (i * 37 % (h - 35));
-      ctx.beginPath(); ctx.arc(dpx, dpy, 1.5 + hash, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.stroke();
-    break;
-  }
-  case 'Toilet': {
-    // Base
-    ctx.fillStyle = '#f0f0f0';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.6, w * 0.42, h * 0.38, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Seat
-    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.6, w * 0.32, h * 0.28, 0, 0, Math.PI * 2);
+    ctx.roundRect(px, py + ph - 4, pw, depth + 4, 4);
+    ctx.fill(); 
     ctx.stroke();
-    // Tank
-    ctx.fillStyle = '#e8e8e8';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.15, y, w * 0.7, h * 0.3, 4); ctx.fill();
-    // Flush button
-    ctx.fillStyle = '#ccc';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.12, 4, 0, Math.PI * 2); ctx.fill();
-    break;
-  }
-  case 'Bathtub': {
-    // Tub
-    ctx.fillStyle = '#f5f5f5';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.fill();
-    // Inside
-    ctx.fillStyle = '#e0e8f0';
-    ctx.beginPath(); ctx.roundRect(x + 6, y + 6, w - 12, h - 12, 8); ctx.fill();
-    // Faucet end
-    ctx.fillStyle = '#bbb';
-    ctx.beginPath(); ctx.roundRect(x + w - 16, y + h * 0.3, 12, 16, 3); ctx.fill();
-    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.stroke();
-    break;
-  }
-  case 'Laundry': {
-    // Basket
-    ctx.fillStyle = '#8d6e63';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill();
-    // Weave lines
-    ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1;
-    for (let i = 1; i < 5; i++) {
-      ctx.beginPath(); ctx.moveTo(x + 4, y + i * h / 5); ctx.lineTo(x + w - 4, y + i * h / 5); ctx.stroke();
-    }
-    // Clothes peeking out
-    ctx.fillStyle = '#e53935';
-    ctx.beginPath(); ctx.arc(x + w * 0.3, y + 6, 8, Math.PI, 0); ctx.fill();
-    ctx.fillStyle = '#1e88e5';
-    ctx.beginPath(); ctx.arc(x + w * 0.65, y + 4, 7, Math.PI, 0); ctx.fill();
-    break;
-  }
 
-  // ─── BEDROOM ───
-  case 'Bed': {
-    // Frame
-    ctx.fillStyle = '#5a3a1a';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
-    // Mattress
-    ctx.fillStyle = '#f5f5f0';
-    ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 4); ctx.fill();
-    // Blanket
-    ctx.fillStyle = '#3949ab';
-    ctx.beginPath(); ctx.roundRect(x + 4, y + h * 0.35, w - 8, h * 0.6, 4); ctx.fill();
-    // Blanket fold
-    ctx.fillStyle = '#303f9f';
-    ctx.beginPath(); ctx.roundRect(x + 4, y + h * 0.35, w - 8, 8, 2); ctx.fill();
-    // Pillow
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.roundRect(x + 12, y + 10, w * 0.35, h * 0.22, 6); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w * 0.52, y + 10, w * 0.35, h * 0.22, 6); ctx.fill();
-    break;
-  }
-  case 'Desk': {
-    // Surface
-    ctx.fillStyle = '#6d5030';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    ctx.fillStyle = '#8a6840';
-    ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 3); ctx.fill();
-    // Monitor
-    ctx.fillStyle = '#222';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.3, y + 6, w * 0.4, h * 0.35, 2); ctx.fill();
-    ctx.fillStyle = '#2a4a6a';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.33, y + 8, w * 0.34, h * 0.27, 1); ctx.fill();
-    // Keyboard
-    ctx.fillStyle = '#444';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.2, y + h * 0.55, w * 0.6, h * 0.2, 2); ctx.fill();
-    break;
-  }
-  case 'Wardrobe': {
-    ctx.fillStyle = '#5a3a1a';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Doors
-    ctx.fillStyle = '#6d4a2a';
-    ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w / 2 - 5, h - 6, 3); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w / 2 + 2, y + 3, w / 2 - 5, h - 6, 3); ctx.fill();
-    // Handles
-    ctx.fillStyle = '#aa8844';
-    ctx.beginPath(); ctx.arc(x + w / 2 - 6, y + h / 2, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x + w / 2 + 6, y + h / 2, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#4a2a10'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
-    break;
-  }
-  case 'Mirror': {
-    // Frame
-    ctx.fillStyle = '#aa8844';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
-    // Glass
-    const grd = ctx.createLinearGradient(x, y, x + w, y + h);
-    grd.addColorStop(0, '#a0c0d8');
-    grd.addColorStop(0.5, '#d0e8f5');
-    grd.addColorStop(1, '#90b0c8');
-    ctx.fillStyle = grd;
-    ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 4); ctx.fill();
-    // Shine
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-    ctx.beginPath(); ctx.roundRect(x + 8, y + 8, w * 0.3, h * 0.4, 2); ctx.fill();
-    break;
-  }
-
-  // ─── HALLWAY ───
-  case 'Bench': {
-    ctx.fillStyle = '#5a4020';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    ctx.fillStyle = '#7a5a30';
-    ctx.beginPath(); ctx.roundRect(x + 2, y + 2, w - 4, h - 4, 3); ctx.fill();
-    // Slats
-    ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1;
-    for (let i = 1; i < 4; i++) {
-      ctx.beginPath(); ctx.moveTo(x + 6, y + h * i / 4); ctx.lineTo(x + w - 6, y + h * i / 4); ctx.stroke();
-    }
-    break;
-  }
-  case 'Cabinet': {
-    ctx.fillStyle = '#4a3520';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Doors
-    ctx.fillStyle = '#5a4530';
-    ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w / 2 - 5, h - 6, 2); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w / 2 + 2, y + 3, w / 2 - 5, h - 6, 2); ctx.fill();
-    // Handles
-    ctx.fillStyle = '#888';
-    ctx.fillRect(x + w / 2 - 7, y + h / 2 - 2, 4, 4);
-    ctx.fillRect(x + w / 2 + 3, y + h / 2 - 2, 4, 4);
-    break;
-  }
-  case 'Lamp': {
-    // Base
-    ctx.fillStyle = '#333';
+    // Top Face
+    ctx.fillStyle = tColor;
     ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.8, w * 0.3, h * 0.15, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Pole
-    ctx.fillStyle = '#555';
-    ctx.fillRect(x + w / 2 - 2, y + h * 0.25, 4, h * 0.55);
-    // Shade
-    ctx.fillStyle = '#f5e6b8';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.2, w * 0.4, h * 0.2, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Glow
-    ctx.fillStyle = 'rgba(255,240,180,0.08)';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.2, w * 0.7, 0, Math.PI * 2); ctx.fill();
-    break;
-  }
-
-  // ─── GYM ───
-  case 'Bench Press': {
-    // Bench
-    ctx.fillStyle = '#333';
-    ctx.beginPath(); ctx.roundRect(x, y + h * 0.3, w, h * 0.4, 4); ctx.fill();
-    // Padding
-    ctx.fillStyle = '#222';
-    ctx.beginPath(); ctx.roundRect(x + 8, y + h * 0.35, w - 16, h * 0.3, 3); ctx.fill();
-    // Bar rack
-    ctx.fillStyle = '#888';
-    ctx.fillRect(x + 4, y, 6, h);
-    ctx.fillRect(x + w - 10, y, 6, h);
-    // Bar
-    ctx.fillStyle = '#aaa';
-    ctx.fillRect(x - 10, y + 6, w + 20, 4);
-    // Weights
-    ctx.fillStyle = '#555';
-    ctx.beginPath(); ctx.roundRect(x - 16, y, 10, 16, 2); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w + 6, y, 10, 16, 2); ctx.fill();
-    break;
-  }
-  case 'Weights': {
-    // Rack
-    ctx.fillStyle = '#444';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Dumbbell pairs
-    const colors = ['#666','#555','#777','#888'];
-    for (let i = 0; i < 3; i++) {
-      const dy = y + 8 + i * (h / 3 - 2);
-      ctx.fillStyle = colors[i];
-      // Left weight
-      ctx.beginPath(); ctx.roundRect(x + 8, dy, 12, 14, 3); ctx.fill();
-      // Bar
-      ctx.fillStyle = '#aaa';
-      ctx.fillRect(x + 20, dy + 5, w - 40, 4);
-      // Right weight
-      ctx.fillStyle = colors[i];
-      ctx.beginPath(); ctx.roundRect(x + w - 20, dy, 12, 14, 3); ctx.fill();
-    }
-    break;
-  }
-  case 'Treadmill': {
-    // Body
-    ctx.fillStyle = '#333';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
-    // Belt
-    ctx.fillStyle = '#222';
-    ctx.beginPath(); ctx.roundRect(x + 4, y + h * 0.25, w - 8, h * 0.6, 4); ctx.fill();
-    // Belt lines
-    ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1;
-    for (let i = 1; i < 6; i++) {
-      const ly = y + h * 0.25 + (h * 0.6 / 6) * i;
-      ctx.beginPath(); ctx.moveTo(x + 8, ly); ctx.lineTo(x + w - 8, ly); ctx.stroke();
-    }
-    // Console
-    ctx.fillStyle = '#444';
-    ctx.beginPath(); ctx.roundRect(x + 6, y + 4, w - 12, h * 0.15, 3); ctx.fill();
-    // Screen
-    ctx.fillStyle = '#1a4a2a';
-    ctx.beginPath(); ctx.roundRect(x + 12, y + 6, w - 24, h * 0.1, 2); ctx.fill();
-    // Handles
-    ctx.fillStyle = '#666';
-    ctx.fillRect(x, y + 4, 5, h * 0.4);
-    ctx.fillRect(x + w - 5, y + 4, 5, h * 0.4);
-    break;
-  }
-  case 'Dumbbells': {
-    // Floor mat
-    ctx.fillStyle = '#2a2a30';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Two dumbbells
-    for (let d = 0; d < 2; d++) {
-      const dy = y + 10 + d * 28;
-      ctx.fillStyle = '#666';
-      ctx.beginPath(); ctx.roundRect(x + 10, dy, 16, 14, 4); ctx.fill();
-      ctx.beginPath(); ctx.roundRect(x + w - 26, dy, 16, 14, 4); ctx.fill();
-      ctx.fillStyle = '#aaa';
-      ctx.fillRect(x + 26, dy + 5, w - 52, 4);
-    }
-    break;
-  }
-  case 'Punching Bag': {
-    // Shadow on floor
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.85, w * 0.35, h * 0.12, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Chain
-    ctx.strokeStyle = '#777'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x + w / 2, y); ctx.lineTo(x + w / 2, y + h * 0.15); ctx.stroke();
-    // Bag
-    const bgrd = ctx.createLinearGradient(x, y + h * 0.15, x + w, y + h * 0.15);
-    bgrd.addColorStop(0, '#8b2020'); bgrd.addColorStop(0.5, '#c62828'); bgrd.addColorStop(1, '#8b2020');
-    ctx.fillStyle = bgrd;
-    ctx.beginPath();
-    ctx.roundRect(x + w * 0.15, y + h * 0.15, w * 0.7, h * 0.65, w * 0.25);
-    ctx.fill();
-    // Stitch line
-    ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x + w / 2, y + h * 0.2); ctx.lineTo(x + w / 2, y + h * 0.75); ctx.stroke();
-    break;
-  }
-  case 'Yoga Mat': {
-    ctx.fillStyle = '#7b1fa2';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    ctx.fillStyle = '#9c27b0';
-    ctx.beginPath(); ctx.roundRect(x + 2, y + 2, w - 4, h - 4, 3); ctx.fill();
-    // Texture lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
-    for (let i = 0; i < 5; i++) {
-      ctx.beginPath(); ctx.moveTo(x + 6 + i * 20, y + 2); ctx.lineTo(x + 6 + i * 20, y + h - 2); ctx.stroke();
-    }
-    break;
-  }
-
-  // ─── GARDEN ───
-  case 'Tree': {
-    // Trunk
-    ctx.fillStyle = '#5d4037';
-    ctx.fillRect(x + w * 0.38, y + h * 0.5, w * 0.24, h * 0.5);
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.9, w * 0.45, h * 0.12, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Canopy layers
-    ctx.fillStyle = '#1b5e20';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.35, w * 0.48, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#2e7d32';
-    ctx.beginPath(); ctx.arc(x + w * 0.4, y + h * 0.28, w * 0.3, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#388e3c';
-    ctx.beginPath(); ctx.arc(x + w * 0.62, y + h * 0.3, w * 0.25, 0, Math.PI * 2); ctx.fill();
-    break;
-  }
-  case 'Bush': {
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.12)';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.85, w * 0.45, h * 0.15, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Bush body
-    ctx.fillStyle = '#2e7d32';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.5, w * 0.48, h * 0.45, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#43a047';
-    ctx.beginPath(); ctx.arc(x + w * 0.35, y + h * 0.4, w * 0.2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x + w * 0.65, y + h * 0.4, w * 0.18, 0, Math.PI * 2); ctx.fill();
-    break;
-  }
-  case 'Fountain': {
-    // Water glow on ground
-    ctx.fillStyle = 'rgba(80,200,255,0.04)';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.6, w * 0.6, h * 0.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Outer basin rim
-    ctx.fillStyle = '#607d8b';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.62, w * 0.5, h * 0.4, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Inner basin
-    ctx.fillStyle = '#78909c';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.6, w * 0.46, h * 0.36, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Water surface
-    const wGrd = ctx.createRadialGradient(x + w / 2, y + h * 0.6, 5, x + w / 2, y + h * 0.6, w * 0.4);
-    wGrd.addColorStop(0, '#81d4fa');
-    wGrd.addColorStop(0.5, '#4fc3f7');
-    wGrd.addColorStop(1, '#29b6f6');
-    ctx.fillStyle = wGrd;
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.6, w * 0.4, h * 0.3, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Water ripples
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 0.5;
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.6, w * 0.25, h * 0.18, 0, 0, Math.PI * 2);
+    ctx.roundRect(px, py, pw, ph, 4);
+    ctx.fill(); 
     ctx.stroke();
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.6, w * 0.15, h * 0.1, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    // Center pillar (ornate)
-    ctx.fillStyle = '#90a4ae';
-    ctx.fillRect(x + w / 2 - 6, y + h * 0.18, 12, h * 0.42);
-    // Pillar detail
-    ctx.fillStyle = '#a0b0b8';
-    ctx.fillRect(x + w / 2 - 8, y + h * 0.35, 16, 4);
-    // Top bowl with water
-    ctx.fillStyle = '#78909c';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.18, 16, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(100,200,255,0.4)';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.17, 12, 4, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Water streams falling
-    ctx.strokeStyle = 'rgba(100,200,255,0.2)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x + w / 2 - 10, y + h * 0.2); ctx.lineTo(x + w / 2 - 18, y + h * 0.4); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x + w / 2 + 10, y + h * 0.2); ctx.lineTo(x + w / 2 + 18, y + h * 0.4); ctx.stroke();
-    // Top finial
-    ctx.fillStyle = '#a0b0b8';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.1, 4, 0, Math.PI * 2); ctx.fill();
-    break;
-  }
-  case 'Flowers': {
-    // Soil
-    ctx.fillStyle = '#4e342e';
-    ctx.beginPath(); ctx.roundRect(x, y + h * 0.5, w, h * 0.5, 4); ctx.fill();
-    // Flowers
-    const flowerColors = ['#e53935','#fdd835','#e91e63','#ff9800'];
-    for (let i = 0; i < 4; i++) {
-      const fx = x + 8 + i * 13, fy = y + 10 + (i % 2) * 8;
-      // Stem
-      ctx.strokeStyle = '#4caf50'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(fx, fy + 8); ctx.lineTo(fx, y + h * 0.55); ctx.stroke();
-      // Petals
-      ctx.fillStyle = flowerColors[i];
-      ctx.beginPath(); ctx.arc(fx, fy, 5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fff59d';
-      ctx.beginPath(); ctx.arc(fx, fy, 2, 0, Math.PI * 2); ctx.fill();
-    }
-    break;
-  }
-
-  // ─── GARAGE ───
-  case 'Car': {
-    // Ground shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.95, w * 0.52, h * 0.08, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Body with metallic gradient
-    const carGrd = ctx.createLinearGradient(x, y, x + w, y);
-    carGrd.addColorStop(0, '#0d47a1');
-    carGrd.addColorStop(0.3, '#1976d2');
-    carGrd.addColorStop(0.7, '#1565c0');
-    carGrd.addColorStop(1, '#0d47a1');
-    ctx.fillStyle = carGrd;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 12); ctx.fill();
-    // Body panels lines
-    ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(x + 10, y + h * 0.45); ctx.lineTo(x + w - 10, y + h * 0.45); ctx.stroke();
-    // Roof (darker)
-    ctx.fillStyle = '#0d47a1';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.18, y + h * 0.18, w * 0.64, h * 0.54, 10); ctx.fill();
-    // Windshield (front)
-    const wshGrd = ctx.createLinearGradient(x + w * 0.2, y + h * 0.2, x + w * 0.8, y + h * 0.2);
-    wshGrd.addColorStop(0, 'rgba(120,180,240,0.35)');
-    wshGrd.addColorStop(0.5, 'rgba(180,220,255,0.25)');
-    wshGrd.addColorStop(1, 'rgba(120,180,240,0.35)');
-    ctx.fillStyle = wshGrd;
-    ctx.beginPath(); ctx.roundRect(x + w * 0.2, y + h * 0.19, w * 0.6, h * 0.16, 5); ctx.fill();
-    // Rear window
-    ctx.fillStyle = 'rgba(120,180,240,0.28)';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.22, y + h * 0.56, w * 0.56, h * 0.14, 4); ctx.fill();
-    // Side windows
-    ctx.fillStyle = 'rgba(120,180,240,0.2)';
-    ctx.beginPath(); ctx.roundRect(x + 4, y + h * 0.25, w * 0.12, h * 0.2, 2); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w - 4 - w * 0.12, y + h * 0.25, w * 0.12, h * 0.2, 2); ctx.fill();
-    // Door handles
-    ctx.fillStyle = '#0d47a1';
-    ctx.beginPath(); ctx.roundRect(x + 6, y + h * 0.48, 10, 3, 1); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w - 16, y + h * 0.48, 10, 3, 1); ctx.fill();
-    // Wheels with rims
-    const wheelPositions = [
-      [x - 5, y + h * 0.1], [x - 5, y + h * 0.62],
-      [x + w - 7, y + h * 0.1], [x + w - 7, y + h * 0.62]
-    ];
-    wheelPositions.forEach(([wx2, wy2]) => {
-      ctx.fillStyle = '#1a1a1a';
-      ctx.beginPath(); ctx.roundRect(wx2, wy2, 12, 22, 4); ctx.fill();
-      // Rim
-      ctx.fillStyle = '#666';
-      ctx.beginPath(); ctx.arc(wx2 + 6, wy2 + 11, 5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#444';
-      ctx.beginPath(); ctx.arc(wx2 + 6, wy2 + 11, 2, 0, Math.PI * 2); ctx.fill();
-    });
-    // Headlights with glow
-    ctx.fillStyle = 'rgba(255,235,59,0.1)';
-    ctx.beginPath(); ctx.arc(x + 12, y + 8, 10, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x + w - 12, y + 8, 10, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#fff9c4';
-    ctx.beginPath(); ctx.roundRect(x + 6, y + 4, 12, 8, 3); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w - 18, y + 4, 12, 8, 3); ctx.fill();
-    // Tail lights
-    ctx.fillStyle = '#d32f2f';
-    ctx.beginPath(); ctx.roundRect(x + 6, y + h - 10, 10, 6, 2); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(x + w - 16, y + h - 10, 10, 6, 2); ctx.fill();
-    // License plate
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.roundRect(x + w / 2 - 12, y + h - 8, 24, 6, 1); ctx.fill();
-    ctx.fillStyle = '#333';
-    ctx.font = '4px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('FIT-01', x + w / 2, y + h - 4);
-    // Body highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    ctx.fillRect(x + 4, y + 4, w - 8, h * 0.2);
-    break;
-  }
-  case 'Workbench': {
-    // Table
-    ctx.fillStyle = '#5d4037';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    ctx.fillStyle = '#6d5040';
-    ctx.beginPath(); ctx.roundRect(x + 2, y + 2, w - 4, h - 4, 3); ctx.fill();
-    // Tool pegboard (back wall feel)
-    ctx.fillStyle = '#4a3525';
-    ctx.beginPath(); ctx.roundRect(x + 2, y + 2, w - 4, h * 0.2, 2); ctx.fill();
-    // Tools hanging
-    ctx.fillStyle = '#aaa';
-    ctx.fillRect(x + 10, y + 6, 3, 14);  // wrench
-    ctx.fillRect(x + 22, y + 8, 3, 10);  // screwdriver
-    ctx.fillRect(x + 34, y + 5, 8, 3);   // hammer head
-    ctx.fillRect(x + 36, y + 8, 3, 12);  // hammer handle
-    // Vice
-    ctx.fillStyle = '#777';
-    ctx.beginPath(); ctx.roundRect(x + w - 25, y + h * 0.5, 20, 16, 2); ctx.fill();
-    break;
-  }
-  case 'Toolbox': {
-    ctx.fillStyle = '#d32f2f';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
-    // Lid line
-    ctx.strokeStyle = '#b71c1c'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x + 4, y + h * 0.35); ctx.lineTo(x + w - 4, y + h * 0.35); ctx.stroke();
-    // Handle
-    ctx.fillStyle = '#333';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.3, y + 3, w * 0.4, 8, 3); ctx.fill();
-    // Latch
-    ctx.fillStyle = '#fdd835';
-    ctx.fillRect(x + w / 2 - 4, y + h * 0.35 - 3, 8, 6);
-    ctx.strokeStyle = '#c62828'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.stroke();
-    break;
-  }
-  case 'Barrel': {
-    ctx.fillStyle = '#5d4037';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, w * 0.2); ctx.fill();
-    // Metal bands
-    ctx.strokeStyle = '#888'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x + 4, y + h * 0.25); ctx.lineTo(x + w - 4, y + h * 0.25); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x + 4, y + h * 0.75); ctx.lineTo(x + w - 4, y + h * 0.75); ctx.stroke();
-    // Top
-    ctx.fillStyle = '#4e342e';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + 6, w * 0.42, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Wood grain
-    ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x + w * 0.3, y + 4); ctx.lineTo(x + w * 0.3, y + h - 4); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x + w * 0.7, y + 4); ctx.lineTo(x + w * 0.7, y + h - 4); ctx.stroke();
-    break;
-  }
-  case 'Boxes': {
-    // Bottom box
-    ctx.fillStyle = '#8d6e63';
-    ctx.beginPath(); ctx.roundRect(x, y + h * 0.35, w, h * 0.65, 3); ctx.fill();
-    ctx.strokeStyle = '#6d4c41'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y + h * 0.35, w, h * 0.65, 3); ctx.stroke();
-    // Tape
-    ctx.fillStyle = '#bcaaa4';
-    ctx.fillRect(x + w * 0.4, y + h * 0.35, w * 0.2, h * 0.65);
-    // Top box (smaller, rotated slightly)
-    ctx.save(); ctx.translate(x + w * 0.5, y + h * 0.25); ctx.rotate(0.1);
-    ctx.fillStyle = '#a1887f';
-    ctx.beginPath(); ctx.roundRect(-w * 0.35, -h * 0.2, w * 0.7, h * 0.4, 3); ctx.fill();
-    ctx.fillStyle = '#bcaaa4';
-    ctx.fillRect(-w * 0.08, -h * 0.2, w * 0.16, h * 0.4);
-    ctx.restore();
-    break;
-  }
-  case 'Ladder': {
-    // Side rails
-    ctx.fillStyle = '#ff8f00';
-    ctx.fillRect(x + 6, y, 5, h);
-    ctx.fillRect(x + w - 11, y, 5, h);
-    // Rungs
-    ctx.fillStyle = '#ffa726';
-    const rungs = 5;
-    for (let i = 0; i < rungs; i++) {
-      ctx.fillRect(x + 11, y + 8 + i * (h - 16) / (rungs - 1), w - 22, 4);
-    }
-    break;
-  }
-
-  // ─── NEW KITCHEN ITEMS ───
-  case 'Dishwasher': {
-    ctx.fillStyle = '#b0b8c0';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
-    // Door
-    ctx.fillStyle = '#a0a8b0';
-    ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 3); ctx.fill();
-    // Handle
-    ctx.fillStyle = '#888';
-    ctx.fillRect(x + 10, y + h * 0.45, w - 20, 4);
-    // Control panel
-    ctx.fillStyle = '#444';
-    ctx.beginPath(); ctx.roundRect(x + 10, y + 6, w - 20, 12, 2); ctx.fill();
-    // LED dots
-    ctx.fillStyle = '#0f0';
-    ctx.beginPath(); ctx.arc(x + 20, y + 12, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#0a0';
-    ctx.beginPath(); ctx.arc(x + 30, y + 12, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#999'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.stroke();
-    break;
-  }
-  case 'Microwave': {
-    ctx.fillStyle = '#2a2a30';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Window
-    ctx.fillStyle = '#111820';
-    ctx.beginPath(); ctx.roundRect(x + 5, y + 6, w * 0.6, h - 12, 2); ctx.fill();
-    // Interior glow
-    ctx.fillStyle = 'rgba(255,200,100,0.05)';
-    ctx.beginPath(); ctx.roundRect(x + 7, y + 8, w * 0.6 - 4, h - 16, 1); ctx.fill();
-    // Control panel
-    ctx.fillStyle = '#333';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.68, y + 6, w * 0.26, h - 12, 2); ctx.fill();
-    // Buttons
-    ctx.fillStyle = '#555';
-    for (let i = 0; i < 3; i++) {
-      ctx.beginPath(); ctx.arc(x + w * 0.81, y + 14 + i * 10, 3, 0, Math.PI * 2); ctx.fill();
-    }
-    // Timer display
-    ctx.fillStyle = '#0a3';
-    ctx.font = '6px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('0:00', x + w * 0.81, y + h - 8);
-    ctx.strokeStyle = '#444'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
-    break;
-  }
-  case 'Pantry': {
-    ctx.fillStyle = '#5a4020';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Shelves
-    for (let i = 1; i <= 3; i++) {
-      ctx.fillStyle = '#4a3018';
-      ctx.fillRect(x + 3, y + (h / 4) * i - 2, w - 6, 3);
-    }
-    // Cans/jars on shelves
-    const jarColors = ['#c62828','#2e7d32','#f9a825','#1565c0'];
-    for (let i = 0; i < 3; i++) {
-      let jx = x + 6;
-      for (let j = 0; j < 3; j++) {
-        ctx.fillStyle = jarColors[(i + j) % jarColors.length];
-        ctx.beginPath(); ctx.roundRect(jx, y + (h / 4) * i + 4, 8, h / 4 - 8, 1); ctx.fill();
-        jx += 12;
-      }
-    }
-    ctx.strokeStyle = '#3a2510'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
-    break;
-  }
-  case 'Spice Rack': {
-    ctx.fillStyle = '#6d4a2a';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Shelf
-    ctx.fillStyle = '#5a3a1a';
-    ctx.fillRect(x + 2, y + h * 0.5, w - 4, 3);
-    // Spice bottles
-    const spiceColors = ['#c62828','#f9a825','#4caf50','#ff6f00','#795548','#e91e63'];
-    for (let r = 0; r < 2; r++) {
-      let sx = x + 6;
-      for (let i = 0; i < Math.floor((w - 12) / 12); i++) {
-        ctx.fillStyle = spiceColors[(r * 3 + i) % spiceColors.length];
-        const by = r === 0 ? y + 5 : y + h * 0.5 + 6;
-        const bh = h * 0.4 - 8;
-        ctx.beginPath(); ctx.roundRect(sx, by, 8, bh, 2); ctx.fill();
-        // Cap
-        ctx.fillStyle = '#333';
-        ctx.fillRect(sx + 1, by, 6, 3);
-        sx += 12;
-      }
-    }
-    ctx.strokeStyle = '#4a2a10'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
-    break;
-  }
-  case 'Mop Bucket': {
-    // Bucket
-    ctx.fillStyle = '#546e7a';
-    ctx.beginPath();
-    ctx.moveTo(x + w * 0.15, y + h * 0.3);
-    ctx.lineTo(x + w * 0.25, y + h);
-    ctx.lineTo(x + w * 0.75, y + h);
-    ctx.lineTo(x + w * 0.85, y + h * 0.3);
-    ctx.closePath(); ctx.fill();
-    // Water
-    ctx.fillStyle = 'rgba(100,180,220,0.3)';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.35, w * 0.32, h * 0.08, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Handle
-    ctx.strokeStyle = '#777'; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(x + w / 2, y + h * 0.2, w * 0.25, Math.PI, 0);
-    ctx.stroke();
-    // Mop handle
-    ctx.strokeStyle = '#8d6e63'; ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(x + w * 0.7, y + h * 0.3);
-    ctx.lineTo(x + w * 0.8, y);
-    ctx.stroke();
-    break;
-  }
-
-  // ─── NEW CAFETERIA ITEMS ───
-  case 'Food Counter': {
-    // Steel counter
-    ctx.fillStyle = '#b0b8c0';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Glass sneeze guard
-    ctx.strokeStyle = 'rgba(150,200,255,0.3)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x + 10, y + 4); ctx.lineTo(x + w - 10, y + 4); ctx.stroke();
-    // Food trays
-    const trayColors = ['#c62828','#f9a825','#2e7d32'];
-    for (let i = 0; i < 3; i++) {
-      ctx.fillStyle = '#e0e0e0';
-      ctx.beginPath(); ctx.roundRect(x + 10 + i * 60, y + 14, 50, h - 24, 2); ctx.fill();
-      ctx.fillStyle = trayColors[i] + '60';
-      ctx.beginPath(); ctx.roundRect(x + 14 + i * 60, y + 18, 42, h - 32, 1); ctx.fill();
-    }
-    ctx.strokeStyle = '#999'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
-    break;
-  }
-  case 'Menu Board': {
-    ctx.fillStyle = '#1a1a1a';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 3); ctx.fill();
-    // Text lines
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    for (let i = 0; i < 4; i++) {
-      ctx.fillRect(x + 8, y + 8 + i * 10, w - 16 - (i % 2) * 15, 3);
-    }
-    // Frame
-    ctx.strokeStyle = '#5a3a1a'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 3); ctx.stroke();
-    break;
-  }
-
-  // ─── NEW LIVING ROOM ITEMS ───
-  case 'Speaker': {
-    ctx.fillStyle = '#1a1a1a';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
-    // Woofer
-    ctx.strokeStyle = '#444'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.55, w * 0.3, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = '#222';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.55, w * 0.18, 0, Math.PI * 2); ctx.fill();
-    // Tweeter
-    ctx.strokeStyle = '#444'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.2, w * 0.15, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = '#333';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.2, w * 0.08, 0, Math.PI * 2); ctx.fill();
-    // LED
-    ctx.fillStyle = '#00ff88';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h - 8, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.stroke();
-    break;
-  }
-  case 'Side Table': {
-    ctx.fillStyle = '#5a4020';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
-    ctx.fillStyle = '#6d5030';
-    ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 4); ctx.fill();
-    // Coaster
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(x + w * 0.6, y + h * 0.4, 8, 0, Math.PI * 2); ctx.stroke();
-    break;
-  }
-  case 'Rug Display': {
-    ctx.fillStyle = 'rgba(80,40,60,0.2)';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
-    // Pattern
-    ctx.strokeStyle = 'rgba(200,150,100,0.1)'; ctx.lineWidth = 1;
-    const cx2 = x + w / 2, cy2 = y + h / 2;
-    ctx.beginPath();
-    ctx.moveTo(cx2, y + 8); ctx.lineTo(x + w - 8, cy2);
-    ctx.lineTo(cx2, y + h - 8); ctx.lineTo(x + 8, cy2);
-    ctx.closePath(); ctx.stroke();
-    // Border decoration
-    ctx.strokeStyle = 'rgba(200,150,100,0.08)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.roundRect(x + 5, y + 5, w - 10, h - 10, 3); ctx.stroke();
-    ctx.beginPath(); ctx.roundRect(x + 10, y + 10, w - 20, h - 20, 2); ctx.stroke();
-    break;
-  }
-  case 'Storage Ottoman': {
-    ctx.fillStyle = '#5c3d2e';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill();
-    // Cushion top
-    ctx.fillStyle = '#7a4f3a';
-    ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 6); ctx.fill();
-    // Button tufts
-    ctx.fillStyle = '#503020';
-    const ox = [w * 0.3, w * 0.7, w * 0.5];
-    const oy = [h * 0.35, h * 0.35, h * 0.65];
-    for (let i = 0; i < 3; i++) {
-      ctx.beginPath(); ctx.arc(x + ox[i], y + oy[i], 3, 0, Math.PI * 2); ctx.fill();
-    }
-    break;
-  }
-
-  // ─── NEW BATHROOM ITEMS ───
-  case 'Toilet Paper': {
-    // Holder
-    ctx.fillStyle = '#888';
-    ctx.fillRect(x + w * 0.1, y + h * 0.3, w * 0.8, 4);
-    // Roll
-    ctx.fillStyle = '#f5f5f0';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.5, w * 0.35, h * 0.3, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Center hole
-    ctx.fillStyle = '#ddd';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.5, w * 0.12, h * 0.1, 0, 0, Math.PI * 2);
-    ctx.fill();
-    break;
-  }
-  case 'Medicine Cabinet': {
-    ctx.fillStyle = '#e0e0e0';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Mirror door
-    const mgrd = ctx.createLinearGradient(x, y, x + w, y + h);
-    mgrd.addColorStop(0, '#b0c8d8'); mgrd.addColorStop(0.5, '#d0e4f0'); mgrd.addColorStop(1, '#a0b8c8');
-    ctx.fillStyle = mgrd;
-    ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 3); ctx.fill();
-    // Shine
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.beginPath(); ctx.roundRect(x + 6, y + 6, w * 0.3, h * 0.35, 2); ctx.fill();
-    // Handle
-    ctx.fillStyle = '#888';
-    ctx.beginPath(); ctx.roundRect(x + w - 12, y + h / 2 - 8, 5, 16, 2); ctx.fill();
-    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
-    break;
-  }
-  case 'Plunger': {
-    // Handle
-    ctx.fillStyle = '#8d6e63';
-    ctx.fillRect(x + w / 2 - 2, y, 4, h * 0.65);
-    // Cup
-    ctx.fillStyle = '#c62828';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.75, w * 0.35, h * 0.25, 0, 0, Math.PI);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.75, w * 0.35, h * 0.08, 0, 0, Math.PI * 2);
-    ctx.fill();
-    break;
-  }
-
-  // ─── NEW HALLWAY ITEMS ───
-  case 'Fire Extinguisher': {
-    // Body
-    ctx.fillStyle = '#d32f2f';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.2, y + h * 0.15, w * 0.6, h * 0.75, w * 0.2); ctx.fill();
-    // Top
-    ctx.fillStyle = '#333';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.3, y, w * 0.4, h * 0.2, 3); ctx.fill();
-    // Handle
-    ctx.fillStyle = '#555';
-    ctx.fillRect(x + w * 0.55, y + h * 0.05, w * 0.25, 4);
-    // Pressure gauge
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(x + w * 0.5, y + h * 0.4, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#0a0';
-    ctx.beginPath(); ctx.arc(x + w * 0.5, y + h * 0.4, 3, 0, Math.PI * 2); ctx.fill();
-    // Label
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.28, y + h * 0.52, w * 0.44, h * 0.18, 1); ctx.fill();
-    ctx.strokeStyle = '#b71c1c'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x + w * 0.2, y + h * 0.15, w * 0.6, h * 0.75, w * 0.2); ctx.stroke();
-    break;
-  }
-  case 'Wall Panel': {
-    ctx.fillStyle = '#2a2a35';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Screen
-    ctx.fillStyle = '#0a1a2a';
-    ctx.beginPath(); ctx.roundRect(x + 6, y + 6, w - 12, h * 0.5, 2); ctx.fill();
-    // Blinking status lights
-    ctx.fillStyle = '#0f0';
-    ctx.beginPath(); ctx.arc(x + 12, y + h * 0.7, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ff0';
-    ctx.beginPath(); ctx.arc(x + 24, y + h * 0.7, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#444';
-    ctx.beginPath(); ctx.arc(x + 36, y + h * 0.7, 3, 0, Math.PI * 2); ctx.fill();
-    // Buttons
-    ctx.fillStyle = '#555';
-    ctx.beginPath(); ctx.roundRect(x + w - 20, y + h * 0.65, 12, 8, 2); ctx.fill();
-    ctx.strokeStyle = '#444'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
-    break;
-  }
-  case 'Control Panel': {
-    ctx.fillStyle = '#1a1a28';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
-    // Main screen
-    ctx.fillStyle = '#0a2040';
-    ctx.beginPath(); ctx.roundRect(x + 6, y + 6, w - 12, h * 0.4, 2); ctx.fill();
-    // Screen content (fake readout)
-    ctx.fillStyle = '#0f4';
-    ctx.font = '5px monospace'; ctx.textAlign = 'left';
-    ctx.fillText('SYS OK', x + 10, y + 16);
-    ctx.fillText('T:22.4C', x + 10, y + 24);
-    // Buttons grid
-    const btnColors = ['#d32f2f','#2e7d32','#1565c0','#f9a825'];
-    for (let bi = 0; bi < 4; bi++) {
-      ctx.fillStyle = btnColors[bi];
-      ctx.beginPath();
-      ctx.roundRect(x + 8 + (bi % 2) * 30, y + h * 0.55 + Math.floor(bi / 2) * 16, 22, 12, 2);
-      ctx.fill();
-    }
-    // Knob
-    ctx.fillStyle = '#666';
-    ctx.beginPath(); ctx.arc(x + w - 14, y + h * 0.75, 6, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#888';
-    ctx.beginPath(); ctx.arc(x + w - 14, y + h * 0.75, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.stroke();
-    break;
-  }
-  case 'Sign Post': {
-    // Post
-    ctx.fillStyle = '#666';
-    ctx.fillRect(x + w / 2 - 3, y + h * 0.3, 6, h * 0.7);
-    // Sign
-    ctx.fillStyle = '#1565c0';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h * 0.35, 3); ctx.fill();
-    // Arrow
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.moveTo(x + w * 0.7, y + h * 0.1);
-    ctx.lineTo(x + w * 0.85, y + h * 0.175);
-    ctx.lineTo(x + w * 0.7, y + h * 0.25);
-    ctx.closePath(); ctx.fill();
-    ctx.fillRect(x + w * 0.25, y + h * 0.155, w * 0.45, 4);
-    break;
-  }
-  case 'Emergency Light': {
-    // Base plate
-    ctx.fillStyle = '#d32f2f';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Light lens
-    const elGrd = ctx.createRadialGradient(x + w / 2, y + h / 2, 2, x + w / 2, y + h / 2, w * 0.4);
-    elGrd.addColorStop(0, '#ff6659');
-    elGrd.addColorStop(0.5, '#d32f2f');
-    elGrd.addColorStop(1, '#b71c1c');
-    ctx.fillStyle = elGrd;
-    ctx.beginPath(); ctx.roundRect(x + 6, y + 6, w - 12, h - 12, 3); ctx.fill();
-    // Glow effect
-    ctx.fillStyle = 'rgba(255,50,50,0.06)';
-    ctx.beginPath(); ctx.arc(x + w / 2, y + h / 2, w * 0.8, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#b71c1c'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.stroke();
-    break;
-  }
-
-  // ─── NEW BEDROOM ITEMS ───
-  case 'Nightstand': {
-    ctx.fillStyle = '#5a3a1a';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    ctx.fillStyle = '#6d4a2a';
-    ctx.beginPath(); ctx.roundRect(x + 2, y + 2, w - 4, h - 4, 3); ctx.fill();
-    // Drawer line
-    ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x + 4, y + h * 0.55); ctx.lineTo(x + w - 4, y + h * 0.55); ctx.stroke();
-    // Handle
-    ctx.fillStyle = '#aa8844';
-    ctx.fillRect(x + w / 2 - 5, y + h * 0.3, 10, 3);
-    ctx.fillRect(x + w / 2 - 5, y + h * 0.7, 10, 3);
-    // Alarm clock on top
-    ctx.fillStyle = '#222';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.3, y + 5, w * 0.4, 8, 2); ctx.fill();
-    ctx.fillStyle = '#0a0';
-    ctx.font = '4px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('7:30', x + w / 2, y + 11);
-    break;
-  }
-  case 'Bookshelf Small': {
-    ctx.fillStyle = '#5a3a1a';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 3); ctx.fill();
-    // Shelves
-    ctx.fillStyle = '#4a2a10';
-    ctx.fillRect(x + 2, y + h * 0.5 - 1, w - 4, 2);
-    // Books
-    const bkColors = ['#c62828','#1565c0','#2e7d32','#f9a825','#6a1b9a'];
-    let bx2 = x + 4;
-    for (let row = 0; row < 2; row++) {
-      bx2 = x + 4;
-      const by2 = row === 0 ? y + 4 : y + h * 0.5 + 3;
-      const bh2 = h * 0.45 - 6;
-      while (bx2 < x + w - 6) {
-        const bw2 = 4 + Math.random() * 5;
-        ctx.fillStyle = bkColors[Math.floor(Math.random() * bkColors.length)];
-        ctx.fillRect(bx2, by2, bw2, bh2);
-        bx2 += bw2 + 1;
-      }
-    }
-    ctx.strokeStyle = '#3a2210'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 3); ctx.stroke();
-    break;
-  }
-
-  // ─── NEW GYM ITEMS ───
-  case 'Kettlebells': {
-    // Mat underneath
-    ctx.fillStyle = '#2a2a30';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
-    // Kettlebells
-    const kbSizes = [{cx: 0.3, cy: 0.55, r: 0.2, c: '#444'}, {cx: 0.7, cy: 0.55, r: 0.18, c: '#555'}, {cx: 0.5, cy: 0.5, r: 0.22, c: '#3a3a3a'}];
-    kbSizes.forEach(kb => {
-      // Ball
-      ctx.fillStyle = kb.c;
-      ctx.beginPath(); ctx.arc(x + w * kb.cx, y + h * kb.cy, w * kb.r, 0, Math.PI * 2); ctx.fill();
-      // Handle
-      ctx.strokeStyle = kb.c; ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(x + w * kb.cx, y + h * kb.cy - w * kb.r * 0.8, w * kb.r * 0.6, Math.PI * 0.2, Math.PI * 0.8);
-      ctx.stroke();
-      // Highlight
-      ctx.fillStyle = 'rgba(255,255,255,0.08)';
-      ctx.beginPath(); ctx.arc(x + w * kb.cx - 3, y + h * kb.cy - 3, w * kb.r * 0.3, 0, Math.PI * 2); ctx.fill();
-    });
-    break;
-  }
-  case 'Gym Mirror': {
-    // Frame
-    ctx.fillStyle = '#333';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 3); ctx.fill();
-    // Mirror surface
-    const gmGrd = ctx.createLinearGradient(x, y, x + w, y + h);
-    gmGrd.addColorStop(0, '#8aa8c0');
-    gmGrd.addColorStop(0.3, '#b8d4e8');
-    gmGrd.addColorStop(0.7, '#a0c0d8');
-    gmGrd.addColorStop(1, '#90b0c0');
-    ctx.fillStyle = gmGrd;
-    ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 2); ctx.fill();
-    // Reflection shine
+    
+    // Top highlight rim
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.beginPath(); ctx.roundRect(x + 6, y + 6, w * 0.25, h - 12, 1); ctx.fill();
-    break;
-  }
-  case 'Water Cooler': {
-    // Base
-    ctx.fillStyle = '#e0e0e0';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.15, y + h * 0.35, w * 0.7, h * 0.65, 4); ctx.fill();
-    // Bottle
-    ctx.fillStyle = 'rgba(100,180,255,0.3)';
-    ctx.beginPath();
-    ctx.moveTo(x + w * 0.3, y + h * 0.35);
-    ctx.lineTo(x + w * 0.35, y + h * 0.1);
-    ctx.quadraticCurveTo(x + w / 2, y, x + w * 0.65, y + h * 0.1);
-    ctx.lineTo(x + w * 0.7, y + h * 0.35);
-    ctx.closePath(); ctx.fill();
-    // Taps
-    ctx.fillStyle = '#c62828';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.2, y + h * 0.5, 8, 6, 1); ctx.fill();
-    ctx.fillStyle = '#1565c0';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.7 - 8, y + h * 0.5, 8, 6, 1); ctx.fill();
-    // Drip tray
-    ctx.fillStyle = '#ccc';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.2, y + h * 0.6, w * 0.6, 4, 1); ctx.fill();
-    ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x + w * 0.15, y + h * 0.35, w * 0.7, h * 0.65, 4); ctx.stroke();
-    break;
-  }
-  case 'Foam Roller': {
-    // Roller body
-    ctx.fillStyle = '#1a237e';
-    ctx.beginPath(); ctx.roundRect(x, y + h * 0.2, w, h * 0.6, h * 0.3); ctx.fill();
-    // Texture bumps
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    for (let i = 0; i < Math.floor(w / 12); i++) {
-      for (let j = 0; j < 2; j++) {
-        ctx.beginPath();
-        ctx.arc(x + 8 + i * 12, y + h * 0.35 + j * h * 0.2, 3, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    ctx.strokeStyle = '#0d1257'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y + h * 0.2, w, h * 0.6, h * 0.3); ctx.stroke();
-    break;
+    ctx.beginPath(); ctx.roundRect(px + 4, py + 4, pw - 8, ph * 0.4, 2); ctx.fill();
+
+    if (customDetail) customDetail(px, py, pw, ph, depth, tColor, fColor);
   }
 
-  // ─── NEW GARDEN ITEMS ───
-  case 'Garden Bench': {
-    // Legs
-    ctx.fillStyle = '#555';
-    ctx.fillRect(x + 4, y + h * 0.6, 5, h * 0.4);
-    ctx.fillRect(x + w - 9, y + h * 0.6, 5, h * 0.4);
-    // Seat
-    ctx.fillStyle = '#6d4a2a';
-    ctx.beginPath(); ctx.roundRect(x, y + h * 0.45, w, 12, 3); ctx.fill();
-    // Backrest slats
-    ctx.fillStyle = '#5a3a1a';
-    for (let i = 0; i < 4; i++) {
-      ctx.beginPath(); ctx.roundRect(x + 4 + i * (w - 8) / 4, y, (w - 8) / 4 - 3, h * 0.48, 2); ctx.fill();
-    }
-    ctx.strokeStyle = '#4a2a10'; ctx.lineWidth = 0.5;
-    for (let i = 0; i < 4; i++) {
-      ctx.beginPath(); ctx.roundRect(x + 4 + i * (w - 8) / 4, y, (w - 8) / 4 - 3, h * 0.48, 2); ctx.stroke();
-    }
-    break;
+  // Draw specific items
+  switch (o.label) {
+    case 'Stove':
+      drawIsoProp(x, y, w, h, 20, '#596068', '#383d42', false, (px, py, pw, ph) => {
+          ctx.fillStyle = '#111'; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(px + pw*.3, py + ph*.3, ph*.15, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(px + pw*.7, py + ph*.3, ph*.15, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(px + pw*.3, py + ph*.7, ph*.15, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(px + pw*.7, py + ph*.7, ph*.15, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#0a0c0f'; ctx.fillRect(px + pw*.1, py + ph + 2, pw*.8, 14);
+      });
+      break;
+    case 'Fridge':
+      drawIsoProp(x, y-10, w, h+10, 40, '#ccdae7', '#9ca8b5', false, (px, py, pw, ph, depth) => {
+          ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px, py + ph + 20); ctx.lineTo(px+pw, py + ph + 20); ctx.stroke();
+          ctx.fillStyle = '#555'; ctx.fillRect(px+pw*.8, py+ph+5, 4, 12);
+          ctx.fillRect(px+pw*.8, py+ph+23, 4, 15);
+      });
+      break;
+    case 'Table':
+    case 'Coffee Table':
+    case 'Side Table':
+    case 'Desk':
+    case 'Workbench':
+    case 'Food Counter':
+      drawIsoProp(x, y, w, h, 14, '#bf8245', '#7a4f21', false, (px, py, pw, ph, depth) => {
+          ctx.fillStyle = '#3e260e'; ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(px + 4, py + ph + depth - 4, 6, 12, 1); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.roundRect(px + pw - 10, py + ph + depth - 4, 6, 12, 1); ctx.fill(); ctx.stroke();
+      });
+      break;
+    case 'Couch':
+    case 'Armchair':
+      // The backrest
+      drawIsoProp(x, y, w, h*.4, 30, '#e74c3c', '#c0392b', false);
+      // The seat cushion
+      drawIsoProp(x + 4, y + h*.4, w - 8, h*.6, 12, '#ff6b6b', '#e74c3c', false);
+      // Armrests
+      drawIsoProp(x, y + h*.1, Math.max(10, w*.15), h*.9, 15, '#e74c3c', '#c0392b', false);
+      drawIsoProp(x + w - Math.max(10, w*.15), y + h*.1, Math.max(10, w*.15), h*.9, 15, '#e74c3c', '#c0392b', false);
+      break;
+    case 'TV':
+      drawIsoProp(x, y, w, h, 8, '#2d3436', '#171a1c', false, (px, py, pw, ph) => {
+          ctx.fillStyle = '#0984e3'; ctx.strokeStyle = '#000'; ctx.lineWidth=2;
+          ctx.beginPath(); ctx.roundRect(px+4, py+4, pw-8, ph-8, 2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.moveTo(px+pw*.1, py+ph*.1); ctx.lineTo(px+pw*.8, py+ph*.1); ctx.lineTo(px+pw*.1, py+ph*.8); ctx.fill();
+      });
+      break;
+    case 'Bed':
+      drawIsoProp(x, y, w, h, 14, '#7f8fa6', '#353b48', false);
+      drawIsoProp(x+4, y+10, w-8, h-14, 8, '#273c75', '#192a56', false, (px, py, pw, ph) => {
+          ctx.fillStyle = '#f5f6fa'; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+          ctx.beginPath(); ctx.roundRect(px+pw*.1, py+4, pw*.3, 15, 3); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.roundRect(px+pw*.6, py+4, pw*.3, 15, 3); ctx.fill(); ctx.stroke();
+      });
+      break;
+    case 'Wardrobe':
+    case 'Cabinet':
+    case 'Pantry':
+    case 'Medicine Cabinet':
+    case 'Bookshelf':
+    case 'Shelving':
+      drawIsoProp(x, y-10, w, h+10, 35, '#e1b12c', '#c23616', false, (px, py, pw, ph, depth) => {
+          ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(px+pw/2, py+ph); ctx.lineTo(px+pw/2, py+ph+depth); ctx.stroke();
+          ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(px+pw/2 - 6, py+ph+depth/2, 3, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(px+pw/2 + 6, py+ph+depth/2, 3, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      });
+      break;
+    case 'Toilet': 
+      drawIsoProp(x+w*.2, y, w*.6, h*.4, 25, '#f5f6fa', '#dcdde1', false); // Tank
+      drawIsoProp(x+w*.25, y+h*.3, w*.5, h*.6, 15, '#fff', '#e5e7e9', true, (px,py,pw,ph)=>{
+          ctx.fillStyle='#00a8ff'; ctx.beginPath(); ctx.ellipse(px+pw/2, py+ph/2, pw*.3, ph*.3, 0, 0, Math.PI*2); ctx.fill();
+      });
+      break;
+    case 'Bathtub':
+      drawIsoProp(x, y, w, h, 18, '#ffffff', '#dcdde1', false, (px, py, pw, ph) => {
+          ctx.fillStyle = '#74b9ff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.roundRect(px+8, py+8, pw-16, ph-16, 8); ctx.fill(); ctx.stroke();
+      });
+      break;
+    case 'Shower':
+      drawIsoProp(x, y, w, h, 4, '#ebf5fb', '#cad8e3', false, (px, py, pw, ph) => {
+          ctx.strokeStyle = '#000'; ctx.lineWidth=3; ctx.fillStyle = 'rgba(116, 185, 255, 0.4)';
+          ctx.beginPath(); ctx.rect(px, py+ph, pw, 35); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(px+pw/2, py+ph/2, 8, 0, Math.PI*2); ctx.fill();
+      });
+      break;
+    case 'Vending':
+      drawIsoProp(x, y, w, h, 40, '#e84118', '#c23616', false, (px, py, pw, ph, depth) => {
+          ctx.fillStyle = '#2f3640'; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+          ctx.beginPath(); ctx.roundRect(px+4, py+ph+4, pw-16, depth-14, 2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#00a8ff'; ctx.fillRect(px+6, py+ph+6, pw-20, depth-30);
+      });
+      break;
+    case 'Plant':
+    case 'Tree':
+    case 'Bush':
+    case 'Potted Plant':
+    case 'Flower Pot':
+      drawIsoProp(x+w*.2, y+h*.4, w*.6, h*.4, 15, '#e17055', '#d63031', true);
+      drawIsoProp(x-4, y, w+8, h*.6, 20, '#2ecc71', '#27ae60', true);
+      break;
+    case 'Car':
+      drawIsoProp(x, y+h*.1, w, h*.8, 20, '#0984e3', '#0652dd', false);
+      drawIsoProp(x+w*.2, y+h*.2, w*.5, h*.6, 15, '#74b9ff', '#0984e3', false);
+      drawIsoProp(x+10, y-5, 16, h+10, 6, '#2d3436', '#1e272e', false);
+      drawIsoProp(x+w-26, y-5, 16, h+10, 6, '#2d3436', '#1e272e', false);
+      break;
+    case 'Bin':
+    case 'Trash Can':
+    case 'Barrel':
+    case 'Oil Can':
+      drawIsoProp(x, y, w, h, 20, '#7f8fa6', '#353b48', true);
+      break;
+    case 'Boxes':
+    case 'Cardboard Box':
+      drawIsoProp(x, y, w, h, 25, '#cd6133', '#aa4b2b', false, (px, py, pw, ph) => {
+          ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(px+pw/2, py); ctx.lineTo(px+pw/2, py+ph); ctx.stroke();
+      });
+      break;
+    case 'Treadmill':
+    case 'Rowing Machine':
+    case 'Elliptical':
+    case 'Exercise Bike':
+      drawIsoProp(x, y, w, h, 10, '#353b48', '#2f3640', false, (px, py, pw, ph, depth) => {
+          drawIsoProp(px, py, pw*.3, ph, 25, '#718093', '#2f3640', false);
+      });
+      break;
+    case 'Dumbbells':
+    case 'Weights':
+    case 'Kettlebells':
+      drawIsoProp(x, y, w, h, 4, '#1e272e', '#111', false, (px, py, pw, ph) => {
+          drawIsoProp(px+pw*.1, py+ph*.2, pw*.2, ph*.6, 8, '#7f8fa6', '#353b48', true);
+          drawIsoProp(px+pw*.7, py+ph*.2, pw*.2, ph*.6, 8, '#7f8fa6', '#353b48', true);
+      });
+      break;
+    case 'Gym Mirror':
+      drawIsoProp(x, y, w, h, 4, '#bdc3c7', '#7f8fa6', false, (px, py, pw, ph, depth) => {
+          ctx.fillStyle = '#00a8ff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.rect(px, py+ph, pw, 35); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = 'rgba(255,255,255,0.2)';
+          ctx.beginPath(); ctx.moveTo(px+pw*.2, py+ph+5); ctx.lineTo(px+pw*.8, py+ph+5); ctx.lineTo(px+pw*.2, py+ph+30); ctx.fill();
+      });
+      break;
+    default:
+      drawIsoProp(x, y, w, h, 20, '#00cec9', '#01a3a4', false);
+      break;
   }
-  case 'Bird Bath': {
-    // Pedestal
-    ctx.fillStyle = '#78909c';
-    ctx.fillRect(x + w * 0.35, y + h * 0.4, w * 0.3, h * 0.6);
-    // Base
-    ctx.fillStyle = '#607d8b';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.95, w * 0.4, h * 0.08, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Bowl
-    ctx.fillStyle = '#90a4ae';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.38, w * 0.48, h * 0.15, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Water
-    ctx.fillStyle = 'rgba(100,200,255,0.3)';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h * 0.38, w * 0.38, h * 0.1, 0, 0, Math.PI * 2);
-    ctx.fill();
-    break;
-  }
-  case 'Flower Pot': {
-    // Large decorative pot
-    ctx.fillStyle = '#8B4513';
-    ctx.beginPath();
-    ctx.moveTo(x + w * 0.15, y + h * 0.35);
-    ctx.lineTo(x + w * 0.25, y + h);
-    ctx.lineTo(x + w * 0.75, y + h);
-    ctx.lineTo(x + w * 0.85, y + h * 0.35);
-    ctx.closePath(); ctx.fill();
-    // Rim
-    ctx.fillStyle = '#a0522d';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.1, y + h * 0.3, w * 0.8, 8, 3); ctx.fill();
-    // Flowers (multiple colorful ones)
-    const fpColors = ['#e53935','#ffb300','#e91e63','#ff7043','#ab47bc'];
-    for (let i = 0; i < 5; i++) {
-      const fx = x + w * 0.2 + i * w * 0.14;
-      const fy = y + 8 + (i % 2) * 6;
-      // Stem
-      ctx.strokeStyle = '#4caf50'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(fx, fy + 6); ctx.lineTo(fx, y + h * 0.35); ctx.stroke();
-      // Flower
-      ctx.fillStyle = fpColors[i];
-      ctx.beginPath(); ctx.arc(fx, fy, 5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fff59d';
-      ctx.beginPath(); ctx.arc(fx, fy, 2, 0, Math.PI * 2); ctx.fill();
-    }
-    break;
-  }
-
-  // ─── NEW GARAGE ITEMS ───
-  case 'Shelving': {
-    // Metal frame
-    ctx.fillStyle = '#555';
-    ctx.fillRect(x, y, 3, h);
-    ctx.fillRect(x + w - 3, y, 3, h);
-    // Shelves
-    for (let i = 0; i < 3; i++) {
-      const sy2 = y + (h / 3) * i;
-      ctx.fillStyle = '#666';
-      ctx.fillRect(x, sy2, w, 3);
-      // Items on shelves
-      ctx.fillStyle = '#8d6e63';
-      ctx.beginPath(); ctx.roundRect(x + 6, sy2 + 5, 12, h / 3 - 10, 1); ctx.fill();
-      ctx.fillStyle = '#546e7a';
-      ctx.beginPath(); ctx.roundRect(x + 22, sy2 + 5, 15, h / 3 - 10, 1); ctx.fill();
-      ctx.fillStyle = '#795548';
-      ctx.beginPath(); ctx.roundRect(x + 42, sy2 + 8, 10, h / 3 - 14, 1); ctx.fill();
-    }
-    break;
-  }
-  case 'Oil Can': {
-    // Can body
-    ctx.fillStyle = '#444';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.15, y + h * 0.15, w * 0.7, h * 0.7, w * 0.15); ctx.fill();
-    // Label
-    ctx.fillStyle = '#1565c0';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.22, y + h * 0.3, w * 0.56, h * 0.25, 2); ctx.fill();
-    // Spout
-    ctx.fillStyle = '#666';
-    ctx.fillRect(x + w * 0.42, y, w * 0.16, h * 0.2);
-    // Cap
-    ctx.fillStyle = '#555';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.38, y - 2, w * 0.24, 6, 2); ctx.fill();
-    ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x + w * 0.15, y + h * 0.15, w * 0.7, h * 0.7, w * 0.15); ctx.stroke();
-    break;
-  }
-  case 'Floor Jack': {
-    // Base
-    ctx.fillStyle = '#d32f2f';
-    ctx.beginPath(); ctx.roundRect(x, y + h * 0.5, w, h * 0.5, 3); ctx.fill();
-    // Arm
-    ctx.fillStyle = '#c62828';
-    ctx.beginPath();
-    ctx.moveTo(x + w * 0.1, y + h * 0.5);
-    ctx.lineTo(x + w * 0.4, y + h * 0.15);
-    ctx.lineTo(x + w * 0.6, y + h * 0.15);
-    ctx.lineTo(x + w * 0.3, y + h * 0.5);
-    ctx.closePath(); ctx.fill();
-    // Pad
-    ctx.fillStyle = '#222';
-    ctx.beginPath(); ctx.roundRect(x + w * 0.35, y, w * 0.3, h * 0.18, 2); ctx.fill();
-    // Handle
-    ctx.fillStyle = '#888';
-    ctx.fillRect(x + w * 0.7, y + h * 0.35, w * 0.3, 4);
-    // Wheels
-    ctx.fillStyle = '#222';
-    ctx.beginPath(); ctx.arc(x + 8, y + h - 3, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x + w - 8, y + h - 3, 4, 0, Math.PI * 2); ctx.fill();
-    break;
-  }
-
-  // ─── DEFAULT FALLBACK ───
-  default: {
-    ctx.fillStyle = '#2a3450';
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.stroke();
-    break;
-  }
-  }
-
+  
   ctx.restore();
 }
-
 
 function drawPowerups() {
   const time = frameCount / 60;
