@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v24'; // v24: Fix inbox messages, add unread dots, pass senderId in FCM
+const CACHE_NAME = 'pbb-app-v25'; // v25: Fix stale JWT causing empty inbox, add session refresh
 const MODEL_CACHE_NAME = 'pbb-models-v2'; // v2: pre-cache critical onboarding models for fast startup
 const ASSETS = [
   './dashboard.html',
