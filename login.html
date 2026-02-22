@@ -1059,16 +1059,18 @@
 
         // Handle forgot password
         async function handleForgotPassword() {
-            const email = prompt('Enter your email address to reset your password:');
+            const rawEmail = prompt('Enter your email address to reset your password:');
 
-            if (!email) return;
+            if (!rawEmail) return;
+
+            const email = rawEmail.trim();
 
             try {
                 await authHelpers.resetPassword(email);
-                showSuccess('Password reset email sent! Check your inbox.');
+                showSuccess('Password reset email sent! Check your inbox (and spam folder).');
             } catch (error) {
                 console.error('Reset password error:', error);
-                showError('Failed to send reset email. Please check your email address.');
+                showError(error.message || 'Failed to send reset email. Please check your email address.');
             }
         }
 
