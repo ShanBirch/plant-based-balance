@@ -3163,261 +3163,324 @@ function drawArenaBackground() {
 
     switch (rm.floorType) {
       case 'checker-tile': {
-        // Kitchen: large checkered tiles with grout lines
-        for (let r = startRow; r < endRow; r++) {
-          for (let c = startCol; c < endCol; c++) {
-            const tx = rm.x + c * TILE, ty = rm.y + r * TILE;
-            const tw = Math.min(TILE, rm.x + rm.w - tx), th = Math.min(TILE, rm.y + rm.h - ty);
-            if (tw <= 0 || th <= 0) continue;
-            ctx.fillStyle = (r + c) % 2 === 0 ? rm.tileColor1 : rm.tileColor2;
-            ctx.fillRect(tx, ty, tw, th);
-            // Grout lines
-            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-            ctx.lineWidth = 0.5;
-            ctx.strokeRect(tx, ty, tw, th);
+        // Kitchen: Large metallic plates with safety tape border (Among Us Kitchen)
+        ctx.fillStyle = '#22262a';
+        ctx.fillRect(rm.x, rm.y, rm.w, rm.h);
+        
+        // Panel lines
+        ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+        ctx.lineWidth = 3;
+        const panSize = 100;
+        for (let r = Math.max(0, Math.floor((vy - rm.y) / panSize)); r < Math.min(Math.ceil(rm.h / panSize), Math.ceil((vy + vh - rm.y) / panSize) + 1); r++) {
+          for (let c = Math.max(0, Math.floor((vx - rm.x) / panSize)); c < Math.min(Math.ceil(rm.w / panSize), Math.ceil((vx + vw - rm.x) / panSize) + 1); c++) {
+            ctx.strokeRect(rm.x + c * panSize, rm.y + r * panSize, panSize, panSize);
+            // Rivets at corners
+            ctx.fillStyle = 'rgba(255,255,255,0.06)';
+            ctx.beginPath(); ctx.arc(rm.x + c * panSize + 8, rm.y + r * panSize + 8, 2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(rm.x + c * panSize + panSize - 8, rm.y + r * panSize + 8, 2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(rm.x + c * panSize + 8, rm.y + r * panSize + panSize - 8, 2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(rm.x + c * panSize + panSize - 8, rm.y + r * panSize + panSize - 8, 2, 0, Math.PI*2); ctx.fill();
           }
         }
-        // Subtle floor shine
-        ctx.fillStyle = 'rgba(255,255,255,0.008)';
-        ctx.fillRect(rm.x, rm.y, rm.w * 0.6, rm.h * 0.4);
-        break;
-      }
-      case 'linoleum': {
-        // Cafeteria: smooth speckled linoleum
-        for (let r = startRow; r < endRow; r++) {
-          for (let c = startCol; c < endCol; c++) {
-            const tx = rm.x + c * TILE, ty = rm.y + r * TILE;
-            const tw = Math.min(TILE, rm.x + rm.w - tx), th = Math.min(TILE, rm.y + rm.h - ty);
-            if (tw <= 0 || th <= 0) continue;
-            ctx.fillStyle = (r + c) % 2 === 0 ? rm.tileColor1 : rm.tileColor2;
-            ctx.fillRect(tx, ty, tw, th);
-            // Speckles
-            const hash = ((c * 3917 + r * 2741) & 0xFFFF) / 65535;
-            ctx.fillStyle = 'rgba(200,180,255,0.015)';
-            for (let s = 0; s < 3; s++) {
-              const spx = tx + ((hash * 1000 + s * 13) % TILE);
-              const spy = ty + ((hash * 700 + s * 17) % TILE);
-              ctx.fillRect(spx, spy, 2, 2);
-            }
-          }
-        }
-        break;
-      }
-      case 'wood': {
-        // Living Room: hardwood plank flooring
-        const plankW = 80, plankH = 20;
-        const pc0 = Math.max(0, Math.floor((vx - rm.x) / plankW));
-        const pc1 = Math.min(Math.ceil(rm.w / plankW), Math.ceil((vx + vw - rm.x) / plankW) + 1);
-        const pr0 = Math.max(0, Math.floor((vy - rm.y) / plankH));
-        const pr1 = Math.min(Math.ceil(rm.h / plankH), Math.ceil((vy + vh - rm.y) / plankH) + 1);
-        for (let r = pr0; r < pr1; r++) {
-          for (let c = pc0; c < pc1; c++) {
-            const offset = (r % 2) * (plankW / 2);
-            const tx = rm.x + c * plankW + offset, ty = rm.y + r * plankH;
-            if (tx + plankW < rm.x || tx > rm.x + rm.w) continue;
-            const clampX = Math.max(tx, rm.x);
-            const clampW = Math.min(tx + plankW, rm.x + rm.w) - clampX;
-            const clampY = Math.max(ty, rm.y);
-            const clampH = Math.min(ty + plankH, rm.y + rm.h) - clampY;
-            if (clampW <= 0 || clampH <= 0) continue;
-            const hash = ((c * 5119 + r * 3331) & 0xFF) / 255;
-            const shade = 0.02 + hash * 0.02;
-            ctx.fillStyle = (r + c) % 3 === 0 ? rm.tileColor1 : rm.tileColor2;
-            ctx.fillRect(clampX, clampY, clampW, clampH);
-            // Wood grain line
-            ctx.strokeStyle = `rgba(255,255,255,${shade})`;
-            ctx.lineWidth = 0.5;
-            ctx.beginPath();
-            ctx.moveTo(clampX + 2, clampY + plankH * 0.5);
-            ctx.lineTo(clampX + clampW - 2, clampY + plankH * 0.5);
-            ctx.stroke();
-            // Plank gap
-            ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-            ctx.lineWidth = 0.5;
-            ctx.strokeRect(clampX, clampY, clampW, clampH);
-          }
-        }
-        break;
-      }
-      case 'small-tile': {
-        // Bathroom: small hexagonal-feel tiles
-        const sTile = 24;
-        const sc2 = Math.max(0, Math.floor((vx - rm.x) / sTile));
-        const ec2 = Math.min(Math.ceil(rm.w / sTile), Math.ceil((vx + vw - rm.x) / sTile) + 1);
-        const sr2 = Math.max(0, Math.floor((vy - rm.y) / sTile));
-        const er2 = Math.min(Math.ceil(rm.h / sTile), Math.ceil((vy + vh - rm.y) / sTile) + 1);
-        for (let r = sr2; r < er2; r++) {
-          for (let c = sc2; c < ec2; c++) {
-            const tx = rm.x + c * sTile, ty = rm.y + r * sTile;
-            const tw = Math.min(sTile, rm.x + rm.w - tx), th = Math.min(sTile, rm.y + rm.h - ty);
-            if (tw <= 0 || th <= 0) continue;
-            const isAlt = (r + c) % 3 === 0;
-            ctx.fillStyle = isAlt ? '#1a2a2c' : rm.tileColor1;
-            ctx.fillRect(tx, ty, tw, th);
-            ctx.strokeStyle = 'rgba(100,180,200,0.04)';
-            ctx.lineWidth = 0.5;
-            ctx.strokeRect(tx, ty, tw, th);
-          }
-        }
-        // Wet floor reflections
-        ctx.fillStyle = 'rgba(100,200,255,0.01)';
-        ctx.beginPath();
-        ctx.ellipse(rm.x + rm.w * 0.3, rm.y + rm.h * 0.6, 80, 40, 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        break;
-      }
-      case 'metal': {
-        // Hallway: industrial metal grate feel
-        const mTile = 50;
-        const mc0 = Math.max(0, Math.floor((vx - rm.x) / mTile));
-        const mc1 = Math.min(Math.ceil(rm.w / mTile), Math.ceil((vx + vw - rm.x) / mTile) + 1);
-        const mr0 = Math.max(0, Math.floor((vy - rm.y) / mTile));
-        const mr1 = Math.min(Math.ceil(rm.h / mTile), Math.ceil((vy + vh - rm.y) / mTile) + 1);
-        for (let r = mr0; r < mr1; r++) {
-          for (let c = mc0; c < mc1; c++) {
-            const tx = rm.x + c * mTile, ty = rm.y + r * mTile;
-            const tw = Math.min(mTile, rm.x + rm.w - tx), th = Math.min(mTile, rm.y + rm.h - ty);
-            if (tw <= 0 || th <= 0) continue;
-            ctx.fillStyle = (r + c) % 2 === 0 ? rm.tileColor1 : rm.tileColor2;
-            ctx.fillRect(tx, ty, tw, th);
-            // Metal plate rivets at corners
-            ctx.fillStyle = 'rgba(255,255,255,0.04)';
-            ctx.beginPath(); ctx.arc(tx + 4, ty + 4, 1.5, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(tx + tw - 4, ty + 4, 1.5, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(tx + 4, ty + th - 4, 1.5, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(tx + tw - 4, ty + th - 4, 1.5, 0, Math.PI * 2); ctx.fill();
-            // Plate seams
-            ctx.strokeStyle = 'rgba(255,255,255,0.02)';
-            ctx.lineWidth = 0.5;
-            ctx.strokeRect(tx + 1, ty + 1, tw - 2, th - 2);
-          }
-        }
-        // Floor stripe markings
-        ctx.fillStyle = 'rgba(255,200,0,0.04)';
-        ctx.fillRect(rm.x + 30, rm.y + rm.h / 2 - 15, rm.w - 60, 30);
-        ctx.strokeStyle = 'rgba(255,200,0,0.06)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([20, 15]);
-        ctx.beginPath();
-        ctx.moveTo(rm.x + 40, rm.y + rm.h / 2);
-        ctx.lineTo(rm.x + rm.w - 40, rm.y + rm.h / 2);
-        ctx.stroke();
+        
+        // Heavy safety warning edge tape
+        ctx.lineWidth = 16;
+        ctx.strokeStyle = '#facc15';
+        ctx.strokeRect(rm.x + 15, rm.y + 15, rm.w - 30, rm.h - 30);
+        ctx.setLineDash([25, 25]);
+        ctx.strokeStyle = '#111';
+        ctx.strokeRect(rm.x + 15, rm.y + 15, rm.w - 30, rm.h - 30);
         ctx.setLineDash([]);
         break;
       }
-      case 'carpet': {
-        // Bedroom: soft carpet texture
-        ctx.fillStyle = rm.tileColor1;
+      case 'linoleum': {
+        // Cafeteria: Smooth blue floor with giant center grate
+        ctx.fillStyle = '#3a4a5a';
         ctx.fillRect(rm.x, rm.y, rm.w, rm.h);
-        // Carpet texture dots
-        ctx.fillStyle = 'rgba(255,255,255,0.01)';
-        const dotSpacing = 8;
-        const dx0 = Math.floor((vx - rm.x) / dotSpacing) * dotSpacing;
-        const dy0 = Math.floor((vy - rm.y) / dotSpacing) * dotSpacing;
-        for (let dy = Math.max(0, dy0); dy < Math.min(rm.h, vy + vh - rm.y); dy += dotSpacing) {
-          for (let dx = Math.max(0, dx0); dx < Math.min(rm.w, vx + vw - rm.x); dx += dotSpacing) {
-            ctx.fillRect(rm.x + dx, rm.y + dy, 1, 1);
+        
+        // Large polished tiles
+        ctx.strokeStyle = '#2a3a4a';
+        ctx.lineWidth = 2;
+        const TILE = 80;
+        for (let r = Math.max(0, Math.floor((vy - rm.y) / TILE)); r < Math.min(Math.ceil(rm.h / TILE), Math.ceil((vy + vh - rm.y) / TILE) + 1); r++) {
+          for (let c = Math.max(0, Math.floor((vx - rm.x) / TILE)); c < Math.min(Math.ceil(rm.w / TILE), Math.ceil((vx + vw - rm.x) / TILE) + 1); c++) {
+            ctx.strokeRect(rm.x + c * TILE, rm.y + r * TILE, TILE, TILE);
           }
         }
-        // Carpet edge border
-        ctx.strokeStyle = rm.trimColor + '30';
+        
+        // Cafeteria Central Vent Grate (Iconic)
+        if (vx < rm.x + rm.w / 2 + 120 && vx + vw > rm.x + rm.w / 2 - 120 &&
+            vy < rm.y + rm.h / 2 + 120 && vy + vh > rm.y + rm.h / 2 - 120) {
+          
+          ctx.fillStyle = '#111';
+          ctx.beginPath(); ctx.arc(rm.x + rm.w / 2, rm.y + rm.h / 2, 110, 0, Math.PI * 2); ctx.fill();
+          
+          // Outer vent ring
+          ctx.strokeStyle = '#667'; ctx.lineWidth = 14;
+          ctx.beginPath(); ctx.arc(rm.x + rm.w / 2, rm.y + rm.h / 2, 110, 0, Math.PI * 2); ctx.stroke();
+          
+          // Grating mesh inside vent
+          ctx.strokeStyle = '#333';
+          ctx.lineWidth = 4;
+          ctx.save();
+          ctx.beginPath(); ctx.arc(rm.x + rm.w/2, rm.y + rm.h/2, 103, 0, Math.PI*2); ctx.clip();
+          for (let i = -110; i <= 110; i += 16) {
+            ctx.beginPath(); ctx.moveTo(rm.x + rm.w / 2 + i, rm.y + rm.h / 2 - 110); ctx.lineTo(rm.x + rm.w / 2 + i, rm.y + rm.h / 2 + 110); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(rm.x + rm.w / 2 - 110, rm.y + rm.h / 2 + i); ctx.lineTo(rm.x + rm.w / 2 + 110, rm.y + rm.h / 2 + i); ctx.stroke();
+          }
+          ctx.restore();
+        }
+        
+        // Caution stripes crossing the room
+        ctx.beginPath(); ctx.moveTo(rm.x, rm.y + rm.h / 2); ctx.lineTo(rm.x + rm.w, rm.y + rm.h / 2);
+        ctx.lineWidth = 30; ctx.strokeStyle = '#facc15'; ctx.stroke();
+        ctx.setLineDash([25, 25]); ctx.strokeStyle = '#111'; ctx.stroke(); ctx.setLineDash([]);
+        break;
+      }
+      case 'wood': {
+        // Living Room -> Admin (Hexagon Grate Floor)
+        ctx.fillStyle = '#1e2025';
+        ctx.fillRect(rm.x, rm.y, rm.w, rm.h);
+        
+        ctx.strokeStyle = 'rgba(0,180,255,0.08)';
+        ctx.lineWidth = 2;
+        
+        const hexS = 22;
+        const dx = hexS * 1.5;
+        const dy = hexS * Math.sqrt(3);
+        
+        let hc0 = Math.floor((vx - rm.x) / dx) - 1;
+        let hr0 = Math.floor((vy - rm.y) / dy) - 1;
+        let hc1 = Math.ceil((vx + vw - rm.x) / dx) + 1;
+        let hr1 = Math.ceil((vy + vh - rm.y) / dy) + 1;
+        
+        ctx.beginPath();
+        for (let r = hr0; r < hr1; r++) {
+          for (let c = hc0; c < hc1; c++) {
+            const cx = rm.x + c * dx;
+            const cy = rm.y + r * dy + (c % 2 === 0 ? 0 : dy/2);
+            
+            ctx.moveTo(cx + hexS, cy);
+            ctx.lineTo(cx + hexS/2, cy + dy/2);
+            ctx.lineTo(cx - hexS/2, cy + dy/2);
+            ctx.lineTo(cx - hexS, cy);
+            ctx.lineTo(cx - hexS/2, cy - dy/2);
+            ctx.lineTo(cx + hexS/2, cy - dy/2);
+            ctx.lineTo(cx + hexS, cy);
+          }
+        }
+        ctx.stroke();
+        break;
+      }
+      case 'small-tile': {
+        // Bathroom -> MedBay (White Tech Panels with blue medical crosses)
+        ctx.fillStyle = '#bac7d6';
+        ctx.fillRect(rm.x, rm.y, rm.w, rm.h);
+        
+        const ts = 80;
+        ctx.strokeStyle = '#9caabb';
         ctx.lineWidth = 4;
-        ctx.strokeRect(rm.x + 20, rm.y + 20, rm.w - 40, rm.h - 40);
+        for (let r = Math.max(0, Math.floor((vy - rm.y) / ts)); r < Math.min(Math.ceil(rm.h / ts), Math.ceil((vy + vh - rm.y) / ts) + 1); r++) {
+          for (let c = Math.max(0, Math.floor((vx - rm.x) / ts)); c < Math.min(Math.ceil(rm.w / ts), Math.ceil((vx + vw - rm.x) / ts) + 1); c++) {
+            ctx.strokeRect(rm.x + c * ts, rm.y + r * ts, ts, ts);
+            
+            // Medical / Tech markings
+            if ((r + c) % 3 === 0) {
+              ctx.fillStyle = '#3498db';
+              const cx = rm.x + c * ts + ts/2;
+              const cy = rm.y + r * ts + ts/2;
+              ctx.fillRect(cx - 4, cy - 14, 8, 28);
+              ctx.fillRect(cx - 14, cy - 4, 28, 8);
+              
+              // Internal glow to MedBay crosses
+              ctx.shadowColor = '#3498db'; ctx.shadowBlur = 10;
+              ctx.fillStyle = '#85c1e9';
+              ctx.fillRect(cx - 2, cy - 10, 4, 20);
+              ctx.fillRect(cx - 10, cy - 2, 20, 4);
+              ctx.shadowBlur = 0;
+            }
+          }
+        }
+        break;
+      }
+      case 'metal': {
+        // Hallway: Dark steel industrial plates with massive wire conduits
+        ctx.fillStyle = '#26292b';
+        ctx.fillRect(rm.x, rm.y, rm.w, rm.h);
+        
+        ctx.strokeStyle = '#181a1c';
+        ctx.lineWidth = 5;
+        for (let tx = rm.x + 30; tx < rm.x + rm.w; tx += 80) {
+            ctx.beginPath(); ctx.moveTo(tx, rm.y); ctx.lineTo(tx, rm.y + rm.h); ctx.stroke();
+        }
+        for (let ty = rm.y + 30; ty < rm.y + rm.h; ty += 80) {
+            ctx.beginPath(); ctx.moveTo(rm.x, ty); ctx.lineTo(rm.x + rm.w, ty); ctx.stroke();
+        }
+        
+        // Huge central wire conduit crossing hallway
+        ctx.fillStyle = '#111';
+        ctx.fillRect(rm.x, rm.y + rm.h / 2 - 25, rm.w, 50);
+        
+        // Electric Wires
+        const colors = ['#e74c3c', '#e67e22', '#2ecc71', '#00f2fe'];
+        colors.forEach((col, i) => {
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(rm.x, rm.y + rm.h / 2 - 15 + i*10);
+          for(let wx = rm.x; wx < rm.x + rm.w; wx += 30) {
+              ctx.lineTo(wx, rm.y + rm.h / 2 - 15 + i*10 + Math.sin(wx/50 + i)*6);
+          }
+          ctx.stroke();
+        });
+        
+        // Venting covers on conduit
+        ctx.fillStyle = '#444';
+        for(let tx = rm.x + 60; tx < rm.x + rm.w; tx += 200) {
+           ctx.fillRect(tx, rm.y + rm.h/2 - 28, 40, 56);
+        }
+        break;
+      }
+      case 'carpet': {
+        // Bedroom -> Nav/Comms Center (Dark technical floor)
+        ctx.fillStyle = '#1c222e';
+        ctx.fillRect(rm.x, rm.y, rm.w, rm.h);
+        
+        ctx.strokeStyle = '#28364a';
+        ctx.lineWidth = 3;
+        const gS = 60;
+        for (let r = Math.max(0, Math.floor((vy - rm.y) / gS)); r < Math.min(Math.ceil(rm.h / gS), Math.ceil((vy + vh - rm.y) / gS) + 1); r++) {
+          for (let c = Math.max(0, Math.floor((vx - rm.x) / gS)); c < Math.min(Math.ceil(rm.w / gS), Math.ceil((vx + vw - rm.x) / gS) + 1); c++) {
+            ctx.strokeRect(rm.x + c * gS, rm.y + r * gS, gS, gS);
+            
+            const hash = (r*37 + c*19) % 100;
+            if (hash < 12) {
+              // Comms flashing LED lights built into floor
+              const active = (frameCount % 120 < 60);
+              ctx.shadowColor = active ? '#00ff88' : '#ff0f3f';
+              ctx.shadowBlur = 10;
+              ctx.fillStyle = active ? '#00ff88' : '#ff0f3f';
+              ctx.beginPath(); ctx.arc(rm.x + c * gS + 14, rm.y + r * gS + 14, 4, 0, Math.PI*2); ctx.fill();
+              ctx.shadowBlur = 0;
+            }
+          }
+        }
         break;
       }
       case 'rubber': {
-        // Gym: rubber mat flooring with diamond pattern
-        const rTile = 36;
-        const rc0 = Math.max(0, Math.floor((vx - rm.x) / rTile));
-        const rc1 = Math.min(Math.ceil(rm.w / rTile), Math.ceil((vx + vw - rm.x) / rTile) + 1);
-        const rr0 = Math.max(0, Math.floor((vy - rm.y) / rTile));
-        const rr1 = Math.min(Math.ceil(rm.h / rTile), Math.ceil((vy + vh - rm.y) / rTile) + 1);
-        for (let r = rr0; r < rr1; r++) {
-          for (let c = rc0; c < rc1; c++) {
-            const tx = rm.x + c * rTile, ty = rm.y + r * rTile;
-            const tw = Math.min(rTile, rm.x + rm.w - tx), th = Math.min(rTile, rm.y + rm.h - ty);
-            if (tw <= 0 || th <= 0) continue;
-            ctx.fillStyle = (r + c) % 2 === 0 ? rm.tileColor1 : rm.tileColor2;
-            ctx.fillRect(tx, ty, tw, th);
-            // Diamond grip pattern
-            ctx.strokeStyle = 'rgba(255,200,100,0.02)';
-            ctx.lineWidth = 0.5;
-            const mid = rTile / 2;
-            ctx.beginPath();
-            ctx.moveTo(tx + mid, ty + 2); ctx.lineTo(tx + rTile - 2, ty + mid);
-            ctx.lineTo(tx + mid, ty + rTile - 2); ctx.lineTo(tx + 2, ty + mid);
-            ctx.closePath(); ctx.stroke();
+        // Gym -> Weapons (Heavy diamond grip steel)
+        ctx.fillStyle = '#313335';
+        ctx.fillRect(rm.x, rm.y, rm.w, rm.h);
+        
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 2;
+        const dS = 30;
+        for (let r = Math.max(0, Math.floor((vy - rm.y) / dS)); r < Math.min(Math.ceil(rm.h / dS), Math.ceil((vy + vh - rm.y) / dS) + 1); r++) {
+          for (let c = Math.max(0, Math.floor((vx - rm.x) / dS)); c < Math.min(Math.ceil(rm.w / dS), Math.ceil((vx + vw - rm.x) / dS) + 1); c++) {
+              const dx = rm.x + c * dS; const dy = rm.y + r * dS;
+              ctx.beginPath();
+              if ((r+c)%2 === 0) {
+                  ctx.moveTo(dx + 6, dy + 6); ctx.lineTo(dx + dS - 6, dy + dS - 6);
+              } else {
+                  ctx.moveTo(dx + dS - 6, dy + 6); ctx.lineTo(dx + 6, dy + dS - 6);
+              }
+              ctx.stroke();
           }
         }
+        
+        // Giant weapons target circle on floor
+        ctx.strokeStyle = 'rgba(239,68,68,0.2)';
+        ctx.lineWidth = 14;
+        ctx.beginPath(); ctx.arc(rm.x + rm.w/2, rm.y + rm.h/2, 140, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(rm.x + rm.w/2, rm.y + rm.h/2, 80, 0, Math.PI*2); ctx.stroke();
+        ctx.lineWidth = 8;
+        ctx.beginPath(); ctx.moveTo(rm.x + rm.w/2, rm.y + rm.h/2 - 180); ctx.lineTo(rm.x + rm.w/2, rm.y + rm.h/2 + 180); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(rm.x + rm.w/2 - 180, rm.y + rm.h/2); ctx.lineTo(rm.x + rm.w/2 + 180, rm.y + rm.h/2); ctx.stroke();
         break;
       }
       case 'grass': {
-        // Garden: grass with dirt patches and flower spots
-        ctx.fillStyle = rm.tileColor1;
+        // Garden -> O2 Greenhouse (Grate with glowing oxygen bio-tubes beneath)
+        ctx.fillStyle = '#0a0d0a';
         ctx.fillRect(rm.x, rm.y, rm.w, rm.h);
-        // Grass blades (subtle texture)
-        ctx.fillStyle = 'rgba(100,200,100,0.03)';
-        const gSpacing = 12;
-        const gx0 = Math.floor((vx - rm.x) / gSpacing) * gSpacing;
-        const gy0 = Math.floor((vy - rm.y) / gSpacing) * gSpacing;
-        for (let gy = Math.max(0, gy0); gy < Math.min(rm.h, vy + vh - rm.y); gy += gSpacing) {
-          for (let gx = Math.max(0, gx0); gx < Math.min(rm.w, vx + vw - rm.x); gx += gSpacing) {
-            const hash = ((gx * 7 + gy * 13) & 0xFF) / 255;
-            if (hash < 0.4) {
-              ctx.fillStyle = hash < 0.2 ? 'rgba(80,180,80,0.04)' : 'rgba(60,150,60,0.03)';
-              ctx.fillRect(rm.x + gx, rm.y + gy, 2, 4 + hash * 4);
-            }
+        
+        // Liquid oxygen tubes
+        ctx.strokeStyle = '#00ff44';
+        ctx.lineWidth = 14;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#00ff44';
+        for (let t = 0; t < 6; t++) {
+          ctx.beginPath();
+          ctx.moveTo(rm.x + 80 + t*220, rm.y);
+          ctx.lineTo(rm.x + 80 + t*220, rm.y + rm.h);
+          ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+        
+        // Huge heavy iron hex grate overlay
+        ctx.strokeStyle = '#181f18';
+        ctx.lineWidth = 8;
+        const hexS = 30;
+        const dx = hexS * 1.5;
+        const dy = hexS * Math.sqrt(3);
+        
+        let hc0 = Math.floor((vx - rm.x) / dx) - 1;
+        let hr0 = Math.floor((vy - rm.y) / dy) - 1;
+        let hc1 = Math.ceil((vx + vw - rm.x) / dx) + 1;
+        let hr1 = Math.ceil((vy + vh - rm.y) / dy) + 1;
+        
+        ctx.beginPath();
+        for (let r = hr0; r < hr1; r++) {
+          for (let c = hc0; c < hc1; c++) {
+            const cx = rm.x + c * dx;
+            const cy = rm.y + r * dy + (c % 2 === 0 ? 0 : dy/2);
+            ctx.moveTo(cx + hexS, cy); ctx.lineTo(cx + hexS/2, cy + dy/2); ctx.lineTo(cx - hexS/2, cy + dy/2); ctx.lineTo(cx - hexS, cy); ctx.lineTo(cx - hexS/2, cy - dy/2); ctx.lineTo(cx + hexS/2, cy - dy/2); ctx.lineTo(cx + hexS, cy);
           }
         }
-        // Stone path down the middle
-        ctx.fillStyle = 'rgba(120,110,100,0.08)';
-        for (let py = 0; py < rm.h; py += 50) {
-          const offset = (Math.floor(py / 50) % 2) * 15;
-          ctx.beginPath();
-          ctx.ellipse(rm.x + rm.w * 0.5 + offset, rm.y + py + 25, 22, 14, 0.1, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        // Dirt patches
-        ctx.fillStyle = 'rgba(80,60,40,0.06)';
-        ctx.beginPath(); ctx.ellipse(rm.x + rm.w * 0.2, rm.y + rm.h * 0.3, 50, 30, 0.3, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(rm.x + rm.w * 0.8, rm.y + rm.h * 0.7, 40, 25, -0.2, 0, Math.PI * 2); ctx.fill();
+        ctx.stroke();
         break;
       }
       case 'concrete': {
-        // Garage: rough concrete with oil stains and cracks
-        ctx.fillStyle = rm.tileColor1;
+        // Garage -> Engine / Reactor (Dark metal with glowing plasma cores and vents)
+        ctx.fillStyle = '#141418';
         ctx.fillRect(rm.x, rm.y, rm.w, rm.h);
-        // Concrete texture variation
-        for (let r = startRow; r < endRow; r++) {
-          for (let c = startCol; c < endCol; c++) {
-            const tx = rm.x + c * TILE, ty = rm.y + r * TILE;
-            const tw = Math.min(TILE, rm.x + rm.w - tx), th = Math.min(TILE, rm.y + rm.h - ty);
-            if (tw <= 0 || th <= 0) continue;
-            const hash = ((c * 6131 + r * 4217) & 0xFF) / 255;
-            if (hash > 0.7) {
-              ctx.fillStyle = 'rgba(255,255,255,0.01)';
-              ctx.fillRect(tx, ty, tw, th);
-            }
-          }
+        
+        // Massive heavy panel splits
+        ctx.strokeStyle = '#08080a';
+        ctx.lineWidth = 8;
+        for (let c = 1; c < 5; c++) {
+          ctx.beginPath(); ctx.moveTo(rm.x + (rm.w/5)*c, rm.y); ctx.lineTo(rm.x + (rm.w/5)*c, rm.y + rm.h); ctx.stroke();
         }
-        // Oil stains
-        ctx.fillStyle = 'rgba(30,20,10,0.12)';
-        ctx.beginPath(); ctx.ellipse(rm.x + rm.w * 0.35, rm.y + rm.h * 0.5, 60, 35, 0.3, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = 'rgba(20,15,5,0.08)';
-        ctx.beginPath(); ctx.ellipse(rm.x + rm.w * 0.7, rm.y + rm.h * 0.3, 45, 25, -0.4, 0, Math.PI * 2); ctx.fill();
-        // Crack lines
-        ctx.strokeStyle = 'rgba(0,0,0,0.06)';
-        ctx.lineWidth = 0.5;
-        ctx.beginPath();
-        ctx.moveTo(rm.x + rm.w * 0.2, rm.y + rm.h * 0.1);
-        ctx.lineTo(rm.x + rm.w * 0.25, rm.y + rm.h * 0.3);
-        ctx.lineTo(rm.x + rm.w * 0.22, rm.y + rm.h * 0.5);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(rm.x + rm.w * 0.6, rm.y + rm.h * 0.7);
-        ctx.lineTo(rm.x + rm.w * 0.65, rm.y + rm.h * 0.85);
-        ctx.lineTo(rm.x + rm.w * 0.7, rm.y + rm.h * 0.9);
-        ctx.stroke();
+        
+        // Engine Plasma Core in Floor
+        const cx = rm.x + rm.w / 2;
+        const cy = rm.y + rm.h / 2;
+        
+        // Containment rings
+        ctx.strokeStyle = '#222'; ctx.lineWidth = 14;
+        ctx.beginPath(); ctx.arc(cx, cy, 180, 0, Math.PI*2); ctx.stroke();
+        
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = '#00f2fe';
+        ctx.fillStyle = '#081a30';
+        ctx.beginPath(); ctx.arc(cx, cy, 140, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        ctx.fillStyle = '#00f2fe';
+        ctx.beginPath(); ctx.arc(cx, cy, 90, 0, Math.PI*2); ctx.fill();
+        
+        // Engine pipes radiating
+        ctx.strokeStyle = '#00f2fe';
+        ctx.lineWidth = 12;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#00f2fe';
+        const angles = [0, Math.PI/2, Math.PI, Math.PI*1.5];
+        for (let a of angles) {
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(a)*100, cy + Math.sin(a)*100);
+          ctx.lineTo(cx + Math.cos(a)*Math.max(rm.w, rm.h), cy + Math.sin(a)*Math.max(rm.w, rm.h));
+          ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
         break;
       }
     }
