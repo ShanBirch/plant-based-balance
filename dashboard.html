@@ -27248,7 +27248,9 @@ async function requestPermNotif() {
                 }
             } else {
                 // Last fallback: try native Capacitor push directly
-                const { PushNotifications } = await import('@capacitor/push-notifications');
+                const PushNotifications = window.Capacitor && window.Capacitor.registerPlugin
+                    ? window.Capacitor.registerPlugin('PushNotifications') : null;
+                if (!PushNotifications) throw new Error('PushNotifications not available');
                 const result = await PushNotifications.requestPermissions();
                 if (result.receive === 'granted') {
                     updatePermBtn('notif', 'granted');
@@ -41829,8 +41831,9 @@ window.showDMNotificationBanner = function showDMNotificationBanner(senderName, 
     // Native Android: fire a local notification so the app icon gets a badge dot.
     // The heads-up display + shade entry triggers the launcher badge dot automatically.
     if (typeof isNativeApp === 'function' && isNativeApp()) {
-        import('@capacitor/local-notifications').then(function(mod) {
-            mod.LocalNotifications.schedule({
+        var _ln = typeof window._getLocalNotificationsPlugin === 'function' ? window._getLocalNotificationsPlugin() : null;
+        if (_ln) {
+            _ln.schedule({
                 notifications: [{
                     id: 7777 + (Date.now() % 1000),
                     title: senderName || 'New Message',
@@ -41842,7 +41845,7 @@ window.showDMNotificationBanner = function showDMNotificationBanner(senderName, 
                     extra: { type: 'dm_message', senderName: senderName || '' }
                 }]
             }).catch(function(e) { console.warn('[Badge] Local notif error:', e); });
-        }).catch(function() {});
+        }
     }
 
     // Auto-dismiss after 5 seconds
@@ -41897,9 +41900,8 @@ function updateMessageBadges(count) {
     // Native Android: badge dots come from notifications in the shade.
     // Cancel the silent badge notification when count hits 0.
     if (count === 0 && typeof isNativeApp === 'function' && isNativeApp()) {
-        import('@capacitor/local-notifications').then(function(mod) {
-            mod.LocalNotifications.cancel({ notifications: [{ id: 7777 }] }).catch(function() {});
-        }).catch(function() {});
+        var _ln2 = typeof window._getLocalNotificationsPlugin === 'function' ? window._getLocalNotificationsPlugin() : null;
+        if (_ln2) { _ln2.cancel({ notifications: [{ id: 7777 }] }).catch(function() {}); }
     }
 }
 
