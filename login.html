@@ -963,6 +963,13 @@
 
                 // Create account
                 const signupResult = await authHelpers.signUp(email, password, { name });
+
+                // Supabase returns a fake success for duplicate emails (email enumeration prevention).
+                // An empty identities array means the email is already registered.
+                if (signupResult.user?.identities?.length === 0) {
+                    throw new Error('already registered');
+                }
+
                 const newUserId = signupResult.user?.id;
 
                 // If there's a referral code and signup was successful, process the referral
