@@ -12587,6 +12587,10 @@ async function applyAppTheme(themeKey) {
                         // Remove from DOM after transition
                         overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
                     }, 300);
+                    // Signal that the main character model + core UI is loaded.
+                    // Non-critical assets (rare models, etc.) should wait for this.
+                    window._appCriticalContentReady = true;
+                    window.dispatchEvent(new Event('appCriticalContentReady'));
                 }
 
                 const modelViewer = document.getElementById('tamagotchi-model');
@@ -66296,7 +66300,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // BACKGROUND MODEL PREFETCH - warm browser cache for 3D models
     // ============================================================
     (function prefetchRareModels() {
-        // Wait for page to finish loading critical content first
+        // Wait for the main app (character model, calorie tracker, stats) to fully load
+        // before starting background prefetch of rare 3D models
         const startPrefetch = () => {
             // Prioritize: 1) active skin, 2) featured monthly rare, 3) first in collection, 4) rest
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
@@ -66316,23 +66321,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
 
-            // Prefetch priority models immediately (low-priority fetch to not block UI)
-            prefetchBatch(priorityModels).then(() => {
-                // Then prefetch remaining models with staggered delays
-                prefetchBatch(remainingModels);
+            // Prefetch priority models first (low-priority fetch to not block UI)
+            prefetchBatch(priorityModels, 400).then(() => {
+                // Then prefetch remaining models with longer staggered delays
+                prefetchBatch(remainingModels, 600);
             });
         };
 
-        function prefetchBatch(urls) {
+        function prefetchBatch(urls, staggerMs) {
             const fetches = urls.map((url, i) => {
                 return new Promise(resolve => {
-                    // Stagger by 200ms each to avoid flooding the network
                     setTimeout(() => {
-                        fetch(url, { mode: 'cors', credentials: 'omit' })
+                        fetch(url, { mode: 'cors', credentials: 'omit', priority: 'low' })
                             .then(() => console.log('Prefetched:', url.split('/').pop()))
                             .catch(() => {}) // Silently ignore prefetch failures
                             .finally(resolve);
-                    }, i * 200);
+                    }, i * staggerMs);
                 });
             });
             return Promise.all(fetches);
@@ -66346,11 +66350,33 @@ document.addEventListener('DOMContentLoaded', async function() {
             return rare ? rare.id : null;
         }
 
-        // Start prefetching after page is idle (use requestIdleCallback if available)
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => startPrefetch(), { timeout: 5000 });
+        // Wait for the critical content (main character, calorie tracker, stats) to load,
+        // then add an extra delay before starting rare model prefetch in the background
+        function waitAndPrefetch() {
+            if (window._appCriticalContentReady) {
+                // Critical content already loaded — start after a short extra delay
+                setTimeout(startPrefetch, 2000);
+            } else {
+                // Listen for the signal from the login overlay dismissal
+                window.addEventListener('appCriticalContentReady', () => {
+                    setTimeout(startPrefetch, 2000);
+                }, { once: true });
+                // Safety fallback: if signal never fires (e.g. overlay was hidden for returning users),
+                // start after a generous delay
+                setTimeout(() => {
+                    if (!window._appCriticalContentReady) {
+                        window._appCriticalContentReady = true;
+                        startPrefetch();
+                    }
+                }, 15000);
+            }
+        }
+
+        // Kick off the waiting logic after DOM is interactive
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', waitAndPrefetch);
         } else {
-            setTimeout(startPrefetch, 3000);
+            waitAndPrefetch();
         }
     })();
 
