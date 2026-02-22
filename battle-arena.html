@@ -3885,9 +3885,13 @@ function drawObstacles() {
 // ── FURNITURE RENDERER (TOP-DOWN SVG) ──
 function drawFurnitureItem(o) {
   const x = o.x, y = o.y, w = o.w, h = o.h;
-  if (!window.SVG_IMAGES) return;
-  const img = window.SVG_IMAGES[o.label] || window.SVG_IMAGES['Stove'] || window.SVG_IMAGES['Fallback'];
+  ctx.save();
   
+  let img = null;
+  if (window.SVG_IMAGES) {
+    img = window.SVG_IMAGES[o.label] || window.SVG_IMAGES['Stove'];
+  }
+
   // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.beginPath();
@@ -3898,10 +3902,12 @@ function drawFurnitureItem(o) {
     // Draw SVG
     ctx.drawImage(img, x, y, w, h);
   } else {
-    // fallback if not loaded
+    // fallback if not loaded or missing
     ctx.fillStyle = '#ff00ff';
     ctx.fillRect(x,y,w,h);
   }
+  
+  ctx.restore();
 }
 
 function drawPowerups() {
