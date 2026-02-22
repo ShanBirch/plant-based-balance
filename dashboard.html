@@ -7765,17 +7765,6 @@ async function applyAppTheme(themeKey) {
         visibility: hidden;
         pointer-events: none;
     }
-    .login-loading-logo {
-        width: 80px;
-        height: 80px;
-        margin-bottom: 32px;
-        border-radius: 20px;
-        animation: loadingPulse 2s ease-in-out infinite;
-    }
-    @keyframes loadingPulse {
-        0%, 100% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.05); opacity: 0.85; }
-    }
     .login-loading-text {
         font-family: 'Inter', sans-serif;
         font-size: 15px;
@@ -7810,7 +7799,6 @@ async function applyAppTheme(themeKey) {
 <body>
 <!-- Login Loading Overlay -->
 <div id="login-loading-overlay" class="login-loading-overlay">
-    <img src="assets/Logo_dots.jpg" alt="FitGotchi" class="login-loading-logo">
     <div id="login-loading-text" class="login-loading-text">Loading your dashboard...</div>
     <div class="login-loading-bar-track">
         <div id="login-loading-bar" class="login-loading-bar-fill"></div>
