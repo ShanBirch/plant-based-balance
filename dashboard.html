@@ -12671,14 +12671,9 @@ async function applyAppTheme(themeKey) {
             updateLoginProgress(80, 'Almost there...');
 
             // Phase 4: Non-critical UI updates (fire-and-forget, don't block)
-            if(typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
-            if(typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
-            if(typeof checkAndShowFitnessDiaryCard === 'function') checkAndShowFitnessDiaryCard();
-            if(typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
-            if(typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
-            if(typeof checkAndShowProgressPhotoCard === 'function') checkAndShowProgressPhotoCard();
-            if(typeof checkAndShowWorkoutTrendCard === 'function') checkAndShowWorkoutTrendCard();
-            if(typeof initPerformanceCard === 'function') initPerformanceCard();
+            // Note: weigh-in, diary, quiz, meal tip, progress photo, workout trend, and
+            // performance card are all refreshed by switchAppTab('dashboard') below,
+            // so we only call integrations that switchAppTab doesn't handle.
             if(typeof initFitbitDashboard === 'function') initFitbitDashboard();
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
 
@@ -27260,14 +27255,17 @@ async function requestPermNotif() {
 let currentWizardStep = 1;
 const totalWizardSteps = 21;
 
-// Wizard-specific validation message (renders above the z-index:12000 wizard overlay)
-function wizardAlert(message) {
+// Wizard-specific validation/info message (renders above the z-index:12000 wizard overlay)
+function wizardAlert(message, type = 'error') {
     const existing = document.getElementById('wizard-validation-toast');
     if (existing) existing.remove();
 
+    const colors = { error: '#ef4444', success: '#22c55e', info: '#3b82f6' };
+    const bg = colors[type] || colors.error;
+
     const toast = document.createElement('div');
     toast.id = 'wizard-validation-toast';
-    toast.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:12px 24px; background:#ef4444; color:white; border-radius:12px; font-weight:600; font-size:0.9rem; box-shadow:0 4px 20px rgba(0,0,0,0.3); z-index:14000; text-align:center; max-width:90vw; animation:fadeInUp 0.3s ease-out;';
+    toast.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:12px 24px; background:' + bg + '; color:white; border-radius:12px; font-weight:600; font-size:0.9rem; box-shadow:0 4px 20px rgba(0,0,0,0.3); z-index:14000; text-align:center; max-width:90vw; animation:fadeInUp 0.3s ease-out;';
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => {
@@ -29177,7 +29175,7 @@ async function loadWizardReferralCode() {
 function wizardShareWhatsApp() {
     const code = currentReferralCode;
     if (!code) {
-        showToast('Your referral code will be available after you finish setup!', 'info');
+        wizardAlert('Your referral code will be available after you finish setup!', 'info');
         return;
     }
     const link = `${window.location.origin}/login.html?ref=${code}`;
@@ -29188,7 +29186,7 @@ function wizardShareWhatsApp() {
 function wizardShareSMS() {
     const code = currentReferralCode;
     if (!code) {
-        showToast('Your referral code will be available after you finish setup!', 'info');
+        wizardAlert('Your referral code will be available after you finish setup!', 'info');
         return;
     }
     const link = `${window.location.origin}/login.html?ref=${code}`;
@@ -29198,7 +29196,7 @@ function wizardShareSMS() {
         window.location.href = `sms:?&body=${encodeURIComponent(message)}`;
     } else {
         navigator.clipboard.writeText(message).then(() => {
-            showToast('Message copied! Paste it into your SMS app.', 'success');
+            wizardAlert('Message copied! Paste it into your SMS app.', 'success');
         });
     }
 }
@@ -29206,12 +29204,12 @@ function wizardShareSMS() {
 function wizardCopyLink() {
     const code = currentReferralCode;
     if (!code) {
-        showToast('Your referral code will be available after you finish setup!', 'info');
+        wizardAlert('Your referral code will be available after you finish setup!', 'info');
         return;
     }
     const link = `${window.location.origin}/login.html?ref=${code}`;
     navigator.clipboard.writeText(link).then(() => {
-        showToast('Referral link copied!', 'success');
+        wizardAlert('Referral link copied!', 'success');
         const btn = event.target.closest('button');
         if (btn) {
             const originalText = btn.innerHTML;
@@ -29914,16 +29912,41 @@ async function closeWizardManually() {
          wizardEl.classList.remove('active');
      }
      localStorage.setItem('onboardingComplete', 'true');
-     localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
+     localStorage.setItem('plantbased_onboarding_complete', 'true');
+
+     // Skip weigh-in prompts on first day (same as finishOnboarding)
+     localStorage.setItem('lastWeighInPromptDate', new Date().toDateString());
+     const weighInCard = document.getElementById('daily-weigh-in-card');
+     if (weighInCard) weighInCard.style.display = 'none';
 
      // Sync any collected data (including gender) to database before closing
      await syncQuizDataToDb();
+
+     // Mark onboarding complete in the database so it persists across devices
+     if (window.currentUser) {
+         try {
+             await dbHelpers.users.update(window.currentUser.id, { onboarding_complete: true });
+         } catch (e) {
+             console.warn('Failed to mark onboarding complete in database:', e);
+         }
+     }
 
      // Still apply gender-specific UI if they selected a gender
      if (typeof applyGenderSpecificUI === 'function') {
          applyGenderSpecificUI();
      }
 
+     // Show native permissions after a delay (same as finishOnboarding)
+     setTimeout(showNativePermissionsModal, 4000);
+
+     // Web (non-native): request notification permission
+     if (!(typeof isNativeApp === 'function' && isNativeApp())) {
+         setTimeout(() => {
+             if (typeof requestNotificationPermission === 'function') {
+                 requestNotificationPermission();
+             }
+         }, 4500);
+     }
 }
 
 function toggleWizardPeriodInput() {
