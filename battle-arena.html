@@ -3886,11 +3886,16 @@ function drawFurnitureItem(o) {
   const x = o.x, y = o.y, w = o.w, h = o.h;
   ctx.save();
 
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  // Neon Cyberpunk Outer Glow
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.shadowColor = '#00f2fe';
+  ctx.shadowBlur = 10;
   ctx.beginPath();
-  ctx.roundRect(x + 3, y + 3, w, h, 6);
+  ctx.roundRect(x + 2, y + 2, w, h, 6);
   ctx.fill();
+  
+  // Clear the shadow blur so the object itself doesn't glow internally
+  ctx.shadowBlur = 0;
 
   switch (o.label) {
 
