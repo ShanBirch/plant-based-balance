@@ -40336,7 +40336,7 @@ async function sendDMNotification(recipientId, messageText) {
         const profile = await window.getUserProfile();
         const senderName = profile?.name || 'Someone';
 
-        await fetch('/.netlify/functions/send-dm-notification', {
+        const resp = await fetch('/.netlify/functions/send-dm-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -40345,8 +40345,17 @@ async function sendDMNotification(recipientId, messageText) {
                 messageText: messageText
             })
         });
+
+        const result = await resp.json().catch(() => ({}));
+        console.log('[PushNotif] send-dm-notification response:', resp.status, result);
+
+        if (!resp.ok) {
+            console.error('[PushNotif] Server error:', result.error || resp.statusText);
+        } else if (result.sent === 0) {
+            console.warn('[PushNotif] No push subscriptions found for recipient', recipientId);
+        }
     } catch (error) {
-        console.error('Error sending DM notification:', error);
+        console.error('[PushNotif] Error sending DM notification:', error);
     }
 }
 

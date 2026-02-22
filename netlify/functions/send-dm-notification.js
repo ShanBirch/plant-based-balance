@@ -10,10 +10,27 @@ const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@plantbasedbalance.c
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hzapaorxqboevxnumxkv.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
-// FCM V1 config — service account JSON stored as an env var string
-const FIREBASE_SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-    : null;
+// FCM V1 config — supports both a single JSON env var (FIREBASE_SERVICE_ACCOUNT)
+// and individual env vars (FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, FIREBASE_PROJECT_ID)
+let FIREBASE_SERVICE_ACCOUNT = null;
+try {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        FIREBASE_SERVICE_ACCOUNT = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } else if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+        // Build service account object from individual env vars
+        FIREBASE_SERVICE_ACCOUNT = {
+            client_email: process.env.FIREBASE_CLIENT_EMAIL,
+            private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            project_id: process.env.FIREBASE_PROJECT_ID,
+        };
+        console.log('[FCM] Built service account from individual env vars (project:', process.env.FIREBASE_PROJECT_ID, ')');
+    }
+} catch (parseErr) {
+    console.error('[FCM] Error parsing Firebase config:', parseErr.message);
+}
+if (!FIREBASE_SERVICE_ACCOUNT) {
+    console.warn('[FCM] Firebase not configured — need FIREBASE_SERVICE_ACCOUNT or FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY + FIREBASE_PROJECT_ID');
+}
 
 /**
  * Get an OAuth2 access token for FCM V1 API using the service account JWT
@@ -168,9 +185,14 @@ exports.handler = async (event) => {
         console.log(`Found ${subscriptions.length} subscriptions for user ${recipientId}`);
 
         if (subscriptions.length === 0) {
+            console.log(`[DM-Notif] No push subscriptions in DB for user ${recipientId}. The user needs to open the app so their FCM token gets registered.`);
             return {
                 statusCode: 200,
-                body: JSON.stringify({ message: 'No subscriptions found for recipient', sent: 0 })
+                body: JSON.stringify({
+                    message: 'No subscriptions found for recipient — device not registered for push',
+                    sent: 0,
+                    hint: 'User must open app once after deploy to register FCM token'
+                })
             };
         }
 
