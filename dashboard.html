@@ -51332,8 +51332,7 @@ async function loadPointsWidget() {
     try {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) {
-            console.log('No user session, showing default points widget');
-            updatePointsDisplay({ current_points: 0, current_streak: 0 });
+            console.log('No user session, skipping points update to preserve cached level');
             return;
         }
 
@@ -51355,8 +51354,8 @@ async function loadPointsWidget() {
 
     } catch (error) {
         console.error('Error loading points widget:', error);
-        // Still show with defaults
-        updatePointsDisplay({ current_points: 0, current_streak: 0 });
+        // Don't call updatePointsDisplay with zeroed-out defaults here;
+        // it would reset level to 1 and overwrite the localStorage cache.
     }
 }
 
@@ -51374,40 +51373,47 @@ function updatePointsDisplay(pointsData) {
     // Calculate level from lifetime points
     const levelData = calculateLevel(lifetimePoints);
 
-    // Update level display
-    const levelEl = document.getElementById('level-current');
-    if (levelEl) {
-        levelEl.textContent = levelData.level;
-    }
+    // Only update level-related UI when we have real data.
+    // When lifetime_points is missing (0) but a cached level exists,
+    // skip overwriting to prevent resetting a high-level user to level 1.
+    const hasRealLevelData = lifetimePoints > 0 || !parseInt(localStorage.getItem('fitgotchi_level'));
 
-    // Update SVG level ring progress (circumference = 2 * PI * 45 ≈ 283)
-    const levelRingSvg = document.getElementById('level-ring-svg');
-    if (levelRingSvg) {
-        const circumference = 283;
-        const offset = circumference - (levelData.progress / 100) * circumference;
-        levelRingSvg.style.strokeDashoffset = offset;
-    }
+    if (hasRealLevelData) {
+        // Update level display
+        const levelEl = document.getElementById('level-current');
+        if (levelEl) {
+            levelEl.textContent = levelData.level;
+        }
 
-    // Update level title
-    const levelTitleEl = document.getElementById('level-title');
-    if (levelTitleEl) {
-        levelTitleEl.textContent = getLevelTitle(levelData.level);
-    }
+        // Update SVG level ring progress (circumference = 2 * PI * 45 ≈ 283)
+        const levelRingSvg = document.getElementById('level-ring-svg');
+        if (levelRingSvg) {
+            const circumference = 283;
+            const offset = circumference - (levelData.progress / 100) * circumference;
+            levelRingSvg.style.strokeDashoffset = offset;
+        }
 
-    // Update level progress bar
-    const levelProgressFill = document.getElementById('level-progress-fill');
-    if (levelProgressFill) {
-        levelProgressFill.style.width = `${levelData.progress}%`;
-    }
+        // Update level title
+        const levelTitleEl = document.getElementById('level-title');
+        if (levelTitleEl) {
+            levelTitleEl.textContent = getLevelTitle(levelData.level);
+        }
 
-    // Update level progress label
-    const levelProgressLabel = document.getElementById('level-progress-label');
-    if (levelProgressLabel) {
-        if (levelData.isMaxLevel) {
-            levelProgressLabel.textContent = 'MAX LEVEL - Legend!';
-        } else {
-            const xpToNext = levelData.pointsNeededForNext - levelData.pointsIntoLevel;
-            levelProgressLabel.textContent = `${xpToNext} XP to Level ${levelData.level + 1}`;
+        // Update level progress bar
+        const levelProgressFill = document.getElementById('level-progress-fill');
+        if (levelProgressFill) {
+            levelProgressFill.style.width = `${levelData.progress}%`;
+        }
+
+        // Update level progress label
+        const levelProgressLabel = document.getElementById('level-progress-label');
+        if (levelProgressLabel) {
+            if (levelData.isMaxLevel) {
+                levelProgressLabel.textContent = 'MAX LEVEL - Legend!';
+            } else {
+                const xpToNext = levelData.pointsNeededForNext - levelData.pointsIntoLevel;
+                levelProgressLabel.textContent = `${xpToNext} XP to Level ${levelData.level + 1}`;
+            }
         }
     }
 
@@ -63139,9 +63145,31 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         window.updateFitGotchi = async function(pointsData) {
+            // When called without arguments (e.g. from clearRareSkin), re-fetch points
+            if (!pointsData) {
+                try {
+                    const userId = window.currentUser?.id;
+                    if (userId && window.db?.points?.getPoints) {
+                        pointsData = await window.db.points.getPoints(userId);
+                    }
+                } catch(e) {}
+                if (!pointsData) return;
+            }
+
             const lifetimePoints = pointsData.lifetime_points || 0;
             const currentStreak = pointsData.current_streak || 0;
-            
+
+            // Guard: Don't overwrite valid cached level with default level 1.
+            // This prevents a race condition where loadPointsWidget fires before
+            // auth is ready, receives 0 lifetime_points, and resets a level 35
+            // user back to level 1 (including overwriting the localStorage cache).
+            if (lifetimePoints === 0) {
+                const cachedLevel = parseInt(localStorage.getItem('fitgotchi_level'));
+                if (cachedLevel > 1) {
+                    return;
+                }
+            }
+
             // Calculate actual level using app's logic
             let level = 1;
             while (level < 99) {
