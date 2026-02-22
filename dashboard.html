@@ -20177,9 +20177,10 @@ function viewWorkoutHistoryDetail(date) {
            <svg id="nav-cycle-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.22-7.52-3.22 3.22 7.52 3.22-7.52z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
            <span id="nav-cycle-label">Cycle</span>
         </button>
-        <button class="nav-item" onclick="switchAppTab('friends', this)">
+        <button class="nav-item" onclick="switchAppTab('friends', this)" style="position: relative;">
             <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>
             <span>Feed</span>
+            <div id="feed-nav-badge" style="display: none; position: absolute; top: 2px; right: calc(50% - 18px); width: 16px; height: 16px; background: #ef4444; color: white; font-size: 0.6rem; font-weight: 700; border-radius: 50%; align-items: center; justify-content: center;"></div>
         </button>
      </nav>
 
@@ -20200,7 +20201,7 @@ function viewWorkoutHistoryDetail(date) {
                 <!-- Message Inbox Icon (now holds Group Chats + Friends) -->
                 <div onclick="openFeedMessagesPanel()" style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
-                    <div id="message-inbox-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center;">0</div>
+                    <div id="message-inbox-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; border-radius: 50%; align-items: center; justify-content: center;"></div>
                 </div>
                 <!-- Add Friend Button -->
                 <div onclick="openAddFriendModal()" style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
@@ -41756,9 +41757,9 @@ window.appendCoachMessage = function(text) {
     // Mark as unread
     localStorage.setItem('coach_unread_messages', 'true');
 
-    // Notification Badge on App Icon
-    if ('setAppBadge' in navigator && document.visibilityState === 'hidden') {
-        navigator.setAppBadge(1).catch(e => console.error(e));
+    // Update message badges (inbox icon, nav button, app icon)
+    if (typeof updateMessageBadges === 'function') {
+        updateMessageBadges((window._unreadDMCount || 0) + 1);
     }
 };
 
@@ -41824,6 +41825,75 @@ window.showDMNotificationBanner = function showDMNotificationBanner(senderName, 
         }
     }, 5000);
 }
+
+/**
+ * Unread DM counter — tracks new messages while user is not viewing them.
+ * Persists across tab switches via localStorage.
+ */
+window._unreadDMCount = parseInt(localStorage.getItem('unread_dm_count') || '0', 10);
+
+function updateMessageBadges(count) {
+    window._unreadDMCount = count;
+    localStorage.setItem('unread_dm_count', String(count));
+
+    // Message inbox icon badge (Feed header)
+    var inboxBadge = document.getElementById('message-inbox-badge');
+    if (inboxBadge) {
+        if (count > 0) {
+            inboxBadge.textContent = count > 9 ? '9+' : String(count);
+            inboxBadge.style.display = 'flex';
+        } else {
+            inboxBadge.style.display = 'none';
+        }
+    }
+
+    // Feed nav button badge (bottom bar)
+    var navBadge = document.getElementById('feed-nav-badge');
+    if (navBadge) {
+        if (count > 0) {
+            navBadge.textContent = count > 9 ? '9+' : String(count);
+            navBadge.style.display = 'flex';
+        } else {
+            navBadge.style.display = 'none';
+        }
+    }
+
+    // App icon badge (native + PWA)
+    if (count > 0 && 'setAppBadge' in navigator) {
+        navigator.setAppBadge(count).catch(function(e) { console.error(e); });
+    } else if (count === 0) {
+        if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(function() {});
+        if ('setAppBadge' in navigator) navigator.setAppBadge(0).catch(function() {});
+    }
+}
+
+function clearMessageBadges() {
+    updateMessageBadges(0);
+}
+
+// Play a short notification chime for in-app DM alerts
+function playNotificationSound() {
+    try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);       // A5
+        osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.08); // ~C#6
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.25);
+    } catch (e) { /* audio not available */ }
+}
+
+// Restore badge state on load
+(function() {
+    var stored = parseInt(localStorage.getItem('unread_dm_count') || '0', 10);
+    if (stored > 0) updateMessageBadges(stored);
+})();
 
 /**
  * Subscribe to Supabase Realtime for new DMs (nudges) to this user
@@ -41903,10 +41973,11 @@ window.subscribeToCoachMessages = function(userId) {
                     // Show the in-app notification banner
                     showDMNotificationBanner(senderName, senderPhoto, newMessage.message, newMessage.sender_id);
 
-                    // Set app badge
-                    if ('setAppBadge' in navigator) {
-                        navigator.setAppBadge(1).catch(function(e) { console.error(e); });
-                    }
+                    // Play notification sound
+                    playNotificationSound();
+
+                    // Update unread badges (inbox icon, nav button, app icon)
+                    updateMessageBadges((window._unreadDMCount || 0) + 1);
                 }
 
                 console.log('Realtime: New DM received from', newMessage.sender_id);
@@ -41926,13 +41997,8 @@ window.openCoachChat = function() {
     // Clear unread flag
     localStorage.removeItem('coach_unread_messages');
 
-    // Clear Badge
-    if ('clearAppBadge' in navigator) {
-        navigator.clearAppBadge().catch(e => console.error(e));
-    }
-    if ('setAppBadge' in navigator) {
-        navigator.setAppBadge(0).catch(e => console.error(e));
-    }
+    // Clear all message badges
+    clearMessageBadges();
 };
 
 // Helper to save AI community messages to DB and Local Cache
@@ -45015,6 +45081,9 @@ let currentDMRecipient = null;
 function openDirectMessage(userId, userName, userPhoto) {
     currentDMRecipient = { id: userId, name: userName, photo: userPhoto };
 
+    // Clear message badges when opening a conversation
+    clearMessageBadges();
+
     const modal = document.getElementById('direct-message-modal');
     const nameEl = document.getElementById('dm-recipient-name');
     const photoEl = document.getElementById('dm-recipient-photo');
@@ -45253,6 +45322,8 @@ function openFeedMessagesPanel() {
         loadPanelGroupChats();
         loadPanelFriends();
     }
+    // Clear message badges when opening messages
+    clearMessageBadges();
 }
 
 // Close the Messages panel
