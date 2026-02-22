@@ -58903,7 +58903,7 @@ async function loadMovementWeeklyMetrics() {
         const [workoutsResult, activitiesResult] = await Promise.allSettled([
             window.supabaseClient
                 .from('workouts')
-                .select('workout_date, exercise_name, set_number, reps, weight_kg, time_duration, created_at')
+                .select('workout_date, exercise_name, set_number, reps, weight_kg, created_at')
                 .eq('user_id', userId)
                 .eq('workout_type', 'history')
                 .gte('workout_date', startDate)
@@ -59038,7 +59038,7 @@ async function loadMovementMultiWeekData(numWeeks) {
         const [workoutsResult, activitiesResult] = await Promise.allSettled([
             window.supabaseClient
                 .from('workouts')
-                .select('workout_date, exercise_name, set_number, reps, weight_kg, time_duration, created_at')
+                .select('workout_date, exercise_name, set_number, reps, weight_kg, created_at')
                 .eq('user_id', userId)
                 .eq('workout_type', 'history')
                 .gte('workout_date', startDateStr)
