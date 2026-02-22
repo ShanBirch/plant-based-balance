@@ -9642,6 +9642,19 @@ async function applyAppTheme(themeKey) {
             if (wsPause) wsPause.style.display = data.playing ? 'block' : 'none';
         }
 
+        // Check if any calorie tracker / meal flow modal is active
+        // Exposed globally so other script blocks can use it
+        window.isMealFlowActive = function() {
+            const camModal = document.getElementById('unified-camera-modal');
+            if (camModal && camModal.style.display !== 'none' && camModal.style.display !== '') return true;
+            const previewModal = document.getElementById('meal-preview-modal');
+            if (previewModal && previewModal.style.display !== 'none' && previewModal.style.display !== '') return true;
+            const inputModal = document.getElementById('meal-input-modal');
+            if (inputModal && inputModal.classList.contains('visible')) return true;
+            return false;
+        };
+        var isMealFlowActive = window.isMealFlowActive;
+
         function updatePlayerUI(data) {
             const widget = document.getElementById('spotify-now-playing');
             if (!widget) return;
@@ -9661,9 +9674,8 @@ async function applyAppTheme(themeKey) {
             window._snpTrackUrl     = track.spotify_url || null;
             window._snpCurrentTrack = track;
 
-            // Show mini widget (but not while camera modal is open)
-            const camModal = document.getElementById('unified-camera-modal');
-            if (camModal && camModal.style.display !== 'none' && camModal.style.display !== '') {
+            // Show mini widget (but not while any calorie tracker modal is open)
+            if (isMealFlowActive()) {
                 widget.style.display = 'none';
             } else {
                 widget.style.display = 'block';
@@ -54636,6 +54648,10 @@ function openMealInputModal(source) {
     // Update submit button state
     updateSubmitButtonState();
 
+    // Hide Spotify mini player during meal flow
+    const spotifyMini = document.getElementById('spotify-now-playing');
+    if (spotifyMini) spotifyMini.style.display = 'none';
+
     // Show modal
     if (modal) modal.classList.add('visible');
 }
@@ -54649,6 +54665,12 @@ function closeMealInputModal() {
     if (isRecordingVoice && speechRecognition) {
         speechRecognition.stop();
         isRecordingVoice = false;
+    }
+
+    // Restore Spotify mini player if music is playing and no other meal flow is active
+    if (window._snpPlaying && !isMealFlowActive()) {
+        const spotifyMini = document.getElementById('spotify-now-playing');
+        if (spotifyMini) spotifyMini.style.display = 'block';
     }
 }
 
@@ -56034,6 +56056,10 @@ function showMealPhotoPreview(dataUrl) {
         btn.classList.toggle('active', btn.dataset.type === selectedMealType);
     });
 
+    // Hide Spotify mini player during meal flow
+    const spotifyMini = document.getElementById('spotify-now-playing');
+    if (spotifyMini) spotifyMini.style.display = 'none';
+
     // Show modal with preview
     previewPhoto.src = dataUrl;
     previewModal.style.display = 'flex';
@@ -56051,6 +56077,12 @@ function closeMealPreviewModal() {
     if (descInput) descInput.value = '';
 
     capturedMealFile = null;
+
+    // Restore Spotify mini player if music is playing and no other meal flow is active
+    if (window._snpPlaying && !isMealFlowActive()) {
+        const spotifyMini = document.getElementById('spotify-now-playing');
+        if (spotifyMini) spotifyMini.style.display = 'block';
+    }
 }
 
 // Retake meal photo from preview
@@ -60679,8 +60711,8 @@ function closeUnifiedCamera() {
     const video = document.getElementById('unified-camera-video');
     if (video) video.style.opacity = '0';
 
-    // Restore Spotify mini player if music is playing
-    if (window._snpPlaying) {
+    // Restore Spotify mini player if music is playing and no other meal flow is active
+    if (window._snpPlaying && !isMealFlowActive()) {
         const spotifyMini = document.getElementById('spotify-now-playing');
         if (spotifyMini) spotifyMini.style.display = 'block';
     }
