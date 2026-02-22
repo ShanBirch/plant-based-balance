@@ -93,11 +93,13 @@ async function sendNativePush(token, payload) {
     }
 
     try {
+        console.log('[NativePush] Attempting FCM send to token:', token.substring(0, 20) + '...');
         const accessToken = await getFCMAccessToken();
         if (!accessToken) {
-            console.error('[NativePush] Failed to get FCM access token');
+            console.error('[NativePush] Failed to get FCM access token — check FIREBASE_SERVICE_ACCOUNT env var');
             return false;
         }
+        console.log('[NativePush] Got FCM access token OK');
 
         const projectId = FIREBASE_SERVICE_ACCOUNT.project_id;
         // FCM V1 requires all data values to be strings
@@ -105,9 +107,10 @@ async function sendNativePush(token, payload) {
             Object.entries(payload.data || {}).map(([k, v]) => [k, String(v)])
         );
 
-        const response = await fetch(
-            `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
-            {
+        const fcmUrl = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
+        console.log('[NativePush] Sending to:', fcmUrl);
+
+        const response = await fetch(fcmUrl, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -137,13 +140,15 @@ async function sendNativePush(token, payload) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('[NativePush] FCM V1 error:', errorText);
+            console.error('[NativePush] FCM V1 error (status ' + response.status + '):', errorText);
             return false;
         }
 
+        const responseBody = await response.json();
+        console.log('[NativePush] FCM V1 success:', JSON.stringify(responseBody));
         return true;
     } catch (err) {
-        console.error('[NativePush] FCM send failed:', err.message);
+        console.error('[NativePush] FCM send failed:', err.message, err.stack);
         return false;
     }
 }
@@ -235,6 +240,12 @@ exports.handler = async (event) => {
 
             const users = await usersResponse.json();
             console.log(`Found ${users.length} users needing ${mealType} reminders`);
+            // Log subscription types for debugging
+            users.forEach((u, i) => {
+                const isNative = u.push_endpoint && u.push_endpoint.startsWith('native://');
+                console.log(`  [${i}] user=${u.user_id?.substring(0, 8)}... type=${isNative ? 'NATIVE/FCM' : 'WEB_PUSH'} endpoint=${(u.push_endpoint || 'null').substring(0, 40)}...`);
+            });
+            console.log('[FCM Config] Firebase configured:', !!FIREBASE_SERVICE_ACCOUNT, 'project:', FIREBASE_SERVICE_ACCOUNT?.project_id || 'N/A');
 
             if (users.length === 0) {
                 mealResults[mealType] = { sent: 0, failed: 0 };
