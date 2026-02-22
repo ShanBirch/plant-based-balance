@@ -32804,26 +32804,37 @@ function setupWorkoutInputListeners() {
 
 // Retry save with exponential backoff
 async function saveWorkoutWithRetry(setsToSave, userId, maxRetries = 3) {
+    let remaining = [...setsToSave];
     let lastError = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-            await Promise.all(setsToSave.map(s => dbHelpers.workouts.createHistory(userId, s)));
-            return true; // Success
-        } catch (e) {
-            lastError = e;
-            console.error(`Save attempt ${attempt + 1} failed:`, e);
+        const results = await Promise.allSettled(
+            remaining.map(s => dbHelpers.workouts.createHistory(userId, s))
+        );
 
-            if (attempt < maxRetries) {
-                // Exponential backoff: 1s, 2s, 4s
-                const delay = Math.pow(2, attempt) * 1000;
-                console.log(`Retrying in ${delay/1000}s...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
+        // Only keep the sets that failed
+        const failed = [];
+        results.forEach((result, idx) => {
+            if (result.status === 'rejected') {
+                failed.push(remaining[idx]);
+                lastError = result.reason;
             }
+        });
+
+        if (failed.length === 0) return true; // All succeeded
+
+        remaining = failed;
+        console.error(`Save attempt ${attempt + 1}: ${failed.length}/${remaining.length + (results.length - failed.length)} sets failed`, lastError);
+
+        if (attempt < maxRetries) {
+            // Exponential backoff: 1s, 2s, 4s
+            const delay = Math.pow(2, attempt) * 1000;
+            console.log(`Retrying ${remaining.length} failed sets in ${delay/1000}s...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
 
-    throw lastError; // All retries failed
+    throw lastError || new Error('Failed to save ' + remaining.length + ' sets');
 }
 
 // Check for unsaved workout on page load
@@ -58927,7 +58938,7 @@ async function loadMovementWeeklyMetrics() {
             if (a.activity_date) allActiveDates.add(a.activity_date);
         });
 
-        const totalSessions = workoutDates.size + activities.length;
+        const totalSessions = workoutDates.size;
         const totalExercises = exerciseNames.size;
         const activeDays = allActiveDates.size;
 
