@@ -9820,8 +9820,9 @@ async function applyAppTheme(themeKey) {
     </script>
 
     <script>
-    // ===== WEATHER AUTO-FETCH + DISPLAY =====
-    // Fetches today's weather via Open-Meteo (no API key), stores in weather_logs, and renders the card.
+    // ===== WEATHER BACKGROUND DATA COLLECTION =====
+    // Fetches today's weather via Open-Meteo (no API key) and stores in weather_logs for analytics.
+    // No UI card — data is used for correlating mood, sleep, workouts, and energy with weather.
     (function() {
         const WMO_LABELS = {
             0:'Clear sky', 1:'Mainly clear', 2:'Partly cloudy', 3:'Overcast',
@@ -9832,69 +9833,10 @@ async function applyAppTheme(themeKey) {
             95:'Thunderstorm', 96:'Thunderstorm+hail', 99:'Thunderstorm+heavy hail',
         };
 
-        const WMO_ICONS = {
-            0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
-            45:'🌫️', 48:'🌫️',
-            51:'🌦️', 53:'🌧️', 55:'🌧️',
-            61:'🌧️', 63:'🌧️', 65:'🌧️',
-            71:'❄️', 73:'❄️', 75:'❄️', 77:'🌨️',
-            80:'🌦️', 81:'🌧️', 82:'⛈️',
-            85:'🌨️', 86:'🌨️',
-            95:'⛈️', 96:'⛈️', 99:'⛈️',
-        };
-
-        function updateWeatherUI(row) {
-            const loading = document.getElementById('weather-card-loading');
-            const prompt  = document.getElementById('weather-card-prompt');
-            const loaded  = document.getElementById('weather-card-loaded');
-            if (!loaded) return;
-
-            if (loading) loading.style.display = 'none';
-            if (prompt)  prompt.style.display  = 'none';
-            loaded.style.display = 'block';
-
-            const code = row.weather_code;
-            const icon = WMO_ICONS[code] || '🌤️';
-
-            const iconEl   = document.getElementById('weather-icon-main');
-            const condEl   = document.getElementById('weather-condition-label');
-            const tempEl   = document.getElementById('weather-temp');
-            const feelsEl  = document.getElementById('weather-feels-like');
-            const humEl    = document.getElementById('weather-humidity');
-            const windEl   = document.getElementById('weather-wind');
-            const uvEl     = document.getElementById('weather-uv');
-
-            if (iconEl)  iconEl.textContent  = icon;
-            if (condEl)  condEl.textContent  = row.condition || 'Today\'s Weather';
-            if (tempEl)  tempEl.textContent  = (row.temp_c != null ? Math.round(row.temp_c) + '°C' : '--°');
-            if (feelsEl) feelsEl.textContent = 'Feels like ' + (row.feels_like_c != null ? Math.round(row.feels_like_c) + '°C' : '--°');
-            if (humEl)   humEl.textContent   = (row.humidity_pct != null ? row.humidity_pct + '%' : '--');
-            if (windEl)  windEl.textContent  = (row.wind_speed_kmh != null ? Math.round(row.wind_speed_kmh) : '--');
-            if (uvEl)    uvEl.textContent    = (row.uv_index != null ? parseFloat(row.uv_index).toFixed(1) : '--');
-        }
-        window.updateWeatherUI = updateWeatherUI;
-
-        function showWeatherPrompt(permissionDenied) {
-            const loading = document.getElementById('weather-card-loading');
-            const prompt  = document.getElementById('weather-card-prompt');
-            if (loading) loading.style.display = 'none';
-            if (prompt)  prompt.style.display  = 'flex';
-
-            const subtitle = document.getElementById('weather-prompt-subtitle');
-            const btn      = document.getElementById('weather-prompt-btn');
-            if (permissionDenied) {
-                if (subtitle) subtitle.textContent = 'Location blocked — enable in browser/device settings, then retry';
-                if (btn) btn.textContent = 'Retry';
-            } else {
-                if (subtitle) subtitle.textContent = 'Allow location for local weather';
-                if (btn) btn.textContent = 'Enable';
-            }
-        }
-
         async function fetchAndStoreWeather() {
-            if (!window.currentUser) { showWeatherPrompt(); return; }
+            if (!window.currentUser) return;
             if (sessionStorage.getItem('weather_fetched')) return;
-            if (!navigator.geolocation) { showWeatherPrompt(); return; }
+            if (!navigator.geolocation) return;
 
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 try {
@@ -9930,45 +9872,17 @@ async function applyAppTheme(themeKey) {
                         fetched_at:       new Date().toISOString(),
                     };
 
-                    // Update UI immediately so card shows weather even if DB save fails
-                    updateWeatherUI(row);
                     sessionStorage.setItem('weather_fetched', '1');
-
                     await supabaseClient.from('weather_logs').upsert(row, { onConflict: 'user_id,log_date' });
                 } catch (err) {
                     console.warn('Weather fetch error:', err);
                 }
-            }, (err) => { showWeatherPrompt(err && err.code === 1); }, { timeout: 8000, maximumAge: 3600000 });
+            }, () => {}, { timeout: 8000, maximumAge: 3600000 });
         }
 
-        // Load today's stored weather from DB (runs immediately after user is ready)
-        async function loadWeatherFromDB() {
-            if (!window.currentUser) return;
-            const today = new Date().toISOString().split('T')[0];
-            try {
-                const { data, error } = await supabaseClient
-                    .from('weather_logs')
-                    .select('*')
-                    .eq('user_id', window.currentUser.id)
-                    .eq('log_date', today)
-                    .maybeSingle();
-                if (data && !error) {
-                    updateWeatherUI(data);
-                    sessionStorage.setItem('weather_fetched', '1');
-                }
-            } catch (err) {
-                console.warn('Weather DB load error:', err);
-            }
-        }
-        window.loadWeatherFromDB = loadWeatherFromDB;
-
-        // Allow the "Enable" button to re-trigger geolocation
+        // Allow permissions modal to re-trigger weather fetch after location is granted
         window.requestWeatherLocation = function() {
             sessionStorage.removeItem('weather_fetched');
-            const prompt  = document.getElementById('weather-card-prompt');
-            const loading = document.getElementById('weather-card-loading');
-            if (prompt)  prompt.style.display  = 'none';
-            if (loading) loading.style.display = 'flex';
             fetchAndStoreWeather();
         };
 
@@ -9980,7 +9894,6 @@ async function applyAppTheme(themeKey) {
         setTimeout(function() {
             if (typeof isNativeApp === 'function' && isNativeApp() &&
                 !localStorage.getItem('native_permissions_requested')) {
-                // Permissions modal will handle weather fetch after it closes
                 return;
             }
             fetchAndStoreWeather();
@@ -10015,7 +9928,6 @@ async function applyAppTheme(themeKey) {
         if (typeof initOuraDashboard === 'function') initOuraDashboard();
         if (typeof initStravaDashboard === 'function') initStravaDashboard();
         if (typeof initSpotifyDashboard === 'function') initSpotifyDashboard();
-        if (typeof window.loadWeatherFromDB === 'function') window.loadWeatherFromDB();
     }
 
     // Call after user is loaded (piggyback on Fitbit init timing)
@@ -11586,60 +11498,6 @@ async function applyAppTheme(themeKey) {
             <div id="strava-last-sync" style="text-align: right; font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; padding-right: 4px;"></div>
         </div>
 
-        <!-- Weather Card -->
-        <div id="weather-dashboard-card" style="margin: 20px 0 15px 0;">
-            <!-- Loading state (shown by default) -->
-            <div id="weather-card-loading" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); border-radius: 20px; padding: 20px 18px; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(14,165,233,0.25);">
-                <div style="font-size: 1.3rem;">🌤️</div>
-                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.8);">Fetching weather...</div>
-            </div>
-            <!-- Location permission prompt (shown if geolocation denied) -->
-            <div id="weather-card-prompt" style="display: none; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 20px; padding: 16px 18px; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                    <div style="width: 34px; height: 34px; flex-shrink: 0; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">🌤️</div>
-                    <div>
-                        <div style="font-size: 0.88rem; font-weight: 700; color: white; margin-bottom: 2px;">Today's Weather</div>
-                        <div id="weather-prompt-subtitle" style="font-size: 0.75rem; color: rgba(255,255,255,0.55);">Allow location for local weather</div>
-                    </div>
-                </div>
-                <button id="weather-prompt-btn" onclick="requestWeatherLocation()" style="flex-shrink: 0; background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap;">Enable</button>
-            </div>
-            <!-- Loaded state -->
-            <div id="weather-card-loaded" style="display: none; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(14,165,233,0.25);">
-                <!-- Header: icon + condition + temp -->
-                <div style="padding: 16px 18px 0; display: flex; align-items: center; justify-content: space-between;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;" id="weather-icon-main">🌤️</div>
-                        <div>
-                            <div style="font-weight: 700; font-size: 0.95rem; color: white;" id="weather-condition-label">Today's Weather</div>
-                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.7);">Local conditions</div>
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div id="weather-temp" style="font-size: 2.2rem; font-weight: 800; color: white; line-height: 1;">--°</div>
-                        <div id="weather-feels-like" style="font-size: 0.7rem; color: rgba(255,255,255,0.7); white-space: nowrap;">Feels like --°</div>
-                    </div>
-                </div>
-                <!-- Stats row -->
-                <div style="padding: 12px 18px 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px;">
-                    <div style="text-align: center; padding: 10px 4px; background: rgba(255,255,255,0.15); border-radius: 13px;">
-                        <div style="font-size: 1.2rem; margin-bottom: 2px;">💧</div>
-                        <div id="weather-humidity" style="font-size: 1.1rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
-                        <div style="font-size: 0.62rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Humidity</div>
-                    </div>
-                    <div style="text-align: center; padding: 10px 4px; background: rgba(255,255,255,0.15); border-radius: 13px;">
-                        <div style="font-size: 1.2rem; margin-bottom: 2px;">💨</div>
-                        <div id="weather-wind" style="font-size: 1.1rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
-                        <div style="font-size: 0.62rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Wind km/h</div>
-                    </div>
-                    <div style="text-align: center; padding: 10px 4px; background: rgba(255,255,255,0.15); border-radius: 13px;">
-                        <div style="font-size: 1.2rem; margin-bottom: 2px;">🔆</div>
-                        <div id="weather-uv" style="font-size: 1.1rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
-                        <div style="font-size: 0.62rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">UV Index</div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Live Challenges Section -->
         <div style="margin: 20px 0 15px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-green); padding-bottom: 8px;">
