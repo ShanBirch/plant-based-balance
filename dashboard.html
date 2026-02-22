@@ -41930,8 +41930,11 @@ window.subscribeToCoachMessages = function(userId) {
                 const modal = document.getElementById('coach-chat-modal');
                 const isCoachChatOpen = modal && modal.style.display === 'flex';
 
-                // Check if the DM modal is open for this sender
-                const isDMOpenForSender = typeof currentDMRecipient !== 'undefined'
+                // Check if the DM modal is open AND visible for this sender
+                const dmModal = document.getElementById('direct-message-modal');
+                const isDMModalVisible = dmModal && (dmModal.style.display === 'flex' || dmModal.style.display === 'block');
+                const isDMOpenForSender = isDMModalVisible
+                    && typeof currentDMRecipient !== 'undefined'
                     && currentDMRecipient
                     && currentDMRecipient.id === newMessage.sender_id;
 
@@ -41989,7 +41992,98 @@ window.subscribeToCoachMessages = function(userId) {
 
     // Store channel reference for cleanup
     window._coachMessagesChannel = channel;
+
+    // Start polling fallback in case Realtime publication is not enabled for nudges
+    startDMPolling(userId);
 };
+
+/**
+ * Polling fallback for DM notifications.
+ * Checks for new messages every 15 seconds. This ensures notifications
+ * work even if the nudges table is not in the supabase_realtime publication.
+ * Once Realtime is working, both systems coexist safely because
+ * _shownMessageIds prevents duplicate notifications.
+ */
+function startDMPolling(userId) {
+    if (window._dmPollingInterval) clearInterval(window._dmPollingInterval);
+    if (!userId || !window.supabaseClient) return;
+
+    // Track the latest message timestamp we've seen
+    window._lastDMPollTime = window._lastDMPollTime || new Date().toISOString();
+
+    window._dmPollingInterval = setInterval(async () => {
+        try {
+            const { data: newMessages, error } = await window.supabaseClient
+                .from('nudges')
+                .select('id, sender_id, receiver_id, message, created_at')
+                .eq('receiver_id', userId)
+                .neq('sender_id', userId)
+                .gt('created_at', window._lastDMPollTime)
+                .order('created_at', { ascending: true })
+                .limit(10);
+
+            if (error || !newMessages || newMessages.length === 0) return;
+
+            // Update the poll timestamp to the latest message
+            window._lastDMPollTime = newMessages[newMessages.length - 1].created_at;
+
+            // Ensure dedup set exists
+            window._shownMessageIds = window._shownMessageIds || new Set();
+
+            for (const msg of newMessages) {
+                // Skip if already shown by Realtime
+                if (window._shownMessageIds.has(msg.id)) continue;
+                window._shownMessageIds.add(msg.id);
+
+                // Check if user is currently viewing this conversation
+                const dmModal = document.getElementById('direct-message-modal');
+                const isDMModalVisible = dmModal && (dmModal.style.display === 'flex' || dmModal.style.display === 'block');
+                const isDMOpenForSender = isDMModalVisible
+                    && typeof currentDMRecipient !== 'undefined'
+                    && currentDMRecipient
+                    && currentDMRecipient.id === msg.sender_id;
+
+                const coachId = window._coachUserId;
+                const coachModal = document.getElementById('coach-chat-modal');
+                const isCoachChatOpen = coachModal && coachModal.style.display === 'flex';
+
+                if (coachId && msg.sender_id === coachId && isCoachChatOpen) {
+                    appendCoachMessage(msg.message);
+                } else if (isDMOpenForSender) {
+                    loadDirectMessages(currentDMRecipient.id);
+                } else {
+                    // Show notification
+                    let senderName = 'New Message';
+                    let senderPhoto = '';
+
+                    if (coachId && msg.sender_id === coachId) {
+                        senderName = 'Coach Shannon';
+                        senderPhoto = 'assets/coach_shannon.jpg';
+                        localStorage.setItem('coach_unread_messages', 'true');
+                    } else {
+                        try {
+                            const { data: senderData } = await window.supabaseClient
+                                .from('users')
+                                .select('name, profile_photo')
+                                .eq('id', msg.sender_id)
+                                .maybeSingle();
+                            if (senderData) {
+                                senderName = senderData.name || 'Someone';
+                                senderPhoto = senderData.profile_photo || '';
+                            }
+                        } catch (e) { /* ignore */ }
+                    }
+
+                    showDMNotificationBanner(senderName, senderPhoto, msg.message, msg.sender_id);
+                    playNotificationSound();
+                    updateMessageBadges((window._unreadDMCount || 0) + 1);
+                }
+            }
+        } catch (e) {
+            console.warn('[DMPoll] Error:', e);
+        }
+    }, 15000); // Poll every 15 seconds
+}
 
 window.openCoachChat = function() {
     openCoachChatModal();
