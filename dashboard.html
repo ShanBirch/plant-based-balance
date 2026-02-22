@@ -42071,8 +42071,13 @@ window.subscribeToCoachMessages = function(userId) {
             }
         )
         .subscribe((status) => {
-            console.log('Realtime DM subscription status:', status);
+            console.log('[DM-Realtime] Subscription status:', status, 'for user:', userId);
+            if (status === 'CHANNEL_ERROR') {
+                console.warn('[DM-Realtime] Channel error — nudges table may not be in supabase_realtime publication. Relying on polling fallback.');
+            }
         });
+
+    console.log('[DM-Realtime] Subscribed to nudges changes + started 15s polling fallback for user:', userId);
 
     // Store channel reference for cleanup
     window._coachMessagesChannel = channel;
@@ -42090,10 +42095,14 @@ window.subscribeToCoachMessages = function(userId) {
  */
 function startDMPolling(userId) {
     if (window._dmPollingInterval) clearInterval(window._dmPollingInterval);
-    if (!userId || !window.supabaseClient) return;
+    if (!userId || !window.supabaseClient) {
+        console.warn('[DMPoll] Cannot start polling — userId:', userId, 'supabaseClient:', !!window.supabaseClient);
+        return;
+    }
 
     // Track the latest message timestamp we've seen
     window._lastDMPollTime = window._lastDMPollTime || new Date().toISOString();
+    console.log('[DMPoll] Starting 15s polling for user:', userId, 'from:', window._lastDMPollTime);
 
     window._dmPollingInterval = setInterval(async () => {
         try {
@@ -42106,7 +42115,13 @@ function startDMPolling(userId) {
                 .order('created_at', { ascending: true })
                 .limit(10);
 
-            if (error || !newMessages || newMessages.length === 0) return;
+            if (error) {
+                console.warn('[DMPoll] Query error:', error.message);
+                return;
+            }
+            if (!newMessages || newMessages.length === 0) return;
+
+            console.log('[DMPoll] Found', newMessages.length, 'new message(s)');
 
             // Update the poll timestamp to the latest message
             window._lastDMPollTime = newMessages[newMessages.length - 1].created_at;
@@ -42167,7 +42182,7 @@ function startDMPolling(userId) {
         } catch (e) {
             console.warn('[DMPoll] Error:', e);
         }
-    }, 15000); // Poll every 15 seconds
+    }, 5000); // Poll every 5 seconds for responsive notifications
 }
 
 window.openCoachChat = function() {
