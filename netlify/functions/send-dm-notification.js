@@ -11,9 +11,17 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL |
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
 // FCM V1 config — service account JSON stored as an env var string
-const FIREBASE_SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-    : null;
+let FIREBASE_SERVICE_ACCOUNT = null;
+try {
+    FIREBASE_SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT
+        ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+        : null;
+} catch (parseErr) {
+    console.error('[FCM] FIREBASE_SERVICE_ACCOUNT env var is invalid JSON:', parseErr.message);
+}
+if (!FIREBASE_SERVICE_ACCOUNT) {
+    console.warn('[FCM] FIREBASE_SERVICE_ACCOUNT not configured — native Android push notifications will not be sent');
+}
 
 /**
  * Get an OAuth2 access token for FCM V1 API using the service account JWT
@@ -168,9 +176,14 @@ exports.handler = async (event) => {
         console.log(`Found ${subscriptions.length} subscriptions for user ${recipientId}`);
 
         if (subscriptions.length === 0) {
+            console.log(`[DM-Notif] No push subscriptions in DB for user ${recipientId}. The user needs to open the app so their FCM token gets registered.`);
             return {
                 statusCode: 200,
-                body: JSON.stringify({ message: 'No subscriptions found for recipient', sent: 0 })
+                body: JSON.stringify({
+                    message: 'No subscriptions found for recipient — device not registered for push',
+                    sent: 0,
+                    hint: 'User must open app once after deploy to register FCM token'
+                })
             };
         }
 

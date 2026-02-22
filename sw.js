@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v19'; // v19: FCM token fix, push notification logging, admin push support, DB trigger
+const CACHE_NAME = 'pbb-app-v20'; // v20: FCM registration fix (listeners before register), improved logging
 const MODEL_CACHE_NAME = 'pbb-models-v2'; // v2: pre-cache critical onboarding models for fast startup
 const ASSETS = [
   './dashboard.html',

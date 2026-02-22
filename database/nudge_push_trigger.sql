@@ -17,6 +17,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     sender_name TEXT;
     site_url TEXT := 'https://plantbased-balance.org';
+    request_id BIGINT;
 BEGIN
     -- Look up sender name
     SELECT COALESCE(u.name, u.email, 'Someone')
@@ -25,18 +26,16 @@ BEGIN
     WHERE u.id = NEW.sender_id
     LIMIT 1;
 
-    -- Call the Netlify function to send push notification
-    PERFORM extensions.http_post(
+    -- Call the Netlify function via pg_net to send push notification
+    SELECT net.http_post(
         url := site_url || '/.netlify/functions/send-dm-notification',
         body := json_build_object(
-            'recipientId', NEW.receiver_id,
+            'recipientId', NEW.receiver_id::text,
             'senderName', COALESCE(sender_name, 'Someone'),
             'messageText', LEFT(NEW.message, 200)
-        )::text,
-        headers := json_build_object(
-            'Content-Type', 'application/json'
-        )::jsonb
-    );
+        )::jsonb,
+        headers := '{"Content-Type": "application/json"}'::jsonb
+    ) INTO request_id;
 
     RETURN NEW;
 EXCEPTION
