@@ -3886,16 +3886,11 @@ function drawFurnitureItem(o) {
   const x = o.x, y = o.y, w = o.w, h = o.h;
   ctx.save();
 
-  // Neon Cyberpunk Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.7)';
-  ctx.shadowColor = '#00f2fe';
-  ctx.shadowBlur = 15;
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
   ctx.beginPath();
-  ctx.roundRect(x + 2, y + 2, w, h, 6);
+  ctx.roundRect(x + 3, y + 3, w, h, 6);
   ctx.fill();
-  
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
 
   switch (o.label) {
 
