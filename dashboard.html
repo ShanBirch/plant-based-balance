@@ -9523,63 +9523,7 @@ async function applyAppTheme(themeKey) {
     })();
     </script>
 
-    <!-- ===== SPOTIFY NOW PLAYING MINI PLAYER ===== -->
-    <div id="spotify-now-playing" style="
-        display: none;
-        position: fixed;
-        bottom: 72px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: calc(100% - 32px);
-        max-width: 420px;
-        background: rgba(18, 18, 18, 0.96);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-        border: 1px solid rgba(255,255,255,0.08);
-        padding: 12px 14px;
-        z-index: 100001;
-        color: white;
-        font-family: inherit;
-    ">
-        <!-- Clickable left area opens Spotify -->
-        <div style="display:flex; align-items:center; gap:12px;">
-            <div onclick="openInSpotify()" style="display:flex; align-items:center; gap:12px; flex:1; min-width:0; cursor:pointer;">
-                <!-- Album art -->
-                <div style="position:relative; flex-shrink:0;">
-                    <img id="snp-art" src="" alt="" style="width:48px; height:48px; border-radius:8px; object-fit:cover; background:#333;" onerror="this.style.display='none'">
-                    <div id="snp-art-placeholder" style="display:none; width:48px; height:48px; border-radius:8px; background:#1DB954; align-items:center; justify-content:center;">
-                        <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:white;"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-                    </div>
-                </div>
-                <!-- Track info + Spotify link hint -->
-                <div style="flex:1; min-width:0;">
-                    <div id="snp-track" style="font-weight:600; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
-                    <div id="snp-artist" style="font-size:0.75rem; color:rgba(255,255,255,0.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;"></div>
-                </div>
-                <!-- External link icon -->
-                <svg viewBox="0 0 24 24" style="width:15px; height:15px; fill:rgba(255,255,255,0.35); flex-shrink:0; margin-right:4px;"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
-            </div>
-            <!-- Controls (separate — don't open full player) -->
-            <div style="display:flex; align-items:center; gap:2px; flex-shrink:0;">
-                <button id="snp-prev" onclick="spotifyPlayerControl('previous')" title="Previous" style="background:none; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.8;">
-                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
-                </button>
-                <button id="snp-playpause" onclick="spotifyPlayerControl(window._snpPlaying ? 'pause' : 'play')" title="Play/Pause" style="background:#1DB954; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                    <svg id="snp-play-icon" viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>
-                    <svg id="snp-pause-icon" viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor; display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                </button>
-                <button id="snp-next" onclick="spotifyPlayerControl('next')" title="Next" style="background:none; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.8;">
-                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M6 18l8.5-6L6 6v12zm2-8.14 4.97 3.14L8 16.14V9.86zM16 6h2v12h-2z"/></svg>
-                </button>
-            </div>
-        </div>
-        <!-- Progress bar -->
-        <div style="margin-top:10px; background:rgba(255,255,255,0.15); border-radius:2px; height:3px; overflow:hidden;">
-            <div id="snp-progress" style="height:100%; background:#1DB954; width:0%; transition:width 1s linear; border-radius:2px;"></div>
-        </div>
-    </div>
+    <!-- Spotify mini player moved to global scope (before bottom-nav) for cross-tab visibility -->
 
     <!-- ===== SPOTIFY FULL PLAYER OVERLAY (removed — tap bar opens Spotify app) ===== -->
     <div id="spotify-full-player" style="display:none;"><!-- removed -->
@@ -20029,6 +19973,64 @@ function viewWorkoutHistoryDetail(date) {
 }
 </style>
 
+    <!-- ===== SPOTIFY NOW PLAYING MINI PLAYER (global scope for cross-tab visibility) ===== -->
+    <div id="spotify-now-playing" style="
+        display: none;
+        position: fixed;
+        bottom: 72px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 32px);
+        max-width: 420px;
+        background: rgba(18, 18, 18, 0.96);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.08);
+        padding: 12px 14px;
+        z-index: 100001;
+        color: white;
+        font-family: inherit;
+    ">
+        <!-- Clickable left area opens Spotify -->
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div onclick="openInSpotify()" style="display:flex; align-items:center; gap:12px; flex:1; min-width:0; cursor:pointer;">
+                <!-- Album art -->
+                <div style="position:relative; flex-shrink:0;">
+                    <img id="snp-art" src="" alt="" style="width:48px; height:48px; border-radius:8px; object-fit:cover; background:#333;" onerror="this.style.display='none'">
+                    <div id="snp-art-placeholder" style="display:none; width:48px; height:48px; border-radius:8px; background:#1DB954; align-items:center; justify-content:center;">
+                        <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:white;"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                    </div>
+                </div>
+                <!-- Track info + Spotify link hint -->
+                <div style="flex:1; min-width:0;">
+                    <div id="snp-track" style="font-weight:600; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+                    <div id="snp-artist" style="font-size:0.75rem; color:rgba(255,255,255,0.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;"></div>
+                </div>
+                <!-- External link icon -->
+                <svg viewBox="0 0 24 24" style="width:15px; height:15px; fill:rgba(255,255,255,0.35); flex-shrink:0; margin-right:4px;"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+            </div>
+            <!-- Controls (separate — don't open full player) -->
+            <div style="display:flex; align-items:center; gap:2px; flex-shrink:0;">
+                <button id="snp-prev" onclick="spotifyPlayerControl('previous')" title="Previous" style="background:none; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.8;">
+                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+                </button>
+                <button id="snp-playpause" onclick="spotifyPlayerControl(window._snpPlaying ? 'pause' : 'play')" title="Play/Pause" style="background:#1DB954; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                    <svg id="snp-play-icon" viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="snp-pause-icon" viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor; display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <button id="snp-next" onclick="spotifyPlayerControl('next')" title="Next" style="background:none; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.8;">
+                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M6 18l8.5-6L6 6v12zm2-8.14 4.97 3.14L8 16.14V9.86zM16 6h2v12h-2z"/></svg>
+                </button>
+            </div>
+        </div>
+        <!-- Progress bar -->
+        <div style="margin-top:10px; background:rgba(255,255,255,0.15); border-radius:2px; height:3px; overflow:hidden;">
+            <div id="snp-progress" style="height:100%; background:#1DB954; width:0%; transition:width 1s linear; border-radius:2px;"></div>
+        </div>
+    </div>
+
     <!-- Bottom Navigation (Moved Outside Container) -->
     <nav class="bottom-nav" style="z-index: 9999 !important; position: fixed; bottom: 0; left: 0; width: 100%;">
         <button class="nav-item active" onclick="switchAppTab('dashboard', this)">
@@ -23402,6 +23404,13 @@ function _switchAppTabReal(tabName, btn) {
     // Track current active tab for level-up animation visibility
     if (typeof currentActiveTab !== 'undefined') {
         currentActiveTab = tabName;
+    }
+
+    // Sync Spotify mini player visibility (only show on dashboard and movement tab)
+    const _spotifyWidget = document.getElementById('spotify-now-playing');
+    if (_spotifyWidget) {
+        const showSpotify = (tabName === 'dashboard' || tabName === 'movement-tab') && window._snpPlaying;
+        _spotifyWidget.style.display = showSpotify ? 'block' : 'none';
     }
 
     // 1. Update Bottom Nav UI
@@ -34855,6 +34864,7 @@ function initializeMovementSwipeNavigation() {
     enableSwipeBackNavigation('view-interval-timer', () => {
         closeIntervalTimer();
     });
+
 }
 
 // Initialize swipe-back for Weekly Trends page (one-time setup)
@@ -67706,7 +67716,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const todayStr = new Date().toISOString().split('T')[0];
 
         // Run all data fetches in parallel for speed
-        const [quizResult, factsResult, nutritionResult, mealsResult, workoutsResult, weighInsResult, replacementsResult, wearableResult, aiMealPlanResult] = await Promise.allSettled([
+        const [quizResult, factsResult, nutritionResult, mealsResult, workoutsResult, weighInsResult, replacementsResult, wearableResult, friendsResult, aiMealPlanResult] = await Promise.allSettled([
             // Quiz results
             db.quizResults.getLatest(user.id),
             // User facts
@@ -67754,6 +67764,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }));
                 return wearables;
             })(),
+            // Friends list (for challenge creation)
+            (async () => {
+                try {
+                    return await db.friends.getFriendsWithFallback(user.id);
+                } catch (e) { return []; }
+            })(),
             // Check if user has a tailored meal plan
             (async () => {
                 try {
@@ -67781,6 +67797,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         context.activeReplacements = replacementsResult.status === 'fulfilled' ? (replacementsResult.value || []) : [];
         context.wearables = wearableResult.status === 'fulfilled' ? (wearableResult.value || {}) : {};
         context.hasAiMealPlan = aiMealPlanResult.status === 'fulfilled' && !!aiMealPlanResult.value;
+
+        // Friends list (names + IDs for AI challenge creation)
+        const friendsList = friendsResult.status === 'fulfilled' ? (friendsResult.value || []) : [];
+        context.friends = friendsList.map(f => ({
+            id: f.friend_id || f.id,
+            name: f.friend_name || f.name || 'Unknown'
+        }));
 
         // Adaptive calorie recommendation
         try {
@@ -67889,11 +67912,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             update_calorie_goal: '🔥',
             update_macro_goals: '📊',
             create_workout: '💪',
-            generate_meal_plan: '🥗'
+            generate_meal_plan: '🥗',
+            create_challenge: '⚔️',
+            create_quiz: '🧠',
+            create_tracker: '📊',
+            create_checklist: '✅',
+            create_personal_challenge: '🏆',
+            search_exercises: '🔍'
         };
 
+        // Filter out silent tool actions (search_exercises auto-executes, never shown to user)
+        const visibleActions = actions.filter(a => a.type !== 'search_exercises');
+        if (visibleActions.length === 0) return;
+
         let html = '';
-        actions.forEach((action) => {
+        visibleActions.forEach((action) => {
             const icon = actionIcons[action.type] || '⚡';
             html += `<div class="ai-action-card">
                 <div class="ai-action-title">${icon} ${action.description || action.type}</div>
@@ -68100,6 +68133,169 @@ document.addEventListener('DOMContentLoaded', async function() {
                         break;
                     }
 
+                    case 'create_challenge': {
+                        // Create a competitive challenge with friends
+                        const challengeName = action.name || 'AI Challenge';
+                        const challengeType = action.challenge_type || 'xp';
+                        const validTypes = ['xp', 'workouts', 'volume', 'calories', 'steps', 'streak', 'sleep', 'water'];
+                        if (!validTypes.includes(challengeType)) {
+                            throw new Error('Invalid challenge type: ' + challengeType + '. Must be one of: ' + validTypes.join(', '));
+                        }
+                        const entryFee = Math.max(0, parseInt(action.entry_fee) || 0);
+                        const durationDays = parseInt(action.duration_days) || 30;
+
+                        // Debit coins if entry fee > 0
+                        if (entryFee > 0) {
+                            const { data: newBalance, error: coinError } = await window.supabaseClient
+                                .rpc('debit_coins', {
+                                    user_uuid: user.id,
+                                    coin_amount: entryFee,
+                                    txn_type: 'challenge_entry',
+                                    txn_description: 'Created challenge: ' + challengeName + ' (' + entryFee.toLocaleString() + ' coins)'
+                                });
+                            if (coinError) throw new Error('Coin debit failed: ' + coinError.message);
+                            if (newBalance === -1) throw new Error('Not enough coins! You need ' + entryFee.toLocaleString() + ' coins.');
+                        }
+
+                        // Calculate dates
+                        const startDate = new Date().toISOString().split('T')[0];
+                        const endDateObj = new Date();
+                        endDateObj.setDate(endDateObj.getDate() + durationDays);
+                        const endDate = endDateObj.toISOString().split('T')[0];
+
+                        // Insert challenge
+                        const { data: challenge, error: createError } = await window.supabaseClient
+                            .from('challenges')
+                            .insert({
+                                name: challengeName,
+                                creator_id: user.id,
+                                start_date: startDate,
+                                end_date: endDate,
+                                duration_days: durationDays,
+                                status: 'pending',
+                                entry_fee: entryFee,
+                                challenge_type: challengeType
+                            })
+                            .select()
+                            .single();
+                        if (createError) throw createError;
+
+                        // Add creator as participant
+                        await window.supabaseClient
+                            .from('challenge_participants')
+                            .insert({
+                                challenge_id: challenge.id,
+                                user_id: user.id,
+                                status: 'accepted',
+                                accepted_at: new Date().toISOString(),
+                                starting_points: 0,
+                                current_points: 0,
+                                challenge_points: 0,
+                                has_paid: entryFee > 0,
+                                paid_at: entryFee > 0 ? new Date().toISOString() : null
+                            });
+
+                        // Invite friends if specified
+                        const friendNames = action.friend_names || [];
+                        if (friendNames.length > 0) {
+                            // Resolve friend names to IDs using the context friends list
+                            const contextFriends = window._aiUserContext?.friends || [];
+                            const friendIds = [];
+                            friendNames.forEach(name => {
+                                const match = contextFriends.find(f =>
+                                    f.name.toLowerCase().includes(name.toLowerCase()) ||
+                                    name.toLowerCase().includes(f.name.toLowerCase())
+                                );
+                                if (match) friendIds.push(match.id);
+                            });
+
+                            if (friendIds.length > 0) {
+                                // Insert as invited participants
+                                const invites = friendIds.map(fid => ({
+                                    challenge_id: challenge.id,
+                                    user_id: fid,
+                                    status: 'invited'
+                                }));
+                                await window.supabaseClient.from('challenge_participants').insert(invites);
+
+                                // Send nudge notifications
+                                const creatorName = user.user_metadata?.name || user.user_metadata?.full_name || 'Someone';
+                                const typeLabel = challengeType.charAt(0).toUpperCase() + challengeType.slice(1);
+                                for (const fid of friendIds) {
+                                    await window.supabaseClient.from('nudges').insert({
+                                        sender_id: user.id,
+                                        receiver_id: fid,
+                                        message: `⚔️ ${typeLabel.toUpperCase()} CHALLENGE! ${creatorName} challenged you to "${challengeName}"!${entryFee > 0 ? ' 🪙 ' + entryFee.toLocaleString() + ' entry' : ''}`,
+                                        nudge_type: 'challenge_invite'
+                                    });
+                                }
+                            }
+                        }
+
+                        addAiMessage(`Challenge **"${challengeName}"** created!${friendNames.length > 0 ? ' Invites sent to your friends.' : ''} Check the Challenges tab to track progress.`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
+                    case 'create_quiz': {
+                        // Save a custom quiz card
+                        if (!action.games || !Array.isArray(action.games) || action.games.length === 0) {
+                            throw new Error('Quiz needs at least one game/question');
+                        }
+                        await window.saveCustomCard('quiz', action.title || 'Custom Quiz', action.description || '', {
+                            games: action.games
+                        });
+                        addAiMessage(`Quiz **"${action.title || 'Custom Quiz'}"** created! You\'ll find it on your home screen.`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
+                    case 'create_tracker': {
+                        // Save a custom tracker card
+                        if (!action.metrics || !Array.isArray(action.metrics) || action.metrics.length === 0) {
+                            throw new Error('Tracker needs at least one metric');
+                        }
+                        await window.saveCustomCard('tracker', action.title || 'Custom Tracker', action.description || '', {
+                            icon: action.icon || '📊',
+                            color: action.color || '#0ea5e9',
+                            metrics: action.metrics
+                        });
+                        addAiMessage(`Tracker **"${action.title || 'Custom Tracker'}"** created! Tap it on your home screen to log daily.`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
+                    case 'create_checklist': {
+                        // Save a custom checklist card
+                        if (!action.items || !Array.isArray(action.items) || action.items.length === 0) {
+                            throw new Error('Checklist needs at least one item');
+                        }
+                        await window.saveCustomCard('checklist', action.title || 'Custom Checklist', action.description || '', {
+                            icon: action.icon || '✅',
+                            color: action.color || '#10b981',
+                            items: action.items
+                        });
+                        addAiMessage(`Checklist **"${action.title || 'Custom Checklist'}"** created! Check it off daily from your home screen.`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
+                    case 'create_personal_challenge': {
+                        // Save a personal challenge card (XP capped at 5)
+                        const xpReward = Math.min(parseInt(action.xp_reward) || 0, 5);
+                        await window.saveCustomCard('challenge', action.title || 'Personal Challenge', action.description || '', {
+                            icon: action.icon || '🏆',
+                            color: action.color || '#f59e0b',
+                            duration_days: parseInt(action.duration_days) || 30,
+                            rules: action.rules || [],
+                            success_criteria: action.success_criteria || '',
+                            xp_reward: xpReward
+                        });
+                        addAiMessage(`Personal challenge **"${action.title || 'Personal Challenge'}"** created!${xpReward > 0 ? ' Complete it to earn ' + xpReward + ' XP.' : ''} Find it on your home screen.`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
                     default:
                         console.warn('Unknown AI action type:', action.type);
                         errors.push('Unknown action: ' + action.type);
@@ -68119,7 +68315,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         if (errors.length === 0 && successCount > 0) {
-            addAiMessage('Done! I\'ve made those changes for you. Your schedule has been updated.', 'bot');
+            addAiMessage('Done! I\'ve made those changes for you.', 'bot');
         } else if (successCount > 0) {
             addAiMessage('Partially done - some changes were applied but there were issues with: ' + errors.join('; '), 'bot');
         } else {
@@ -68172,6 +68368,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             // Gather context
             const userData = await gatherUserContext();
+            window._aiUserContext = userData;
 
             // Call the edge function
             const response = await fetch('/.netlify/functions/home-ai-chat', {
@@ -68198,15 +68395,57 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.error('AI returned error:', data.error, data.details);
                 addAiMessage('Sorry, I ran into an issue. Please try again!', 'bot');
             } else {
-                // Show the reply
-                addAiMessage(data.reply, 'bot');
+                // Check for search_exercises tool action (auto-execute, no confirm)
+                const searchAction = data.actions?.find(a => a.type === 'search_exercises');
+                if (searchAction) {
+                    // Show the AI's reply while we search
+                    addAiMessage(data.reply, 'bot');
+                    aiChatHistory.push({ role: 'bot', text: data.reply });
 
-                // Add to history
-                aiChatHistory.push({ role: 'bot', text: data.reply });
+                    // Run the exercise search client-side
+                    const searchResults = searchExerciseLibrary(searchAction.queries || [searchAction.query || '']);
 
-                // Show actions if any
-                if (data.actions && data.actions.length > 0) {
-                    renderActions(data.actions);
+                    // Feed results back as a system message and call AI again
+                    showTypingIndicator();
+                    const toolResultMsg = `[EXERCISE SEARCH RESULTS]\n${searchResults}\n\nNow use ONLY exercises from these results to build the workout. Use the exact exercise names as shown.`;
+                    aiChatHistory.push({ role: 'user', text: toolResultMsg });
+
+                    try {
+                        const followUp = await fetch('/.netlify/functions/home-ai-chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                message: toolResultMsg,
+                                userData: userData,
+                                chatHistory: aiChatHistory.slice(-20)
+                            })
+                        });
+                        removeTypingIndicator();
+
+                        if (followUp.ok) {
+                            const followUpData = await followUp.json();
+                            if (followUpData.reply) {
+                                addAiMessage(followUpData.reply, 'bot');
+                                aiChatHistory.push({ role: 'bot', text: followUpData.reply });
+                            }
+                            // Show non-search actions for confirmation
+                            const realActions = (followUpData.actions || []).filter(a => a.type !== 'search_exercises');
+                            if (realActions.length > 0) {
+                                renderActions(realActions);
+                            }
+                        }
+                    } catch (e) {
+                        removeTypingIndicator();
+                        console.error('Follow-up AI call failed:', e);
+                    }
+                } else {
+                    // Normal flow: show reply and actions
+                    addAiMessage(data.reply, 'bot');
+                    aiChatHistory.push({ role: 'bot', text: data.reply });
+
+                    if (data.actions && data.actions.length > 0) {
+                        renderActions(data.actions);
+                    }
                 }
             }
         } catch (err) {
@@ -68217,6 +68456,78 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         aiIsLoading = false;
         if (sendBtn) sendBtn.style.opacity = '1';
+    }
+
+    // Exercise search tool — searches EXERCISE_VIDEOS + WORKOUT_LIBRARY + custom exercises
+    function searchExerciseLibrary(queries) {
+        const results = [];
+        const seen = new Set();
+
+        for (const query of queries) {
+            if (!query || query.length < 2) continue;
+            const terms = query.toLowerCase().split(' ').filter(t => t);
+
+            // Search EXERCISE_VIDEOS (the main exercise library)
+            if (typeof EXERCISE_VIDEOS !== 'undefined') {
+                const matches = Object.keys(EXERCISE_VIDEOS).filter(name => {
+                    const nameLower = name.toLowerCase();
+                    return terms.every(term => nameLower.includes(term));
+                });
+
+                // Score and sort
+                matches.sort((a, b) => {
+                    const scoreA = scoreExerciseMatch(a, terms, query);
+                    const scoreB = scoreExerciseMatch(b, terms, query);
+                    return scoreB - scoreA;
+                });
+
+                // Take top 15 per query
+                matches.slice(0, 15).forEach(name => {
+                    if (!seen.has(name)) {
+                        seen.add(name);
+                        results.push(name);
+                    }
+                });
+            }
+
+            // Search WORKOUT_LIBRARY for exercises in relevant subcategories
+            if (typeof WORKOUT_LIBRARY !== 'undefined') {
+                for (const [catKey, cat] of Object.entries(WORKOUT_LIBRARY)) {
+                    const subs = cat.subcategories || {};
+                    for (const [subKey, sub] of Object.entries(subs)) {
+                        // Check if this subcategory matches any search term
+                        const subLower = subKey.toLowerCase();
+                        const catLower = catKey.toLowerCase();
+                        const nameMatch = terms.some(t => subLower.includes(t) || catLower.includes(t));
+                        if (nameMatch) {
+                            (sub.workouts || []).forEach(w => {
+                                (w.exercises || []).forEach(ex => {
+                                    const eName = ex.name;
+                                    if (!seen.has(eName)) {
+                                        seen.add(eName);
+                                        results.push(`${eName} (${ex.sets} sets x ${ex.reps})`);
+                                    }
+                                });
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Search custom exercises
+            (window._customExercisesCache || []).forEach(ex => {
+                const nameLower = ex.exercise_name.toLowerCase();
+                if (terms.every(t => nameLower.includes(t)) && !seen.has(ex.exercise_name)) {
+                    seen.add(ex.exercise_name);
+                    results.push(`${ex.exercise_name} [CUSTOM]${ex.muscle_group ? ' (' + ex.muscle_group + ')' : ''}`);
+                }
+            });
+        }
+
+        if (results.length === 0) {
+            return 'No exercises found. You can still suggest exercises by common name — the user may have them available.';
+        }
+        return results.slice(0, 60).join('\n');
     }
 
     // Toggle expand/collapse
@@ -68240,8 +68551,285 @@ document.addEventListener('DOMContentLoaded', async function() {
 })();
 </script>
 
+
+<!-- Custom Cards System - cards created via FITGotchi AI actions -->
+<script>
+(function() {
+    let customCardsCache = [];
+
+    async function loadMyCards() {
+        const user = window.currentUser;
+        if (!user) return;
+        try {
+            const { data, error } = await window.supabaseClient
+                .from('custom_cards')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('is_active', true)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            customCardsCache = data || [];
+        } catch (e) {
+            console.warn('Failed to load custom cards:', e);
+            const local = localStorage.getItem('custom_cards');
+            customCardsCache = local ? JSON.parse(local) : [];
+        }
+    }
+
+    async function saveCustomCard(cardType, title, description, cardData) {
+        const user = window.currentUser;
+        if (!user) return null;
+        const record = {
+            user_id: user.id, card_type: cardType, title: title,
+            description: description || '', card_data: cardData || {}, is_active: true
+        };
+        try {
+            const { data, error } = await window.supabaseClient
+                .from('custom_cards').insert(record).select().single();
+            if (error) throw error;
+            customCardsCache.unshift(data);
+            renderDashboardCustomCards();
+            return data;
+        } catch (e) {
+            console.error('Failed to save card:', e);
+            const localCards = JSON.parse(localStorage.getItem('custom_cards') || '[]');
+            const localCard = { ...record, id: 'local_' + Date.now(), created_at: new Date().toISOString() };
+            localCards.unshift(localCard);
+            localStorage.setItem('custom_cards', JSON.stringify(localCards));
+            customCardsCache.unshift(localCard);
+            renderDashboardCustomCards();
+            return localCard;
+        }
+    }
+
+    async function deleteCard(cardId) {
+        if (!confirm('Delete this custom card?')) return;
+        const user = window.currentUser;
+        try {
+            if (cardId.startsWith('local_')) {
+                const localCards = JSON.parse(localStorage.getItem('custom_cards') || '[]');
+                localStorage.setItem('custom_cards', JSON.stringify(localCards.filter(c => c.id !== cardId)));
+            } else if (user) {
+                await window.supabaseClient.from('custom_cards').delete().eq('id', cardId).eq('user_id', user.id);
+            }
+            customCardsCache = customCardsCache.filter(c => c.id !== cardId);
+            renderDashboardCustomCards();
+        } catch (e) { console.error('Failed to delete card:', e); }
+    }
+
+    function openCard(cardId) {
+        const card = customCardsCache.find(c => c.id === cardId);
+        if (!card) return;
+        if (card.card_type === 'quiz') playCustomQuiz(card);
+        else if (card.card_type === 'checklist') openCustomChecklist(card);
+        else if (card.card_type === 'tracker') openCustomTracker(card);
+        else if (card.card_type === 'challenge') openCustomChallenge(card);
+    }
+
+    function playCustomQuiz(card) {
+        const games = card.card_data?.games;
+        if (!games || games.length === 0) return;
+        if (typeof window.playCustomQuizGames === 'function') {
+            window.playCustomQuizGames(card.title, card.card_data);
+            return;
+        }
+        let currentQ = 0, score = 0;
+
+        function showQuestion() {
+            if (currentQ >= games.length) { showQuizResult(); return; }
+            const game = games[currentQ];
+            let html = '';
+            const qLabel = `<div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">Question ${currentQ + 1} of ${games.length}</div>`;
+
+            if (game.type === 'swipe_true_false') {
+                html = `<div style="text-align: center; padding: 20px;">${qLabel}<div style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 24px; line-height: 1.4;">${game.question}</div><div style="display: flex; gap: 12px; justify-content: center;"><button onclick="window._quizAnswer(true)" style="flex: 1; max-width: 140px; padding: 14px; background: #10b981; color: white; border: none; border-radius: 14px; font-weight: 700; font-size: 1rem; cursor: pointer;">TRUE</button><button onclick="window._quizAnswer(false)" style="flex: 1; max-width: 140px; padding: 14px; background: #ef4444; color: white; border: none; border-radius: 14px; font-weight: 700; font-size: 1rem; cursor: pointer;">FALSE</button></div></div>`;
+            } else if (game.type === 'fill_blank') {
+                const btns = game.options.map(opt => `<button onclick="window._quizAnswer('${opt}')" style="padding: 10px 18px; background: #f1f5f9; color: var(--text-main); border: 2px solid #e2e8f0; border-radius: 12px; font-weight: 600; font-size: 0.9rem; cursor: pointer;">${opt}</button>`).join('');
+                html = `<div style="text-align: center; padding: 20px;">${qLabel}<div style="font-size: 1rem; font-weight: 600; color: var(--text-main); margin-bottom: 20px; line-height: 1.4;">${game.sentence}</div><div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;">${btns}</div></div>`;
+            } else if (game.type === 'tap_all') {
+                const opts = game.options.map((opt, i) => `<button data-idx="${i}" data-correct="${opt.correct}" onclick="this.classList.toggle('selected'); this.style.borderColor = this.classList.contains('selected') ? '#8b5cf6' : '#e2e8f0'; this.style.background = this.classList.contains('selected') ? '#ede9fe' : '#f8fafc';" style="padding: 12px 16px; background: #f8fafc; color: var(--text-main); border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem; cursor: pointer; text-align: left;">${opt.text}</button>`).join('');
+                html = `<div style="text-align: center; padding: 20px;">${qLabel.replace('</div>', ' — Tap all correct</div>')}<div style="font-size: 1rem; font-weight: 600; color: var(--text-main); margin-bottom: 16px; line-height: 1.4;">${game.question}</div><div id="quiz-tap-options" style="display: flex; flex-direction: column; gap: 8px;">${opts}</div><button onclick="window._quizSubmitTapAll()" style="margin-top: 14px; padding: 12px 28px; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer;">Submit</button></div>`;
+            } else if (game.type === 'scenario_story') {
+                const sopts = game.options.map(opt => `<button onclick="window._quizAnswer(${opt.correct})" style="padding: 12px 16px; background: #f8fafc; color: var(--text-main); border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem; cursor: pointer; text-align: left;">${opt.text}</button>`).join('');
+                html = `<div style="text-align: center; padding: 20px;">${qLabel}<div style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4; font-style: italic;">${game.scenario}</div><div style="font-size: 1rem; font-weight: 600; color: var(--text-main); margin-bottom: 16px;">${game.question}</div><div style="display: flex; flex-direction: column; gap: 8px;">${sopts}</div></div>`;
+            } else { currentQ++; showQuestion(); return; }
+
+            const modal = document.getElementById('custom-quiz-modal') || createQuizModal();
+            document.getElementById('custom-quiz-body').innerHTML = html;
+        }
+
+        function createQuizModal() {
+            const modal = document.createElement('div');
+            modal.id = 'custom-quiz-modal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            modal.innerHTML = `<div style="background: white; border-radius: 20px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; position: relative;"><button onclick="document.getElementById('custom-quiz-modal').remove()" style="position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #94a3b8; z-index: 1;">&#x2715;</button><div id="custom-quiz-body"></div></div>`;
+            document.body.appendChild(modal);
+            return modal;
+        }
+
+        window._quizAnswer = function(answer) {
+            const game = games[currentQ];
+            let correct = false;
+            if (game.type === 'swipe_true_false') correct = answer === game.answer;
+            else if (game.type === 'fill_blank') correct = answer === game.answer;
+            else if (game.type === 'scenario_story') correct = answer === true;
+            if (correct) score++;
+            currentQ++;
+            showQuestion();
+        };
+
+        window._quizSubmitTapAll = function() {
+            const btns = document.querySelectorAll('#quiz-tap-options button');
+            let allCorrect = true;
+            btns.forEach(btn => {
+                if (btn.classList.contains('selected') !== (btn.dataset.correct === 'true')) allCorrect = false;
+            });
+            if (allCorrect) score++;
+            currentQ++;
+            showQuestion();
+        };
+
+        function showQuizResult() {
+            const pct = Math.round((score / games.length) * 100);
+            const modal = document.getElementById('custom-quiz-modal');
+            if (!modal) return;
+            document.getElementById('custom-quiz-body').innerHTML = `<div style="text-align: center; padding: 30px 20px;"><div style="font-size: 2.5rem; margin-bottom: 12px;">${pct >= 80 ? '🎉' : pct >= 50 ? '👍' : '📚'}</div><div style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">${score}/${games.length}</div><div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">${pct >= 80 ? 'Nailed it!' : pct >= 50 ? 'Good effort!' : 'Keep learning!'}</div><button onclick="document.getElementById('custom-quiz-modal').remove()" style="padding: 12px 28px; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); color: white; border: none; border-radius: 14px; font-weight: 700; font-size: 1rem; cursor: pointer;">Done</button></div>`;
+        }
+        showQuestion();
+    }
+
+    function openCustomChecklist(card) {
+        const items = card.card_data?.items || [];
+        const todayKey = `checklist_${card.id}_${new Date().toISOString().split('T')[0]}`;
+        const checked = JSON.parse(localStorage.getItem(todayKey) || '[]');
+        const icon = card.card_data?.icon || '✅';
+        const modal = document.createElement('div');
+        modal.id = 'custom-checklist-modal';
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 20px;';
+        const itemsHtml = items.map((item, i) => {
+            const text = typeof item === 'string' ? item : item.text;
+            const isChecked = checked.includes(i);
+            return `<label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: ${isChecked ? '#f0fdf4' : '#f8fafc'}; border-radius: 12px; cursor: pointer; border: 1px solid ${isChecked ? '#86efac' : '#e2e8f0'};"><input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window._checklistToggle('${todayKey}', ${i}, this.checked)" style="width: 18px; height: 18px; accent-color: #10b981;"><span style="font-size: 0.9rem; color: var(--text-main); ${isChecked ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${text}</span></label>`;
+        }).join('');
+        modal.innerHTML = `<div style="background: white; border-radius: 20px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; position: relative; padding: 24px 20px;"><button onclick="document.getElementById('custom-checklist-modal').remove()" style="position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #94a3b8;">&#x2715;</button><div style="text-align: center; margin-bottom: 16px;"><span style="font-size: 1.5rem;">${icon}</span><div style="font-weight: 700; font-size: 1.05rem; margin-top: 4px;">${card.title}</div></div><div style="display: flex; flex-direction: column; gap: 10px;">${itemsHtml}</div></div>`;
+        document.body.appendChild(modal);
+    }
+
+    window._checklistToggle = function(key, index, isChecked) {
+        const checked = JSON.parse(localStorage.getItem(key) || '[]');
+        if (isChecked && !checked.includes(index)) checked.push(index);
+        else if (!isChecked) { const idx = checked.indexOf(index); if (idx >= 0) checked.splice(idx, 1); }
+        localStorage.setItem(key, JSON.stringify(checked));
+    };
+
+    function openCustomTracker(card) {
+        const metrics = card.card_data?.metrics || [];
+        const todayKey = `tracker_${card.id}_${new Date().toISOString().split('T')[0]}`;
+        const saved = JSON.parse(localStorage.getItem(todayKey) || '{}');
+        const icon = card.card_data?.icon || '📊';
+        const modal = document.createElement('div');
+        modal.id = 'custom-tracker-modal';
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 20px;';
+        const metricsHtml = metrics.map(m => {
+            if (m.type === 'boolean') {
+                return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: #f8fafc; border-radius: 12px;"><span style="font-weight: 600; font-size: 0.9rem;">${m.name}</span><input type="checkbox" ${saved[m.name] ? 'checked' : ''} data-metric="${m.name}" style="width: 20px; height: 20px; accent-color: #10b981;"></div>`;
+            } else if (m.type === 'rating') {
+                const stars = [1,2,3,4,5].map(n => `<button data-metric="${m.name}" data-val="${n}" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: ${(saved[m.name] || 0) >= n ? '#fbbf24' : '#e2e8f0'}; font-size: 0.9rem; cursor: pointer; font-weight: 700;">${n}</button>`).join('');
+                return `<div style="padding: 12px 14px; background: #f8fafc; border-radius: 12px;"><div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">${m.name}</div><div style="display: flex; gap: 6px; justify-content: center;">${stars}</div></div>`;
+            } else {
+                return `<div style="padding: 12px 14px; background: #f8fafc; border-radius: 12px;"><div style="display: flex; justify-content: space-between; align-items: center;"><span style="font-weight: 600; font-size: 0.9rem;">${m.name}</span>${m.goal ? `<span style="font-size: 0.78rem; color: var(--text-muted);">Goal: ${m.goal} ${m.unit || ''}</span>` : ''}</div><div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;"><input type="number" data-metric="${m.name}" value="${saved[m.name] || ''}" placeholder="0" style="flex: 1; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 1rem; outline: none;">${m.unit ? `<span style="font-size: 0.85rem; color: var(--text-muted);">${m.unit}</span>` : ''}</div></div>`;
+            }
+        }).join('');
+        modal.innerHTML = `<div style="background: white; border-radius: 20px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; position: relative; padding: 24px 20px;"><button onclick="document.getElementById('custom-tracker-modal').remove()" style="position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #94a3b8;">&#x2715;</button><div style="text-align: center; margin-bottom: 16px;"><span style="font-size: 1.5rem;">${icon}</span><div style="font-weight: 700; font-size: 1.05rem; margin-top: 4px;">${card.title}</div></div><div style="display: flex; flex-direction: column; gap: 14px;">${metricsHtml}</div><button onclick="window._trackerSave('${card.id}', '${todayKey}')" style="margin-top: 16px; width: 100%; padding: 14px; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: white; border: none; border-radius: 14px; font-weight: 700; font-size: 1rem; cursor: pointer;">Save Today's Log</button></div>`;
+        document.body.appendChild(modal);
+    }
+
+    window._trackerSave = function(cardId, todayKey) {
+        const modal = document.getElementById('custom-tracker-modal');
+        if (!modal) return;
+        const data = {};
+        modal.querySelectorAll('[data-metric]').forEach(el => {
+            const name = el.dataset.metric;
+            if (el.type === 'checkbox') data[name] = el.checked;
+            else if (el.type === 'number') data[name] = parseFloat(el.value) || 0;
+            else if (el.dataset.val) {
+                const rating = parseInt(el.dataset.val);
+                if (el.style.background.includes('fbbf24')) data[name] = Math.max(data[name] || 0, rating);
+            }
+        });
+        localStorage.setItem(todayKey, JSON.stringify(data));
+        const user = window.currentUser;
+        if (user) {
+            window.supabaseClient.from('custom_card_logs').upsert({
+                card_id: cardId, user_id: user.id,
+                log_date: new Date().toISOString().split('T')[0], log_data: data
+            }, { onConflict: 'card_id,log_date' }).then(() => {}).catch(() => {});
+        }
+        modal.remove();
+    };
+
+    function openCustomChallenge(card) {
+        const data = card.card_data || {};
+        const icon = data.icon || '🏆';
+        const startKey = `challenge_start_${card.id}`;
+        const startDate = localStorage.getItem(startKey);
+        let dayNum = 0, started = false;
+        if (startDate) { started = true; dayNum = Math.floor((Date.now() - new Date(startDate).getTime()) / 86400000) + 1; }
+        const progress = started ? Math.min(Math.round((dayNum / (data.duration_days || 30)) * 100), 100) : 0;
+        const modal = document.createElement('div');
+        modal.id = 'custom-challenge-modal';
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 20px;';
+        let rulesHtml = '';
+        if (data.rules) data.rules.forEach(r => { rulesHtml += `<div style="font-size: 0.88rem; color: var(--text-main); padding: 4px 0;">&#x2022; ${r}</div>`; });
+        const criteriaHtml = data.success_criteria ? `<div style="padding: 12px 14px; background: #f0fdf4; border-radius: 12px; margin-bottom: 14px;"><div style="font-weight: 600; font-size: 0.82rem; color: #16a34a; margin-bottom: 2px;">Success Criteria</div><div style="font-size: 0.85rem; color: var(--text-main);">${data.success_criteria}</div></div>` : '';
+        let progressHtml = '';
+        if (started) {
+            progressHtml = `<div style="margin-bottom: 14px;"><div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px;"><span>Day ${dayNum} of ${data.duration_days || '?'}</span><span>${progress}%</span></div><div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;"><div style="height: 100%; width: ${progress}%; background: linear-gradient(90deg, #f59e0b, #ef4444); border-radius: 4px;"></div></div></div>`;
+            if (progress >= 100) progressHtml += `<div style="text-align: center; padding: 12px; background: linear-gradient(135deg, #f59e0b, #ef4444); border-radius: 14px; color: white; font-weight: 700;">Challenge Complete!${data.xp_reward ? ' +' + data.xp_reward + ' XP' : ''}</div>`;
+        } else {
+            progressHtml = `<button onclick="localStorage.setItem('${startKey}', new Date().toISOString()); document.getElementById('custom-challenge-modal').remove(); window._customCardOpen('${card.id}')" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; border: none; border-radius: 14px; font-weight: 700; font-size: 1rem; cursor: pointer;">Start Challenge</button>`;
+        }
+        modal.innerHTML = `<div style="background: white; border-radius: 20px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; position: relative; padding: 24px 20px;"><button onclick="document.getElementById('custom-challenge-modal').remove()" style="position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #94a3b8;">&#x2715;</button><div style="text-align: center; margin-bottom: 16px;"><span style="font-size: 2rem;">${icon}</span><div style="font-weight: 700; font-size: 1.1rem; margin-top: 6px;">${card.title}</div><div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">${data.duration_days || '?'} day challenge</div></div>${rulesHtml ? '<div style="margin-bottom: 14px;">' + rulesHtml + '</div>' : ''}${criteriaHtml}${progressHtml}</div>`;
+        document.body.appendChild(modal);
+    }
+
+    function renderDashboardCustomCards() {
+        let container = document.getElementById('dashboard-custom-cards');
+        if (!container) {
+            const aiCard = document.getElementById('ai-assistant-card');
+            if (!aiCard) return;
+            container = document.createElement('div');
+            container.id = 'dashboard-custom-cards';
+            aiCard.parentNode.insertBefore(container, aiCard.nextSibling);
+        }
+        if (customCardsCache.length === 0) { container.innerHTML = ''; return; }
+        const typeIcons = { quiz: '🧠', tracker: '📊', challenge: '🏆', checklist: '✅' };
+        const typeGradients = {
+            quiz: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            tracker: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
+            challenge: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
+            checklist: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+        };
+        const cards = customCardsCache.slice(0, 4);
+        container.innerHTML = `<div style="margin: 0 25px 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">${cards.map(card => {
+            const icon = card.card_data?.icon || typeIcons[card.card_type] || '📋';
+            const gradient = typeGradients[card.card_type] || typeGradients.quiz;
+            return `<div onclick="window._customCardOpen('${card.id}')" style="background: ${gradient}; border-radius: 14px; padding: 16px; color: white; cursor: pointer; position: relative; overflow: hidden; min-height: 80px;"><div style="position: absolute; top: -15px; right: -15px; width: 60px; height: 60px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div><div style="font-size: 1.3rem; margin-bottom: 6px;">${icon}</div><div style="font-weight: 700; font-size: 0.85rem; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${card.title}</div><div style="font-size: 0.72rem; opacity: 0.85; text-transform: capitalize; margin-top: 2px;">${card.card_type}</div></div>`;
+        }).join('')}</div>`;
+    }
+
+    window._customCardOpen = openCard;
+    window._customCardDelete = deleteCard;
+    window.saveCustomCard = saveCustomCard;
+    window.renderDashboardCustomCards = renderDashboardCustomCards;
+    window.loadMyCustomCards = loadMyCards;
+    window.getCustomCardsCache = function() { return customCardsCache; };
+
+    setTimeout(() => {
+        if (window.currentUser) loadMyCards().then(() => renderDashboardCustomCards());
+    }, 3000);
+})();
+</script>
+
 </body>
 </html>
-
-
-

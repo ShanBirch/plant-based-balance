@@ -68,6 +68,7 @@ export default async function (request: Request, context: Context) {
     const adaptiveResult = userData?.adaptiveResult || null;
     const facts = userData?.facts || {};
     const hasAiMealPlan = userData?.hasAiMealPlan || false;
+    const friends = userData?.friends || [];
 
     // Workout schedule context (this week)
     const weekSchedule = userData?.weekSchedule || [];
@@ -227,6 +228,9 @@ Preferences: ${facts.preferences?.join(', ') || 'None'}
 Health Notes: ${facts.health_notes?.join(', ') || 'None'}
 Goals: ${facts.goals?.join(', ') || 'None'}
 
+=== FRIENDS ===
+${friends.length > 0 ? friends.map((f: any) => `- ${f.name} (ID: ${f.id})`).join('\n') : 'No friends added yet.'}
+
 === MEAL PLAN STATUS ===
 Has Tailored Meal Plan: ${hasAiMealPlan ? 'YES - user already has a personalized meal plan generated' : 'NO - user does NOT have a meal plan yet. If they mention meals, nutrition, or eating, you can proactively offer to generate one!'}
 `;
@@ -275,7 +279,24 @@ Available action types:
 6. **create_workout** - Build a new custom workout
    { "type": "create_workout", "name": "Upper Body Push", "exercises": [{"name": "Push Ups", "sets": 3, "reps": "10-12"}, ...], "description": "Create a push-focused upper body workout" }
 
-7. **generate_meal_plan** - Generate a personalized weekly meal plan tailored to the user's goals, dietary preferences, and nutritional targets.
+   IMPORTANT: Before creating a workout, you SHOULD use the search_exercises tool first to find real exercises from the user's library. This ensures exercise names match what's available with demo videos. See action 7 below.
+
+7. **search_exercises** - TOOL: Search the exercise library (1800+ exercises with demo videos). This is a SILENT tool action — it auto-executes without user confirmation. The search results will be sent back to you automatically, and then you build the workout using real exercise names from the results.
+   { "type": "search_exercises", "queries": ["back compound", "lat pulldown", "rear delt"], "description": "Searching exercises for back workout" }
+
+   HOW TO USE THIS TOOL:
+   - Include search_exercises as an action when you need to find specific exercises
+   - Use multiple queries to cover different muscle groups or movement patterns needed for the workout
+   - The results come back automatically — you'll then see "[EXERCISE SEARCH RESULTS]" with matching exercise names
+   - After receiving results, build the create_workout action using ONLY exercise names from the results
+   - You can include a reply alongside the search action (e.g., "Let me find the best exercises for that...")
+   - Example flow:
+     1. User: "Build me a back workout"
+     2. You reply: "On it — let me search through your exercise library..." with actions: [{ "type": "search_exercises", "queries": ["back compound", "row", "pulldown", "rear delt", "deadlift back"] }]
+     3. You automatically receive search results with real exercise names
+     4. You reply with the workout plan and include a create_workout action using those exact exercise names
+
+8. **generate_meal_plan** - Generate a personalized weekly meal plan tailored to the user's goals, dietary preferences, and nutritional targets.
    { "type": "generate_meal_plan", "description": "Generate your tailored weekly meal plan" }
 
    IMPORTANT - MEAL PLAN CONVERSATION FLOW:
@@ -296,6 +317,53 @@ Available action types:
    Step 3 - GENERATE: Only AFTER the user confirms, include the generate_meal_plan action in your response.
 
    NOTE: This generates 35 meals (5 per day x 7 days) perfectly calibrated to the user's macros, dietary restrictions, and preferences. Users can generate additional weeks later with "+ Next Week". Tell the user it will appear in their Meals tab under "Your Meal Plan". Do NOT call it an "AI meal plan" - call it a "tailored meal plan" or "your personalized meal plan".
+
+9. **create_challenge** - Create a competitive challenge with friends. Uses the app's challenge system with coin entry fees and leaderboards.
+   { "type": "create_challenge", "name": "Race to 200kg Squat", "challenge_type": "volume", "entry_fee": 1000, "duration_days": 30, "friend_names": ["Jake", "Sarah"], "description": "Create a volume challenge to race to 200kg squat" }
+
+   Challenge types available: "xp" (most XP earned), "workouts" (most workouts logged), "volume" (most total kg lifted), "calories" (most days hitting calorie goal), "steps" (most total steps), "streak" (longest streak kept), "sleep" (most hours slept), "water" (most days hitting water goal).
+
+   IMPORTANT - CHALLENGE CONVERSATION FLOW:
+   When a user wants to create a challenge, follow this flow:
+   Step 1 - CLARIFY: Ask what kind of challenge (suggest relevant type based on their description), duration, entry fee (coins), and which friends to invite (reference their friends list).
+   Step 2 - CONFIRM: Summarize the challenge details and list the friends who will be invited. Ask to confirm.
+   Step 3 - CREATE: Only AFTER confirmation, include the create_challenge action.
+   Entry fee can be 0 for free challenges. Friends are invited via the friends list names.
+
+10. **create_quiz** - Create a custom quiz with mixed game formats
+   { "type": "create_quiz", "title": "Plant Protein Mastery", "description": "Test your knowledge of plant proteins", "games": [...], "description": "Create a quiz about plant proteins" }
+
+   QUIZ GAME FORMATS - use a mix of these for variety:
+   - swipe_true_false: { "type": "swipe_true_false", "question": "Tofu contains all essential amino acids", "answer": true, "explanation": "Soy is a complete protein" }
+   - fill_blank: { "type": "fill_blank", "sentence": "_____ has the highest protein per calorie among legumes", "options": ["Lentils", "Chickpeas", "Black beans", "Peanuts"], "answer": "Lentils" }
+   - tap_all: { "type": "tap_all", "question": "Which are complete proteins?", "options": [{ "text": "Quinoa", "correct": true }, { "text": "Rice", "correct": false }, { "text": "Soy", "correct": true }, { "text": "Wheat", "correct": false }] }
+   - scenario_story: { "type": "scenario_story", "scenario": "You're at a restaurant and the only vegan option is a salad...", "question": "What should you do?", "options": [{ "text": "Ask for modifications to another dish", "correct": true }, { "text": "Just eat the salad", "correct": false }] }
+
+   Generate 5-10 questions per quiz using a mix of these formats. Make questions educational and relevant to the user's interests.
+
+11. **create_tracker** - Create a custom daily tracker
+    { "type": "create_tracker", "title": "Hydration Tracker", "description": "Track your daily water intake", "icon": "💧", "color": "#0ea5e9", "metrics": [{ "name": "Glasses of water", "type": "number", "unit": "glasses", "goal": 8 }, { "name": "Felt hydrated", "type": "boolean" }, { "name": "Energy level", "type": "rating" }] }
+
+    Metric types: "number" (with optional unit and goal), "boolean" (yes/no toggle), "rating" (1-5 scale).
+
+12. **create_checklist** - Create a daily checklist
+    { "type": "create_checklist", "title": "Morning Routine", "description": "Daily morning wellness checklist", "icon": "🌅", "color": "#10b981", "items": ["Drink warm lemon water", "10 min stretch", "Cold shower", "Gratitude journal"] }
+
+    Items are strings. Checklist state resets daily. Keep it simple and actionable.
+
+13. **create_personal_challenge** - Create a personal challenge (solo, not competitive)
+    { "type": "create_personal_challenge", "title": "30 Day Cold Shower Challenge", "description": "Take a cold shower every day for 30 days", "icon": "🥶", "color": "#3b82f6", "duration_days": 30, "rules": ["Cold shower for at least 2 minutes", "Must be below lukewarm", "Log it daily"], "success_criteria": "Complete all 30 days without missing", "xp_reward": 5 }
+
+    CRITICAL: xp_reward is CAPPED at 5 maximum. Never set it higher than 5 regardless of what the user asks. This prevents XP farming.
+
+=== BUILDING / CREATION CONVERSATION FLOW ===
+When a user asks you to build or create something (challenge, quiz, tracker, checklist, personal challenge):
+1. LISTEN to what they want and figure out which action type fits best
+2. ASK clarifying questions (1-2 messages max) - don't interrogate, just get enough info
+3. PROPOSE the action with a clear summary of what you'll create
+4. Let them CONFIRM before you include the action
+
+You should be creative and fill in sensible defaults when the user is vague. For example, if they say "make me a hydration tracker", don't ask 20 questions - propose a sensible tracker with water glasses, hydration feel, and energy level, and let them adjust.
 
 === RESPONSE FORMAT ===
 You MUST respond in valid JSON with this exact structure:
@@ -370,7 +438,7 @@ ${userContext}${coachPersonalityPrompt}`;
       body: JSON.stringify({
         contents,
         generationConfig: {
-          maxOutputTokens: 2048,
+          maxOutputTokens: 4096,
           temperature: 0.7,
           responseMimeType: "application/json",
         }
