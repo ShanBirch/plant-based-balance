@@ -3659,192 +3659,149 @@ function drawAmbientDetails() {
   const vw = window.innerWidth, vh = window.innerHeight;
 
   ROOMS.forEach(rm => {
-    if (rm.x + rm.w < vx - 20 || rm.x > vx + vw + 20 ||
-        rm.y + rm.h < vy - 20 || rm.y > vy + vh + 20) return;
+    if (rm.x + rm.w < vx - 50 || rm.x > vx + vw + 50 ||
+        rm.y + rm.h < vy - 50 || rm.y > vy + vh + 50) return;
 
     ctx.save();
-    // Clip to room bounds to keep details contained
+    // Clip to room bounds so we don't bleed out
     ctx.beginPath();
     ctx.rect(rm.x, rm.y, rm.w, rm.h);
     ctx.clip();
+    
+    // Draw 3D floor/wall junction line to add depth to the floors themselves
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(rm.x, rm.y, rm.w, 15);
+    ctx.fillRect(rm.x, rm.y, 15, rm.h);
 
     switch (rm.name) {
       case 'Kitchen': {
-        // Pipe along top wall
-        ctx.strokeStyle = 'rgba(120,120,130,0.12)'; ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(rm.x + 20, rm.y + 30);
-        ctx.lineTo(rm.x + rm.w - 20, rm.y + 30);
-        ctx.stroke();
-        // Pipe joints
-        ctx.fillStyle = 'rgba(140,140,150,0.1)';
-        for (let px = rm.x + 200; px < rm.x + rm.w; px += 300) {
-          ctx.beginPath(); ctx.arc(px, rm.y + 30, 5, 0, Math.PI * 2); ctx.fill();
+        // Kitchen Back Wall (Industrial Ovens built-in)
+        ctx.fillStyle = '#1c2024'; ctx.fillRect(rm.x, rm.y, rm.w, 80);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
+        for (let ox = rm.x + 80; ox < rm.x + rm.w - 100; ox += 160) {
+            ctx.fillStyle = '#4a5560'; ctx.fillRect(ox, rm.y, 120, 60); ctx.strokeRect(ox, rm.y, 120, 60);
+            ctx.fillStyle = '#0a0c0f'; ctx.fillRect(ox+10, rm.y+10, 100, 40); ctx.strokeRect(ox+10, rm.y+10, 100, 40);
+            // Flames inside oven
+            ctx.fillStyle = 'rgba(255, 100, 0, 0.4)';
+            ctx.beginPath(); ctx.ellipse(ox+60, rm.y+35, 40, 10, 0, 0, Math.PI*2); ctx.fill();
         }
-        // Small floor tiles pattern highlight
-        ctx.fillStyle = 'rgba(200,255,200,0.008)';
-        ctx.fillRect(rm.x + 250, rm.y + 300, 400, 300);
         break;
       }
       case 'Cafeteria': {
-        // Overhead light fixtures (circles on ceiling)
-        ctx.fillStyle = 'rgba(255,240,200,0.025)';
-        for (let lx = rm.x + 200; lx < rm.x + rm.w - 100; lx += 350) {
-          ctx.beginPath(); ctx.arc(lx, rm.y + rm.h / 2, 80, 0, Math.PI * 2); ctx.fill();
+        // Cafeteria Buffet line built into the north wall
+        ctx.fillStyle = '#3a4a5a'; ctx.fillRect(rm.x, rm.y, rm.w, 120);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
+        ctx.fillStyle = '#bdc3c7'; ctx.fillRect(rm.x + 40, rm.y + 40, rm.w - 80, 60); ctx.strokeRect(rm.x + 40, rm.y + 40, rm.w - 80, 60);
+        // Food trays
+        for (let fx = rm.x + 80; fx < rm.x + rm.w - 120; fx += 140) {
+            ctx.fillStyle = '#c0392b'; ctx.fillRect(fx, rm.y + 50, 100, 40); ctx.strokeRect(fx, rm.y + 50, 100, 40);
+            ctx.fillStyle = '#f1c40f'; ctx.fillRect(fx+10, rm.y + 60, 80, 20); // The "Food"
         }
-        // Serving line marking on floor
-        ctx.strokeStyle = 'rgba(255,255,255,0.02)'; ctx.lineWidth = 2;
-        ctx.setLineDash([8, 8]);
-        ctx.beginPath();
-        ctx.moveTo(rm.x + 100, rm.y + rm.h * 0.85);
-        ctx.lineTo(rm.x + rm.w - 100, rm.y + rm.h * 0.85);
-        ctx.stroke();
-        ctx.setLineDash([]);
         break;
       }
       case 'Living Room': {
-        // Picture frames on walls (simulated)
-        const frameColors = ['rgba(180,140,80,0.06)', 'rgba(100,120,160,0.06)', 'rgba(160,100,80,0.06)'];
-        for (let fi = 0; fi < 3; fi++) {
-          ctx.fillStyle = frameColors[fi];
-          ctx.beginPath();
-          ctx.roundRect(rm.x + 80 + fi * 250, rm.y + 60, 50, 35, 2);
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(180,140,80,0.08)'; ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.roundRect(rm.x + 80 + fi * 250, rm.y + 60, 50, 35, 2);
-          ctx.stroke();
-        }
-        // Warm light pool from lamp
-        ctx.fillStyle = 'rgba(255,220,150,0.015)';
-        ctx.beginPath();
-        ctx.ellipse(rm.x + 80, rm.y + 120, 60, 60, 0, 0, Math.PI * 2);
-        ctx.fill();
+        // ADMIN Room: The giant map table in the center
+        // Background wall super-computers
+        ctx.fillStyle = '#1c222e'; ctx.fillRect(rm.x, rm.y, rm.w, 100);
+        ctx.fillStyle = '#2c3e50'; ctx.fillRect(rm.x+50, rm.y, rm.w-100, 80);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.strokeRect(rm.x+50, rm.y, rm.w-100, 80);
+        // Giant glowing map screen on wall
+        ctx.fillStyle = '#0984e3'; ctx.fillRect(rm.x+100, rm.y+10, rm.w-200, 60);
+        ctx.fillStyle = '#00cec9'; ctx.fillRect(rm.x+150, rm.y+20, rm.w-350, 40);
         break;
       }
       case 'Bathroom': {
-        // Tile grout pattern on walls (lighter strip at top)
-        ctx.fillStyle = 'rgba(100,200,220,0.01)';
-        ctx.fillRect(rm.x, rm.y + 20, rm.w, 40);
-        // Pipe running along bottom
-        ctx.strokeStyle = 'rgba(160,160,170,0.08)'; ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(rm.x + 20, rm.y + rm.h - 25);
-        ctx.lineTo(rm.x + rm.w * 0.6, rm.y + rm.h - 25);
-        ctx.stroke();
-        // Pipe elbow
-        ctx.beginPath();
-        ctx.arc(rm.x + rm.w * 0.6, rm.y + rm.h - 45, 20, Math.PI * 0.5, Math.PI);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(rm.x + rm.w * 0.6 - 20, rm.y + rm.h - 45);
-        ctx.lineTo(rm.x + rm.w * 0.6 - 20, rm.y + 60);
-        ctx.stroke();
-        break;
-      }
-      case 'Hallway': {
-        // Overhead strip lights
-        ctx.fillStyle = 'rgba(200,220,255,0.015)';
-        ctx.fillRect(rm.x + 50, rm.y + rm.h * 0.45, rm.w - 100, rm.h * 0.1);
-        // Conduit/wire run along ceiling
-        ctx.strokeStyle = 'rgba(100,100,120,0.06)'; ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(rm.x + 20, rm.y + 25);
-        ctx.lineTo(rm.x + rm.w - 20, rm.y + 25);
-        ctx.stroke();
-        // Pipe along bottom
-        ctx.strokeStyle = 'rgba(120,120,130,0.06)'; ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(rm.x + 20, rm.y + rm.h - 20);
-        ctx.lineTo(rm.x + rm.w - 20, rm.y + rm.h - 20);
-        ctx.stroke();
-        // Arrow floor markings
-        ctx.fillStyle = 'rgba(255,255,255,0.015)';
-        for (let ax = rm.x + 300; ax < rm.x + rm.w - 200; ax += 400) {
-          ctx.beginPath();
-          ctx.moveTo(ax, rm.y + rm.h / 2 - 8);
-          ctx.lineTo(ax + 20, rm.y + rm.h / 2);
-          ctx.lineTo(ax, rm.y + rm.h / 2 + 8);
-          ctx.closePath(); ctx.fill();
+        // MEDBAY: Glowing bio-scanners and beds
+        ctx.fillStyle = '#bac7d6'; ctx.fillRect(rm.x, rm.y, rm.w, 100);
+        // Medical Pods against the wall
+        for (let mx = rm.x + 80; mx < rm.x + rm.w - 150; mx += 200) {
+            ctx.fillStyle = '#ecf0f1'; ctx.fillRect(mx, rm.y, 140, 120);
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.strokeRect(mx, rm.y, 140, 120);
+            // Glowing scanner glass
+            ctx.fillStyle = 'rgba(52, 152, 219, 0.4)';
+            ctx.fillRect(mx + 20, rm.y + 20, 100, 80);
+            ctx.beginPath(); ctx.moveTo(mx+20, rm.y+50); ctx.lineTo(mx+120, rm.y+50); ctx.strokeStyle='#00f2fe'; ctx.stroke();
         }
+        // Occasional blood splatter (Among Us vibe)
+        ctx.fillStyle = 'rgba(192, 57, 43, 0.8)';
+        ctx.beginPath(); ctx.arc(rm.x + rm.w - 80, rm.y + 150, 20, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(rm.x + rm.w - 60, rm.y + 170, 10, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(rm.x + rm.w - 100, rm.y + 160, 15, 0, Math.PI*2); ctx.fill();
         break;
       }
       case 'Bedroom': {
-        // Warm ambient glow from window (simulated)
-        ctx.fillStyle = 'rgba(200,180,255,0.01)';
-        ctx.beginPath();
-        ctx.ellipse(rm.x + rm.w * 0.8, rm.y + rm.h * 0.3, 100, 80, 0, 0, Math.PI * 2);
-        ctx.fill();
-        // Wall poster (abstract)
-        ctx.fillStyle = 'rgba(100,60,120,0.06)';
-        ctx.beginPath(); ctx.roundRect(rm.x + rm.w * 0.1, rm.y + 50, 60, 45, 2); ctx.fill();
-        ctx.strokeStyle = 'rgba(140,80,160,0.08)'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.roundRect(rm.x + rm.w * 0.1, rm.y + 50, 60, 45, 2); ctx.stroke();
+        // COMMS: Radio desks and flashing servers
+        ctx.fillStyle = '#1c222e'; ctx.fillRect(rm.x, rm.y, rm.w, 120);
+        for (let sx = rm.x + 40; sx < rm.x + rm.w - 100; sx += 120) {
+            ctx.fillStyle = '#2f3640'; ctx.fillRect(sx, rm.y, 100, 100);
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.strokeRect(sx, rm.y, 100, 100);
+            // Server lights
+            ctx.fillStyle = (frameCount % 60 < 30) ? '#e84118' : '#4cd137';
+            ctx.fillRect(sx + 20, rm.y + 20, 10, 10);
+            ctx.fillStyle = (frameCount % 45 < 20) ? '#4cd137' : '#e84118';
+            ctx.fillRect(sx + 40, rm.y + 20, 10, 10);
+            ctx.fillStyle = '#192a56'; ctx.fillRect(sx+20, rm.y+40, 60, 15);
+            ctx.fillRect(sx+20, rm.y+65, 60, 15);
+        }
         break;
       }
       case 'Gym': {
-        // Floor line markings for exercise zones
-        ctx.strokeStyle = 'rgba(255,200,0,0.03)'; ctx.lineWidth = 2;
-        // Dashed boundary
-        ctx.setLineDash([10, 10]);
-        ctx.beginPath();
-        ctx.roundRect(rm.x + 140, rm.y + 80, 500, 200, 4);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.roundRect(rm.x + 140, rm.y + 350, 500, 300, 4);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        // Zone labels
-        ctx.fillStyle = 'rgba(255,255,255,0.02)';
-        ctx.font = '10px Inter'; ctx.textAlign = 'center';
-        ctx.fillText('WEIGHTS', rm.x + 390, rm.y + 180);
-        ctx.fillText('CARDIO', rm.x + 390, rm.y + 500);
-        // Rubber mat at entrance
-        ctx.fillStyle = 'rgba(80,60,40,0.06)';
-        ctx.beginPath(); ctx.roundRect(rm.x + rm.w - 80, rm.y + rm.h / 2 - 40, 70, 80, 3); ctx.fill();
+        // WEAPONS: Giant Asteroid Cannon embedded in wall
+        ctx.fillStyle = '#313335'; ctx.fillRect(rm.x, rm.y, rm.w, 140);
+        ctx.fillStyle = '#222'; ctx.fillRect(rm.x + rm.w/2 - 150, rm.y, 300, 140);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.strokeRect(rm.x + rm.w/2 - 150, rm.y, 300, 140);
+        // The cannon barrels
+        ctx.fillStyle = '#111';
+        ctx.fillRect(rm.x+rm.w/2 - 100, rm.y + 40, 200, 40);
+        ctx.fillRect(rm.x+rm.w/2 - 40, rm.y + 80, 80, 60);
         break;
       }
       case 'Garden': {
-        // Sunlight dappling effect
-        ctx.fillStyle = 'rgba(255,255,200,0.012)';
-        for (let i = 0; i < 6; i++) {
-          const gx2 = rm.x + 100 + (i * 197 % rm.w);
-          const gy2 = rm.y + 100 + (i * 131 % rm.h);
-          ctx.beginPath();
-          ctx.ellipse(gx2, gy2, 30 + i * 8, 20 + i * 5, i * 0.3, 0, Math.PI * 2);
-          ctx.fill();
+        // O2 ROOM: Massive Oxygen Tanks
+        ctx.fillStyle = '#2d3436'; ctx.fillRect(rm.x, rm.y, rm.w, 150);
+        for (let tx = rm.x + 80; tx < rm.x + rm.w - 180; tx += 200) {
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(tx, rm.y + 10, 140, 130, 20); ctx.fill();
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.strokeRect(tx, rm.y + 10, 140, 130);
+            // Green liquid inside
+            ctx.fillStyle = 'rgba(46, 204, 113, 0.6)';
+            ctx.fillRect(tx + 20, rm.y + 40, 100, 90);
+            // Bubbles
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            const bob = (frameCount % 60) * 1.5;
+            ctx.beginPath(); ctx.arc(tx + 40, rm.y + 120 - bob, 5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(tx + 80, rm.y + 90 - bob*0.8, 8, 0, Math.PI*2); ctx.fill();
         }
-        // Garden border/fence posts (decorative)
-        ctx.fillStyle = 'rgba(120,100,80,0.04)';
-        for (let fp = rm.x + 60; fp < rm.x + rm.w - 40; fp += 80) {
-          ctx.fillRect(fp, rm.y + 25, 4, 20);
-        }
-        // Fence rail
-        ctx.strokeStyle = 'rgba(120,100,80,0.04)'; ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(rm.x + 60, rm.y + 35);
-        ctx.lineTo(rm.x + rm.w - 40, rm.y + 35);
-        ctx.stroke();
         break;
       }
       case 'Garage': {
-        // Overhead fluorescent light
-        ctx.fillStyle = 'rgba(255,255,240,0.015)';
-        ctx.fillRect(rm.x + rm.w * 0.2, rm.y + 30, rm.w * 0.6, 6);
-        // Light pool
-        ctx.fillStyle = 'rgba(255,255,240,0.01)';
-        ctx.beginPath();
-        ctx.ellipse(rm.x + rm.w * 0.5, rm.y + rm.h * 0.5, rm.w * 0.3, rm.h * 0.35, 0, 0, Math.PI * 2);
-        ctx.fill();
-        // Tool shadow on wall (implied pegboard)
-        ctx.fillStyle = 'rgba(80,80,80,0.03)';
-        ctx.fillRect(rm.x + rm.w - 100, rm.y + 25, 80, 60);
-        // Small dots (pegboard holes)
-        ctx.fillStyle = 'rgba(0,0,0,0.03)';
-        for (let py2 = rm.y + 30; py2 < rm.y + 80; py2 += 10) {
-          for (let px2 = rm.x + rm.w - 95; px2 < rm.x + rm.w - 25; px2 += 10) {
-            ctx.beginPath(); ctx.arc(px2, py2, 1, 0, Math.PI * 2); ctx.fill();
-          }
+        // REACTOR / TRASH ROOM: Giant garbage chute and engines
+        // The garbage chute
+        ctx.fillStyle = '#555'; ctx.fillRect(rm.x, rm.y, 250, 150);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.strokeRect(rm.x, rm.y, 250, 150);
+        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(rm.x + 125, rm.y + 75, 60, 0, Math.PI*2); ctx.fill();
+        
+        ctx.fillStyle = 'rgba(255, 200, 0, 0.8)';
+        ctx.font = '24px sans-serif'; ctx.fillText('TRASH', rm.x + 125, rm.y + 160);
+
+        // Scattered trash bags (organic blobby shapes)
+        function drawTrashBag(bx, by) {
+            ctx.fillStyle = '#2c3e50'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.ellipse(bx, by, 30, 20, Math.random(), 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(bx-10, by-20); ctx.lineTo(bx, by-35); ctx.lineTo(bx+10, by-20); ctx.fill(); ctx.stroke();
+        }
+        drawTrashBag(rm.x + 200, rm.y + 180);
+        drawTrashBag(rm.x + 250, rm.y + 150);
+        drawTrashBag(rm.x + 160, rm.y + 200);
+
+        break;
+      }
+      case 'Hallway': {
+        // Hallway - massive wire bundles and structural pillars
+        ctx.fillStyle = '#1e2025';
+        for (let p = rm.x + 100; p < rm.x + rm.w; p += 400) {
+            ctx.fillRect(p, rm.y, 60, 80);
+            ctx.strokeStyle = '#000'; ctx.lineWidth=4; ctx.strokeRect(p, rm.y, 60, 80);
+            ctx.fillStyle = '#facc15'; ctx.fillRect(p + 10, rm.y + 60, 40, 10);
         }
         break;
       }
@@ -3853,7 +3810,6 @@ function drawAmbientDetails() {
     ctx.restore();
   });
 }
-
 function getWallRoomColor(ox, oy) {
   // Find which room this wall belongs to based on proximity
   let best = null, bestDist = Infinity;
@@ -3869,11 +3825,13 @@ function drawObstacles() {
   MAP_OBSTACLES.forEach(o => {
     // Frustum culling
     if (o.x + o.w < camera.x - 20 || o.x > camera.x + window.innerWidth + 20 ||
-        o.y + o.h < camera.y - 20 || o.y > camera.y + window.innerHeight + 20) return;
+        o.y + o.h < camera.y - 40 || o.y > camera.y + window.innerHeight + 40) return;
 
     if (o.type === 'wall') {
       const rm = getWallRoomColor(o.x, o.y);
       const wallBase = rm ? rm.wallColor : '#1e2538';
+      const wallLight = rm ? rm.wallHighlight : '#2a3548';
+      const trim = rm ? rm.trimColor : '#4a6a88';
       
       // Cyberpunk edge glow for bounds
       if (rm == null) {
@@ -3883,79 +3841,64 @@ function drawObstacles() {
           ctx.shadowColor = rm.trimColor;
           ctx.shadowBlur = 10;
       }
-      const wallLight = rm ? rm.wallHighlight : '#2a3548';
-      const trim = rm ? rm.trimColor : '#4a6a88';
 
-      // Wall shadow (depth effect)
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
-      ctx.beginPath();
-      ctx.roundRect(o.x + 2, o.y + 2, o.w, o.h, 3);
-      ctx.fill();
+      ctx.save();
+      
+      const wallDepth = 25; // How tall the walls are in 2.5D
+      
+      // Shadow (inner base)
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(o.x + 4, o.y + wallDepth + 4, o.w, o.h);
+      ctx.shadowBlur = 0; // Turn off glow for geometry
+      
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 4;
+      ctx.lineJoin = 'round';
 
-      // Main wall body
+      // Wall front face (extrusion)
       ctx.fillStyle = wallBase;
       ctx.beginPath();
-      ctx.roundRect(o.x, o.y, o.w, o.h, 3);
+      ctx.rect(o.x, o.y + o.h, o.w, wallDepth);
       ctx.fill();
-
-      // Wall top highlight (3D depth)
-      ctx.fillStyle = wallLight;
-      if (o.h <= WALL + 2) {
-        // Horizontal wall - top face
-        ctx.fillRect(o.x + 1, o.y, o.w - 2, 3);
-      } else {
-        // Vertical wall - left face
-        ctx.fillRect(o.x, o.y + 1, 3, o.h - 2);
-      }
-
-      // Trim/baseboard accent
-      ctx.fillStyle = trim + '30';
-      if (o.h <= WALL + 2) {
-        // Horizontal wall trim line
-        ctx.fillRect(o.x, o.y + o.h - 2, o.w, 2);
-      } else {
-        // Vertical wall trim
-        ctx.fillRect(o.x + o.w - 2, o.y, 2, o.h);
-      }
-
-      // Subtle texture on longer walls
-      if (o.w > 100 || o.h > 100) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.02)';
-        ctx.lineWidth = 0.5;
-        if (o.w > o.h) {
-          // Horizontal wall - brick-like segments
-          for (let bx = o.x + 30; bx < o.x + o.w - 10; bx += 40) {
-            ctx.beginPath();
-            ctx.moveTo(bx, o.y + 3);
-            ctx.lineTo(bx, o.y + o.h - 3);
-            ctx.stroke();
-          }
-        } else {
-          // Vertical wall
-          for (let by = o.y + 30; by < o.y + o.h - 10; by += 40) {
-            ctx.beginPath();
-            ctx.moveTo(o.x + 3, by);
-            ctx.lineTo(o.x + o.w - 3, by);
-            ctx.stroke();
-          }
-        }
-      }
-
-      // Edge outline
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-      ctx.lineWidth = 0.5;
-      ctx.beginPath();
-      ctx.roundRect(o.x, o.y, o.w, o.h, 3);
       ctx.stroke();
       
-      // Stop wall glow bleeding into room
-      ctx.shadowBlur = 0;
+      // Trim/baseboard on the front face
+      ctx.fillStyle = trim;
+      ctx.fillRect(o.x, o.y + o.h + wallDepth - 6, o.w, 6);
+      ctx.beginPath(); ctx.moveTo(o.x, o.y + o.h + wallDepth - 6); ctx.lineTo(o.x + o.w, o.y + o.h + wallDepth - 6); ctx.stroke();
+
+      // Top face of the wall
+      ctx.fillStyle = wallLight;
+      ctx.beginPath();
+      ctx.rect(o.x, o.y, o.w, o.h);
+      ctx.fill();
+      ctx.stroke();
+      
+      // Top face inner highlight
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.fillRect(o.x + 4, o.y + 4, o.w - 8, Math.min(6, o.h - 8));
+      
+      // Subtle repeating panel lines on top face
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (o.w > o.h) {
+          for (let px = o.x + 40; px < o.x + o.w; px += 40) {
+              ctx.moveTo(px, o.y); ctx.lineTo(px, o.y + o.h);
+          }
+      } else {
+          for (let py = o.y + 40; py < o.y + o.h; py += 40) {
+              ctx.moveTo(o.x, py); ctx.lineTo(o.x + o.w, py);
+          }
+      }
+      ctx.stroke();
+
+      ctx.restore();
     } else {
       drawFurnitureItem(o);
     }
   });
 }
-
 // ── FURNITURE RENDERER (TOP-DOWN SVG) ──
 function drawFurnitureItem(o) {
   const x = o.x, y = o.y, w = o.w, h = o.h;
