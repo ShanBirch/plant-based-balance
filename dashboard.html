@@ -31696,7 +31696,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning', 'view-log-activity', 'view-activity-success', 'view-user-profile'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning', 'view-log-activity', 'view-activity-success', 'view-user-profile', 'view-card-builder'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
@@ -34842,6 +34842,11 @@ function initializeMovementSwipeNavigation() {
     // Interval Timer view
     enableSwipeBackNavigation('view-interval-timer', () => {
         closeIntervalTimer();
+    });
+
+    // Card Builder view
+    enableSwipeBackNavigation('view-card-builder', () => {
+        if (typeof window._closeCardBuilder === 'function') window._closeCardBuilder();
     });
 }
 
@@ -68116,8 +68121,571 @@ document.addEventListener('DOMContentLoaded', async function() {
 })();
 </script>
 
+<!-- ============================================ -->
+<!-- CUSTOM CARD BUILDER - Full-screen overlay    -->
+<!-- ============================================ -->
+<div id="view-card-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#f8fafc; z-index:500; overflow-y:auto;">
+    <!-- Sticky header with safe area -->
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+        <div style="width: 40px;"></div>
+        <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Card Builder</div>
+        <div style="width: 40px;"></div>
+    </div>
+
+    <!-- Chat + Preview area -->
+    <div style="padding: 15px 20px; padding-bottom: 120px;">
+        <!-- Quick-pick cards -->
+        <div id="card-builder-quickpicks" style="margin-bottom: 15px;">
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Quick start</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button onclick="cardBuilderQuickPick('tracker')" style="padding: 8px 14px; border-radius: 20px; border: 1px solid #e2e8f0; background: white; font-size: 0.82rem; cursor: pointer; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                    <span>📊</span> Tracker
+                </button>
+                <button onclick="cardBuilderQuickPick('challenge')" style="padding: 8px 14px; border-radius: 20px; border: 1px solid #e2e8f0; background: white; font-size: 0.82rem; cursor: pointer; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                    <span>🏆</span> Challenge
+                </button>
+                <button onclick="cardBuilderQuickPick('lesson')" style="padding: 8px 14px; border-radius: 20px; border: 1px solid #e2e8f0; background: white; font-size: 0.82rem; cursor: pointer; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                    <span>🧠</span> Quiz / Lesson
+                </button>
+                <button onclick="cardBuilderQuickPick('widget')" style="padding: 8px 14px; border-radius: 20px; border: 1px solid #e2e8f0; background: white; font-size: 0.82rem; cursor: pointer; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                    <span>✨</span> Widget
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat messages -->
+        <div id="card-builder-messages" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+            <div class="cb-msg cb-msg-bot">
+                <div class="cb-msg-bubble">Tell me what kind of card you want to build — a daily tracker, a personal challenge, a quiz, or a dashboard widget. Or just describe your idea!</div>
+            </div>
+        </div>
+
+        <!-- Card preview area -->
+        <div id="card-builder-preview" style="display: none; margin-bottom: 15px;">
+        </div>
+    </div>
+
+    <!-- Fixed input bar at bottom -->
+    <div style="position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 200; display: flex; gap: 8px; align-items: center;">
+        <input type="text" id="card-builder-input" placeholder="Describe your card idea..." style="flex: 1; padding: 11px 16px; border: 1px solid #e2e8f0; border-radius: 24px; font-size: 0.88rem; outline: none; background: #f8fafc; color: var(--text-main); transition: border-color 0.2s;" onfocus="this.style.borderColor='#8b5cf6'" onblur="this.style.borderColor='#e2e8f0'" onkeypress="if(event.key==='Enter') sendCardBuilderMessage()">
+        <button id="card-builder-send-btn" onclick="sendCardBuilderMessage()" style="width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+    </div>
+</div>
+
+<style>
+.cb-msg { display: flex; margin-bottom: 2px; }
+.cb-msg-bot { justify-content: flex-start; }
+.cb-msg-user { justify-content: flex-end; }
+.cb-msg-bubble {
+    max-width: 85%; padding: 10px 14px; border-radius: 16px;
+    font-size: 0.88rem; line-height: 1.45; word-wrap: break-word;
+}
+.cb-msg-bot .cb-msg-bubble {
+    background: white; color: var(--text-main);
+    border-bottom-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.cb-msg-user .cb-msg-bubble {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    color: white; border-bottom-right-radius: 4px;
+}
+.cb-typing-indicator { display: flex; gap: 4px; padding: 4px 0; align-items: center; }
+.cb-typing-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #94a3b8;
+    animation: cbTypingBounce 1.4s infinite ease-in-out;
+}
+.cb-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.cb-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes cbTypingBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+}
+.cb-card-preview {
+    border-radius: 16px; padding: 20px; color: white;
+    position: relative; overflow: hidden;
+}
+.cb-card-preview::before {
+    content: ''; position: absolute; top: -20px; right: -20px;
+    width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;
+}
+.cb-card-preview::after {
+    content: ''; position: absolute; bottom: -30px; left: -30px;
+    width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;
+}
+.cb-card-preview > * { position: relative; z-index: 1; }
+.cb-card-actions { display: flex; gap: 8px; margin-top: 15px; }
+.cb-card-actions button {
+    flex: 1; padding: 10px; border-radius: 10px; border: none;
+    font-weight: 600; font-size: 0.88rem; cursor: pointer;
+}
+.cb-btn-save { background: rgba(255,255,255,0.25); color: white; }
+.cb-btn-save:active { background: rgba(255,255,255,0.4); }
+.cb-btn-tweak { background: rgba(0,0,0,0.15); color: rgba(255,255,255,0.9); }
+.custom-card-container {
+    margin: 15px 25px; border-radius: 16px; padding: 18px 20px;
+    color: white; position: relative; overflow: hidden; cursor: pointer;
+}
+.custom-card-container .cc-decor-1 {
+    position: absolute; top: -20px; right: -20px; width: 100px; height: 100px;
+    background: rgba(255,255,255,0.1); border-radius: 50%;
+}
+.custom-card-container .cc-decor-2 {
+    position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px;
+    background: rgba(255,255,255,0.05); border-radius: 50%;
+}
+</style>
+
+<script>
+(function() {
+    let cbChatHistory = [];
+    let cbCurrentCard = null;
+    const CB_STORAGE_KEY = 'pbb_custom_cards';
+
+    function getCustomCards() {
+        try { return JSON.parse(localStorage.getItem(CB_STORAGE_KEY) || '[]'); }
+        catch { return []; }
+    }
+
+    function saveCustomCard(card) {
+        const cards = getCustomCards();
+        card.id = 'cc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        card.createdAt = new Date().toISOString();
+        card.active = true;
+        cards.push(card);
+        localStorage.setItem(CB_STORAGE_KEY, JSON.stringify(cards));
+        return card;
+    }
+
+    function deleteCustomCard(cardId) {
+        let cards = getCustomCards();
+        cards = cards.filter(c => c.id !== cardId);
+        localStorage.setItem(CB_STORAGE_KEY, JSON.stringify(cards));
+        renderCustomCardsOnDashboard();
+    }
+
+    function updateCustomCardData(cardId, dataUpdate) {
+        const cards = getCustomCards();
+        const card = cards.find(c => c.id === cardId);
+        if (!card) return;
+        card.trackingData = { ...(card.trackingData || {}), ...dataUpdate };
+        localStorage.setItem(CB_STORAGE_KEY, JSON.stringify(cards));
+    }
+
+    function getCardTrackingData(cardId) {
+        const cards = getCustomCards();
+        const card = cards.find(c => c.id === cardId);
+        return card?.trackingData || {};
+    }
+
+    function openCardBuilder() {
+        if (typeof hideAllAppViews === 'function') hideAllAppViews();
+        const view = document.getElementById('view-card-builder');
+        if (!view) return;
+        view.style.display = 'block';
+        view.scrollTop = 0;
+        window.scrollTo(0, 0);
+        const bottomNav = document.querySelector('.bottom-nav');
+        if (bottomNav) bottomNav.style.display = 'none';
+
+        cbChatHistory = [];
+        cbCurrentCard = null;
+        const msgs = document.getElementById('card-builder-messages');
+        if (msgs) msgs.innerHTML = '<div class="cb-msg cb-msg-bot"><div class="cb-msg-bubble">Tell me what kind of card you want to build — a daily tracker, a personal challenge, a quiz, or a dashboard widget. Or just describe your idea!</div></div>';
+        const preview = document.getElementById('card-builder-preview');
+        if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+        document.getElementById('card-builder-quickpicks').style.display = 'block';
+        document.getElementById('card-builder-input').value = '';
+
+        if (typeof pushNavigationState === 'function') {
+            pushNavigationState('view-card-builder', () => closeCardBuilder());
+        }
+    }
+
+    function closeCardBuilder() {
+        document.getElementById('view-card-builder').style.display = 'none';
+        if (typeof switchAppTab === 'function') switchAppTab('view-dashboard');
+    }
+
+    function cardBuilderQuickPick(type) {
+        const prompts = {
+            tracker: "I want to create a daily tracker card",
+            challenge: "I want to create a personal challenge",
+            lesson: "I want to create a quiz or lesson card",
+            widget: "I want to create a dashboard widget"
+        };
+        document.getElementById('card-builder-input').value = prompts[type] || '';
+        sendCardBuilderMessage();
+    }
+
+    function addCbMessage(text, role) {
+        const container = document.getElementById('card-builder-messages');
+        if (!container) return;
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'cb-msg cb-msg-' + (role === 'user' ? 'user' : 'bot');
+        const bubble = document.createElement('div');
+        bubble.className = 'cb-msg-bubble';
+        bubble.textContent = text;
+        msgDiv.appendChild(bubble);
+        container.appendChild(msgDiv);
+        const view = document.getElementById('view-card-builder');
+        if (view) setTimeout(() => view.scrollTop = view.scrollHeight, 50);
+    }
+
+    function showCbTyping() {
+        const container = document.getElementById('card-builder-messages');
+        if (!container) return;
+        const indicator = document.createElement('div');
+        indicator.className = 'cb-msg cb-msg-bot';
+        indicator.id = 'cb-typing';
+        indicator.innerHTML = '<div class="cb-msg-bubble"><div class="cb-typing-indicator"><div class="cb-typing-dot"></div><div class="cb-typing-dot"></div><div class="cb-typing-dot"></div></div></div>';
+        container.appendChild(indicator);
+        const view = document.getElementById('view-card-builder');
+        if (view) setTimeout(() => view.scrollTop = view.scrollHeight, 50);
+    }
+
+    function removeCbTyping() {
+        const el = document.getElementById('cb-typing');
+        if (el) el.remove();
+    }
+
+    async function sendCardBuilderMessage() {
+        const input = document.getElementById('card-builder-input');
+        const text = input?.value?.trim();
+        if (!text) return;
+        input.value = '';
+        document.getElementById('card-builder-quickpicks').style.display = 'none';
+        addCbMessage(text, 'user');
+        cbChatHistory.push({ role: 'user', text });
+
+        const sendBtn = document.getElementById('card-builder-send-btn');
+        if (sendBtn) sendBtn.style.opacity = '0.5';
+        if (input) input.disabled = true;
+        showCbTyping();
+
+        try {
+            const userData = {};
+            try { const p = localStorage.getItem('userProfile'); if (p) userData.profile = JSON.parse(p); } catch {}
+            try { const f = localStorage.getItem('pbb_user_facts'); if (f) userData.facts = JSON.parse(f); } catch {}
+            const existingCards = getCustomCards().map(c => ({ title: c.title, type: c.type }));
+
+            const response = await fetch('/.netlify/functions/card-builder-ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text, chatHistory: cbChatHistory.slice(-16), userData, existingCards })
+            });
+            removeCbTyping();
+            if (!response.ok) throw new Error('Network error');
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+
+            if (data.reply) {
+                addCbMessage(data.reply, 'bot');
+                cbChatHistory.push({ role: 'model', text: data.reply });
+            }
+            if (data.card) {
+                cbCurrentCard = data.card;
+                renderCardPreview(data.card);
+            }
+        } catch (err) {
+            removeCbTyping();
+            addCbMessage('Sorry, something went wrong. Please try again!', 'bot');
+            console.error('Card builder error:', err);
+        }
+
+        if (sendBtn) sendBtn.style.opacity = '1';
+        if (input) { input.disabled = false; input.focus(); }
+    }
+
+    function shiftColor(hex, amount) {
+        hex = (hex || '#8b5cf6').replace('#', '');
+        if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+        const num = parseInt(hex, 16);
+        let r = Math.min(255, Math.max(0, (num >> 16) + amount));
+        let g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
+        let b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
+        return '#' + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
+    }
+
+    function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+    function renderCardPreview(card) {
+        const container = document.getElementById('card-builder-preview');
+        if (!container) return;
+        const color2 = shiftColor(card.color, -20);
+        const bg = 'linear-gradient(135deg, ' + (card.color || '#8b5cf6') + ' 0%, ' + color2 + ' 100%)';
+
+        let configHtml = '';
+        if (card.type === 'tracker' && card.config) {
+            configHtml = '<div style="margin-top:10px;font-size:0.82rem;opacity:0.9;"><span style="background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:12px;margin-right:6px;">' + (card.config.trackingType||'checkbox') + '</span><span style="background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:12px;margin-right:6px;">' + (card.config.frequency||'daily') + '</span>' + (card.config.goal ? '<span style="background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:12px;">Goal: ' + card.config.goal + (card.config.unit ? ' ' + card.config.unit : '') + '</span>' : '') + '</div>';
+        } else if (card.type === 'challenge' && card.config) {
+            configHtml = '<div style="margin-top:10px;font-size:0.82rem;opacity:0.9;"><span style="background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:12px;margin-right:6px;">' + (card.config.durationDays||30) + ' days</span>' + (card.config.dailyTarget ? '<span style="background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:12px;">' + escHtml(card.config.dailyTarget) + '</span>' : '') + '</div>';
+        } else if (card.type === 'lesson' && card.config) {
+            const n = card.config.games?.length || 0;
+            configHtml = '<div style="margin-top:10px;font-size:0.82rem;opacity:0.9;"><span style="background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:12px;">' + n + ' question' + (n !== 1 ? 's' : '') + '</span></div>';
+        } else if (card.type === 'widget' && card.config) {
+            configHtml = '<div style="margin-top:10px;font-size:0.82rem;opacity:0.9;"><span style="background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:12px;">' + (card.config.widgetType||'info') + '</span></div>';
+        }
+
+        container.innerHTML = '<div class="cb-card-preview" style="background:' + bg + ';"><div style="display:flex;align-items:flex-start;gap:12px;"><div style="width:44px;height:44px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">' + (card.icon||'✨') + '</div><div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:1rem;margin-bottom:2px;">' + escHtml(card.title||'Custom Card') + '</div><div style="font-size:0.82rem;opacity:0.9;">' + escHtml(card.description||'') + '</div></div><div style="background:rgba(255,255,255,0.2);padding:4px 10px;border-radius:12px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">' + (card.type||'card') + '</div></div>' + configHtml + '<div class="cb-card-actions"><button class="cb-btn-save" onclick="window._cbSaveCard()">Add to Dashboard</button><button class="cb-btn-tweak" onclick="document.getElementById(\'card-builder-input\').focus()">Tweak It</button></div></div>';
+        container.style.display = 'block';
+        const view = document.getElementById('view-card-builder');
+        if (view) setTimeout(() => view.scrollTop = view.scrollHeight, 50);
+    }
+
+    function cbSaveCard() {
+        if (!cbCurrentCard) return;
+        saveCustomCard(cbCurrentCard);
+        const preview = document.getElementById('card-builder-preview');
+        if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+        addCbMessage('Card saved to your dashboard! You can create another or swipe back.', 'bot');
+        cbCurrentCard = null;
+        renderCustomCardsOnDashboard();
+    }
+
+    function renderCustomCardsOnDashboard() {
+        document.querySelectorAll('.custom-card-wrapper').forEach(el => el.remove());
+        const cards = getCustomCards().filter(c => c.active);
+        if (cards.length === 0) return;
+        const anchor = document.getElementById('daily-workout-trend-card');
+        if (!anchor) return;
+        const today = new Date().toISOString().split('T')[0];
+
+        cards.forEach(card => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'custom-card-wrapper';
+            wrapper.id = 'custom-card-' + card.id;
+            const color2 = shiftColor(card.color, -20);
+            const bg = 'linear-gradient(135deg, ' + (card.color||'#8b5cf6') + ' 0%, ' + color2 + ' 100%)';
+            const tracking = card.trackingData || {};
+            let bodyHtml = '';
+
+            if (card.type === 'tracker') {
+                const todayDone = tracking[today];
+                const tType = card.config?.trackingType || 'checkbox';
+                if (tType === 'checkbox') {
+                    bodyHtml = '<div style="margin-top:12px;"><button onclick="window._ccToggleTracker(\'' + card.id + '\')" style="background:rgba(255,255,255,' + (todayDone ? '0.3' : '0.15') + ');border:2px solid rgba(255,255,255,0.4);color:white;padding:8px 18px;border-radius:10px;font-size:0.85rem;font-weight:600;cursor:pointer;">' + (todayDone ? '&#x2713; Done Today' : 'Mark Complete') + '</button></div>';
+                } else if (tType === 'counter') {
+                    const count = todayDone || 0;
+                    const goal = card.config?.goal || 0;
+                    bodyHtml = '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;"><button onclick="window._ccCounterDecrement(\'' + card.id + '\')" style="width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.15);color:white;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">-</button><div style="font-size:1.3rem;font-weight:700;min-width:50px;text-align:center;">' + count + (goal ? '/' + goal : '') + (card.config?.unit ? ' ' + card.config.unit : '') + '</div><button onclick="window._ccCounterIncrement(\'' + card.id + '\')" style="width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.15);color:white;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button></div>';
+                } else if (tType === 'rating') {
+                    const rating = todayDone || 0;
+                    let stars = '';
+                    for (let i = 1; i <= 5; i++) {
+                        stars += '<span onclick="window._ccRate(\'' + card.id + '\', ' + i + ')" style="cursor:pointer;font-size:1.3rem;opacity:' + (i <= rating ? '1' : '0.4') + ';">' + (i <= rating ? '&#9733;' : '&#9734;') + '</span>';
+                    }
+                    bodyHtml = '<div style="margin-top:10px;display:flex;gap:4px;">' + stars + '</div>';
+                }
+            } else if (card.type === 'challenge') {
+                const startDate = card.createdAt ? card.createdAt.split('T')[0] : today;
+                const dayNum = Math.floor((new Date(today) - new Date(startDate)) / 86400000) + 1;
+                const totalDays = card.config?.durationDays || 30;
+                const pct = Math.min(100, Math.round((dayNum / totalDays) * 100));
+                const todayChecked = tracking[today];
+                bodyHtml = '<div style="margin-top:12px;"><div style="display:flex;justify-content:space-between;font-size:0.78rem;opacity:0.85;margin-bottom:6px;"><span>Day ' + Math.min(dayNum, totalDays) + ' of ' + totalDays + '</span><span>' + pct + '%</span></div><div style="background:rgba(255,255,255,0.2);border-radius:6px;height:6px;overflow:hidden;"><div style="background:rgba(255,255,255,0.7);height:100%;width:' + pct + '%;border-radius:6px;transition:width 0.3s;"></div></div><button onclick="window._ccToggleTracker(\'' + card.id + '\')" style="margin-top:10px;background:rgba(255,255,255,' + (todayChecked ? '0.3' : '0.15') + ');border:2px solid rgba(255,255,255,0.4);color:white;padding:8px 18px;border-radius:10px;font-size:0.85rem;font-weight:600;cursor:pointer;">' + (todayChecked ? '&#x2713; Day Complete' : 'Complete Today') + '</button></div>';
+            } else if (card.type === 'lesson') {
+                const gameCount = card.config?.games?.length || 0;
+                const completed = tracking.completed;
+                bodyHtml = '<div style="margin-top:12px;"><button onclick="window._ccStartLesson(\'' + card.id + '\')" style="background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);color:white;padding:8px 18px;border-radius:10px;font-size:0.85rem;font-weight:600;cursor:pointer;">' + (completed ? 'Play Again' : 'Start') + ' (' + gameCount + ' questions)</button></div>';
+            } else if (card.type === 'widget') {
+                if (card.config?.widgetType === 'affirmation') {
+                    const affirmations = card.config?.content?.affirmations || ['You are doing great!'];
+                    const idx = Math.floor(Math.random() * affirmations.length);
+                    bodyHtml = '<div style="margin-top:8px;font-size:0.92rem;font-style:italic;opacity:0.95;line-height:1.4;">"' + escHtml(affirmations[idx]) + '"</div>';
+                } else if (card.config?.widgetType === 'checklist') {
+                    const items = card.config?.content?.items || [];
+                    const checks = tracking.checks || {};
+                    let listHtml = '';
+                    items.forEach((item, i) => {
+                        const checked = checks[today + '_' + i];
+                        listHtml += '<div onclick="window._ccChecklistToggle(\'' + card.id + '\', ' + i + ')" style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:0.85rem;opacity:' + (checked ? '0.7' : '1') + ';text-decoration:' + (checked ? 'line-through' : 'none') + ';"><span style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.5);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;background:' + (checked ? 'rgba(255,255,255,0.3)' : 'transparent') + ';">' + (checked ? '&#x2713;' : '') + '</span>' + escHtml(item) + '</div>';
+                    });
+                    bodyHtml = '<div style="margin-top:10px;">' + listHtml + '</div>';
+                } else if (card.config?.widgetType === 'note') {
+                    bodyHtml = '<div style="margin-top:8px;font-size:0.85rem;opacity:0.95;line-height:1.4;">' + escHtml(card.config?.content?.text || '') + '</div>';
+                }
+            }
+
+            wrapper.innerHTML = '<div class="custom-card-container" style="background:' + bg + ';"><div class="cc-decor-1"></div><div class="cc-decor-2"></div><button onclick="event.stopPropagation();window._ccDeleteCard(\'' + card.id + '\')" style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.2);border:none;color:white;width:24px;height:24px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;padding:0;z-index:2;">&#x2715;</button><div style="position:relative;z-index:1;"><div style="display:flex;align-items:flex-start;gap:12px;"><div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">' + (card.icon||'✨') + '</div><div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:0.95rem;margin-bottom:2px;">' + escHtml(card.title) + '</div><div style="font-size:0.82rem;opacity:0.9;">' + escHtml(card.description||'') + '</div></div></div>' + bodyHtml + '</div></div>';
+            anchor.parentNode.insertBefore(wrapper, anchor.nextSibling);
+        });
+    }
+
+    function ccToggleTracker(cardId) {
+        const today = new Date().toISOString().split('T')[0];
+        const data = getCardTrackingData(cardId);
+        data[today] = !data[today];
+        updateCustomCardData(cardId, data);
+        renderCustomCardsOnDashboard();
+    }
+
+    function ccCounterIncrement(cardId) {
+        const today = new Date().toISOString().split('T')[0];
+        const data = getCardTrackingData(cardId);
+        data[today] = (data[today] || 0) + 1;
+        updateCustomCardData(cardId, data);
+        renderCustomCardsOnDashboard();
+    }
+
+    function ccCounterDecrement(cardId) {
+        const today = new Date().toISOString().split('T')[0];
+        const data = getCardTrackingData(cardId);
+        data[today] = Math.max(0, (data[today] || 0) - 1);
+        updateCustomCardData(cardId, data);
+        renderCustomCardsOnDashboard();
+    }
+
+    function ccRate(cardId, rating) {
+        const today = new Date().toISOString().split('T')[0];
+        const data = getCardTrackingData(cardId);
+        data[today] = rating;
+        updateCustomCardData(cardId, data);
+        renderCustomCardsOnDashboard();
+    }
+
+    function ccChecklistToggle(cardId, index) {
+        const today = new Date().toISOString().split('T')[0];
+        const data = getCardTrackingData(cardId);
+        if (!data.checks) data.checks = {};
+        data.checks[today + '_' + index] = !data.checks[today + '_' + index];
+        updateCustomCardData(cardId, data);
+        renderCustomCardsOnDashboard();
+    }
+
+    function ccDeleteCard(cardId) {
+        if (confirm('Remove this card from your dashboard?')) deleteCustomCard(cardId);
+    }
+
+    function ccStartLesson(cardId) {
+        const cards = getCustomCards();
+        const card = cards.find(c => c.id === cardId);
+        if (!card || !card.config?.games?.length) return;
+
+        let currentQ = 0;
+        const games = card.config.games;
+        let score = 0;
+        let tapAllSelected = new Set();
+        let matchState = { selected: null, matched: 0, pairs: [] };
+
+        let overlay = document.getElementById('custom-lesson-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'custom-lesson-overlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#f8fafc;z-index:100001;overflow-y:auto;display:none;';
+            document.body.appendChild(overlay);
+        }
+        overlay.style.display = 'block';
+
+        function showFeedback(correct, explanation) {
+            const fb = document.getElementById('cl-feedback');
+            if (!fb) return;
+            fb.style.display = 'block';
+            fb.style.background = correct ? '#f0fdf4' : '#fef2f2';
+            fb.style.color = correct ? '#16a34a' : '#dc2626';
+            fb.innerHTML = '<div style="font-weight:700;margin-bottom:4px;">' + (correct ? 'Correct!' : 'Not quite') + '</div>' + (explanation ? '<div style="font-size:0.85rem;color:var(--text-muted);">' + escHtml(explanation) + '</div>' : '') + '<button onclick="window._ccNextQ()" style="margin-top:12px;padding:10px 24px;background:' + (correct ? '#22c55e' : '#8b5cf6') + ';color:white;border:none;border-radius:10px;font-weight:600;cursor:pointer;">Continue</button>';
+            document.querySelectorAll('#cl-question-area button').forEach(b => b.disabled = true);
+        }
+
+        function renderQuestion() {
+            if (currentQ >= games.length) {
+                const pct = Math.round((score / games.length) * 100);
+                overlay.innerHTML = '<div style="padding:20px;padding-top:calc(20px + env(safe-area-inset-top, 0px));text-align:center;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div style="font-size:3rem;margin-bottom:15px;">' + (pct >= 80 ? '🎉' : pct >= 50 ? '👍' : '💪') + '</div><div style="font-size:1.4rem;font-weight:700;color:var(--text-main);margin-bottom:8px;">' + pct + '% Correct</div><div style="font-size:0.9rem;color:var(--text-muted);margin-bottom:30px;">' + score + ' of ' + games.length + ' questions</div><button onclick="document.getElementById(\'custom-lesson-overlay\').style.display=\'none\'" style="padding:12px 30px;background:linear-gradient(135deg,#8b5cf6 0%,#6366f1 100%);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;">Done</button></div>';
+                updateCustomCardData(cardId, { completed: true, lastScore: pct });
+                return;
+            }
+
+            const game = games[currentQ];
+            const progress = (currentQ + 1) + '/' + games.length;
+            matchState = { selected: null, matched: 0, pairs: game.pairs || [] };
+            tapAllSelected = new Set();
+            let qHtml = '';
+
+            if (game.type === 'swipe_true_false') {
+                qHtml = '<div style="font-size:1rem;color:var(--text-main);text-align:center;margin:30px 0;line-height:1.5;padding:0 10px;">' + escHtml(game.question) + '</div><div style="display:flex;gap:12px;justify-content:center;"><button onclick="window._ccAnsTF(false)" style="flex:1;max-width:140px;padding:14px;border-radius:12px;border:2px solid #ef4444;background:#fef2f2;color:#ef4444;font-weight:700;font-size:1rem;cursor:pointer;">Myth</button><button onclick="window._ccAnsTF(true)" style="flex:1;max-width:140px;padding:14px;border-radius:12px;border:2px solid #22c55e;background:#f0fdf4;color:#22c55e;font-weight:700;font-size:1rem;cursor:pointer;">Fact</button></div>';
+            } else if (game.type === 'fill_blank') {
+                const opts = (game.options||[]).map(function(o) { return '<button onclick="window._ccAnsFB(\'' + o.replace(/'/g, "\\'") + '\')" style="padding:10px 18px;border-radius:10px;border:1px solid #e2e8f0;background:white;color:var(--text-main);font-size:0.9rem;cursor:pointer;">' + escHtml(o) + '</button>'; }).join('');
+                qHtml = '<div style="font-size:1rem;color:var(--text-main);text-align:center;margin:30px 0;line-height:1.5;padding:0 10px;">' + escHtml(game.sentence||game.question||'') + '</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">' + opts + '</div>';
+            } else if (game.type === 'tap_all') {
+                const opts = (game.options||[]).map(function(o, i) { return '<button id="ta-opt-' + i + '" onclick="window._ccToggleTA(' + i + ')" style="padding:10px 18px;border-radius:10px;border:2px solid #e2e8f0;background:white;color:var(--text-main);font-size:0.9rem;cursor:pointer;">' + escHtml(o.text) + '</button>'; }).join('');
+                qHtml = '<div style="font-size:1rem;color:var(--text-main);text-align:center;margin:30px 0;line-height:1.5;padding:0 10px;">' + escHtml(game.question) + '</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:15px;">' + opts + '</div><div style="text-align:center;"><button onclick="window._ccSubmitTA()" style="padding:12px 30px;background:linear-gradient(135deg,#8b5cf6 0%,#6366f1 100%);color:white;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Check</button></div>';
+            } else if (game.type === 'scenario_story') {
+                const opts = (game.options||[]).map(function(o, i) { return '<button onclick="window._ccAnsScenario(' + i + ')" style="display:block;width:100%;padding:12px 16px;border-radius:10px;border:1px solid #e2e8f0;background:white;color:var(--text-main);font-size:0.88rem;cursor:pointer;text-align:left;margin-bottom:8px;">' + escHtml(o.text) + '</button>'; }).join('');
+                qHtml = '<div style="font-size:0.88rem;color:var(--text-muted);text-align:center;margin:15px 0;line-height:1.4;padding:0 10px;font-style:italic;">' + escHtml(game.scenario||'') + '</div><div style="font-size:1rem;color:var(--text-main);text-align:center;margin:15px 0 20px;font-weight:600;">' + escHtml(game.question) + '</div>' + opts;
+            } else if (game.type === 'match_pairs') {
+                const pairs = game.pairs || [];
+                const rights = pairs.map(function(p){return p.right;}).sort(function(){return Math.random()-0.5;});
+                let grid = '';
+                pairs.forEach(function(p, i) {
+                    grid += '<div id="mp-l-' + i + '" onclick="window._ccMatchSel(\'left\',' + i + ')" style="padding:10px 14px;border-radius:8px;border:2px solid #e2e8f0;background:white;cursor:pointer;font-size:0.85rem;text-align:center;">' + escHtml(p.left) + '</div><div id="mp-r-' + i + '" data-val="' + escHtml(rights[i]) + '" onclick="window._ccMatchSel(\'right\',' + i + ')" style="padding:10px 14px;border-radius:8px;border:2px solid #e2e8f0;background:white;cursor:pointer;font-size:0.85rem;text-align:center;">' + escHtml(rights[i]) + '</div>';
+                });
+                qHtml = '<div style="font-size:0.92rem;color:var(--text-main);text-align:center;margin:20px 0;font-weight:600;">Match the pairs</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' + grid + '</div>';
+            } else {
+                qHtml = '<div style="font-size:1rem;color:var(--text-main);text-align:center;margin:30px 0;">' + escHtml(game.question||'Question') + '</div><button onclick="window._ccNextQ()" style="display:block;margin:0 auto;padding:12px 30px;background:linear-gradient(135deg,#8b5cf6 0%,#6366f1 100%);color:white;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Next</button>';
+            }
+
+            overlay.innerHTML = '<div style="padding:20px;padding-top:calc(20px + env(safe-area-inset-top, 0px));min-height:100vh;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;"><button onclick="document.getElementById(\'custom-lesson-overlay\').style.display=\'none\'" style="background:none;border:none;font-size:0.9rem;color:var(--text-muted);cursor:pointer;">Close</button><div style="font-size:0.85rem;font-weight:600;color:var(--text-main);">' + progress + '</div><div style="font-size:0.85rem;color:var(--text-muted);">' + score + ' pts</div></div><div style="background:#e2e8f0;border-radius:4px;height:4px;margin-bottom:20px;"><div style="background:linear-gradient(135deg,#8b5cf6 0%,#6366f1 100%);height:100%;width:' + ((currentQ/games.length)*100) + '%;border-radius:4px;"></div></div><div id="cl-question-area">' + qHtml + '</div><div id="cl-feedback" style="display:none;text-align:center;margin-top:20px;padding:15px;border-radius:12px;"></div></div>';
+        }
+
+        window._ccAnsTF = function(answer) { const g = games[currentQ]; if (answer === g.answer) score++; showFeedback(answer === g.answer, g.explanation); };
+        window._ccAnsFB = function(answer) { const g = games[currentQ]; if (answer === g.answer) score++; showFeedback(answer === g.answer, null); };
+        window._ccToggleTA = function(idx) { const el = document.getElementById('ta-opt-'+idx); if (!el) return; if (tapAllSelected.has(idx)) { tapAllSelected.delete(idx); el.style.borderColor='#e2e8f0'; el.style.background='white'; } else { tapAllSelected.add(idx); el.style.borderColor='#8b5cf6'; el.style.background='#f5f3ff'; } };
+        window._ccSubmitTA = function() { const g = games[currentQ]; const correct = new Set((g.options||[]).map(function(o,i){return o.correct?i:-1}).filter(function(i){return i>=0})); const ok = tapAllSelected.size===correct.size && [...tapAllSelected].every(function(i){return correct.has(i)}); if (ok) score++; showFeedback(ok, null); tapAllSelected = new Set(); };
+        window._ccAnsScenario = function(idx) { const g = games[currentQ]; const ok = g.options?.[idx]?.correct; if (ok) score++; showFeedback(ok, g.explanation); };
+        window._ccMatchSel = function(side, idx) {
+            const g = games[currentQ]; const pairs = g.pairs||[];
+            if (!matchState.selected) { matchState.selected = {side, idx}; const el = document.getElementById('mp-'+side[0]+'-'+idx); if (el) el.style.borderColor='#8b5cf6'; }
+            else if (matchState.selected.side === side) { const old = document.getElementById('mp-'+side[0]+'-'+matchState.selected.idx); if (old) old.style.borderColor='#e2e8f0'; matchState.selected = {side, idx}; const el = document.getElementById('mp-'+side[0]+'-'+idx); if (el) el.style.borderColor='#8b5cf6'; }
+            else {
+                const lIdx = side==='left'?idx:matchState.selected.idx; const rIdx = side==='right'?idx:matchState.selected.idx;
+                const rEl = document.getElementById('mp-r-'+rIdx); const rVal = rEl?.getAttribute('data-val');
+                const ok = pairs[lIdx]?.right === rVal; const lEl = document.getElementById('mp-l-'+lIdx);
+                if (ok) { if(lEl){lEl.style.borderColor='#22c55e';lEl.style.background='#f0fdf4';lEl.style.pointerEvents='none';} if(rEl){rEl.style.borderColor='#22c55e';rEl.style.background='#f0fdf4';rEl.style.pointerEvents='none';} matchState.matched++; if(matchState.matched>=pairs.length){score++;showFeedback(true,null);} }
+                else { if(lEl) lEl.style.borderColor='#ef4444'; if(rEl) rEl.style.borderColor='#ef4444'; setTimeout(function(){if(lEl)lEl.style.borderColor='#e2e8f0';if(rEl)rEl.style.borderColor='#e2e8f0';},600); }
+                matchState.selected = null;
+            }
+        };
+        window._ccNextQ = function() { currentQ++; renderQuestion(); };
+
+        renderQuestion();
+    }
+
+    function renderCreateCardButton() {
+        if (document.getElementById('create-card-btn-wrapper')) return;
+        const anchor = document.getElementById('daily-workout-trend-card');
+        if (!anchor) return;
+        const btn = document.createElement('div');
+        btn.id = 'create-card-btn-wrapper';
+        btn.innerHTML = '<div onclick="window._openCardBuilder()" style="margin:15px 25px;padding:16px 20px;background:white;border:2px dashed #d1d5db;border-radius:16px;cursor:pointer;display:flex;align-items:center;gap:12px;" onmouseover="this.style.borderColor=\'#8b5cf6\'" onmouseout="this.style.borderColor=\'#d1d5db\'"><div style="width:40px;height:40px;background:linear-gradient(135deg,#8b5cf6 0%,#6366f1 100%);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:white;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div><div><div style="font-weight:700;font-size:0.9rem;color:var(--text-main);">Create Custom Card</div><div style="font-size:0.78rem;color:var(--text-muted);">Build trackers, challenges, quizzes & more with AI</div></div></div>';
+        anchor.parentNode.insertBefore(btn, anchor.nextSibling);
+    }
+
+    function initCustomCards() {
+        renderCreateCardButton();
+        renderCustomCardsOnDashboard();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCustomCards);
+    } else {
+        setTimeout(initCustomCards, 500);
+    }
+
+    window._openCardBuilder = openCardBuilder;
+    window._closeCardBuilder = closeCardBuilder;
+    window._cbSaveCard = cbSaveCard;
+    window._ccToggleTracker = ccToggleTracker;
+    window._ccCounterIncrement = ccCounterIncrement;
+    window._ccCounterDecrement = ccCounterDecrement;
+    window._ccRate = ccRate;
+    window._ccChecklistToggle = ccChecklistToggle;
+    window._ccDeleteCard = ccDeleteCard;
+    window._ccStartLesson = ccStartLesson;
+    window.cardBuilderQuickPick = cardBuilderQuickPick;
+    window.sendCardBuilderMessage = sendCardBuilderMessage;
+})();
+</script>
+
 </body>
 </html>
-
-
 
