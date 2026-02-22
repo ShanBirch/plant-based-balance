@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v22'; // v22: Better DM notification logging, 5s polling interval
+const CACHE_NAME = 'pbb-app-v23'; // v23: Skip SW registration on native, fix FCM token save
 const MODEL_CACHE_NAME = 'pbb-models-v2'; // v2: pre-cache critical onboarding models for fast startup
 const ASSETS = [
   './dashboard.html',
