@@ -12688,12 +12688,14 @@ async function applyAppTheme(themeKey) {
                             });
                         });
                     }
-                    if (window.NativePush) window.NativePush.init();
                 } else if (!window._onboardingWizardPending) {
                     // First time on native & no onboarding wizard pending — show permissions modal
                     // (If wizard IS pending, permissions modal will show after wizard finishes)
                     setTimeout(showNativePermissionsModal, 800);
                 }
+                // Always init native push (FCM) regardless of permissions modal state
+                // so the FCM token gets registered for background push notifications
+                if (window.NativePush) window.NativePush.init();
             } else if (!window._onboardingWizardPending) {
                 // Web (non-native): request notification permission now that user is logged in
                 // and onboarding is complete. Deferred from DOMContentLoaded to avoid
@@ -47604,6 +47606,13 @@ function openCoachChat() {
 
 // 5. Push Notifications - Subscribe ALL users to server push
 async function requestNotificationPermission() {
+    // On native apps, push notifications are handled by FCM via NativePush.init()
+    // Web push subscriptions from a WebView don't deliver when the app is closed
+    if (typeof isNativeApp === 'function' && isNativeApp()) {
+        console.log('[Push] Native app detected — skipping web push (FCM handles this)');
+        return;
+    }
+
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
         console.log('Push notifications not supported');
         return;
