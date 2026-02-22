@@ -63815,6 +63815,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const existing = await window.dbHelpers.userFacts.get(userId) || {};
                 const currentAdditional = existing.additional_data || {};
                 const unalloc = parseInt(localStorage.getItem('unallocatedStatPoints') || '0');
+
+                // Don't overwrite non-zero DB stats with zeros (protects against
+                // localStorage being cleared while DB still has the correct values)
+                const dbStats = currentAdditional.battle_stats;
+                if (dbStats) {
+                    const dbAllocated = (dbStats.str || 0) + (dbStats.hp || 0) + (dbStats.mana || 0);
+                    const newAllocated = (stats.str || 0) + (stats.hp || 0) + (stats.mana || 0);
+                    if (dbAllocated > 0 && newAllocated === 0) {
+                        console.warn('🎮 Blocked saving zeroed stats to DB (DB has allocated stats). Only updating unallocated points.');
+                        await window.dbHelpers.userFacts.upsert(userId, {
+                            additional_data: { ...currentAdditional, unallocated_stat_points: unalloc }
+                        });
+                        return;
+                    }
+                }
+
                 await window.dbHelpers.userFacts.upsert(userId, {
                     additional_data: { ...currentAdditional, battle_stats: stats, unallocated_stat_points: unalloc }
                 });
@@ -64070,18 +64086,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             const actualTotal = allocated + unallocated;
 
             if (actualTotal < expectedTotal) {
-                // Safety check: if allocated stats are 0 but user has a non-trivial level,
-                // something corrupted localStorage/DB. Don't grant retroactive points
-                // based on corrupted data — it would overwrite correct DB values with zeros.
-                if (allocated === 0 && level > 5 && unallocated === 0) {
-                    console.warn(`🎮 Skipping retroactive grant: stats appear corrupted (level ${level} but 0 allocated, 0 unallocated). Will retry on next load.`);
-                    return;
-                }
                 const missing = expectedTotal - actualTotal;
+                if (allocated === 0 && level > 5 && unallocated === 0) {
+                    // Stats were lost (localStorage cleared + DB empty/zeroed).
+                    // Grant ALL expected points as unallocated so the user can re-allocate.
+                    console.warn(`🎮 Stat recovery: level ${level} but 0 allocated, 0 unallocated. Granting all ${expectedTotal} points as unallocated.`);
+                }
                 setUnallocatedPoints(unallocated + missing);
                 console.log(`🎮 Retroactively granted ${missing} stat points (level ${level}, expected ${expectedTotal}, had ${actualTotal})`);
                 // Persist the newly granted unallocated points to DB
                 saveBattleStatsToDb(stats);
+                // Show the allocation modal so the user can spend the recovered points
+                setTimeout(() => showStatAllocationModal(), 1000);
             }
         }
 
