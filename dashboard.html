@@ -32637,7 +32637,7 @@ function collectWorkoutData() {
     const activeWorkout = document.getElementById('workout-exercises-list');
     if (!activeWorkout) return null;
 
-    const date = new Date().toISOString().split('T')[0];
+    const date = getLocalDateString(new Date());
     const setsData = [];
 
     Array.from(activeWorkout.children).forEach(card => {
@@ -33021,7 +33021,7 @@ async function finishWorkout() {
 
     // Save logic
     const activeWorkout = document.getElementById('workout-exercises-list');
-    const date = new Date().toISOString().split('T')[0];
+    const date = getLocalDateString(new Date());
     const setsToSave = [];
 
     if(activeWorkout) {
@@ -33374,7 +33374,7 @@ async function saveWorkoutRating() {
         const energy = parseInt(document.getElementById('rating-energy-slider')?.value || 3);
 
         await window.dbHelpers?.workoutRatings?.create(window.currentUser.id, {
-            workout_date: new Date().toISOString().split('T')[0],
+            workout_date: getLocalDateString(new Date()),
             workout_name: workoutRatingState.workoutName,
             source_type: workoutRatingState.sourceType,
             source_id: workoutRatingState.sourceId,
@@ -58899,16 +58899,16 @@ async function loadMovementWeeklyMetrics() {
         const startDate = getLocalDateString(sevenDaysAgo);
         const endDate = getLocalDateString(today);
 
-        // Fetch workouts for last 7 days
+        // Fetch workouts for last 7 days (include created_at for session grouping)
         const [workoutsResult, activitiesResult] = await Promise.allSettled([
             window.supabaseClient
                 .from('workouts')
-                .select('workout_date, exercise_name, set_number, reps, weight_kg, time_duration')
+                .select('workout_date, exercise_name, set_number, reps, weight_kg, time_duration, created_at')
                 .eq('user_id', userId)
                 .eq('workout_type', 'history')
                 .gte('workout_date', startDate)
                 .lte('workout_date', endDate)
-                .order('workout_date', { ascending: true }),
+                .order('created_at', { ascending: true }),
             window.supabaseClient
                 .from('activity_logs')
                 .select('activity_date, activity_type, activity_label, duration_minutes, estimated_calories')
@@ -58921,24 +58921,49 @@ async function loadMovementWeeklyMetrics() {
         const workouts = workoutsResult.status === 'fulfilled' && !workoutsResult.value.error ? workoutsResult.value.data || [] : [];
         const activities = activitiesResult.status === 'fulfilled' && !activitiesResult.value.error ? activitiesResult.value.data || [] : [];
 
-        // Calculate metrics
-        const workoutDates = new Set();
+        // Calculate metrics - count individual workout sessions, not just unique dates
+        // Group sets into sessions: sets created within 5 minutes of each other = 1 session
         const exerciseNames = new Set();
         const allActiveDates = new Set();
+        const workoutDates = new Set();
+        let totalSessions = 0;
 
-        workouts.forEach(w => {
-            if (w.workout_date) {
-                workoutDates.add(w.workout_date);
-                allActiveDates.add(w.workout_date);
-            }
-            if (w.exercise_name) exerciseNames.add(w.exercise_name);
-        });
+        if (workouts.length > 0) {
+            // Sort by created_at and group into sessions
+            const sorted = [...workouts].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+            let sessionCount = 1;
+            let lastCreatedAt = new Date(sorted[0].created_at || 0);
+
+            sorted.forEach((w, idx) => {
+                if (w.workout_date) {
+                    workoutDates.add(w.workout_date);
+                    allActiveDates.add(w.workout_date);
+                }
+                if (w.exercise_name) exerciseNames.add(w.exercise_name);
+
+                if (idx > 0 && w.created_at) {
+                    const current = new Date(w.created_at);
+                    const diffMinutes = (current - lastCreatedAt) / (1000 * 60);
+                    // If more than 30 minutes gap between sets, it's a new session
+                    if (diffMinutes > 30) {
+                        sessionCount++;
+                    }
+                    lastCreatedAt = current;
+                }
+            });
+
+            totalSessions = sessionCount;
+        }
+
+        // Fallback: if created_at wasn't available, use unique dates
+        if (totalSessions === 0 && workoutDates.size > 0) {
+            totalSessions = workoutDates.size;
+        }
 
         activities.forEach(a => {
             if (a.activity_date) allActiveDates.add(a.activity_date);
         });
 
-        const totalSessions = workoutDates.size;
         const totalExercises = exerciseNames.size;
         const activeDays = allActiveDates.size;
 
@@ -59013,11 +59038,11 @@ async function loadMovementMultiWeekData(numWeeks) {
         const [workoutsResult, activitiesResult] = await Promise.allSettled([
             window.supabaseClient
                 .from('workouts')
-                .select('workout_date, exercise_name, set_number, reps, weight_kg, time_duration')
+                .select('workout_date, exercise_name, set_number, reps, weight_kg, time_duration, created_at')
                 .eq('user_id', userId)
                 .eq('workout_type', 'history')
                 .gte('workout_date', startDateStr)
-                .order('workout_date', { ascending: true }),
+                .order('created_at', { ascending: true }),
             window.supabaseClient
                 .from('activity_logs')
                 .select('activity_date, duration_minutes, estimated_calories')
@@ -59028,6 +59053,22 @@ async function loadMovementMultiWeekData(numWeeks) {
 
         const workouts = workoutsResult.status === 'fulfilled' && !workoutsResult.value.error ? workoutsResult.value.data || [] : [];
         const activities = activitiesResult.status === 'fulfilled' && !activitiesResult.value.error ? activitiesResult.value.data || [] : [];
+
+        // Helper: count workout sessions by grouping sets with created_at within 30 min
+        function countWorkoutSessions(workoutRows) {
+            if (workoutRows.length === 0) return 0;
+            const sorted = [...workoutRows].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+            let sessions = 1;
+            let lastTime = new Date(sorted[0].created_at || 0);
+            for (let i = 1; i < sorted.length; i++) {
+                if (sorted[i].created_at) {
+                    const current = new Date(sorted[i].created_at);
+                    if ((current - lastTime) / (1000 * 60) > 30) sessions++;
+                    lastTime = current;
+                }
+            }
+            return sessions;
+        }
 
         // Group by week
         const weeks = [];
@@ -59047,6 +59088,9 @@ async function loadMovementMultiWeekData(numWeeks) {
             const activityDateSet = new Set(weekActivities.map(a => a.activity_date).filter(Boolean));
             const allDates = new Set([...workoutDateSet, ...activityDateSet]);
 
+            // Count actual workout sessions (not just unique dates)
+            const weekSessions = countWorkoutSessions(weekWorkouts);
+
             const totalSets = weekWorkouts.length;
             const totalVolume = weekWorkouts.reduce((sum, r) => {
                 return sum + ((parseFloat(r.weight_kg) || 0) * (parseInt(r.reps) || 0));
@@ -59057,7 +59101,7 @@ async function loadMovementMultiWeekData(numWeeks) {
 
             weeks.push({
                 label: 'Wk ' + (w + 1),
-                sessions: allDates.size,
+                sessions: weekSessions || workoutDateSet.size,
                 totalSets: totalSets,
                 totalVolume: Math.round(totalVolume),
                 activeMinutes: activityMinutes + workoutMinutes,
@@ -59175,12 +59219,12 @@ async function loadMovementWorkoutJournal() {
         const [workoutsResult, activitiesResult] = await Promise.allSettled([
             window.supabaseClient
                 .from('workouts')
-                .select('workout_date, exercise_name, set_number, reps, weight_kg')
+                .select('workout_date, exercise_name, set_number, reps, weight_kg, created_at')
                 .eq('user_id', userId)
                 .eq('workout_type', 'history')
                 .gte('workout_date', startDate)
                 .lte('workout_date', endDate)
-                .order('workout_date', { ascending: false }),
+                .order('created_at', { ascending: false }),
             window.supabaseClient
                 .from('activity_logs')
                 .select('activity_date, activity_type, activity_label, duration_minutes, estimated_calories')
@@ -59196,43 +59240,91 @@ async function loadMovementWorkoutJournal() {
         const container = document.getElementById('mvmt-workout-journal-timeline');
         if (!container) return;
 
-        // Group by date
-        const byDate = {};
-        workouts.forEach(w => {
-            if (!w.workout_date) return;
-            if (!byDate[w.workout_date]) byDate[w.workout_date] = { exercises: {}, activities: [] };
-            if (!byDate[w.workout_date].exercises[w.exercise_name]) {
-                byDate[w.workout_date].exercises[w.exercise_name] = { name: w.exercise_name, sets: 0, bestWeight: 0, bestReps: 0 };
-            }
-            var ex = byDate[w.workout_date].exercises[w.exercise_name];
-            ex.sets++;
-            var weight = parseFloat(w.weight_kg) || 0;
-            var reps = parseInt(w.reps) || 0;
-            if (weight > ex.bestWeight) { ex.bestWeight = weight; ex.bestReps = reps; }
-            else if (weight === ex.bestWeight && reps > ex.bestReps) { ex.bestReps = reps; }
-        });
+        // Group by session: sets within 30 min of each other = 1 session
+        const sessions = [];
+        if (workouts.length > 0) {
+            const sorted = [...workouts].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+            let currentSession = { date: sorted[0].workout_date, created_at: sorted[0].created_at, sets: [sorted[0]] };
 
+            for (let i = 1; i < sorted.length; i++) {
+                const w = sorted[i];
+                const prevTime = new Date(currentSession.sets[currentSession.sets.length - 1].created_at || 0);
+                const currTime = new Date(w.created_at || 0);
+                const diffMin = (currTime - prevTime) / (1000 * 60);
+
+                if (diffMin > 30 || w.workout_date !== currentSession.date) {
+                    sessions.push(currentSession);
+                    currentSession = { date: w.workout_date, created_at: w.created_at, sets: [w] };
+                } else {
+                    currentSession.sets.push(w);
+                }
+            }
+            sessions.push(currentSession);
+        }
+
+        // Also group activities by date
+        const activitiesByDate = {};
         activities.forEach(a => {
             if (!a.activity_date) return;
-            if (!byDate[a.activity_date]) byDate[a.activity_date] = { exercises: {}, activities: [] };
-            byDate[a.activity_date].activities.push(a);
+            if (!activitiesByDate[a.activity_date]) activitiesByDate[a.activity_date] = [];
+            activitiesByDate[a.activity_date].push(a);
         });
 
-        var dates = Object.keys(byDate).sort(function(a, b) { return new Date(b) - new Date(a); });
+        // Build journal entries: each session is a separate entry, plus activity-only dates
+        const journalEntries = [];
 
-        if (dates.length === 0) {
+        // Add workout sessions
+        sessions.forEach(session => {
+            const exercises = {};
+            session.sets.forEach(w => {
+                if (!exercises[w.exercise_name]) {
+                    exercises[w.exercise_name] = { name: w.exercise_name, sets: 0, bestWeight: 0, bestReps: 0 };
+                }
+                var ex = exercises[w.exercise_name];
+                ex.sets++;
+                var weight = parseFloat(w.weight_kg) || 0;
+                var reps = parseInt(w.reps) || 0;
+                if (weight > ex.bestWeight) { ex.bestWeight = weight; ex.bestReps = reps; }
+                else if (weight === ex.bestWeight && reps > ex.bestReps) { ex.bestReps = reps; }
+            });
+            journalEntries.push({
+                date: session.date,
+                created_at: session.created_at,
+                exercises: Object.values(exercises),
+                activities: activitiesByDate[session.date] || []
+            });
+            // Mark this date's activities as used
+            delete activitiesByDate[session.date];
+        });
+
+        // Add activity-only dates (dates with activities but no workouts)
+        Object.keys(activitiesByDate).forEach(dateStr => {
+            journalEntries.push({
+                date: dateStr,
+                created_at: dateStr,
+                exercises: [],
+                activities: activitiesByDate[dateStr]
+            });
+        });
+
+        // Sort by date descending, then by created_at descending
+        journalEntries.sort((a, b) => {
+            if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
+            return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+        });
+
+        if (journalEntries.length === 0) {
             container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">No workouts logged this week</p>';
             return;
         }
 
         var html = '';
-        dates.forEach(function(dateStr) {
-            var date = new Date(dateStr + 'T12:00:00');
+        journalEntries.forEach(function(entry) {
+            var date = new Date(entry.date + 'T12:00:00');
             var dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
             var dayNum = date.getDate();
-            var dayData = byDate[dateStr];
-            var exercises = Object.values(dayData.exercises);
-            var acts = dayData.activities;
+            var exercises = entry.exercises;
+            var acts = entry.activities;
 
             var detailsHtml = '';
             exercises.forEach(function(ex) {
