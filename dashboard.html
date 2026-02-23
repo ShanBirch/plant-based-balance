@@ -44232,7 +44232,8 @@ const CHALLENGE_TYPES = {
     steps:    { emoji: '👟', name: 'Steps',     desc: 'Most total steps', subtitle: '30-day step challenge', color: '#3b82f6', howStep2: 'Track your <strong style="color: #4ade80;">steps</strong> every day for 30 days.', howStep3: 'Most <strong style="color: #3b82f6;">total steps</strong> wins.' },
     streak:   { emoji: '🔥', name: 'Streak',    desc: 'Longest streak kept', subtitle: '30-day streak challenge', color: '#fbbf24', howStep2: 'Keep your <strong style="color: #4ade80;">streak alive</strong> for 30 days.', howStep3: 'Longest <strong style="color: #fbbf24;">streak kept</strong> wins.' },
     sleep:    { emoji: '😴', name: 'Sleep',     desc: 'Most hours slept', subtitle: '30-day sleep challenge', color: '#818cf8', howStep2: 'Track your <strong style="color: #4ade80;">sleep</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #818cf8;">hours slept</strong> wins.' },
-    water:    { emoji: '💧', name: 'Water',     desc: 'Most days hitting water goal', subtitle: '30-day hydration challenge', color: '#0ea5e9', howStep2: 'Hit your <strong style="color: #4ade80;">water goals</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #0ea5e9;">days hitting goal</strong> wins.' }
+    water:    { emoji: '💧', name: 'Water',     desc: 'Most days hitting water goal', subtitle: '30-day hydration challenge', color: '#0ea5e9', howStep2: 'Hit your <strong style="color: #4ade80;">water goals</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #0ea5e9;">days hitting goal</strong> wins.' },
+    milestone:{ emoji: '🎯', name: 'Milestone', desc: 'First to hit the target', subtitle: 'Race to a goal', color: '#f97316', howStep2: 'Work toward the <strong style="color: #4ade80;">target</strong> in your workouts.', howStep3: '<strong style="color: #f97316;">First to hit the milestone</strong> wins the race.' }
 };
 
 let selectedChallengeType = 'xp';
@@ -45055,7 +45056,7 @@ function updatePodium(leaderboard) {
 
         if (participant) {
             if (podiumNameEl) podiumNameEl.textContent = participant.user_name;
-            if (podiumPtsEl) podiumPtsEl.textContent = formatChallengePoints(participant.challenge_points, challengeType);
+            if (podiumPtsEl) podiumPtsEl.textContent = formatChallengePoints(participant.challenge_points, challengeType, participant.milestone_progress, participant.milestone_criteria);
             if (podiumPhotoEl) {
                 const initials = (participant.user_name || '?').charAt(0).toUpperCase();
                 podiumPhotoEl.innerHTML = participant.user_photo
@@ -45087,7 +45088,7 @@ function updateFullRankings(leaderboard) {
         const initials = (participant.user_name || '?').charAt(0).toUpperCase();
         const isCurrentUser = participant.user_id === window.currentUser?.id;
         const rankColor = participant.rank === 1 ? '#fbbf24' : participant.rank === 2 ? '#94a3b8' : participant.rank === 3 ? '#d97706' : '#6b7280';
-        const formattedPts = formatChallengePoints(participant.challenge_points, challengeType);
+        const formattedPts = formatChallengePoints(participant.challenge_points, challengeType, participant.milestone_progress, participant.milestone_criteria);
 
         return `
             <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; ${isCurrentUser ? 'background: #f0fdf4; margin: 0 -15px; padding: 12px 15px;' : ''}">
@@ -45243,11 +45244,25 @@ const CHALLENGE_UNIT_LABELS = {
     steps: 'steps',
     streak: 'days',
     sleep: 'min',
-    water: 'days'
+    water: 'days',
+    milestone: '%'
 };
 
 // Format challenge points with appropriate unit for display
-function formatChallengePoints(points, challengeType) {
+function formatChallengePoints(points, challengeType, milestoneProgress, milestoneCriteria) {
+    // Milestone challenges: show actual values or achievement status
+    if (challengeType === 'milestone') {
+        if (points >= 100) return '✅ ACHIEVED';
+        if (milestoneProgress && milestoneCriteria) {
+            const metric = milestoneCriteria.metric || 'weight_x_reps';
+            if (metric === 'reps_at_bodyweight') {
+                return `${milestoneProgress.best_reps || 0} / ${milestoneCriteria.target_reps} reps`;
+            } else {
+                return `${milestoneProgress.best_weight_kg || 0}kg / ${milestoneCriteria.target_weight_kg}kg`;
+            }
+        }
+        return `${points}%`;
+    }
     const unit = CHALLENGE_UNIT_LABELS[challengeType] || 'pts';
     if (challengeType === 'volume' && points >= 1000) {
         return `${(points / 1000).toFixed(1)}t`;
@@ -45274,6 +45289,29 @@ async function refreshChallengeProgress() {
         await window.supabaseClient.rpc('update_challenge_participant_points', {
             user_uuid: window.currentUser.id
         });
+
+        // Check if any milestone challenge was just achieved (auto-complete)
+        try {
+            const { data: milestoneWins } = await window.supabaseClient
+                .from('challenge_participants')
+                .select('challenge_id, challenge_points, challenges!inner(id, status, challenge_type)')
+                .eq('user_id', window.currentUser.id)
+                .eq('status', 'accepted')
+                .gte('challenge_points', 100)
+                .eq('challenges.challenge_type', 'milestone')
+                .eq('challenges.status', 'active');
+
+            if (milestoneWins && milestoneWins.length > 0) {
+                for (const win of milestoneWins) {
+                    console.log('Milestone achieved! Auto-completing challenge:', win.challenge_id);
+                    if (typeof completeAndRewardChallenge === 'function') {
+                        await completeAndRewardChallenge(win.challenge_id);
+                    }
+                }
+            }
+        } catch (milestoneErr) {
+            console.warn('Error checking milestone completion:', milestoneErr);
+        }
 
         // Refresh the challenge cards on the home screen
         if (typeof loadHomeChallenges === 'function') {
@@ -68137,7 +68175,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         // Create a competitive challenge with friends
                         const challengeName = action.name || 'AI Challenge';
                         const challengeType = action.challenge_type || 'xp';
-                        const validTypes = ['xp', 'workouts', 'volume', 'calories', 'steps', 'streak', 'sleep', 'water'];
+                        const validTypes = ['xp', 'workouts', 'volume', 'calories', 'steps', 'streak', 'sleep', 'water', 'milestone'];
                         if (!validTypes.includes(challengeType)) {
                             throw new Error('Invalid challenge type: ' + challengeType + '. Must be one of: ' + validTypes.join(', '));
                         }
@@ -68163,19 +68201,32 @@ document.addEventListener('DOMContentLoaded', async function() {
                         endDateObj.setDate(endDateObj.getDate() + durationDays);
                         const endDate = endDateObj.toISOString().split('T')[0];
 
+                        // Build challenge insert data
+                        const challengeInsert = {
+                            name: challengeName,
+                            creator_id: user.id,
+                            start_date: startDate,
+                            end_date: endDate,
+                            duration_days: durationDays,
+                            status: 'pending',
+                            entry_fee: entryFee,
+                            challenge_type: challengeType
+                        };
+
+                        // Add milestone criteria if this is a milestone challenge
+                        if (challengeType === 'milestone') {
+                            challengeInsert.milestone_criteria = {
+                                exercise_name: action.exercise_name || null,
+                                target_weight_kg: parseFloat(action.target_weight_kg) || null,
+                                target_reps: parseInt(action.target_reps) || null,
+                                metric: action.metric || 'weight_x_reps'
+                            };
+                        }
+
                         // Insert challenge
                         const { data: challenge, error: createError } = await window.supabaseClient
                             .from('challenges')
-                            .insert({
-                                name: challengeName,
-                                creator_id: user.id,
-                                start_date: startDate,
-                                end_date: endDate,
-                                duration_days: durationDays,
-                                status: 'pending',
-                                entry_fee: entryFee,
-                                challenge_type: challengeType
-                            })
+                            .insert(challengeInsert)
                             .select()
                             .single();
                         if (createError) throw createError;

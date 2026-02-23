@@ -319,17 +319,37 @@ Available action types:
    NOTE: This generates 35 meals (5 per day x 7 days) perfectly calibrated to the user's macros, dietary restrictions, and preferences. Users can generate additional weeks later with "+ Next Week". Tell the user it will appear in their Meals tab under "Your Meal Plan". Do NOT call it an "AI meal plan" - call it a "tailored meal plan" or "your personalized meal plan".
 
 9. **create_challenge** - Create a competitive challenge with friends. Uses the app's challenge system with coin entry fees and leaderboards.
-   { "type": "create_challenge", "name": "Race to 200kg Squat", "challenge_type": "volume", "entry_fee": 1000, "duration_days": 30, "friend_names": ["Jake", "Sarah"], "description": "Create a volume challenge to race to 200kg squat" }
 
-   Challenge types available: "xp" (most XP earned), "workouts" (most workouts logged), "volume" (most total kg lifted), "calories" (most days hitting calorie goal), "steps" (most total steps), "streak" (longest streak kept), "sleep" (most hours slept), "water" (most days hitting water goal).
+   ACCUMULATION TYPES (who accumulates the most over the period):
+   { "type": "create_challenge", "name": "Volume King", "challenge_type": "volume", "entry_fee": 1000, "duration_days": 30, "friend_names": ["Jake"], "description": "Most total kg lifted in 30 days" }
+
+   Available: "xp" (most XP earned), "workouts" (most workouts logged), "volume" (most total kg lifted), "calories" (most days hitting calorie goal), "steps" (most total steps), "streak" (longest streak kept), "sleep" (most hours slept), "water" (most days hitting water goal).
+
+   MILESTONE TYPE (first to hit a specific exercise target wins — a RACE):
+   { "type": "create_challenge", "name": "Race to 200kg Squat", "challenge_type": "milestone", "exercise_name": "Barbell Squat", "target_weight_kg": 200, "target_reps": 1, "metric": "weight_x_reps", "entry_fee": 1000, "duration_days": 90, "friend_names": ["Jake"], "description": "First to squat 200kg x 1 wins" }
+
+   Milestone-specific fields (required when challenge_type is "milestone"):
+   - exercise_name: EXACT exercise name from the library. ALWAYS use search_exercises first to find the correct name!
+   - target_weight_kg: target weight in kg (set to null for bodyweight exercises like pull-ups)
+   - target_reps: target number of reps
+   - metric: "weight_x_reps" (hit both weight AND reps), "reps_at_bodyweight" (just hit rep count, e.g. 20 pull-ups), "max_weight" (hit target weight at any rep count)
+
+   Examples of milestone challenges:
+   - "Race to 200kg squat" → metric: "weight_x_reps", target_weight_kg: 200, target_reps: 1
+   - "First to 20 pull-ups" → metric: "reps_at_bodyweight", target_reps: 20, target_weight_kg: null
+   - "First to bench 100kg x 5" → metric: "weight_x_reps", target_weight_kg: 100, target_reps: 5
+
+   WHEN TO USE WHICH TYPE:
+   - User describes a SPECIFIC exercise target ("squat 200kg", "20 pull-ups", "bench 100kg for 5") → use "milestone"
+   - User describes a GENERAL competition ("who can lift the most", "most workouts this month") → use accumulation types
 
    IMPORTANT - CHALLENGE CONVERSATION FLOW:
    When a user wants to create a challenge, follow this flow:
-   Step 1 - CLARIFY: Ask what kind of challenge (suggest relevant type based on their description), duration, entry fee (coins), and which friends to invite (reference their friends list).
+   Step 1 - CLARIFY: Ask what kind of challenge, duration, entry fee (coins), and which friends to invite. For milestone challenges, also clarify the exact exercise, target weight, and target reps. Use search_exercises to find the correct exercise name.
    Step 2 - CONFIRM: Summarize the challenge details and list the friends who will be invited. Ask to confirm.
    Step 3 - CREATE: Only AFTER confirmation, include the create_challenge action.
    Entry fee can be 0 for free challenges. Friends are invited via the friends list names.
-   IMPORTANT: duration_days must be at least 1 (minimum 1 day).
+   Duration must be at least 7 days. Milestone races often work well at 60-90 days.
 
 10. **create_quiz** - Create a custom quiz with mixed game formats
    { "type": "create_quiz", "title": "Plant Protein Mastery", "description": "Test your knowledge of plant proteins", "games": [...], "description": "Create a quiz about plant proteins" }
