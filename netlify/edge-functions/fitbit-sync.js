@@ -181,10 +181,16 @@ async function syncUserFitbitData(supabase, userId, clientId, clientSecret) {
     const today = new Date().toISOString().split("T")[0];
     const headers = { "Authorization": `Bearer ${accessToken}` };
 
+    // For sleep, fetch last 3 days to catch records that may have been missed
+    // or stored with 0 duration due to sync timing
+    const sleepStartDate = new Date();
+    sleepStartDate.setDate(sleepStartDate.getDate() - 2);
+    const sleepStart = sleepStartDate.toISOString().split("T")[0];
+
     // Fetch data from Fitbit API in parallel
     const [activityData, sleepData, heartData] = await Promise.all([
         fetchFitbitAPI(`https://api.fitbit.com/1/user/-/activities/date/${today}.json`, headers),
-        fetchFitbitAPI(`https://api.fitbit.com/1.2/user/-/sleep/date/${today}.json`, headers),
+        fetchFitbitAPI(`https://api.fitbit.com/1.2/user/-/sleep/date/${sleepStart}/${today}.json`, headers),
         fetchFitbitAPI(`https://api.fitbit.com/1/user/-/activities/heart/date/${today}/1d.json`, headers),
     ]);
 
@@ -203,24 +209,46 @@ async function syncUserFitbitData(supabase, userId, clientId, clientSecret) {
         }, { onConflict: "user_id,date" });
     }
 
-    // Store sleep data
-    if (sleepData && sleepData.summary) {
-        const summary = sleepData.summary;
-        const mainSleep = sleepData.sleep?.find(s => s.isMainSleep) || sleepData.sleep?.[0];
+    // Store sleep data — process individual records grouped by dateOfSleep
+    // The date-range endpoint returns a sleep[] array without a summary,
+    // so we derive totals from each record's own fields.
+    if (sleepData && sleepData.sleep && sleepData.sleep.length > 0) {
+        // Group records by their Fitbit-assigned date (accounts for timezone)
+        const sleepByDate = {};
+        for (const record of sleepData.sleep) {
+            const d = record.dateOfSleep;
+            if (!d) continue;
+            if (!sleepByDate[d]) sleepByDate[d] = [];
+            sleepByDate[d].push(record);
+        }
 
-        await supabase.from("fitbit_sleep").upsert({
-            user_id: userId,
-            date: today,
-            start_time: mainSleep?.startTime || null,
-            end_time: mainSleep?.endTime || null,
-            duration_minutes: summary.totalMinutesAsleep || 0,
-            efficiency: mainSleep?.efficiency || null,
-            deep_minutes: summary.stages?.deep || 0,
-            light_minutes: summary.stages?.light || 0,
-            rem_minutes: summary.stages?.rem || 0,
-            wake_minutes: summary.stages?.wake || 0,
-            synced_at: new Date().toISOString(),
-        }, { onConflict: "user_id,date" });
+        for (const [date, records] of Object.entries(sleepByDate)) {
+            const mainSleep = records.find(s => s.isMainSleep) || records[0];
+            const totalMinutesAsleep = records.reduce((sum, r) => sum + (r.minutesAsleep || 0), 0);
+
+            // Skip if there's genuinely no sleep recorded yet
+            if (totalMinutesAsleep === 0) continue;
+
+            // Sleep stages come from levels.summary on individual records
+            // "stages" type: { deep: {minutes}, light: {minutes}, rem: {minutes}, wake: {minutes} }
+            // "classic" type: { asleep: {minutes}, awake: {minutes}, restless: {minutes} }
+            const stages = mainSleep.levels?.summary || {};
+            const isStages = mainSleep.type === "stages";
+
+            await supabase.from("fitbit_sleep").upsert({
+                user_id: userId,
+                date: date,
+                start_time: mainSleep.startTime || null,
+                end_time: mainSleep.endTime || null,
+                duration_minutes: totalMinutesAsleep,
+                efficiency: mainSleep.efficiency || null,
+                deep_minutes: isStages ? (stages.deep?.minutes || 0) : 0,
+                light_minutes: isStages ? (stages.light?.minutes || 0) : 0,
+                rem_minutes: isStages ? (stages.rem?.minutes || 0) : 0,
+                wake_minutes: isStages ? (stages.wake?.minutes || 0) : (stages.awake?.minutes || 0),
+                synced_at: new Date().toISOString(),
+            }, { onConflict: "user_id,date" });
+        }
     }
 
     // Store heart rate data
