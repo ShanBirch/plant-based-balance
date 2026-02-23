@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v25'; // v25: Fix stale JWT causing empty inbox, add session refresh
-const MODEL_CACHE_NAME = 'pbb-models-v2'; // v2: pre-cache critical onboarding models for fast startup
+const CACHE_NAME = 'pbb-app-v26'; // v26: Pre-cache evolution models, remove FitGotchi load timeout
+const MODEL_CACHE_NAME = 'pbb-models-v3'; // v3: add all evolution models so FitGotchi loads instantly
 const ASSETS = [
   './dashboard.html',
   './assets/Logo_dots.jpg',
@@ -12,11 +12,26 @@ const ASSETS = [
 
 // Critical 3D models to pre-cache for fast onboarding & dashboard startup
 const CRITICAL_MODELS = [
+  // Onboarding story models
   'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/goku.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb'
+  'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb',
+  // Male evolution models
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_10_real_final.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_20_real_final.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_30_real_final.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_40_real_final.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb',
+  // Female evolution models
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_10_female_final.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_20_female_final.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_30_female_final.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_40_female_final.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_50_female_final.glb'
 ];
 
 // Install - cache assets + pre-cache critical 3D models
