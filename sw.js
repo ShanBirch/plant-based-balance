@@ -1,5 +1,8 @@
-const CACHE_NAME = 'pbb-app-v26'; // v26: Pre-cache evolution models, remove FitGotchi load timeout
-const MODEL_CACHE_NAME = 'pbb-models-v3'; // v3: add all evolution models so FitGotchi loads instantly
+const CACHE_NAME = 'pbb-app-v27'; // v27: Cache all app JS, CDN libs, Supabase API data
+const MODEL_CACHE_NAME = 'pbb-models-v3'; // v3: all evolution + collectible models
+const API_CACHE_NAME = 'pbb-api-v1'; // v1: Supabase user data, nutrition, learning progress
+
+// Core app files
 const ASSETS = [
   './dashboard.html',
   './assets/Logo_dots.jpg',
@@ -7,10 +10,33 @@ const ASSETS = [
   './lib/supabase.js',
   './lib/auth-guard.js',
   './lib/biometric-auth.js',
+  './lib/nutrition-calculator.js',
+  './lib/learning-config.js',
+  './lib/learning-lessons.js',
+  './lib/learning-inline.js',
+  './lib/learning.js',
+  './lib/stories.js',
+  './lib/ai-opponents.js',
+  './lib/games.js',
+  './lib/native-health.js',
+  './lib/native-iap.js',
+  './lib/native-push.js',
+  './lib/platform.js',
+  './lib/points-config.js',
+  './lib/migrate-localstorage.js',
+  './lib/avatar.js',
   './login.html'
 ];
 
-// Critical 3D models to pre-cache for fast onboarding & dashboard startup
+// CDN libraries to pre-cache so app works offline / loads fast
+const CDN_SCRIPTS = [
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+  'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
+  'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js',
+  'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js'
+];
+
+// All 3D models to pre-cache: onboarding + evolution + collectible characters
 const CRITICAL_MODELS = [
   // Onboarding story models
   'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb',
@@ -31,15 +57,37 @@ const CRITICAL_MODELS = [
   'https://f005.backblazeb2.com/file/shannonsvideos/level_20_female_final.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/level_30_female_final.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/level_40_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_50_female_final.glb'
+  'https://f005.backblazeb2.com/file/shannonsvideos/level_50_female_final.glb',
+  // Collectible / rare characters
+  'https://f005.backblazeb2.com/file/shannonsvideos/gohan.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/vegeta.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/cbum.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/ronny.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/itadori.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/elon.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/trump.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/epstein_rigged.glb'
 ];
 
-// Install - cache assets + pre-cache critical 3D models
+// Install - cache assets, CDN scripts, and pre-cache 3D models
 self.addEventListener('install', (e) => {
   self.skipWaiting(); // Force activation immediately
   e.waitUntil(
     Promise.all([
       caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)),
+      // Pre-cache CDN scripts (non-blocking)
+      caches.open(CACHE_NAME).then((cache) => {
+        return Promise.allSettled(
+          CDN_SCRIPTS.map(url =>
+            cache.match(url).then(existing => {
+              if (existing) return;
+              return fetch(url, { mode: 'cors' }).then(resp => {
+                if (resp.ok) cache.put(url, resp);
+              }).catch(() => {}); // Don't fail install
+            })
+          )
+        );
+      }),
       // Pre-cache critical models (non-blocking — don't fail install if models fail)
       caches.open(MODEL_CACHE_NAME).then((cache) => {
         return Promise.allSettled(
@@ -48,7 +96,7 @@ self.addEventListener('install', (e) => {
               if (existing) return; // Already cached
               return fetch(url, { mode: 'cors' }).then(resp => {
                 if (resp.ok) cache.put(url, resp);
-              });
+              }).catch(() => {}); // Don't fail install
             })
           )
         );
@@ -57,21 +105,47 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// Activate - clean old caches (but keep model cache)
+// Activate - clean old caches (keep model + API caches)
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.filter(k => k !== CACHE_NAME && k !== MODEL_CACHE_NAME).map(k => caches.delete(k))
+        keys.filter(k => k !== CACHE_NAME && k !== MODEL_CACHE_NAME && k !== API_CACHE_NAME).map(k => caches.delete(k))
       );
     })
   );
   return self.clients.claim(); // Take control immediately
 });
 
-// Fetch - Network First for HTML/JS, Cache First for models & images
+// Fetch - smart caching per resource type
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
+
+  // Only handle GET requests (POST/PATCH/DELETE should always hit network)
+  if (e.request.method !== 'GET') return;
+
+  // Supabase REST API — stale-while-revalidate for user data, nutrition, learning progress
+  // Serves cached response instantly while fetching fresh data in the background
+  if (url.hostname.includes('supabase.co') && url.pathname.startsWith('/rest/')) {
+    e.respondWith(
+      caches.open(API_CACHE_NAME).then(cache => {
+        return cache.match(e.request).then(cached => {
+          const networkFetch = fetch(e.request).then(response => {
+            if (response.ok) {
+              cache.put(e.request, response.clone());
+            }
+            return response;
+          }).catch(() => {
+            // Offline — return cached if available
+            return cached || new Response('{}', { status: 503, headers: { 'Content-Type': 'application/json' } });
+          });
+          // Return cached immediately if available, otherwise wait for network
+          return cached || networkFetch;
+        });
+      })
+    );
+    return;
+  }
 
   // Network first for HTML, JS, and CSS files (always get latest)
   if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
@@ -107,9 +181,19 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Cache first for everything else (images, icons)
+  // Cache first for everything else (images, icons, fonts)
   e.respondWith(
-    caches.match(e.request).then((response) => response || fetch(e.request))
+    caches.match(e.request).then((response) => {
+      if (response) return response;
+      return fetch(e.request).then(resp => {
+        // Cache images and other static assets on first fetch
+        if (resp.ok && (url.pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|woff2?)$/) || url.hostname.includes('fonts.googleapis.com'))) {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        }
+        return resp;
+      });
+    })
   );
 });
 
