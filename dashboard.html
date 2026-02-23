@@ -22756,32 +22756,6 @@ function viewWorkoutHistoryDetail(date) {
             </div>
         </div>
 
-        <!-- Health IQ Profile Card -->
-        <div id="profile-health-iq-card" class="settings-card" style="margin: 0 25px 25px 25px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6366f1 100%); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25); color: white; padding: 20px;">
-            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px;">
-                <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; backdrop-filter: blur(10px);">
-                    <span id="profile-hiq-icon">🌱</span>
-                </div>
-                <div style="flex: 1;">
-                    <div style="font-size: 0.75rem; font-weight: 600; opacity: 0.85; text-transform: uppercase; letter-spacing: 1px;">Health IQ</div>
-                    <div style="font-size: 1.2rem; font-weight: 800;" id="profile-hiq-rank">Curious</div>
-                </div>
-                <div style="text-align: center; background: rgba(255,255,255,0.15); border-radius: 12px; padding: 6px 14px;">
-                    <div style="font-size: 1.3rem; font-weight: 800; line-height: 1;" id="profile-hiq-level">1</div>
-                    <div style="font-size: 0.6rem; font-weight: 600; opacity: 0.8;">LEVEL</div>
-                </div>
-            </div>
-            <div id="profile-hiq-progress" style="margin-bottom: 0;">
-                <div style="height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden;">
-                    <div id="profile-hiq-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #fbbf24, #f59e0b); border-radius: 3px; transition: width 0.8s ease;"></div>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.72rem; opacity: 0.8; font-weight: 500;">
-                    <span id="profile-hiq-next-label">5 lessons to Informed</span>
-                    <span id="profile-hiq-lessons">0 lessons completed</span>
-                </div>
-            </div>
-        </div>
-
         <!-- Professional Protocol Settings -->
         <div class="settings-card" style="margin: 0 25px 25px 25px; background: white; border-radius: 16px; border: 1px solid #f1f5f9; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
             <div style="background: #f8fafc; padding: 15px 20px; border-bottom: 1px solid #e2e8f0;">
@@ -24428,43 +24402,6 @@ async function _loadProfileDataRealImpl() {
         }
     }
 
-    // Update Health IQ card on profile
-    try {
-        if (typeof window._ensureLearningProgressLoaded === 'function') {
-            await window._ensureLearningProgressLoaded();
-        }
-        if (typeof window._getHealthIQProgress === 'function') {
-            const hiqProgress = window._getHealthIQProgress();
-            const hiqLevel = hiqProgress.current;
-            const hiqNext = hiqProgress.next;
-            const hiqCompleted = (typeof window._getHealthIQProgress === 'function')
-                ? (window._getHealthIQProgress().current.lessonsRequired + (hiqNext ? hiqProgress.percent * (hiqNext.lessonsRequired - hiqLevel.lessonsRequired) / 100 : 0))
-                : 0;
-
-            const iconEl = document.getElementById('profile-hiq-icon');
-            const rankEl = document.getElementById('profile-hiq-rank');
-            const levelEl = document.getElementById('profile-hiq-level');
-            const barEl = document.getElementById('profile-hiq-bar');
-            const nextLabelEl = document.getElementById('profile-hiq-next-label');
-            const lessonsEl = document.getElementById('profile-hiq-lessons');
-
-            if (iconEl) iconEl.textContent = hiqLevel.icon;
-            if (rankEl) rankEl.textContent = hiqLevel.title;
-            if (levelEl) levelEl.textContent = hiqLevel.level;
-            if (barEl) barEl.style.width = hiqProgress.percent + '%';
-            if (nextLabelEl) {
-                nextLabelEl.textContent = hiqNext
-                    ? hiqProgress.lessonsToNext + ' lesson' + (hiqProgress.lessonsToNext !== 1 ? 's' : '') + ' to ' + hiqNext.title
-                    : 'Max level reached!';
-            }
-            // Get actual lessons count from learning state
-            const localProgress = JSON.parse(localStorage.getItem('plant_based_learning_progress') || '{}');
-            const lessonsCount = localProgress?.lessons_completed?.length || 0;
-            if (lessonsEl) lessonsEl.textContent = lessonsCount + ' lessons completed';
-        }
-    } catch (hiqErr) {
-        console.warn('Health IQ profile update skipped:', hiqErr);
-    }
 }
 // Register real implementation
 _loadProfileDataReal = _loadProfileDataRealImpl;
