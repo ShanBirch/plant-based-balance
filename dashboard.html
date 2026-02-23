@@ -20022,7 +20022,13 @@ function viewWorkoutHistoryDetail(date) {
         z-index: 100001;
         color: white;
         font-family: inherit;
+        transition: none;
+        touch-action: none;
     ">
+        <!-- Drag handle -->
+        <div style="display:flex; justify-content:center; padding:0 0 6px 0; cursor:grab;">
+            <div style="width:32px; height:4px; border-radius:2px; background:rgba(255,255,255,0.25);"></div>
+        </div>
         <!-- Clickable left area opens Spotify -->
         <div style="display:flex; align-items:center; gap:12px;">
             <div onclick="openInSpotify()" style="display:flex; align-items:center; gap:12px; flex:1; min-width:0; cursor:pointer;">
@@ -20060,6 +20066,72 @@ function viewWorkoutHistoryDetail(date) {
             <div id="snp-progress" style="height:100%; background:#1DB954; width:0%; transition:width 1s linear; border-radius:2px;"></div>
         </div>
     </div>
+
+    <!-- Spotify mini player drag-to-reposition -->
+    <script>
+    (function() {
+        const bar = document.getElementById('spotify-now-playing');
+        if (!bar) return;
+
+        let dragging = false;
+        let startY = 0;
+        let startBottom = 0;
+        let moved = false;
+        const MIN_BOTTOM = 72;  // above bottom nav
+
+        function getBottom() {
+            return parseInt(bar.style.bottom) || MIN_BOTTOM;
+        }
+
+        function clampBottom(b) {
+            const maxBottom = window.innerHeight - bar.offsetHeight - 10;
+            return Math.max(MIN_BOTTOM, Math.min(b, maxBottom));
+        }
+
+        bar.addEventListener('touchstart', function(e) {
+            // Don't hijack button taps — only drag from the bar area itself
+            if (e.target.closest('button')) return;
+            dragging = true;
+            moved = false;
+            startY = e.touches[0].clientY;
+            startBottom = getBottom();
+            bar.style.transition = 'none';
+        }, { passive: true });
+
+        bar.addEventListener('touchmove', function(e) {
+            if (!dragging) return;
+            const dy = startY - e.touches[0].clientY;
+            if (Math.abs(dy) > 5) moved = true;
+            if (!moved) return;
+            e.preventDefault();
+            bar.style.bottom = clampBottom(startBottom + dy) + 'px';
+        }, { passive: false });
+
+        bar.addEventListener('touchend', function() {
+            if (!dragging) return;
+            dragging = false;
+            // Save position so it persists while music plays
+            try { localStorage.setItem('spotify-mini-bottom', bar.style.bottom); } catch(_) {}
+        }, { passive: true });
+
+        // Restore saved position when bar is shown
+        const origDisplay = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'style') ? null : bar.style.display;
+        const observer = new MutationObserver(function() {
+            if (bar.style.display !== 'none') {
+                try {
+                    const saved = localStorage.getItem('spotify-mini-bottom');
+                    if (saved) bar.style.bottom = saved;
+                } catch(_) {}
+            }
+        });
+        observer.observe(bar, { attributes: true, attributeFilter: ['style'] });
+
+        // Suppress onclick/openInSpotify when user was dragging
+        bar.addEventListener('click', function(e) {
+            if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
+        }, true);
+    })();
+    </script>
 
     <!-- Bottom Navigation (Moved Outside Container) -->
     <nav class="bottom-nav" style="z-index: 9999 !important; position: fixed; bottom: 0; left: 0; width: 100%;">
