@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS public.stories (
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
 
   -- Story content
-  media_type TEXT NOT NULL CHECK (media_type IN ('image', 'video')),
+  media_type TEXT NOT NULL CHECK (media_type IN ('image', 'video', 'workout_card', 'nutrition_card', 'level_up_card')),
   media_url TEXT NOT NULL,  -- Base64 or Supabase Storage URL
   thumbnail_url TEXT,  -- Thumbnail for video preview or profile photo fallback
   caption TEXT,
