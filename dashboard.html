@@ -28252,7 +28252,7 @@ function updateWizardUI() {
     if(currentWizardStep === 21) {
         const goalDiv = document.getElementById('wizard-hormone-goal');
         if(goalDiv) {
-            goalDiv.innerHTML = 'Goal: Get Stronger & Level Up Your FitGotchi 💪';
+            goalDiv.innerHTML = "You're all set! 🚀";
         }
     }
 
@@ -38888,22 +38888,40 @@ function openAsClient() {
                 <p style="text-align:center; color:#64748b; font-size:0.85rem;">Your feedback helps make this app better for everyone. Don't be shy!</p>
             </div>
 
-            <!-- SLIDE 21: YOU'RE ALL SET! -->
+            <!-- SLIDE 21: MEET YOUR AI + YOU'RE ALL SET -->
             <div class="wizard-slide" id="slide-21" style="display:none; text-align:center;">
-                <div style="font-size:4rem; margin-bottom:20px;">🚀</div>
-                <h3 style="margin-bottom:10px;">You're All Set!</h3>
-                <p style="color:#64748b; margin-bottom:20px;">Your personalized plan is ready.</p>
+                <div style="font-size:3rem; margin-bottom:12px;">🤖✨</div>
+                <h3 style="margin-bottom:6px;">Meet Your AI Coach</h3>
+                <p style="color:#64748b; margin-bottom:16px; font-size:0.9rem;">Your FitGotchi has a built-in AI that can do <em>a lot</em>. Just ask it anything:</p>
 
-                <div id="wizard-hormone-goal" style="background:var(--secondary); color:white; padding:15px; border-radius:12px; display:inline-block; font-weight:600; margin-bottom:20px;">
-                    Goal: Get Stronger & Level Up Your FitGotchi 💪
+                <div style="display:flex; flex-direction:column; gap:8px; text-align:left; margin-bottom:16px;">
+                    <div style="display:flex; align-items:center; gap:10px; background:linear-gradient(135deg, #f0fdf4, #dcfce7); padding:10px 14px; border-radius:10px; border:1px solid #bbf7d0;">
+                        <span style="font-size:1.1rem; flex-shrink:0;">🏋️</span>
+                        <span style="font-size:0.82rem; color:#166534;"><strong>Build workouts</strong> — "Build me a push day" (1800+ exercises with video demos)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; background:linear-gradient(135deg, #eff6ff, #dbeafe); padding:10px 14px; border-radius:10px; border:1px solid #bfdbfe;">
+                        <span style="font-size:1.1rem; flex-shrink:0;">🍽️</span>
+                        <span style="font-size:0.82rem; color:#1e40af;"><strong>Meal plans</strong> — "Make me a meal plan" (full week, tailored to your macros)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; background:linear-gradient(135deg, #fef3c7, #fde68a); padding:10px 14px; border-radius:10px; border:1px solid #fcd34d;">
+                        <span style="font-size:1.1rem; flex-shrink:0;">⚔️</span>
+                        <span style="font-size:0.82rem; color:#92400e;"><strong>Challenges</strong> — "Race Jake to a 100kg bench" (leaderboards + coin bets)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; background:linear-gradient(135deg, #fce7f3, #fbcfe8); padding:10px 14px; border-radius:10px; border:1px solid #f9a8d4;">
+                        <span style="font-size:1.1rem; flex-shrink:0;">⚡</span>
+                        <span style="font-size:0.82rem; color:#be185d;"><strong>Quick log</strong> — "I weigh 80kg" / "Ran 5k" / "Had 8 waters" (instant, no forms)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; background:linear-gradient(135deg, #f5f3ff, #ede9fe); padding:10px 14px; border-radius:10px; border:1px solid #c4b5fd;">
+                        <span style="font-size:1.1rem; flex-shrink:0;">🔧</span>
+                        <span style="font-size:0.82rem; color:#6d28d9;"><strong>Build anything</strong> — trackers, checklists, quizzes, personal challenges</span>
+                    </div>
                 </div>
 
-                <div style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; margin-top:10px;">
-                    <p style="margin:0; font-size:0.9rem; color:#334155;">
-                        <strong>What's next?</strong><br>
-                        <span style="font-size:0.85rem; color:#64748b;">Start your first workout, snap a meal photo, and watch your FitGotchi grow!</span>
-                    </p>
+                <div id="wizard-hormone-goal" style="background:var(--secondary); color:white; padding:12px 18px; border-radius:12px; display:inline-block; font-weight:600; margin-bottom:12px; font-size:0.9rem;">
+                    You're all set! 🚀
                 </div>
+
+                <p style="color:#94a3b8; font-size:0.8rem; margin:0;">Tap the chat bubble anytime to talk to your AI coach</p>
             </div>
 
         </div>
