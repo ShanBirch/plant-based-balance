@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Balance Admin</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -26,7 +26,7 @@
         .dashboard-btn:hover { background: #3a6d3c; }
         .logout-btn { background: #ef4444; color: white; }
         .logout-btn:hover { background: #dc2626; }
-        .hamburger { display: none; position: fixed; top: 16px; left: 16px; z-index: 1001; background: #48864B; border: none; width: 44px; height: 44px; border-radius: 10px; cursor: pointer; flex-direction: column; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .hamburger { display: none; position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: 16px; z-index: 1001; background: #48864B; border: none; width: 44px; height: 44px; border-radius: 10px; cursor: pointer; flex-direction: column; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .hamburger span { display: block; width: 22px; height: 2.5px; background: white; border-radius: 2px; transition: all 0.3s; }
         .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(6px, 6px); }
         .hamburger.active span:nth-child(2) { opacity: 0; }
@@ -147,9 +147,9 @@
         .usage-bar-value { width: 50px; text-align: right; font-weight: 700; font-size: 0.85rem; color: #1e293b; flex-shrink: 0; }
         @media (max-width: 768px) {
             .hamburger { display: flex; }
-            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; width: 240px; padding-top: 72px; }
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; width: 240px; padding-top: calc(72px + env(safe-area-inset-top, 0px)); }
             .sidebar.active { transform: translateX(0); }
-            .main-content { margin-left: 0; padding: 70px 12px 12px 12px; }
+            .main-content { margin-left: 0; padding: calc(70px + env(safe-area-inset-top, 0px)) 12px 12px 12px; }
             .ai-coach-container { height: calc(100vh - 82px); }
             .ai-msg { max-width: 95%; }
             .ai-profile-compact { gap: 6px; padding: 8px 10px; }
