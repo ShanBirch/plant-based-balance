@@ -60823,7 +60823,8 @@ async function openUnifiedCamera() {
     document.getElementById('barcode-scan-status').textContent = 'Scanning for barcodes...';
 
     modal.style.display = 'flex';
-    await startUnifiedCamera();
+    // Don't await — let the modal show instantly while camera initializes
+    startUnifiedCamera();
 }
 
 function closeUnifiedCamera() {
@@ -60889,7 +60890,7 @@ async function startUnifiedCamera() {
 
     try {
         unifiedCameraStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: unifiedFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+            video: { facingMode: unifiedFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: false
         });
         const video = document.getElementById('unified-camera-video');
@@ -60898,8 +60899,10 @@ async function startUnifiedCamera() {
         await video.play();
         video.style.opacity = '1';
 
-        // Start background barcode scanning on the live video frames
-        startBarcodeScanLoop(video);
+        // Delay barcode scanning slightly so camera feed stabilizes first
+        setTimeout(() => {
+            if (unifiedCameraStream) startBarcodeScanLoop(video);
+        }, 500);
     } catch (err) {
         console.error('Failed to access camera:', err);
         if (err.name === 'NotAllowedError') {
@@ -61001,20 +61004,24 @@ function startBarcodeScanLoop(videoEl) {
         return;
     }
 
-    // Fallback: use html5-qrcode scanning on canvas snapshots
+    // Fallback: use html5-qrcode scanning on downscaled canvas snapshots
     if (typeof Html5Qrcode !== 'undefined') {
         const scanCanvas = document.createElement('canvas');
         const scanCtx = scanCanvas.getContext('2d');
         const qr = new Html5Qrcode('barcode-reader', /* verbose= */ false);
+        let scanBusy = false; // prevent overlapping scans
 
         barcodeScanInterval = setInterval(async () => {
-            if (videoEl.readyState < 2) return;
+            if (videoEl.readyState < 2 || scanBusy) return;
+            scanBusy = true;
             try {
-                scanCanvas.width = videoEl.videoWidth;
-                scanCanvas.height = videoEl.videoHeight;
-                scanCtx.drawImage(videoEl, 0, 0);
+                // Downscale to 640px wide for faster processing
+                const scale = Math.min(1, 640 / videoEl.videoWidth);
+                scanCanvas.width = Math.round(videoEl.videoWidth * scale);
+                scanCanvas.height = Math.round(videoEl.videoHeight * scale);
+                scanCtx.drawImage(videoEl, 0, 0, scanCanvas.width, scanCanvas.height);
                 scanCanvas.toBlob(async (blob) => {
-                    if (!blob) return;
+                    if (!blob) { scanBusy = false; return; }
                     try {
                         const imageFile = new File([blob], 'frame.jpg', { type: 'image/jpeg' });
                         const result = await qr.scanFileV2(imageFile, /* showImage= */ false);
@@ -61025,8 +61032,9 @@ function startBarcodeScanLoop(videoEl) {
                     } catch (e) {
                         // No barcode found in this frame — expected
                     }
-                }, 'image/jpeg', 0.8);
-            } catch (e) {}
+                    scanBusy = false;
+                }, 'image/jpeg', 0.6);
+            } catch (e) { scanBusy = false; }
         }, 800);
         return;
     }
@@ -65132,6 +65140,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                         });
 
                     console.log('Battle invite sent to', friendName, 'bet:', betAmount);
+
+                    // Send push notification so opponent gets notified even if app is closed
+                    const battleMsg = betAmount > 0
+                        ? '⚔️ BATTLE CHALLENGE! 🪙 ' + betAmount + ' coin bet! Tap to accept and fight!'
+                        : '⚔️ BATTLE CHALLENGE! Tap to accept and fight!';
+                    sendDMNotification(friendId, battleMsg);
                 }
             } catch (e) {
                 console.warn('Could not send battle invite:', e);
@@ -65325,6 +65339,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
+        // Expose to window so native push handler can trigger immediate checks
+        window.checkForBattleChallenges = checkForBattleChallenges;
+
         // Check for challenges every 15 seconds
         setInterval(checkForBattleChallenges, 15000);
         // Initial check after page load
@@ -65427,6 +65444,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // Silently fail
             }
         }
+
+        // Expose to window so native push handler can trigger immediate checks
+        window.checkForQuizBattleChallenges = checkForQuizBattleChallenges;
 
         // Check for quiz battle challenges every 15 seconds
         setInterval(checkForQuizBattleChallenges, 15000);
