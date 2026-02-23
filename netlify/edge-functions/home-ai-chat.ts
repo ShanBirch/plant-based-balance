@@ -69,6 +69,8 @@ export default async function (request: Request, context: Context) {
     const facts = userData?.facts || {};
     const hasAiMealPlan = userData?.hasAiMealPlan || false;
     const friends = userData?.friends || [];
+    const moodLogs = userData?.moodLogs || [];
+    const fitnessDiary = userData?.fitnessDiary || [];
 
     // Workout schedule context (this week)
     const weekSchedule = userData?.weekSchedule || [];
@@ -178,6 +180,54 @@ export default async function (request: Request, context: Context) {
     }
     if (!wearableSummary) wearableSummary = 'No wearable data available.';
 
+    // Format mood logs
+    let moodSummary = 'No mood data logged recently.';
+    if (moodLogs.length > 0) {
+      const moodByDate: Record<string, any[]> = {};
+      moodLogs.forEach((m: any) => {
+        const d = m.log_date || 'unknown';
+        if (!moodByDate[d]) moodByDate[d] = [];
+        moodByDate[d].push(m);
+      });
+      moodSummary = Object.entries(moodByDate).map(([date, logs]) => {
+        const entries = logs.map((l: any) =>
+          `${l.context || '?'}: Mood ${l.mood_score}/10, Energy ${l.energy_score || '?'}/10, Stress ${l.stress_score || '?'}/10`
+        ).join('; ');
+        return `${date}: ${entries}`;
+      }).join('\n');
+    }
+
+    // Format fitness diary entries
+    let diarySummary = 'No fitness diary entries recently.';
+    if (fitnessDiary.length > 0) {
+      diarySummary = fitnessDiary.map((d: any) => {
+        const ad = d.additional_data || {};
+        const parts = [`Rating: ${ad.day_rating || d.energy || '?'}`];
+        if (ad.energy_level) parts.push(`Energy: ${ad.energy_level}`);
+        if (ad.highlight) parts.push(`Highlight: ${ad.highlight}`);
+        if (ad.struggle) parts.push(`Struggle: ${ad.struggle}`);
+        if (ad.note) parts.push(`Note: ${ad.note}`);
+        return `${d.checkin_date}: ${parts.join(', ')}`;
+      }).join('\n');
+    }
+
+    // Compute energy balance summary from nutrition + weight data
+    let energyBalanceSummary = 'Not enough data for energy balance calculation.';
+    const trackedNutritionDays = dailyNutrition.filter((d: any) => d.total_calories && d.total_calories > 0);
+    const sortedWeighInsForBalance = [...weighIns].sort((a: any, b: any) => (a.weigh_in_date || '').localeCompare(b.weigh_in_date || ''));
+    if (trackedNutritionDays.length >= 7 && sortedWeighInsForBalance.length >= 2) {
+      const avgCalIn = Math.round(trackedNutritionDays.reduce((s: number, d: any) => s + parseFloat(d.total_calories), 0) / trackedNutritionDays.length);
+      const firstW = parseFloat(sortedWeighInsForBalance[0].weight_kg);
+      const lastW = parseFloat(sortedWeighInsForBalance[sortedWeighInsForBalance.length - 1].weight_kg);
+      const weightChangeKg = lastW - firstW;
+      const daysBetween = Math.max(1, Math.round((new Date(sortedWeighInsForBalance[sortedWeighInsForBalance.length - 1].weigh_in_date).getTime() - new Date(sortedWeighInsForBalance[0].weigh_in_date).getTime()) / 86400000));
+      const dailyDeficit = Math.round((weightChangeKg * 7700) / daysBetween);
+      const realTDEE = avgCalIn - dailyDeficit;
+      const formulaTDEE = quiz.tdee ? Math.round(quiz.tdee) : null;
+      energyBalanceSummary = `Avg calories in: ${avgCalIn}/day (${trackedNutritionDays.length} days). Weight change: ${weightChangeKg > 0 ? '+' : ''}${weightChangeKg.toFixed(1)}kg over ${daysBetween} days. Calculated real TDEE: ${realTDEE} cal/day.`;
+      if (formulaTDEE) energyBalanceSummary += ` Formula TDEE: ${formulaTDEE}. Difference: ${realTDEE - formulaTDEE} cal.`;
+    }
+
     // Format adaptive adjustment
     let adaptiveSummary = 'No adaptive data.';
     if (adaptiveResult?.eligible && adaptiveResult?.suggestion) {
@@ -221,6 +271,15 @@ ${weightSummary}
 
 === WEARABLE DATA ===
 ${wearableSummary}
+
+=== ENERGY BALANCE (Calculated from tracked data) ===
+${energyBalanceSummary}
+
+=== MOOD & ENERGY LOGS (Last 7 Days) ===
+${moodSummary}
+
+=== FITNESS DIARY ENTRIES ===
+${diarySummary}
 
 === KNOWN FACTS ===
 Struggles: ${facts.struggles?.join(', ') || 'None'}
@@ -488,6 +547,14 @@ The schedule shows 7 days (Monday=0 to Sunday=6). When the user asks to move/swa
 - Think about muscle group recovery (don't put Chest after Shoulders, don't stack two leg days)
 - If the target day is already a rest day, you can just move the workout there without asking
 - When doing a swap, include BOTH workout names in the action (day1_workout and day2_workout fields)
+
+=== PROACTIVE INSIGHTS ===
+You now have access to mood/energy/stress check-ins, fitness diary reflections, and calculated energy balance data. Use these to give genuinely insightful, data-driven observations when relevant:
+- Correlate mood/energy patterns with workouts, nutrition, sleep, or weight trends
+- Reference specific data points naturally (e.g., "your energy has been averaging 5/10 this week — down from 7 last week")
+- If you notice patterns (low energy on low-protein days, better mood after workouts, stress spikes mid-week), mention them
+- Use the energy balance data to give honest feedback about whether their calorie tracking matches their weight trajectory
+- Don't dump all data at once — weave insights into conversation naturally when the topic is relevant
 
 === IMPORTANT RULES ===
 - NEVER give medical advice

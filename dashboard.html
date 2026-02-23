@@ -8791,6 +8791,133 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
+    <!-- Mood Check-In Card (3x daily: morning, afternoon, evening) -->
+    <div id="mood-checkin-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%); border-radius: 16px; padding: 18px 20px; color: white; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+        <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+        <div style="position: relative; z-index: 1;">
+            <!-- Header with progress dots -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+                <div>
+                    <h3 id="mood-checkin-title" style="margin: 0 0 4px 0; font-size: 1.05rem; font-weight: 700;">How are you feeling?</h3>
+                    <p id="mood-checkin-subtitle" style="margin: 0; font-size: 0.8rem; opacity: 0.85;">Quick mood check — 3 taps</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div id="mood-dot-morning" style="width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); background: transparent; transition: all 0.3s;" title="Morning"></div>
+                    <div id="mood-dot-afternoon" style="width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); background: transparent; transition: all 0.3s;" title="Afternoon"></div>
+                    <div id="mood-dot-evening" style="width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); background: transparent; transition: all 0.3s;" title="Evening"></div>
+                </div>
+            </div>
+
+            <!-- Mood selection -->
+            <div id="mood-checkin-form" style="display: block;">
+                <!-- Step 1: Mood -->
+                <div id="mood-step-mood" style="margin-bottom: 14px;">
+                    <div style="font-weight: 600; font-size: 0.82rem; margin-bottom: 8px; opacity: 0.95;">Mood</div>
+                    <div style="display: flex; justify-content: space-between; gap: 6px;">
+                        <button onclick="selectMoodEmoji('mood',1,this)" class="mood-emoji-btn" data-group="mood" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">😫</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Awful</div>
+                        </button>
+                        <button onclick="selectMoodEmoji('mood',2,this)" class="mood-emoji-btn" data-group="mood" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">😕</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Low</div>
+                        </button>
+                        <button onclick="selectMoodEmoji('mood',3,this)" class="mood-emoji-btn" data-group="mood" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">😐</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Okay</div>
+                        </button>
+                        <button onclick="selectMoodEmoji('mood',4,this)" class="mood-emoji-btn" data-group="mood" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">🙂</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Good</div>
+                        </button>
+                        <button onclick="selectMoodEmoji('mood',5,this)" class="mood-emoji-btn" data-group="mood" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">😁</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Great</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Energy -->
+                <div id="mood-step-energy" style="margin-bottom: 14px;">
+                    <div style="font-weight: 600; font-size: 0.82rem; margin-bottom: 8px; opacity: 0.95;">Energy</div>
+                    <div style="display: flex; justify-content: space-between; gap: 6px;">
+                        <button onclick="selectMoodEmoji('energy',1,this)" class="mood-emoji-btn" data-group="energy" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">🪫</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Dead</div>
+                        </button>
+                        <button onclick="selectMoodEmoji('energy',2,this)" class="mood-emoji-btn" data-group="energy" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">😴</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Tired</div>
+                        </button>
+                        <button onclick="selectMoodEmoji('energy',3,this)" class="mood-emoji-btn" data-group="energy" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">🙂</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Normal</div>
+                        </button>
+                        <button onclick="selectMoodEmoji('energy',4,this)" class="mood-emoji-btn" data-group="energy" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">💪</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Good</div>
+                        </button>
+                        <button onclick="selectMoodEmoji('energy',5,this)" class="mood-emoji-btn" data-group="energy" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">⚡</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Wired</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Stress -->
+                <div id="mood-step-stress" style="margin-bottom: 14px;">
+                    <div style="font-weight: 600; font-size: 0.82rem; margin-bottom: 8px; opacity: 0.95;">Stress</div>
+                    <div style="display: flex; justify-content: space-between; gap: 6px;">
+                        <button onclick="selectMoodEmoji('stress',1,this)" class="mood-emoji-btn" data-group="stress" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">😌</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Chill</div>
+                        </button>
+                        <button onclick="selectMoodEmoji('stress',2,this)" class="mood-emoji-btn" data-group="stress" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">🙂</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Easy</div>
+                        </button>
+                        <button onclick="selectMoodEmoji('stress',3,this)" class="mood-emoji-btn" data-group="stress" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">😐</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Some</div>
+                        </button>
+                        <button onclick="selectMoodEmoji('stress',4,this)" class="mood-emoji-btn" data-group="stress" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">😰</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">High</div>
+                        </button>
+                        <button onclick="selectMoodEmoji('stress',5,this)" class="mood-emoji-btn" data-group="stress" style="flex: 1; background: rgba(255,255,255,0.12); border: 2px solid transparent; border-radius: 12px; padding: 10px 0; cursor: pointer; transition: all 0.2s; text-align: center;">
+                            <div style="font-size: 1.5rem;">🤯</div>
+                            <div style="font-size: 0.6rem; color: white; opacity: 0.7; margin-top: 2px;">Max</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit button (hidden until all 3 selected) -->
+                <button id="mood-checkin-submit" onclick="submitMoodCheckin()" style="display: none; width: 100%; background: white; color: #a855f7; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: transform 0.2s;">
+                    Log Check-In
+                </button>
+            </div>
+
+            <!-- Success state -->
+            <div id="mood-checkin-success" style="display: none; text-align: center; padding: 6px 0;">
+                <div style="font-size: 1.6rem; margin-bottom: 6px;">+1 XP</div>
+                <p id="mood-checkin-success-text" style="margin: 0; font-weight: 600; font-size: 0.9rem;">All 3 check-ins done! Nice one.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mood Check-In Done Card -->
+    <div id="mood-checkin-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%); border-radius: 16px; padding: 14px 20px; color: white; align-items: center; gap: 12px; position: relative;">
+        <button onclick="dismissMoodCheckinDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 38px; height: 38px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">&#x2705;</div>
+            <div style="flex: 1;">
+                <div style="font-weight: 700; font-size: 0.95rem;">Mood Check-Ins Complete!</div>
+                <div id="mood-done-summary" style="font-size: 0.78rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. See you tomorrow!</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Fitness Diary Card (appears daily from 6 PM) -->
     <div id="fitness-diary-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden;">
         <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
@@ -9321,12 +9448,276 @@ async function applyAppTheme(themeKey) {
     window.submitFitnessDiary = submitFitnessDiary;
     window.dismissFitnessDiaryDoneCard = dismissFitnessDiaryDoneCard;
 
+    // ===== MOOD CHECK-IN CARD (3x daily: morning, afternoon, evening) =====
+
+    window._moodCheckinData = { mood: null, energy: null, stress: null };
+
+    function getMoodTimeWindow() {
+        var hour = new Date().getHours();
+        if (hour >= 6 && hour < 12) return 'morning';
+        if (hour >= 12 && hour < 18) return 'afternoon';
+        if (hour >= 18 || hour < 6) return 'evening';
+        return null;
+    }
+
+    function getMoodWindowLabel(w) {
+        if (w === 'morning') return 'Morning';
+        if (w === 'afternoon') return 'Afternoon';
+        if (w === 'evening') return 'Evening';
+        return '';
+    }
+
+    function getMoodCompletedWindows() {
+        var dateKey = getTodayDateKey();
+        var raw = localStorage.getItem('moodCheckin_' + dateKey);
+        return raw ? JSON.parse(raw) : {};
+    }
+
+    function setMoodCompletedWindow(window_name) {
+        var dateKey = getTodayDateKey();
+        var completed = getMoodCompletedWindows();
+        completed[window_name] = true;
+        localStorage.setItem('moodCheckin_' + dateKey, JSON.stringify(completed));
+    }
+
+    function updateMoodDots() {
+        var completed = getMoodCompletedWindows();
+        ['morning', 'afternoon', 'evening'].forEach(function(w) {
+            var dot = document.getElementById('mood-dot-' + w);
+            if (dot) {
+                if (completed[w]) {
+                    dot.style.background = 'white';
+                    dot.style.borderColor = 'white';
+                } else {
+                    dot.style.background = 'transparent';
+                    dot.style.borderColor = 'rgba(255,255,255,0.6)';
+                }
+            }
+        });
+    }
+
+    async function checkAndShowMoodCheckinCard() {
+        if (!window.currentUser) return;
+        if (window._onboardingWizardPending) return;
+        var wizard = document.getElementById('onboarding-wizard');
+        if (wizard && wizard.style.display !== 'none') return;
+
+        var card = document.getElementById('mood-checkin-card');
+        var doneCard = document.getElementById('mood-checkin-done-card');
+        if (!card) return;
+
+        var currentWindow = getMoodTimeWindow();
+        var completed = getMoodCompletedWindows();
+        var allDone = completed.morning && completed.afternoon && completed.evening;
+
+        updateMoodDots();
+
+        if (allDone) {
+            // All 3 windows done — show done card unless dismissed
+            card.style.display = 'none';
+            if (doneCard) {
+                var dateKey = getTodayDateKey();
+                var dismissKey = 'moodCheckinDoneDismissed_' + dateKey;
+                doneCard.style.display = localStorage.getItem(dismissKey) ? 'none' : 'flex';
+            }
+            return;
+        }
+
+        if (!currentWindow || completed[currentWindow]) {
+            // Current window done or outside windows — hide card
+            card.style.display = 'none';
+            if (doneCard) doneCard.style.display = 'none';
+            return;
+        }
+
+        // Show the mood card for this window
+        card.style.display = 'block';
+        if (doneCard) doneCard.style.display = 'none';
+
+        // Update title
+        var titleEl = document.getElementById('mood-checkin-title');
+        var subtitleEl = document.getElementById('mood-checkin-subtitle');
+        if (titleEl) titleEl.textContent = getMoodWindowLabel(currentWindow) + ' Check-In';
+        if (subtitleEl) subtitleEl.textContent = 'Quick mood check — 3 taps';
+
+        // Reset selections
+        window._moodCheckinData = { mood: null, energy: null, stress: null };
+        document.querySelectorAll('.mood-emoji-btn').forEach(function(btn) {
+            btn.style.background = 'rgba(255,255,255,0.12)';
+            btn.style.borderColor = 'transparent';
+            btn.style.transform = 'scale(1)';
+        });
+        var submitBtn = document.getElementById('mood-checkin-submit');
+        if (submitBtn) submitBtn.style.display = 'none';
+        var form = document.getElementById('mood-checkin-form');
+        var success = document.getElementById('mood-checkin-success');
+        if (form) form.style.display = 'block';
+        if (success) success.style.display = 'none';
+    }
+
+    function selectMoodEmoji(group, value, el) {
+        window._moodCheckinData[group] = value;
+
+        // Visual: reset group, highlight selected
+        document.querySelectorAll('.mood-emoji-btn[data-group="' + group + '"]').forEach(function(btn) {
+            btn.style.background = 'rgba(255,255,255,0.12)';
+            btn.style.borderColor = 'transparent';
+            btn.style.transform = 'scale(1)';
+        });
+        el.style.background = 'rgba(255,255,255,0.3)';
+        el.style.borderColor = 'white';
+        el.style.transform = 'scale(1.05)';
+
+        // Show submit if all 3 selected
+        var d = window._moodCheckinData;
+        if (d.mood && d.energy && d.stress) {
+            var btn = document.getElementById('mood-checkin-submit');
+            if (btn) {
+                btn.style.display = 'block';
+                btn.style.animation = 'none';
+                btn.offsetHeight; // reflow
+                btn.style.animation = 'fadeIn 0.3s ease';
+            }
+        }
+    }
+
+    async function submitMoodCheckin() {
+        if (!window.currentUser) return;
+        var d = window._moodCheckinData;
+        if (!d.mood || !d.energy || !d.stress) return;
+
+        var currentWindow = getMoodTimeWindow();
+        if (!currentWindow) return;
+
+        // Map 1-5 scale to 2/4/6/8/10 for the mood_logs table (1-10 range)
+        var moodScore = d.mood * 2;
+        var energyScore = d.energy * 2;
+        // Stress is inverted for the DB: 1=chill(low stress=2), 5=max(high stress=10)
+        var stressScore = d.stress * 2;
+
+        var dateKey = getTodayDateKey();
+
+        try {
+            // Save to mood_logs table
+            await window.supabaseClient.from('mood_logs').insert({
+                user_id: window.currentUser.id,
+                logged_at: new Date().toISOString(),
+                log_date: dateKey,
+                mood_score: moodScore,
+                energy_score: energyScore,
+                stress_score: stressScore,
+                context: currentWindow
+            });
+
+            // Mark this window as completed
+            setMoodCompletedWindow(currentWindow);
+            updateMoodDots();
+
+            var completed = getMoodCompletedWindows();
+            var allDone = completed.morning && completed.afternoon && completed.evening;
+
+            var form = document.getElementById('mood-checkin-form');
+            var success = document.getElementById('mood-checkin-success');
+            var successText = document.getElementById('mood-checkin-success-text');
+            var card = document.getElementById('mood-checkin-card');
+
+            if (allDone) {
+                // Award 1 XP for completing all 3
+                try {
+                    var { data: currentPoints } = await window.supabaseClient
+                        .from('user_points')
+                        .select('lifetime_points')
+                        .eq('user_id', window.currentUser.id)
+                        .maybeSingle();
+
+                    if (currentPoints) {
+                        await window.supabaseClient
+                            .from('user_points')
+                            .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 1 })
+                            .eq('user_id', window.currentUser.id);
+                    } else {
+                        await window.supabaseClient
+                            .from('user_points')
+                            .insert({ user_id: window.currentUser.id, lifetime_points: 1, current_points: 0 });
+                    }
+                    if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+                    if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+                } catch (xpErr) {
+                    console.log('Mood XP award skipped:', xpErr);
+                }
+
+                if (form) form.style.display = 'none';
+                if (success) success.style.display = 'block';
+                if (successText) successText.textContent = 'All 3 check-ins done! Nice one.';
+
+                // Transition to done card
+                setTimeout(function() {
+                    if (card) {
+                        card.style.transition = 'opacity 0.5s, transform 0.5s';
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(-20px)';
+                        setTimeout(function() {
+                            card.style.display = 'none';
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                            var doneCard = document.getElementById('mood-checkin-done-card');
+                            if (doneCard) doneCard.style.display = 'flex';
+                        }, 500);
+                    }
+                }, 2000);
+            } else {
+                // Not all done yet — show quick confirmation then hide card
+                if (form) form.style.display = 'none';
+                if (success) success.style.display = 'block';
+                if (successText) {
+                    var remaining = [];
+                    if (!completed.morning) remaining.push('Morning');
+                    if (!completed.afternoon) remaining.push('Afternoon');
+                    if (!completed.evening) remaining.push('Evening');
+                    successText.textContent = getMoodWindowLabel(currentWindow) + ' logged! ' + remaining.join(' & ') + ' left for +1 XP.';
+                }
+
+                setTimeout(function() {
+                    if (card) {
+                        card.style.transition = 'opacity 0.5s, transform 0.5s';
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(-20px)';
+                        setTimeout(function() {
+                            card.style.display = 'none';
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, 500);
+                    }
+                }, 2000);
+            }
+
+            if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
+
+        } catch (err) {
+            console.error('Error submitting mood check-in:', err);
+            alert('Failed to save mood check-in. Please try again.');
+        }
+    }
+
+    function dismissMoodCheckinDoneCard() {
+        var dateKey = getTodayDateKey();
+        localStorage.setItem('moodCheckinDoneDismissed_' + dateKey, '1');
+        var el = document.getElementById('mood-checkin-done-card');
+        if (el) el.style.display = 'none';
+    }
+
+    window.checkAndShowMoodCheckinCard = checkAndShowMoodCheckinCard;
+    window.selectMoodEmoji = selectMoodEmoji;
+    window.submitMoodCheckin = submitMoodCheckin;
+    window.dismissMoodCheckinDoneCard = dismissMoodCheckinDoneCard;
+
     // PWA resume: re-check weigh-in when app comes back to foreground
     // (e.g., user opens PWA the next day without a hard refresh)
     let _lastWeighInCheckDate = new Date().toDateString();
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'visible') {
-            // Always re-check fitness diary on resume (6 PM threshold may have been crossed)
+            // Always re-check mood & fitness diary on resume (time window may have changed)
+            if (typeof checkAndShowMoodCheckinCard === 'function') checkAndShowMoodCheckinCard();
             if (typeof checkAndShowFitnessDiaryCard === 'function') checkAndShowFitnessDiaryCard();
 
             const today = new Date().toDateString();
@@ -9336,6 +9727,7 @@ async function applyAppTheme(themeKey) {
                 console.log('🔄 New day detected on PWA resume, refreshing daily cards');
                 if (typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
                 if (typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
+                if (typeof checkAndShowMoodCheckinCard === 'function') checkAndShowMoodCheckinCard();
                 if (typeof checkAndShowFitnessDiaryCard === 'function') checkAndShowFitnessDiaryCard();
                 if (typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
                 if (typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
@@ -10648,8 +11040,12 @@ async function applyAppTheme(themeKey) {
         if (loadingEl) loadingEl.style.display = 'block';
         if (contentEl) contentEl.style.display = 'none';
 
+        const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
+        const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+        const todayStr = new Date().toISOString().split('T')[0];
+
         try {
-            const [exerciseHistoryResult, weighInsResult, sleepResult] = await Promise.allSettled([
+            const [exerciseHistoryResult, weighInsResult, sleepResult, nutritionResult, wearableCaloriesResult, quizResult, moodResult] = await Promise.allSettled([
                 supabaseClient
                     .from('workouts')
                     .select('workout_date, exercise_name, weight_kg, reps')
@@ -10658,6 +11054,19 @@ async function applyAppTheme(themeKey) {
                     .order('workout_date', { ascending: true }),
                 db.weighIns.getRecent(userId, 30),
                 _loadWearableSleepForInsights(userId),
+                // Nutrition for energy balance (14 days)
+                db.nutrition.getRange(userId, fourteenDaysAgo, todayStr),
+                // Wearable calories burned (try all sources)
+                _loadWearableCaloriesForInsights(userId, fourteenDaysAgo),
+                // Quiz results for estimated BMR
+                db.quizResults.getLatest(userId),
+                // Mood logs (last 7 days)
+                (async () => {
+                    const { data } = await supabaseClient
+                        .from('mood_logs').select('*').eq('user_id', userId)
+                        .gte('log_date', sevenDaysAgo).order('log_date', { ascending: true });
+                    return data;
+                })()
             ]);
 
             const exerciseHistory = (exerciseHistoryResult.status === 'fulfilled' && !exerciseHistoryResult.value.error)
@@ -10665,12 +11074,18 @@ async function applyAppTheme(themeKey) {
                 : [];
             const weighIns = weighInsResult.status === 'fulfilled' ? (weighInsResult.value || []) : [];
             const sleepData = sleepResult.status === 'fulfilled' ? sleepResult.value : null;
+            const nutritionDays = nutritionResult.status === 'fulfilled' ? (nutritionResult.value || []) : [];
+            const wearableCalories = wearableCaloriesResult.status === 'fulfilled' ? (wearableCaloriesResult.value || []) : [];
+            const quizData = quizResult.status === 'fulfilled' ? (quizResult.value || {}) : {};
+            const moodLogs = moodResult.status === 'fulfilled' ? (moodResult.value || []) : [];
 
             const strengthGains = _computeStrengthGains(exerciseHistory);
 
             renderStrengthProgress(strengthGains);
             renderInsightsCorrelations(strengthGains, weighIns, sleepData);
             renderInsightsSleep(sleepData);
+            renderEnergyBalance(nutritionDays, wearableCalories, weighIns, quizData);
+            renderMoodTrends(moodLogs);
 
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
@@ -10679,6 +11094,234 @@ async function applyAppTheme(themeKey) {
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
         }
+    }
+
+    // Fetch wearable calorie data from all connected sources
+    async function _loadWearableCaloriesForInsights(userId, sinceDate) {
+        const caloriesByDate = {};
+        const sources = [
+            { url: `/api/fitbit/data?user_id=${userId}`, extract: (d) => (d.activity || []).map(a => ({ date: a.date, calories: a.calories_burned })) },
+            { url: `/api/oura/data?user_id=${userId}`, extract: (d) => (d.activity || []).map(a => ({ date: a.date, calories: a.total_calories || a.active_calories })) },
+        ];
+        for (const src of sources) {
+            try {
+                const resp = await fetch(src.url);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.connected) {
+                        const entries = src.extract(data);
+                        entries.forEach(e => {
+                            if (e.date && e.calories && e.date >= sinceDate) {
+                                caloriesByDate[e.date] = e.calories;
+                            }
+                        });
+                        if (Object.keys(caloriesByDate).length > 0) break; // use first connected source
+                    }
+                }
+            } catch (e) { /* source not connected */ }
+        }
+        return Object.entries(caloriesByDate).map(([date, calories]) => ({ date, calories_burned: calories }));
+    }
+
+    // Render Energy Balance section with real BMR calculation
+    function renderEnergyBalance(nutritionDays, wearableCalories, weighIns, quizData) {
+        const container = document.getElementById('insights-energy-balance-container');
+        if (!container) return;
+
+        const trackedDays = nutritionDays.filter(d => d.total_calories && d.total_calories > 0);
+        const sortedWeighIns = [...weighIns].sort((a, b) => (a.weigh_in_date || '').localeCompare(b.weigh_in_date || ''));
+
+        // Need minimum data
+        if (trackedDays.length < 7 || sortedWeighIns.length < 2) {
+            container.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Keep tracking meals and weigh-ins — need 7+ nutrition days & 2+ weigh-ins to calculate your real energy balance.</div>';
+            return;
+        }
+
+        // Average daily calories consumed
+        const avgCaloriesIn = Math.round(trackedDays.reduce((s, d) => s + parseFloat(d.total_calories), 0) / trackedDays.length);
+
+        // Weight change over the tracked period
+        const firstWeight = parseFloat(sortedWeighIns[0].weight_kg);
+        const lastWeight = parseFloat(sortedWeighIns[sortedWeighIns.length - 1].weight_kg);
+        const weightChangeTotalKg = lastWeight - firstWeight;
+        const daysBetween = Math.max(1, Math.round((new Date(sortedWeighIns[sortedWeighIns.length - 1].weigh_in_date) - new Date(sortedWeighIns[0].weigh_in_date)) / 86400000));
+
+        // 7700 cal per kg of body mass change (mix of fat + water + muscle)
+        const dailyDeficitFromWeight = Math.round((weightChangeTotalKg * 7700) / daysBetween);
+        // If losing weight, deficit is positive (burning more than eating)
+        // actual_TDEE = calories_in + deficit_from_weight_loss
+        const realTDEE = avgCaloriesIn - dailyDeficitFromWeight;
+
+        // Wearable TDEE (average)
+        let wearableTDEE = null;
+        if (wearableCalories.length >= 3) {
+            wearableTDEE = Math.round(wearableCalories.reduce((s, d) => s + d.calories_burned, 0) / wearableCalories.length);
+        }
+
+        // Formula BMR/TDEE from quiz
+        const formulaBMR = quizData.bmr ? Math.round(quizData.bmr) : null;
+        const formulaTDEE = quizData.tdee ? Math.round(quizData.tdee) : null;
+
+        // Back-calculate real BMR (rough estimate using activity multiplier)
+        const activityMultiplier = quizData.activity_level === 'active' ? 1.55 : quizData.activity_level === 'moderate' ? 1.375 : 1.2;
+        const realBMR = Math.round(realTDEE / activityMultiplier);
+
+        // Build the display
+        let html = '';
+
+        // Main comparison cards
+        html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">';
+
+        // Calories In card
+        html += '<div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 14px; padding: 14px; color: white; text-align: center;">';
+        html += '<div style="font-size: 0.68rem; opacity: 0.8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Avg Calories In</div>';
+        html += '<div style="font-size: 1.5rem; font-weight: 800;">' + avgCaloriesIn.toLocaleString() + '</div>';
+        html += '<div style="font-size: 0.7rem; opacity: 0.75;">per day (' + trackedDays.length + ' days)</div>';
+        html += '</div>';
+
+        // Real TDEE card
+        html += '<div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 14px; padding: 14px; color: white; text-align: center;">';
+        html += '<div style="font-size: 0.68rem; opacity: 0.8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Real TDEE</div>';
+        html += '<div style="font-size: 1.5rem; font-weight: 800;">' + realTDEE.toLocaleString() + '</div>';
+        html += '<div style="font-size: 0.7rem; opacity: 0.75;">from weight change</div>';
+        html += '</div>';
+
+        html += '</div>';
+
+        // Deficit/surplus indicator
+        const dailyBalance = avgCaloriesIn - realTDEE;
+        const balanceColor = dailyBalance < -50 ? '#10b981' : dailyBalance > 50 ? '#ef4444' : '#8b5cf6';
+        const balanceLabel = dailyBalance < -50 ? 'deficit' : dailyBalance > 50 ? 'surplus' : 'maintenance';
+
+        html += '<div style="background: #f8fafc; border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">';
+        html += '<span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">Daily Balance</span>';
+        html += '<span style="font-size: 0.95rem; font-weight: 800; color: ' + balanceColor + ';">' + (dailyBalance > 0 ? '+' : '') + dailyBalance + ' cal (' + balanceLabel + ')</span>';
+        html += '</div>';
+
+        // Comparison table
+        html += '<div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 8px;">How the numbers compare:</div>';
+        html += '<div style="display: flex; flex-direction: column; gap: 6px;">';
+
+        // BMR row
+        if (formulaBMR) {
+            html += _buildComparisonRow('BMR', formulaBMR + ' (formula)', realBMR + ' (from data)', realBMR - formulaBMR);
+        }
+
+        // TDEE row
+        if (formulaTDEE) {
+            html += _buildComparisonRow('TDEE', formulaTDEE + ' (formula)', realTDEE + ' (from data)', realTDEE - formulaTDEE);
+        }
+
+        // Wearable TDEE row
+        if (wearableTDEE) {
+            html += _buildComparisonRow('Watch TDEE', wearableTDEE + ' (wearable)', realTDEE + ' (from data)', realTDEE - wearableTDEE);
+        }
+
+        html += '</div>';
+
+        // Weight change summary
+        html += '<div style="margin-top: 14px; background: #f0fdf4; border-radius: 10px; padding: 10px 14px; font-size: 0.8rem; color: #166534;">';
+        html += 'Weight ' + (weightChangeTotalKg < 0 ? 'down' : weightChangeTotalKg > 0 ? 'up' : 'stable') + ' <strong>' + Math.abs(weightChangeTotalKg).toFixed(1) + 'kg</strong> over ' + daysBetween + ' days';
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    function _buildComparisonRow(label, estimated, actual, diff) {
+        const diffColor = Math.abs(diff) < 50 ? '#10b981' : Math.abs(diff) < 150 ? '#f59e0b' : '#ef4444';
+        const sign = diff > 0 ? '+' : '';
+        return '<div style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border-radius: 8px; padding: 8px 12px;">'
+            + '<span style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); width: 70px;">' + label + '</span>'
+            + '<span style="font-size: 0.75rem; color: var(--text-muted);">' + estimated + '</span>'
+            + '<span style="font-size: 0.75rem; color: var(--text-main); font-weight: 600;">' + actual + '</span>'
+            + '<span style="font-size: 0.72rem; font-weight: 700; color: ' + diffColor + '; min-width: 50px; text-align: right;">' + sign + diff + '</span>'
+            + '</div>';
+    }
+
+    // Render Mood & Energy trends from mood_logs
+    function renderMoodTrends(moodLogs) {
+        const container = document.getElementById('insights-mood-container');
+        if (!container) return;
+
+        if (!moodLogs || moodLogs.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Start logging mood check-ins to see trends here.</div>';
+            return;
+        }
+
+        // Group by date, average scores per day
+        const byDate = {};
+        moodLogs.forEach(log => {
+            const d = log.log_date;
+            if (!byDate[d]) byDate[d] = { mood: [], energy: [], stress: [] };
+            if (log.mood_score) byDate[d].mood.push(log.mood_score);
+            if (log.energy_score) byDate[d].energy.push(log.energy_score);
+            if (log.stress_score) byDate[d].stress.push(log.stress_score);
+        });
+
+        const dates = Object.keys(byDate).sort();
+        const avg = arr => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length * 10) / 10 : null;
+
+        const dayData = dates.map(d => ({
+            date: d,
+            dayLabel: new Date(d + 'T12:00:00').toLocaleDateString('en', { weekday: 'short' }),
+            mood: avg(byDate[d].mood),
+            energy: avg(byDate[d].energy),
+            stress: avg(byDate[d].stress)
+        }));
+
+        // Build simple bar chart
+        let html = '';
+
+        // Legend
+        html += '<div style="display: flex; gap: 16px; margin-bottom: 12px; font-size: 0.72rem;">';
+        html += '<span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #ec4899;"></span> Mood</span>';
+        html += '<span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #f59e0b;"></span> Energy</span>';
+        html += '<span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #6366f1;"></span> Stress</span>';
+        html += '</div>';
+
+        // Chart
+        html += '<div style="display: flex; gap: 6px; align-items: flex-end; height: 120px;">';
+
+        dayData.forEach(day => {
+            html += '<div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%;">';
+            // Bars container (bottom-aligned)
+            html += '<div style="flex: 1; display: flex; align-items: flex-end; gap: 2px; width: 100%;">';
+
+            const maxScore = 10;
+            const barHeight = (val) => val ? Math.round((val / maxScore) * 90) : 0;
+
+            html += '<div style="flex: 1; height: ' + barHeight(day.mood) + '%; background: #ec4899; border-radius: 3px 3px 0 0; min-height: ' + (day.mood ? '4px' : '0') + ';"></div>';
+            html += '<div style="flex: 1; height: ' + barHeight(day.energy) + '%; background: #f59e0b; border-radius: 3px 3px 0 0; min-height: ' + (day.energy ? '4px' : '0') + ';"></div>';
+            html += '<div style="flex: 1; height: ' + barHeight(day.stress) + '%; background: #6366f1; border-radius: 3px 3px 0 0; min-height: ' + (day.stress ? '4px' : '0') + ';"></div>';
+
+            html += '</div>';
+            // Day label
+            html += '<div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">' + day.dayLabel + '</div>';
+            html += '</div>';
+        });
+
+        html += '</div>';
+
+        // Weekly averages
+        const allMoods = moodLogs.filter(l => l.mood_score).map(l => l.mood_score);
+        const allEnergy = moodLogs.filter(l => l.energy_score).map(l => l.energy_score);
+        const allStress = moodLogs.filter(l => l.stress_score).map(l => l.stress_score);
+
+        html += '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px;">';
+        html += _buildMoodAvgCard('Mood', avg(allMoods), '#ec4899');
+        html += _buildMoodAvgCard('Energy', avg(allEnergy), '#f59e0b');
+        html += _buildMoodAvgCard('Stress', avg(allStress), '#6366f1');
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    function _buildMoodAvgCard(label, value, color) {
+        if (!value) return '<div></div>';
+        return '<div style="text-align: center; background: #f8fafc; border-radius: 10px; padding: 10px 6px;">'
+            + '<div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">' + label + '</div>'
+            + '<div style="font-size: 1.2rem; font-weight: 800; color: ' + color + ';">' + value + '<span style="font-size: 0.7rem; font-weight: 600; opacity: 0.6;">/10</span></div>'
+            + '</div>';
     }
 
     /**
@@ -21618,6 +22261,28 @@ function viewWorkoutHistoryDetail(date) {
                 </div>
             </div>
 
+            <!-- Energy Balance / Real BMR -->
+            <div style="padding: 20px 20px 0;">
+                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
+                    <h3 style="margin: 0 0 4px 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Energy Balance</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Your real numbers vs estimates</div>
+                    <div id="insights-energy-balance-container">
+                        <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">Needs 10+ days of nutrition tracking + weigh-ins to calculate</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mood & Energy Trends -->
+            <div style="padding: 20px 20px 0;">
+                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
+                    <h3 style="margin: 0 0 4px 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Mood &amp; Energy</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Last 7 days from your check-ins</div>
+                    <div id="insights-mood-container">
+                        <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">Start logging mood check-ins to see trends</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Connect a Tracker (shown when no wearable synced) -->
             <div id="insights-connect-section" style="padding: 20px; display: none;">
                 <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 20px; padding: 20px;">
@@ -24047,6 +24712,9 @@ function _switchAppTabReal(tabName, btn) {
         }
         if (typeof checkAndShowWeighInCard === 'function') {
             checkAndShowWeighInCard();
+        }
+        if (typeof checkAndShowMoodCheckinCard === 'function') {
+            checkAndShowMoodCheckinCard();
         }
         if (typeof checkAndShowFitnessDiaryCard === 'function') {
             checkAndShowFitnessDiaryCard();
@@ -33928,6 +34596,13 @@ function openWorkoutRatingModal(workoutName, sourceType, sourceId) {
     if (diffSlider) diffSlider.value = 3;
     if (energySlider) energySlider.value = 3;
 
+    // Reset save button state (may be stuck from previous save)
+    const saveBtn = document.getElementById('save-rating-btn');
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+    }
+
     // Set workout name in header
     const nameEl = document.getElementById('rating-workout-name');
     if (nameEl) nameEl.textContent = workoutName || 'Rate your workout';
@@ -33946,13 +34621,18 @@ async function saveWorkoutRating() {
         const session = await window.authHelpers?.getSession();
         if (!session?.user) {
             showToast('Please log in to save rating', 'error');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+            }
             return;
         }
 
         const difficulty = parseInt(document.getElementById('rating-difficulty-slider')?.value || 3);
         const energy = parseInt(document.getElementById('rating-energy-slider')?.value || 3);
 
-        await window.dbHelpers?.workoutRatings?.create(window.currentUser.id, {
+        const userId = window.currentUser?.id || session.user.id;
+        await window.dbHelpers.workoutRatings.create(userId, {
             workout_date: getLocalDateString(new Date()),
             workout_name: workoutRatingState.workoutName,
             source_type: workoutRatingState.sourceType,
@@ -33971,6 +34651,7 @@ async function saveWorkoutRating() {
     } catch (err) {
         console.error('Error saving workout rating:', err);
         showToast('Failed to save rating', 'error');
+    } finally {
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.textContent = 'Save';
@@ -68350,7 +69031,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const todayStr = new Date().toISOString().split('T')[0];
 
         // Run all data fetches in parallel for speed
-        const [quizResult, factsResult, nutritionResult, mealsResult, workoutsResult, weighInsResult, replacementsResult, wearableResult, friendsResult, aiMealPlanResult] = await Promise.allSettled([
+        const [quizResult, factsResult, nutritionResult, mealsResult, workoutsResult, weighInsResult, replacementsResult, wearableResult, friendsResult, aiMealPlanResult, moodLogsResult, fitnessDiaryResult] = await Promise.allSettled([
             // Quiz results
             db.quizResults.getLatest(user.id),
             // User facts
@@ -68419,6 +69100,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // Table may not exist yet
                     return localStorage.getItem('ai_meal_plan') ? { plan_name: 'Local plan', status: 'active' } : null;
                 }
+            })(),
+            // Mood logs (last 7 days)
+            (async () => {
+                try {
+                    const { data } = await window.supabaseClient
+                        .from('mood_logs').select('*').eq('user_id', user.id)
+                        .gte('log_date', sevenDaysAgo).order('logged_at', { ascending: false }).limit(30);
+                    return data;
+                } catch (e) { return []; }
+            })(),
+            // Fitness diary entries (last 7 days)
+            (async () => {
+                try {
+                    const { data } = await window.supabaseClient
+                        .from('daily_checkins').select('checkin_date, energy, additional_data').eq('user_id', user.id)
+                        .gte('checkin_date', sevenDaysAgo).order('checkin_date', { ascending: false }).limit(7);
+                    return data;
+                } catch (e) { return []; }
             })()
         ]);
 
@@ -68431,6 +69130,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         context.activeReplacements = replacementsResult.status === 'fulfilled' ? (replacementsResult.value || []) : [];
         context.wearables = wearableResult.status === 'fulfilled' ? (wearableResult.value || {}) : {};
         context.hasAiMealPlan = aiMealPlanResult.status === 'fulfilled' && !!aiMealPlanResult.value;
+        context.moodLogs = moodLogsResult.status === 'fulfilled' ? (moodLogsResult.value || []) : [];
+        context.fitnessDiary = fitnessDiaryResult.status === 'fulfilled' ? (fitnessDiaryResult.value || []) : [];
 
         // Friends list (names + IDs for AI challenge creation)
         const friendsList = friendsResult.status === 'fulfilled' ? (friendsResult.value || []) : [];
