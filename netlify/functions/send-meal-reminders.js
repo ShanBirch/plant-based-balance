@@ -164,6 +164,59 @@ exports.handler = async (event) => {
         };
     }
 
+    // ── DEBUG MODE ──────────────────────────────────────────────
+    // POST with { "debug": true } to diagnose why reminders aren't sending.
+    // Returns DB state without sending any notifications.
+    const parsedBody = event.body ? JSON.parse(event.body) : {};
+    if (parsedBody.debug) {
+        if (!SUPABASE_SERVICE_KEY) {
+            return { statusCode: 500, body: JSON.stringify({ error: 'Missing SUPABASE_SERVICE_KEY' }) };
+        }
+        const debug = { fcmConfigured: !!FIREBASE_SERVICE_ACCOUNT, vapidConfigured: !!(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) };
+
+        // 1. Check meal_reminder_preferences
+        const prefsRes = await fetch(`${SUPABASE_URL}/rest/v1/meal_reminder_preferences?select=user_id,reminders_enabled,breakfast_time,lunch_time,dinner_time,breakfast_reminder,lunch_reminder,dinner_reminder,reminder_delay_minutes,timezone`, {
+            headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` }
+        });
+        debug.preferences = prefsRes.ok ? await prefsRes.json() : await prefsRes.text();
+
+        // 2. Check push_subscriptions
+        const subsRes = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?select=user_id,endpoint,auth,updated_at`, {
+            headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` }
+        });
+        const allSubs = subsRes.ok ? await subsRes.json() : [];
+        debug.subscriptions = allSubs.map(s => ({
+            user_id: s.user_id,
+            type: s.endpoint?.startsWith('native://') ? 'NATIVE/FCM' : 'WEB_PUSH',
+            endpoint_preview: (s.endpoint || '').substring(0, 50) + '...',
+            has_auth_token: !!(s.auth && s.auth !== 'native' && s.auth.length > 10),
+            updated_at: s.updated_at
+        }));
+
+        // 3. Run the SQL function for each meal type to see who would get reminders
+        debug.eligible = {};
+        for (const mt of ['breakfast', 'lunch', 'dinner']) {
+            const eligRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_users_needing_meal_reminders`, {
+                method: 'POST',
+                headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ p_meal_type: mt })
+            });
+            debug.eligible[mt] = eligRes.ok ? await eligRes.json() : await eligRes.text();
+        }
+
+        // 4. Check today's reminder log
+        const today = new Date().toISOString().split('T')[0];
+        const logRes = await fetch(`${SUPABASE_URL}/rest/v1/meal_reminder_log?reminder_date=eq.${today}&select=user_id,meal_type,reminder_date,sent_at`, {
+            headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` }
+        });
+        debug.todayLog = logRes.ok ? await logRes.json() : await logRes.text();
+
+        // 5. Server time info
+        debug.serverTimeUTC = new Date().toISOString();
+
+        return { statusCode: 200, body: JSON.stringify(debug, null, 2) };
+    }
+
     // Check VAPID keys (needed for web push)
     if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
         console.error('Missing VAPID keys');
@@ -192,7 +245,7 @@ exports.handler = async (event) => {
         if (isScheduled) {
             mealTypes = ['breakfast', 'lunch', 'dinner'];
         } else {
-            const { mealType } = JSON.parse(event.body || '{}');
+            const { mealType } = parsedBody;
             if (!mealType || !['breakfast', 'lunch', 'dinner'].includes(mealType)) {
                 return {
                     statusCode: 400,
