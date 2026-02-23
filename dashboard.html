@@ -22,18 +22,14 @@
 <link rel="apple-touch-icon" href="assets/Logo_dots.jpg">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
 <script>
-  // Only register the service worker on web — not inside the Capacitor native shell.
-  // On native, FCM handles push notifications directly. A service worker in the
-  // WebView would create a competing web-push subscription that can't deliver
-  // when the app is backgrounded, and may prevent the native FCM token from
-  // being the sole subscription in the database.
-  if ('serviceWorker' in navigator &&
-      !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
+  // Register service worker on BOTH web and native for caching/offline support.
+  // Push notifications are safe: requestNotificationPermission() already has its
+  // own isNativeApp() guard, so no competing web-push subscription is created
+  // on native — FCM still handles push exclusively.
+  if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
       .then(reg => console.log('SW Registered!', reg))
       .catch(err => console.log('SW Failed:', err));
-  } else if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-    console.log('[SW] Skipped service worker registration on native (FCM handles push)');
   }
 </script>
 

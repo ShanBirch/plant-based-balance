@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v27'; // v27: Cache all app JS, CDN libs, Supabase API data
+const CACHE_NAME = 'pbb-app-v28'; // v28: Enable SW on native + timeout race for slow connections
 const MODEL_CACHE_NAME = 'pbb-models-v3'; // v3: all evolution + collectible models
 const API_CACHE_NAME = 'pbb-api-v1'; // v1: Supabase user data, nutrition, learning progress
 
@@ -147,17 +147,33 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Network first for HTML, JS, and CSS files (always get latest)
+  // Network-first with timeout for HTML, JS, and CSS files.
+  // If cached version exists and network takes > 3s, serve cache immediately
+  // (network fetch continues in background to update cache for next load).
+  // This prevents the app from hanging on slow connections.
   if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
     e.respondWith(
-      fetch(e.request)
-        .then(response => {
-          // Clone and cache fresh response
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-          return response;
-        })
-        .catch(() => caches.match(e.request)) // Fallback to cache if offline
+      caches.open(CACHE_NAME).then(cache => {
+        return cache.match(e.request).then(cached => {
+          const networkFetch = fetch(e.request).then(response => {
+            if (response.ok) {
+              cache.put(e.request, response.clone());
+            }
+            return response;
+          });
+
+          if (!cached) {
+            // Nothing in cache — must wait for network
+            return networkFetch.catch(() => cached);
+          }
+
+          // Race: serve cache after 3s timeout if network is slow
+          return Promise.race([
+            networkFetch,
+            new Promise(resolve => setTimeout(() => resolve(cached), 3000))
+          ]).catch(() => cached);
+        });
+      })
     );
     return;
   }
