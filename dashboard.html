@@ -68381,6 +68381,122 @@ document.addEventListener('DOMContentLoaded', async function() {
                         break;
                     }
 
+                    case 'log_weight': {
+                        const weightKg = parseFloat(action.weight_kg);
+                        if (!weightKg || weightKg < 20 || weightKg > 300) {
+                            errors.push('Invalid weight value');
+                            break;
+                        }
+                        const notes = action.notes || null;
+                        const bodyFatPct = action.body_fat_pct ? parseFloat(action.body_fat_pct) : null;
+                        await db.weighIns.log(user.id, weightKg, notes, bodyFatPct);
+                        addAiMessage(`Logged your weight: **${weightKg} kg**${bodyFatPct ? ` (${bodyFatPct}% body fat)` : ''}${notes ? ` — "${notes}"` : ''} ✅`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
+                    case 'log_water': {
+                        const glasses = parseInt(action.glasses);
+                        if (!glasses || glasses < 1 || glasses > 30) {
+                            errors.push('Invalid water intake value');
+                            break;
+                        }
+                        const now = new Date();
+                        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                        await window.supabaseClient
+                            .from('daily_checkins')
+                            .upsert({
+                                user_id: user.id,
+                                checkin_date: todayStr,
+                                water_intake: glasses
+                            }, { onConflict: 'user_id,checkin_date' });
+                        addAiMessage(`Logged **${glasses} glasses** of water for today 💧`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
+                    case 'set_weight_goal': {
+                        const goalWeight = parseFloat(action.goal_weight_kg);
+                        if (!goalWeight || goalWeight < 30 || goalWeight > 250) {
+                            errors.push('Invalid goal weight value');
+                            break;
+                        }
+                        const { error: gwError } = await window.supabaseClient
+                            .from('quiz_results')
+                            .update({ goal_weight: goalWeight })
+                            .eq('user_id', user.id);
+                        if (gwError) throw gwError;
+                        addAiMessage(`Weight goal set to **${goalWeight} kg** 🎯`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
+                    case 'send_nudge': {
+                        const nudgeFriendName = action.friend_name;
+                        const contextFriendsNudge = window._aiUserContext?.friends || [];
+                        const nudgeFriend = contextFriendsNudge.find(f =>
+                            f.name && f.name.toLowerCase().includes(nudgeFriendName?.toLowerCase())
+                        );
+                        if (!nudgeFriend) {
+                            errors.push(`Couldn't find friend "${nudgeFriendName}" in your friends list`);
+                            break;
+                        }
+                        const nudgeMessage = action.message || `Hey! Just checking in - have you worked out today? 💪`;
+                        const { error: nudgeError } = await window.supabaseClient
+                            .from('nudges')
+                            .insert({
+                                sender_id: user.id,
+                                receiver_id: nudgeFriend.id,
+                                message: nudgeMessage
+                            });
+                        if (nudgeError) throw nudgeError;
+                        addAiMessage(`Nudge sent to **${nudgeFriend.name}**! 👋`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
+                    case 'log_activity': {
+                        const activityType = action.activity_type || 'cardio';
+                        const activityLabel = action.activity_label || action.name || activityType;
+                        const durationMin = parseInt(action.duration_minutes);
+                        if (!durationMin || durationMin < 1 || durationMin > 600) {
+                            errors.push('Invalid activity duration');
+                            break;
+                        }
+                        const activityIntensity = action.intensity || 'moderate';
+                        const estCalories = action.estimated_calories ? parseInt(action.estimated_calories) : null;
+                        await db.activityLogs.create(user.id, {
+                            activity_type: activityType,
+                            activity_label: activityLabel,
+                            duration_minutes: durationMin,
+                            intensity: activityIntensity,
+                            estimated_calories: estCalories,
+                            notes: action.notes || null
+                        });
+                        addAiMessage(`Logged **${activityLabel}** — ${durationMin} min${activityIntensity !== 'moderate' ? ` (${activityIntensity})` : ''}${estCalories ? `, ~${estCalories} cal` : ''} 🏃`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
+                    case 'create_custom_exercise': {
+                        const exName = action.exercise_name || action.name;
+                        if (!exName) {
+                            errors.push('Exercise name is required');
+                            break;
+                        }
+                        await db.customExercises.create(user.id, {
+                            name: exName,
+                            description: action.description || '',
+                            muscleGroup: action.muscle_group || 'other',
+                            equipment: action.equipment || 'bodyweight',
+                            sets: parseInt(action.default_sets) || 3,
+                            reps: action.default_reps || '8-12'
+                        });
+                        addAiMessage(`Custom exercise **"${exName}"** added to your library! 💪 You can now use it in any workout.`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
                     default:
                         console.warn('Unknown AI action type:', action.type);
                         errors.push('Unknown action: ' + action.type);
