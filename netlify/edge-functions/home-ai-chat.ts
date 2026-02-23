@@ -329,6 +329,7 @@ Available action types:
    Step 2 - CONFIRM: Summarize the challenge details and list the friends who will be invited. Ask to confirm.
    Step 3 - CREATE: Only AFTER confirmation, include the create_challenge action.
    Entry fee can be 0 for free challenges. Friends are invited via the friends list names.
+   IMPORTANT: duration_days must be at least 1 (minimum 1 day).
 
 10. **create_quiz** - Create a custom quiz with mixed game formats
    { "type": "create_quiz", "title": "Plant Protein Mastery", "description": "Test your knowledge of plant proteins", "games": [...], "description": "Create a quiz about plant proteins" }

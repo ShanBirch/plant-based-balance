@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS public.challenges (
 
   -- Constraints
   CONSTRAINT valid_dates CHECK (end_date > start_date),
-  CONSTRAINT min_duration CHECK (duration_days >= 28)
+  CONSTRAINT min_duration CHECK (duration_days >= 1)
 );
 
 -- ============================================================
