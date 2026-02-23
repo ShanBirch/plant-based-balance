@@ -8928,10 +8928,6 @@ async function applyAppTheme(themeKey) {
             const data = await response.json();
 
             if (data.connected) {
-                // Show dashboard card
-                const card = document.getElementById('fitbit-dashboard-card');
-                if (card) card.style.display = 'block';
-
                 // Update settings button
                 const btn = document.getElementById('fitbit-connect-btn');
                 const statusText = document.getElementById('fitbit-status-text');
@@ -8940,14 +8936,7 @@ async function applyAppTheme(themeKey) {
                     btn.style.background = '#ef4444';
                 }
                 if (statusText) statusText.textContent = 'Connected and syncing';
-
-                // Populate today's data
-                updateFitbitDisplay(data);
             } else {
-                // Not connected - ensure card is hidden
-                const card = document.getElementById('fitbit-dashboard-card');
-                if (card) card.style.display = 'none';
-
                 // Reset settings button
                 const btn = document.getElementById('fitbit-connect-btn');
                 const statusText = document.getElementById('fitbit-status-text');
@@ -10142,6 +10131,11 @@ async function applyAppTheme(themeKey) {
                     if (disconnectedEl) disconnectedEl.style.display = 'none';
                     if (connectedEl) connectedEl.style.display = 'block';
 
+                    const stepsEl = document.getElementById('fitbit-perf-steps');
+                    if (stepsEl && activity && activity.steps != null) {
+                        stepsEl.textContent = (activity.steps || 0).toLocaleString();
+                    }
+
                     const calsEl = document.getElementById('fitbit-perf-cals');
                     if (calsEl && activity && activity.calories_burned) {
                         calsEl.textContent = Math.round(activity.calories_burned).toLocaleString();
@@ -11272,58 +11266,6 @@ async function applyAppTheme(themeKey) {
         </div>
 
 
-        <!-- Fitbit Activity Card (hidden until connected) -->
-        <div id="fitbit-dashboard-card" style="display: none; margin: 20px 0 15px 0;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
-                    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#00B0B9;"><circle cx="12" cy="4" r="2.5"/><circle cx="12" cy="9.5" r="2.5"/><circle cx="12" cy="15" r="2"/><circle cx="12" cy="19.5" r="1.5"/><circle cx="7" cy="9.5" r="1.5"/><circle cx="17" cy="9.5" r="1.5"/></svg>
-                    Fitbit
-                </h3>
-                <button onclick="syncFitbitNow()" id="fitbit-sync-btn" style="background: none; border: none; color: #00B0B9; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                    <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:#00B0B9;"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-                    Sync
-                </button>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                <!-- Steps -->
-                <div style="background: white; border-radius: 14px; padding: 16px 14px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                    <div style="font-size: 1.4rem; margin-bottom: 4px;">👟</div>
-                    <div id="fitbit-steps" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">Steps</div>
-                </div>
-                <!-- Sleep -->
-                <div style="background: white; border-radius: 14px; padding: 16px 14px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                    <div style="font-size: 1.4rem; margin-bottom: 4px;">😴</div>
-                    <div id="fitbit-sleep" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">Sleep</div>
-                </div>
-                <!-- Heart Rate -->
-                <div style="background: white; border-radius: 14px; padding: 16px 14px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                    <div style="font-size: 1.4rem; margin-bottom: 4px;">❤️</div>
-                    <div id="fitbit-heart-rate" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">--</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">BPM</div>
-                </div>
-            </div>
-            <div id="fitbit-details-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                <!-- Active Minutes -->
-                <div style="background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                    <div style="width: 36px; height: 36px; background: #FFF7ED; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">🔥</div>
-                    <div>
-                        <div id="fitbit-active-mins" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">--</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Active Mins</div>
-                    </div>
-                </div>
-                <!-- Calories -->
-                <div style="background: white; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                    <div style="width: 36px; height: 36px; background: #F0FDF4; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">⚡</div>
-                    <div>
-                        <div id="fitbit-calories" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">--</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Cal Burned</div>
-                    </div>
-                </div>
-            </div>
-            <div id="fitbit-last-sync" style="text-align: right; font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; padding-right: 4px;"></div>
-        </div>
 
         <!-- WHOOP Activity Card (hidden until connected) -->
         <div id="whoop-dashboard-card" style="display: none; margin: 20px 0 15px 0;">
@@ -11535,7 +11477,12 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
                 <!-- Stats row -->
-                <div style="padding: 12px 18px 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                <div style="padding: 12px 18px 16px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px;">
+                    <div style="text-align: center; padding: 10px 4px; background: rgba(255,255,255,0.15); border-radius: 13px;">
+                        <div style="font-size: 1.2rem; margin-bottom: 2px;">👟</div>
+                        <div id="fitbit-perf-steps" style="font-size: 1.3rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
+                        <div style="font-size: 0.62rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px;">Steps</div>
+                    </div>
                     <div style="text-align: center; padding: 10px 4px; background: rgba(255,255,255,0.15); border-radius: 13px;">
                         <div style="font-size: 1.2rem; margin-bottom: 2px;">⚡</div>
                         <div id="fitbit-perf-cals" style="font-size: 1.3rem; font-weight: 800; color: white; line-height: 1.2;">--</div>
