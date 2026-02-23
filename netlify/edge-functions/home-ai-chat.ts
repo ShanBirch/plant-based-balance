@@ -71,6 +71,7 @@ export default async function (request: Request, context: Context) {
     const friends = userData?.friends || [];
     const moodLogs = userData?.moodLogs || [];
     const fitnessDiary = userData?.fitnessDiary || [];
+    const healthIQ = userData?.healthIQ || null;
 
     // Workout schedule context (this week)
     const weekSchedule = userData?.weekSchedule || [];
@@ -289,6 +290,9 @@ Goals: ${facts.goals?.join(', ') || 'None'}
 
 === FRIENDS ===
 ${friends.length > 0 ? friends.map((f: any) => `- ${f.name} (ID: ${f.id})`).join('\n') : 'No friends added yet.'}
+
+=== HEALTH IQ ===
+${healthIQ ? `Level ${healthIQ.level || '?'}: ${healthIQ.title || 'Unknown'} ${healthIQ.icon || ''} (${healthIQ.lessonsCompleted || 0} lessons completed)${healthIQ.nextLevel ? `. ${healthIQ.lessonsToNext || '?'} lessons to reach ${healthIQ.nextLevel} (${healthIQ.percentToNext || 0}% progress)` : ' — MAX LEVEL!'}` : 'No quizzes completed yet.'}
 
 === MEAL PLAN STATUS ===
 Has Tailored Meal Plan: ${hasAiMealPlan ? 'YES - user already has a personalized meal plan generated' : 'NO - user does NOT have a meal plan yet. If they mention meals, nutrition, or eating, you can proactively offer to generate one!'}

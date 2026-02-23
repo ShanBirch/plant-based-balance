@@ -69133,6 +69133,34 @@ document.addEventListener('DOMContentLoaded', async function() {
         context.moodLogs = moodLogsResult.status === 'fulfilled' ? (moodLogsResult.value || []) : [];
         context.fitnessDiary = fitnessDiaryResult.status === 'fulfilled' ? (fitnessDiaryResult.value || []) : [];
 
+        // Health IQ (calculated from learning progress)
+        try {
+            if (typeof window._getHealthIQProgress === 'function') {
+                const hiqProgress = window._getHealthIQProgress();
+                if (hiqProgress && hiqProgress.current) {
+                    context.healthIQ = {
+                        level: hiqProgress.current.level,
+                        title: hiqProgress.current.title,
+                        icon: hiqProgress.current.icon,
+                        lessonsCompleted: hiqProgress.current.lessonsRequired + (hiqProgress.lessonsToNext != null ? (hiqProgress.next ? hiqProgress.next.lessonsRequired - hiqProgress.lessonsToNext - hiqProgress.current.lessonsRequired : 0) : 0),
+                        nextLevel: hiqProgress.next ? hiqProgress.next.title : null,
+                        lessonsToNext: hiqProgress.lessonsToNext,
+                        percentToNext: hiqProgress.percent
+                    };
+                }
+            }
+            // Fallback: read from DB if learning lib not loaded yet
+            if (!context.healthIQ) {
+                const { data: lp } = await window.supabaseClient
+                    .from('user_learning_progress').select('lessons_completed, total_lessons_completed')
+                    .eq('user_id', user.id).maybeSingle();
+                if (lp) {
+                    const count = lp.lessons_completed?.length || lp.total_lessons_completed || 0;
+                    context.healthIQ = { lessonsCompleted: count, level: null, title: null };
+                }
+            }
+        } catch (e) { /* health IQ not critical */ }
+
         // Friends list (names + IDs for AI challenge creation)
         const friendsList = friendsResult.status === 'fulfilled' ? (friendsResult.value || []) : [];
         context.friends = friendsList.map(f => ({
