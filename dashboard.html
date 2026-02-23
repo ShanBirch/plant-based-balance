@@ -7931,8 +7931,10 @@ async function applyAppTheme(themeKey) {
                 <div id="tamagotchi-fallback-msg" style="font-size:0.8rem; color:rgba(255,255,255,0.6);">Loading your character...</div>
             </div>
             <script>
-            // Fallback detection with auto-retry — retries loading the model
-            // before showing the fallback, so slow connections still succeed.
+            // Fallback detection — waits patiently for big GLB models to load.
+            // No load timeout: models can be large and take 1-2 min on slow connections.
+            // Only shows fallback if model-viewer script itself is blocked, or after
+            // repeated fetch errors (not slow loads).
             (function() {
                 var mv = document.getElementById('tamagotchi-model');
                 var fb = document.getElementById('tamagotchi-fallback');
@@ -7940,65 +7942,58 @@ async function applyAppTheme(themeKey) {
 
                 var loaded = false;
                 var fallbackShown = false;
-                var retryCount = 0;
-                var maxRetries = 3;
-                var loadTimer = null;
+                var errorRetries = 0;
+                var maxErrorRetries = 5;
+
+                // Show loading animation (pulsing egg) while model downloads
+                fb.style.display = 'flex';
 
                 function showFallback(msg) {
                     if (fallbackShown) return;
                     fallbackShown = true;
                     var msgEl = document.getElementById('tamagotchi-fallback-msg');
                     if (msgEl && msg) msgEl.textContent = msg;
-                    // Add a reload button so users don't have to manually refresh
-                    var btn = document.createElement('button');
-                    btn.textContent = 'Reload';
-                    btn.style.cssText = 'margin-top:14px; padding:10px 28px; border:none; border-radius:12px; background:#6c63ff; color:white; font-size:0.95rem; font-weight:600; cursor:pointer;';
-                    btn.onclick = function() { location.reload(); };
-                    fb.appendChild(btn);
                     fb.style.display = 'flex';
                     mv.style.display = 'none';
                 }
 
-                // Retry loading the model by re-setting src with a cache-bust param
-                function retryLoad() {
-                    if (loaded || fallbackShown) return;
-                    retryCount++;
-                    if (retryCount > maxRetries) {
-                        showFallback('Could not load your character. Tap Reload to try again.');
-                        return;
-                    }
-                    var currentSrc = mv.getAttribute('src');
-                    if (currentSrc) {
-                        // Strip any existing cache-bust param then add a fresh one
-                        var cleanSrc = currentSrc.replace(/[?&]_cb=\d+/, '');
-                        var separator = cleanSrc.indexOf('?') === -1 ? '?' : '&';
-                        mv.setAttribute('src', cleanSrc + separator + '_cb=' + Date.now());
-                    }
-                    // Give each retry another 15s to load
-                    startLoadTimer(15000);
+                function hideLoading() {
+                    if (fallbackShown) return;
+                    fb.style.display = 'none';
+                    mv.style.display = '';
                 }
 
-                function startLoadTimer(ms) {
-                    if (loadTimer) clearTimeout(loadTimer);
-                    loadTimer = setTimeout(function() {
-                        if (!loaded && !fallbackShown) {
-                            retryLoad();
+                // On error, silently retry (same URL, no cache-bust so SW cache works)
+                function retryOnError() {
+                    if (loaded || fallbackShown) return;
+                    errorRetries++;
+                    if (errorRetries > maxErrorRetries) {
+                        showFallback('Could not load your character. Check your connection and restart the app.');
+                        return;
+                    }
+                    // Exponential backoff: 3s, 6s, 12s, 24s, 48s
+                    var delay = 3000 * Math.pow(2, errorRetries - 1);
+                    setTimeout(function() {
+                        if (loaded || fallbackShown) return;
+                        var src = mv.getAttribute('src');
+                        if (src) {
+                            // Re-set same src to trigger a fresh load attempt
+                            mv.removeAttribute('src');
+                            // Small delay so model-viewer registers the change
+                            setTimeout(function() { mv.setAttribute('src', src); }, 50);
                         }
-                    }, ms);
+                    }, delay);
                 }
 
                 // Listen for successful load
                 mv.addEventListener('load', function() {
                     loaded = true;
-                    if (loadTimer) clearTimeout(loadTimer);
-                    // In case a retry brought us back from fallback state
-                    fb.style.display = 'none';
-                    mv.style.display = '';
+                    hideLoading();
                 });
 
-                // Listen for explicit errors (e.g. GLB fetch failure) — retry instead of giving up
+                // Listen for explicit errors (e.g. GLB fetch failure) — retry silently
                 mv.addEventListener('error', function() {
-                    if (!loaded) retryLoad();
+                    if (!loaded) retryOnError();
                 });
 
                 // Check if model-viewer custom element registered (script loaded).
@@ -8006,7 +8001,7 @@ async function applyAppTheme(themeKey) {
                 // the custom element won't be defined and model-viewer is inert.
                 var ceCheckTimeout = setTimeout(function() {
                     if (!customElements.get('model-viewer')) {
-                        showFallback('3D viewer could not load. Tap Reload to try again.');
+                        showFallback('3D viewer could not load. Please restart the app.');
                     }
                 }, 15000);
 
@@ -8014,8 +8009,9 @@ async function applyAppTheme(themeKey) {
                     clearTimeout(ceCheckTimeout);
                 });
 
-                // Initial load timeout: 30s for the first attempt, then retries kick in.
-                startLoadTimer(30000);
+                // No load timeout — we wait patiently for the model to finish downloading.
+                // The service worker caches models after first successful load,
+                // so subsequent app opens will be near-instant.
             })();
             </script>
 
