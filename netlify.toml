@@ -250,10 +250,8 @@
 [functions."sync-wearable-data"]
   schedule = "0 1-23/2 * * *"
 
-# Meal reminders - runs every 10 minutes to check if any users need meal reminders
-# The function checks each user's configured meal times and sends FitGotchi notifications
-[functions."send-meal-reminders"]
-  schedule = "*/10 * * * *"
+# Meal reminders - schedule is defined inline in send-meal-reminders.mjs via export config
+# Runs every 10 minutes to check if any users need meal reminders
 
 # Prevent caching of service worker so native app always gets latest version
 [[headers]]
