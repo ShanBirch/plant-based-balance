@@ -20088,6 +20088,25 @@ function viewWorkoutHistoryDetail(date) {
             return Math.max(MIN_BOTTOM, Math.min(b, maxBottom));
         }
 
+        // Restore saved position whenever the bar becomes visible
+        function restoreSavedPosition() {
+            try {
+                const saved = localStorage.getItem('spotify-mini-bottom');
+                if (saved) bar.style.bottom = saved;
+            } catch(_) {}
+        }
+
+        // Patch updatePlayerUI's display toggle so we restore position after it shows the bar
+        const _origUpdatePlayerUI = window.updatePlayerUI || null;
+        const displayProp = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, 'display');
+        // Use a simpler approach: poll for display changes instead of MutationObserver
+        let _lastDisplay = bar.style.display;
+        setInterval(function() {
+            const cur = bar.style.display;
+            if (cur !== 'none' && _lastDisplay === 'none') restoreSavedPosition();
+            _lastDisplay = cur;
+        }, 500);
+
         bar.addEventListener('touchstart', function(e) {
             // Don't hijack button taps — only drag from the bar area itself
             if (e.target.closest('button')) return;
@@ -20113,18 +20132,6 @@ function viewWorkoutHistoryDetail(date) {
             // Save position so it persists while music plays
             try { localStorage.setItem('spotify-mini-bottom', bar.style.bottom); } catch(_) {}
         }, { passive: true });
-
-        // Restore saved position when bar is shown
-        const origDisplay = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'style') ? null : bar.style.display;
-        const observer = new MutationObserver(function() {
-            if (bar.style.display !== 'none') {
-                try {
-                    const saved = localStorage.getItem('spotify-mini-bottom');
-                    if (saved) bar.style.bottom = saved;
-                } catch(_) {}
-            }
-        });
-        observer.observe(bar, { attributes: true, attributeFilter: ['style'] });
 
         // Suppress onclick/openInSpotify when user was dragging
         bar.addEventListener('click', function(e) {
