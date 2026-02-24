@@ -54,6 +54,7 @@ interface AwardPointsRequest {
   mealTime?: string;        // For meal: HH:MM:SS format for timing bonus check
   nutritionDate?: string;   // For daily_log: the date being logged (YYYY-MM-DD)
   finishDay?: boolean;      // For daily_log: mark day complete without requiring goals met
+  clientDate?: string;      // Client's local date (YYYY-MM-DD) for timezone-correct streak logic
 }
 
 interface PointsResult {
@@ -224,7 +225,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
     // === DAILY LOG VALIDATION ===
     if (type === 'daily_log') {
-      const nutritionDate = body.nutritionDate || new Date().toISOString().split('T')[0];
+      const nutritionDate = body.nutritionDate || body.clientDate || new Date().toISOString().split('T')[0];
       const finishDay = body.finishDay || false;
 
       // Check if day already completed (either via bonus claim or finish-day)
@@ -405,9 +406,14 @@ export default async (request: Request, context: Context): Promise<Response> => 
       console.error('Error fetching user points:', fetchError);
     }
 
-    // Calculate dates for streak
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    // Calculate dates for streak (prefer client's local date for timezone correctness)
+    const today = (body.clientDate && /^\d{4}-\d{2}-\d{2}$/.test(body.clientDate))
+      ? body.clientDate
+      : new Date().toISOString().split('T')[0];
+    const todayDate = new Date(today + 'T00:00:00');
+    const yesterdayDate = new Date(todayDate);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterday = yesterdayDate.toISOString().split('T')[0];
     const lastPostDate = userPoints?.last_post_date;
 
     // Calculate streak
