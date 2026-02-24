@@ -55,7 +55,7 @@
         'myCurrentWorkoutId', 'weightUnitPreference', 'lastWellnessCheck', 'pbb_points_data',
         'pbb_points_level', 'onboardingComplete', 'program_start_date',
         'battleStats', 'unallocatedStatPoints', 'previousLifetimePoints', 'pendingLevelUpCelebration',
-        'selectedBackground', 'cachedNutritionStreak', 'myChatStats', 'plant_based_learning_progress',
+        'selectedBackground', 'cachedNutritionStreak', 'cachedNutritionData', 'myChatStats', 'plant_based_learning_progress',
         'customPBSlots', 'pbSlotsMigratedV2'
     ];
 
@@ -57877,7 +57877,52 @@ function checkAndResetNewDay() {
     if (lastDate !== today) {
         console.log('New day detected, resetting calorie tracker data');
         localStorage.setItem('lastCalorieTrackerDate', today);
-        // Clear any cached data
+        // Clear cached nutrition since it's a new day
+        localStorage.removeItem('cachedNutritionData');
+        return true;
+    }
+    return false;
+}
+
+// Save today's nutrition data to localStorage cache
+function cacheNutritionData(nutritionData, mealsData) {
+    try {
+        const cachePayload = {
+            date: getLocalDateString(),
+            nutrition: nutritionData,
+            meals: mealsData || [],
+            timestamp: Date.now()
+        };
+        localStorage.setItem('cachedNutritionData', JSON.stringify(cachePayload));
+    } catch (e) {
+        console.warn('Failed to cache nutrition data:', e);
+    }
+}
+
+// Load cached nutrition data from localStorage (returns null if stale or missing)
+function getCachedNutritionData() {
+    try {
+        const raw = localStorage.getItem('cachedNutritionData');
+        if (!raw) return null;
+        const cached = JSON.parse(raw);
+        // Only use cache if it's for today
+        if (cached.date !== getLocalDateString()) {
+            localStorage.removeItem('cachedNutritionData');
+            return null;
+        }
+        return cached;
+    } catch (e) {
+        localStorage.removeItem('cachedNutritionData');
+        return null;
+    }
+}
+
+// Render cached nutrition data instantly on page load (before network calls)
+function renderCachedNutrition() {
+    const cached = getCachedNutritionData();
+    if (cached && cached.nutrition) {
+        console.log('Rendering cached nutrition data for instant load');
+        updateNutritionUI(cached.nutrition, cached.meals);
         return true;
     }
     return false;
@@ -58060,6 +58105,9 @@ async function loadTodayNutrition() {
 
         // Update UI with personalized goals
         updateNutritionUI(nutritionDataWithGoals, mealsData);
+
+        // Cache the loaded data for instant rendering next time
+        cacheNutritionData(nutritionDataWithGoals, mealsData);
 
         // Check if daily log bonus already claimed today
         checkDailyLogBonusStatus();
@@ -62584,13 +62632,15 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('lastCalorieTrackerDate', today);
     }
 
-    // Load nutrition data after a short delay to ensure auth is ready
+    // Instantly render cached nutrition data (no network delay)
+    checkAndResetNewDay();
+    renderCachedNutrition();
+
+    // Then fetch fresh data in the background after auth is ready
     setTimeout(async () => {
-        // Check for daily reset
-        checkAndResetNewDay();
         // Recalculate to ensure data is in sync
         await recalculateDailyNutrition();
-        // Then load and display
+        // Then load fresh data and update cache
         loadTodayNutrition();
     }, 1000);
 });
