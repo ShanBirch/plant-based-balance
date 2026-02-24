@@ -10656,7 +10656,7 @@ async function applyAppTheme(themeKey) {
                     const data = await res.json();
                     const c    = data.current;
                     const tz   = data.timezone || null;
-                    const today = new Date().toISOString().split('T')[0];
+                    const today = getLocalDateString();
                     const code  = c.weather_code ?? null;
 
                     const row = {
@@ -10808,7 +10808,7 @@ async function applyAppTheme(themeKey) {
             const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
             const monday = new Date(now);
             monday.setDate(now.getDate() - mondayOffset);
-            const mondayStr = monday.toISOString().split('T')[0];
+            const mondayStr = getLocalDateString(monday);
 
             const { data: weekWorkouts, error } = await supabaseClient
                 .from('workouts')
@@ -11040,9 +11040,11 @@ async function applyAppTheme(themeKey) {
         if (loadingEl) loadingEl.style.display = 'block';
         if (contentEl) contentEl.style.display = 'none';
 
-        const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
-        const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-        const todayStr = new Date().toISOString().split('T')[0];
+        const fourteenDaysAgoDate = new Date(); fourteenDaysAgoDate.setDate(fourteenDaysAgoDate.getDate() - 14);
+        const fourteenDaysAgo = getLocalDateString(fourteenDaysAgoDate);
+        const sevenDaysAgoDate = new Date(); sevenDaysAgoDate.setDate(sevenDaysAgoDate.getDate() - 7);
+        const sevenDaysAgo = getLocalDateString(sevenDaysAgoDate);
+        const todayStr = getLocalDateString();
 
         try {
             const [exerciseHistoryResult, weighInsResult, sleepResult, nutritionResult, wearableCaloriesResult, quizResult, moodResult] = await Promise.allSettled([
@@ -23594,7 +23596,7 @@ function viewWorkoutHistoryDetail(date) {
             }
 
             // Update today's daily_nutrition record with new goals
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalDateString();
             if (window.supabaseClient && window.currentUser?.id) {
                 await window.supabaseClient.from('daily_nutrition')
                     .upsert({
@@ -23948,7 +23950,7 @@ async function _syncQuizDataToDbRealImpl() {
                         console.log("All daily nutrition goals updated");
 
                         // Also ensure today has an entry (updateAllGoals only updates existing rows)
-                        const today = new Date().toISOString().split('T')[0];
+                        const today = getLocalDateString();
                         await dbHelpers.nutrition.updateGoals(user.id, today, goalsToUpdate);
                         console.log("Today's nutrition goals ensured");
 
@@ -24377,7 +24379,7 @@ async function _loadProfileDataRealImpl() {
     // Load today's check-in from Supabase to sync localStorage
     if (window.currentUser && typeof dbHelpers !== 'undefined') {
         try {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalDateString();
             const todayCheckin = await dbHelpers.checkins.get(window.currentUser.id, today);
             if (todayCheckin) {
                 // User has already checked in today - mark localStorage
@@ -25121,10 +25123,7 @@ function renderCycleStatus() {
 
 window.logPeriodStart = function() {
     const today = new Date();
-    // Format YYYY-MM-DD local
-    const offset = today.getTimezoneOffset();
-    const local = new Date(today.getTime() - (offset*60*1000));
-    const dateStr = local.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(today);
     
     userCycleData.lastPeriod = dateStr;
     localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
@@ -25200,7 +25199,7 @@ function renderWeeklyCalendar() {
     }
 
     // NEW: Smart equipment override - most recent selection wins (check-in vs onboarding)
-    const todayDateStr = new Date().toISOString().split('T')[0];
+    const todayDateStr = getLocalDateString();
     const todayCheckIn = userCycleData.logs?.[todayDateStr];
     const checkInTimestamp = todayCheckIn?.timestamp;
     const onboardingTimestamp = localStorage.getItem('onboardingCompletedAt');
@@ -25265,7 +25264,7 @@ function renderWeeklyCalendar() {
             const monday = new Date(today);
             monday.setDate(today.getDate() - distToMon);
             monday.setHours(0, 0, 0, 0);
-            startDate = monday.toISOString().split('T')[0];
+            startDate = getLocalDateString(monday);
             localStorage.setItem('gym_split_start_date', startDate);
         }
 
@@ -25514,7 +25513,7 @@ function renderWeeklyCalendar() {
         
         let headerColor = '';
         let phaseDotHtml = '';
-        const dayDateStr = d.toISOString().split('T')[0];
+        const dayDateStr = getLocalDateString(d);
         const dayWorkout = getWorkoutForDay(i, dayDateStr);
         let workoutName = dayWorkout.title;
         let phase = PHASE_INFO.wellness; // Default
@@ -25836,7 +25835,7 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
         }
     }
 
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(date);
 
     // Get workout label for this day based on user's schedule
     let workoutLabel = getMonthlyWorkoutLabel(dayIndex, isMale);
@@ -26164,7 +26163,7 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
                 const monday = new Date(today);
                 monday.setDate(today.getDate() - distToMon);
                 monday.setHours(0, 0, 0, 0);
-                startDate = monday.toISOString().split('T')[0];
+                startDate = getLocalDateString(monday);
                 localStorage.setItem('gym_split_start_date', startDate);
             }
             const start = new Date(startDate);
@@ -26203,7 +26202,7 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
                     const monday = new Date(today);
                     monday.setDate(today.getDate() - distToMon);
                     monday.setHours(0, 0, 0, 0);
-                    startDate = monday.toISOString().split('T')[0];
+                    startDate = getLocalDateString(monday);
                 }
             }
             const start = new Date(startDate);
@@ -26245,7 +26244,7 @@ function getTodaysWorkout() {
     // Check for today's workout override (e.g., low energy yoga recommendation or cycle sync)
     try {
         const override = JSON.parse(localStorage.getItem('todayWorkoutOverride') || 'null');
-        if (override && override.date === new Date().toISOString().split('T')[0]) {
+        if (override && override.date === getLocalDateString()) {
             // Return yoga workout for override
             if (override.program === 'yoga') {
                 const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
@@ -26294,7 +26293,7 @@ function getTodaysWorkout() {
     }
 
     // NEW: Smart equipment override - most recent selection wins (check-in vs onboarding)
-    const todayDateStr = new Date().toISOString().split('T')[0];
+    const todayDateStr = getLocalDateString();
     const todayCheckIn = userCycleData.logs?.[todayDateStr];
     const checkInTimestamp = todayCheckIn?.timestamp;
     const onboardingTimestamp = localStorage.getItem('onboardingCompletedAt');
@@ -26449,7 +26448,7 @@ function getTodaysWorkout() {
                 const monday = new Date(today);
                 monday.setDate(today.getDate() - distToMon);
                 monday.setHours(0, 0, 0, 0);
-                startDate = monday.toISOString().split('T')[0];
+                startDate = getLocalDateString(monday);
                 localStorage.setItem('gym_split_start_date', startDate);
             }
             const start = new Date(startDate);
@@ -26482,7 +26481,7 @@ function getTodaysWorkout() {
                 const monday = new Date(today);
                 monday.setDate(today.getDate() - distToMon);
                 monday.setHours(0, 0, 0, 0);
-                startDate = monday.toISOString().split('T')[0];
+                startDate = getLocalDateString(monday);
             }
             const start = new Date(startDate);
             const msPerWeek = 7 * 24 * 60 * 60 * 1000;
@@ -26552,7 +26551,7 @@ function getTodaysWorkout() {
     // Hormone profiles (cortisol/estrogen) no longer automatically override workouts
 
     // Apply daily check-in modifiers (read from TODAY's log, not stale global state)
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     const todayLog = userCycleData.logs?.[todayStr];
 
     // Only apply if user hasn't already made a choice (declined yoga)
@@ -31847,7 +31846,7 @@ async function submitCheckIn() {
         try {
             const user = window.currentUser;
             if (user) {
-                const dateStr = new Date().toISOString().split('T')[0];
+                const dateStr = getLocalDateString();
                 await dbHelpers.checkins.upsert(user.id, dateStr, {
                     energy: selectedEnergy,
                     equipment: selectedEquipment
@@ -32000,7 +31999,7 @@ async function renderMovementView() {
     }
 
     // 2. Get Check-in
-    const dateStr = new Date().toISOString().split('T')[0];
+    const dateStr = getLocalDateString();
     const checkin = await dbHelpers.checkins.get(user.id, dateStr);
 
     // 3. Calculate Cycle Phase
@@ -32046,7 +32045,7 @@ async function renderMovementView() {
     profile = { ...dbProfile, ...profile };
 
     // PRIORITY 0.5: Smart equipment override - most recent selection wins (check-in vs onboarding)
-    const todayDateStr = new Date().toISOString().split('T')[0];
+    const todayDateStr = getLocalDateString();
     const todayCheckIn = userCycleData.logs?.[todayDateStr];
     const checkInTimestamp = todayCheckIn?.timestamp;
     const onboardingTimestamp = localStorage.getItem('onboardingCompletedAt');
@@ -32561,7 +32560,7 @@ async function renderMovementView() {
                 const monday = new Date(today);
                 monday.setDate(today.getDate() - distToMon);
                 monday.setHours(0, 0, 0, 0);
-                startDate = monday.toISOString().split('T')[0];
+                startDate = getLocalDateString(monday);
                 localStorage.setItem('gym_split_start_date', startDate);
             }
             const start = new Date(startDate);
@@ -32611,7 +32610,7 @@ async function renderMovementView() {
                 const monday = new Date(today);
                 monday.setDate(today.getDate() - distToMon);
                 monday.setHours(0, 0, 0, 0);
-                startDate = monday.toISOString().split('T')[0];
+                startDate = getLocalDateString(monday);
             }
             const start = new Date(startDate);
             const msPerWeek = 7 * 24 * 60 * 60 * 1000;
@@ -41871,7 +41870,7 @@ async function gatherContext() {
     try {
         const user = window.currentUser;
         if(user) {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalDateString();
             const checkin = await dbHelpers.checkins.get(user.id, today);
             if(checkin) {
                 energy = checkin.energy;
@@ -45555,7 +45554,7 @@ function openCreateChallengeModal(featuredRareId = null) {
     // Set default start date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    document.getElementById('challenge-start-date').value = tomorrow.toISOString().split('T')[0];
+    document.getElementById('challenge-start-date').value = getLocalDateString(tomorrow);
 }
 
 // Close create challenge modal
@@ -45739,7 +45738,7 @@ async function createChallenge() {
             name: name,
             creator_id: window.currentUser.id,
             start_date: startDate,
-            end_date: end.toISOString().split('T')[0],
+            end_date: getLocalDateString(end),
             duration_days: duration,
             status: 'pending',
             entry_fee: betAmount,
@@ -49308,7 +49307,7 @@ function closeCheckInModal() {
 async function submitDailyCycleSync() {
     try {
         // 1. Save Log locally
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
         if (typeof userCycleData === 'undefined') {
             window.userCycleData = JSON.parse(localStorage.getItem('userCycleData') || '{}');
         }
@@ -51855,7 +51854,7 @@ async function initCycleView() {
     if(typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
 
     // 4. Check Daily Log Status
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const hasLog = userCycleData.logs && userCycleData.logs[today];
 
     const promptCard = document.getElementById('check-in-prompt-card');
@@ -51996,7 +51995,7 @@ window.toggleCheckInOption = toggleCheckInOption;
 // Real implementation of submitDailyCycleSync
 window._submitDailyCycleSyncImpl = async function() {
     // 1. Save Log locally
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     if(!userCycleData.logs) userCycleData.logs = {};
 
     // Clone to avoid ref issues
@@ -52144,7 +52143,7 @@ window._submitDailyCycleSyncImpl = async function() {
 
             // If in menstrual phase (days 1-5), AUTOMATICALLY switch to yoga (no popup)
             if (currentCycleDay >= 1 && currentCycleDay <= 5) {
-                const todayDateStr = new Date().toISOString().split('T')[0];
+                const todayDateStr = getLocalDateString();
 
                 // Set automatic yoga override
                 const yogaOverride = {
@@ -52264,7 +52263,7 @@ function showLowEnergyYogaPopup(reason = 'low_energy') {
 
 function acceptYogaRecommendation() {
     // Save yoga override for today - use the reason from popup trigger
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const reason = window._yogaPopupReason || 'low_energy';
     const yogaOverride = { date: today, program: 'yoga', reason: reason };
     localStorage.setItem('todayWorkoutOverride', JSON.stringify(yogaOverride));
@@ -52303,7 +52302,7 @@ function acceptYogaRecommendation() {
 
 function declineYogaRecommendation() {
     // Record that user declined - so we don't force yoga on them
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     if (userCycleData.logs && userCycleData.logs[today]) {
         userCycleData.logs[today].workoutOverride = 'declined';
         localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
@@ -52445,8 +52444,8 @@ function renderCycleSyncMeal(reason, recipeKey) {
 function checkAndRenderCycleSync() {
     // Check if we have a log for today
     if(!userCycleData || !userCycleData.logs) return;
-    
-    const today = new Date().toISOString().split('T')[0];
+
+    const today = getLocalDateString();
     const log = userCycleData.logs[today];
     
     if(log && log.symptoms && log.symptoms.length > 0) {
@@ -53559,7 +53558,8 @@ async function claimDailyNutritionBonus() {
                 userId: window.currentUser.id,
                 type: 'daily_log',
                 referenceId: `daily_${today}`,
-                nutritionDate: today
+                nutritionDate: today,
+                clientDate: getLocalDateString()
             })
         });
 
@@ -53688,7 +53688,8 @@ async function finishDayWithoutBonus() {
                 type: 'daily_log',
                 referenceId: `daily_${today}`,
                 nutritionDate: today,
-                finishDay: true
+                finishDay: true,
+                clientDate: getLocalDateString()
             })
         });
 
@@ -56270,7 +56271,7 @@ async function loadRecentMeals() {
 
         var thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        var sinceDate = thirtyDaysAgo.toISOString().split('T')[0];
+        var sinceDate = getLocalDateString(thirtyDaysAgo);
 
         var { data: meals, error } = await window.supabaseClient
             .from('meal_logs')
@@ -64177,7 +64178,7 @@ window.confirmReplacement = async function() {
             dayOfWeek: dayIndex,
             workout: workoutData,
             durationWeeks: selectedDuration,
-            startDate: startDate.toISOString().split('T')[0]
+            startDate: getLocalDateString(startDate)
         });
 
         // Refresh cache
@@ -68963,9 +68964,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Profile
         context.profile = { name: user.user_metadata?.name || user.email?.split('@')[0] || 'User' };
 
-        const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
-        const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-        const todayStr = new Date().toISOString().split('T')[0];
+        const twoWeeksAgoDate = new Date(); twoWeeksAgoDate.setDate(twoWeeksAgoDate.getDate() - 14);
+        const twoWeeksAgo = getLocalDateString(twoWeeksAgoDate);
+        const sevenDaysAgoDate = new Date(); sevenDaysAgoDate.setDate(sevenDaysAgoDate.getDate() - 7);
+        const sevenDaysAgo = getLocalDateString(sevenDaysAgoDate);
+        const todayStr = getLocalDateString();
 
         // Run all data fetches in parallel for speed
         const [quizResult, factsResult, nutritionResult, mealsResult, workoutsResult, weighInsResult, replacementsResult, wearableResult, friendsResult, aiMealPlanResult, moodLogsResult, fitnessDiaryResult] = await Promise.allSettled([
@@ -69137,7 +69140,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Today info
         const today = new Date();
         context.todayDayIndex = (today.getDay() + 6) % 7; // Monday=0
-        context.todayDate = today.toISOString().split('T')[0];
+        context.todayDate = getLocalDateString(today);
 
         return context;
     }
@@ -69249,7 +69252,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (daysUntil < 0) daysUntil += 7;
         const startDate = new Date(today);
         startDate.setDate(today.getDate() + daysUntil);
-        return startDate.toISOString().split('T')[0];
+        return getLocalDateString(startDate);
     }
 
     // Execute confirmed actions
@@ -69359,7 +69362,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (!action.new_calorie_goal || isNaN(parseInt(action.new_calorie_goal))) {
                             throw new Error('Invalid calorie goal: ' + action.new_calorie_goal);
                         }
-                        const todayStr = new Date().toISOString().split('T')[0];
+                        const todayStr = getLocalDateString();
                         // Fetch existing goals first so we don't null-out macros
                         let existingGoals = {};
                         try {
@@ -69378,7 +69381,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     case 'update_macro_goals': {
-                        const todayStr = new Date().toISOString().split('T')[0];
+                        const todayStr = getLocalDateString();
                         // Fetch existing goals first so we only update specified fields
                         let existingGoals = {};
                         try {
@@ -69458,10 +69461,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                         }
 
                         // Calculate dates
-                        const startDate = new Date().toISOString().split('T')[0];
+                        const startDate = getLocalDateString();
                         const endDateObj = new Date();
                         endDateObj.setDate(endDateObj.getDate() + durationDays);
-                        const endDate = endDateObj.toISOString().split('T')[0];
+                        const endDate = getLocalDateString(endDateObj);
 
                         // Build challenge insert data
                         const challengeInsert = {
@@ -70129,7 +70132,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function openCustomChecklist(card) {
         const items = card.card_data?.items || [];
-        const todayKey = `checklist_${card.id}_${new Date().toISOString().split('T')[0]}`;
+        const todayKey = `checklist_${card.id}_${getLocalDateString()}`;
         const checked = JSON.parse(localStorage.getItem(todayKey) || '[]');
         const icon = card.card_data?.icon || '✅';
         const modal = document.createElement('div');
@@ -70153,7 +70156,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function openCustomTracker(card) {
         const metrics = card.card_data?.metrics || [];
-        const todayKey = `tracker_${card.id}_${new Date().toISOString().split('T')[0]}`;
+        const todayKey = `tracker_${card.id}_${getLocalDateString()}`;
         const saved = JSON.parse(localStorage.getItem(todayKey) || '{}');
         const icon = card.card_data?.icon || '📊';
         const modal = document.createElement('div');
@@ -70191,7 +70194,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (user) {
             window.supabaseClient.from('custom_card_logs').upsert({
                 card_id: cardId, user_id: user.id,
-                log_date: new Date().toISOString().split('T')[0], log_data: data
+                log_date: getLocalDateString(), log_data: data
             }, { onConflict: 'card_id,log_date' }).then(() => {}).catch(() => {});
         }
         modal.remove();
