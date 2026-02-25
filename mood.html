@@ -519,8 +519,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function autoSetContext() {
     const h = new Date().getHours();
-    if (h >= 5  && h < 12) setContext('morning');
-    else if (h >= 12 && h < 17) setContext('afternoon');
+    if (h >= 5  && h < 11) setContext('morning');
+    else if (h >= 11 && h < 17) setContext('afternoon');
     else if (h >= 17 && h < 21) setContext('evening');
     else setContext('night');
 }
@@ -591,7 +591,7 @@ async function saveLog() {
     document.getElementById('mood-notes').value = '';
     document.getElementById('today-banner').style.display = 'flex';
     document.getElementById('today-banner-text').textContent =
-        `Logged ${scores.mood}/10 mood · ${scores.energy}/10 energy · ${scores.stress}/10 stress`;
+        `Logged ${scores.mood}/10 mood · ${scores.energy}/10 energy · ${scores.stress ?? '–'}/10 stress`;
 
     await Promise.all([loadTrend(), loadRecentLogs()]);
 }
