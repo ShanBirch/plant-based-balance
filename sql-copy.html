@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copy SQL Code</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1a1a2e;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            background: #2e1a0e;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 600px;
+            width: 100%;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+        textarea {
+            width: 100%;
+            height: 250px;
+            background: rgba(0,0,0,0.3);
+            color: #86efac;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-bottom: 20px;
+            resize: none;
+            box-sizing: border-box;
+        }
+        button {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #1a1a2e;
+            border: none;
+            border-radius: 12px;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .success-msg {
+            color: #10b981;
+            margin-top: 15px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2 style="margin-top:0; color:#fbbf24;">Supabase SQL Setup</h2>
+        <p style="color:#a1a1aa; font-size:0.9rem; margin-bottom:20px;">Tap the button below to copy the exact code needed to fix the multiplayer games database tables.</p>
+        
+        <textarea id="sqlCode" readonly>
+CREATE TABLE IF NOT EXISTS public.game_matches (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    challenger_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    opponent_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    game_type TEXT NOT NULL,
+    coin_bet INTEGER DEFAULT 0,
+    current_turn UUID REFERENCES public.users(id),
+    game_state JSONB DEFAULT '{"board": null}'::jsonb,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'completed', 'draw', 'forfeit')),
+    winner_id UUID REFERENCES public.users(id),
+    move_count INTEGER DEFAULT 0,
+    last_move_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.game_moves (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    match_id UUID REFERENCES public.game_matches(id) ON DELETE CASCADE,
+    player_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    move_number INTEGER NOT NULL,
+    move_data JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.game_matches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.game_moves ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own game matches"
+    ON public.game_matches FOR SELECT
+    USING (auth.uid() = challenger_id OR auth.uid() = opponent_id);
+
+CREATE POLICY "Users can create game matches"
+    ON public.game_matches FOR INSERT
+    WITH CHECK (auth.uid() = challenger_id);
+
+CREATE POLICY "Users can update their own game matches"
+    ON public.game_matches FOR UPDATE
+    USING (auth.uid() = challenger_id OR auth.uid() = opponent_id);
+
+CREATE POLICY "Users can view moves for their matches"
+    ON public.game_moves FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.game_matches
+            WHERE id = game_moves.match_id
+            AND (challenger_id = auth.uid() OR opponent_id = auth.uid())
+        )
+    );
+
+CREATE POLICY "Users can insert moves"
+    ON public.game_moves FOR INSERT
+    WITH CHECK (auth.uid() = player_id);
+
+NOTIFY pgrst, 'reload schema';
+        </textarea>
+
+        <button onclick="copySql()">
+            <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:currentColor;"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+            Copy SQL Code
+        </button>
+        <div id="successMsg" class="success-msg">✅ Copied to clipboard! Now paste into Supabase.</div>
+    </div>
+
+    <script>
+        function copySql() {
+            const sqlText = document.getElementById('sqlCode').value;
+            navigator.clipboard.writeText(sqlText).then(() => {
+                const msg = document.getElementById('successMsg');
+                msg.style.opacity = '1';
+                setTimeout(() => { msg.style.opacity = '0'; }, 3000);
+            }).catch(err => {
+                alert('Failed to copy. Please select the text manually.');
+            });
+        }
+    </script>
+</body>
+</html>
