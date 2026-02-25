@@ -1,0 +1,1291 @@
+.wizard-progress .dot { width: 8px; height: 8px; background: #e2e8f0; border-radius: 50%; transition: all 0.3s; }
+.wizard-progress .dot.active { background: var(--primary); width: 20px; border-radius: 10px; }
+.wizard-slide {
+    display: none;
+    opacity: 0;
+    transform: translateX(12px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.wizard-slide.slide-active {
+    display: block;
+    opacity: 1;
+    transform: translateX(0);
+}
+.wizard-slide.slide-exit {
+    opacity: 0;
+    transform: translateX(-12px);
+}
+
+/* Gender selection button styles */
+.gender-select-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.gender-select-btn:active {
+    transform: translateY(0);
+}
+
+/* ============================================ */
+/* FITGOTCHI STORY ONBOARDING OVERLAY           */
+/* ============================================ */
+#fitgotchi-story-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 40%, #16213e 100%);
+    z-index: 13000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+#fitgotchi-story-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+#fitgotchi-story-overlay.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Binary awakening screen (Phase 0) */
+.story-binary-screen {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.8s ease;
+}
+.story-binary-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+.story-binary-text {
+    color: #00ff41;
+    font-family: 'Courier New', monospace;
+    font-size: 1.3rem;
+    text-align: center;
+    padding: 20px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+}
+
+/* Arny model container */
+.story-model-container {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 400px;
+    height: 60%;
+}
+.story-model-container model-viewer {
+    width: 100%;
+    height: 100%;
+    --poster-color: transparent;
+}
+/* Hide model-viewer default loading bar so only our custom loading state shows */
+#story-arny-model::part(default-progress-bar) {
+    display: none;
+}
+
+/* Speech bubble area — positioned above Arny, right side */
+.story-speech-area {
+    position: absolute;
+    top: calc(10% + env(safe-area-inset-top, 0px));
+    right: 5%;
+    left: 20%;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+/* Individual speech bubble */
+.story-bubble {
+    background: white;
+    color: #1a1a2e;
+    padding: 16px 20px;
+    border-radius: 20px;
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 500;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    margin-bottom: 12px;
+    max-width: 95%;
+    position: relative;
+}
+/* Speech bubble tail pointing down toward Arny */
+.story-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 24px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 14px solid white;
+}
+.story-bubble.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+.story-bubble.exit {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.story-bubble strong {
+    color: var(--primary, #046a38);
+}
+
+/* Tap to continue prompt */
+.story-tap-prompt {
+    text-align: left;
+    color: rgba(255,255,255,0.5);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 4px 0 0 4px;
+    animation: storyPulse 2s ease-in-out infinite;
+}
+@keyframes storyPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}
+
+/* Shannon card */
+.story-shannon-card {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    z-index: 101;
+    transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.story-shannon-card.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+.story-shannon-card.exit {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.story-shannon-tap {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.8rem;
+    font-weight: 500;
+    animation: storyPulse 2s ease-in-out infinite;
+}
+.story-shannon-photo {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 4px solid rgba(255,255,255,0.9);
+    box-shadow: 0 0 40px rgba(4, 106, 56, 0.4), 0 8px 32px rgba(0,0,0,0.3);
+    object-fit: cover;
+}
+.story-shannon-text {
+    color: white;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.story-shannon-text span {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.7);
+    margin-top: 4px;
+}
+
+/* Loading state for model */
+.story-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255,255,255,0.6);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: center;
+}
+.story-loading-dots::after {
+    content: '';
+    animation: storyLoadDots 1.5s infinite;
+}
+@keyframes storyLoadDots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+}
+
+/* Typewriter cursor effect */
+.story-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: var(--primary, #046a38);
+    margin-left: 2px;
+    animation: storyCursorBlink 0.8s infinite;
+    vertical-align: text-bottom;
+}
+@keyframes storyCursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Particles / ambient effect */
+.story-particles {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+}
+.story-particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    animation: storyFloat 6s infinite ease-in-out;
+}
+@keyframes storyFloat {
+    0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+}
+
+/* ============================================ */
+/* STORY BATTLE DEMO UI                         */
+/* ============================================ */
+.story-battle-ui {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+.story-battle-hp-row {
+    position: absolute;
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    left: 12px;
+    right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+.story-battle-hp-box {
+    flex: 1;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    border-radius: 10px;
+    padding: 6px 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.story-battle-vs {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+.story-battle-hp-name {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.story-battle-hp-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.story-battle-hp-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.4s ease-out;
+}
+.story-battle-hp-fill.player {
+    background: linear-gradient(90deg, #2ecc71, #4ecdc4);
+}
+.story-battle-hp-fill.enemy {
+    background: linear-gradient(90deg, #e74c3c, #ff6b6b);
+}
+.story-battle-hp-text {
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.6);
+    margin-top: 2px;
+    font-family: 'Outfit', sans-serif;
+}
+
+/* Stats row under HP bars */
+.story-battle-stats-row {
+    position: absolute;
+    top: calc(65px + env(safe-area-inset-top, 0px));
+    left: 12px;
+    right: 12px;
+    display: flex;
+    gap: 6px;
+}
+.story-battle-stat {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 4px 6px;
+}
+.story-stat-icon {
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+.story-stat-info {
+    flex: 1;
+    min-width: 0;
+}
+.story-stat-label {
+    font-size: 0.5rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.5px;
+}
+.story-stat-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 2px;
+}
+.story-stat-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.story-stat-fill.str { background: linear-gradient(90deg, #ff4444, #ff6b6b); }
+.story-stat-fill.hp { background: linear-gradient(90deg, #2ecc71, #4ecdc4); }
+.story-stat-fill.mana { background: linear-gradient(90deg, #3498db, #45b7d1); }
+
+/* Pre-loaded showcase model container */
+.story-preload-models {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 400px;
+    height: 60%;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+.story-preload-models.active {
+    opacity: 1;
+}
+.story-preload-viewer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+.story-preload-viewer.active {
+    opacity: 1;
+}
+
+/* Character label (rare showcase) */
+.story-character-label {
+    position: absolute;
+    top: calc(12% + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 3;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+.story-character-label.visible {
+    opacity: 1;
+}
+.story-char-name {
+    display: block;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+}
+.story-char-tier {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+/* ============================================ */
+/* DARK STARRY THEME FOR ONBOARDING WIZARD      */
+/* ============================================ */
+#onboarding-wizard.onboarding-overlay {
+    background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 40%, #16213e 100%) !important;
+    backdrop-filter: none !important;
+}
+
+/* Particles in wizard */
+.wizard-particles {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+}
+.wizard-particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 50%;
+    animation: storyFloat 6s infinite ease-in-out;
+}
+
+/* Modal card — frosted glass dark */
+#onboarding-wizard .onboarding-modal.wizard-container {
+    background: rgba(255,255,255,0.07) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5) !important;
+}
+
+/* Header */
+#onboarding-wizard .wizard-header h2,
+#onboarding-wizard #wizard-title {
+    color: white !important;
+}
+
+/* Close button */
+#onboarding-wizard .wizard-header > div[onclick] {
+    background: rgba(255,255,255,0.1) !important;
+    color: rgba(255,255,255,0.7) !important;
+}
+
+/* Progress dots */
+#onboarding-wizard .wizard-progress .dot {
+    background: rgba(255,255,255,0.15) !important;
+}
+#onboarding-wizard .wizard-progress .dot.active {
+    background: var(--primary) !important;
+}
+
+/* Headings */
+#onboarding-wizard h3 {
+    color: white !important;
+}
+
+/* Paragraph text */
+#onboarding-wizard p {
+    color: rgba(255,255,255,0.7) !important;
+}
+#onboarding-wizard p strong {
+    color: white !important;
+}
+
+/* Labels */
+#onboarding-wizard label {
+    color: rgba(255,255,255,0.85) !important;
+}
+
+/* Spans with muted color */
+#onboarding-wizard .wizard-slide span {
+    color: rgba(255,255,255,0.6) !important;
+}
+#onboarding-wizard .wizard-slide span strong {
+    color: white !important;
+}
+
+/* Input groups & info boxes — dark glass */
+#onboarding-wizard .wizard-input-group,
+#onboarding-wizard .wizard-slide div[style*="background:#f8fafc"],
+#onboarding-wizard .wizard-slide div[style*="background: #f8fafc"] {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Text inputs, selects, textareas */
+#onboarding-wizard input,
+#onboarding-wizard select,
+#onboarding-wizard textarea {
+    background: rgba(255,255,255,0.08) !important;
+    border-color: rgba(255,255,255,0.15) !important;
+    color: white !important;
+}
+#onboarding-wizard input::placeholder,
+#onboarding-wizard textarea::placeholder {
+    color: rgba(255,255,255,0.35) !important;
+}
+#onboarding-wizard select option {
+    background: #1a1a2e;
+    color: white;
+}
+
+/* Gender select buttons */
+#onboarding-wizard .gender-select-btn {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.15) !important;
+    color: rgba(255,255,255,0.9) !important;
+}
+#onboarding-wizard .gender-select-btn:hover {
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.25) !important;
+}
+
+/* Footer */
+#onboarding-wizard .wizard-footer {
+    border-top-color: rgba(255,255,255,0.08) !important;
+}
+#onboarding-wizard .wizard-btn.secondary,
+#onboarding-wizard #wizard-back {
+    color: rgba(255,255,255,0.6) !important;
+}
+
+/* Primary button keeps green but add glow */
+#onboarding-wizard .wizard-btn.primary,
+#onboarding-wizard #wizard-next {
+    box-shadow: 0 4px 20px rgba(4,106,56,0.35) !important;
+}
+
+/* Feature list items & icon circles in slides */
+#onboarding-wizard .wizard-slide div[style*="color:#334155"] {
+    color: rgba(255,255,255,0.9) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#64748b"],
+#onboarding-wizard .wizard-slide span[style*="color:#64748b"] {
+    color: rgba(255,255,255,0.5) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#666"],
+#onboarding-wizard .wizard-slide p[style*="color:#666"] {
+    color: rgba(255,255,255,0.6) !important;
+}
+
+/* ---- COMPREHENSIVE INLINE COLOR OVERRIDES ---- */
+
+/* ALL white/light backgrounds → dark glass */
+#onboarding-wizard .wizard-slide div[style*="background:white"],
+#onboarding-wizard .wizard-slide div[style*="background: white"],
+#onboarding-wizard .wizard-slide button[style*="background:white"],
+#onboarding-wizard .wizard-slide button[style*="background: white"],
+#onboarding-wizard .wizard-slide div[style*="background:#fff"],
+#onboarding-wizard .wizard-slide div[style*="background: #fff"] {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Light gray backgrounds */
+#onboarding-wizard .wizard-slide div[style*="background:#e2e8f0"],
+#onboarding-wizard .wizard-slide div[style*="background: #e2e8f0"] {
+    background: rgba(255,255,255,0.1) !important;
+}
+
+/* Green gradient backgrounds (f0fdf4, dcfce7) → dark green */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #f0fdf4"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #f0fdf4"] {
+    background: linear-gradient(135deg, rgba(4,106,56,0.2), rgba(4,106,56,0.1)) !important;
+}
+
+/* Blue gradient backgrounds (e0f2fe, bae6fd) → dark blue */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #e0f2fe"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #e0f2fe"] {
+    background: linear-gradient(135deg, rgba(14,116,144,0.2), rgba(14,116,144,0.1)) !important;
+}
+
+/* Indigo gradient backgrounds (e0e7ff, c7d2fe) → dark indigo */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #e0e7ff"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #e0e7ff"] {
+    background: linear-gradient(135deg, rgba(67,56,202,0.2), rgba(67,56,202,0.1)) !important;
+}
+
+/* Yellow gradient backgrounds (fef3c7, fde68a) → dark amber */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #fef3c7"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #fef3c7"] {
+    background: linear-gradient(135deg, rgba(180,83,9,0.2), rgba(180,83,9,0.1)) !important;
+}
+
+/* Pink gradient backgrounds (fce7f3, fbcfe8) → dark pink */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #fce7f3"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #fce7f3"] {
+    background: linear-gradient(135deg, rgba(190,24,93,0.2), rgba(190,24,93,0.1)) !important;
+}
+
+/* Profile photo container gradient */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #e2e8f0"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #e2e8f0"] {
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04)) !important;
+}
+
+/* ALL border overrides — every light border pattern */
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #e2e8f0"],
+#onboarding-wizard .wizard-slide div[style*="border: 1px solid #e2e8f0"],
+#onboarding-wizard .wizard-slide button[style*="border:2px solid #e2e8f0"],
+#onboarding-wizard .wizard-slide button[style*="border: 2px solid #e2e8f0"] {
+    border-color: rgba(255,255,255,0.12) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #eee"],
+#onboarding-wizard .wizard-slide div[style*="border: 1px solid #eee"] {
+    border-color: rgba(255,255,255,0.1) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #cbd5e1"],
+#onboarding-wizard .wizard-slide button[style*="border:1px solid #cbd5e1"] {
+    border-color: rgba(255,255,255,0.15) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:2px solid #48864B"],
+#onboarding-wizard .wizard-slide button[style*="border:2px solid #48864B"] {
+    border-color: rgba(4,106,56,0.5) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:2px dashed #48864B"],
+#onboarding-wizard .wizard-slide div[style*="border: 2px dashed #48864B"] {
+    border-color: rgba(4,106,56,0.5) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #bbf7d0"] {
+    border-color: rgba(4,106,56,0.3) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #7dd3fc"],
+#onboarding-wizard .wizard-slide div[style*="border:2px solid #0284c7"],
+#onboarding-wizard .wizard-slide button[style*="border:2px solid #0284c7"] {
+    border-color: rgba(14,116,144,0.4) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #a5b4fc"] {
+    border-color: rgba(67,56,202,0.3) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #fcd34d"] {
+    border-color: rgba(180,83,9,0.3) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #f9a8d4"] {
+    border-color: rgba(190,24,93,0.3) !important;
+}
+#onboarding-wizard .wizard-slide button[style*="border:2px solid var(--primary)"] {
+    border-color: rgba(4,106,56,0.5) !important;
+}
+
+/* ---- TEXT COLOR OVERRIDES ---- */
+
+/* Dark greens on light backgrounds → light green/white */
+#onboarding-wizard .wizard-slide div[style*="color:#166534"],
+#onboarding-wizard .wizard-slide span[style*="color:#166534"],
+#onboarding-wizard .wizard-slide p[style*="color:#166534"] {
+    color: #86efac !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#1a4d2e"],
+#onboarding-wizard .wizard-slide span[style*="color:#1a4d2e"],
+#onboarding-wizard .wizard-slide p[style*="color:#1a4d2e"] {
+    color: #86efac !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#48864B"],
+#onboarding-wizard .wizard-slide span[style*="color:#48864B"] {
+    color: #6ee7b7 !important;
+}
+
+/* Dark blues → light blue */
+#onboarding-wizard .wizard-slide div[style*="color:#0369a1"],
+#onboarding-wizard .wizard-slide span[style*="color:#0369a1"],
+#onboarding-wizard .wizard-slide p[style*="color:#0369a1"] {
+    color: #7dd3fc !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#0c4a6e"],
+#onboarding-wizard .wizard-slide span[style*="color:#0c4a6e"] {
+    color: #7dd3fc !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#0284c7"],
+#onboarding-wizard .wizard-slide span[style*="color:#0284c7"] {
+    color: #38bdf8 !important;
+}
+
+/* Dark amber → warm amber */
+#onboarding-wizard .wizard-slide div[style*="color:#92400e"],
+#onboarding-wizard .wizard-slide span[style*="color:#92400e"] {
+    color: #fcd34d !important;
+}
+
+/* Dark indigo → light indigo */
+#onboarding-wizard .wizard-slide div[style*="color:#4338ca"],
+#onboarding-wizard .wizard-slide span[style*="color:#4338ca"] {
+    color: #a5b4fc !important;
+}
+
+/* Dark pink → light pink */
+#onboarding-wizard .wizard-slide div[style*="color:#be185d"],
+#onboarding-wizard .wizard-slide span[style*="color:#be185d"] {
+    color: #f9a8d4 !important;
+}
+
+/* Muted grays → light */
+#onboarding-wizard .wizard-slide div[style*="color:#94a3b8"],
+#onboarding-wizard .wizard-slide span[style*="color:#94a3b8"] {
+    color: rgba(255,255,255,0.5) !important;
+}
+
+/* Dark gray text (#333) → white for readability on dark bg (e.g. workout names) */
+#onboarding-wizard .wizard-slide div[style*="color:#333"] {
+    color: rgba(255,255,255,0.9) !important;
+}
+
+/* Medium gray text (#888) → lighter for readability on dark bg (e.g. workout descriptions) */
+#onboarding-wizard .wizard-slide div[style*="color:#888"] {
+    color: rgba(255,255,255,0.5) !important;
+}
+
+/* Light borders (#f0f0f0) → subtle dark borders (e.g. calendar row dividers) */
+#onboarding-wizard .wizard-slide div[style*="border-bottom:1px solid #f0f0f0"] {
+    border-bottom-color: rgba(255,255,255,0.1) !important;
+}
+
+/* var(--primary) text in buttons on dark bg */
+#onboarding-wizard .wizard-slide button[style*="color:var(--primary)"] {
+    color: #6ee7b7 !important;
+}
+
+/* Catch-all: any remaining dark text inside wizard */
+#onboarding-wizard .wizard-slide div[style*="color:#1f2937"] {
+    color: rgba(255,255,255,0.9) !important;
+}
+
+/* Calendar/preview white backgrounds */
+#onboarding-wizard .wizard-slide div[style*="background:#fff"],
+#onboarding-wizard .wizard-slide div[style*="background: #fff"],
+#onboarding-wizard .wizard-slide div[style*="background: white"] {
+    background: rgba(255,255,255,0.06) !important;
+}
+
+/* Small colored circle icons — keep their colors */
+#onboarding-wizard .wizard-slide div[style*="background:var(--primary)"],
+#onboarding-wizard .wizard-slide div[style*="background: var(--primary)"],
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(180deg, #1a1a2e"],
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #fbbf24"] {
+    /* These already look good on dark — no override */
+}
+
+/* Active/selected state for buttons with green backgrounds */
+#onboarding-wizard .wizard-slide button[style*="background:#f0fdf4"],
+#onboarding-wizard .wizard-slide button[style*="background: #f0fdf4"] {
+    background: rgba(4,106,56,0.15) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="background:#f0fdf4"],
+#onboarding-wizard .wizard-slide div[style*="background: #f0fdf4"] {
+    background: rgba(4,106,56,0.15) !important;
+}
+
+/* ---- LI / BUTTON / LABEL ELEMENT OVERRIDES ---- */
+/* The selectors above target div elements, but many slides use li, button, and label elements */
+
+/* White backgrounds on li elements → dark glass */
+#onboarding-wizard .wizard-slide li[style*="background:white"],
+#onboarding-wizard .wizard-slide li[style*="background: white"] {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Green gradient backgrounds on li → dark green */
+#onboarding-wizard .wizard-slide li[style*="background:linear-gradient(135deg, #f0fdf4"],
+#onboarding-wizard .wizard-slide li[style*="background: linear-gradient(135deg, #f0fdf4"] {
+    background: linear-gradient(135deg, rgba(4,106,56,0.2), rgba(4,106,56,0.1)) !important;
+}
+
+/* Indigo gradient backgrounds on li → dark indigo */
+#onboarding-wizard .wizard-slide li[style*="background:linear-gradient(135deg, #e0e7ff"],
+#onboarding-wizard .wizard-slide li[style*="background: linear-gradient(135deg, #e0e7ff"] {
+    background: linear-gradient(135deg, rgba(67,56,202,0.2), rgba(67,56,202,0.1)) !important;
+}
+
+/* Yellow gradient backgrounds on li → dark amber */
+#onboarding-wizard .wizard-slide li[style*="background:linear-gradient(135deg, #fef3c7"],
+#onboarding-wizard .wizard-slide li[style*="background: linear-gradient(135deg, #fef3c7"] {
+    background: linear-gradient(135deg, rgba(180,83,9,0.2), rgba(180,83,9,0.1)) !important;
+}
+
+/* Pink gradient backgrounds on li → dark pink */
+#onboarding-wizard .wizard-slide li[style*="background:linear-gradient(135deg, #fce7f3"],
+#onboarding-wizard .wizard-slide li[style*="background: linear-gradient(135deg, #fce7f3"] {
+    background: linear-gradient(135deg, rgba(190,24,93,0.2), rgba(190,24,93,0.1)) !important;
+}
+
+/* Border overrides on li elements */
+#onboarding-wizard .wizard-slide li[style*="border:1px solid #bbf7d0"] {
+    border-color: rgba(4,106,56,0.3) !important;
+}
+#onboarding-wizard .wizard-slide li[style*="border:1px solid #a5b4fc"] {
+    border-color: rgba(67,56,202,0.3) !important;
+}
+#onboarding-wizard .wizard-slide li[style*="border:1px solid #fcd34d"] {
+    border-color: rgba(180,83,9,0.3) !important;
+}
+#onboarding-wizard .wizard-slide li[style*="border:1px solid #f9a8d4"] {
+    border-color: rgba(190,24,93,0.3) !important;
+}
+#onboarding-wizard .wizard-slide li[style*="border:1px solid #eee"],
+#onboarding-wizard .wizard-slide li[style*="border: 1px solid #eee"] {
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Ensure all text inside wizard list items is readable */
+#onboarding-wizard .wizard-slide li {
+    color: rgba(255,255,255,0.9) !important;
+}
+#onboarding-wizard .wizard-slide li strong {
+    color: white !important;
+}
+
+/* Button background:#fff overrides (freq/day/split buttons on slides 4-5) */
+#onboarding-wizard .wizard-slide button[style*="background:#fff"],
+#onboarding-wizard .wizard-slide button[style*="background: #fff"] {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.15) !important;
+}
+
+/* Button text color overrides */
+#onboarding-wizard .wizard-slide button[style*="color:#1a4d2e"] {
+    color: rgba(255,255,255,0.9) !important;
+}
+#onboarding-wizard .wizard-slide button[style*="color:#334155"] {
+    color: rgba(255,255,255,0.9) !important;
+}
+#onboarding-wizard .wizard-slide button[style*="color:#0c4a6e"] {
+    color: #7dd3fc !important;
+}
+
+/* Glass size button active state (background:#e0f2fe) → dark blue */
+#onboarding-wizard .wizard-slide button[style*="background:#e0f2fe"],
+#onboarding-wizard .wizard-slide button[style*="background: #e0f2fe"] {
+    background: rgba(14,116,144,0.2) !important;
+}
+#onboarding-wizard .wizard-slide button[style*="border:2px solid #0284c7"] {
+    border-color: rgba(14,116,144,0.4) !important;
+}
+#onboarding-wizard .wizard-slide button[style*="color:#0284c7"] {
+    color: #38bdf8 !important;
+}
+
+/* Label background overrides (cycle sync radio labels on slide 3) */
+#onboarding-wizard .wizard-slide label[style*="background:white"],
+#onboarding-wizard .wizard-slide label[style*="background: white"] {
+    background: rgba(255,255,255,0.06) !important;
+}
+#onboarding-wizard .wizard-slide label[style*="border:1px solid #e2e8f0"],
+#onboarding-wizard .wizard-slide label[style*="border: 1px solid #e2e8f0"] {
+    border-color: rgba(255,255,255,0.12) !important;
+}
+
+/* Paragraph text color:#334155 override (slide 20 instructions) */
+#onboarding-wizard .wizard-slide p[style*="color:#334155"],
+#onboarding-wizard .wizard-slide p[style*="color: #334155"] {
+    color: rgba(255,255,255,0.9) !important;
+}
+
+/* Blue gradient backgrounds on div (slide 9 hydration) — ensure coverage */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #e0f2fe"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #e0f2fe"] {
+    background: linear-gradient(135deg, rgba(14,116,144,0.2), rgba(14,116,144,0.1)) !important;
+}
+
+/* ---- END LI / BUTTON / LABEL OVERRIDES ---- */
+
+/* DBZ Theme Decorations */
+#dbz-decorations {
+    display: none;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.dbz-character-corner {
+    position: fixed;
+    bottom: 70px;
+    right: 5px;
+    width: 120px;
+    height: auto;
+    max-height: 200px;
+    object-fit: contain;
+    opacity: 0.95;
+    z-index: 100;
+    animation: dbzFloat 3s ease-in-out infinite;
+    filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.5));
+    border-radius: 8px;
+}
+
+.dbz-lightning-left {
+    position: fixed;
+    top: 120px;
+    left: 10px;
+    width: 35px;
+    height: 60px;
+    opacity: 0.7;
+    z-index: 100;
+    animation: dbzLightning 2s ease-in-out infinite;
+}
+
+.dbz-lightning-right {
+    position: fixed;
+    top: 200px;
+    right: 15px;
+    width: 30px;
+    height: 50px;
+    opacity: 0.6;
+    z-index: 100;
+    animation: dbzLightning 2.5s ease-in-out infinite 0.5s;
+}
+
+@keyframes dbzFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-10px) scale(1.05); }
+}
+
+@keyframes dbzLightning {
+    0%, 100% { opacity: 0.4; transform: scaleY(1); }
+    50% { opacity: 0.9; transform: scaleY(1.1); }
+}
+
+/* Flower Garden Decorations (Female users only) */
+#flower-decorations {
+    display: none;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.flower-corner {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    opacity: 0.4;
+    z-index: 100;
+    filter: drop-shadow(0 2px 8px rgba(217, 139, 156, 0.3));
+    animation: flowerFloat 4s ease-in-out infinite;
+}
+
+.flower-top-right {
+    top: 80px;
+    right: 15px;
+    animation-delay: 0s;
+}
+
+.flower-bottom-left {
+    bottom: 80px;
+    left: 15px;
+    transform: rotate(180deg);
+    animation-delay: 1s;
+}
+
+.flower-top-left {
+    top: 180px;
+    left: 20px;
+    animation-delay: 2s;
+    width: 55px;
+    height: 55px;
+}
+
+.flower-bottom-right {
+    bottom: 180px;
+    right: 20px;
+    transform: rotate(-15deg);
+    animation-delay: 3s;
+    width: 50px;
+    height: 50px;
+}
+
+@keyframes flowerFloat {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg) scale(1);
+    }
+    25% {
+        transform: translateY(-8px) rotate(5deg) scale(1.05);
+    }
+    50% {
+        transform: translateY(-12px) rotate(-3deg) scale(1.08);
+    }
+    75% {
+        transform: translateY(-6px) rotate(3deg) scale(1.03);
+    }
+}
+
+/* Additional rotations for specific corners */
+.flower-bottom-left {
+    animation-name: flowerFloatRotated;
+}
+
+@keyframes flowerFloatRotated {
+    0%, 100% {
+        transform: translateY(0) rotate(180deg) scale(1);
+    }
+    25% {
+        transform: translateY(-8px) rotate(185deg) scale(1.05);
+    }
+    50% {
+        transform: translateY(-12px) rotate(177deg) scale(1.08);
+    }
+    75% {
+        transform: translateY(-6px) rotate(183deg) scale(1.03);
+    }
+}
+
+/* Flower Garden Theme - Falling Flower Animation */
+@keyframes flowerFall {
+    0% {
+        transform: translateY(-100px) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    25% {
+        transform: translateY(25vh) translateX(20px) rotate(90deg);
+    }
+    50% {
+        transform: translateY(50vh) translateX(-15px) rotate(180deg);
+    }
+    75% {
+        transform: translateY(75vh) translateX(10px) rotate(270deg);
+        opacity: 0.8;
+    }
+    90% {
+        opacity: 0.5;
+    }
+    100% {
+        transform: translateY(100vh) translateX(0) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+.falling-flower {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    pointer-events: none;
+    z-index: 9999;
+    will-change: transform, opacity;
+}
+
+/* Sailor Moon Character Decorations (Female users only) */
+#sailor-decorations {
+    display: none;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.sailor-character-corner {
+    position: fixed;
+    bottom: 70px;
+    right: 5px;
+    width: 100px;
+    height: auto;
+    max-height: 180px;
+    object-fit: contain;
+    opacity: 0.95;
+    z-index: 100;
+    animation: sailorFloat 3.5s ease-in-out infinite;
+    filter: drop-shadow(0 4px 15px rgba(255, 105, 180, 0.4));
+    border-radius: 8px;
+}
+
+.sailor-star-left {
+    position: fixed;
+    top: 100px;
+    left: 10px;
+    width: 40px;
+    height: 40px;
+    opacity: 0.6;
+    z-index: 100;
+    animation: sailorSparkle 2s ease-in-out infinite;
+}
+
+.sailor-star-right {
+    position: fixed;
+    top: 180px;
+    right: 15px;
+    width: 35px;
+    height: 35px;
+    opacity: 0.5;
+    z-index: 100;
+    animation: sailorSparkle 2.5s ease-in-out infinite 0.5s;
+}
+
+.sailor-heart-float {
+    position: fixed;
+    top: 250px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 30px;
+    opacity: 0.4;
+    z-index: 100;
+    animation: sailorHeartFloat 3s ease-in-out infinite 1s;
+}
+
+@keyframes sailorFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-12px) scale(1.05); }
+}
+
+@keyframes sailorSparkle {
+    0%, 100% { opacity: 0.3; transform: scale(1) rotate(0deg); }
+    50% { opacity: 0.9; transform: scale(1.2) rotate(15deg); }
+}
+
+@keyframes sailorHeartFloat {
+    0%, 100% { opacity: 0.3; transform: translateX(-50%) translateY(0) scale(1); }
+    50% { opacity: 0.7; transform: translateX(-50%) translateY(-15px) scale(1.15); }
+}
+
+/* Sailor Moon theme specific gradient for welcome section */
+body.sailor-theme-active .dashboard-welcome {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--primary-light) 100%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Sailor Moon theme - pink/gold gradient with character in welcome */
+body.sailor-moon-theme .dashboard-welcome::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('assets/sailor-moon-character.svg');
+    background-size: auto 90px;
+    background-repeat: no-repeat;
+    background-position: right -15px bottom -15px;
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Sailor Venus theme - orange/gold gradient with character in welcome */
+body.sailor-venus-theme .dashboard-welcome::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('assets/sailor-venus-character.svg');
+    background-size: auto 85px;
+    background-repeat: no-repeat;
+    background-position: right -20px bottom -10px;
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* DBZ theme specific gradient for welcome section */
+body.dbz-theme-active .dashboard-welcome {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--primary-light) 100%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Goku theme (Super Saiyan) - orange/gold gradient with Goku in welcome */
+body.dbz-goku-theme .dashboard-welcome::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('assets/goku-ssj.webp') no-repeat right -10px bottom -20px;
+    background-size: 100px auto;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* Vegeta theme (Saiyan Prince) - blue/gold gradient with Vegeta in welcome */
+body.dbz-vegeta-theme .dashboard-welcome::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('assets/vegeta-ssj.webp') no-repeat right -20px bottom -10px;
+    background-size: auto 90px;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 480px) {
+    .dbz-character-corner {
+        width: 90px;
+        max-height: 150px;
+        bottom: 65px;
+        right: 3px;
+    }
+    .dbz-lightning-left,
+    .dbz-lightning-right {
+        display: none;
+    }
+}
+
+/* Settings icon toggle for DBZ themes */
+.settings-icon-dragonball {
+    display: none !important;
+}
+
+body.dbz-theme-active .settings-icon-gear {
+    display: none !important;
+}
+
+body.dbz-theme-active .settings-icon-dragonball {
+    display: inline-block !important;
+}
+
+/* Settings icon toggle for Sailor Moon themes */
+.settings-icon-sailormoon {
+    display: none !important;
+}
+
+body.sailor-theme-active .settings-icon-gear {
+    display: none !important;
+}
+
+body.sailor-theme-active .settings-icon-sailormoon {
+    display: inline-block !important;
+}
+
+/* Profile icon Sailor Moon for Sailor Moon themes */
+body.sailor-theme-active .profile-icon {
+    background-image: url('assets/sailor-moon.svg');
+    background-size: cover;
+    background-position: center;
+    color: transparent !important; /* Hide the "S" text */
+}
+
+/* Profile icon Dragon Ball for DBZ themes */
+body.dbz-theme-active .profile-icon {
+    background-image: url('assets/dragon-ball.svg');
+    background-size: cover;
+    background-position: center;
+    color: transparent !important; /* Hide the "S" text */
+    font-size: 0; /* Extra measure to hide text */
+}
