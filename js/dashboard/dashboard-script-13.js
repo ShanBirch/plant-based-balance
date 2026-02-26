@@ -863,6 +863,18 @@
 
             html += `</div></div>`;
 
+            // Add Motion Control section (for iOS gyro)
+            html += `<div class="animation-category" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div class="animation-category-title">⚡ Motion Control</div>
+                <div style="padding: 0 10px;">
+                    <button onclick="requestMotionPermission().then(granted => { if(granted) this.innerHTML = '✅ Motion Enabled'; else alert('Motion permission required for tilt effects.') })" 
+                            style="width: 100%; padding: 12px; border-radius: 8px; border: none; background: linear-gradient(135deg, #6366f1, #a855f7); color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span>📱</span> Enable Motion Effects
+                    </button>
+                    <p style="font-size: 0.65rem; color: rgba(255,255,255,0.6); margin-top: 8px; text-align: center;">Required on iOS for tilt effects. Android/Desktop can also use touch & mouse.</p>
+                </div>
+            </div>`;
+
             html += `
                     </div>
                 </div>
@@ -963,6 +975,9 @@
                 // Setup Parallax
                 setupBgParallax(container, layers);
 
+                // Add Particle System for extra life
+                createParticles(bgName);
+
             } else {
                 // Standard static backgrounds
                 if (dynamicBg) dynamicBg.style.display = 'none';
@@ -1013,11 +1028,23 @@
 
         // Helper: Initialize Parallax Effect based on touch/gyro
         function setupBgParallax(container, layers) {
+            let lastX = 0, lastY = 0;
+            let targetX = 0, targetY = 0;
+            let currentX = 0, currentY = 0;
+
             const updateLayers = (x, y) => {
-                // Move layers at different speeds (Increased Intensity)
-                if (layers.back) layers.back.style.transform = `translateX(${x * -30}px) translateY(${y * -10}px)`;
-                if (layers.mid) layers.mid.style.transform = `translateX(${x * -60}px) translateY(${y * -20}px)`;
-                if (layers.front) layers.front.style.transform = `translateX(${x * -100}px) translateY(${y * -40}px)`;
+                // Smoothing (lerp)
+                currentX += (x - currentX) * 0.1;
+                currentY += (y - currentY) * 0.1;
+
+                // Move layers at different speeds (High Intensity)
+                // We add a subtle rotation for extra "3D" feeling
+                const rotationX = currentY * 5; // Rotate around X axis (tilt up/down)
+                const rotationY = currentX * -5; // Rotate around Y axis (tilt left/right)
+
+                if (layers.back) layers.back.style.transform = `translateX(${currentX * -40}px) translateY(${currentY * -20}px) scale(1.1)`;
+                if (layers.mid) layers.mid.style.transform = `translateX(${currentX * -80}px) translateY(${currentY * -40}px) scale(1.05) rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
+                if (layers.front) layers.front.style.transform = `translateX(${currentX * -150}px) translateY(${currentY * -80}px) scale(1.15)`;
             };
 
             const handleMove = (e) => {
@@ -1025,37 +1052,67 @@
                 
                 let x = 0, y = 0;
                 if (e.type === 'touchmove') {
-                    x = e.touches[0].clientX / window.innerWidth - 0.5;
-                    y = e.touches[0].clientY / window.innerHeight - 0.5;
+                    x = (e.touches[0].clientX / window.innerWidth - 0.5) * 2;
+                    y = (e.touches[0].clientY / window.innerHeight - 0.5) * 2;
                 } else {
-                    x = e.clientX / window.innerWidth - 0.5;
-                    y = e.clientY / window.innerHeight - 0.5;
+                    x = (e.clientX / window.innerWidth - 0.5) * 2;
+                    y = (e.clientY / window.innerHeight - 0.5) * 2;
                 }
                 updateLayers(x, y);
             };
 
-            // Support Gyroscope for premium feeling on mobile
-            // Use a separate handler for gyro to avoid listener conflicts
-            if (!container._gyroHandler) {
-                container._gyroHandler = (event) => {
-                    if (window.isDuringBattle || !container.style.display || container.style.display === 'none') return;
-                    // event.gamma = tilt left/right, event.beta = tilt front/back
-                    const x = event.gamma ? event.gamma / 45 : 0; 
-                    const y = event.beta ? (event.beta - 45) / 45 : 0; 
-                    updateLayers(x, y);
-                };
-                window.addEventListener('deviceorientation', container._gyroHandler);
-            }
+            // Request permission for motion on iOS
+            window.requestMotionPermission = async function() {
+                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    try {
+                        const permission = await DeviceOrientationEvent.requestPermission();
+                        if (permission === 'granted') {
+                            console.log('Motion permission granted');
+                            initGyro();
+                            return true;
+                        }
+                    } catch (err) {
+                        console.error('Motion permission error:', err);
+                    }
+                } else {
+                    // Non-iOS or old version
+                    initGyro();
+                    return true;
+                }
+                return false;
+            };
 
+            const initGyro = () => {
+                if (!container._gyroHandler) {
+                    container._gyroHandler = (event) => {
+                        if (window.isDuringBattle || !container.style.display || container.style.display === 'none') return;
+                        
+                        // x: -1 to 1 based on gamma (left/right tilt)
+                        // y: -1 to 1 based on beta (forward/back tilt)
+                        const x = (event.gamma || 0) / 30; // 30 degrees for full shift
+                        const y = ((event.beta || 45) - 45) / 30; 
+                        
+                        updateLayers(x, y);
+                    };
+                    window.addEventListener('deviceorientation', container._gyroHandler);
+                    console.log('Gyroscope initialised');
+                }
+            };
+
+            // Start gyro automatically if possible (Android usually allows this)
+            initGyro();
+
+            // Support mouse/touch
             container.removeEventListener('mousemove', container._parallaxHandler);
             container.removeEventListener('touchmove', container._parallaxHandler);
             
             container._parallaxHandler = handleMove;
             container.addEventListener('mousemove', handleMove);
             container.addEventListener('touchmove', handleMove, { passive: true });
+            
+            // Add a "Breath" class for idle animation if no movement
+            if (layers.mid) layers.mid.classList.add('bg-breathing');
         }
-
-
 
         // Helper: Weather effects (rain, clouds)
         function updateWeatherEffects(bgName) {
@@ -1086,6 +1143,66 @@
             
             // Toggle rain for testing or based on level?
             // For now, let's keep it clear unless we add a weather API later.
+        }
+
+        // Helper: Create particles for extra environmental life
+        function createParticles(bgName) {
+            const container = document.getElementById('tamagotchi-dynamic-bg');
+            if (!container) return;
+            
+            // Clean up existing
+            const existing = document.getElementById('bg-particles');
+            if (existing) existing.remove();
+
+            const particleContainer = document.createElement('div');
+            particleContainer.id = 'bg-particles';
+            particleContainer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;overflow:hidden;';
+            container.appendChild(particleContainer);
+
+            let icon = '✨';
+            let count = 12;
+            let speed = 10000;
+
+            if (bgName === 'kame_house') { icon = '🍃'; count = 6; }
+            else if (bgName === 'kai_world') { icon = '🌸'; count = 10; }
+            else if (bgName === 'beerus') { icon = '✨'; count = 15; speed = 15000; }
+            else if (bgName === 'namek') { icon = '🫧'; count = 8; speed = 8000; }
+            else if (bgName === 'arena') { icon = '💨'; count = 8; }
+            else if (bgName === 'lookout') { icon = '🕊️'; count = 3; speed = 25000; }
+
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.innerHTML = icon;
+                p.style.cssText = `position:absolute; font-size: ${Math.random() * 10 + 8}px; pointer-events:none; filter: blur(${Math.random() * 2}px); opacity: 0; transition: opacity 1s;`;
+                particleContainer.appendChild(p);
+                
+                const animate = () => {
+                    const duration = Math.random() * speed + speed/2;
+                    const startX = Math.random() * 120 - 10;
+                    const startY = Math.random() * 120 - 10;
+                    const endX = startX + (Math.random() * 40 - 20);
+                    const endY = startY + (Math.random() * 40 - 20);
+
+                    p.style.left = startX + '%';
+                    p.style.top = startY + '%';
+                    p.style.opacity = 0;
+                    
+                    setTimeout(() => {
+                        p.style.transition = `all ${duration}ms linear, opacity 1s ease-in-out`;
+                        p.style.left = endX + '%';
+                        p.style.top = endY + '%';
+                        p.style.opacity = Math.random() * 0.5 + 0.1;
+                        p.style.transform = `rotate(${Math.random() * 360}deg) scale(${Math.random() * 0.5 + 0.7})`;
+                    }, 50);
+
+                    setTimeout(() => {
+                        p.style.opacity = 0;
+                        setTimeout(animate, 1000);
+                    }, duration - 1000);
+                };
+                
+                setTimeout(animate, Math.random() * 5000);
+            }
         }
 
         // Helper: Create rain drops
