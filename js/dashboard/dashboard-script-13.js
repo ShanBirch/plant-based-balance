@@ -555,22 +555,28 @@
             { name: 'die_1', displayName: 'Play Dead', unlockLevel: 60, icon: '😵', category: 'special' },
         ];
 
-        // Background unlock system - backgrounds unlocked at specific levels
+        // Background unlock system - 20 backgrounds from DB to DBZ
         const BACKGROUND_UNLOCKS = [
             { name: 'none', displayName: 'Default', unlockLevel: 1, icon: '🌑', theme: 'tamagotchi-bg-none', image: null },
-            { name: 'gym', displayName: 'Gym', unlockLevel: 5, icon: '🏋️', theme: 'tamagotchi-bg-gym', image: './assets/gym_bg.jpeg' },
-            { name: 'kame_house', displayName: 'Kame House', unlockLevel: 1, icon: '🏠', theme: 'tamagotchi-bg-home', image: './assets/kame_house.png' },
-            { name: 'park', displayName: 'Park', unlockLevel: 10, icon: '🌳', theme: 'tamagotchi-bg-park', image: './assets/park.jpeg' },
+            { name: 'mt_paozu', displayName: 'Mt. Paozu', unlockLevel: 1, icon: '🏠', theme: 'tamagotchi-bg-park', image: './assets/mt_paozu.png' },
+            { name: 'kame_house', displayName: 'Kame House', unlockLevel: 1, icon: '🏝️', theme: 'tamagotchi-bg-beach', image: './assets/kame_house.png' },
+            { name: 'pilaf', displayName: 'Pilaf Castle', unlockLevel: 5, icon: '🏰', theme: 'tamagotchi-bg-none', image: './assets/pilaf_castle.png' },
+            { name: 'muscle_tower', displayName: 'Muscle Tower', unlockLevel: 10, icon: '❄️', theme: 'tamagotchi-bg-none', image: './assets/muscle_tower.png' },
             { name: 'arena', displayName: 'Tournament', unlockLevel: 15, icon: '🏆', theme: 'tamagotchi-bg-arena', image: './assets/tournament_arena.png' },
-            { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏘️', theme: 'tamagotchi-bg-home', image: './assets/home.jpeg' },
+            { name: 'korin', displayName: 'Korin Tower', unlockLevel: 22, icon: '🐱', theme: 'tamagotchi-bg-mountain', image: './assets/kamis_lookout.png' }, // Redirect to lookout for now
             { name: 'lookout', displayName: 'Kami\'s Lookout', unlockLevel: 30, icon: '🏛️', theme: 'tamagotchi-bg-mountain', image: './assets/kamis_lookout.png' },
-            { name: 'beach', displayName: 'Beach', unlockLevel: 30, icon: '🏖️', theme: 'tamagotchi-bg-beach', image: './assets/beach.jpeg' },
-            { name: 'mountain', displayName: 'Mountain', unlockLevel: 40, icon: '⛰️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
+            { name: 'wasteland', displayName: 'Wasteland', unlockLevel: 35, icon: '🏜️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
+            { name: 'snake_way', displayName: 'Snake Way', unlockLevel: 45, icon: '🐍', theme: 'tamagotchi-bg-none', image: './assets/king_kais_planet.png' }, // Redirect to king kai for now
             { name: 'king_kai', displayName: 'King Kai\'s', unlockLevel: 50, icon: '🪐', theme: 'tamagotchi-bg-none', image: './assets/king_kais_planet.png' },
-            { name: 'namek', displayName: 'Namek', unlockLevel: 70, icon: '🌌', theme: 'tamagotchi-bg-mountain', image: './assets/planet_namek.png' },
+            { name: 'namek', displayName: 'Planet Namek', unlockLevel: 65, icon: '🌌', theme: 'tamagotchi-bg-mountain', image: './assets/planet_namek.png' },
+            { name: 'frieza_ship', displayName: 'Frieza Ship', unlockLevel: 75, icon: '🛸', theme: 'tamagotchi-bg-none', image: './assets/planet_namek.png' },
+            { name: 'dying_namek', displayName: 'Dying Namek', unlockLevel: 85, icon: '🌋', theme: 'tamagotchi-bg-mountain', image: './assets/planet_namek.png' },
             { name: 'time_chamber', displayName: 'H.T.C', unlockLevel: 100, icon: '⚪', theme: 'tamagotchi-bg-none', image: './assets/time_chamber.png' },
-            { name: 'kai_world', displayName: 'Kai World', unlockLevel: 120, icon: '🌳', theme: 'tamagotchi-bg-none', image: './assets/supreme_kai_world.png' },
-            { name: 'beerus', displayName: 'Beerus\'s', unlockLevel: 150, icon: '🐈', theme: 'tamagotchi-bg-none', image: './assets/beerus_planet.png' },
+            { name: 'cell_arena', displayName: 'Cell Games', unlockLevel: 110, icon: '🥋', theme: 'tamagotchi-bg-arena', image: './assets/tournament_arena.png' },
+            { name: 'kai_world', displayName: 'Kai World', unlockLevel: 125, icon: '🌳', theme: 'tamagotchi-bg-none', image: './assets/supreme_kai_world.png' },
+            { name: 'inside_buu', displayName: 'Inside Buu', unlockLevel: 145, icon: '🧠', theme: 'tamagotchi-bg-none', image: './assets/supreme_kai_world.png' },
+            { name: 'rocky_canyon', displayName: 'Rocky Canyon', unlockLevel: 170, icon: '☄️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
+            { name: 'beerus', displayName: 'Beerus\'s', unlockLevel: 200, icon: '🐈', theme: 'tamagotchi-bg-none', image: './assets/beerus_planet.png' },
         ];
         // Expose globally so battle restore can look up the saved background image
         window.BACKGROUND_UNLOCKS = BACKGROUND_UNLOCKS;
@@ -945,7 +951,7 @@
             if (floor) floor.style.display = 'none';
 
             // Check if it's a dynamic DBZ-themed background
-            const isDynamic = ['kame_house', 'arena', 'lookout', 'king_kai', 'namek', 'time_chamber', 'kai_world', 'beerus'].includes(bgName);
+            const isDynamic = ['kame_house', 'arena', 'lookout', 'king_kai', 'namek', 'time_chamber', 'kai_world', 'beerus', 'mt_paozu', 'pilaf', 'muscle_tower', 'korin', 'wasteland', 'snake_way', 'frieza_ship', 'dying_namek', 'cell_arena', 'inside_buu', 'rocky_canyon'].includes(bgName);
 
             if (isDynamic && dynamicBg) {
                 if (staticBg) staticBg.style.display = 'none';
@@ -1052,8 +1058,9 @@
                 
                 let x = 0, y = 0;
                 if (e.type === 'touchmove') {
-                    x = (e.touches[0].clientX / window.innerWidth - 0.5) * 2;
-                    y = (e.touches[0].clientY / window.innerHeight - 0.5) * 2;
+                    // Increased sensitivity for touch
+                    x = (e.touches[0].clientX / window.innerWidth - 0.5) * 3;
+                    y = (e.touches[0].clientY / window.innerHeight - 0.5) * 3;
                 } else {
                     x = (e.clientX / window.innerWidth - 0.5) * 2;
                     y = (e.clientY / window.innerHeight - 0.5) * 2;
@@ -1061,58 +1068,53 @@
                 updateLayers(x, y);
             };
 
-            // Request permission for motion on iOS
-            window.requestMotionPermission = async function() {
-                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    try {
-                        const permission = await DeviceOrientationEvent.requestPermission();
-                        if (permission === 'granted') {
-                            console.log('Motion permission granted');
-                            initGyro();
-                            return true;
-                        }
-                    } catch (err) {
-                        console.error('Motion permission error:', err);
-                    }
-                } else {
-                    // Non-iOS or old version
-                    initGyro();
-                    return true;
-                }
-                return false;
-            };
-
             const initGyro = () => {
                 if (!container._gyroHandler) {
                     container._gyroHandler = (event) => {
                         if (window.isDuringBattle || !container.style.display || container.style.display === 'none') return;
-                        
-                        // x: -1 to 1 based on gamma (left/right tilt)
-                        // y: -1 to 1 based on beta (forward/back tilt)
-                        const x = (event.gamma || 0) / 30; // 30 degrees for full shift
-                        const y = ((event.beta || 45) - 45) / 30; 
-                        
+                        const x = (event.gamma || 0) / 25; 
+                        const y = ((event.beta || 45) - 45) / 25; 
                         updateLayers(x, y);
                     };
                     window.addEventListener('deviceorientation', container._gyroHandler);
-                    console.log('Gyroscope initialised');
                 }
             };
 
-            // Start gyro automatically if possible (Android usually allows this)
+            window.addEventListener('gyroPermissionGranted', initGyro);
+
             initGyro();
 
-            // Support mouse/touch
             container.removeEventListener('mousemove', container._parallaxHandler);
             container.removeEventListener('touchmove', container._parallaxHandler);
             
             container._parallaxHandler = handleMove;
             container.addEventListener('mousemove', handleMove);
             container.addEventListener('touchmove', handleMove, { passive: true });
-            
+
+            // Request permission for motion on iOS
             // Add a "Breath" class for idle animation if no movement
             if (layers.mid) layers.mid.classList.add('bg-breathing');
         }
+
+        // Global motion permission helper
+        window.requestMotionPermission = async function() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        console.log('Motion permission granted');
+                        // Notify all parallax instances to init gyro
+                        window.dispatchEvent(new CustomEvent('gyroPermissionGranted'));
+                        return true;
+                    }
+                } catch (err) {
+                    console.error('Motion permission error:', err);
+                }
+            } else {
+                return true;
+            }
+            return false;
+        };
 
         // Helper: Weather effects (rain, clouds)
         function updateWeatherEffects(bgName) {
@@ -1135,7 +1137,23 @@
                 }
                 createRainEffect(rainOverlay);
                 rainOverlay.style.filter = 'hue-rotate(80deg) brightness(0.8)';
-            } else if (bgName === 'lookout') {
+            } else if (bgName === 'dying_namek') {
+                // Dark skies + ash rain
+                if (cloudLayer) {
+                    cloudLayer.style.display = 'block';
+                    cloudLayer.style.filter = 'grayscale(1) brightness(0.3)';
+                }
+                createRainEffect(rainOverlay);
+                rainOverlay.style.filter = 'sepia(1) hue-rotate(-20deg) brightness(0.6)';
+            } else if (bgName === 'muscle_tower') {
+                // Heavy snow
+                if (cloudLayer) {
+                    cloudLayer.style.display = 'block';
+                    cloudLayer.style.filter = 'brightness(1.5) opacity(0.5)';
+                }
+                createRainEffect(rainOverlay, '❄️');
+                rainOverlay.style.filter = 'none';
+            } else if (bgName === 'lookout' || bgName === 'korin' || bgName === 'snake_way') {
                 // High altitude clouds
                 if (cloudLayer) cloudLayer.style.display = 'block';
             }
@@ -1163,12 +1181,14 @@
             let count = 12;
             let speed = 10000;
 
-            if (bgName === 'kame_house') { icon = '🍃'; count = 6; }
+            if (bgName === 'kame_house' || bgName === 'mt_paozu') { icon = '🍃'; count = 6; }
             else if (bgName === 'kai_world') { icon = '🌸'; count = 10; }
-            else if (bgName === 'beerus') { icon = '✨'; count = 15; speed = 15000; }
-            else if (bgName === 'namek') { icon = '🫧'; count = 8; speed = 8000; }
-            else if (bgName === 'arena') { icon = '💨'; count = 8; }
-            else if (bgName === 'lookout') { icon = '🕊️'; count = 3; speed = 25000; }
+            else if (bgName === 'beerus' || bgName === 'pilaf' || bgName === 'frieza_ship') { icon = '✨'; count = 15; speed = 15000; }
+            else if (bgName === 'namek' || bgName === 'inside_buu') { icon = '🫧'; count = 8; speed = 8000; }
+            else if (bgName === 'arena' || bgName === 'wasteland' || bgName === 'cell_arena' || bgName === 'rocky_canyon') { icon = '💨'; count = 8; }
+            else if (bgName === 'lookout' || bgName === 'korin' || bgName === 'snake_way') { icon = '☁️'; count = 10; speed = 20000; }
+            else if (bgName === 'muscle_tower') { icon = '❄️'; count = 12; speed = 12000; }
+            else if (bgName === 'dying_namek') { icon = '☄️'; count = 6; speed = 7000; }
 
             for (let i = 0; i < count; i++) {
                 const p = document.createElement('div');
@@ -1206,18 +1226,24 @@
         }
 
         // Helper: Create rain drops
-        function createRainEffect(container) {
+        function createRainEffect(container, char = null) {
             if (!container) return;
             container.innerHTML = '';
             container.style.display = 'block';
             const dropCount = 40;
             for (let i = 0; i < dropCount; i++) {
                 const drop = document.createElement('div');
-                drop.className = 'rain-drop';
-                drop.style.left = Math.random() * 110 - 5 + '%';
-                drop.style.top = Math.random() * 100 + '%';
-                drop.style.animationDelay = Math.random() * 1 + 's';
-                drop.style.animationDuration = 0.5 + Math.random() * 0.5 + 's';
+                if (char) {
+                    drop.innerHTML = char;
+                    drop.style.cssText = `position:absolute; font-size: 10px; opacity: ${Math.random()}; animation: rain-fall ${Math.random() * 2 + 1}s infinite linear;`;
+                } else {
+                    drop.className = 'rain-drop';
+                }
+                drop.style.left = Math.random() * 100 + '%';
+                drop.style.animationDelay = Math.random() * 2 + 's';
+                if (!char) { // Only apply animationDuration if it's a default rain-drop
+                    drop.style.animationDuration = 0.5 + Math.random() * 0.5 + 's';
+                }
                 container.appendChild(drop);
             }
         }
