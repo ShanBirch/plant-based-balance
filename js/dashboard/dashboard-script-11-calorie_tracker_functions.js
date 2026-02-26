@@ -6849,14 +6849,19 @@ async function logBarcodeAsMeal() {
     };
 
     closeBarcodeResult();
-    showToast('Logging meal...', 'info');
+    showToast('Logging barcode meal...', 'info');
 
     try {
-        const savedMeal = await saveMealLog({
+        const mealType = typeof autoDetectMealType === 'function' ? autoDetectMealType() : selectedMealType;
+        selectedMealType = mealType;
+
+        const savedMeal = await saveMealLogWithType({
             foodItems,
             totals,
             micronutrients,
             confidence: 'high',
+            mealType: mealType,
+            inputMethod: 'barcode',
             notes: `Barcode scan: ${barcode}`
         });
 
