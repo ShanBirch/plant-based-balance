@@ -555,28 +555,29 @@
             { name: 'die_1', displayName: 'Play Dead', unlockLevel: 60, icon: '😵', category: 'special' },
         ];
 
-        // Background unlock system - 20 backgrounds from DB to DBZ
+        // Background unlock system - 20 backgrounds (ALL UNLOCKED FOR TESTING)
         const BACKGROUND_UNLOCKS = [
             { name: 'none', displayName: 'Default', unlockLevel: 1, icon: '🌑', theme: 'tamagotchi-bg-none', image: null },
             { name: 'mt_paozu', displayName: 'Mt. Paozu', unlockLevel: 1, icon: '🏠', theme: 'tamagotchi-bg-park', image: './assets/mt_paozu.png' },
             { name: 'kame_house', displayName: 'Kame House', unlockLevel: 1, icon: '🏝️', theme: 'tamagotchi-bg-beach', image: './assets/kame_house.png' },
-            { name: 'pilaf', displayName: 'Pilaf Castle', unlockLevel: 5, icon: '🏰', theme: 'tamagotchi-bg-none', image: './assets/pilaf_castle.png' },
-            { name: 'muscle_tower', displayName: 'Muscle Tower', unlockLevel: 10, icon: '❄️', theme: 'tamagotchi-bg-none', image: './assets/muscle_tower.png' },
-            { name: 'arena', displayName: 'Tournament', unlockLevel: 15, icon: '🏆', theme: 'tamagotchi-bg-arena', image: './assets/tournament_arena.png' },
-            { name: 'korin', displayName: 'Korin Tower', unlockLevel: 22, icon: '🐱', theme: 'tamagotchi-bg-mountain', image: './assets/kamis_lookout.png' }, // Redirect to lookout for now
-            { name: 'lookout', displayName: 'Kami\'s Lookout', unlockLevel: 30, icon: '🏛️', theme: 'tamagotchi-bg-mountain', image: './assets/kamis_lookout.png' },
-            { name: 'wasteland', displayName: 'Wasteland', unlockLevel: 35, icon: '🏜️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
-            { name: 'snake_way', displayName: 'Snake Way', unlockLevel: 45, icon: '🐍', theme: 'tamagotchi-bg-none', image: './assets/king_kais_planet.png' }, // Redirect to king kai for now
-            { name: 'king_kai', displayName: 'King Kai\'s', unlockLevel: 50, icon: '🪐', theme: 'tamagotchi-bg-none', image: './assets/king_kais_planet.png' },
-            { name: 'namek', displayName: 'Planet Namek', unlockLevel: 65, icon: '🌌', theme: 'tamagotchi-bg-mountain', image: './assets/planet_namek.png' },
-            { name: 'frieza_ship', displayName: 'Frieza Ship', unlockLevel: 75, icon: '🛸', theme: 'tamagotchi-bg-none', image: './assets/planet_namek.png' },
-            { name: 'dying_namek', displayName: 'Dying Namek', unlockLevel: 85, icon: '🌋', theme: 'tamagotchi-bg-mountain', image: './assets/planet_namek.png' },
-            { name: 'time_chamber', displayName: 'H.T.C', unlockLevel: 100, icon: '⚪', theme: 'tamagotchi-bg-none', image: './assets/time_chamber.png' },
-            { name: 'cell_arena', displayName: 'Cell Games', unlockLevel: 110, icon: '🥋', theme: 'tamagotchi-bg-arena', image: './assets/tournament_arena.png' },
-            { name: 'kai_world', displayName: 'Kai World', unlockLevel: 125, icon: '🌳', theme: 'tamagotchi-bg-none', image: './assets/supreme_kai_world.png' },
-            { name: 'inside_buu', displayName: 'Inside Buu', unlockLevel: 145, icon: '🧠', theme: 'tamagotchi-bg-none', image: './assets/supreme_kai_world.png' },
-            { name: 'rocky_canyon', displayName: 'Rocky Canyon', unlockLevel: 170, icon: '☄️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
-            { name: 'beerus', displayName: 'Beerus\'s', unlockLevel: 200, icon: '🐈', theme: 'tamagotchi-bg-none', image: './assets/beerus_planet.png' },
+            { name: 'pilaf', displayName: 'Pilaf Castle', unlockLevel: 1, icon: '🏰', theme: 'tamagotchi-bg-none', image: './assets/pilaf_castle.png' },
+            { name: 'muscle_tower', displayName: 'Muscle Tower', unlockLevel: 1, icon: '❄️', theme: 'tamagotchi-bg-none', image: './assets/muscle_tower.png' },
+            { name: 'arena', displayName: 'Tournament', unlockLevel: 1, icon: '🏆', theme: 'tamagotchi-bg-arena', image: './assets/tournament_arena.png' },
+            { name: 'lookout', displayName: 'Kami\'s Lookout', unlockLevel: 1, icon: '🏛️', theme: 'tamagotchi-bg-mountain', image: './assets/kamis_lookout.png' },
+            { name: 'korin', displayName: 'Korin Tower', unlockLevel: 1, icon: '🐱', theme: 'tamagotchi-bg-mountain', image: './assets/kamis_lookout.png' },
+            { name: 'wasteland', displayName: 'Wasteland', unlockLevel: 1, icon: '🏜️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
+            { name: 'snake_way', displayName: 'Snake Way', unlockLevel: 1, icon: '🐍', theme: 'tamagotchi-bg-none', image: './assets/king_kais_planet.png' },
+            { name: 'king_kai', displayName: 'King Kai\'s', unlockLevel: 1, icon: '🪐', theme: 'tamagotchi-bg-none', image: './assets/king_kais_planet.png' },
+            { name: 'namek', displayName: 'Planet Namek', unlockLevel: 1, icon: '🌌', theme: 'tamagotchi-bg-mountain', image: './assets/planet_namek.png' },
+            { name: 'frieza_ship', displayName: 'Frieza Ship', unlockLevel: 1, icon: '🛸', theme: 'tamagotchi-bg-none', image: './assets/planet_namek.png' },
+            { name: 'dying_namek', displayName: 'Dying Namek', unlockLevel: 1, icon: '🌋', theme: 'tamagotchi-bg-mountain', image: './assets/planet_namek.png' },
+            { name: 'time_chamber', displayName: 'H.T.C', unlockLevel: 1, icon: '⚪', theme: 'tamagotchi-bg-none', image: './assets/time_chamber.png' },
+            { name: 'cell_arena', displayName: 'Cell Games', unlockLevel: 1, icon: '🥋', theme: 'tamagotchi-bg-arena', image: './assets/tournament_arena.png' },
+            { name: 'kai_world', displayName: 'Kai World', unlockLevel: 1, icon: '🌳', theme: 'tamagotchi-bg-none', image: './assets/supreme_kai_world.png' },
+            { name: 'inside_buu', displayName: 'Inside Buu', unlockLevel: 1, icon: '🧠', theme: 'tamagotchi-bg-none', image: './assets/supreme_kai_world.png' },
+            { name: 'rocky_canyon', displayName: 'Rocky Canyon', unlockLevel: 1, icon: '☄️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
+            { name: 'beerus', displayName: 'Beerus\'s', unlockLevel: 1, icon: '🐈', theme: 'tamagotchi-bg-none', image: './assets/beerus_planet.png' },
+            { name: 'grand_palace', displayName: 'Grand Palace', unlockLevel: 1, icon: '✨', theme: 'tamagotchi-bg-none', image: './assets/time_chamber.png' },
         ];
         // Expose globally so battle restore can look up the saved background image
         window.BACKGROUND_UNLOCKS = BACKGROUND_UNLOCKS;
@@ -869,18 +870,6 @@
 
             html += `</div></div>`;
 
-            // Add Motion Control section (for iOS gyro)
-            html += `<div class="animation-category" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
-                <div class="animation-category-title">⚡ Motion Control</div>
-                <div style="padding: 0 10px;">
-                    <button onclick="requestMotionPermission().then(granted => { if(granted) this.innerHTML = '✅ Motion Enabled'; else alert('Motion permission required for tilt effects.') })" 
-                            style="width: 100%; padding: 12px; border-radius: 8px; border: none; background: linear-gradient(135deg, #6366f1, #a855f7); color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <span>📱</span> Enable Motion Effects
-                    </button>
-                    <p style="font-size: 0.65rem; color: rgba(255,255,255,0.6); margin-top: 8px; text-align: center;">Required on iOS for tilt effects. Android/Desktop can also use touch & mouse.</p>
-                </div>
-            </div>`;
-
             html += `
                     </div>
                 </div>
@@ -965,11 +954,19 @@
                 };
 
                 // For now, put the main image in the mid layer
-                // In a future update, we can slice these into separate transparent PNGs
                 if (layers.mid) {
                     layers.mid.style.backgroundImage = `url('${bg.image}')`;
                     layers.back.style.backgroundImage = 'none';
                     layers.front.style.backgroundImage = 'none';
+
+                    // Adjust vertical alignment for specific backgrounds to provide more floor space
+                    if (bgName === 'mt_paozu' || bgName === 'pilaf') {
+                        layers.mid.style.backgroundPosition = 'center 35%'; // Pulls the image UP to show more floor
+                    } else if (bgName === 'namek') {
+                        layers.mid.style.backgroundPosition = 'center 45%';
+                    } else {
+                        layers.mid.style.backgroundPosition = 'center center';
+                    }
                 }
 
                 // Apply Time of Day Sync
@@ -1032,35 +1029,32 @@
             else container.classList.add('bg-time-night');
         }
 
-        // Helper: Initialize Parallax Effect based on touch/gyro
+        // Helper: Initialize Parallax Effect (Reverted to Touch/Mouse Only)
         function setupBgParallax(container, layers) {
-            let lastX = 0, lastY = 0;
-            let targetX = 0, targetY = 0;
-            let currentX = 0, currentY = 0;
+            let currentX = 0;
+            let currentY = 0;
 
             const updateLayers = (x, y) => {
-                // Smoothing (lerp)
+                // Smoothing
                 currentX += (x - currentX) * 0.1;
                 currentY += (y - currentY) * 0.1;
 
-                // Move layers at different speeds (High Intensity)
-                // We add a subtle rotation for extra "3D" feeling
-                const rotationX = currentY * 5; // Rotate around X axis (tilt up/down)
-                const rotationY = currentX * -5; // Rotate around Y axis (tilt left/right)
-
-                if (layers.back) layers.back.style.transform = `translateX(${currentX * -40}px) translateY(${currentY * -20}px) scale(1.1)`;
-                if (layers.mid) layers.mid.style.transform = `translateX(${currentX * -80}px) translateY(${currentY * -40}px) scale(1.05) rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
-                if (layers.front) layers.front.style.transform = `translateX(${currentX * -150}px) translateY(${currentY * -80}px) scale(1.15)`;
+                // Subtle parallax shift as requested by user
+                if (layers.back) layers.back.style.transform = `translateX(${currentX * -20}px) translateY(${currentY * -10}px)`;
+                if (layers.mid) layers.mid.style.transform = `translateX(${currentX * -45}px) translateY(${currentY * -20}px)`;
+                if (layers.front) layers.front.style.transform = `translateX(${currentX * -80}px) translateY(${currentY * -40}px)`;
             };
 
             const handleMove = (e) => {
                 if (window.isDuringBattle) return;
                 
                 let x = 0, y = 0;
-                if (e.type === 'touchmove') {
-                    // Increased sensitivity for touch
-                    x = (e.touches[0].clientX / window.innerWidth - 0.5) * 3;
-                    y = (e.touches[0].clientY / window.innerHeight - 0.5) * 3;
+                if (e.type === 'touchmove' || e.type === 'touchstart') {
+                    const touch = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : null);
+                    if (touch) {
+                        x = (touch.clientX / window.innerWidth - 0.5) * 2;
+                        y = (touch.clientY / window.innerHeight - 0.5) * 2;
+                    }
                 } else {
                     x = (e.clientX / window.innerWidth - 0.5) * 2;
                     y = (e.clientY / window.innerHeight - 0.5) * 2;
@@ -1068,31 +1062,15 @@
                 updateLayers(x, y);
             };
 
-            const initGyro = () => {
-                if (!container._gyroHandler) {
-                    container._gyroHandler = (event) => {
-                        if (window.isDuringBattle || !container.style.display || container.style.display === 'none') return;
-                        const x = (event.gamma || 0) / 25; 
-                        const y = ((event.beta || 45) - 45) / 25; 
-                        updateLayers(x, y);
-                    };
-                    window.addEventListener('deviceorientation', container._gyroHandler);
-                }
-            };
-
-            window.addEventListener('gyroPermissionGranted', initGyro);
-
-            initGyro();
-
             container.removeEventListener('mousemove', container._parallaxHandler);
+            container.removeEventListener('touchstart', container._parallaxHandler);
             container.removeEventListener('touchmove', container._parallaxHandler);
             
             container._parallaxHandler = handleMove;
             container.addEventListener('mousemove', handleMove);
+            container.addEventListener('touchstart', handleMove, { passive: true });
             container.addEventListener('touchmove', handleMove, { passive: true });
-
-            // Request permission for motion on iOS
-            // Add a "Breath" class for idle animation if no movement
+            
             if (layers.mid) layers.mid.classList.add('bg-breathing');
         }
 
