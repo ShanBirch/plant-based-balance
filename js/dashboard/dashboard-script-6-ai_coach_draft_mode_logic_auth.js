@@ -4955,7 +4955,7 @@ async function loadDirectMessages(recipientId) {
             const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             // Check if it's a game invite or turn notification
-            const isGameMessage = msg.message.includes('🎮') && (msg.message.includes('challenge') || msg.message.includes('Tap here to play!') || msg.message.includes('turn'));
+            const isGameMessage = msg.message.includes('🎮') && (msg.message.includes('challenged') || msg.message.includes('accepted') || msg.message.includes('turn') || msg.message.includes('won') || msg.message.includes('challenge'));
             const clickHandler = isGameMessage && !isSent ? `onclick="handleGameMessageClick('${msg.sender_id}')" style="cursor:pointer;"` : '';
             const extraStyle = isGameMessage && !isSent ? 'border: 2px solid #F59E0B; background: linear-gradient(to right, #FFFBEB, #FEF3C7); color: #B45309;' : `background: ${isSent ? 'var(--primary)' : 'white'}; color: ${isSent ? 'white' : 'var(--text-main)'};`;
 
