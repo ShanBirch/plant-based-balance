@@ -568,6 +568,9 @@
             { name: 'mountain', displayName: 'Mountain', unlockLevel: 40, icon: '⛰️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
             { name: 'king_kai', displayName: 'King Kai\'s', unlockLevel: 50, icon: '🪐', theme: 'tamagotchi-bg-none', image: './assets/king_kais_planet.png' },
             { name: 'namek', displayName: 'Namek', unlockLevel: 70, icon: '🌌', theme: 'tamagotchi-bg-mountain', image: './assets/planet_namek.png' },
+            { name: 'time_chamber', displayName: 'H.T.C', unlockLevel: 100, icon: '⚪', theme: 'tamagotchi-bg-none', image: './assets/time_chamber.png' },
+            { name: 'kai_world', displayName: 'Kai World', unlockLevel: 120, icon: '🌳', theme: 'tamagotchi-bg-none', image: './assets/supreme_kai_world.png' },
+            { name: 'beerus', displayName: 'Beerus\'s', unlockLevel: 150, icon: '🐈', theme: 'tamagotchi-bg-none', image: './assets/beerus_planet.png' },
         ];
         // Expose globally so battle restore can look up the saved background image
         window.BACKGROUND_UNLOCKS = BACKGROUND_UNLOCKS;
@@ -930,7 +933,7 @@
             if (floor) floor.style.display = 'none';
 
             // Check if it's a dynamic DBZ-themed background
-            const isDynamic = ['kame_house', 'arena', 'lookout', 'king_kai', 'namek'].includes(bgName);
+            const isDynamic = ['kame_house', 'arena', 'lookout', 'king_kai', 'namek', 'time_chamber', 'kai_world', 'beerus'].includes(bgName);
 
             if (isDynamic && dynamicBg) {
                 if (staticBg) staticBg.style.display = 'none';
@@ -1010,21 +1013,39 @@
 
         // Helper: Initialize Parallax Effect based on touch/gyro
         function setupBgParallax(container, layers) {
+            const updateLayers = (x, y) => {
+                // Move layers at different speeds (Increased Intensity)
+                if (layers.back) layers.back.style.transform = `translateX(${x * -30}px) translateY(${y * -10}px)`;
+                if (layers.mid) layers.mid.style.transform = `translateX(${x * -60}px) translateY(${y * -20}px)`;
+                if (layers.front) layers.front.style.transform = `translateX(${x * -100}px) translateY(${y * -40}px)`;
+            };
+
             const handleMove = (e) => {
-                if (window.isDuringBattle) return; // Disable during battle for stability
+                if (window.isDuringBattle) return;
                 
-                let x = 0;
+                let x = 0, y = 0;
                 if (e.type === 'touchmove') {
                     x = e.touches[0].clientX / window.innerWidth - 0.5;
+                    y = e.touches[0].clientY / window.innerHeight - 0.5;
                 } else {
                     x = e.clientX / window.innerWidth - 0.5;
+                    y = e.clientY / window.innerHeight - 0.5;
                 }
-
-                // Move layers at different speeds
-                if (layers.back) layers.back.style.transform = `translateX(${x * -10}px)`;
-                if (layers.mid) layers.mid.style.transform = `translateX(${x * -25}px)`;
-                if (layers.front) layers.front.style.transform = `translateX(${x * -50}px)`;
+                updateLayers(x, y);
             };
+
+            // Support Gyroscope for premium feeling on mobile
+            // Use a separate handler for gyro to avoid listener conflicts
+            if (!container._gyroHandler) {
+                container._gyroHandler = (event) => {
+                    if (window.isDuringBattle || !container.style.display || container.style.display === 'none') return;
+                    // event.gamma = tilt left/right, event.beta = tilt front/back
+                    const x = event.gamma ? event.gamma / 45 : 0; 
+                    const y = event.beta ? (event.beta - 45) / 45 : 0; 
+                    updateLayers(x, y);
+                };
+                window.addEventListener('deviceorientation', container._gyroHandler);
+            }
 
             container.removeEventListener('mousemove', container._parallaxHandler);
             container.removeEventListener('touchmove', container._parallaxHandler);
@@ -1033,6 +1054,8 @@
             container.addEventListener('mousemove', handleMove);
             container.addEventListener('touchmove', handleMove, { passive: true });
         }
+
+
 
         // Helper: Weather effects (rain, clouds)
         function updateWeatherEffects(bgName) {
