@@ -4963,6 +4963,12 @@ async function loadDirectMessages(recipientId) {
                 <div style="display: flex; justify-content: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
                     <div \${clickHandler} style="max-width: 75%; padding: 10px 14px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; \${extraStyle} box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                         <div style="font-size: 0.9rem; line-height: 1.4;">\${msg.message}</div>
+                        \${isGameMessage && !isSent ? \`
+                        <div style="margin-top: 10px;">
+                            <button onclick="handleGameMessageClick('\${msg.sender_id}'); event.stopPropagation();" style="width: 100%; padding: 8px 12px; background: #F59E0B; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);">
+                                🎮 \${msg.message.includes('challenge') ? 'Accept Challenge' : (msg.message.includes('turn') ? 'Take Turn' : 'Play Game')}
+                            </button>
+                        </div>\` : ''}
                         <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px; text-align: right;">\${time}</div>
                     </div>
                 </div>
