@@ -334,6 +334,14 @@ async function applyAppTheme(themeKey) {
         <div id="tamagotchi-widget-container" style="background: #1a1a2e; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 0; overflow: hidden; margin: 0; height: 420px; position: relative;">
             <!-- Room floor with perspective depth (hidden when static bg is active) -->
             <div id="tamagotchi-floor" style="position: absolute; bottom: 0; left: 0; right: 0; height: 55%; background: linear-gradient(180deg, transparent 0%, rgba(30,40,60,0.3) 20%, rgba(40,55,80,0.6) 50%, rgba(50,70,100,0.8) 80%, rgba(60,85,120,0.95) 100%); transform: perspective(500px) rotateX(25deg); transform-origin: bottom center; pointer-events: none; z-index: 1; display: none;"></div>
+            <!-- Dynamic Background (DBZ Style) -->
+            <div id="tamagotchi-dynamic-bg" class="dynamic-bg-container" style="display: none;">
+                <div id="bg-layer-back" class="bg-layer bg-layer-back"></div>
+                <div id="bg-layer-mid" class="bg-layer bg-layer-mid"></div>
+                <div id="bg-layer-front" class="bg-layer bg-layer-front"></div>
+                <div id="rain-overlay" class="rain-overlay"></div>
+                <div id="cloud-layer" class="cloud-layer"></div>
+            </div>
             <!-- Static gym background image -->
             <div id="tamagotchi-static-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; display: none;"></div>
             <!-- 3D Background Environment - part of the scene with camera sync -->
@@ -3172,8 +3180,8 @@ async function applyAppTheme(themeKey) {
                 <div class="card-body" style="max-height: none; padding: 25px; opacity: 1; display: flex; align-items: center; gap: 20px;">
                     <div style="background: var(--accent-green); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🌿</div>
                     <div>
-                        <h4 style="margin: 0 0 5px 0; border: none; padding: 0;">Current Phase</h4>
-                        <p style="margin: 0; font-weight: 500; color: var(--primary);">Week 1: The Flush</p>
+                        <h4 id="dashboard-current-phase-title" style="margin: 0 0 5px 0; border: none; padding: 0;">Current Phase</h4>
+                        <p id="dashboard-current-phase-name" style="margin: 0; font-weight: 500; color: var(--primary);">Week 1: The Flush</p>
                         <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">View today's menu &rarr;</p>
                     </div>
                 </div>
@@ -18783,6 +18791,35 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
     setTimeout(() => {
         if (window.currentUser) loadMyCards().then(() => renderDashboardCustomCards());
     }, 3000);
+})();
+</script>
+
+<!-- CRITICAL: Immediate check for male user to prevent UI flash -->
+<script>
+(function() {
+    if (localStorage.getItem('userGender') === 'male') {
+        document.body.classList.add('male-theme');
+        document.body.classList.remove('female-theme');
+        
+        // Fast early-update for current phase
+        const pTitle = document.getElementById('dashboard-current-phase-title');
+        const pName = document.getElementById('dashboard-current-phase-name');
+        if (pTitle) pTitle.textContent = 'Current Phase';
+        if (pName) pName.textContent = 'Performance Mode';
+        
+        // Update nav icon label
+        const nLabel = document.getElementById('nav-cycle-label');
+        if (nLabel) nLabel.textContent = 'Calendar';
+        
+        // Adjust CSS directly to hide female sections immediately
+        const style = document.createElement('style');
+        style.textContent = `
+            #check-in-period-section, #check-in-cervical-section, #cycle-hero-card,
+            #check-in-prompt-card, #check-in-completed-card, .female-only-chip { display: none !important; }
+            #check-in-recovery-section, .male-only-chip { display: block !important; }
+        `;
+        document.head.appendChild(style);
+    }
 })();
 </script>
 

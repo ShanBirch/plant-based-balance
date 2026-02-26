@@ -6026,6 +6026,12 @@ function applyGenderSpecificUI() {
         if (phaseName) phaseName.textContent = 'Performance Mode';
         if (phaseDesc) phaseDesc.textContent = 'Optimized training based on your recovery and energy levels.';
         if (phaseIcon) phaseIcon.textContent = '💪';
+        
+        // Fix dashboard quick-action card for males
+        const dashboardPhaseTitle = document.getElementById('dashboard-current-phase-title');
+        const dashboardPhaseName = document.getElementById('dashboard-current-phase-name');
+        if (dashboardPhaseTitle) dashboardPhaseTitle.textContent = 'Current Phase';
+        if (dashboardPhaseName) dashboardPhaseName.textContent = 'Performance Mode';
 
         // Hide cycle day badge parent
         const cycleDayBadge = document.getElementById('cycle-day-display');

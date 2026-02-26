@@ -559,10 +559,15 @@
         const BACKGROUND_UNLOCKS = [
             { name: 'none', displayName: 'Default', unlockLevel: 1, icon: '🌑', theme: 'tamagotchi-bg-none', image: null },
             { name: 'gym', displayName: 'Gym', unlockLevel: 5, icon: '🏋️', theme: 'tamagotchi-bg-gym', image: './assets/gym_bg.jpeg' },
+            { name: 'kame_house', displayName: 'Kame House', unlockLevel: 1, icon: '🏠', theme: 'tamagotchi-bg-home', image: './assets/kame_house.png' },
             { name: 'park', displayName: 'Park', unlockLevel: 10, icon: '🌳', theme: 'tamagotchi-bg-park', image: './assets/park.jpeg' },
-            { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏠', theme: 'tamagotchi-bg-home', image: './assets/home.jpeg' },
+            { name: 'arena', displayName: 'Tournament', unlockLevel: 15, icon: '🏆', theme: 'tamagotchi-bg-arena', image: './assets/tournament_arena.png' },
+            { name: 'home', displayName: 'Home', unlockLevel: 20, icon: '🏘️', theme: 'tamagotchi-bg-home', image: './assets/home.jpeg' },
+            { name: 'lookout', displayName: 'Kami\'s Lookout', unlockLevel: 30, icon: '🏛️', theme: 'tamagotchi-bg-mountain', image: './assets/kamis_lookout.png' },
             { name: 'beach', displayName: 'Beach', unlockLevel: 30, icon: '🏖️', theme: 'tamagotchi-bg-beach', image: './assets/beach.jpeg' },
             { name: 'mountain', displayName: 'Mountain', unlockLevel: 40, icon: '⛰️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
+            { name: 'king_kai', displayName: 'King Kai\'s', unlockLevel: 50, icon: '🪐', theme: 'tamagotchi-bg-none', image: './assets/king_kais_planet.png' },
+            { name: 'namek', displayName: 'Namek', unlockLevel: 70, icon: '🌌', theme: 'tamagotchi-bg-mountain', image: './assets/planet_namek.png' },
         ];
         // Expose globally so battle restore can look up the saved background image
         window.BACKGROUND_UNLOCKS = BACKGROUND_UNLOCKS;
@@ -899,43 +904,82 @@
         // Select and apply a background theme from the Unlocks panel
         window.selectBackground = function(bgName) {
             const bg = (window.BACKGROUND_UNLOCKS || BACKGROUND_UNLOCKS).find(b => b.name === bgName);
-            if (!bg || !bg.theme) return;
+            if (!bg) return;
 
             const container = document.getElementById('tamagotchi-widget-container');
+            const dynamicBg = document.getElementById('tamagotchi-dynamic-bg');
+            const staticBg = document.getElementById('tamagotchi-static-bg');
+            const bgModel = document.getElementById('tamagotchi-bg-model');
+            const floor = document.getElementById('tamagotchi-floor');
+            
             if (!container) return;
 
             // Remove all background CSS theme classes
-            ALL_BG_THEME_CLASSES.forEach(theme => container.classList.remove(theme));
+            const ALL_THEME_CLEANUP = [
+                'tamagotchi-bg-gym', 'tamagotchi-bg-park', 'tamagotchi-bg-home',
+                'tamagotchi-bg-beach', 'tamagotchi-bg-mountain',
+                'tamagotchi-bg-dojo', 'tamagotchi-bg-arena', 'tamagotchi-bg-none'
+            ];
+            ALL_THEME_CLEANUP.forEach(theme => container.classList.remove(theme));
 
             // Apply the selected CSS theme (gradient backdrop)
-            container.classList.add(bg.theme);
+            if (bg.theme) container.classList.add(bg.theme);
 
-            // Handle background display - ALL backgrounds use static images now
-            const bgModel = document.getElementById('tamagotchi-bg-model');
-            const floor = document.getElementById('tamagotchi-floor');
-            const staticBg = document.getElementById('tamagotchi-static-bg');
-
-            // Hide 3D model and floor - we use static images for everything
+            // Hide 3D model and floor by default
             if (bgModel) bgModel.style.display = 'none';
             if (floor) floor.style.display = 'none';
 
-            if (bg.image && staticBg) {
-                // Show static background image
-                staticBg.style.display = 'block';
-                staticBg.style.backgroundImage = "url('" + bg.image + "')";
-                staticBg.style.backgroundSize = 'cover';
-                staticBg.style.backgroundPosition = 'center center';
-            } else if (staticBg) {
-                // No image available (e.g. Home) - hide static bg, show floor as fallback
-                staticBg.style.display = 'none';
-                if (floor) floor.style.display = 'block';
+            // Check if it's a dynamic DBZ-themed background
+            const isDynamic = ['kame_house', 'arena', 'lookout', 'king_kai', 'namek'].includes(bgName);
+
+            if (isDynamic && dynamicBg) {
+                if (staticBg) staticBg.style.display = 'none';
+                dynamicBg.style.display = 'block';
+                
+                // Initialize Dynamic Layers
+                const layers = {
+                    back: document.getElementById('bg-layer-back'),
+                    mid: document.getElementById('bg-layer-mid'),
+                    front: document.getElementById('bg-layer-front')
+                };
+
+                // For now, put the main image in the mid layer
+                // In a future update, we can slice these into separate transparent PNGs
+                if (layers.mid) {
+                    layers.mid.style.backgroundImage = `url('${bg.image}')`;
+                    layers.back.style.backgroundImage = 'none';
+                    layers.front.style.backgroundImage = 'none';
+                }
+
+                // Apply Time of Day Sync
+                applyTimeOfDayToBg(dynamicBg);
+                
+                // Initialize Weather if applicable (e.g. Namek or Lookout can have clouds/rain)
+                updateWeatherEffects(bgName);
+
+                // Setup Parallax
+                setupBgParallax(container, layers);
+
+            } else {
+                // Standard static backgrounds
+                if (dynamicBg) dynamicBg.style.display = 'none';
+                
+                if (bg.image && staticBg) {
+                    staticBg.style.display = 'block';
+                    staticBg.style.backgroundImage = "url('" + bg.image + "')";
+                    staticBg.style.backgroundSize = 'cover';
+                    staticBg.style.backgroundPosition = 'center center';
+                } else if (staticBg) {
+                    staticBg.style.display = 'none';
+                    if (floor) floor.style.display = 'block';
+                }
             }
 
             // Save selection to localStorage (skip in admin view-as mode)
             if (!window.isAdminViewing) {
                 localStorage.setItem('selectedBackground', bgName);
 
-                // Save background preference to Supabase for persistence across cache clears
+                // Save background preference to Supabase for persistence
                 if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
                     try {
                         dbHelpers.users.update(window.currentUser.id, { background_preference: bgName });
@@ -952,6 +996,93 @@
             const selectedEl = document.querySelector(`.bg-selector-item[data-bg="${bgName}"]`);
             if (selectedEl) selectedEl.classList.add('bg-selected');
         };
+
+        // Helper: Apply Time of Day Filters based on user's local time
+        function applyTimeOfDayToBg(container) {
+            const hour = new Date().getHours();
+            container.classList.remove('bg-time-dawn', 'bg-time-day', 'bg-time-dusk', 'bg-time-night');
+            
+            if (hour >= 5 && hour < 8) container.classList.add('bg-time-dawn');
+            else if (hour >= 8 && hour < 17) container.classList.add('bg-time-day');
+            else if (hour >= 17 && hour < 20) container.classList.add('bg-time-dusk');
+            else container.classList.add('bg-time-night');
+        }
+
+        // Helper: Initialize Parallax Effect based on touch/gyro
+        function setupBgParallax(container, layers) {
+            const handleMove = (e) => {
+                if (window.isDuringBattle) return; // Disable during battle for stability
+                
+                let x = 0;
+                if (e.type === 'touchmove') {
+                    x = e.touches[0].clientX / window.innerWidth - 0.5;
+                } else {
+                    x = e.clientX / window.innerWidth - 0.5;
+                }
+
+                // Move layers at different speeds
+                if (layers.back) layers.back.style.transform = `translateX(${x * -10}px)`;
+                if (layers.mid) layers.mid.style.transform = `translateX(${x * -25}px)`;
+                if (layers.front) layers.front.style.transform = `translateX(${x * -50}px)`;
+            };
+
+            container.removeEventListener('mousemove', container._parallaxHandler);
+            container.removeEventListener('touchmove', container._parallaxHandler);
+            
+            container._parallaxHandler = handleMove;
+            container.addEventListener('mousemove', handleMove);
+            container.addEventListener('touchmove', handleMove, { passive: true });
+        }
+
+        // Helper: Weather effects (rain, clouds)
+        function updateWeatherEffects(bgName) {
+            const rainOverlay = document.getElementById('rain-overlay');
+            const cloudLayer = document.getElementById('cloud-layer');
+            
+            if (!rainOverlay) return;
+            
+            // Clean up
+            rainOverlay.innerHTML = '';
+            rainOverlay.style.display = 'none';
+            if (cloudLayer) cloudLayer.style.display = 'none';
+
+            // Specific weather for certain backgrounds
+            if (bgName === 'namek') {
+                // Namek has green-ish clouds/mist + toxic rain
+                if (cloudLayer) {
+                    cloudLayer.style.display = 'block';
+                    cloudLayer.style.filter = 'hue-rotate(80deg) saturate(0.5)';
+                }
+                createRainEffect(rainOverlay);
+                rainOverlay.style.filter = 'hue-rotate(80deg) brightness(0.8)';
+            } else if (bgName === 'lookout') {
+                // High altitude clouds
+                if (cloudLayer) cloudLayer.style.display = 'block';
+            }
+
+            
+            // Toggle rain for testing or based on level?
+            // For now, let's keep it clear unless we add a weather API later.
+        }
+
+        // Helper: Create rain drops
+        function createRainEffect(container) {
+            if (!container) return;
+            container.innerHTML = '';
+            container.style.display = 'block';
+            const dropCount = 40;
+            for (let i = 0; i < dropCount; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'rain-drop';
+                drop.style.left = Math.random() * 110 - 5 + '%';
+                drop.style.top = Math.random() * 100 + '%';
+                drop.style.animationDelay = Math.random() * 1 + 's';
+                drop.style.animationDuration = 0.5 + Math.random() * 0.5 + 's';
+                container.appendChild(drop);
+            }
+        }
+
+
 
         // Listen for initial model load to log available animations and apply colors
         const initialModelViewer = document.getElementById('tamagotchi-model');
