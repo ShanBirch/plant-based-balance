@@ -5053,6 +5053,51 @@ window.handleGameMessageClick = async function(senderId) {
     }
 };
 
+// Listen for messages from service worker (web push notification clicks)
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'dm_message_click') {
+            const senderId = event.data.senderId;
+            const isGameInvite = event.data.isGameInvite;
+
+            if (isGameInvite && senderId) {
+                if (typeof window.handleGameMessageClick === 'function') {
+                    window.handleGameMessageClick(senderId);
+                }
+            } else if (senderId) {
+                if (typeof window.openDirectMessage === 'function') {
+                    window.openDirectMessage(senderId, 'Message', '');
+                }
+            }
+        }
+    });
+}
+
+// Check URL parameters for direct navigation from web push
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+    const senderId = urlParams.get('sender_id');
+
+    if (action === 'game_invite' && senderId) {
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        // Wait briefly for app to load auth, then open game
+        setTimeout(() => {
+            if (typeof window.handleGameMessageClick === 'function') {
+                window.handleGameMessageClick(senderId);
+            }
+        }, 1500);
+    } else if (action === 'open_dm' && senderId) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setTimeout(() => {
+            if (typeof window.openDirectMessage === 'function') {
+                window.openDirectMessage(senderId, 'Message', '');
+            }
+        }, 1500);
+    }
+});
+
 // Send direct message
 async function sendDirectMessage() {
     const input = document.getElementById('dm-input');

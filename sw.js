@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v26'; // v26: Pre-cache evolution models, remove FitGotchi load timeout
+const CACHE_NAME = 'pbb-app-v27'; // v27: update push notification handler to open games directly
 const MODEL_CACHE_NAME = 'pbb-models-v3'; // v3: add all evolution models so FitGotchi loads instantly
 const ASSETS = [
   './dashboard.html',
@@ -157,15 +157,30 @@ self.addEventListener('notificationclick', (e) => {
     clients.matchAll({ type: 'window', includeUnmatched: true }).then(clientList => {
       // Handle DM message notifications
       if (notificationData.type === 'dm_message') {
+        const isGameInvite = (e.notification.body || '').includes('🎮') || (e.notification.title || '').includes('🎮');
+        const senderId = notificationData.senderId || notificationData.sender_id || null;
+
         // Try to focus existing window
         for (let client of clientList) {
           if (client.url.includes('dashboard.html') && 'focus' in client) {
-            return client.focus();
+            return client.focus().then(client => {
+              client.postMessage({
+                type: 'dm_message_click',
+                isGameInvite: isGameInvite,
+                senderId: senderId
+              });
+              return client;
+            });
           }
         }
 
         // If no window exists, open dashboard
         if (clients.openWindow) {
+          if (isGameInvite && senderId) {
+            return clients.openWindow(`./dashboard.html?action=game_invite&sender_id=${senderId}`);
+          } else if (senderId) {
+            return clients.openWindow(`./dashboard.html?action=open_dm&sender_id=${senderId}`);
+          }
           return clients.openWindow('./dashboard.html');
         }
       }
