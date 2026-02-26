@@ -4935,14 +4935,19 @@ async function loadDirectMessages(recipientId) {
             const isSent = msg.sender_id === userId;
             const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            return `
+            // Check if it's a game invite or turn notification
+            const isGameMessage = msg.message.includes('🎮') && (msg.message.includes('challenge') || msg.message.includes('Tap here to play!') || msg.message.includes('turn'));
+            const clickHandler = isGameMessage && !isSent ? `onclick="handleGameMessageClick('${msg.sender_id}')" style="cursor:pointer;"` : '';
+            const extraStyle = isGameMessage && !isSent ? 'border: 2px solid #F59E0B; background: linear-gradient(to right, #FFFBEB, #FEF3C7); color: #B45309;' : `background: ${isSent ? 'var(--primary)' : 'white'}; color: ${isSent ? 'white' : 'var(--text-main)'};`;
+
+            return \`
                 <div style="display: flex; justify-content: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
-                    <div style="max-width: 75%; padding: 10px 14px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; background: ${isSent ? 'var(--primary)' : 'white'}; color: ${isSent ? 'white' : 'var(--text-main)'}; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 0.9rem; line-height: 1.4;">${msg.message}</div>
-                        <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px; text-align: right;">${time}</div>
+                    <div \${clickHandler} style="max-width: 75%; padding: 10px 14px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; \${extraStyle} box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <div style="font-size: 0.9rem; line-height: 1.4;">\${msg.message}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px; text-align: right;">\${time}</div>
                     </div>
                 </div>
-            `;
+            \`;
         }).join('');
 
         // Scroll to bottom
