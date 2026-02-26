@@ -2475,6 +2475,20 @@ async function updateFriendsCount() {
 // Initialize Friends View
 async function initFriendsView() {
     console.log('Initializing Feed View...');
+
+    // Ensure active-games-container exists at the top of the feed
+    let container = document.getElementById('active-games-container');
+    if (!container) {
+        const feedView = document.getElementById('view-feed') || document.querySelector('[id*="feed"]');
+        if (feedView) {
+            container = document.createElement('div');
+            container.id = 'active-games-container';
+            container.style.marginBottom = '15px';
+            // Insert at the very top of the feed
+            feedView.insertBefore(container, feedView.firstChild);
+        }
+    }
+
     // Hide dismissed promo cards
     if (localStorage.getItem('referral_banner_dismissed') === 'true') {
         const banner = document.getElementById('friends-referral-banner');
