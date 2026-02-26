@@ -1281,11 +1281,16 @@ window.showDMNotificationBanner = function showDMNotificationBanner(senderName, 
     banner.addEventListener('click', function() {
         banner.remove();
         if (senderId) {
-            // Open the DM conversation with this sender
-            if (typeof openDirectMessage === 'function') {
-                openDirectMessage(senderId, senderName || 'User', senderPhoto || '');
-            } else if (typeof window.switchAppTab === 'function') {
-                window.switchAppTab('social');
+            const isGameMessage = messageText.includes('🎮') && (messageText.includes('challenge') || messageText.includes('Tap here to play!') || messageText.includes('turn'));
+            if (isGameMessage && typeof window.handleGameMessageClick === 'function') {
+                window.handleGameMessageClick(senderId);
+            } else {
+                // Open the DM conversation with this sender
+                if (typeof openDirectMessage === 'function') {
+                    openDirectMessage(senderId, senderName || 'User', senderPhoto || '');
+                } else if (typeof window.switchAppTab === 'function') {
+                    window.switchAppTab('social');
+                }
             }
         }
     });
