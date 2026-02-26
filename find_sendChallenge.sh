@@ -1,0 +1,1 @@
+find . -type f -exec grep -Hn "sendChallenge" {} + > where_is_send.txt
