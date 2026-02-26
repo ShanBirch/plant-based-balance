@@ -4996,25 +4996,44 @@ window.handleGameMessageClick = async function(senderId) {
         showToast('Games system not ready.', 'error');
         return;
     }
-    showToast('Loading game...', 'info');
+    
+    // Show loading state
+    const originalText = '🎮 Loading game...';
+    showToast(originalText, 'info');
+    
     try {
         const games = await window.db.games.getUserGames(window.currentUser.id);
         if (!games || games.length === 0) {
-            showToast('Game not found or already finished.');
+            showToast('No active games found with this friend.');
             return;
         }
-        // Find the most relevant game with this sender
+        
+        // Find the most relevant game with this sender (pending or active)
         const game = games.find(g => 
             (g.challenger_id === senderId || g.opponent_id === senderId) &&
             (g.status === 'pending' || g.status === 'active')
         );
+        
         if (game) {
-            closeDirectMessageModal();
-            if (game.status === 'pending' && game.challenger_id === senderId) {
-                if (typeof window.handleGameInvite === 'function') {
-                    window.handleGameInvite(game.match_id);
+            // Close any modals that might be in the way
+            if (typeof closeDirectMessageModal === 'function') closeDirectMessageModal();
+            if (typeof closeMessageSelectorModal === 'function') closeMessageSelectorModal();
+            
+            if (game.status === 'pending') {
+                if (game.challenger_id === senderId) {
+                    // They challenged us - show the invite modal
+                    if (typeof window.handleGameInvite === 'function') {
+                        window.handleGameInvite(game.match_id);
+                    }
+                } else {
+                    // We challenged them - show the "Waiting" toast
+                    showToast('Waiting for friend to accept...', 'info');
+                    if (typeof window.openGameBoard === 'function') {
+                        window.openGameBoard(game.match_id);
+                    }
                 }
             } else {
+                // Game is already active - open the board
                 if (typeof window.openGameBoard === 'function') {
                     window.openGameBoard(game.match_id);
                 }
@@ -5024,7 +5043,7 @@ window.handleGameMessageClick = async function(senderId) {
         }
     } catch (e) {
         console.error('Error finding game:', e);
-        showToast('Error opening game.', 'error');
+        showToast('Error opening game. Please try again.', 'error');
     }
 };
 
