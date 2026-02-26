@@ -1,0 +1,1 @@
+find . -type f -name "*.html" -o -name "*.js" | xargs grep -l "Failed to send challenge" > bash_search.txt
