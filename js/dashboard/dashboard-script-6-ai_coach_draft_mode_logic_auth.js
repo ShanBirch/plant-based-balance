@@ -4972,6 +4972,43 @@ window.loadDirectMessages = loadDirectMessages;
 window.openDirectMessage = openDirectMessage;
 window.openMessageInbox = openMessageInbox;
 
+window.handleGameMessageClick = async function(senderId) {
+    if (!window.currentUser || !window.db || !window.db.games) {
+        showToast('Games system not ready.', 'error');
+        return;
+    }
+    showToast('Loading game...', 'info');
+    try {
+        const games = await window.db.games.getUserGames(window.currentUser.id);
+        if (!games || games.length === 0) {
+            showToast('Game not found or already finished.');
+            return;
+        }
+        // Find the most relevant game with this sender
+        const game = games.find(g => 
+            (g.challenger_id === senderId || g.opponent_id === senderId) &&
+            (g.status === 'pending' || g.status === 'active')
+        );
+        if (game) {
+            closeDirectMessageModal();
+            if (game.status === 'pending' && game.challenger_id === senderId) {
+                if (typeof window.handleGameInvite === 'function') {
+                    window.handleGameInvite(game.match_id);
+                }
+            } else {
+                if (typeof window.openGameBoard === 'function') {
+                    window.openGameBoard(game.match_id);
+                }
+            }
+        } else {
+            showToast('Game not found or already finished.');
+        }
+    } catch (e) {
+        console.error('Error finding game:', e);
+        showToast('Error opening game.', 'error');
+    }
+};
+
 // Send direct message
 async function sendDirectMessage() {
     const input = document.getElementById('dm-input');
