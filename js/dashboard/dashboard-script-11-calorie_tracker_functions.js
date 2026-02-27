@@ -2854,46 +2854,72 @@ async function loadMultiWeekData(numWeeks = 4) {
         const today = new Date();
         const startDate = new Date(today);
         startDate.setDate(startDate.getDate() - (numWeeks * 7));
+        const startDateStr = getLocalDateString(startDate);
 
-        const { data: allData, error } = await window.supabaseClient
-            .from('daily_nutrition')
-            .select('nutrition_date, total_calories, total_protein_g, total_carbs_g, total_fat_g, calorie_goal')
-            .eq('user_id', userId)
-            .gte('nutrition_date', getLocalDateString(startDate))
-            .order('nutrition_date', { ascending: true });
+        // Fetch nutrition and weigh-ins in parallel
+        const [nutritionResult, weighInResult] = await Promise.allSettled([
+            window.supabaseClient
+                .from('daily_nutrition')
+                .select('*')
+                .eq('user_id', userId)
+                .gte('nutrition_date', startDateStr)
+                .order('nutrition_date', { ascending: true }),
+            window.supabaseClient
+                .from('daily_weigh_ins')
+                .select('*')
+                .eq('user_id', userId)
+                .gte('weigh_in_date', startDateStr)
+                .order('weigh_in_date', { ascending: true })
+        ]);
 
-        if (error) {
-            console.error('Error loading multi-week:', error);
-            return;
-        }
+        const nutritionData = nutritionResult.status === 'fulfilled' ? (nutritionResult.value.data || []) : [];
+        const weighInData = weighInResult.status === 'fulfilled' ? (weighInResult.value.data || []) : [];
 
-        // Group by week
+        // Group into weeks
         const weeks = [];
-        for (let w = 0; w < numWeeks; w++) {
-            const weekStart = new Date(today);
-            weekStart.setDate(weekStart.getDate() - ((numWeeks - 1 - w) * 7 + 6));
+        for (let i = 0; i < numWeeks; i++) {
+            const weekStart = new Date(startDate);
+            weekStart.setDate(weekStart.getDate() + (i * 7));
             const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6);
+            weekEnd.setDate(weekEnd.getDate() + 7);
 
-            const weekData = (allData || []).filter(d => {
-                return d.nutrition_date >= getLocalDateString(weekStart) && d.nutrition_date <= getLocalDateString(weekEnd);
+            // Filter data for this week
+            const weekNutrition = nutritionData.filter(d => {
+                const date = new Date(d.nutrition_date + 'T12:00:00');
+                return date >= weekStart && date < weekEnd;
             });
 
-            const daysWithData = weekData.filter(d => d.total_calories > 0);
-            const totalCal = daysWithData.reduce((s, d) => s + (d.total_calories || 0), 0);
-            const totalPro = daysWithData.reduce((s, d) => s + (d.total_protein_g || 0), 0);
-            const totalCarb = daysWithData.reduce((s, d) => s + (d.total_carbs_g || 0), 0);
-            const totalFat = daysWithData.reduce((s, d) => s + (d.total_fat_g || 0), 0);
-            const count = daysWithData.length || 1;
+            const weekWeights = weighInData.filter(d => {
+                const date = new Date(d.weigh_in_date + 'T12:00:00');
+                return date >= weekStart && date < weekEnd;
+            });
+
+            // Calculate weekly aggregates
+            const daysLogged = weekNutrition.length;
+            const totalCal = weekNutrition.reduce((sum, d) => sum + (d.total_calories || 0), 0);
+            const totalPro = weekNutrition.reduce((sum, d) => sum + (d.total_protein_g || 0), 0);
+            const totalCarb = weekNutrition.reduce((sum, d) => sum + (d.total_carbs_g || 0), 0);
+            const totalFat = weekNutrition.reduce((sum, d) => sum + (d.total_fat_g || 0), 0);
+
+            const avgCal = daysLogged > 0 ? totalCal / daysLogged : 0;
+            const avgPro = daysLogged > 0 ? totalPro / daysLogged : 0;
+            const avgCarb = daysLogged > 0 ? totalCarb / daysLogged : 0;
+            const avgFat = daysLogged > 0 ? totalFat / daysLogged : 0;
+
+            // Calculate average weight for the week
+            const avgWeight = weekWeights.length > 0
+                ? weekWeights.reduce((sum, w) => sum + (parseFloat(w.weight_kg) || 0), 0) / weekWeights.length
+                : 0;
 
             weeks.push({
-                label: `Wk ${w + 1}`,
-                avgCal: Math.round(totalCal / count),
-                avgPro: Math.round(totalPro / count),
-                avgCarb: Math.round(totalCarb / count),
-                avgFat: Math.round(totalFat / count),
-                daysLogged: daysWithData.length,
-                totalCal: Math.round(totalCal)
+                start: getLocalDateString(weekStart),
+                totalCal: Math.round(totalCal),
+                avgCal: Math.round(avgCal),
+                avgPro: Math.round(avgPro),
+                avgCarb: Math.round(avgCarb),
+                avgFat: Math.round(avgFat),
+                avgWeight: avgWeight > 0 ? parseFloat(avgWeight.toFixed(1)) : 0,
+                daysLogged: daysLogged
             });
         }
 
@@ -2914,12 +2940,26 @@ function renderMultiWeekUI(weeks) {
         return;
     }
 
-    // Build sparklines for calories, protein, carbs, fat
+    const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+    const weightSuffix = preferLbs ? ' lbs' : ' kg';
+
+    // Prepare data for rendering
+    weeks.forEach(w => {
+        if (w.avgWeight > 0) {
+            w.avgWeightDisplay = preferLbs ? parseFloat((w.avgWeight * 2.20462).toFixed(1)) : w.avgWeight;
+        } else {
+            w.avgWeightDisplay = 0;
+        }
+    });
+
+    // Build sparklines for calories, protein, carbs, fat + NEW Total Intake and Weight
     const metrics = [
-        { key: 'avgCal', label: 'Calories', color: 'var(--primary)', suffix: '' },
-        { key: 'avgPro', label: 'Protein', color: '#3b82f6', suffix: 'g' },
-        { key: 'avgCarb', label: 'Carbs', color: '#f59e0b', suffix: 'g' },
-        { key: 'avgFat', label: 'Fat', color: '#ef4444', suffix: 'g' }
+        { key: 'totalCal', label: 'Total Intake', color: '#8b5cf6', suffix: ' kcal' },
+        { key: 'avgWeightDisplay', label: 'Weight', color: '#7BA883', suffix: weightSuffix },
+        { key: 'avgCal', label: 'Avg Calories', color: 'var(--primary)', suffix: ' kcal' },
+        { key: 'avgPro', label: 'Protein', color: '#3b82f6', suffix: ' g' },
+        { key: 'avgCarb', label: 'Carbs', color: '#f59e0b', suffix: ' g' },
+        { key: 'avgFat', label: 'Fat', color: '#ef4444', suffix: ' g' }
     ];
 
     let html = '';
@@ -2961,7 +3001,7 @@ function renderMultiWeekUI(weeks) {
                         return `<circle cx="${x}" cy="${y}" r="3" fill="${metric.color}" opacity="${i === values.length - 1 ? 1 : 0.4}"/>`;
                     }).join('')}
                 </svg>
-                <div class="sparkline-value">${current}${metric.suffix}</div>
+                <div class="sparkline-value">${current.toLocaleString()}${metric.suffix}</div>
                 <div class="sparkline-trend ${trendClass}">${trendText}</div>
             </div>
         `;

@@ -3650,7 +3650,7 @@
         font-size: 0.82rem;
         font-weight: 600;
         color: var(--text-main);
-        width: 55px;
+        width: 75px;
         flex-shrink: 0;
     }
     .sparkline-svg {
@@ -3661,9 +3661,9 @@
         font-size: 0.85rem;
         font-weight: 700;
         color: var(--text-main);
-        width: 60px;
-        text-align: right;
+        width: 85px;
         flex-shrink: 0;
+        text-align: right;
     }
     .sparkline-trend {
         font-size: 0.75rem;
