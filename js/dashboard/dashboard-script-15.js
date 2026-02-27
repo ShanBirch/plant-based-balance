@@ -262,11 +262,12 @@
         const modelViewer = document.getElementById('tamagotchi-model');
         if (modelViewer) {
             modelViewer.setAttribute('src', modelSrc);
-            // Apply character colors when model loads
+            // Apply character colors + idle animation when model loads
             modelViewer.addEventListener('load', function onLoad() {
                 if (window.applyCharacterColors) {
                     window.applyCharacterColors(modelViewer, modelSrc);
                 }
+                if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
                 modelViewer.removeEventListener('load', onLoad);
             });
         }
@@ -288,6 +289,11 @@
         const modelViewer = document.getElementById('tamagotchi-model');
         if (modelViewer) {
             modelViewer.setAttribute('src', rare.model);
+            // Apply idle/stand animation once model finishes loading
+            modelViewer.addEventListener('load', function onLoad() {
+                if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
+                modelViewer.removeEventListener('load', onLoad);
+            });
         }
         // Refresh active skin highlight in the already-rendered panel
         if (typeof window._refreshActiveSkin === 'function') {
@@ -307,6 +313,11 @@
         const modelViewer = document.getElementById('tamagotchi-model');
         if (modelViewer) {
             modelViewer.setAttribute('src', char.model);
+            // Apply idle/stand animation once model finishes loading — prevents T-pose
+            modelViewer.addEventListener('load', function onLoad() {
+                if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
+                modelViewer.removeEventListener('load', onLoad);
+            });
         }
         // Refresh active skin highlight in the already-rendered panel
         if (typeof window._refreshActiveSkin === 'function') {

@@ -1264,7 +1264,29 @@
 
 
 
-        // Listen for initial model load to log available animations and apply colors
+        // Shared helper: play the best available resting animation on a model-viewer.
+        // Priority: idle > stand > first available animation.
+        // Called on initial load AND whenever a new skin is set (including DBZ characters).
+        window.applyIdleAnimation = function(mv) {
+            if (!mv) return;
+            const anims = mv.availableAnimations || [];
+            if (!anims.length) return;
+
+            // Priority order for a natural resting pose
+            const preferred = ['idle', 'stand', 'stand_hands_on_hips', 'arms_up_still', 'fold_arms'];
+            let chosen = null;
+            for (const name of preferred) {
+                const match = anims.find(a => a.toLowerCase() === name.toLowerCase());
+                if (match) { chosen = match; break; }
+            }
+            // Fallback: use the very first animation in the model
+            if (!chosen) chosen = anims[0];
+
+            mv.animationName = chosen;
+            mv.play();
+        };
+
+        // Listen for initial model load to log available animations and apply colors + idle pose
         const initialModelViewer = document.getElementById('tamagotchi-model');
         if (initialModelViewer) {
             initialModelViewer.addEventListener('load', () => {
@@ -1278,8 +1300,12 @@
                 if (window.applyCharacterColors) {
                     window.applyCharacterColors(initialModelViewer, initialModelViewer.getAttribute('src'));
                 }
+
+                // Apply resting idle/stand animation so character doesn't T-pose
+                window.applyIdleAnimation(initialModelViewer);
             });
         }
+
 
         // ============================================================
         // CAMERA SYNC: Gym background rotates with character
