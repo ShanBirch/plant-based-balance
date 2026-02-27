@@ -1,4 +1,5 @@
-const RARE_TIERS = {
+(function() {
+    const RARE_TIERS = {
         LEGENDARY: { label: 'LEGENDARY', color: '#fbbf24', glow: 'rgba(251,191,36,0.4)', gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)', buyIn: 10000, weight: 1 },
         EPIC:      { label: 'EPIC',      color: '#a855f7', glow: 'rgba(168,85,247,0.4)', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)', buyIn: 5000,  weight: 3 },
         RARE:      { label: 'RARE',      color: '#3b82f6', glow: 'rgba(59,130,246,0.4)', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)', buyIn: 2500,  weight: 5 },
@@ -273,6 +274,9 @@ const RARE_TIERS = {
         if (typeof populateTamagotchiAnimations === 'function') {
             populateTamagotchiAnimations();
         }
+        if (typeof window.closeAnimationSelector === 'function') {
+            window.closeAnimationSelector();
+        }
         showToast(rare.emoji + ' ' + rare.name + ' skin equipped!', 'success');
     }
 
@@ -288,6 +292,9 @@ const RARE_TIERS = {
         if (typeof populateTamagotchiAnimations === 'function') {
             populateTamagotchiAnimations();
         }
+        if (typeof window.closeAnimationSelector === 'function') {
+            window.closeAnimationSelector();
+        }
         showToast(char.emoji + ' ' + char.name + ' skin equipped!', 'success');
     }
 
@@ -301,9 +308,11 @@ const RARE_TIERS = {
         } else if (typeof updateFitGotchi === 'function') {
             updateFitGotchi();
         }
-        // Refresh the tamagotchi modal skins display if open
         if (typeof populateTamagotchiAnimations === 'function') {
             populateTamagotchiAnimations();
+        }
+        if (typeof window.closeAnimationSelector === 'function') {
+            window.closeAnimationSelector();
         }
         showToast('Reverted to level skin!', 'success');
     }
@@ -893,5 +902,6 @@ const RARE_TIERS = {
     window.selectRareSkinFromDBZ = selectRareSkinFromDBZ;
     window.isRareUnlocked = isRareUnlocked;
     window.clearRareSkin = clearRareSkin;
+})();
 
 

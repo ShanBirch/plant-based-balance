@@ -350,76 +350,49 @@
                 if (xpTextEl) xpTextEl.textContent = `${lifetimePoints} XP (MAX)`;
             }
 
-            // Update Model if changed (but respect active rare skin)
-            if (modelViewer) {
-                const activeRareSkinId = localStorage.getItem('active_rare_skin');
-                if (activeRareSkinId && typeof RARE_COLLECTION !== 'undefined' && typeof isRareUnlocked === 'function') {
-                    const rareData = RARE_COLLECTION.find(r => r.id === activeRareSkinId);
-                    if (rareData && isRareUnlocked(activeRareSkinId)) {
-                        // Rare skin is active - use it instead of level evolution
-                        const currentSrc = modelViewer.getAttribute('src');
-                        if (currentSrc !== rareData.model) {
+            // Apply rare/evolution skin overrides if active
+            const activeRareSkinId = localStorage.getItem('active_rare_skin');
+            const activeEvoSkinOverride = localStorage.getItem('active_evolution_skin');
+
+            if (activeRareSkinId && window.RARE_COLLECTION && window.DBZ_COLLECTION) {
+                const rareData = [...window.RARE_COLLECTION, ...window.DBZ_COLLECTION].find(r => r.id === activeRareSkinId);
+                if (rareData) {
+                    const isUnlocked = window.DBZ_COLLECTION.some(c => c.id === activeRareSkinId) || 
+                                     (typeof window.isRareUnlocked === 'function' && window.isRareUnlocked(activeRareSkinId));
+                    if (isUnlocked) {
+                        if (modelViewer.getAttribute('src') !== rareData.model) {
                             modelViewer.setAttribute('src', rareData.model);
                         }
-                        // Skip the rest of model update (level evolution)
+                        if (window.applyCharacterColors) {
+                            window.applyCharacterColors(modelViewer, rareData.model);
+                        }
                     } else {
-                        // Rare skin invalid/locked, clear it
                         localStorage.removeItem('active_rare_skin');
                     }
                 }
+            } else if (activeEvoSkinOverride) {
+                if (modelViewer.getAttribute('src') !== activeEvoSkinOverride) {
+                    modelViewer.setAttribute('src', activeEvoSkinOverride);
+                }
+                if (window.applyCharacterColors) {
+                    window.applyCharacterColors(modelViewer, activeEvoSkinOverride);
+                }
+            } else {
                 const currentSrc = modelViewer.getAttribute('src');
-                const activeRareCheck = localStorage.getItem('active_rare_skin');
-                const activeEvoSkinCheck = localStorage.getItem('active_evolution_skin');
-
-                // Check for evolution skin override (user swapped to a different unlocked evolution)
-                if (!activeRareCheck && activeEvoSkinCheck) {
-                    if (currentSrc !== activeEvoSkinCheck) {
-                        modelViewer.setAttribute('src', activeEvoSkinCheck);
-                    }
-                } else if (!activeRareCheck && currentSrc !== currentEvolution.src) {
+                if (currentSrc !== currentEvolution.src) {
                     modelViewer.setAttribute('src', currentEvolution.src);
-
-                    // Trigger "evolution" effect if it actually changed
                     if (currentSrc) {
                         modelViewer.style.filter = 'brightness(3) contrast(1.2)';
                         setTimeout(() => modelViewer.style.filter = '', 500);
                     }
-
-                    // Log when new model's animations are loaded and apply character colors
-                    modelViewer.addEventListener('load', function onModelLoad() {
-                        console.log('Model loaded:', currentEvolution.src);
-                        console.log('Available animations:', modelViewer.availableAnimations);
-                        
-                        // Force opaque materials for all parts
-                        if (modelViewer.model) {
-                            modelViewer.model.materials.forEach(m => m.setAlphaMode("OPAQUE"));
-                        }
-
-                        // Apply user's custom character colors to the new model
-                        if (window.applyCharacterColors) {
-                            window.applyCharacterColors(modelViewer, currentEvolution.src);
-                        }
-                        
-                        // Setup correct Idle animation for the new model/gender
-                        setTimeout(() => {
-                            let idleAnim = 'idle';
-
-                            if (modelViewer.availableAnimations.includes(idleAnim)) {
-                                modelViewer.animationName = idleAnim;
-                                modelViewer.play();
-                            }
-                        }, 500);
-
-                        modelViewer.removeEventListener('load', onModelLoad);
-                    }, { once: true });
-                } else {
-                    // Model already loaded, just apply colors if not already done
-                    if (window.applyCharacterColors && modelViewer.model) {
-                        window.applyCharacterColors(modelViewer, currentSrc);
-                    }
                 }
+                if (window.applyCharacterColors) {
+                    window.applyCharacterColors(modelViewer, currentEvolution.src);
+                }
+            }
 
-                // Camera distance logic based on level (larger values = smaller character in room)
+            if (modelViewer) {
+                // Camera distance logic based on level
                 let cameraDist = 22.0;
                 if (level >= 99) cameraDist = 12.0;
                 else if (level >= 40) cameraDist = 18.0 - ((level - 40) / 59 * 6.0);
@@ -805,15 +778,14 @@
 
             html += `</div></div>`;
 
-            // Add Rare Skins section
             const activeRareSkin = localStorage.getItem('active_rare_skin') || '';
             html += `<div class="animation-category">
                 <div class="animation-category-title">💎 Rare Skins</div>
                 <div class="skin-levels-grid">`;
 
-            RARE_COLLECTION.forEach(rare => {
-                const rareUnlocked = isRareUnlocked(rare.id);
-                const tierData = RARE_TIERS[rare.tier];
+            (window.RARE_COLLECTION || []).forEach(rare => {
+                const rareUnlocked = (window.isRareUnlocked || (() => false))(rare.id);
+                const tierData = (window.RARE_TIERS || {})[rare.tier];
                 const isActive = activeRareSkin === rare.id;
                 if (rareUnlocked) {
                     html += `
@@ -842,7 +814,7 @@
 
                 window.DBZ_COLLECTION.forEach(char => {
                     const isActive = activeRareSkin === char.id;
-                    const tierData = RARE_TIERS[char.tier] || RARE_TIERS.EPIC;
+                    const tierData = (window.RARE_TIERS || {})[char.tier] || (window.RARE_TIERS || {}).EPIC;
                     html += `
                         <div class="skin-level-item unlocked${isActive ? ' rare-skin-active' : ''}" onclick="selectRareSkinFromDBZ('${char.id}')" style="cursor: pointer; position: relative; ${isActive ? 'border: 2px solid ' + tierData.color + '; box-shadow: 0 0 10px ' + tierData.glow + ';' : ''}">
                             <span class="skin-level-badge" style="background: ${tierData.gradient}; color: white; font-size: 0.55rem;">${tierData.label}</span>
@@ -851,16 +823,6 @@
                         </div>`;
                 });
                 html += `</div></div>`;
-            }
-
-            // Add "Use Level Skin" reset option if a rare or evolution override is active
-            if (activeRareSkin || activeEvoSkin) {
-                html += `
-                    <div class="skin-level-item unlocked" onclick="clearRareSkin()" style="cursor: pointer; border: 1px dashed rgba(255,255,255,0.3);">
-                        <span class="skin-level-badge" style="background: rgba(255,255,255,0.2); color: white; font-size: 0.55rem;">RESET</span>
-                        <span class="skin-level-icon">↩️</span>
-                        <span class="skin-level-title">Current Level</span>
-                    </div>`;
             }
 
             html += `</div></div>`;
