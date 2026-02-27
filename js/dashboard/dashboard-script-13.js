@@ -407,19 +407,45 @@
                     modelViewer.setAttribute('field-of-view', `${fov}deg`);
                 }
 
-                // Scale down both male and female characters equally via CSS transform
-                modelViewer.style.transform = 'scale(0.75)';
-                modelViewer.style.transformOrigin = 'center center';
+                // Scale logic: Kids and small characters need to be shrunk 
+                // so they don't look bigger than adults due to model proportions.
+                const viewport = document.getElementById('tamagotchi-viewport');
+                const modelSrc = modelViewer.getAttribute('src') || '';
+                const modelName = modelSrc.split('/').pop().toLowerCase();
+                
+                let scaleFactor = 0.75; // Default adult scale
+                const isSmallChar = modelName.includes('kid') || 
+                                   modelName.includes('baby') || 
+                                   modelName.includes('chaozu') || 
+                                   modelName.includes('dendi') || 
+                                   modelName.includes('oolong') ||
+                                   modelName.includes('guldo') ||
+                                   modelName.includes('goten') ||
+                                   modelName.includes('young_chi_chi');
+                
+                if (isSmallChar) {
+                    scaleFactor = 0.55; // Shrink the "box" for kids
+                }
+
+                const finalScale = `scale(${scaleFactor})`;
+                if (viewport) {
+                    viewport.style.transform = finalScale;
+                    viewport.style.transformOrigin = 'center center';
+                    // Reset modelViewer transform if it was set
+                    modelViewer.style.transform = '';
+                } else {
+                    modelViewer.style.transform = finalScale;
+                    modelViewer.style.transformOrigin = 'center center';
+                }
 
                 // Cache current model state for instant restore on next page load
-                // Skip in admin view-as mode to prevent character state leakage
                 if (!window.isAdminViewing) {
                     try {
                         var finalSrc = modelViewer.getAttribute('src');
                         if (finalSrc) localStorage.setItem('fitgotchi_model_src', finalSrc);
                         localStorage.setItem('fitgotchi_camera_orbit', `0deg 85deg ${cameraDist}m`);
                         localStorage.setItem('fitgotchi_fov', `${fov}deg`);
-                        localStorage.setItem('fitgotchi_scale', 'scale(0.75)');
+                        localStorage.setItem('fitgotchi_scale', finalScale);
                     } catch(e) {}
                 }
             }

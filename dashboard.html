@@ -374,27 +374,28 @@ async function applyAppTheme(themeKey) {
                 disable-zoom
                 disable-pan>
             </model-viewer>
-            <!-- Character model - starts with visible background, goes transparent after load so 3D environment shows through -->
-            <!-- src is set dynamically below to avoid baby model flash for returning users -->
-            <model-viewer
-                id="tamagotchi-model"
-                camera-controls
-                disable-zoom
-                disable-pan
-                auto-rotate
-                loading="eager"
-                rotation-intensity="0.5"
-                shadow-intensity="1.5"
-                shadow-softness="0.8"
-                exposure="0.9"
-                environment-image="neutral"
-                camera-orbit="0deg 85deg 22m"
-                field-of-view="55deg"
-                min-field-of-view="20deg"
-                max-field-of-view="120deg"
-                style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; --poster-color: #1a1a2e; touch-action: pan-y; background: #1a1a2e;"
-                interaction-prompt="none">
-            </model-viewer>
+            <!-- Character model viewport - the "box" used for scaling -->
+            <div id="tamagotchi-viewport" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; display: flex; align-items: center; justify-content: center; transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none; background: #1a1a2e; --poster-color: #1a1a2e;">
+                <model-viewer
+                    id="tamagotchi-model"
+                    camera-controls
+                    disable-zoom
+                    disable-pan
+                    auto-rotate
+                    loading="eager"
+                    rotation-intensity="0.5"
+                    shadow-intensity="1.5"
+                    shadow-softness="0.8"
+                    exposure="0.9"
+                    environment-image="neutral"
+                    camera-orbit="0deg 85deg 22m"
+                    field-of-view="55deg"
+                    min-field-of-view="20deg"
+                    max-field-of-view="120deg"
+                    style="width: 100%; height: 100%; position: relative; pointer-events: auto; background: transparent;"
+                    interaction-prompt="none">
+                </model-viewer>
+            </div>
             <script>
             // Set model src from cache (returning users) or default to baby (new users).
             // Runs before model-viewer custom element registers, so the correct model loads from the start.
@@ -408,13 +409,19 @@ async function applyAppTheme(themeKey) {
                 var cachedScale = localStorage.getItem('fitgotchi_scale');
                 var isReturning = localStorage.getItem('dashboardInitialized') === 'true';
 
+                var vp = document.getElementById('tamagotchi-viewport');
                 if (isReturning && cachedModel) {
                     mv.setAttribute('src', cachedModel);
                     if (cachedOrbit) mv.setAttribute('camera-orbit', cachedOrbit);
                     if (cachedFov) mv.setAttribute('field-of-view', cachedFov);
                     if (cachedScale) {
-                        mv.style.transform = cachedScale;
-                        mv.style.transformOrigin = 'center center';
+                        if (vp) {
+                            vp.style.transform = cachedScale;
+                            vp.style.transformOrigin = 'center center';
+                        } else {
+                            mv.style.transform = cachedScale;
+                            mv.style.transformOrigin = 'center center';
+                        }
                     }
                 } else {
                     mv.setAttribute('src', 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb');

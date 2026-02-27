@@ -320,8 +320,6 @@
     z-index: 3;
     --poster-color: transparent;
     background: transparent;
-    transform: scale(0.75);
-    transform-origin: center center;
   }
 
   .battle-viewport .battle-overlay-text {
@@ -2833,6 +2831,10 @@ function setupBattleModel() {
   mv.setAttribute('src', src);
   mv.removeAttribute('auto-rotate');
   mv.removeAttribute('camera-controls');
+  const savedScale = localStorage.getItem('fitgotchi_scale') || 'scale(0.75)';
+  mv.style.transform = savedScale;
+  mv.style.transformOrigin = 'center center';
+  
   const savedOrbit = localStorage.getItem('fitgotchi_camera_orbit');
   if (savedOrbit) {
     // Extract distance from saved orbit, use 0deg 85deg for battle

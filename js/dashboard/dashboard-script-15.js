@@ -316,6 +316,8 @@
             modelViewer.addEventListener('load', function onLoad() {
                 if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
                 modelViewer.removeEventListener('load', onLoad);
+                // Refresh scaling/camera distance for the new model
+                if (typeof updateFitGotchi === 'function') updateFitGotchi();
             });
         }
         // Refresh active skin highlight in the already-rendered panel
@@ -340,6 +342,8 @@
             modelViewer.addEventListener('load', function onLoad() {
                 if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
                 modelViewer.removeEventListener('load', onLoad);
+                // Refresh scaling/camera distance for the new model
+                if (typeof updateFitGotchi === 'function') updateFitGotchi();
             });
         }
         // Refresh active skin highlight in the already-rendered panel
