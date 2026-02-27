@@ -12114,9 +12114,16 @@ function viewWorkoutHistoryDetail(date) {
 
                 <!-- Daily Calorie Intake Graph -->
                 <div style="padding: 10px 20px 10px 20px;">
-                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">
-                        <span style="color: var(--primary);">&#x1F967;</span> Daily Calories
-                    </h3>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                        <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0;">
+                            <span style="color: var(--primary);">&#x1F967;</span> Daily Calories
+                        </h3>
+                        <div class="multi-week-nav" id="intake-timeframe-nav" style="margin: 0;">
+                            <button onclick="updateIntakeGraphTimeframe(7)">7D</button>
+                            <button onclick="updateIntakeGraphTimeframe(14)">14D</button>
+                            <button class="active" onclick="updateIntakeGraphTimeframe(30)">30D</button>
+                        </div>
+                    </div>
                     <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow);">
                         <div id="total-intake-graph">
                             <!-- Populated by JS -->

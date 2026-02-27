@@ -128,7 +128,6 @@ async function initProgressView() {
         }
 
         // Load nutrition data for daily calorie graph
-        let nutritionDays = [];
         try {
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -142,15 +141,16 @@ async function initProgressView() {
                 .order('nutrition_date', { ascending: true });
             
             if (error) throw error;
-            nutritionDays = data || [];
+            window._cachedIntakeData = data || [];
         } catch (e) {
             console.warn('Failed to load nutrition data for progress graph:', e);
+            window._cachedIntakeData = [];
         }
 
         // Render sections
         renderPersonalBests(personalBests, recentPBs);
         renderBodyWeightGraph(weighIns);
-        renderTotalIntakeGraph(nutritionDays);
+        renderTotalIntakeGraph(window._cachedIntakeData);
         renderProgressPhotosTimeline(progressPhotos);
         // renderCheckins(checkins); // UI removed in redesign
         await renderExerciseProgress(user.id, recentExercises);
@@ -474,28 +474,48 @@ function renderTotalIntakeGraph(nutritionDays) {
     svg += '</svg>';
 
     // Stats
-    const latestCal = calories[calories.length - 1];
-    const avgCal = Math.round(calories.reduce((a, b) => a + b, 0) / calories.length);
-    const dayCount = calories.length;
+    const latestCal = calories[calories.length - 1] || 0;
+    const avgCal = calories.length > 0 ? Math.round(calories.reduce((a, b) => a + b, 0) / calories.length) : 0;
+    
+    // Weekly total (sum of last 7 days of the provided data slice)
+    const last7 = calories.slice(-7);
+    const weeklyTotal = last7.reduce((a, b) => a + b, 0);
 
     const stats = `
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px;">
             <div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;">
-                <div style="font-size: 1.2rem; font-weight: 700; color: #6366f1;">${latestCal.toLocaleString()}</div>
-                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Today</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #6366f1;">${weeklyTotal.toLocaleString()}</div>
+                <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 3px; font-weight: 600; text-transform: uppercase;">Weekly Total</div>
             </div>
             <div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;">
-                <div style="font-size: 1.2rem; font-weight: 700; color: #6366f1;">${avgCal.toLocaleString()}</div>
-                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Avg Daily</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #6366f1;">${avgCal.toLocaleString()}</div>
+                <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 3px; font-weight: 600; text-transform: uppercase;">Daily Avg</div>
             </div>
             <div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;">
-                <div style="font-size: 1.2rem; font-weight: 700; color: #6366f1;">${dayCount}</div>
-                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Days Tracked</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #6366f1;">${latestCal.toLocaleString()}</div>
+                <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 3px; font-weight: 600; text-transform: uppercase;">Today</div>
             </div>
         </div>
     `;
 
     container.innerHTML = svg + stats;
+}
+
+// Update the intake graph timeframe and re-render
+function updateIntakeGraphTimeframe(days) {
+    const nav = document.getElementById('intake-timeframe-nav');
+    if (nav) {
+        nav.querySelectorAll('button').forEach(btn => {
+            const btnDays = parseInt(btn.innerText);
+            btn.classList.toggle('active', btnDays === days);
+        });
+    }
+
+    if (!window._cachedIntakeData) return;
+
+    // Slice the last X days from the cached data
+    const filteredData = window._cachedIntakeData.slice(-days);
+    renderTotalIntakeGraph(filteredData);
 }
 
 // Render Progress Photos Timeline - grid of weekly progress photos
