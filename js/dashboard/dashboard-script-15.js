@@ -223,14 +223,17 @@
         } else {
             waitAndPrefetch();
         }
-        // Expose constants for other scripts
+    })(); // end prefetchRareModels
+
+    // Expose constants for other scripts
     window.RARE_COLLECTION = RARE_COLLECTION;
     window.DBZ_COLLECTION = DBZ_COLLECTION;
     window.RARE_TIERS = RARE_TIERS;
     window.selectRareSkin = selectRareSkin;
     window.isRareUnlocked = isRareUnlocked;
     window.clearRareSkin = clearRareSkin;
-})();
+})(); // end outer IIFE
+
 
     // Helper: check if a rare skin is unlocked
     function isRareUnlocked(id) {
@@ -946,14 +949,7 @@
         }, { once: true });
     }
 
-    // Expose constants for other scripts
-    window.RARE_COLLECTION = RARE_COLLECTION;
-    window.DBZ_COLLECTION = DBZ_COLLECTION;
-    window.RARE_TIERS = RARE_TIERS;
-    window.selectRareSkin = selectRareSkin;
-    window.selectRareSkinFromDBZ = selectRareSkinFromDBZ;
-    window.isRareUnlocked = isRareUnlocked;
-    window.clearRareSkin = clearRareSkin;
-})();
+
+
 
 
