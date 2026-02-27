@@ -1,4 +1,24 @@
 (function() {
+    // ONE-TIME MIGRATION: fix cached model URLs that still contain the old /dbz/ path.
+    // This was a bug where DBZ model URLs pointed to /shannonsvideos/dbz/ instead of /shannonsvideos/.
+    // Without this, returning users who had a DBZ character selected see "could not load character".
+    try {
+        const keysToFix = ['fitgotchi_model_src', 'active_rare_skin'];
+        const cachedSrc = localStorage.getItem('fitgotchi_model_src');
+        if (cachedSrc && cachedSrc.includes('/shannonsvideos/dbz/')) {
+            localStorage.setItem('fitgotchi_model_src', cachedSrc.replace('/shannonsvideos/dbz/', '/shannonsvideos/'));
+        }
+        // Also fix window._fitgotchiCachedModel if it was set by the early script
+        if (window._fitgotchiCachedModel && window._fitgotchiCachedModel.includes('/shannonsvideos/dbz/')) {
+            window._fitgotchiCachedModel = window._fitgotchiCachedModel.replace('/shannonsvideos/dbz/', '/shannonsvideos/');
+            // Also patch the model-viewer src directly if it's already been set
+            const mv = document.getElementById('tamagotchi-model');
+            if (mv && mv.getAttribute('src') && mv.getAttribute('src').includes('/shannonsvideos/dbz/')) {
+                mv.setAttribute('src', mv.getAttribute('src').replace('/shannonsvideos/dbz/', '/shannonsvideos/'));
+            }
+        }
+    } catch(e) {}
+
     const RARE_TIERS = {
         LEGENDARY: { label: 'LEGENDARY', color: '#fbbf24', glow: 'rgba(251,191,36,0.4)', gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)', buyIn: 10000, weight: 1 },
         EPIC:      { label: 'EPIC',      color: '#a855f7', glow: 'rgba(168,85,247,0.4)', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)', buyIn: 5000,  weight: 3 },
