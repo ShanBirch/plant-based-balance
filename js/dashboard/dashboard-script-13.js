@@ -673,20 +673,68 @@
             return true;
         }
 
+        // ─── ANIMATION SELECTOR ──────────────────────────────────────────────────
+        // Performance note: with 80+ DBZ characters, avoid rebuilding innerHTML
+        // on every skin-click. Instead we cache the rendered panel and only do
+        // lightweight DOM updates (toggling CSS classes) when the active skin changes.
+
+        let _animSelectorBuilt = false; // true after first full build
+
+        // Lightweight update: flip active classes without rebuilding the whole panel.
+        // Called by selectRareSkin / selectRareSkinFromDBZ instead of a full rebuild.
+        window._refreshActiveSkin = function(newId) {
+            const container = document.getElementById('animation-selector-container');
+            if (!container || container.style.display === 'none') return;
+            // Remove all active states
+            container.querySelectorAll('.rare-skin-active').forEach(el => {
+                el.classList.remove('rare-skin-active');
+                el.style.border = '';
+                el.style.boxShadow = '';
+            });
+            if (!newId) return;
+            // Find the matching tile (data-id attribute)
+            const activeTile = container.querySelector(`[data-skin-id="${CSS.escape(newId)}"]`);
+            if (activeTile) {
+                activeTile.classList.add('rare-skin-active');
+                const glow = activeTile.dataset.skinGlow || 'rgba(168,85,247,0.4)';
+                const color = activeTile.dataset.skinColor || '#a855f7';
+                activeTile.style.border = `2px solid ${color}`;
+                activeTile.style.boxShadow = `0 0 10px ${glow}`;
+                // Scroll the tile into view inside the modal
+                activeTile.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        };
+
         // Build and show animation selector UI (exposed to window for onclick)
-        window.showAnimationSelector = function() {
+        window.showAnimationSelector = function(forceRebuild) {
             const mv = document.getElementById('tamagotchi-model');
             if (!mv) return;
 
+            // Create / find container
+            let container = document.getElementById('animation-selector-container');
+            const tamagotchiContainer = document.getElementById('tamagotchi-widget-container');
+            if (!container && tamagotchiContainer) {
+                container = document.createElement('div');
+                container.id = 'animation-selector-container';
+                container.className = 'animation-selector-container';
+                tamagotchiContainer.appendChild(container);
+            }
+            if (!container) return;
+
+            // If the panel is already built and we're just re-showing it, skip rebuild
+            if (_animSelectorBuilt && !forceRebuild) {
+                container.style.display = 'block';
+                // Still refresh the active skin highlight in case it changed
+                window._refreshActiveSkin(localStorage.getItem('active_rare_skin') || '');
+                return;
+            }
+
             const level = getCurrentUserLevel();
 
-            // Use ANIMATION_UNLOCKS directly - don't rely on availableAnimations detection
-            // The model has animations, we just show what's possible based on level
+            // ── Animation categories ──────────────────────────────────────────────
             const categories = {};
             ANIMATION_UNLOCKS.forEach(unlock => {
-                if (!categories[unlock.category]) {
-                    categories[unlock.category] = [];
-                }
+                if (!categories[unlock.category]) categories[unlock.category] = [];
                 categories[unlock.category].push({
                     name: unlock.name,
                     displayName: unlock.displayName,
@@ -708,59 +756,47 @@
                 'special': '⭐ Special'
             };
 
-            const selectorTitle = "Unlocks";
-
             let html = `
                 <div class="animation-selector-backdrop" onclick="closeAnimationSelector()"></div>
                 <div class="animation-selector-modal">
                     <div class="animation-selector-header">
-                        <h3>${selectorTitle}</h3>
+                        <h3>Unlocks</h3>
                         <span class="animation-selector-close" onclick="closeAnimationSelector()">&times;</span>
                     </div>
                     <div class="animation-selector-content">
             `;
 
             const categoryOrder = ['greetings', 'reactions', 'celebrations', 'exercise', 'combat', 'poses', 'dance', 'special'];
-
             categoryOrder.forEach(cat => {
-                if (categories[cat]?.length) {
-                    html += `<div class="animation-category">
-                        <div class="animation-category-title">${categoryNames[cat] || cat}</div>
-                        <div class="animation-grid">`;
-
-                    categories[cat].forEach(anim => {
-                        if (anim.isUnlocked) {
-                            html += `
-                                <div class="animation-item unlocked" onclick="playAnimationFromSelector('${anim.name}')">
-                                    <span class="animation-icon">${anim.icon}</span>
-                                    <span class="animation-name">${anim.displayName}</span>
-                                </div>`;
-                        } else {
-                            html += `
-                                <div class="animation-item locked">
-                                    <span class="animation-icon">🔒</span>
-                                    <span class="animation-name">${anim.displayName}</span>
-                                    <span class="animation-unlock-level">Lvl ${anim.unlockLevel}</span>
-                                </div>`;
-                        }
-                    });
-
-                    html += `</div></div>`;
-                }
+                if (!categories[cat]?.length) return;
+                html += `<div class="animation-category">
+                    <div class="animation-category-title">${categoryNames[cat] || cat}</div>
+                    <div class="animation-grid">`;
+                categories[cat].forEach(anim => {
+                    if (anim.isUnlocked) {
+                        html += `<div class="animation-item unlocked" onclick="playAnimationFromSelector('${anim.name}')">
+                            <span class="animation-icon">${anim.icon}</span>
+                            <span class="animation-name">${anim.displayName}</span>
+                        </div>`;
+                    } else {
+                        html += `<div class="animation-item locked">
+                            <span class="animation-icon">🔒</span>
+                            <span class="animation-name">${anim.displayName}</span>
+                            <span class="animation-unlock-level">Lvl ${anim.unlockLevel}</span>
+                        </div>`;
+                    }
+                });
+                html += `</div></div>`;
             });
 
-            // Add Character Skins section showing level unlocks
-            const skinEvolutions = TAMAGOTCHI_EVOLUTIONS.filter((e, i, arr) => {
-                // Only show entries where the model source changes (actual new skin)
-                return i === 0 || e.src !== arr[i - 1].src;
-            });
+            // ── Character Skins (evolution levels) ───────────────────────────────
+            const skinEvolutions = TAMAGOTCHI_EVOLUTIONS.filter((e, i, arr) => i === 0 || e.src !== arr[i - 1].src);
+            const activeRareSkinForEvo = localStorage.getItem('active_rare_skin') || '';
+            const activeEvoSkin = localStorage.getItem('active_evolution_skin') || '';
 
             html += `<div class="animation-category">
                 <div class="animation-category-title">🎨 Character Skins</div>
                 <div class="skin-levels-grid">`;
-
-            const activeRareSkinForEvo = localStorage.getItem('active_rare_skin') || '';
-            const activeEvoSkin = localStorage.getItem('active_evolution_skin') || '';
             skinEvolutions.forEach(evo => {
                 const isUnlocked = level >= evo.level;
                 const isActiveEvo = !activeRareSkinForEvo && (activeEvoSkin === evo.src || (!activeEvoSkin && evo === skinEvolutions.filter(e => level >= e.level).pop()));
@@ -768,121 +804,136 @@
                 const checkOrLock = isUnlocked ? (isActiveEvo ? '✨' : '✅') : '🔒';
                 const activeStyle = isActiveEvo ? 'border: 2px solid var(--primary); box-shadow: 0 0 10px rgba(123,168,131,0.4);' : '';
                 const clickHandler = isUnlocked ? `onclick="selectEvolutionSkin('${evo.src}', '${evo.title}')" style="cursor: pointer; ${activeStyle}"` : '';
-                html += `
-                    <div class="${skinClass}" ${clickHandler}>
-                        <span class="skin-level-badge">Lvl ${evo.level}</span>
-                        <span class="skin-level-icon">${checkOrLock}</span>
-                        <span class="skin-level-title">${evo.title}</span>
-                    </div>`;
+                html += `<div class="${skinClass}" ${clickHandler}>
+                    <span class="skin-level-badge">Lvl ${evo.level}</span>
+                    <span class="skin-level-icon">${checkOrLock}</span>
+                    <span class="skin-level-title">${evo.title}</span>
+                </div>`;
             });
-
             html += `</div></div>`;
 
+            // ── Rare Skins ────────────────────────────────────────────────────────
             const activeRareSkin = localStorage.getItem('active_rare_skin') || '';
             html += `<div class="animation-category">
                 <div class="animation-category-title">💎 Rare Skins</div>
                 <div class="skin-levels-grid">`;
-
             (window.RARE_COLLECTION || []).forEach(rare => {
                 const rareUnlocked = (window.isRareUnlocked || (() => false))(rare.id);
-                const tierData = (window.RARE_TIERS || {})[rare.tier];
+                const tierData = (window.RARE_TIERS || {})[rare.tier] || {};
                 const isActive = activeRareSkin === rare.id;
+                const activeInlineStyle = isActive ? `border: 2px solid ${tierData.color}; box-shadow: 0 0 10px ${tierData.glow};` : '';
                 if (rareUnlocked) {
-                    html += `
-                        <div class="skin-level-item unlocked${isActive ? ' rare-skin-active' : ''}" onclick="selectRareSkin('${rare.id}')" style="cursor: pointer; position: relative; ${isActive ? 'border: 2px solid ' + tierData.color + '; box-shadow: 0 0 10px ' + tierData.glow + ';' : ''}">
-                            <span class="skin-level-badge" style="background: ${tierData.gradient}; color: white; font-size: 0.55rem;">${tierData.label}</span>
-                            <span class="skin-level-icon">${rare.emoji}</span>
-                            <span class="skin-level-title">${rare.name}</span>
-                        </div>`;
+                    html += `<div class="skin-level-item unlocked${isActive ? ' rare-skin-active' : ''}" onclick="selectRareSkin('${rare.id}')"
+                        data-skin-id="${rare.id}" data-skin-color="${tierData.color || ''}" data-skin-glow="${tierData.glow || ''}"
+                        style="cursor: pointer; position: relative; ${activeInlineStyle}">
+                        <span class="skin-level-badge" style="background: ${tierData.gradient}; color: white; font-size: 0.55rem;">${tierData.label}</span>
+                        <span class="skin-level-icon">${rare.emoji}</span>
+                        <span class="skin-level-title">${rare.name}</span>
+                    </div>`;
                 } else {
-                    html += `
-                        <div class="skin-level-item locked" style="position: relative;">
-                            <span class="skin-level-badge" style="background: ${tierData.gradient}; color: white; font-size: 0.55rem;">${tierData.label}</span>
-                            <span class="skin-level-icon">🔒</span>
-                            <span class="skin-level-title" style="opacity: 0.5;">${rare.name}</span>
-                        </div>`;
+                    html += `<div class="skin-level-item locked" style="position: relative;">
+                        <span class="skin-level-badge" style="background: ${tierData.gradient}; color: white; font-size: 0.55rem;">${tierData.label}</span>
+                        <span class="skin-level-icon">🔒</span>
+                        <span class="skin-level-title" style="opacity: 0.5;">${rare.name}</span>
+                    </div>`;
                 }
             });
-
             html += `</div></div>`;
 
-            // Add DBZ Warriors section
+            // ── DBZ Warriors — rendered with search so 82 tiles don't all paint at once
             if (window.DBZ_COLLECTION) {
-                html += `<div class="animation-category">
-                    <div class="animation-category-title">🥋 DBZ Warriors</div>
-                    <div class="skin-levels-grid">`;
+                const epicData = (window.RARE_TIERS || {}).EPIC || { gradient: 'linear-gradient(135deg,#a855f7,#7c3aed)', color: '#a855f7', glow: 'rgba(168,85,247,0.4)', label: 'EPIC' };
 
-                window.DBZ_COLLECTION.forEach(char => {
+                // Build tiles HTML up-front (strings are fast; DOM insertion is the bottleneck)
+                const dbzTilesHtml = window.DBZ_COLLECTION.map(char => {
                     const isActive = activeRareSkin === char.id;
-                    const tierData = (window.RARE_TIERS || {})[char.tier] || (window.RARE_TIERS || {}).EPIC;
-                    html += `
-                        <div class="skin-level-item unlocked${isActive ? ' rare-skin-active' : ''}" onclick="selectRareSkinFromDBZ('${char.id}')" style="cursor: pointer; position: relative; ${isActive ? 'border: 2px solid ' + tierData.color + '; box-shadow: 0 0 10px ' + tierData.glow + ';' : ''}">
-                            <span class="skin-level-badge" style="background: ${tierData.gradient}; color: white; font-size: 0.55rem;">${tierData.label}</span>
-                            <span class="skin-level-icon">${char.emoji}</span>
-                            <span class="skin-level-title">${char.name}</span>
-                        </div>`;
-                });
-                html += `</div></div>`;
+                    const tierData = (window.RARE_TIERS || {})[char.tier] || epicData;
+                    const activeInline = isActive ? `border: 2px solid ${tierData.color}; box-shadow: 0 0 10px ${tierData.glow};` : '';
+                    return `<div class="skin-level-item unlocked${isActive ? ' rare-skin-active' : ''}" onclick="selectRareSkinFromDBZ('${char.id}')"
+                        data-skin-id="${char.id}" data-skin-color="${tierData.color}" data-skin-glow="${tierData.glow}"
+                        data-dbz-name="${char.name.toLowerCase()}"
+                        style="cursor: pointer; position: relative; ${activeInline}">
+                        <span class="skin-level-badge" style="background: ${tierData.gradient}; color: white; font-size: 0.55rem;">${tierData.label}</span>
+                        <span class="skin-level-icon">${char.emoji}</span>
+                        <span class="skin-level-title">${char.name}</span>
+                    </div>`;
+                }).join('');
+
+                html += `<div class="animation-category" id="dbz-warriors-category">
+                    <div class="animation-category-title">🥋 DBZ Warriors</div>
+                    <div style="padding: 6px 0 8px; position: relative;">
+                        <input id="dbz-search-input" type="text" placeholder="🔍 Search characters…"
+                            oninput="filterDBZChars(this.value)"
+                            style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:10px;
+                                   border:1px solid #e2e8f0;font-size:0.85rem;outline:none;
+                                   background:#f8fafc;color:#1a1a1a;"
+                        />
+                    </div>
+                    <div class="skin-levels-grid" id="dbz-warriors-grid">${dbzTilesHtml}</div>
+                </div>`;
             }
 
-            // Add Backgrounds section
+            // ── Backgrounds ───────────────────────────────────────────────────────
+            const savedBg = localStorage.getItem('selectedBackground') || '';
             html += `<div class="animation-category">
                 <div class="animation-category-title">🖼️ Backgrounds</div>
                 <div class="animation-grid">`;
-
-            const savedBg = localStorage.getItem('selectedBackground') || '';
             BACKGROUND_UNLOCKS.forEach(bg => {
                 const isBgUnlocked = level >= bg.unlockLevel;
                 const isSelected = savedBg === bg.name;
                 if (isBgUnlocked) {
-                    html += `
-                        <div class="animation-item unlocked bg-selector-item${isSelected ? ' bg-selected' : ''}" data-bg="${bg.name}" onclick="selectBackground('${bg.name}')">
-                            <span class="animation-icon">${bg.icon}</span>
-                            <span class="animation-name">${bg.displayName}</span>
-                        </div>`;
+                    html += `<div class="animation-item unlocked bg-selector-item${isSelected ? ' bg-selected' : ''}" data-bg="${bg.name}" onclick="selectBackground('${bg.name}')">
+                        <span class="animation-icon">${bg.icon}</span>
+                        <span class="animation-name">${bg.displayName}</span>
+                    </div>`;
                 } else {
-                    html += `
-                        <div class="animation-item locked">
-                            <span class="animation-icon">🔒</span>
-                            <span class="animation-name">${bg.displayName}</span>
-                            <span class="animation-unlock-level">Lvl ${bg.unlockLevel}</span>
-                        </div>`;
+                    html += `<div class="animation-item locked">
+                        <span class="animation-icon">🔒</span>
+                        <span class="animation-name">${bg.displayName}</span>
+                        <span class="animation-unlock-level">Lvl ${bg.unlockLevel}</span>
+                    </div>`;
                 }
             });
-
             html += `</div></div>`;
 
-            html += `
-                    </div>
-                </div>
-            `;
+            html += `</div></div>`; // close animation-selector-content + animation-selector-modal
 
-            // Create container inside tamagotchi widget
-            let container = document.getElementById('animation-selector-container');
-            const tamagotchiContainer = document.getElementById('tamagotchi-widget-container');
+            container.innerHTML = html;
+            container.style.display = 'block';
+            _animSelectorBuilt = true;
+        };
 
-            if (!container && tamagotchiContainer) {
-                container = document.createElement('div');
-                container.id = 'animation-selector-container';
-                container.className = 'animation-selector-container';
-                tamagotchiContainer.appendChild(container);
-            }
-
-            if (container) {
-                container.innerHTML = html;
-                container.style.display = 'block';
-            }
-        }
+        // Live search filter for DBZ Warriors — toggles display:none on non-matching tiles
+        window.filterDBZChars = function(query) {
+            const grid = document.getElementById('dbz-warriors-grid');
+            if (!grid) return;
+            const q = query.trim().toLowerCase();
+            grid.querySelectorAll('.skin-level-item').forEach(el => {
+                if (!q || (el.dataset.dbzName || '').includes(q)) {
+                    el.style.display = '';
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+        };
 
         window.closeAnimationSelector = function() {
             const container = document.getElementById('animation-selector-container');
-            if (container) {
-                container.style.display = 'none';
-            }
+            if (container) container.style.display = 'none';
         };
 
-        // Alias for refreshing the selector when a skin is selected
-        window.populateTamagotchiAnimations = window.showAnimationSelector;
+        // When the selector needs to fully refresh (e.g. level-up changed unlocks), call with forceRebuild=true
+        window.populateTamagotchiAnimations = function() {
+            // Only force-rebuild if the panel is currently visible; otherwise just mark dirty
+            const container = document.getElementById('animation-selector-container');
+            const isVisible = container && container.style.display !== 'none';
+            if (isVisible) {
+                _animSelectorBuilt = false;
+                window.showAnimationSelector(true);
+            } else {
+                _animSelectorBuilt = false; // will rebuild next time it opens
+            }
+        };
 
         window.playAnimationFromSelector = function(animName) {
             playAnimation(animName, true);

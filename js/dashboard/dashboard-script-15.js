@@ -122,19 +122,34 @@
             priorityIds.add(RARE_COLLECTION[0].id); // First in list (shown when opening Rare Drops)
 
             const priorityModels = [];
-            const remainingModels = [];
+            const remainingRareModels = [];
             RARE_COLLECTION.forEach(rare => {
                 if (priorityIds.has(rare.id)) {
                     priorityModels.push(rare.model);
                 } else {
-                    remainingModels.push(rare.model);
+                    remainingRareModels.push(rare.model);
                 }
             });
 
-            // Prefetch priority models first (low-priority fetch to not block UI)
-            prefetchBatch(priorityModels, 400).then(() => {
-                // Then prefetch remaining models with longer staggered delays
-                prefetchBatch(remainingModels, 600);
+            // Also include the active DBZ character as a priority prefetch
+            const dbzPriorityModels = [];
+            const dbzRemainingModels = [];
+            (DBZ_COLLECTION || []).forEach(char => {
+                if (priorityIds.has(char.id)) {
+                    dbzPriorityModels.push(char.model);
+                } else {
+                    dbzRemainingModels.push(char.model);
+                }
+            });
+
+            // Prefetch priority models first (active skin + featured rare + active DBZ char)
+            prefetchBatch([...priorityModels, ...dbzPriorityModels], 400).then(() => {
+                // Then prefetch the small RARE_COLLECTION (12 models) at 600ms stagger
+                prefetchBatch(remainingRareModels, 600).then(() => {
+                    // Finally prefetch all 82 DBZ models in the background at a slow 800ms stagger
+                    // so they don't compete with the main app after the user opens the app
+                    prefetchBatch(dbzRemainingModels, 800);
+                });
             });
         };
 
@@ -255,9 +270,9 @@
                 modelViewer.removeEventListener('load', onLoad);
             });
         }
-        // Refresh the unlocks display if open
-        if (typeof populateTamagotchiAnimations === 'function') {
-            populateTamagotchiAnimations();
+        // Refresh active skin highlight instead of rebuilding the whole panel
+        if (typeof window._refreshActiveSkin === 'function') {
+            window._refreshActiveSkin('');
         }
         if (typeof window.closeAnimationSelector === 'function') {
             window.closeAnimationSelector();
@@ -274,8 +289,9 @@
         if (modelViewer) {
             modelViewer.setAttribute('src', rare.model);
         }
-        if (typeof populateTamagotchiAnimations === 'function') {
-            populateTamagotchiAnimations();
+        // Refresh active skin highlight in the already-rendered panel
+        if (typeof window._refreshActiveSkin === 'function') {
+            window._refreshActiveSkin(id);
         }
         if (typeof window.closeAnimationSelector === 'function') {
             window.closeAnimationSelector();
@@ -292,8 +308,9 @@
         if (modelViewer) {
             modelViewer.setAttribute('src', char.model);
         }
-        if (typeof populateTamagotchiAnimations === 'function') {
-            populateTamagotchiAnimations();
+        // Refresh active skin highlight in the already-rendered panel
+        if (typeof window._refreshActiveSkin === 'function') {
+            window._refreshActiveSkin(id);
         }
         if (typeof window.closeAnimationSelector === 'function') {
             window.closeAnimationSelector();
@@ -311,8 +328,9 @@
         } else if (typeof updateFitGotchi === 'function') {
             updateFitGotchi();
         }
-        if (typeof populateTamagotchiAnimations === 'function') {
-            populateTamagotchiAnimations();
+        // Refresh active skin highlight in the already-rendered panel
+        if (typeof window._refreshActiveSkin === 'function') {
+            window._refreshActiveSkin('');
         }
         if (typeof window.closeAnimationSelector === 'function') {
             window.closeAnimationSelector();
