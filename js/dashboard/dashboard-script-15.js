@@ -259,6 +259,9 @@
         if (typeof populateTamagotchiAnimations === 'function') {
             populateTamagotchiAnimations();
         }
+        if (typeof window.closeAnimationSelector === 'function') {
+            window.closeAnimationSelector();
+        }
         showToast('🎨 ' + title + ' skin equipped!', 'success');
     };
 
