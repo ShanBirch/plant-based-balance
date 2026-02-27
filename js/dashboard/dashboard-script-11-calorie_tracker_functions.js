@@ -640,8 +640,10 @@ function recentMealAddWithPhoto() {
             var photoUrl = await uploadMealPhoto(compressedFile);
 
             // Save the meal with the photo URL
-            var mealType = autoDetectMealType();
-            selectedMealType = mealType;
+            var mealType = typeof autoDetectMealType === 'function' ? autoDetectMealType() : 'snack';
+            if (typeof selectedMealType !== 'undefined') {
+                selectedMealType = mealType;
+            }
 
             var savedMeal = await saveMealLog({
                 photoUrl: photoUrl,
@@ -662,25 +664,33 @@ function recentMealAddWithPhoto() {
             // Award XP points since there's a photo
             if (savedMeal && savedMeal[0]?.id) {
                 try {
-                    var photoTimestamp = file.lastModified ? new Date(file.lastModified).toISOString() : null;
-                    var base64ForHash = await fileToBase64(file);
-                    var photoHash = await window.db?.points?.generatePhotoHash(base64ForHash);
-                    await awardPointsForMeal(savedMeal[0].id, photoTimestamp, 'high', photoHash);
+                    var photoTimestamp = file.lastModified ? new Date(file.lastModified).toISOString() : new Date().toISOString();
+                    var base64ForHash = null;
+                    if (typeof fileToBase64 === 'function') {
+                        base64ForHash = await fileToBase64(file);
+                    }
+                    var photoHash = null;
+                    if (window.db?.points?.generatePhotoHash && base64ForHash) {
+                        photoHash = await window.db.points.generatePhotoHash(base64ForHash);
+                    }
+                    if (typeof awardPointsForMeal === 'function') {
+                        await awardPointsForMeal(savedMeal[0].id, photoTimestamp, 'high', photoHash);
+                    }
                 } catch (pointsErr) {
                     console.error('Error awarding points (meal still saved):', pointsErr);
                 }
             }
 
-            await recalculateDailyNutrition();
-            await loadTodayNutrition();
-            try { await loadMicronutrientInsights(); } catch(e) {}
+            if (typeof recalculateDailyNutrition === 'function') await recalculateDailyNutrition();
+            if (typeof loadTodayNutrition === 'function') await loadTodayNutrition();
+            try { if (typeof loadMicronutrientInsights === 'function') await loadMicronutrientInsights(); } catch(e) {}
             try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
 
             showToast('Meal added with photo! +1 XP', 'success');
 
         } catch (err) {
             console.error('Error adding recent meal with photo:', err);
-            showToast('Failed to add meal. Please try again.', 'error');
+            showToast('Failed to add meal: ' + (err.message || 'Please try again.'), 'error');
         }
     }, 'Take a meal photo');
 }
