@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v27'; // v27: update push notification handler to open games directly
-const MODEL_CACHE_NAME = 'pbb-models-v3'; // v3: add all evolution models so FitGotchi loads instantly
+const CACHE_NAME = 'pbb-app-v28'; // v28: fix DBZ model URLs (/dbz/ subfolder removed), force cache refresh
+const MODEL_CACHE_NAME = 'pbb-models-v4'; // v4: evict any cached 404s from old /dbz/ URLs
 const ASSETS = [
   './dashboard.html',
   './assets/Logo_dots.jpg',

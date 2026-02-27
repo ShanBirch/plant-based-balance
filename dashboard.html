@@ -23,6 +23,19 @@
 <link rel="apple-touch-icon" href="assets/Logo_dots.jpg">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
 <script>
+// MIGRATION v1: Fix cached model URLs that incorrectly include /dbz/ subfolder.
+// Runs as the very first script so it works even if old JS is cached on Android WebView.
+(function() {
+    try {
+        var src = localStorage.getItem('fitgotchi_model_src');
+        if (src && src.indexOf('/shannonsvideos/dbz/') !== -1) {
+            localStorage.setItem('fitgotchi_model_src', src.replace('/shannonsvideos/dbz/', '/shannonsvideos/'));
+        }
+    } catch(e) {}
+})();
+</script>
+<script>
+
   // Only register the service worker on web — not inside the Capacitor native shell.
   // On native, FCM handles push notifications directly. A service worker in the
   // WebView would create a competing web-push subscription that can't deliver
