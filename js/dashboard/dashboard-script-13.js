@@ -563,22 +563,23 @@
             { name: 'pilaf', displayName: 'Pilaf Castle', unlockLevel: 1, icon: '🏰', theme: 'tamagotchi-bg-none', image: './assets/pilaf_castle.png' },
             { name: 'muscle_tower', displayName: 'Muscle Tower', unlockLevel: 1, icon: '❄️', theme: 'tamagotchi-bg-none', image: './assets/muscle_tower.png' },
             { name: 'arena', displayName: 'Tournament', unlockLevel: 1, icon: '🏆', theme: 'tamagotchi-bg-arena', image: './assets/tournament_arena.png' },
+            { name: 'korin', displayName: 'Korin Tower', unlockLevel: 1, icon: '🐱', theme: 'tamagotchi-bg-mountain', image: './assets/korin_tower.png' },
             { name: 'lookout', displayName: 'Kami\'s Lookout', unlockLevel: 1, icon: '🏛️', theme: 'tamagotchi-bg-mountain', image: './assets/kamis_lookout.png' },
-            { name: 'korin', displayName: 'Korin Tower', unlockLevel: 1, icon: '🐱', theme: 'tamagotchi-bg-mountain', image: './assets/kamis_lookout.png' },
-            { name: 'wasteland', displayName: 'Wasteland', unlockLevel: 1, icon: '🏜️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
-            { name: 'snake_way', displayName: 'Snake Way', unlockLevel: 1, icon: '🐍', theme: 'tamagotchi-bg-none', image: './assets/king_kais_planet.png' },
+            { name: 'wasteland', displayName: 'Wasteland', unlockLevel: 1, icon: '🏜️', theme: 'tamagotchi-bg-mountain', image: './assets/wasteland.png' },
+            { name: 'snake_way', displayName: 'Snake Way', unlockLevel: 1, icon: '🐍', theme: 'tamagotchi-bg-none', image: './assets/snake_way.png' },
             { name: 'king_kai', displayName: 'King Kai\'s', unlockLevel: 1, icon: '🪐', theme: 'tamagotchi-bg-none', image: './assets/king_kais_planet.png' },
             { name: 'namek', displayName: 'Planet Namek', unlockLevel: 1, icon: '🌌', theme: 'tamagotchi-bg-mountain', image: './assets/planet_namek.png' },
-            { name: 'frieza_ship', displayName: 'Frieza Ship', unlockLevel: 1, icon: '🛸', theme: 'tamagotchi-bg-none', image: './assets/planet_namek.png' },
-            { name: 'dying_namek', displayName: 'Dying Namek', unlockLevel: 1, icon: '🌋', theme: 'tamagotchi-bg-mountain', image: './assets/planet_namek.png' },
+            { name: 'frieza_ship', displayName: 'Frieza Ship', unlockLevel: 1, icon: '🛸', theme: 'tamagotchi-bg-none', image: './assets/frieza_ship.png' },
+            { name: 'dying_namek', displayName: 'Dying Namek', unlockLevel: 1, icon: '🌋', theme: 'tamagotchi-bg-mountain', image: './assets/dying_namek.png' },
             { name: 'time_chamber', displayName: 'H.T.C', unlockLevel: 1, icon: '⚪', theme: 'tamagotchi-bg-none', image: './assets/time_chamber.png' },
-            { name: 'cell_arena', displayName: 'Cell Games', unlockLevel: 1, icon: '🥋', theme: 'tamagotchi-bg-arena', image: './assets/tournament_arena.png' },
+            { name: 'cell_arena', displayName: 'Cell Games', unlockLevel: 1, icon: '🥋', theme: 'tamagotchi-bg-arena', image: './assets/cell_arena.png' },
             { name: 'kai_world', displayName: 'Kai World', unlockLevel: 1, icon: '🌳', theme: 'tamagotchi-bg-none', image: './assets/supreme_kai_world.png' },
-            { name: 'inside_buu', displayName: 'Inside Buu', unlockLevel: 1, icon: '🧠', theme: 'tamagotchi-bg-none', image: './assets/supreme_kai_world.png' },
-            { name: 'rocky_canyon', displayName: 'Rocky Canyon', unlockLevel: 1, icon: '☄️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
+            { name: 'inside_buu', displayName: 'Inside Buu', unlockLevel: 1, icon: '🧠', theme: 'tamagotchi-bg-none', image: './assets/inside_buu.png' },
+            { name: 'rocky_canyon', displayName: 'Rocky Canyon', unlockLevel: 1, icon: '☄️', theme: 'tamagotchi-bg-mountain', image: './assets/rocky_canyon.png' },
             { name: 'beerus', displayName: 'Beerus\'s', unlockLevel: 1, icon: '🐈', theme: 'tamagotchi-bg-none', image: './assets/beerus_planet.png' },
-            { name: 'grand_palace', displayName: 'Grand Palace', unlockLevel: 1, icon: '✨', theme: 'tamagotchi-bg-none', image: './assets/time_chamber.png' },
+            { name: 'grand_palace', displayName: 'Grand Palace', unlockLevel: 1, icon: '✨', theme: 'tamagotchi-bg-none', image: './assets/grand_palace.png' },
         ];
+
         // Expose globally so battle restore can look up the saved background image
         window.BACKGROUND_UNLOCKS = BACKGROUND_UNLOCKS;
 
