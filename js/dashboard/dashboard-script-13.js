@@ -825,8 +825,6 @@
                 html += `</div></div>`;
             }
 
-            html += `</div></div>`;
-
             // Add Backgrounds section
             html += `<div class="animation-category">
                 <div class="animation-category-title">🖼️ Backgrounds</div>
@@ -882,6 +880,9 @@
                 container.style.display = 'none';
             }
         };
+
+        // Alias for refreshing the selector when a skin is selected
+        window.populateTamagotchiAnimations = window.showAnimationSelector;
 
         window.playAnimationFromSelector = function(animName) {
             playAnimation(animName, true);
