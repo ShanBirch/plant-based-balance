@@ -127,9 +127,30 @@ async function initProgressView() {
             console.warn('Failed to load progress photos:', e);
         }
 
+        // Load nutrition data for daily calorie graph
+        let nutritionDays = [];
+        try {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+            
+            const { data, error } = await window.supabaseClient
+                .from('daily_nutrition')
+                .select('nutrition_date, total_calories')
+                .eq('user_id', user.id)
+                .gte('nutrition_date', startDate)
+                .order('nutrition_date', { ascending: true });
+            
+            if (error) throw error;
+            nutritionDays = data || [];
+        } catch (e) {
+            console.warn('Failed to load nutrition data for progress graph:', e);
+        }
+
         // Render sections
         renderPersonalBests(personalBests, recentPBs);
         renderBodyWeightGraph(weighIns);
+        renderTotalIntakeGraph(nutritionDays);
         renderProgressPhotosTimeline(progressPhotos);
         // renderCheckins(checkins); // UI removed in redesign
         await renderExerciseProgress(user.id, recentExercises);
@@ -332,6 +353,144 @@ function renderBodyWeightGraph(weighIns) {
             <div style="background: #f0fdf4; padding: 12px 8px; border-radius: 12px; text-align: center;">
                 <div style="font-size: 1.3rem; font-weight: 700; color: var(--primary);">${sorted.length}</div>
                 <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Weigh-ins</div>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = svg + stats;
+}
+
+// Render Daily Calorie Intake Graph
+function renderTotalIntakeGraph(nutritionDays) {
+    const container = document.getElementById('total-intake-graph');
+    if (!container) return;
+
+    if (!nutritionDays || nutritionDays.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 30px 20px;"><div style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;">&#x1F967;</div><div style="font-size: 0.9rem;">Start logging your meals to see your intake trends!</div></div>';
+        return;
+    }
+
+    // Sort ascending by date
+    const sorted = [...nutritionDays].sort((a, b) => new Date(a.nutrition_date) - new Date(b.nutrition_date));
+
+    const dates = sorted.map(d => {
+        const date = new Date(d.nutrition_date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+
+    const calories = sorted.map(d => Math.round(d.total_calories || 0));
+
+    const minCal = Math.min(...calories);
+    const maxCal = Math.max(...calories);
+    
+    // Add padding to range
+    const range = (maxCal - minCal) || 1000;
+    const yMin = Math.max(0, minCal - range * 0.15);
+    const yMax = maxCal + range * 0.15;
+
+    // Chart dimensions
+    const width = 400;
+    const height = 230;
+    const padding = { top: 20, right: 15, bottom: 45, left: 45 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+
+    const pointCount = sorted.length;
+    const xStep = pointCount > 1 ? chartWidth / (pointCount - 1) : 0;
+
+    // Build SVG
+    let svg = `<svg viewBox="0 0 ${width} ${height}" style="width: 100%; display: block; overflow: visible;">`;
+
+    // Gradient fill under the line
+    svg += `
+        <defs>
+            <linearGradient id="intakeFillGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#6366f1" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#6366f1" stop-opacity="0.02"/>
+            </linearGradient>
+        </defs>
+    `;
+
+    // Horizontal grid lines
+    const gridLines = 4;
+    for (let i = 0; i <= gridLines; i++) {
+        const y = padding.top + (chartHeight / gridLines) * i;
+        const val = yMax - ((yMax - yMin) / gridLines) * i;
+        svg += `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="#f1f5f9" stroke-width="1"/>`;
+        svg += `<text x="${padding.left - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="#94a3b8">${Math.round(val)}</text>`;
+    }
+
+    // Y-axis unit label
+    svg += `<text x="${padding.left - 35}" y="${padding.top + chartHeight / 2}" text-anchor="middle" font-size="9" fill="#94a3b8" transform="rotate(-90, ${padding.left - 35}, ${padding.top + chartHeight / 2})">kcal</text>`;
+
+    // Build line path and area fill
+    let linePath = '';
+    let areaPath = '';
+    const points = [];
+
+    calories.forEach((cal, i) => {
+        const x = padding.left + xStep * i;
+        const y = padding.top + chartHeight - ((cal - yMin) / (yMax - yMin)) * chartHeight;
+        points.push({ x, y, cal, date: dates[i] });
+        if (i === 0) {
+            linePath = `M ${x},${y}`;
+            areaPath = `M ${x},${padding.top + chartHeight} L ${x},${y}`;
+        } else {
+            linePath += ` L ${x},${y}`;
+            areaPath += ` L ${x},${y}`;
+        }
+    });
+
+    // Close area path
+    if (points.length > 0) {
+        areaPath += ` L ${points[points.length - 1].x},${padding.top + chartHeight} Z`;
+    }
+
+    // Area fill
+    svg += `<path d="${areaPath}" fill="url(#intakeFillGrad)"/>`;
+
+    // Line
+    svg += `<path d="${linePath}" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+    // Data points - BIGGER NODES as requested
+    points.forEach((p, i) => {
+        const isLast = i === points.length - 1;
+        const r = isLast ? 6 : 5; // Bigger than default 3.5
+        svg += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${isLast ? '#6366f1' : 'white'}" stroke="#6366f1" stroke-width="2.5"/>`;
+    });
+
+    // X-axis date labels
+    const labelFreq = Math.max(1, Math.ceil(pointCount / 7));
+    points.forEach((p, i) => {
+        const showLabel = pointCount <= 8 || i === 0 || i === pointCount - 1 || i % labelFreq === 0;
+        if (showLabel) {
+            let anchor = 'middle';
+            if (i === 0 && pointCount > 1) anchor = 'start';
+            else if (i === pointCount - 1 && pointCount > 1) anchor = 'end';
+            svg += `<text x="${p.x}" y="${height - 8}" text-anchor="${anchor}" font-size="9" fill="#94a3b8">${p.date}</text>`;
+        }
+    });
+
+    svg += '</svg>';
+
+    // Stats
+    const latestCal = calories[calories.length - 1];
+    const avgCal = Math.round(calories.reduce((a, b) => a + b, 0) / calories.length);
+    const dayCount = calories.length;
+
+    const stats = `
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px;">
+            <div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #6366f1;">${latestCal.toLocaleString()}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Today</div>
+            </div>
+            <div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #6366f1;">${avgCal.toLocaleString()}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Avg Daily</div>
+            </div>
+            <div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: #6366f1;">${dayCount}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">Days Tracked</div>
             </div>
         </div>
     `;
