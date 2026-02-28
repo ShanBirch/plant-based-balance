@@ -447,7 +447,8 @@
                     'king_cold': 320,
 
                     // Real World / Mixed
-                    'arny': 188, 'cbum': 185, 'ronny': 180, 'elon': 188, 'trump': 190, 'steve_irwin': 180, 'itadori': 173, 'optimus': 250, 'epstein': 180
+                    'arny': 188, 'cbum': 185, 'ronny': 180, 'elon': 188, 'trump': 190, 'steve_irwin': 180, 'itadori': 173, 'optimus': 250, 'epstein': 180,
+                    'baby': 60, 'baby_full_animations': 60
                 };
 
                 // Determine character baseline height
@@ -465,7 +466,8 @@
                 let scaleFactor = (charHeight / 175) * 0.75;
                 
                 // Caps to ensure character stays within visible screen bounds
-                scaleFactor = Math.min(1.2, Math.max(0.4, scaleFactor));
+                // Lower floor to 0.25 to allow "baby" models to be tiny
+                scaleFactor = Math.min(1.2, Math.max(0.25, scaleFactor));
 
                 const finalScale = `scale(${scaleFactor})`;
                 if (viewport) {
