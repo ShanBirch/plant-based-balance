@@ -1,5 +1,6 @@
-import os, sys
+import os
 import subprocess
-result = subprocess.run(['find', '.', '-name', 'dashboard.html'], capture_output=True, text=True)
-sys.stderr.write(result.stdout)
-sys.exit(1)
+print("Finding dashboard")
+res = subprocess.run(['find', '.', '-name', 'dashboard.html'], capture_output=True, text=True)
+with open('dash_paths.txt', 'w') as f:
+    f.write(res.stdout)
