@@ -2199,10 +2199,21 @@ function getCachedNutritionData() {
         const raw = localStorage.getItem('cachedNutritionData');
         if (!raw) return null;
         const cached = JSON.parse(raw);
-        // Only use cache if it's for today
+        // If it's a past date, use the goals but reset totals for an instant empty state
         if (cached.date !== getLocalDateString()) {
-            localStorage.removeItem('cachedNutritionData');
-            return null;
+            console.log('Rolling over yesterday cache goals for instant empty state');
+            if (cached.nutrition) {
+                cached.nutrition.total_calories = 0;
+                cached.nutrition.total_protein_g = 0;
+                cached.nutrition.total_carbs_g = 0;
+                cached.nutrition.total_fat_g = 0;
+                cached.nutrition.total_fiber_g = 0;
+            }
+            cached.meals = [];
+            // Update cache to today with 0s
+            cached.date = getLocalDateString();
+            localStorage.setItem('cachedNutritionData', JSON.stringify(cached));
+            return cached;
         }
         return cached;
     } catch (e) {
@@ -2394,14 +2405,14 @@ async function loadTodayNutrition() {
             console.error('Error loading meals:', mealsError);
         }
 
-        // Load weekly metrics
-        await loadWeeklyMetrics(userId);
-
-        // Update UI with personalized goals
+        // Update UI with personalized goals first
         updateNutritionUI(nutritionDataWithGoals, mealsData);
-
+        
         // Cache the loaded data for instant rendering next time
         cacheNutritionData(nutritionDataWithGoals, mealsData);
+
+        // Load weekly metrics in background
+        loadWeeklyMetrics(userId);
 
         // Check if daily log bonus already claimed today
         checkDailyLogBonusStatus();
@@ -5590,9 +5601,7 @@ function updateNutritionUI(dailyData, mealsData) {
     );
 
     // Update meals list
-    if (mealsData && mealsData.length > 0) {
-        renderMealsList(mealsData);
-    }
+    renderMealsList(mealsData || []);
 
     // Update daily nutrition score
     updateNutritionScoreUI(data);
@@ -6976,10 +6985,18 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCachedNutrition();
 
     // Then fetch fresh data in the background after auth is ready
-    setTimeout(async () => {
-        // Recalculate to ensure data is in sync
-        await recalculateDailyNutrition();
-        // Then load fresh data and update cache
-        loadTodayNutrition();
-    }, 1000);
+    const waitForAuth = setInterval(async () => {
+        if (window.currentUser?.id) {
+            clearInterval(waitForAuth);
+            // Load fresh data instantly to show to user
+            await loadTodayNutrition();
+            // Recalculate to ensure data is in sync (background process)
+            await recalculateDailyNutrition();
+            // Load again if recalculation changed anything
+            loadTodayNutrition();
+        }
+    }, 50);
+    
+    // Fallback if auth never resolves within 5 seconds
+    setTimeout(() => clearInterval(waitForAuth), 5000);
 });
