@@ -1,18 +1,17 @@
 import os
-
-with open('dashboard.html', 'r', encoding='utf-8') as f:
-    text = f.read()
-    
-# We want to find the exact function that contains "failed to send challenge" or "PICK A GAME"
-idx = text.find('failed to send challenge')
-if idx == -1:
-    idx = text.find('PICK A GAME')
-    
-if idx != -1:
-    start = max(0, idx - 1000)
-    end = min(len(text), idx + 2000)
-    with open('target_code.txt', 'w', encoding='utf-8') as f:
-        f.write(text[start:end])
-else:
-    with open('target_code.txt', 'w', encoding='utf-8') as f:
-        f.write("NOT FOUND")
+target = "Meal Insight".lower()
+found_files = []
+for root, _, files in os.walk('.'):
+    if '.git' in root or 'node_modules' in root: continue
+    for file in files:
+        if file.endswith(('.js', '.html', '.ts', '.md', '.sql', '.css', '.txt')):
+            try:
+                with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
+                    content = f.read().lower()
+                    if target in content:
+                        found_files.append(os.path.join(root, file))
+            except Exception:
+                pass
+                
+with open('found_target.txt', 'w') as f:
+    f.write('\n'.join(found_files))
