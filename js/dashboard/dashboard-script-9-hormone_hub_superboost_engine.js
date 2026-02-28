@@ -7,6 +7,9 @@ if (typeof window.checkInProgress === 'undefined') {
 var checkInProgress = window.checkInProgress;
 
 async function initCycleView() {
+    // 0. Render instantly with cached state to prevent "The Flush" base flash
+    renderCycleStatus();
+
     // 1. Ensure Data Loaded - MUST await this to load from DB before rendering
     if(typeof initCalendarView === 'function') {
         await initCalendarView();
@@ -41,9 +44,18 @@ async function initCycleView() {
 }
 
 function renderCycleStatus() {
+    // Determine if male early using local storage if function is not yet ready
+    let isMale = false;
+    if (typeof isMaleUser === 'function') {
+        isMale = isMaleUser();
+    } else {
+        const gender = localStorage.getItem('userGender');
+        isMale = (gender === 'Male' || gender === 'male');
+    }
+
     // For male users, show Performance Mode (no cycle tracking)
-    if (typeof isMaleUser === 'function' && isMaleUser()) {
-        const phase = PHASE_INFO['performance'];
+    if (isMale) {
+        const phase = PHASE_INFO['performance'] || { name: 'Performance Mode', color: '#3b82f6', icon: '⚡' };
         const dayDisplay = document.getElementById('cycle-day-display');
         const nameDisplay = document.getElementById('cycle-phase-name');
         const descDisplay = document.getElementById('cycle-phase-desc');
