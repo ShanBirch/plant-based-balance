@@ -453,6 +453,7 @@ async function submitMealDescription() {
 
 // Track which recent meal is currently selected for confirm step
 let _selectedRecentMealIndex = null;
+let _pendingRecentMeal = null; // Store meal data during photo verification flow
 
 // Open the recent meals modal and load data
 async function openRecentMealsModal() {
@@ -631,6 +632,19 @@ function openCameraWithCallback(callback) {
 
 // "Add with Photo" — opens camera, uploads photo, saves meal + awards XP
 function recentMealAddWithPhoto() {
+    var meal = window._recentMealsData && window._recentMealsData[_selectedRecentMealIndex];
+    if (!meal) return;
+
+    // Close modal
+    closeRecentMealsModal();
+
+    // Open the unified camera instead of the system camera
+    _pendingRecentMeal = meal;
+    openMealCameraDirect('recent');
+}
+
+// Legacy function - kept for reference, but recentMealAddWithPhoto now uses openMealCameraDirect
+function _legacyRecentMealAddWithPhoto() {
     var meal = window._recentMealsData && window._recentMealsData[_selectedRecentMealIndex];
     if (!meal) return;
 
@@ -1611,6 +1625,7 @@ function closeMealPreviewModal() {
     if (descInput) descInput.value = '';
 
     capturedMealFile = null;
+    _pendingRecentMeal = null; // Clear pending recent meal
 
     // Restore Spotify mini player if music is playing and no other meal flow is active
     if (window._snpPlaying && !isMealFlowActive()) {
@@ -1679,7 +1694,8 @@ async function useMealPhoto() {
                 body: JSON.stringify({
                     imageBase64: base64Data,
                     mimeType: fileToAnalyze.type,
-                    description: mealDescription
+                    description: mealDescription || (_pendingRecentMeal ? getRecentMealName(_pendingRecentMeal) : ''),
+                    only_verify: !!_pendingRecentMeal
                 })
             });
 
@@ -1723,16 +1739,30 @@ async function useMealPhoto() {
         // Upload photo to Supabase Storage
         const photoUrl = await uploadMealPhoto(fileToAnalyze);
 
+        // If this was a recent meal verification, use the original macros
+        const finalFoodItems = _pendingRecentMeal ? (_pendingRecentMeal.food_items || []) : nutritionData.foodItems;
+        const finalTotals = _pendingRecentMeal ? {
+            calories: parseFloat(_pendingRecentMeal.calories) || 0,
+            protein_g: parseFloat(_pendingRecentMeal.protein_g) || 0,
+            carbs_g: parseFloat(_pendingRecentMeal.carbs_g) || 0,
+            fat_g: parseFloat(_pendingRecentMeal.fat_g) || 0,
+            fiber_g: parseFloat(_pendingRecentMeal.fiber_g) || 0
+        } : nutritionData.totals;
+        const finalMicronutrients = _pendingRecentMeal ? (_pendingRecentMeal.micronutrients || {}) : nutritionData.micronutrients;
+
         // Save meal log to database
         const savedMeal = await saveMealLogWithType({
             photoUrl,
-            foodItems: nutritionData.foodItems,
-            totals: nutritionData.totals,
-            micronutrients: nutritionData.micronutrients,
-            confidence: nutritionData.confidence,
-            notes: nutritionData.notes,
+            foodItems: finalFoodItems,
+            totals: finalTotals,
+            micronutrients: finalMicronutrients,
+            confidence: _pendingRecentMeal ? 'high' : nutritionData.confidence,
+            notes: _pendingRecentMeal ? (_pendingRecentMeal.notes || getRecentMealName(_pendingRecentMeal)) : nutritionData.notes,
             inputMethod: 'photo'
         });
+
+        // Clear the pending recent meal
+        _pendingRecentMeal = null;
 
         // Award points for the meal (with anti-cheat data)
         if (savedMeal && savedMeal[0]?.id) {
@@ -1813,7 +1843,9 @@ async function analyzePhotoInBackground(originalFile, compressedFile, base64, ba
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     imageBase64: base64Data,
-                    mimeType: originalFile.type
+                    mimeType: originalFile.type,
+                    description: (_pendingRecentMeal ? getRecentMealName(_pendingRecentMeal) : ''),
+                    only_verify: !!_pendingRecentMeal
                 })
             });
 
@@ -1855,15 +1887,29 @@ async function analyzePhotoInBackground(originalFile, compressedFile, base64, ba
     try {
         const photoUrl = await uploadMealPhoto(originalFile);
 
+        // If this was a recent meal verification, use the original macros
+        const finalFoodItems = _pendingRecentMeal ? (_pendingRecentMeal.food_items || []) : nutritionData.foodItems;
+        const finalTotals = _pendingRecentMeal ? {
+            calories: parseFloat(_pendingRecentMeal.calories) || 0,
+            protein_g: parseFloat(_pendingRecentMeal.protein_g) || 0,
+            carbs_g: parseFloat(_pendingRecentMeal.carbs_g) || 0,
+            fat_g: parseFloat(_pendingRecentMeal.fat_g) || 0,
+            fiber_g: parseFloat(_pendingRecentMeal.fiber_g) || 0
+        } : nutritionData.totals;
+        const finalMicronutrients = _pendingRecentMeal ? (_pendingRecentMeal.micronutrients || {}) : nutritionData.micronutrients;
+
         const savedMeal = await saveMealLogWithType({
             photoUrl,
-            foodItems: nutritionData.foodItems,
-            totals: nutritionData.totals,
-            micronutrients: nutritionData.micronutrients,
-            confidence: nutritionData.confidence,
-            notes: nutritionData.notes,
+            foodItems: finalFoodItems,
+            totals: finalTotals,
+            micronutrients: finalMicronutrients,
+            confidence: _pendingRecentMeal ? 'high' : nutritionData.confidence,
+            notes: _pendingRecentMeal ? (_pendingRecentMeal.notes || getRecentMealName(_pendingRecentMeal)) : nutritionData.notes,
             inputMethod: 'photo'
         });
+
+        // Clear the pending recent meal
+        _pendingRecentMeal = null;
 
         // Award points
         if (savedMeal && savedMeal[0]?.id) {
@@ -6350,6 +6396,8 @@ function closeUnifiedCamera() {
         const spotifyMini = document.getElementById('spotify-now-playing');
         if (spotifyMini) spotifyMini.style.display = 'block';
     }
+
+    _pendingRecentMeal = null; // Clear pending recent meal
 
     // Exit immersive mode to restore status bar
     if (window.NativePermissions && window.NativePermissions.exitImmersiveMode) {

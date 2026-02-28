@@ -7,7 +7,7 @@ export default async function (request: Request, context: Context) {
   }
 
   try {
-    const { imageBase64, mimeType, description } = await request.json();
+    const { imageBase64, mimeType, description, only_verify } = await request.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!apiKey) {
@@ -28,7 +28,57 @@ export default async function (request: Request, context: Context) {
     // Prepare the Gemini API request
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
-    const systemPrompt = `You are a precise nutrition analysis AI. Analyze the food in this image and provide accurate nutritional information.
+    const systemPrompt = only_verify
+      ? `You are a precise food verification AI. Your task is to verify if the provided image contains a meal that matches this description: "${description || 'a meal'}".
+        INSTRUCTIONS:
+        1. Verify if the image contains a legitimate edible meal.
+        2. If it matches the description or is a clear meal, return success: true.
+        3. Even for verification, please provide estimated macros for the ACTUAL image content, but the user will choose to override them.
+
+        RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
+        {
+          "is_meal": boolean,
+          "match_confidence": "high/medium/low",
+          "foodItems": [
+            {
+              "name": "Food item name",
+              "portion": "estimated portion size in grams",
+              "portion_weight_g": number,
+              "calories": number,
+              "protein_g": number,
+              "carbs_g": number,
+              "fat_g": number,
+              "fiber_g": number
+            }
+          ],
+          "totals": {
+            "calories": number,
+            "protein_g": number,
+            "carbs_g": number,
+            "fat_g": number,
+            "fiber_g": number
+          },
+          "micronutrients": {
+            "vitamin_c_mg": number,
+            "iron_mg": number,
+            "calcium_mg": number,
+            "potassium_mg": number,
+            "b12_mcg": number,
+            "omega3_g": number,
+            "zinc_mg": number,
+            "vitamin_d_mcg": number,
+            "iodine_mcg": number,
+            "selenium_mcg": number,
+            "folate_mcg": number,
+            "magnesium_mg": number,
+            "vitamin_a_mcg": number,
+            "vitamin_e_mg": number,
+            "vitamin_k_mcg": number
+          },
+          "confidence": "high/medium/low",
+          "notes": "string"
+        }`
+      : `You are a precise nutrition analysis AI. Analyze the food in this image and provide accurate nutritional information.
 ${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : ''}
 INSTRUCTIONS:
 1. Identify all food items visible in the image
