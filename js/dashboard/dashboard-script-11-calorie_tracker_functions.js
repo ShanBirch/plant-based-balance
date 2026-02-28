@@ -1,5 +1,6 @@
 // ==========================================
 // CALORIE TRACKER FUNCTIONS
+// This file contains functions related to calorie tracking
 // ==========================================
 
 let mealCameraSource = 'widget'; // Track where camera was opened from
@@ -37,35 +38,15 @@ function selectPhotoMealType(type) {
 }
 
 function openMealTextInput(source) {
-    mealCameraSource = source || 'widget';
-    selectedMealType = autoDetectMealType();
-
-    // Update simple modal meal type bubbles
-    document.querySelectorAll('.simple-meal-type-bubble').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.type === selectedMealType);
-    });
-
-    const modal = document.getElementById('meal-text-modal');
-    const textarea = document.getElementById('simple-meal-input');
-    const submitBtn = document.getElementById('simple-meal-submit');
-
-    // Only add event listener once
-    if (!simpleMealInputInitialized && textarea) {
-        textarea.addEventListener('input', function() {
-            const btn = document.getElementById('simple-meal-submit');
-            if (btn) btn.disabled = this.value.trim().length === 0;
-        });
-        simpleMealInputInitialized = true;
-    }
-
-    if (textarea) textarea.value = '';
-    if (submitBtn) submitBtn.disabled = true;
-    if (modal) modal.classList.add('visible');
-
-    // Focus textarea after modal opens
+    console.log('openMealTextInput called, redirecting to new unified input modal');
+    openMealInputModal(source);
+    
+    // Give modal a tiny moment to render, then select 'text' method
     setTimeout(() => {
-        if (textarea) textarea.focus();
-    }, 100);
+        if (typeof selectInputMethod === 'function') {
+            selectInputMethod('text');
+        }
+    }, 50);
 }
 
 function closeMealTextModal() {
@@ -76,7 +57,14 @@ function closeMealTextModal() {
 async function submitSimpleMealText() {
     const textarea = document.getElementById('simple-meal-input');
     const submitBtn = document.getElementById('simple-meal-submit');
-    const description = textarea ? textarea.value.trim() : '';
+    
+    if (!textarea) {
+        console.error('simple-meal-input not found');
+        showToast('Text input not available. Please refresh and try again.', 'error');
+        return;
+    }
+    
+    const description = textarea.value.trim();
 
     if (description.length < 3) {
         alert('Please describe what you ate.');
@@ -116,8 +104,15 @@ function openMealInputModal(source) {
     selectedMealType = autoDetectMealType();
     selectedInputMethod = null;
 
-    // Reset UI state
+    // Check if modal exists
     const modal = document.getElementById('meal-input-modal');
+    if (!modal) {
+        console.error('meal-input-modal not found');
+        showToast('Meal input is not available. Please try again.', 'error');
+        return;
+    }
+
+    // Reset UI state
     const methodsSection = document.getElementById('meal-input-methods');
     const textSection = document.getElementById('meal-text-section');
     const voiceSection = document.getElementById('meal-voice-section');
@@ -615,6 +610,25 @@ function renderRecentMealsList(container, meals) {
     window._recentMealsData = meals;
 }
 
+function openCameraWithCallback(callback) {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.capture = 'environment';
+    fileInput.style.display = 'none';
+    let hasProcessedFile = false;
+    fileInput.onchange = function(e) {
+        if (hasProcessedFile) return;
+        hasProcessedFile = true;
+        const file = e.target.files[0];
+        callback(file);
+    };
+    // For iOS Safari compatibility
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    setTimeout(() => { document.body.removeChild(fileInput); }, 100);
+}
+
 // "Add with Photo" — opens camera, uploads photo, saves meal + awards XP
 function recentMealAddWithPhoto() {
     var meal = window._recentMealsData && window._recentMealsData[_selectedRecentMealIndex];
@@ -624,7 +638,7 @@ function recentMealAddWithPhoto() {
     closeRecentMealsModal();
 
     // Open getUserMedia camera instead of file input (which opens gallery in Capacitor WebView)
-    openWorkoutCamera(async function(file) {
+    openCameraWithCallback(async function(file) {
         if (!file || !file.type.startsWith('image/')) {
             showToast('No valid photo taken. Meal not added.', 'error');
             return;
@@ -645,7 +659,7 @@ function recentMealAddWithPhoto() {
                 selectedMealType = mealType;
             }
 
-            var savedMeal = await saveMealLog({
+            var savedMeal = await saveMealLogWithType({
                 photoUrl: photoUrl,
                 foodItems: meal.food_items || [],
                 totals: {
@@ -658,7 +672,9 @@ function recentMealAddWithPhoto() {
                 micronutrients: meal.micronutrients || {},
                 confidence: 'high',
                 notes: meal.notes || getRecentMealName(meal),
-                mealType: mealType
+                mealType: mealType,
+                inputMethod: 'photo',
+                mealDescription: getRecentMealName(meal)
             });
 
             // Award XP points since there's a photo
@@ -709,7 +725,7 @@ async function recentMealQuickAdd() {
         var mealType = autoDetectMealType();
         selectedMealType = mealType;
 
-        await saveMealLog({
+        var savedMeal = await saveMealLogWithType({
             foodItems: meal.food_items || [],
             totals: {
                 calories: parseFloat(meal.calories) || 0,
@@ -721,7 +737,9 @@ async function recentMealQuickAdd() {
             micronutrients: meal.micronutrients || {},
             confidence: 'high',
             notes: meal.notes || foodNames,
-            mealType: mealType
+            mealType: mealType,
+            inputMethod: 'recent',
+            mealDescription: foodNames
         });
 
         await recalculateDailyNutrition();
@@ -742,6 +760,8 @@ async function recentMealQuickAdd() {
 // Background meal analysis — fires off the API call and saves results without blocking the UI
 async function analyzeMealInBackground({ description, mealType, inputMethod, saveFn }) {
     try {
+        showToast('Analyzing your meal...', 'info');
+        
         const response = await fetch('/.netlify/functions/analyze-meal-text', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -750,13 +770,13 @@ async function analyzeMealInBackground({ description, mealType, inputMethod, sav
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(errorData.error || 'Failed to analyze meal');
+            throw new Error(errorData.error || 'Failed to analyze meal. Server returned error.');
         }
 
         const result = await response.json();
 
         if (!result.success || !result.data) {
-            throw new Error('Invalid response from analysis');
+            throw new Error('Invalid response from analysis. Please try again.');
         }
 
         const nutritionData = result.data;
@@ -779,7 +799,7 @@ async function analyzeMealInBackground({ description, mealType, inputMethod, sav
 
     } catch (error) {
         console.error('Background meal analysis error:', error);
-        showMealAnalysisError(error.message);
+        showMealAnalysisError(error.message || 'Failed to analyze meal. Please try again.');
     }
 }
 
@@ -1704,13 +1724,14 @@ async function useMealPhoto() {
         const photoUrl = await uploadMealPhoto(fileToAnalyze);
 
         // Save meal log to database
-        const savedMeal = await saveMealLog({
+        const savedMeal = await saveMealLogWithType({
             photoUrl,
             foodItems: nutritionData.foodItems,
             totals: nutritionData.totals,
             micronutrients: nutritionData.micronutrients,
             confidence: nutritionData.confidence,
-            notes: nutritionData.notes
+            notes: nutritionData.notes,
+            inputMethod: 'photo'
         });
 
         // Award points for the meal (with anti-cheat data)
@@ -1834,13 +1855,14 @@ async function analyzePhotoInBackground(originalFile, compressedFile, base64, ba
     try {
         const photoUrl = await uploadMealPhoto(originalFile);
 
-        const savedMeal = await saveMealLog({
+        const savedMeal = await saveMealLogWithType({
             photoUrl,
             foodItems: nutritionData.foodItems,
             totals: nutritionData.totals,
             micronutrients: nutritionData.micronutrients,
             confidence: nutritionData.confidence,
-            notes: nutritionData.notes
+            notes: nutritionData.notes,
+            inputMethod: 'photo'
         });
 
         // Award points
