@@ -526,24 +526,80 @@
 
         if (connectSection) connectSection.style.display = 'none';
 
+        // Calculate 30-day average
+        const last30 = sleepData.records.slice(0, 30);
+        const avgMins30 = last30.reduce((sum, r) => sum + (r.duration_minutes || r.total_sleep_minutes || 0), 0) / (last30.length || 1);
+        const avgHrs30 = Math.floor(avgMins30 / 60);
+        const avgMinsRem30 = Math.round(avgMins30 % 60);
+
         const records = sleepData.records.slice(0, 7).reverse();
+        // Use total duration to scale the bars (including wake time if available, or just total_sleep_minutes)
         const maxMins = Math.max(...records.map(r => r.duration_minutes || r.total_sleep_minutes || 0), 1);
 
-        let html = `<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; font-weight: 600;">Last ${records.length} nights via ${sleepData.source}</div>`;
-        html += '<div style="display: flex; align-items: flex-end; gap: 6px; height: 80px; padding-bottom: 20px; position: relative;">';
+        let html = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Last ${records.length} nights via ${sleepData.source}</div>
+            ${last30.length > 0 ? `<div style="font-size: 0.65rem; color: var(--text-main); font-weight: 700; background: #f1f5f9; padding: 3px 8px; border-radius: 12px;">30-Day Avg: ${avgHrs30}h ${avgMinsRem30}m</div>` : ''}
+        </div>`;
+        
+        // Add legend for sleep stages
+        html += `
+            <div style="display: flex; gap: 8px; font-size: 0.6rem; color: var(--text-muted); font-weight: 600; margin-bottom: 16px; justify-content: center;">
+                <div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #eab308;"></div> Awake</div>
+                <div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #06b6d4;"></div> REM</div>
+                <div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #818cf8;"></div> Light</div>
+                <div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #312e81;"></div> Deep</div>
+            </div>
+        `;
+
+        html += '<div style="display: flex; align-items: flex-end; gap: 6px; height: 100px; padding-bottom: 20px; position: relative;">';
 
         for (const r of records) {
             const mins = r.duration_minutes || r.total_sleep_minutes || 0;
             const pct = Math.round((mins / maxMins) * 100);
             const hrs = (mins / 60).toFixed(1);
             const date = r.date ? new Date(r.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' }) : '';
-            const color = mins >= 420 ? '#6366f1' : mins >= 360 ? '#a78bfa' : '#e2e8f0';
+            
+            // Check for Fitbit stages
+            const summary = r.levels && r.levels.summary;
+            let barHtml = '';
+            
+            if (summary && summary.deep && summary.light) {
+                // Stacked bar
+                const deepMins = summary.deep.minutes || 0;
+                const lightMins = summary.light.minutes || 0;
+                const remMins = (summary.rem && summary.rem.minutes) || 0;
+                const wakeMins = (summary.wake && summary.wake.minutes) || 0;
+                
+                const totalStageMins = deepMins + lightMins + remMins + wakeMins || 1; // avoid /0
+                
+                const deepPct = (deepMins / totalStageMins) * 100;
+                const lightPct = (lightMins / totalStageMins) * 100;
+                const remPct = (remMins / totalStageMins) * 100;
+                const wakePct = (wakeMins / totalStageMins) * 100;
+                
+                barHtml = `
+                    <div style="width: 100%; height: ${Math.max(pct, 6)}%; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 5px 5px 2px 2px; overflow: hidden; position: relative;">
+                        ${wakePct > 0 ? `<div style="width: 100%; height: ${wakePct}%; background: #eab308;"></div>` : ''}
+                        ${remPct > 0 ? `<div style="width: 100%; height: ${remPct}%; background: #06b6d4;"></div>` : ''}
+                        ${lightPct > 0 ? `<div style="width: 100%; height: ${lightPct}%; background: #818cf8;"></div>` : ''}
+                        ${deepPct > 0 ? `<div style="width: 100%; height: ${deepPct}%; background: #312e81;"></div>` : ''}
+                        <div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">${hrs}h</div>
+                    </div>
+                `;
+            } else {
+                // Fallback to solid color
+                const color = mins >= 420 ? '#6366f1' : mins >= 360 ? '#a78bfa' : '#e2e8f0';
+                barHtml = `
+                    <div style="width: 100%; height: ${Math.max(pct, 6)}%; background: ${color}; border-radius: 5px 5px 2px 2px; position: relative;">
+                        <div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">${hrs}h</div>
+                    </div>
+                `;
+            }
+
             html += `
                 <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%;">
-                    <div style="flex: 1; width: 100%; display: flex; align-items: flex-end;">
-                        <div style="width: 100%; height: ${Math.max(pct, 6)}%; background: ${color}; border-radius: 5px 5px 2px 2px; position: relative;">
-                            <div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">${hrs}h</div>
-                        </div>
+                    <div style="flex: 1; width: 100%; display: flex; align-items: flex-end; margin-top: 18px;">
+                        ${barHtml}
                     </div>
                     <div style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">${date}</div>
                 </div>`;
