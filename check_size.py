@@ -1,4 +1,4 @@
-import os
-with open('dashboard.html', 'r', encoding='utf-8') as f:
-    s = f.read()
-    print("Len:", len(s))
+import os, sys
+size = os.path.getsize('dashboard.html')
+sys.stderr.write(f"Size is {size}")
+sys.exit(1)
