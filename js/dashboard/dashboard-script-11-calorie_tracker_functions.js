@@ -722,7 +722,7 @@ function _legacyRecentMealAddWithPhoto() {
             console.error('Error adding recent meal with photo:', err);
             showToast('Failed to add meal: ' + (err.message || 'Please try again.'), 'error');
         }
-    }, 'Take a meal photo');
+    });
 }
 
 // "Quick Add" — saves meal without photo (no XP)
@@ -6359,9 +6359,12 @@ let barcodeServings = 1;
 let barcodeAmountMode = 'servings'; // 'servings' or 'custom'
 let barcodeCustomAmount = '';
 
-async function openUnifiedCamera() {
+async function openUnifiedCamera(callback) {
     const modal = document.getElementById('unified-camera-modal');
     if (!modal) return;
+
+    // Store callback for recent meal photo flow
+    window._unifiedCameraCallback = callback;
 
     // Enter immersive mode to hide status bar (Spotify controls, etc.)
     if (window.NativePermissions && window.NativePermissions.enterImmersiveMode) {
@@ -6737,7 +6740,15 @@ function captureUnifiedPhoto() {
         const desc = document.getElementById('unified-camera-description');
         const description = desc ? desc.value.trim() : '';
 
-        // Close camera and show the existing meal preview flow
+        // If a callback was provided, use it instead of the default preview flow
+        if (window._unifiedCameraCallback) {
+            const cb = window._unifiedCameraCallback;
+            window._unifiedCameraCallback = null;
+            cb(file);
+            return;
+        }
+
+        // Default: Close camera and show the existing meal preview flow
         closeUnifiedCamera();
 
         const reader = new FileReader();
