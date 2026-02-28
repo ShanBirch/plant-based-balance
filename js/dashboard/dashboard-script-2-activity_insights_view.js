@@ -557,7 +557,14 @@
             const mins = r.duration_minutes || r.total_sleep_minutes || 0;
             const pct = Math.round((mins / maxMins) * 100);
             const hrs = (mins / 60).toFixed(1);
-            const date = r.date ? new Date(r.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' }) : '';
+            
+            let date = '';
+            if (r.date) {
+                const d = new Date(r.date + 'T12:00:00');
+                // Shift back 1 day so sleep ending Saturday morning shows as Friday night's sleep
+                d.setDate(d.getDate() - 1);
+                date = d.toLocaleDateString('en-US', { weekday: 'short' });
+            }
             
             // Check for sleep stages directly from the DB record
             const deepMins = r.deep_minutes || 0;
