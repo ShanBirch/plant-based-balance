@@ -551,7 +551,7 @@
             </div>
         `;
 
-        html += '<div style="display: flex; align-items: flex-end; gap: 6px; height: 100px; padding-bottom: 20px; position: relative;">';
+        html += '<div style="display: flex; align-items: flex-end; gap: 6px; height: 180px; padding-bottom: 20px; position: relative;">';
 
         for (const r of records) {
             const mins = r.duration_minutes || r.total_sleep_minutes || 0;
