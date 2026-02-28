@@ -559,17 +559,17 @@
             const hrs = (mins / 60).toFixed(1);
             const date = r.date ? new Date(r.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' }) : '';
             
-            // Check for Fitbit stages
-            const summary = r.levels && r.levels.summary;
+            // Check for sleep stages directly from the DB record
+            const deepMins = r.deep_minutes || 0;
+            const lightMins = r.light_minutes || 0;
+            const remMins = r.rem_minutes || 0;
+            const wakeMins = r.wake_minutes || 0;
+            
             let barHtml = '';
             
-            if (summary && summary.deep && summary.light) {
+            // If we have any stage data (especially deep or light), render the stacked chart
+            if (deepMins > 0 || lightMins > 0 || remMins > 0) {
                 // Stacked bar
-                const deepMins = summary.deep.minutes || 0;
-                const lightMins = summary.light.minutes || 0;
-                const remMins = (summary.rem && summary.rem.minutes) || 0;
-                const wakeMins = (summary.wake && summary.wake.minutes) || 0;
-                
                 const totalStageMins = deepMins + lightMins + remMins + wakeMins || 1; // avoid /0
                 
                 const deepPct = (deepMins / totalStageMins) * 100;
