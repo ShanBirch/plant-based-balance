@@ -21,9 +21,18 @@
                     // Already weighed in today - hide input card, show done card (unless dismissed)
                     card.style.display = 'none';
                     if (doneCard) {
-                        var d = new Date();
-                        var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-                        doneCard.style.display = localStorage.getItem('weighInDoneCardDismissedDate') === today ? 'none' : 'flex';
+                        const today = typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().split('T')[0];
+                        const isDismissedLocal = localStorage.getItem('weighInDoneCardDismissedDate') === today;
+                        const isDismissedCloud = (window._pbbDismissedDates && window._pbbDismissedDates['weighInDoneCard']) === today;
+                        
+                        if (isDismissedLocal || isDismissedCloud) {
+                            doneCard.style.display = 'none';
+                            if (isDismissedCloud && !isDismissedLocal) {
+                                try { localStorage.setItem('weighInDoneCardDismissedDate', today); } catch(e) {}
+                            }
+                        } else {
+                            doneCard.style.display = 'flex';
+                        }
                     }
                 } else {
                     // Show the card for today's weigh-in
@@ -169,10 +178,18 @@
     }
 
     function dismissWeighInDoneCard() {
-        var d = new Date();
-        var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        localStorage.setItem('weighInDoneCardDismissedDate', today);
-        document.getElementById('daily-weigh-in-done-card').style.display = 'none';
+        const today = typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().split('T')[0];
+        try {
+            localStorage.setItem('weighInDoneCardDismissedDate', today);
+        } catch (e) { console.warn('localStorage full', e); }
+        
+        // Sync to cloud
+        if (typeof window.syncTrendDismissalToDb === 'function') {
+            window.syncTrendDismissalToDb('weighInDoneCard', today);
+        }
+
+        const el = document.getElementById('daily-weigh-in-done-card');
+        if (el) el.style.display = 'none';
     }
 
     // Make functions globally available

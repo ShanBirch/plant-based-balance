@@ -407,31 +407,70 @@
                     modelViewer.setAttribute('field-of-view', `${fov}deg`);
                 }
 
-                // Scale logic: Kids and small characters need to be shrunk 
-                // so they don't look bigger than adults due to model proportions.
+                // Scale logic: Detailed character-specific box sizing for accurate relative heights.
+                // Research-based heights (cm) used to calculate specific scale factors.
                 const viewport = document.getElementById('tamagotchi-viewport');
                 const modelSrc = modelViewer.getAttribute('src') || '';
-                const modelName = modelSrc.split('/').pop().toLowerCase();
+                const filename = modelSrc.split('/').pop().toLowerCase().replace('.glb', '').replace('_animated', '').replace('_rigged', '').replace('_from_image', '');
+                const activeRareId = localStorage.getItem('active_rare_skin');
                 
-                let scaleFactor = 0.75; // Default adult scale
-                const isSmallChar = modelName.includes('kid') || 
-                                   modelName.includes('baby') || 
-                                   modelName.includes('chaozu') || 
-                                   modelName.includes('dendi') || 
-                                   modelName.includes('oolong') ||
-                                   modelName.includes('guldo') ||
-                                   modelName.includes('goten') ||
-                                   modelName.includes('young_chi_chi');
-                
-                if (isSmallChar) {
-                    scaleFactor = 0.55; // Shrink the "box" for kids
+                // Map of character IDs / filenames to their canonical (or visually appropriate) heights in cm
+                const CHARACTER_HEIGHTS = {
+                    // Main Characters
+                    'goku': 175, 'goku_adult': 175, 'ssj_goku': 175, 'ssj2_goku': 175, 'ssj3_goku': 175, 'vegito_ssj': 181,
+                    'vegeta': 164, 'adult_vegeta_premium': 164, 'ssj_vegeta': 164, 'super_vegeta': 164, 'super_vegeta_v3': 164,
+                    'piccolo': 226,
+                    'krillin': 153,
+                    'adult_gohan_ssj2': 176, 'adult_gohan_weak': 176, 'ultimate_gohan': 176, 'future_gohan': 176, 'ssj_gohan_adult': 176, 'great_saiyaman': 176,
+                    'ssj2_kid_gohan': 155, 'ssj_gohan_kid': 155, 'gohan_rigged': 155, // Teen Gohan form
+                    'kid_gohan': 115, 'gohan_namek_armor': 115,
+                    'kid_goku': 124,
+                    'trunks_kid': 129, 'goten': 123, 'gotenks_ssj': 135, 'ssj3_gotenks': 140, 'super_trunks_kid': 130,
+                    'future_trunks': 170, 'ssj_future_trunks': 170, 'super_trunks': 185,
+                    
+                    // Females
+                    'bulma': 165, 'adult_bulma': 165, 'kid_bulma': 130,
+                    'chi_chi': 163, 'adult_chi_chi': 163, 'young_chi_chi': 156, 'kid_chi_chi': 130,
+                    'videl': 157, '18': 169, 'android_18': 169,
+
+                    // Villains / Others
+                    'android_16': 215, 'android_17': 170, 'android_17_new': 170, 'android_19': 178, 'dr_gero': 170,
+                    'cell_perfect': 213, 'cell_base': 180,
+                    'freeza_final': 158, 'freeza_first_form': 132, 'mecha_freeza': 160,
+                    'nappa': 209, 'raditz': 198, 'broly_lssj': 280,
+                    'fat_buu': 210, 'super_buu': 240, 'kid_buu': 145,
+                    'mr_satan': 188, 'yajirobe': 145, // Yajirobe set shorter than Teen Gohan as requested
+                    'tien': 187, 'yamcha': 183, 'master_roshi': 160,
+                    'chaozu': 138, 'chaozu_premium': 138, 'dendi': 120, 'oolong': 90,
+                    'mr_popo': 110, 'king_kai': 110, 'kami': 170, 'supreme_kai': 156,
+                    'dabura': 210, 'recoome': 235, 'burter': 285, 'jeice': 170, 'guldo': 130, 'captain_ginyu': 195,
+                    'king_cold': 320,
+
+                    // Real World / Mixed
+                    'arny': 188, 'cbum': 185, 'ronny': 180, 'elon': 188, 'trump': 190, 'steve_irwin': 180, 'itadori': 173, 'optimus': 250, 'epstein': 180
+                };
+
+                // Determine character baseline height
+                let charHeight = 175; // Default adult height (Goku)
+                // Try to find by active skin ID first, then by filename
+                if (activeRareId && CHARACTER_HEIGHTS[activeRareId]) {
+                    charHeight = CHARACTER_HEIGHTS[activeRareId];
+                } else {
+                    // Fallback to filename matching (stripping common suffixes)
+                    const cleanName = filename.split('_')[0]; // Often first word matches
+                    charHeight = CHARACTER_HEIGHTS[filename] || CHARACTER_HEIGHTS[cleanName] || 175;
                 }
+
+                // Reference: 175cm -> 0.75 scale. Scale factor is linear but capped for extremes.
+                let scaleFactor = (charHeight / 175) * 0.75;
+                
+                // Caps to ensure character stays within visible screen bounds
+                scaleFactor = Math.min(1.2, Math.max(0.4, scaleFactor));
 
                 const finalScale = `scale(${scaleFactor})`;
                 if (viewport) {
                     viewport.style.transform = finalScale;
                     viewport.style.transformOrigin = 'center center';
-                    // Reset modelViewer transform if it was set
                     modelViewer.style.transform = '';
                 } else {
                     modelViewer.style.transform = finalScale;

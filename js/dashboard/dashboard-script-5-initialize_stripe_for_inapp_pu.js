@@ -1279,6 +1279,12 @@ async function initCalendarView() {
                     if (lastPeriodInput) lastPeriodInput.disabled = true;
                     console.log('✅ Loaded noPeriodMode from DB:', userCycleData.noPeriodMode);
                 }
+
+                // Load dismissed dates for tip cards to prevent them reappearing
+                if (facts.additional_data.dismissed_dates) {
+                    window._pbbDismissedDates = facts.additional_data.dismissed_dates;
+                    console.log('✅ Loaded dismissed dates from DB:', window._pbbDismissedDates);
+                }
             } else {
                 console.warn('⚠️ No additional_data found in user_facts');
             }
