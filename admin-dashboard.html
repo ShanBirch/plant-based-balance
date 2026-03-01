@@ -694,13 +694,24 @@
                     let replyText = data.reply;
                     if (replyText.startsWith('"') && replyText.endsWith('"')) replyText = replyText.slice(1, -1);
                     
-                    await dbHelpers.conversations.create(u.id, 'shannon', 'assistant', replyText, 'Shannon');
-                    if(coachUser?.data?.user?.id){
-                        await window.supabaseClient.from('nudges').insert({sender_id:coachUser.data.user.id, receiver_id:u.id, message:replyText}).catch(e=>console.warn('Nudge insert:',e));
-                    }
-                    fetch('/.netlify/functions/send-dm-notification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: u.id, senderName: 'Coach Shannon', messageText: replyText }) }).catch(e=>console.warn('Push notify:',e));
+                    const msgId = 'ai-resp-' + Date.now() + Math.floor(Math.random()*1000);
+                    const am = document.createElement('div');
+                    am.className = 'ai-msg ai-msg-response';
+                    am.id = msgId;
+                    am.dataset.rawText = replyText;
+                    am.dataset.targetUserId = u.id;
+                    am.dataset.targetUserName = u.name.split(' ')[0];
+                    am.innerHTML = `<strong>Draft response for ${u.name.split(' ')[0]}:</strong><br><br>${aiFormatMarkdown(replyText)}`;
+                    
+                    const ab = document.createElement('div');
+                    ab.className = 'ai-msg-actions';
+                    ab.innerHTML = `<button class="ai-action-edit" onclick="aiEditResponse('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${u.name.split(' ')[0]}</button>`;
+                    am.appendChild(ab);
+                    ch.appendChild(am);
+                    
+                    aiChatHistory.push({role: 'model', text: `[DRAFT RESPONSE FOR ${u.name.split(' ')[0]}]\n${replyText}`});
 
-                    logs.innerHTML += ` <span style="color:#16a34a">Done! Sent response.</span>`;
+                    logs.innerHTML += ` <span style="color:#16a34a">Drafted!</span>`;
                     ch.scrollTop = ch.scrollHeight;
                 }
                 logs.innerHTML += '<br><strong>Batch Complete!</strong>';
@@ -759,13 +770,24 @@
                     let replyText = data.reply;
                     if (replyText.startsWith('"') && replyText.endsWith('"')) replyText = replyText.slice(1, -1);
                     
-                    await dbHelpers.conversations.create(u.id, 'shannon', 'assistant', replyText, 'Shannon');
-                    if(coachUser?.data?.user?.id){
-                        await window.supabaseClient.from('nudges').insert({sender_id:coachUser.data.user.id, receiver_id:u.id, message:replyText}).catch(e=>console.warn('Nudge insert:',e));
-                    }
-                    fetch('/.netlify/functions/send-dm-notification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: u.id, senderName: 'Coach Shannon', messageText: replyText }) }).catch(e=>console.warn('Push notify:',e));
+                    const msgId = 'ai-resp-' + Date.now() + Math.floor(Math.random()*1000);
+                    const am = document.createElement('div');
+                    am.className = 'ai-msg ai-msg-response';
+                    am.id = msgId;
+                    am.dataset.rawText = replyText;
+                    am.dataset.targetUserId = u.id;
+                    am.dataset.targetUserName = u.name.split(' ')[0];
+                    am.innerHTML = `<strong>Draft check-in for ${u.name.split(' ')[0]}:</strong><br><br>${aiFormatMarkdown(replyText)}`;
+                    
+                    const ab = document.createElement('div');
+                    ab.className = 'ai-msg-actions';
+                    ab.innerHTML = `<button class="ai-action-edit" onclick="aiEditResponse('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${u.name.split(' ')[0]}</button>`;
+                    am.appendChild(ab);
+                    ch.appendChild(am);
+                    
+                    aiChatHistory.push({role: 'model', text: `[DRAFT CHECK-IN FOR ${u.name.split(' ')[0]}]\n${replyText}`});
 
-                    logs.innerHTML += ` <span style="color:#16a34a">Done! Sent check-in.</span>`;
+                    logs.innerHTML += ` <span style="color:#16a34a">Drafted!</span>`;
                     ch.scrollTop = ch.scrollHeight;
                 }
                 logs.innerHTML += '<br><strong>Batch Check-ins Complete!</strong>';
@@ -935,10 +957,11 @@
             const el=document.getElementById(msgId);if(!el)return;
             const raw=el.dataset.rawText||el.innerText;
             const actions=el.querySelector('.ai-msg-actions');
+            const targetName = el.dataset.targetUserName || (aiSelectedUser?aiSelectedUser.name.split(' ')[0]:'Client');
             // Store the original HTML so we can cancel
             el.dataset.originalHtml=el.innerHTML;
             // Replace content with editable textarea
-            el.innerHTML=`<textarea class="ai-edit-textarea" id="${msgId}-editor">${raw.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea><div class="ai-msg-actions"><button class="ai-action-cancel" onclick="aiCancelEdit('${msgId}')">Cancel</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}',true)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${aiSelectedUser?aiSelectedUser.name.split(' ')[0]:'Client'}</button></div>`;
+            el.innerHTML=`<textarea class="ai-edit-textarea" id="${msgId}-editor">${raw.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea><div class="ai-msg-actions"><button class="ai-action-cancel" onclick="aiCancelEdit('${msgId}')">Cancel</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}',true)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${targetName}</button></div>`;
             const ta=document.getElementById(msgId+'-editor');if(ta){ta.focus();ta.style.height=Math.max(ta.scrollHeight,120)+'px';}
         }
         function aiCancelEdit(msgId){
@@ -946,8 +969,10 @@
             el.innerHTML=el.dataset.originalHtml;
         }
         async function aiSendToClient(msgId,fromEditor){
-            if(!aiSelectedUser){alert('No client selected.');return;}
             const el=document.getElementById(msgId);if(!el)return;
+            const targetId = el.dataset.targetUserId || (aiSelectedUser ? aiSelectedUser.id : null);
+            const targetName = el.dataset.targetUserName || (aiSelectedUser ? aiSelectedUser.name : 'Client');
+            if(!targetId){alert('No client selected.');return;}
             let msgText;
             if(fromEditor){
                 const ta=document.getElementById(msgId+'-editor');
@@ -960,23 +985,23 @@
             el.querySelectorAll('button').forEach(b=>b.disabled=true);
             const sendBtn=el.querySelector('.ai-action-send');if(sendBtn){sendBtn.textContent='Sending...';}
             try{
-                await dbHelpers.conversations.create(aiSelectedUser.id,'shannon','assistant',msgText,'Shannon');
+                await dbHelpers.conversations.create(targetId,'shannon','assistant',msgText,'Shannon');
                 // Also insert into nudges so the user's DM inbox receives it
                 const coachUser2=await window.supabaseClient.auth.getUser();
                 if(coachUser2?.data?.user?.id){
-                    await window.supabaseClient.from('nudges').insert({sender_id:coachUser2.data.user.id,receiver_id:aiSelectedUser.id,message:msgText}).catch(e=>console.warn('Nudge insert:',e));
+                    await window.supabaseClient.from('nudges').insert({sender_id:coachUser2.data.user.id,receiver_id:targetId,message:msgText}).catch(e=>console.warn('Nudge insert:',e));
                 }
                 // Send push notification
-                fetch('/.netlify/functions/send-dm-notification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipientId:aiSelectedUser.id,senderName:'Coach Shannon',messageText:msgText})}).catch(e=>console.warn('Push notify:',e));
+                fetch('/.netlify/functions/send-dm-notification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipientId:targetId,senderName:'Coach Shannon',messageText:msgText})}).catch(e=>console.warn('Push notify:',e));
                 // Replace action bar with sent badge
                 const rendered=aiFormatMarkdown(msgText);
-                el.innerHTML=rendered+'<div class="ai-msg-sent-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Sent to '+aiSelectedUser.name+'</div>';
+                el.innerHTML=rendered+'<div class="ai-msg-sent-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Sent to '+targetName+'</div>';
                 delete el.dataset.rawText;
             }catch(e){
                 console.error('Failed to send to client:',e);alert('Failed to send message: '+e.message);
                 // Re-enable buttons
                 el.querySelectorAll('button').forEach(b=>b.disabled=false);
-                if(sendBtn)sendBtn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to '+(aiSelectedUser?aiSelectedUser.name.split(' ')[0]:'Client');
+                if(sendBtn)sendBtn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to '+targetName;
             }
         }
         function aiFormatMarkdown(t){if(!t)return'';return t.replace(/```([\s\S]*?)```/g,'<pre style="background:#f1f5f9;padding:12px;border-radius:8px;overflow-x:auto;font-size:0.85rem;"><code>$1</code></pre>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>').replace(/^---$/gm,'<hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0;">').replace(/^- (.+)$/gm,'<li>$1</li>').replace(/(<li>.*<\/li>\n?)+/g,'<ul>$&</ul>').replace(/^\d+\. (.+)$/gm,'<li>$1</li>').replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');}
