@@ -3448,6 +3448,31 @@ async function shareWinCardAsImage(messageId) {
 // ============================================================
 // CHALLENGES FUNCTIONS
 // ============================================================
+// CHALLENGE SYSTEM CONFIGURATION
+// ============================================================
+
+const CHALLENGE_UNIT_LABELS = {
+    xp: 'XP',
+    workouts: 'workouts',
+    volume: 'kg',
+    calories: 'days',
+    steps: 'steps',
+    streak: 'days',
+    sleep: 'min',
+    water: 'days',
+    milestone: '%'
+};
+
+const CHALLENGE_TYPES = {
+    xp:       { emoji: '⚡', name: 'Level Up',  desc: 'Most XP earned', subtitle: '30-day XP battle with friends', color: '#c084fc', howStep2: 'Earn <strong style="color: #4ade80;">double XP</strong> on everything for 30 days.', howStep3: 'Most <strong style="color: #c084fc;">XP</strong> at the end wins.' },
+    workouts: { emoji: '💪', name: 'Workout',   desc: 'Most workouts logged', subtitle: '30-day workout challenge', color: '#ef4444', howStep2: 'Log your <strong style="color: #4ade80;">workouts</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #ef4444;">workouts logged</strong> wins.' },
+    volume:   { emoji: '🏋️', name: 'Volume',    desc: 'Most total kg lifted', subtitle: '30-day volume challenge', color: '#fb923c', howStep2: 'Track your <strong style="color: #4ade80;">lifting volume</strong> for 30 days.', howStep3: 'Most <strong style="color: #fb923c;">total kg lifted</strong> wins.' },
+    calories: { emoji: '🍎', name: 'Calories',  desc: 'Most days hitting calorie goal', subtitle: '30-day calorie challenge', color: '#4ade80', howStep2: 'Hit your <strong style="color: #4ade80;">calorie goals</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #4ade80;">days hitting goal</strong> wins.' },
+    steps:    { emoji: '👟', name: 'Steps',     desc: 'Most total steps', subtitle: '30-day step challenge', color: '#3b82f6', howStep2: 'Track your <strong style="color: #4ade80;">steps</strong> every day for 30 days.', howStep3: 'Most <strong style="color: #3b82f6;">total steps</strong> wins.' },
+    sleep:    { emoji: '🌙', name: 'Sleep',     desc: 'Most minutes of deep sleep', subtitle: '30-day sleep challenge', color: '#a855f7', howStep2: 'Track your <strong style="color: #4ade80;">sleep</strong> every night for 30 days.', howStep3: 'Most <strong style="color: #a855f7;">minutes of sleep</strong> wins.' },
+    water:    { emoji: '💧', name: 'Hydration', desc: 'Most days hitting water goal', subtitle: '30-day water challenge', color: '#0ea5e9', howStep2: 'Log your <strong style="color: #4ade80;">water intake</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #0ea5e9;">days hitting goal</strong> wins.' },
+    milestone: { emoji: '🏔️', name: 'Milestone', desc: 'First to hit a PR goal', subtitle: 'First to hit target weight/reps', color: '#ec4899', howStep2: 'Set a specific <strong style="color: #4ade80;">fitness milestone</strong> to achieve.', howStep3: 'First to hit <strong style="color: #ec4899;">100%</strong> of the target wins.' }
+};
 
 let currentChallengeId = null;
 let challengeChart = null;
@@ -3467,69 +3492,60 @@ async function loadHomeChallenges() {
 
     try {
         console.log('⚔️ [loadHomeChallenges] Fetching from RPC get_user_challenges_v2...');
-        const { data: challenges, error } = await window.supabaseClient
+        let { data: rawChallenges, error: rpcError } = await window.supabaseClient
             .rpc('get_user_challenges_v2', { p_user_id: window.currentUser.id });
 
-        if (error) {
-            console.error('⚔️ [loadHomeChallenges] RPC ERROR:', error);
-            // If the new RPC fails, try the old one as fallback
+        if (rpcError) {
+            console.error('⚔️ [loadHomeChallenges] RPC ERROR:', rpcError);
             console.log('⚔️ [loadHomeChallenges] Falling back to get_user_challenges...');
-            const { data: oldData, error: oldError } = await window.supabaseClient
+            const { data: fallbackData, error: fallbackError } = await window.supabaseClient
                 .rpc('get_user_challenges', { user_uuid: window.currentUser.id });
                 
-            if (oldError) throw oldError;
-            // Map old data to new format if needed
-            challenges = oldData;
+            if (fallbackError) {
+                console.error('⚔️ [loadHomeChallenges] FALLBACK ERROR:', fallbackError);
+                throw fallbackError;
+            }
+            rawChallenges = fallbackData;
         }
 
-        console.log('⚔️ [loadHomeChallenges] Raw Records fetched:', JSON.stringify(challenges));
+        const allChallenges = rawChallenges || [];
+        console.log('⚔️ [loadHomeChallenges] Records fetched:', allChallenges.length);
+        if (allChallenges.length > 0) {
+            console.log('⚔️ [loadHomeChallenges] Sample Record:', JSON.stringify(allChallenges[0]));
+        }
 
-        // Filter active challenges, pending challenges (waiting for friends), and pending invites
-        const allChallenges = challenges || [];
+        // Filter challenges by status and user participation
         const activeChallenges = allChallenges.filter(c =>
-            c.status === 'active' && c.user_status === 'accepted'
+            (c.status === 'active' || c.status === 'pending_start') && c.user_status === 'accepted'
         );
         const pendingChallenges = allChallenges.filter(c =>
-            c.status === 'pending' && c.user_status === 'accepted'
+            c.status === 'pending' && (c.user_status === 'accepted' || c.user_status === 'active')
         );
         const pendingInvites = allChallenges.filter(c => c.user_status === 'invited');
 
-        console.log('⚔️ [loadHomeChallenges] Counts - Total:', allChallenges.length, 'Active:', activeChallenges.length, 'Pending:', pendingChallenges.length, 'Invites:', pendingInvites.length);
+        console.log('⚔️ [loadHomeChallenges] Counts - Active:', activeChallenges.length, 'Pending:', pendingChallenges.length, 'Invites:', pendingInvites.length);
 
         const hasChallenges = activeChallenges.length > 0 || pendingInvites.length > 0 || pendingChallenges.length > 0;
 
-        // Toggle visibility: Hide "Start" card ONLY when there are challenges
+        // Toggle visibility of the "Start a Challenge" empty state card
         if (emptyState) {
             emptyState.style.display = hasChallenges ? 'none' : 'block';
+            console.log('⚔️ [loadHomeChallenges] Setting emptyState display to:', emptyState.style.display);
         }
         
         if (!hasChallenges) {
             container.innerHTML = '';
-            console.log('⚔️ [loadHomeChallenges] No matching challenges found.');
+            console.log('⚔️ [loadHomeChallenges] No matching challenges found for user.');
             return;
         }
 
         let html = '';
 
-        // Show pending invites first — fetch extra details (entry_fee, rare_reward_id) per challenge
+        // Show pending invites first
         if (pendingInvites.length > 0) {
-            // Batch fetch challenge details for invite cards
-            const challengeIds = pendingInvites.map(c => c.challenge_id);
-            let challengeDetails = {};
-            try {
-                const { data: details } = await window.supabaseClient
-                    .from('challenges')
-                    .select('id, entry_fee, rare_reward_id')
-                    .in('id', challengeIds);
-                if (details) {
-                    details.forEach(d => challengeDetails[d.id] = d);
-                }
-            } catch (e) { console.warn('Could not fetch challenge details for invites:', e); }
-
             html += pendingInvites.map(challenge => {
-                const detail = challengeDetails[challenge.challenge_id] || {};
-                const entryFee = detail.entry_fee || 1000;
-                const rareId = detail.rare_reward_id;
+                const entryFee = challenge.entry_fee || 1000;
+                const rareId = challenge.rare_reward_id;
                 const rare = rareId && typeof RARE_COLLECTION !== 'undefined' ? RARE_COLLECTION.find(r => r.id === rareId) : null;
                 const tierData = rare ? (RARE_TIERS[rare.tier] || RARE_TIERS.COMMON) : null;
 
@@ -3690,18 +3706,7 @@ async function loadChallenges() {
     }
 }
 
-// Challenge type definitions
-const CHALLENGE_TYPES = {
-    xp:       { emoji: '⚡', name: 'Level Up',  desc: 'Most XP earned', subtitle: '30-day XP battle with friends', color: '#c084fc', howStep2: 'Earn <strong style="color: #4ade80;">double XP</strong> on everything for 30 days.', howStep3: 'Most <strong style="color: #c084fc;">XP</strong> at the end wins.' },
-    workouts: { emoji: '💪', name: 'Workout',   desc: 'Most workouts logged', subtitle: '30-day workout challenge', color: '#ef4444', howStep2: 'Log your <strong style="color: #4ade80;">workouts</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #ef4444;">workouts logged</strong> wins.' },
-    volume:   { emoji: '🏋️', name: 'Volume',    desc: 'Most total kg lifted', subtitle: '30-day volume challenge', color: '#fb923c', howStep2: 'Track your <strong style="color: #4ade80;">lifting volume</strong> for 30 days.', howStep3: 'Most <strong style="color: #fb923c;">total kg lifted</strong> wins.' },
-    calories: { emoji: '🍎', name: 'Calories',  desc: 'Most days hitting calorie goal', subtitle: '30-day calorie challenge', color: '#4ade80', howStep2: 'Hit your <strong style="color: #4ade80;">calorie goals</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #4ade80;">days hitting goal</strong> wins.' },
-    steps:    { emoji: '👟', name: 'Steps',     desc: 'Most total steps', subtitle: '30-day step challenge', color: '#3b82f6', howStep2: 'Track your <strong style="color: #4ade80;">steps</strong> every day for 30 days.', howStep3: 'Most <strong style="color: #3b82f6;">total steps</strong> wins.' },
-    streak:   { emoji: '🔥', name: 'Streak',    desc: 'Longest streak kept', subtitle: '30-day streak challenge', color: '#fbbf24', howStep2: 'Keep your <strong style="color: #4ade80;">streak alive</strong> for 30 days.', howStep3: 'Longest <strong style="color: #fbbf24;">streak kept</strong> wins.' },
-    sleep:    { emoji: '😴', name: 'Sleep',     desc: 'Most hours slept', subtitle: '30-day sleep challenge', color: '#818cf8', howStep2: 'Track your <strong style="color: #4ade80;">sleep</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #818cf8;">hours slept</strong> wins.' },
-    water:    { emoji: '💧', name: 'Water',     desc: 'Most days hitting water goal', subtitle: '30-day hydration challenge', color: '#0ea5e9', howStep2: 'Hit your <strong style="color: #4ade80;">water goals</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #0ea5e9;">days hitting goal</strong> wins.' },
-    milestone:{ emoji: '🎯', name: 'Milestone', desc: 'First to hit the target', subtitle: 'Race to a goal', color: '#f97316', howStep2: 'Work toward the <strong style="color: #4ade80;">target</strong> in your workouts.', howStep3: '<strong style="color: #f97316;">First to hit the milestone</strong> wins the race.' }
-};
+
 
 let selectedChallengeType = 'xp';
 
@@ -4064,26 +4069,34 @@ async function createChallenge() {
                 console.warn('⚔️ [createChallenge] Failed to send nudge to', friendId, nudgeErr);
             }
         }
+        
+        showToast('Challenge created! Invitations sent.', 'success');
 
         closeCreateChallengeModal();
         
         // Wait 1 second before refreshing home challenges to ensure eventual consistency
-        console.log('⚔️ [createChallenge] Waiting 1s before refresh...');
+        console.log('⚔️ [createChallenge] Success! Scheduling refresh in 1s...');
         setTimeout(() => {
-            if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+            if (typeof loadHomeChallenges === 'function') {
+                console.log('⚔️ [createChallenge] Triggering scheduled refresh now');
+                loadHomeChallenges();
+            }
         }, 1000);
         
-        showToast('Challenge created! Invitations sent.', 'success');
         try { if (typeof checkChallengeBadges === 'function') checkChallengeBadges(); } catch(e) {}
 
     } catch (error) {
         console.error('⚔️ [createChallenge] CRITICAL ERROR:', error);
-        alert('Failed to create challenge: ' + (error.message || 'Please try again'));
-    } finally {
+        alert('Failed to create challenge: ' + (error.message || 'Unknown error'));
+        const btn = document.getElementById('create-challenge-btn');
         if (btn) {
             btn.disabled = false;
             btn.textContent = 'Create Challenge';
         }
+    } finally {
+        // The button re-enabling is now handled in the catch block for critical errors
+        // and earlier for RPC errors, so this finally block can be simplified or removed
+        // if no other cleanup is needed. For now, keeping it empty.
     }
 }
 
@@ -4717,17 +4730,6 @@ async function leaveCurrentChallenge() {
 // ============================================================
 
 // Unit labels for each challenge type (matches DB get_challenge_unit)
-const CHALLENGE_UNIT_LABELS = {
-    xp: 'XP',
-    workouts: 'workouts',
-    volume: 'kg',
-    calories: 'days',
-    steps: 'steps',
-    streak: 'days',
-    sleep: 'min',
-    water: 'days',
-    milestone: '%'
-};
 
 // Format challenge points with appropriate unit for display
 function formatChallengePoints(points, challengeType, milestoneProgress, milestoneCriteria) {
@@ -6358,6 +6360,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.currentUser) {
             loadChatHistory();
             loadCommunityFeed();
+            if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
 
             // Subscribe to Realtime updates for new coach messages
             subscribeToCoachMessages(window.currentUser.id);

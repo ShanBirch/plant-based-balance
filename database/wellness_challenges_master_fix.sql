@@ -238,7 +238,8 @@ RETURNS TABLE(
   leader_points INT,
   challenge_type TEXT,
   unit_label TEXT,
-  rare_reward_id TEXT
+  rare_reward_id TEXT,
+  entry_fee INT
 ) AS $$
 BEGIN
   -- Perform a point check and update for THIS user first
@@ -271,7 +272,8 @@ BEGIN
      ORDER BY cp5.challenge_points DESC LIMIT 1) as leader_points,
     c.challenge_type,
     public.get_challenge_unit(c.challenge_type) as unit_label,
-    c.rare_reward_id
+    c.rare_reward_id,
+    c.entry_fee
   FROM public.challenges c
   JOIN public.challenge_participants cp ON cp.challenge_id = c.id AND cp.user_id = p_user_id
   JOIN public.users creator ON creator.id = c.creator_id
