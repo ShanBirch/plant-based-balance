@@ -5083,15 +5083,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const action = urlParams.get('action');
     const senderId = urlParams.get('sender_id');
 
-    if (action === 'game_invite' && senderId) {
+        if (action === 'game_invite' && senderId) {
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
-        // Wait briefly for app to load auth, then open game
-        setTimeout(() => {
-            if (typeof window.handleGameMessageClick === 'function') {
+        // Wait for app to load auth, then open game
+        let retries = 0;
+        const tryOpenGame = () => {
+            if (typeof window.handleGameMessageClick === 'function' && window.db && window.db.games) {
                 window.handleGameMessageClick(senderId);
+            } else if (retries < 10) {
+                retries++;
+                setTimeout(tryOpenGame, 1000);
             }
-        }, 1500);
+        };
+        setTimeout(tryOpenGame, 1500);
     } else if (action === 'open_dm' && senderId) {
         window.history.replaceState({}, document.title, window.location.pathname);
         setTimeout(() => {
