@@ -3455,16 +3455,27 @@ let challengeChart = null;
 // Load user's challenges
 // Load challenges for home screen (compact version)
 async function loadHomeChallenges() {
+    console.log('⚔️ [loadHomeChallenges] START');
+    if (!window.currentUser) {
+        console.warn('⚔️ [loadHomeChallenges] No currentUser, skipping');
+        return;
+    }
+
     const container = document.getElementById('home-challenges-list');
     const emptyState = document.getElementById('home-challenges-empty');
-
-    if (!container || !window.currentUser) return;
+    if (!container) return; // Only return if container is missing, currentUser check is already done
 
     try {
+        console.log('⚔️ [loadHomeChallenges] Fetching from RPC get_user_challenges...');
         const { data: challenges, error } = await window.supabaseClient
             .rpc('get_user_challenges', { user_uuid: window.currentUser.id });
 
-        if (error) throw error;
+        if (error) {
+            console.error('⚔️ [loadHomeChallenges] RPC ERROR:', error);
+            throw error;
+        }
+
+        console.log('⚔️ [loadHomeChallenges] Records fetched:', challenges?.length || 0);
 
         // Filter active challenges, pending challenges (waiting for friends), and pending invites
         const activeChallenges = (challenges || []).filter(c =>
@@ -3475,11 +3486,9 @@ async function loadHomeChallenges() {
         );
         const pendingInvites = (challenges || []).filter(c => c.user_status === 'invited');
 
-        if (activeChallenges.length === 0 && pendingInvites.length === 0 && pendingChallenges.length === 0) {
-            if (emptyState) emptyState.style.display = '';
-            container.innerHTML = '';
-            return;
-        }
+        console.log('⚔️ [loadHomeChallenges] Counts - Active:', activeChallenges.length, 'Pending:', pendingChallenges.length, 'Invites:', pendingInvites.length);
+
+        const hasChallenges = activeChallenges.length > 0 || pendingInvites.length > 0 || pendingChallenges.length > 0;
 
         // Hide the "Start" card when there are challenges
         if (emptyState) emptyState.style.display = 'none';
@@ -3908,6 +3917,7 @@ window._setCreateChallengeBet = function(amount, btnEl) {
 
 // Create a new challenge (with coin buy-in for creator)
 async function createChallenge() {
+    console.log('⚔️ [createChallenge] START');
     const nameInput = document.getElementById('challenge-name-input');
     const durationSelect = document.getElementById('challenge-duration-select');
     const startDateInput = document.getElementById('challenge-start-date');
@@ -3916,6 +3926,8 @@ async function createChallenge() {
     const name = nameInput?.value.trim();
     const duration = 30; // Fixed 30-day duration
     const startDate = startDateInput?.value;
+
+    console.log('⚔️ [createChallenge] Params:', { name, duration, startDate, friendsCount: selectedFriends.length });
 
     if (!name) {
         alert('Please enter a challenge name');
@@ -3939,40 +3951,16 @@ async function createChallenge() {
     }
 
     try {
-        // Validate and get bet amount FIRST (before any DB writes)
         const betAmount = createChallengeBetAmount;
-        if (betAmount < 1000) {
-            alert('Minimum bet is 1,000 coins.');
-            if (btn) { btn.disabled = false; btn.textContent = 'Create Challenge'; }
-            return;
-        }
-
-        // Debit coins from creator FIRST (before creating anything)
-        const { data: newBalance, error: coinError } = await window.supabaseClient
-            .rpc('debit_coins', {
-                user_uuid: window.currentUser.id,
-                coin_amount: betAmount,
-                txn_type: 'challenge_entry',
-                txn_description: 'Created challenge: ' + name + ' (' + betAmount.toLocaleString() + ' coins)'
-            });
-
-        if (coinError) throw coinError;
-
-        if (newBalance === -1) {
-            alert('Not enough coins! You need ' + betAmount.toLocaleString() + ' coins to create a challenge.');
-            if (typeof openCoinShop === 'function') openCoinShop();
-            if (btn) { btn.disabled = false; btn.textContent = 'Create Challenge'; }
-            return;
-        }
-
-        updateCoinBalanceDisplay(newBalance);
-
+        const challengeType = document.getElementById('challenge-type-input')?.value || selectedChallengeType || 'xp';
+        
         // Calculate end date
         const start = new Date(startDate);
         const end = new Date(start);
         end.setDate(end.getDate() + duration);
+        const endDateStr = getLocalDateString(end);
 
-        // Determine rare reward: featured = guaranteed specific, generic = random weighted
+        // Determine rare reward (featured vs random)
         let rareRewardId = null;
         if (window._challengeFeaturedRare) {
             rareRewardId = window._challengeFeaturedRare;
@@ -3981,55 +3969,48 @@ async function createChallenge() {
             if (randomDrop) rareRewardId = randomDrop.id;
         }
 
-        // Create challenge (with entry_fee so accepters know the amount)
-        const challengeType = document.getElementById('challenge-type-input')?.value || selectedChallengeType || 'xp';
-        const challengeInsert = {
-            name: name,
-            creator_id: window.currentUser.id,
-            start_date: startDate,
-            end_date: getLocalDateString(end),
-            duration_days: duration,
-            status: 'pending',
-            entry_fee: betAmount,
-            challenge_type: challengeType
-        };
-        if (rareRewardId) challengeInsert.rare_reward_id = rareRewardId;
+        console.log('⚔️ [createChallenge] Calling create_wellness_challenge RPC...');
+        const { data: result, error: rpcError } = await window.supabaseClient.rpc('create_wellness_challenge', {
+            p_name: name,
+            p_creator_id: window.currentUser.id,
+            p_start_date: startDate,
+            p_end_date: endDateStr,
+            p_duration_days: duration,
+            p_challenge_type: challengeType,
+            p_entry_fee: betAmount,
+            p_rare_reward_id: rareRewardId
+        });
 
-        const { data: challenge, error: createError } = await window.supabaseClient
-            .from('challenges')
-            .insert(challengeInsert)
-            .select()
-            .single();
+        if (rpcError) {
+            console.error('⚔️ [createChallenge] RPC ERROR:', rpcError);
+            throw rpcError;
+        }
 
-        if (createError) throw createError;
+        if (result.error) {
+            console.warn('⚔️ [createChallenge] RPC Error Result:', result.error);
+            if (result.error === 'insufficient_coins') {
+                alert('Not enough coins! You need ' + betAmount.toLocaleString() + ' coins.');
+                if (typeof openCoinShop === 'function') openCoinShop();
+            } else {
+                alert('Failed to create challenge: ' + result.message);
+            }
+            if (btn) { btn.disabled = false; btn.textContent = 'Create Challenge'; }
+            return;
+        }
 
-        // Add creator as participant
-        const { data: userPoints } = await window.supabaseClient
-            .from('user_points')
-            .select('current_points')
-            .eq('user_id', window.currentUser.id)
-            .maybeSingle();
+        const challengeId = result.challenge_id;
+        console.log('⚔️ [createChallenge] Challenge Created Successfully. ID:', challengeId);
 
-        const currentPoints = userPoints?.current_points || 0;
-
-        await window.supabaseClient
-            .from('challenge_participants')
-            .insert({
-                challenge_id: challenge.id,
-                user_id: window.currentUser.id,
-                status: 'accepted',
-                accepted_at: new Date().toISOString(),
-                starting_points: currentPoints,
-                current_points: currentPoints,
-                challenge_points: 0,
-                has_paid: true,
-                paid_at: new Date().toISOString()
-            });
+        if (result.new_balance !== undefined) {
+             updateCoinBalanceDisplay(result.new_balance);
+        }
 
         // Invite selected friends
         const friendIds = Array.from(selectedFriends).map(cb => cb.value);
+        console.log('⚔️ [createChallenge] Inviting friends:', friendIds);
+        
         const invites = friendIds.map(friendId => ({
-            challenge_id: challenge.id,
+            challenge_id: challengeId,
             user_id: friendId,
             status: 'invited'
         }));
@@ -4038,7 +4019,10 @@ async function createChallenge() {
             .from('challenge_participants')
             .insert(invites);
 
-        if (inviteError) throw inviteError;
+        if (inviteError) {
+            console.error('⚔️ [createChallenge] Invite Error:', inviteError);
+            throw inviteError;
+        }
 
         // Send nudge notification to each invited friend
         const creatorName = window.currentUser?.user_metadata?.name || window.currentUser?.email || 'Someone';
@@ -4048,6 +4032,7 @@ async function createChallenge() {
             ? `⚔️ ${typeLabel.toUpperCase()} CHALLENGE! ${creatorName} challenged you to "${name}" — win ${rareInfo.emoji} ${rareInfo.name}! 🪙 ${betAmount.toLocaleString()} entry`
             : `⚔️ ${typeLabel.toUpperCase()} CHALLENGE! ${creatorName} challenged you to "${name}"! 🪙 ${betAmount.toLocaleString()} entry`;
 
+        console.log('⚔️ [createChallenge] Sending nudges...');
         for (const friendId of friendIds) {
             try {
                 await window.supabaseClient
@@ -4056,10 +4041,11 @@ async function createChallenge() {
                         sender_id: window.currentUser.id,
                         receiver_id: friendId,
                         message: nudgeMessage,
-                        nudge_type: 'challenge_invite'
+                        nudge_type: 'challenge_invite',
+                        reference_id: challengeId
                     });
             } catch (nudgeErr) {
-                console.warn('Failed to send nudge to', friendId, nudgeErr);
+                console.warn('⚔️ [createChallenge] Failed to send nudge to', friendId, nudgeErr);
             }
         }
 
@@ -4069,7 +4055,7 @@ async function createChallenge() {
         try { if (typeof checkChallengeBadges === 'function') checkChallengeBadges(); } catch(e) {}
 
     } catch (error) {
-        console.error('Error creating challenge:', error);
+        console.error('⚔️ [createChallenge] CRITICAL ERROR:', error);
         alert('Failed to create challenge: ' + (error.message || 'Please try again'));
     } finally {
         if (btn) {
@@ -4231,17 +4217,16 @@ window._setChallengeBet = function(amount, btnEl) {
 };
 
 async function spendCoinsToJoinChallenge() {
+    console.log('⚔️ [spendCoinsToJoinChallenge] START');
     const challengeId = pendingChallengeId;
     if (!challengeId) {
+        console.error('⚔️ [spendCoinsToJoinChallenge] No pendingChallengeId found');
         alert('No challenge selected');
         return;
     }
 
     const betAmount = currentChallengeBet;
-    if (betAmount < CHALLENGE_MIN_BET) {
-        alert('Minimum bet is ' + CHALLENGE_MIN_BET.toLocaleString() + ' coins.');
-        return;
-    }
+    console.log('⚔️ [spendCoinsToJoinChallenge] Joining:', challengeId, 'Bet:', betAmount);
 
     const btn = document.getElementById('buy-challenge-pass-btn');
     if (btn) {
@@ -4250,45 +4235,52 @@ async function spendCoinsToJoinChallenge() {
     }
 
     try {
-        // Debit coins via RPC
-        const { data: newBalance, error } = await window.supabaseClient
-            .rpc('debit_coins', {
-                user_uuid: window.currentUser.id,
-                coin_amount: betAmount,
-                txn_type: 'challenge_entry',
-                txn_description: 'Challenge entry fee (' + betAmount.toLocaleString() + ' coins)',
-                txn_reference: challengeId
-            });
+        // Use atomic join RPC combining coin debit and participant status update
+        console.log('⚔️ [spendCoinsToJoinChallenge] Calling join_wellness_challenge RPC...');
+        const { data: result, error: rpcError } = await window.supabaseClient.rpc('join_wellness_challenge', {
+            p_challenge_id: challengeId,
+            p_user_id: window.currentUser.id
+        });
 
-        if (error) throw error;
+        if (rpcError) {
+            console.error('⚔️ [spendCoinsToJoinChallenge] RPC ERROR:', rpcError);
+            throw rpcError;
+        }
 
-        if (newBalance === -1) {
-            alert('Not enough coins! You need ' + betAmount.toLocaleString() + ' coins to enter.');
-            closeChallengePassModal();
-            openCoinShop();
+        if (result.error) {
+            console.warn('⚔️ [spendCoinsToJoinChallenge] RPC Error Result:', result.error);
+            if (result.error === 'insufficient_coins') {
+                alert('Not enough coins! You need ' + betAmount.toLocaleString() + ' coins.');
+                closeChallengePassModal();
+                if (typeof openCoinShop === 'function') openCoinShop();
+            } else {
+                alert('Failed to join challenge: ' + result.message);
+            }
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = 'Spend 🪙 ' + betAmount.toLocaleString() + ' Coins &amp; Join';
+            }
             return;
         }
 
+        console.log('⚔️ [spendCoinsToJoinChallenge] Success. Balance:', result.new_balance);
+
         // Update displayed balance
-        updateCoinBalanceDisplay(newBalance);
+        if (result.new_balance !== undefined) {
+             updateCoinBalanceDisplay(result.new_balance);
+        }
 
-        // Close modal and accept challenge
+        // Close modal
         closeChallengePassModal();
-        await doAcceptChallenge(challengeId);
-
-        // Mark as paid on the participant record
-        try {
-            await window.supabaseClient
-                .from('challenge_participants')
-                .update({ has_paid: true, paid_at: new Date().toISOString() })
-                .eq('challenge_id', challengeId)
-                .eq('user_id', window.currentUser.id);
-        } catch (e) { console.warn('Could not update has_paid:', e); }
+        
+        // Refresh challenges on home screen
+        if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+        alert('Challenge accepted! Good luck!');
 
         pendingChallengeId = null;
 
     } catch (error) {
-        console.error('Error spending coins for challenge:', error);
+        console.error('⚔️ [spendCoinsToJoinChallenge] CRITICAL ERROR:', error);
         alert('Failed to join challenge. Please try again.');
         if (btn) {
             btn.disabled = false;
@@ -4299,7 +4291,7 @@ async function spendCoinsToJoinChallenge() {
 
 // Coin balance management
 async function loadCoinBalance() {
-    if (!window.supabaseClient || !window.currentUser) return 0;
+    console.log('🪙 [loadCoinBalance] START');
     try {
         const { data, error } = await window.supabaseClient
             .rpc('get_coin_balance', { user_uuid: window.currentUser.id });
@@ -4394,22 +4386,31 @@ async function buyCoinPack(packId) {
 
 // Decline challenge invitation
 async function declineChallengeInvite(challengeId) {
-    if (!confirm('Are you sure you want to decline this challenge?')) return;
+    console.log('⚔️ [declineChallengeInvite] called for:', challengeId);
+    if (!confirm('Are you sure you want to decline this challenge?')) {
+        console.log('⚔️ [declineChallengeInvite] User cancelled confirmation');
+        return;
+    }
 
     try {
+        console.log('⚔️ [declineChallengeInvite] Updating participant status to declined');
         const { error } = await window.supabaseClient
             .from('challenge_participants')
             .update({ status: 'declined' })
             .eq('challenge_id', challengeId)
             .eq('user_id', window.currentUser.id);
 
-        if (error) throw error;
+        if (error) {
+            console.error('⚔️ [declineChallengeInvite] ERROR:', error);
+            throw error;
+        }
 
+        console.log('⚔️ [declineChallengeInvite] Success');
         // Refresh challenges on home screen
         if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
 
     } catch (error) {
-        console.error('Error declining challenge:', error);
+        console.error('⚔️ [declineChallengeInvite] CRITICAL ERROR:', error);
     }
 }
 
@@ -4643,30 +4644,45 @@ function closeChallengeLeaderboard() {
 
 // Leave current challenge
 async function leaveCurrentChallenge() {
-    if (!currentChallengeId) return;
-    if (!confirm('Are you sure you want to leave this challenge? If you\'re the last participant, the challenge will be cancelled.')) return;
+    console.log('⚔️ [leaveCurrentChallenge] called for:', currentChallengeId);
+    if (!currentChallengeId) {
+        console.error('⚔️ [leaveCurrentChallenge] No currentChallengeId set');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to leave this challenge? If you are still pending start, your entry fee will be refunded. If you\'re the last participant, the challenge will be cancelled.')) {
+        console.log('⚔️ [leaveCurrentChallenge] User cancelled confirmation');
+        return;
+    }
 
     try {
+        console.log('⚔️ [leaveCurrentChallenge] Calling leave_wellness_challenge RPC...');
         const { data, error } = await window.supabaseClient
-            .rpc('leave_challenge', {
-                challenge_uuid: currentChallengeId,
-                user_uuid: window.currentUser.id
+            .rpc('leave_wellness_challenge', {
+                p_challenge_id: currentChallengeId,
+                p_user_id: window.currentUser.id
             });
 
-        if (error) throw error;
+        if (error) {
+            console.error('⚔️ [leaveCurrentChallenge] RPC ERROR:', error);
+            throw error;
+        }
+
+        console.log('⚔️ [leaveCurrentChallenge] RPC Success:', data);
 
         closeChallengeLeaderboard();
         // Refresh challenges on home screen
         if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+        if (typeof loadCoinBalance === 'function') loadCoinBalance();
 
-        if (data?.cancelled) {
-            alert('You were the last participant. The challenge has been cancelled.');
+        if (data?.status === 'cancelled') {
+            alert('The challenge has been cancelled. Any entry fees have been refunded.');
         } else {
             alert('You have left the challenge.');
         }
 
     } catch (error) {
-        console.error('Error leaving challenge:', error);
+        console.error('⚔️ [leaveCurrentChallenge] CRITICAL ERROR:', error);
         alert('Failed to leave challenge');
     }
 }
