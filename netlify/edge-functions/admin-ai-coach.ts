@@ -74,7 +74,9 @@ IMPORTANT:
 - You are NOT talking to a client. You are talking to Shannon the coach/admin.
 - If asked something you don't have data for, say so clearly
 - When identifying users who need attention, explain WHY (e.g., inactive for X days)
-- IF SHANNON ASKS YOU TO REVIEW, CHECK-IN, OR FIND DATA FOR A SPECIFIC CLIENT (e.g., "Search for Shannon" or "Write a checkin for Sarah"), you MUST output the exact phrase \`___FETCH_USER:FirstName___\` (e.g. \`___FETCH_USER:Shannon___\`). Do NOT output anything else if you need to fetch a user. The system will intercept this, fetch their workouts/meals/check-ins, and respond back to you automatically with the data.${personalityPrompt}`;
+- IF SHANNON ASKS YOU TO REVIEW, CHECK-IN, OR FIND DATA FOR A SPECIFIC CLIENT (e.g., "Search for Shannon" or "Write a checkin for Sarah"), you MUST output the exact phrase \`___FETCH_USER:FirstName___\` (e.g. \`___FETCH_USER:Shannon___\`). Do NOT output anything else if you need to fetch a user. The system will intercept this, fetch their workouts/meals/check-ins, and respond back to you automatically with the data.
+- IF SHANNON ASKS YOU TO CHECK, REPLY TO, OR RESPOND TO UNREAD MESSAGES FOR EVERYONE, output exactly: \`___BATCH_REPLY_MESSAGES___\`
+- IF SHANNON ASKS YOU TO WRITE OR SEND CHECK-INS TO EVERYONE, output exactly: \`___BATCH_SEND_CHECKINS___\`${personalityPrompt}`;
 
       const contents: any[] = [];
       contents.push({ role: "user", parts: [{ text: `SYSTEM: ${generalSystemPrompt}` }] });
@@ -358,6 +360,8 @@ IMPORTANT:
 - Flag concerning patterns (e.g., no workouts for 3 days, skipping meals, low energy reports)
 - Celebrate wins too - consistency streaks, PBs, good nutrition days
 - IF SHANNON ASKS YOU TO REVIEW OR SWITCH TO A DIFFERENT SPECIFIC CLIENT (e.g., "Now check Sarah"), you MUST output the exact phrase \`___FETCH_USER:FirstName___\` (e.g. \`___FETCH_USER:Sarah___\`). The system will intercept this, fetch their data, and reset the chat automatically.
+- IF SHANNON ASKS YOU TO CHECK, REPLY TO, OR RESPOND TO UNREAD MESSAGES FOR EVERYONE, output exactly: \`___BATCH_REPLY_MESSAGES___\`
+- IF SHANNON ASKS YOU TO WRITE OR SEND CHECK-INS TO EVERYONE, output exactly: \`___BATCH_SEND_CHECKINS___\`
 
 === SHANNON'S VOICE (CRITICAL - for draft messages and check-in reviews sent to clients) ===
 

@@ -624,11 +624,155 @@
                     }
                 }
             }
+            if (d.reply && d.reply.includes('___BATCH_REPLY_MESSAGES___')) {
+                d.reply = d.reply.replace('___BATCH_REPLY_MESSAGES___', '').trim();
+                setTimeout(() => performBatchReplies(), 500);
+            }
+            if (d.reply && d.reply.includes('___BATCH_SEND_CHECKINS___')) {
+                d.reply = d.reply.replace('___BATCH_SEND_CHECKINS___', '').trim();
+                setTimeout(() => performBatchCheckins(), 500);
+            }
             const am=document.createElement('div');am.className='ai-msg ai-msg-response';am.innerHTML=aiFormatMarkdown(d.reply);
             if(aiSelectedUser){const msgId='ai-resp-'+Date.now();am.id=msgId;am.dataset.rawText=d.reply;const ab=document.createElement('div');ab.className='ai-msg-actions';ab.innerHTML=`<button class="ai-action-edit" onclick="aiEditResponse('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${aiSelectedUser.name.split(' ')[0]}</button>`;am.appendChild(ab);}
             ch.appendChild(am);aiChatHistory.push({role:'user',text:q});aiChatHistory.push({role:'model',text:d.reply});
             }catch(e){console.error('AI coach error:',e);ld.remove();const em=document.createElement('div');em.className='ai-msg ai-msg-response';em.style.borderColor='#fca5a5';em.style.background='#fef2f2';em.innerHTML=`<span style="color:#ef4444;">Error: ${e.message||'Something went wrong.'}</span>`;ch.appendChild(em);}
             ch.scrollTop=ch.scrollHeight;aiIsLoading=false;inp.focus();
+        }
+        
+        async function performBatchReplies() {
+            const ch = document.getElementById('ai-coach-chat');
+            const logs = document.createElement('div');
+            logs.className = 'ai-msg ai-msg-response';
+            logs.innerHTML = '<strong>Batch Auto-Reply Started...</strong><br>Fetching recent conversations...';
+            ch.appendChild(logs); ch.scrollTop = ch.scrollHeight;
+
+            try {
+                const { data: allConvos, error } = await window.supabaseClient.from('conversations')
+                    .select('*')
+                    .order('timestamp', { ascending: false })
+                    .limit(2000);
+                
+                if (error) throw error;
+
+                const processedUsers = new Set();
+                const unrepliedUsers = [];
+                for (const c of allConvos) {
+                    if (!processedUsers.has(c.user_id)) {
+                        processedUsers.add(c.user_id);
+                        if (c.role === 'user') unrepliedUsers.push(c.user_id);
+                    }
+                }
+
+                if (unrepliedUsers.length === 0) {
+                    logs.innerHTML += '<br>No unreplied messages found!';
+                    ch.scrollTop = ch.scrollHeight;
+                    return;
+                }
+
+                logs.innerHTML += `<br>Found ${unrepliedUsers.length} users waiting for a reply. Drafting and sending responses...`;
+                ch.scrollTop = ch.scrollHeight;
+
+                const coachUser = await window.supabaseClient.auth.getUser();
+
+                for (let uId of unrepliedUsers) {
+                    const u = allUsers.find(x => x.id === uId);
+                    if (!u) continue;
+                    logs.innerHTML += `<br>- Processing ${u.name}...`;
+                    ch.scrollTop = ch.scrollHeight;
+
+                    const userData = await dbHelpers.admin.getUserWeekData(u.id, 7);
+                    const query = "Write a direct response to this client's latest message. Write it EXACTLY as Shannon would send it. Only output the message text to be sent directly to the client, nothing else.";
+                    
+                    const body = { query, chatHistory: [], analyticsSummary: '' };
+                    if (coachPersonality) body.coachPersonality = coachPersonality;
+                    body.userData = userData;
+
+                    const res = await fetch('/.netlify/functions/admin-ai-coach', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Failed');
+                    
+                    let replyText = data.reply;
+                    if (replyText.startsWith('"') && replyText.endsWith('"')) replyText = replyText.slice(1, -1);
+                    
+                    await dbHelpers.conversations.create(u.id, 'shannon', 'assistant', replyText, 'Shannon');
+                    if(coachUser?.data?.user?.id){
+                        await window.supabaseClient.from('nudges').insert({sender_id:coachUser.data.user.id, receiver_id:u.id, message:replyText}).catch(e=>console.warn('Nudge insert:',e));
+                    }
+                    fetch('/.netlify/functions/send-dm-notification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: u.id, senderName: 'Coach Shannon', messageText: replyText }) }).catch(e=>console.warn('Push notify:',e));
+
+                    logs.innerHTML += ` <span style="color:#16a34a">Done! Sent response.</span>`;
+                    ch.scrollTop = ch.scrollHeight;
+                }
+                logs.innerHTML += '<br><strong>Batch Complete!</strong>';
+            } catch (err) {
+                logs.innerHTML += `<br><span style="color:#ef4444">Error: ${err.message}</span>`;
+            }
+            ch.scrollTop = ch.scrollHeight;
+        }
+
+        async function performBatchCheckins() {
+            const ch = document.getElementById('ai-coach-chat');
+            const logs = document.createElement('div');
+            logs.className = 'ai-msg ai-msg-response';
+            logs.innerHTML = '<strong>Batch Check-ins Started...</strong><br>Finding active clients who need check-ins...';
+            ch.appendChild(logs); ch.scrollTop = ch.scrollHeight;
+
+            try {
+                // Users active recently but hasn't been messaged by Shannon in last 3 days
+                const activeUsers = allUsers.filter(u => u.last_login && (Date.now() - new Date(u.last_login).getTime() < 7*24*60*60*1000));
+                
+                const { data: recentConvos, error } = await window.supabaseClient.from('conversations')
+                    .select('*')
+                    .gte('timestamp', new Date(Date.now() - 3*24*60*60*1000).toISOString());
+                
+                if (error) throw error;
+
+                const messagedUserIds = new Set(recentConvos.filter(c => c.role !== 'user').map(c => c.user_id));
+                const usersToPing = activeUsers.filter(u => !messagedUserIds.has(u.id)).slice(0, 10);
+                
+                if (usersToPing.length === 0) {
+                    logs.innerHTML += '<br>No clients need check-ins right now! (Active users were already messaged recently)';
+                    ch.scrollTop = ch.scrollHeight;
+                    return;
+                }
+
+                logs.innerHTML += `<br>Found ${usersToPing.length} active clients to check in on. Drafting and sending messages...`;
+                ch.scrollTop = ch.scrollHeight;
+
+                const coachUser = await window.supabaseClient.auth.getUser();
+
+                for (let u of usersToPing) {
+                    logs.innerHTML += `<br>- Processing ${u.name}...`;
+                    ch.scrollTop = ch.scrollHeight;
+
+                    const userData = await dbHelpers.admin.getUserWeekData(u.id, 7);
+                    const query = "Write a proactive check-in message based on this client's recent data. Keep it highly personalized to their tracked meals, workouts, or lack thereof. Write it EXACTLY as Shannon would text. Only output the exact message text to be sent, nothing else.";
+                    
+                    const body = { query, chatHistory: [], analyticsSummary: '' };
+                    if (coachPersonality) body.coachPersonality = coachPersonality;
+                    body.userData = userData;
+
+                    const res = await fetch('/.netlify/functions/admin-ai-coach', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Failed');
+                    
+                    let replyText = data.reply;
+                    if (replyText.startsWith('"') && replyText.endsWith('"')) replyText = replyText.slice(1, -1);
+                    
+                    await dbHelpers.conversations.create(u.id, 'shannon', 'assistant', replyText, 'Shannon');
+                    if(coachUser?.data?.user?.id){
+                        await window.supabaseClient.from('nudges').insert({sender_id:coachUser.data.user.id, receiver_id:u.id, message:replyText}).catch(e=>console.warn('Nudge insert:',e));
+                    }
+                    fetch('/.netlify/functions/send-dm-notification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: u.id, senderName: 'Coach Shannon', messageText: replyText }) }).catch(e=>console.warn('Push notify:',e));
+
+                    logs.innerHTML += ` <span style="color:#16a34a">Done! Sent check-in.</span>`;
+                    ch.scrollTop = ch.scrollHeight;
+                }
+                logs.innerHTML += '<br><strong>Batch Check-ins Complete!</strong>';
+            } catch (err) {
+                logs.innerHTML += `<br><span style="color:#ef4444">Error: ${err.message}</span>`;
+            }
+            ch.scrollTop = ch.scrollHeight;
         }
         // ==========================================
         // CLIENT IMPORT FUNCTIONALITY
