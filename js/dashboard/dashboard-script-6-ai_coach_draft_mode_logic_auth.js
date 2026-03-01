@@ -3472,26 +3472,42 @@ async function loadHomeChallenges() {
 
         if (error) {
             console.error('⚔️ [loadHomeChallenges] RPC ERROR:', error);
-            throw error;
+            // If the new RPC fails, try the old one as fallback
+            console.log('⚔️ [loadHomeChallenges] Falling back to get_user_challenges...');
+            const { data: oldData, error: oldError } = await window.supabaseClient
+                .rpc('get_user_challenges', { user_uuid: window.currentUser.id });
+                
+            if (oldError) throw oldError;
+            // Map old data to new format if needed
+            challenges = oldData;
         }
 
-        console.log('⚔️ [loadHomeChallenges] Records fetched:', challenges?.length || 0);
+        console.log('⚔️ [loadHomeChallenges] Raw Records fetched:', JSON.stringify(challenges));
 
         // Filter active challenges, pending challenges (waiting for friends), and pending invites
-        const activeChallenges = (challenges || []).filter(c =>
+        const allChallenges = challenges || [];
+        const activeChallenges = allChallenges.filter(c =>
             c.status === 'active' && c.user_status === 'accepted'
         );
-        const pendingChallenges = (challenges || []).filter(c =>
+        const pendingChallenges = allChallenges.filter(c =>
             c.status === 'pending' && c.user_status === 'accepted'
         );
-        const pendingInvites = (challenges || []).filter(c => c.user_status === 'invited');
+        const pendingInvites = allChallenges.filter(c => c.user_status === 'invited');
 
-        console.log('⚔️ [loadHomeChallenges] Counts - Active:', activeChallenges.length, 'Pending:', pendingChallenges.length, 'Invites:', pendingInvites.length);
+        console.log('⚔️ [loadHomeChallenges] Counts - Total:', allChallenges.length, 'Active:', activeChallenges.length, 'Pending:', pendingChallenges.length, 'Invites:', pendingInvites.length);
 
         const hasChallenges = activeChallenges.length > 0 || pendingInvites.length > 0 || pendingChallenges.length > 0;
 
-        // Hide the "Start" card when there are challenges
-        if (emptyState) emptyState.style.display = 'none';
+        // Toggle visibility: Hide "Start" card ONLY when there are challenges
+        if (emptyState) {
+            emptyState.style.display = hasChallenges ? 'none' : 'block';
+        }
+        
+        if (!hasChallenges) {
+            container.innerHTML = '';
+            console.log('⚔️ [loadHomeChallenges] No matching challenges found.');
+            return;
+        }
 
         let html = '';
 
@@ -4050,7 +4066,13 @@ async function createChallenge() {
         }
 
         closeCreateChallengeModal();
-        if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+        
+        // Wait 1 second before refreshing home challenges to ensure eventual consistency
+        console.log('⚔️ [createChallenge] Waiting 1s before refresh...');
+        setTimeout(() => {
+            if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+        }, 1000);
+        
         showToast('Challenge created! Invitations sent.', 'success');
         try { if (typeof checkChallengeBadges === 'function') checkChallengeBadges(); } catch(e) {}
 
