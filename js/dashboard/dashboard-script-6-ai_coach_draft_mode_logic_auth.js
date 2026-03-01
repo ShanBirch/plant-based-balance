@@ -3466,9 +3466,9 @@ async function loadHomeChallenges() {
     if (!container) return; // Only return if container is missing, currentUser check is already done
 
     try {
-        console.log('⚔️ [loadHomeChallenges] Fetching from RPC get_user_challenges...');
+        console.log('⚔️ [loadHomeChallenges] Fetching from RPC get_user_challenges_v2...');
         const { data: challenges, error } = await window.supabaseClient
-            .rpc('get_user_challenges', { user_uuid: window.currentUser.id });
+            .rpc('get_user_challenges_v2', { p_user_id: window.currentUser.id });
 
         if (error) {
             console.error('⚔️ [loadHomeChallenges] RPC ERROR:', error);
@@ -4457,9 +4457,10 @@ async function openChallengeLeaderboard(challengeId) {
             }
         }
 
-        // Get leaderboard
+        // Get leaderboard using v2 RPC (includes auto-point update for requester)
+        console.log('⚔️ [openChallengeLeaderboard] Fetching leaderboard from RPC get_challenge_leaderboard_v2...');
         const { data: leaderboard, error } = await window.supabaseClient
-            .rpc('get_challenge_leaderboard', { challenge_uuid: challengeId });
+            .rpc('get_challenge_leaderboard_v2', { p_challenge_id: challengeId, p_user_id: window.currentUser.id });
 
         if (error) throw error;
 
