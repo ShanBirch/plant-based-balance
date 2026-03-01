@@ -159,14 +159,14 @@ RETURNS JSONB AS $$
 DECLARE
     v_remaining_count INTEGER;
     v_challenge_status TEXT;
-    v_is_creator BOOLEAN;
+    v_creator_id UUID;
     v_entry_fee INTEGER;
     v_user_paid BOOLEAN;
 BEGIN
     RAISE NOTICE '[LeaveChallenge] User % leaving %', p_user_id, p_challenge_id;
 
     -- 1. Get challenge context
-    SELECT status, creator_id, entry_fee INTO v_challenge_status, v_is_creator, v_entry_fee
+    SELECT status, creator_id, entry_fee INTO v_challenge_status, v_creator_id, v_entry_fee
     FROM public.challenges WHERE id = p_challenge_id;
 
     SELECT has_paid INTO v_user_paid
@@ -278,6 +278,7 @@ BEGIN
   JOIN public.challenge_participants cp ON cp.challenge_id = c.id AND cp.user_id = p_user_id
   JOIN public.users creator ON creator.id = c.creator_id
   WHERE c.status IN ('pending', 'active')
+  AND cp.status NOT IN ('left', 'declined')
   ORDER BY
     CASE WHEN cp.status = 'invited' THEN 0 ELSE 1 END,
     c.start_date ASC;

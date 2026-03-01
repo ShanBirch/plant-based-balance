@@ -4718,6 +4718,11 @@ async function leaveCurrentChallenge() {
             console.error('⚔️ [leaveCurrentChallenge] RPC ERROR:', error);
             throw error;
         }
+        
+        if (data && data.error) {
+            console.error('⚔️ [leaveCurrentChallenge] DB LOGIC ERROR:', data);
+            throw new Error(data.message || data.error);
+        }
 
         console.log('⚔️ [leaveCurrentChallenge] RPC Success:', data);
 
@@ -4737,8 +4742,14 @@ async function leaveCurrentChallenge() {
 
     } catch (error) {
         console.error('⚔️ [leaveCurrentChallenge] CRITICAL ERROR:', error);
-        if (typeof showToast === 'function') showToast('Failed to leave challenge', 'error');
-        else alert('Failed to leave challenge');
+        
+        const errorMsg = error.message || 'Failed to leave challenge';
+        
+        if (typeof showToast === 'function') {
+            showToast(errorMsg, 'error');
+        } else {
+            alert(errorMsg);
+        }
     }
 }
 
