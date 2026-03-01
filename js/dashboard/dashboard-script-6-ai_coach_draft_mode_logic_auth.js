@@ -5030,17 +5030,8 @@ window.handleGameMessageClick = async function(senderId) {
             if (typeof closeMessageSelectorModal === 'function') closeMessageSelectorModal();
             
             if (game.status === 'pending') {
-                if (game.challenger_id === senderId) {
-                    // They challenged us - show the invite modal
-                    if (typeof window.handleGameInvite === 'function') {
-                        window.handleGameInvite(game.match_id);
-                    }
-                } else {
-                    // We challenged them - show the "Waiting" toast
-                    showToast('Waiting for friend to accept...', 'info');
-                    if (typeof window.openGameBoard === 'function') {
-                        window.openGameBoard(game.match_id);
-                    }
+                if (typeof window.openGameBoard === 'function') {
+                    window.openGameBoard(game.match_id);
                 }
             } else {
                 // Game is already active - open the board
