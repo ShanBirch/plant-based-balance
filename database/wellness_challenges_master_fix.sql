@@ -1,17 +1,22 @@
--- ============================================================
--- WELLNESS CHALLENGES MASTER FIX
--- Atomic RPCs for creation, joining, and cancellation with coin refunds.
--- Includes full logging support for debugging.
--- ============================================================
-
 -- 1. ENHANCE CHALLENGES TABLE (Ensure all columns exist)
 ALTER TABLE public.challenges ADD COLUMN IF NOT EXISTS challenge_type TEXT DEFAULT 'xp';
 ALTER TABLE public.challenges ADD COLUMN IF NOT EXISTS entry_fee INTEGER DEFAULT 1000;
-ALTER TABLE public.challenges ADD COLUMN IF NOT EXISTS rare_reward_id UUID REFERENCES public.cosmetic_items(id);
+
+-- Drop foreign key if it exists so we can change the type
+DO $$ 
+BEGIN 
+    IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'challenges_rare_reward_id_fkey') THEN
+        ALTER TABLE public.challenges DROP CONSTRAINT challenges_rare_reward_id_fkey;
+    END IF;
+END $$;
+
+-- Change rare_reward_id from UUID to TEXT to support custom character IDs (like 'ronny')
+ALTER TABLE public.challenges ALTER COLUMN rare_reward_id TYPE TEXT;
 
 -- 2. ATOMIC CREATE CHALLENGE RPC
 -- Handles coin debit, challenge record, and initial participant record in one transaction.
 DROP FUNCTION IF EXISTS create_wellness_challenge(TEXT, UUID, DATE, DATE, INT, TEXT, INT, UUID);
+DROP FUNCTION IF EXISTS create_wellness_challenge(TEXT, UUID, DATE, DATE, INT, TEXT, INT, TEXT);
 CREATE OR REPLACE FUNCTION create_wellness_challenge(
     p_name TEXT,
     p_creator_id UUID,
@@ -20,7 +25,7 @@ CREATE OR REPLACE FUNCTION create_wellness_challenge(
     p_duration_days INT,
     p_challenge_type TEXT,
     p_entry_fee INT,
-    p_rare_reward_id UUID DEFAULT NULL
+    p_rare_reward_id TEXT DEFAULT NULL
 )
 RETURNS JSONB AS $$
 DECLARE
@@ -233,7 +238,7 @@ RETURNS TABLE(
   leader_points INT,
   challenge_type TEXT,
   unit_label TEXT,
-  rare_reward_id UUID
+  rare_reward_id TEXT
 ) AS $$
 BEGIN
   -- Perform a point check and update for THIS user first
@@ -318,7 +323,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 8. FINAL GRANTS
-GRANT EXECUTE ON FUNCTION public.create_wellness_challenge(TEXT, UUID, DATE, DATE, INT, TEXT, INT, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.create_wellness_challenge(TEXT, UUID, DATE, DATE, INT, TEXT, INT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.join_wellness_challenge(UUID, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.leave_wellness_challenge(UUID, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_user_challenges_v2(UUID) TO authenticated;
