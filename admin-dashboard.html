@@ -579,7 +579,7 @@
             const ch=document.getElementById('ai-coach-chat');ch.innerHTML='<div class="ai-msg-loading"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span style="margin-left:8px;color:#64748b;font-size:0.85rem;">Loading...</span></div>';
             try{const days=parseInt(document.getElementById('ai-timeframe').value);aiUserData=await dbHelpers.admin.getUserWeekData(id,days);aiUserData._days=days;
             aiRenderProfileSummary(name,email,aiUserData,days);ch.innerHTML='';const rm=document.createElement('div');rm.className='ai-msg ai-msg-response';rm.innerHTML=`<strong>${name}'s</strong> data loaded (last ${days} days). I have their workouts, meals, check-ins, conversations, and wearable data ready.<br><br>What would you like to know?`;ch.appendChild(rm);ch.scrollTop=ch.scrollHeight;
-            }catch(e){console.error('Failed to load user data:',e);pp.style.display='none';ch.innerHTML='<div style="padding:20px;color:#ef4444;">Failed to load client data.</div>';}
+            }catch(e){console.error('Failed to load user data:',e);pp.style.display='none';ch.innerHTML='<div style="padding:20px;color:#ef4444;">Failed to load client data.<br><br><pre>'+e.stack+'</pre></div>';}
         }
         function aiRenderProfileSummary(name,email,data,days){
             const panel=document.getElementById('ai-client-profile'),p=data.profile||{},f=data.facts||{},q=data.quizResults||{};
