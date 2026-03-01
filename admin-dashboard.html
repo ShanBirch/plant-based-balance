@@ -606,6 +606,24 @@
             const ld=document.createElement('div');ld.className='ai-msg-loading';ld.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';ch.appendChild(ld);ch.scrollTop=ch.scrollHeight;
             try{const body={query:q,chatHistory:aiChatHistory,analyticsSummary:buildAnalyticsSummary()};if(coachPersonality)body.coachPersonality=coachPersonality;if(aiSelectedUser&&aiUserData)body.userData=aiUserData;
             const r=await fetch('/.netlify/functions/admin-ai-coach',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Failed');ld.remove();
+            if (d.reply && d.reply.includes('___FETCH_USER:')) {
+                const match = d.reply.match(/___FETCH_USER:([^_]+)___/);
+                if (match) {
+                    const searchName = match[1].trim().toLowerCase();
+                    const matchedUser = allUsers.find(u => (u.name||'').toLowerCase().includes(searchName) || (u.email||'').toLowerCase().includes(searchName));
+                    if (matchedUser) {
+                        const selectEl = document.getElementById('ai-client-select');
+                        if (selectEl) selectEl.value = matchedUser.id;
+                        await aiSelectUser(matchedUser.id, matchedUser.name||matchedUser.email, matchedUser.email);
+                        if(um && um.parentNode) um.parentNode.removeChild(um);
+                        document.getElementById('ai-coach-input').value = q;
+                        aiIsLoading = false;
+                        return aiSendMessage(); // resubmit the query with the newly selected user
+                    } else {
+                        d.reply = `I tried to look up "${match[1]}" but I couldn't find them in your client list. Please check the spelling or select them from the dropdown.`;
+                    }
+                }
+            }
             const am=document.createElement('div');am.className='ai-msg ai-msg-response';am.innerHTML=aiFormatMarkdown(d.reply);
             if(aiSelectedUser){const msgId='ai-resp-'+Date.now();am.id=msgId;am.dataset.rawText=d.reply;const ab=document.createElement('div');ab.className='ai-msg-actions';ab.innerHTML=`<button class="ai-action-edit" onclick="aiEditResponse('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${aiSelectedUser.name.split(' ')[0]}</button>`;am.appendChild(ab);}
             ch.appendChild(am);aiChatHistory.push({role:'user',text:q});aiChatHistory.push({role:'model',text:d.reply});
