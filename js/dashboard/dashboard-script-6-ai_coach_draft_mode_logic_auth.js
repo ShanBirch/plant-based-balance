@@ -5030,8 +5030,12 @@ window.handleGameMessageClick = async function(senderId) {
     showToast(originalText, 'info');
     
     try {
+        console.log('🎮 [handleGameMessageClick] Fetching games for user:', window.currentUser.id);
         const games = await window.db.games.getUserGames(window.currentUser.id);
+        console.log('🎮 [handleGameMessageClick] Games found:', games);
+        
         if (!games || games.length === 0) {
+            console.warn('⚠️ [handleGameMessageClick] No active or pending games found in DB.');
             showToast('No active games found with this friend.');
             return;
         }
@@ -5042,28 +5046,35 @@ window.handleGameMessageClick = async function(senderId) {
             (g.status === 'pending' || g.status === 'active')
         );
         
+        console.log('🎮 [handleGameMessageClick] Targeted game match:', game);
+        
         if (game) {
             // Close any modals that might be in the way
-            if (typeof closeDirectMessageModal === 'function') closeDirectMessageModal();
-            if (typeof closeMessageSelectorModal === 'function') closeMessageSelectorModal();
+            if (typeof closeDirectMessageModal === 'function') {
+                console.log('🎮 [handleGameMessageClick] Closing DM modal');
+                closeDirectMessageModal();
+            }
+            if (typeof closeMessageSelectorModal === 'function') {
+                console.log('🎮 [handleGameMessageClick] Closing message selector modal');
+                closeMessageSelectorModal();
+            }
             
-            if (game.status === 'pending') {
-                if (typeof window.openGameBoard === 'function') {
-                    window.openGameBoard(game.match_id);
-                }
+            if (typeof window.openGameBoard === 'function') {
+                console.log('🎮 [handleGameMessageClick] Opening game board for match:', game.match_id);
+                window.openGameBoard(game.match_id);
             } else {
-                // Game is already active - open the board
-                if (typeof window.openGameBoard === 'function') {
-                    window.openGameBoard(game.match_id);
-                }
+                console.error('❌ [handleGameMessageClick] openGameBoard function not found on window!');
+                showToast('Game board component missing.', 'error');
             }
         } else {
+            console.warn('⚠️ [handleGameMessageClick] No game match specifically with sender:', senderId);
             showToast('Game not found or already finished.');
         }
     } catch (e) {
-        console.error('Error finding game:', e);
-        showToast('Error opening game. Please try again.', 'error');
+        console.error('❌ [handleGameMessageClick] critical error:', e);
+        showToast(`Error: ${e.message || 'Could not load game'}`, 'error');
     }
+
 };
 
 // Listen for messages from service worker (web push notification clicks)
