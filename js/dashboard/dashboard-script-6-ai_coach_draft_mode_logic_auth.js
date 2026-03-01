@@ -3584,7 +3584,7 @@ async function loadHomeChallenges() {
         html += pendingChallenges.slice(0, 3).map(challenge => {
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             return `
-            <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(245,158,11,0.2); background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%); margin-bottom: 12px; position: relative;">
+            <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(245,158,11,0.2); background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%); margin-bottom: 12px; margin-top: 12px; position: relative;">
                 <div onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; padding: 18px 20px; padding-bottom: 10px; display: flex; align-items: center; gap: 14px;">
                     <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.25); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.3rem;">${cType.emoji}</div>
                     <div style="flex: 1; min-width: 0;">
@@ -3610,7 +3610,7 @@ async function loadHomeChallenges() {
         html += activeChallenges.slice(0, 3).map(challenge => {
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             return `
-            <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); margin-bottom: 12px; position: relative;">
+            <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); margin-bottom: 12px; margin-top: 12px; position: relative;">
                 <div onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; padding: 18px 20px; padding-bottom: 10px; display: flex; align-items: center; gap: 14px;">
                     <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.3rem;">
                         ${cType.emoji}
