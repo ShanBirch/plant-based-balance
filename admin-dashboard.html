@@ -540,7 +540,7 @@
             document.getElementById('conversation-list-view').style.display='none';document.getElementById('conversation-detail-view').style.display='block';document.getElementById('conversation-user-name').textContent=userName;
             const c=document.getElementById('conversation-messages');c.innerHTML='<div class="loading">Loading conversations...</div>';
             try{const convos=await dbHelpers.admin.getUserConversations(userId);if(!convos.length){c.innerHTML='<p style="color:#64748b;text-align:center;padding:20px;">No conversations found.</p>';return;}
-            let h='';convos.forEach(m=>{h+=`<div class="chat-message ${m.role==='user'?'user':'bot'}"><div><strong>${m.role==='user'?'User':'Shannon'}</strong></div><div>${m.message_text}</div><div class="timestamp">${new Date(m.timestamp).toLocaleString()}</div></div>`;});c.innerHTML=h;c.scrollTop=c.scrollHeight;
+            let h='';convos.forEach(m=>{h+=`<div class="chat-message ${m.role==='user'?'user':'bot'}"><div><strong>${m.role==='user'?'User':'Coach Shannon'}</strong></div><div>${m.message_text}</div><div class="timestamp">${new Date(m.timestamp).toLocaleString()}</div></div>`;});c.innerHTML=h;c.scrollTop=c.scrollHeight;
             }catch(e){console.error('Failed to load conversations:',e);c.innerHTML='<p style="color:#ef4444;padding:20px;">Failed to load conversations.<br><br><pre>'+e.stack+'</pre></p>';}
             lucide.createIcons();
         }
@@ -548,7 +548,7 @@
         async function adminSendReply(){
             const inp=document.getElementById('admin-reply-input'),msg=inp.value.trim();if(!msg||!currentConvoUserId)return;
             const btn=document.getElementById('admin-reply-send');btn.disabled=true;inp.disabled=true;
-            try{await dbHelpers.conversations.create(currentConvoUserId,'shannon','assistant',msg,'Shannon');
+            try{await dbHelpers.conversations.create(currentConvoUserId,'shannon','assistant',msg,'Coach Shannon');
             // Also insert into nudges table so the user's DM inbox receives it
             const coachUser=await window.supabaseClient.auth.getUser();
             if(coachUser?.data?.user?.id){
@@ -556,7 +556,7 @@
             }
             // Send push notification to the client
             fetch('/.netlify/functions/send-dm-notification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipientId:currentConvoUserId,senderName:'Coach Shannon',messageText:msg})}).catch(e=>console.warn('Push notify:',e));
-            const ch=document.getElementById('conversation-messages'),md=document.createElement('div');md.className='chat-message bot';md.innerHTML=`<div><strong>Shannon</strong></div><div>${msg}</div><div class="timestamp">${new Date().toLocaleString()}</div>`;ch.appendChild(md);ch.scrollTop=ch.scrollHeight;inp.value='';
+            const ch=document.getElementById('conversation-messages'),md=document.createElement('div');md.className='chat-message bot';md.innerHTML=`<div><strong>Coach Shannon</strong></div><div>${msg}</div><div class="timestamp">${new Date().toLocaleString()}</div>`;ch.appendChild(md);ch.scrollTop=ch.scrollHeight;inp.value='';
             }catch(e){console.error('Failed to send message:',e);alert('Failed to send message: '+e.message);}
             btn.disabled=false;inp.disabled=false;inp.focus();
         }
@@ -632,9 +632,29 @@
                 d.reply = d.reply.replace('___BATCH_SEND_CHECKINS___', '').trim();
                 setTimeout(() => performBatchCheckins(), 500);
             }
-            const am=document.createElement('div');am.className='ai-msg ai-msg-response';am.innerHTML=aiFormatMarkdown(d.reply);
-            if(aiSelectedUser){const msgId='ai-resp-'+Date.now();am.id=msgId;am.dataset.rawText=d.reply;const ab=document.createElement('div');ab.className='ai-msg-actions';ab.innerHTML=`<button class="ai-action-edit" onclick="aiEditResponse('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${aiSelectedUser.name.split(' ')[0]}</button>`;am.appendChild(ab);}
-            ch.appendChild(am);aiChatHistory.push({role:'user',text:q});aiChatHistory.push({role:'model',text:d.reply});
+            const replyText = d.reply;
+            const parts = replyText.split('|||').map(p => p.trim()).filter(p => p.length > 0);
+            
+            parts.forEach((p, index) => {
+                const am=document.createElement('div');
+                am.className='ai-msg ai-msg-response';
+                am.innerHTML=aiFormatMarkdown(p);
+                
+                if(aiSelectedUser){
+                    const msgId='ai-resp-'+Date.now()+'-'+index;
+                    am.id=msgId;
+                    am.dataset.rawText=p;
+                    const ab=document.createElement('div');
+                    ab.className='ai-msg-actions';
+                    const firstName = aiSelectedUser.name ? aiSelectedUser.name.split(' ')[0] : 'Client';
+                    ab.innerHTML=`<button class="ai-action-edit" onclick="aiEditResponse('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${firstName}</button>`;
+                    am.appendChild(ab);
+                }
+                ch.appendChild(am);
+            });
+            
+            aiChatHistory.push({role:'user',text:q});
+            aiChatHistory.push({role:'model',text:replyText});
             }catch(e){console.error('AI coach error:',e);ld.remove();const em=document.createElement('div');em.className='ai-msg ai-msg-response';em.style.borderColor='#fca5a5';em.style.background='#fef2f2';em.innerHTML=`<span style="color:#ef4444;">Error: ${e.message||'Something went wrong.'}</span>`;ch.appendChild(em);}
             ch.scrollTop=ch.scrollHeight;aiIsLoading=false;inp.focus();
         }
@@ -985,7 +1005,7 @@
             el.querySelectorAll('button').forEach(b=>b.disabled=true);
             const sendBtn=el.querySelector('.ai-action-send');if(sendBtn){sendBtn.textContent='Sending...';}
             try{
-                await dbHelpers.conversations.create(targetId,'shannon','assistant',msgText,'Shannon');
+                await dbHelpers.conversations.create(targetId,'shannon','assistant',msgText,'Coach Shannon');
                 // Also insert into nudges so the user's DM inbox receives it
                 const coachUser2=await window.supabaseClient.auth.getUser();
                 if(coachUser2?.data?.user?.id){
