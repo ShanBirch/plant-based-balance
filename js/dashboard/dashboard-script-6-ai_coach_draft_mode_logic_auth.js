@@ -4722,32 +4722,50 @@ async function leaveCurrentChallenge() {
         console.log('⚔️ [leaveCurrentChallenge] RPC Success:', data);
 
         closeChallengeLeaderboard();
-        // Refresh challenges on home screen
-        setTimeout(() => {
-            if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
-            if (typeof loadCoinBalance === 'function') loadCoinBalance();
-        }, 1000);
 
         if (data?.status === 'cancelled') {
-            alert('The challenge has been cancelled. Any entry fees have been refunded.');
+            if (typeof showToast === 'function') showToast('Challenge cancelled. Entry fees refunded.', 'success');
+            else alert('The challenge has been cancelled. Any entry fees have been refunded.');
         } else {
-            alert('You have left the challenge.');
+            if (typeof showToast === 'function') showToast('You have left the challenge.', 'success');
+            else alert('You have left the challenge.');
         }
+
+        // Refresh challenges on home screen immediately
+        if (typeof loadHomeChallenges === 'function') await loadHomeChallenges();
+        if (typeof loadCoinBalance === 'function') loadCoinBalance();
 
     } catch (error) {
         console.error('⚔️ [leaveCurrentChallenge] CRITICAL ERROR:', error);
-        alert('Failed to leave challenge');
+        if (typeof showToast === 'function') showToast('Failed to leave challenge', 'error');
+        else alert('Failed to leave challenge');
     }
 }
 
 // Global handler for leaving challenge directly from card
 window.leaveChallengeFromCard = async function(event, challengeId) {
+    let btn = null;
     if (event) {
         event.stopPropagation(); // prevent opening leaderboard
+        btn = event.currentTarget || event.target;
     }
     
     currentChallengeId = challengeId;
+    
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.innerHTML = 'Updating...';
+        btn.style.opacity = '0.7';
+        btn.disabled = true;
+    }
+    
     await leaveCurrentChallenge();
+    
+    if (btn && document.body.contains(btn)) {
+        btn.innerHTML = originalText;
+        btn.style.opacity = '1';
+        btn.disabled = false;
+    }
 };
 
 
