@@ -6326,7 +6326,7 @@ async function openUnifiedCamera(callback) {
     document.getElementById('barcode-detected-banner').style.display = 'none';
     document.getElementById('unified-camera-description').value = '';
     document.getElementById('manual-barcode-row').style.display = 'none';
-    document.getElementById('barcode-scan-status').textContent = 'Scanning for barcodes...';
+    document.getElementById('barcode-scan-status').textContent = 'Tap the barcode icon to scan';
 
     modal.style.display = 'flex';
     // Don't await — let the modal show instantly while camera initializes
@@ -6407,10 +6407,8 @@ async function startUnifiedCamera() {
         await video.play();
         video.style.opacity = '1';
 
-        // Delay barcode scanning slightly so camera feed stabilizes first
-        setTimeout(() => {
-            if (unifiedCameraStream) startBarcodeScanLoop(video);
-        }, 500);
+        // Setup video feed without automatic barcode scanning to improve performance
+        // Barcode scanning is triggered manually via showManualBarcodeEntry()
     } catch (err) {
         console.error('Failed to access camera:', err);
         if (err.name === 'NotAllowedError') {
@@ -6713,10 +6711,23 @@ function captureUnifiedPhoto() {
 // --- Manual barcode entry toggle ---
 function showManualBarcodeEntry() {
     const row = document.getElementById('manual-barcode-row');
+    const statusEl = document.getElementById('barcode-scan-status');
+    const video = document.getElementById('unified-camera-video');
+
     if (row) {
         const isVisible = row.style.display === 'flex';
         row.style.display = isVisible ? 'none' : 'flex';
-        if (!isVisible) document.getElementById('barcode-manual-input').focus();
+        
+        if (!isVisible) {
+            document.getElementById('barcode-manual-input').focus();
+            if (video && unifiedCameraStream && !barcodeScanInterval) {
+                statusEl.textContent = 'Scanning for barcodes...';
+                startBarcodeScanLoop(video);
+            }
+        } else {
+            stopBarcodeScanLoop();
+            statusEl.textContent = 'Tap the barcode icon to scan';
+        }
     }
 }
 
