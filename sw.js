@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v29'; // v29: Analytics Command Center Hub update
+const CACHE_NAME = 'pbb-app-v30'; // v30: Updates for instant game lobbies
 const MODEL_CACHE_NAME = 'pbb-models-v4'; // v4: evict any cached 404s from old /dbz/ URLs
 const ASSETS = [
   './dashboard.html',
