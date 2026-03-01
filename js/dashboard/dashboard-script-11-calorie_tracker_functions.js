@@ -1643,6 +1643,52 @@ function retakeMealPhotoFromPreview() {
 
 // Legacy functions - no longer needed with native camera
 
+// Store pending meal uploads offline so they resume if the app closes
+function savePendingMealToQueue(id, data) {
+    try {
+        let queue = JSON.parse(localStorage.getItem('pending_meal_queue') || '{}');
+        queue[id] = { ...data, timestamp: Date.now() }; 
+        localStorage.setItem('pending_meal_queue', JSON.stringify(queue));
+    } catch(e) { console.error('Limit likely reached: ', e); }
+}
+
+function removePendingMealFromQueue(id) {
+    try {
+        let queue = JSON.parse(localStorage.getItem('pending_meal_queue') || '{}');
+        delete queue[id];
+        localStorage.setItem('pending_meal_queue', JSON.stringify(queue));
+    } catch(e) {}
+}
+
+async function runPendingMealQueue() {
+    if (window._isProcessingPendingMeals) return;
+    window._isProcessingPendingMeals = true;
+
+    try {
+        let queue = JSON.parse(localStorage.getItem('pending_meal_queue') || '{}');
+        for (let id in queue) {
+            const data = queue[id];
+            // If it's too old (e.g. > 24 hours), discard
+            if (Date.now() - data.timestamp > 86400000) {
+                removePendingMealFromQueue(id);
+                continue;
+            }
+
+            // Convert base64 back to file for `uploadMealPhoto`
+            const res = await fetch(data.base64);
+            const blob = await res.blob();
+            const file = new File([blob], 'recovered-meal.jpg', { type: 'image/jpeg', lastModified: data.timestamp });
+
+            console.log('🔄 Process recovering a pending meal upload...');
+            await processMealQueueItem(id, data, file, file);
+        }
+    } catch(e) { console.error('Queue error:', e); }
+    finally { window._isProcessingPendingMeals = false; }
+}
+
+// Ensure the queue runs on startup and is unblocked globally
+document.addEventListener('DOMContentLoaded', () => { setTimeout(runPendingMealQueue, 2000); });
+
 // Use captured meal photo for analysis
 async function useMealPhoto() {
     if (!capturedMealFile) {
@@ -1650,190 +1696,84 @@ async function useMealPhoto() {
         return;
     }
 
-    // Store file reference before closing modal (modal clears capturedMealFile)
     const fileToAnalyze = capturedMealFile;
-
-    // Get meal description from the text input
     const descInput = document.getElementById('meal-photo-description');
     let mealDescription = descInput ? descInput.value.trim() : '';
 
-    // Close preview modal
+    // 1. Close modal immediately and show optimistic toast
     closeMealPreviewModal();
+    showToast('📸 Analysing your meal in the background...', 'info');
 
-    // Show loading state
-    showMealAnalysisLoading();
-
-    // Compress image first to avoid 502 errors on large photos
-    const compressedFile = await compressMealImage(fileToAnalyze);
-
-    // Convert compressed image to base64
-    const base64 = await fileToBase64(compressedFile);
-    const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
-
-    // Retry logic - try up to 5 times
-    const maxAttempts = 5;
-    let attempt = 1;
-    let success = false;
-    let nutritionData = null;
-    let lastError = null;
-
-    while (!success && attempt <= maxAttempts) {
-        try {
-            // Update loading message with retry attempt
-            if (attempt > 1) {
-                showMealAnalysisLoading(`Analyzing meal... (attempt ${attempt})`);
-            }
-
-            // Call Gemini API via edge function
-            console.log(`Analyzing food photo (attempt ${attempt})...`);
-            const response = await fetch('/.netlify/functions/analyze-food', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    imageBase64: base64Data,
-                    mimeType: fileToAnalyze.type,
-                    description: mealDescription || (_pendingRecentMeal ? getRecentMealName(_pendingRecentMeal) : ''),
-                    only_verify: !!_pendingRecentMeal
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
-                throw new Error(errorData.error || `Failed to analyze food photo (${response.status})`);
-            }
-
-            const result = await response.json();
-
-            if (!result.success || !result.data) {
-                throw new Error('Invalid response from analysis');
-            }
-
-            nutritionData = result.data;
-            success = true;
-
-        } catch (error) {
-            console.error(`Error analyzing meal (attempt ${attempt}):`, error);
-            lastError = error;
-
-            // If not the last attempt, wait before retrying (exponential backoff)
-            if (attempt < maxAttempts) {
-                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10 seconds
-                console.log(`Retrying in ${delay}ms...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-            attempt++;
-        }
-    }
-
-    // Check if we failed after all attempts
-    if (!success) {
-        const errorDetails = lastError?.message || "Unknown error";
-        showMealAnalysisError(`Failed after ${maxAttempts} attempts. Error: ${errorDetails}`);
-        return;
-    }
-
-    // Success - save meal to database
     try {
-        // Upload photo to Supabase Storage
-        const photoUrl = await uploadMealPhoto(fileToAnalyze);
+        // Compress image first
+        const compressedFile = await compressMealImage(fileToAnalyze);
+        const base64 = await fileToBase64(compressedFile);
+        const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
 
-        // If this was a recent meal verification, use the original macros
-        const finalFoodItems = _pendingRecentMeal ? (_pendingRecentMeal.food_items || []) : nutritionData.foodItems;
-        const finalTotals = _pendingRecentMeal ? {
-            calories: parseFloat(_pendingRecentMeal.calories) || 0,
-            protein_g: parseFloat(_pendingRecentMeal.protein_g) || 0,
-            carbs_g: parseFloat(_pendingRecentMeal.carbs_g) || 0,
-            fat_g: parseFloat(_pendingRecentMeal.fat_g) || 0,
-            fiber_g: parseFloat(_pendingRecentMeal.fiber_g) || 0
-        } : nutritionData.totals;
-        const finalMicronutrients = _pendingRecentMeal ? (_pendingRecentMeal.micronutrients || {}) : nutritionData.micronutrients;
+        const mealId = 'meal_' + Date.now();
+        const queueData = {
+            base64: base64,
+            base64Data: base64Data,
+            description: mealDescription,
+            pendingRecentMeal: _pendingRecentMeal,
+            timestamp: Date.now()
+        };
 
-        // Save meal log to database
-        const savedMeal = await saveMealLogWithType({
-            photoUrl,
-            foodItems: finalFoodItems,
-            totals: finalTotals,
-            micronutrients: finalMicronutrients,
-            confidence: _pendingRecentMeal ? 'high' : nutritionData.confidence,
-            notes: _pendingRecentMeal ? (_pendingRecentMeal.notes || getRecentMealName(_pendingRecentMeal)) : nutritionData.notes,
-            inputMethod: 'photo'
-        });
+        // 2. Safely cache the background task so it survives app closure
+        savePendingMealToQueue(mealId, queueData);
 
-        // Clear the pending recent meal
+        // Clear local memory pointer
         _pendingRecentMeal = null;
 
-        // Award points for the meal (with anti-cheat data)
-        if (savedMeal && savedMeal[0]?.id) {
-            try {
-                // Get photo timestamp from file
-                const photoTimestamp = fileToAnalyze.lastModified ? new Date(fileToAnalyze.lastModified).toISOString() : null;
-
-                // Generate photo hash for duplicate detection
-                const photoHash = await window.db?.points?.generatePhotoHash(base64);
-
-                // Award points
-                await awardPointsForMeal(
-                    savedMeal[0].id,
-                    photoTimestamp,
-                    nutritionData.confidence,
-                    photoHash
-                );
-            } catch (pointsError) {
-                console.error('Error awarding points (meal still saved):', pointsError);
-                // Don't throw - meal was saved successfully, points are bonus
-            }
-        }
-
-        // Recalculate daily nutrition totals
-        await recalculateDailyNutrition();
-
-        // Refresh display
-        await loadTodayNutrition();
-
-        // Refresh micronutrient bars
-        await loadMicronutrientInsights();
-
-        // Check meal badges
-        try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
-
-        // Show success message
-        showMealAnalysisSuccess(nutritionData);
-
-    } catch (error) {
-        console.error('Error saving meal:', error);
-        showMealAnalysisError(error.message);
+        // 3. Kick off async without blocking UI
+        processMealQueueItem(mealId, queueData, fileToAnalyze, compressedFile);
+    } catch(e) {
+        console.error('Meal photo error:', e);
+        showToast('Error analyzing photo', 'error');
     }
 }
 
-// Handle meal photo selection
+// Handle meal photo selection (from standard file input, if used)
 async function handleMealPhotoSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Compress image first (do this before background so user sees quick response)
-    const compressedFile = await compressMealImage(file);
-    const base64 = await fileToBase64(compressedFile);
-    const base64Data = base64.split(',')[1];
-
-    // Reset file input immediately
-    event.target.value = '';
-
     // Show quick confirmation and let user continue
     showToast('📸 Analysing your photo in the background...', 'info');
+    event.target.value = '';
 
-    // Run everything else in the background
-    analyzePhotoInBackground(file, compressedFile, base64, base64Data);
+    try {
+        const compressedFile = await compressMealImage(file);
+        const base64 = await fileToBase64(compressedFile);
+        const base64Data = base64.split(',')[1];
+
+        const mealId = 'meal_' + Date.now();
+        const queueData = {
+            base64: base64,
+            base64Data: base64Data,
+            description: '',
+            pendingRecentMeal: _pendingRecentMeal,
+            timestamp: Date.now()
+        };
+        savePendingMealToQueue(mealId, queueData);
+
+        _pendingRecentMeal = null; // Clear
+
+        processMealQueueItem(mealId, queueData, file, compressedFile);
+    } catch(e) {
+        console.error('File input meal photo error', e);
+    }
 }
 
-// Background photo analysis with retry logic
-async function analyzePhotoInBackground(originalFile, compressedFile, base64, base64Data) {
+// Background photo analysis with retry logic, completely generic
+async function processMealQueueItem(id, data, originalFile, compressedFile) {
     const maxAttempts = 5;
     let attempt = 1;
     let success = false;
     let nutritionData = null;
     let lastError = null;
+
+    let descriptionToUse = data.description || (data.pendingRecentMeal ? getRecentMealName(data.pendingRecentMeal) : '');
 
     while (!success && attempt <= maxAttempts) {
         try {
@@ -1842,10 +1782,10 @@ async function analyzePhotoInBackground(originalFile, compressedFile, base64, ba
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    imageBase64: base64Data,
+                    imageBase64: data.base64Data,
                     mimeType: originalFile.type,
-                    description: (_pendingRecentMeal ? getRecentMealName(_pendingRecentMeal) : ''),
-                    only_verify: !!_pendingRecentMeal
+                    description: descriptionToUse,
+                    only_verify: !!data.pendingRecentMeal
                 })
             });
 
@@ -1879,7 +1819,9 @@ async function analyzePhotoInBackground(originalFile, compressedFile, base64, ba
 
     if (!success) {
         const errorDetails = lastError?.message || "Unknown error";
-        showMealAnalysisError(`Failed after ${maxAttempts} attempts. Error: ${errorDetails}`);
+        console.error(`Offline meal processing failed permanently over 5 tries: ${errorDetails}`);
+        // Remove from queue so it stops retrying forever
+        removePendingMealFromQueue(id);
         return;
     }
 
@@ -1888,35 +1830,35 @@ async function analyzePhotoInBackground(originalFile, compressedFile, base64, ba
         const photoUrl = await uploadMealPhoto(originalFile);
 
         // If this was a recent meal verification, use the original macros
-        const finalFoodItems = _pendingRecentMeal ? (_pendingRecentMeal.food_items || []) : nutritionData.foodItems;
-        const finalTotals = _pendingRecentMeal ? {
-            calories: parseFloat(_pendingRecentMeal.calories) || 0,
-            protein_g: parseFloat(_pendingRecentMeal.protein_g) || 0,
-            carbs_g: parseFloat(_pendingRecentMeal.carbs_g) || 0,
-            fat_g: parseFloat(_pendingRecentMeal.fat_g) || 0,
-            fiber_g: parseFloat(_pendingRecentMeal.fiber_g) || 0
+        const finalFoodItems = data.pendingRecentMeal ? (data.pendingRecentMeal.food_items || []) : nutritionData.foodItems;
+        const finalTotals = data.pendingRecentMeal ? {
+            calories: parseFloat(data.pendingRecentMeal.calories) || 0,
+            protein_g: parseFloat(data.pendingRecentMeal.protein_g) || 0,
+            carbs_g: parseFloat(data.pendingRecentMeal.carbs_g) || 0,
+            fat_g: parseFloat(data.pendingRecentMeal.fat_g) || 0,
+            fiber_g: parseFloat(data.pendingRecentMeal.fiber_g) || 0
         } : nutritionData.totals;
-        const finalMicronutrients = _pendingRecentMeal ? (_pendingRecentMeal.micronutrients || {}) : nutritionData.micronutrients;
+        const finalMicronutrients = data.pendingRecentMeal ? (data.pendingRecentMeal.micronutrients || {}) : nutritionData.micronutrients;
 
         const savedMeal = await saveMealLogWithType({
             photoUrl,
             foodItems: finalFoodItems,
             totals: finalTotals,
             micronutrients: finalMicronutrients,
-            confidence: _pendingRecentMeal ? 'high' : nutritionData.confidence,
-            notes: _pendingRecentMeal ? (_pendingRecentMeal.notes || getRecentMealName(_pendingRecentMeal)) : nutritionData.notes,
-            inputMethod: 'photo'
+            confidence: data.pendingRecentMeal ? 'high' : nutritionData.confidence,
+            notes: data.pendingRecentMeal ? (data.pendingRecentMeal.notes || getRecentMealName(data.pendingRecentMeal)) : nutritionData.notes,
+            inputMethod: 'photo',
+            mealDescription: descriptionToUse
         });
-
-        // Clear the pending recent meal
-        _pendingRecentMeal = null;
 
         // Award points
         if (savedMeal && savedMeal[0]?.id) {
             try {
                 const photoTimestamp = originalFile.lastModified ? new Date(originalFile.lastModified).toISOString() : null;
-                const photoHash = await window.db?.points?.generatePhotoHash(base64);
-                await awardPointsForMeal(savedMeal[0].id, photoTimestamp, nutritionData.confidence, photoHash);
+                const photoHash = await window.db?.points?.generatePhotoHash(data.base64);
+                if (typeof awardPointsForMeal === 'function') {
+                    await awardPointsForMeal(savedMeal[0].id, photoTimestamp, nutritionData.confidence, photoHash);
+                }
             } catch (pointsError) {
                 console.error('Error awarding points (meal still saved):', pointsError);
             }
@@ -1924,12 +1866,16 @@ async function analyzePhotoInBackground(originalFile, compressedFile, base64, ba
 
         await recalculateDailyNutrition();
         await loadTodayNutrition();
-        await loadMicronutrientInsights();
+        try { await loadMicronutrientInsights(); } catch(e){}
+        try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e){}
         showMealAnalysisSuccess(nutritionData);
+        
+        // Final success cleanup
+        removePendingMealFromQueue(id);
 
     } catch (error) {
         console.error('Error saving meal:', error);
-        showMealAnalysisError(error.message);
+        removePendingMealFromQueue(id);
     }
 }
 
