@@ -20,16 +20,14 @@ CREATE TABLE IF NOT EXISTS public.friendships (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
 
-  -- Indexes for fast queries
-  INDEX idx_friendships_user (user_id, status, created_at DESC),
-  INDEX idx_friendships_friend (friend_id, status, created_at DESC),
-
   -- Prevent duplicate friendships (only one direction needed)
   UNIQUE(user_id, friend_id),
 
   -- Prevent self-friending
   CHECK (user_id != friend_id)
 );
+CREATE INDEX IF NOT EXISTS idx_friendships_user ON public.friendships (user_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_friendships_friend ON public.friendships (friend_id, status, created_at DESC);
 
 -- Enable RLS on friendships table
 ALTER TABLE public.friendships ENABLE ROW LEVEL SECURITY;

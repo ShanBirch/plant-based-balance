@@ -4997,13 +4997,31 @@ async function loadDirectMessages(recipientId) {
 }
 
 // Expose messaging functions on window so native-push.js can access them
-window.loadDirectMessages = loadDirectMessages;
 window.openDirectMessage = openDirectMessage;
 window.openMessageInbox = openMessageInbox;
+window.loadDirectMessages = loadDirectMessages;
+window.openAddFriendModal = openAddFriendModal;
+window.closeAddFriendModal = closeAddFriendModal;
+window.showFriendTab = showFriendTab;
+window.searchForFriends = searchForFriends;
+window.sendFriendRequest = sendFriendRequest;
+window.acceptFriendRequest = acceptFriendRequest;
+window.declineFriendRequest = declineFriendRequest;
+window.removeFriend = removeFriend;
+window.openHomeFriendsModal = openHomeFriendsModal;
+window.closeHomeFriendsModal = closeHomeFriendsModal;
+window.openFeedMessagesPanel = openFeedMessagesPanel;
+window.closeFeedMessagesPanel = closeFeedMessagesPanel;
+window.sendDirectMessage = sendDirectMessage;
 
 window.handleGameMessageClick = async function(senderId) {
+    console.log('🎮 handleGameMessageClick called for sender:', senderId);
+    if (!senderId) {
+        console.warn('❌ handleGameMessageClick: No senderId provided');
+        return;
+    }
     if (!window.currentUser || !window.db || !window.db.games) {
-        showToast('Games system not ready.', 'error');
+        showToast('Games system not ready. Please wait...', 'error');
         return;
     }
     
