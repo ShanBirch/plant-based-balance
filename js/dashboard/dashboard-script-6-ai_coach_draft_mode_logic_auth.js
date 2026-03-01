@@ -1282,7 +1282,15 @@ window.showDMNotificationBanner = function showDMNotificationBanner(senderName, 
         banner.remove();
         if (senderId) {
             const isGameMessage = messageText.includes('🎮') && (messageText.includes('challenge') || messageText.includes('Tap here to play!') || messageText.includes('turn'));
-            if (isGameMessage && typeof window.handleGameMessageClick === 'function') {
+            const isQuizBattle = messageText.includes('⚡ QUIZ BATTLE');
+
+            if (isQuizBattle) {
+                 if (typeof window.handleQuizBattleMessageClick === 'function') {
+                    window.handleQuizBattleMessageClick(senderId);
+                } else {
+                    if (typeof window.switchAppTab === 'function') window.switchAppTab('learning');
+                }
+            } else if (isGameMessage && typeof window.handleGameMessageClick === 'function') {
                 window.handleGameMessageClick(senderId);
             } else {
                 // Open the DM conversation with this sender
@@ -4960,17 +4968,19 @@ async function loadDirectMessages(recipientId) {
 
             // Check if it's a game invite or turn notification
             const isGameMessage = msg.message.includes('🎮') && (msg.message.includes('challenged') || msg.message.includes('accepted') || msg.message.includes('turn') || msg.message.includes('won') || msg.message.includes('challenge'));
-            const clickHandler = isGameMessage && !isSent ? `onclick="handleGameMessageClick('${msg.sender_id}')" style="cursor:pointer;"` : '';
-            const extraStyle = isGameMessage && !isSent ? 'border: 2px solid #F59E0B; background: linear-gradient(to right, #FFFBEB, #FEF3C7); color: #B45309;' : `background: ${isSent ? 'var(--primary)' : 'white'}; color: ${isSent ? 'white' : 'var(--text-main)'};`;
+            const isQuizBattle = msg.nudge_type === 'quiz_battle_invite' || msg.message.includes('⚡ QUIZ BATTLE');
+            
+            const clickHandler = (isGameMessage || isQuizBattle) && !isSent ? `onclick="window.${isQuizBattle ? 'handleQuizBattleMessageClick' : 'handleGameMessageClick'}('${msg.sender_id}')" style="cursor:pointer;"` : '';
+            const extraStyle = (isGameMessage || isQuizBattle) && !isSent ? 'border: 2px solid #7c3aed; background: linear-gradient(to right, #f5f3ff, #ede9fe); color: #5b21b6;' : `background: ${isSent ? 'var(--primary)' : 'white'}; color: ${isSent ? 'white' : 'var(--text-main)'};`;
 
             return `
                 <div style="display: flex; justify-content: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
                     <div ${clickHandler} style="max-width: 75%; padding: 10px 14px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; ${extraStyle} box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                         <div style="font-size: 0.9rem; line-height: 1.4;">${msg.message}</div>
-                        ${isGameMessage && !isSent ? `
+                        ${(isGameMessage || isQuizBattle) && !isSent ? `
                         <div style="margin-top: 10px;">
-                            <button onclick="handleGameMessageClick('${msg.sender_id}'); event.stopPropagation();" style="width: 100%; padding: 8px 12px; background: #F59E0B; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);">
-                                🎮 ${msg.message.includes('challenge') ? 'Accept Challenge' : (msg.message.includes('turn') ? 'Take Turn' : 'Play Game')}
+                            <button onclick="window.${isQuizBattle ? 'handleQuizBattleMessageClick' : 'handleGameMessageClick'}('${msg.sender_id}'); event.stopPropagation();" style="width: 100%; padding: 8px 12px; background: ${isQuizBattle ? '#7c3aed' : '#F59E0B'}; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                ${isQuizBattle ? '⚡ Accept Battle' : (msg.message.includes('challenge') ? '🎮 Accept Challenge' : (msg.message.includes('turn') ? '🎮 Take Turn' : '🎮 Play Game'))}
                             </button>
                         </div>` : ''}
                         <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px; text-align: right;">${time}</div>
@@ -5013,6 +5023,56 @@ window.closeHomeFriendsModal = closeHomeFriendsModal;
 window.openFeedMessagesPanel = openFeedMessagesPanel;
 window.closeFeedMessagesPanel = closeFeedMessagesPanel;
 window.sendDirectMessage = sendDirectMessage;
+
+window.handleQuizBattleMessageClick = async function(senderId) {
+    console.log('⚡ handleQuizBattleMessageClick called for sender:', senderId);
+    if (!senderId) {
+        console.warn('❌ handleQuizBattleMessageClick: No senderId provided');
+        return;
+    }
+
+    try {
+        if (!window.supabaseClient || !window.currentUser) {
+            console.warn('❌ handleQuizBattleMessageClick: Supabase or User not ready');
+            return;
+        }
+
+        // Fetch active quiz battles
+        const { data: battles, error } = await window.supabaseClient.rpc('get_user_quiz_battles', { p_user_id: window.currentUser.id });
+        
+        if (error) {
+            console.error('❌ Error fetching quiz battles:', error);
+            return;
+        }
+
+        // Find a pending/active battle with this sender
+        const battle = (battles || []).find(b => 
+            (b.challenger_id === senderId || b.opponent_id === senderId) && 
+            (b.status === 'pending' || b.status === 'active') &&
+            (!b.opponent_finished || b.opponent_id !== window.currentUser.id)
+        );
+
+        if (battle) {
+            console.log('⚡ Found battle match:', battle.id);
+            // Close modals
+            const dmModal = document.getElementById('direct-message-modal');
+            if (dmModal) dmModal.style.display = 'none';
+
+            // Call the acceptance function in learning-inline.js
+            if (typeof window.acceptQuizBattle === 'function') {
+                window.acceptQuizBattle(battle.id, battle.challenger_name, battle.coin_bet);
+            } else {
+                 // Fallback: switch to learning tab
+                 if (typeof window.switchAppTab === 'function') window.switchAppTab('learning');
+            }
+        } else {
+            console.warn('⚠️ No active quiz battle found with this user.');
+            showToast('No active quiz battle found.', 'info');
+        }
+    } catch (e) {
+        console.error('❌ handleQuizBattleMessageClick critical error:', e);
+    }
+};
 
 window.handleGameMessageClick = async function(senderId) {
     console.log('🎮 handleGameMessageClick called for sender:', senderId);
