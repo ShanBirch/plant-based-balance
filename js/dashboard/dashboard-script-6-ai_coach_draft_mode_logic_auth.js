@@ -3516,7 +3516,7 @@ async function loadHomeChallenges() {
 
         // Filter challenges by status and user participation
         const activeChallenges = allChallenges.filter(c =>
-            (c.status === 'active' || c.status === 'pending_start') && c.user_status === 'accepted'
+            (c.status === 'active' || c.status === 'pending_start') && (c.user_status === 'accepted' || c.user_status === 'active')
         );
         const pendingChallenges = allChallenges.filter(c =>
             c.status === 'pending' && (c.user_status === 'accepted' || c.user_status === 'active')
@@ -3528,9 +3528,10 @@ async function loadHomeChallenges() {
         const hasChallenges = activeChallenges.length > 0 || pendingInvites.length > 0 || pendingChallenges.length > 0;
 
         // Toggle visibility of the "Start a Challenge" empty state card
+        // USER REQUEST: "Start a challenge should always stay because then it shows you what challenges you have pending..."
         if (emptyState) {
-            emptyState.style.display = hasChallenges ? 'none' : 'block';
-            console.log('⚔️ [loadHomeChallenges] Setting emptyState display to:', emptyState.style.display);
+            emptyState.style.display = 'block'; 
+            console.log('⚔️ [loadHomeChallenges] Setting emptyState display to block forever per user request.');
         }
         
         if (!hasChallenges) {
@@ -3583,8 +3584,8 @@ async function loadHomeChallenges() {
         html += pendingChallenges.slice(0, 3).map(challenge => {
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             return `
-            <div onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(245,158,11,0.2); background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%); margin-bottom: 12px;">
-                <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
+            <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(245,158,11,0.2); background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%); margin-bottom: 12px; position: relative;">
+                <div onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; padding: 18px 20px; padding-bottom: 10px; display: flex; align-items: center; gap: 14px;">
                     <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.25); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.3rem;">${cType.emoji}</div>
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
@@ -3597,6 +3598,11 @@ async function loadHomeChallenges() {
                     </div>
                     <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.5); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
                 </div>
+                <div style="padding: 0 20px 14px 20px; text-align: right;">
+                     <button onclick="leaveChallengeFromCard(event, '${challenge.challenge_id}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 5px 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.2s;">
+                         Cancel Challenge
+                     </button>
+                </div>
             </div>
         `}).join('');
 
@@ -3604,8 +3610,8 @@ async function loadHomeChallenges() {
         html += activeChallenges.slice(0, 3).map(challenge => {
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             return `
-            <div onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); margin-bottom: 12px;">
-                <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
+            <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); margin-bottom: 12px; position: relative;">
+                <div onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; padding: 18px 20px; padding-bottom: 10px; display: flex; align-items: center; gap: 14px;">
                     <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.3rem;">
                         ${cType.emoji}
                     </div>
@@ -3620,6 +3626,11 @@ async function loadHomeChallenges() {
                     <div style="text-align: right;">
                         <div style="font-size: 1.2rem; font-weight: 800; color: white;">${typeof formatChallengePoints === 'function' ? formatChallengePoints(challenge.user_points, challenge.challenge_type || 'xp') : challenge.user_points}</div>
                     </div>
+                </div>
+                <div style="padding: 0 20px 14px 20px; text-align: right;">
+                     <button onclick="leaveChallengeFromCard(event, '${challenge.challenge_id}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 5px 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.2s;">
+                         Leave Challenge
+                     </button>
                 </div>
             </div>
         `}).join('');
@@ -4147,7 +4158,9 @@ async function doAcceptChallenge(challengeId) {
         if (error) throw error;
 
         // Refresh challenges on home screen
-        if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+        setTimeout(() => {
+            if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+        }, 1000);
         alert('Challenge accepted! Good luck!');
 
     } catch (error) {
@@ -4442,7 +4455,9 @@ async function declineChallengeInvite(challengeId) {
 
         console.log('⚔️ [declineChallengeInvite] Success');
         // Refresh challenges on home screen
-        if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+        setTimeout(() => {
+            if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+        }, 1000);
 
     } catch (error) {
         console.error('⚔️ [declineChallengeInvite] CRITICAL ERROR:', error);
@@ -4708,8 +4723,10 @@ async function leaveCurrentChallenge() {
 
         closeChallengeLeaderboard();
         // Refresh challenges on home screen
-        if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
-        if (typeof loadCoinBalance === 'function') loadCoinBalance();
+        setTimeout(() => {
+            if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+            if (typeof loadCoinBalance === 'function') loadCoinBalance();
+        }, 1000);
 
         if (data?.status === 'cancelled') {
             alert('The challenge has been cancelled. Any entry fees have been refunded.');
@@ -4722,6 +4739,17 @@ async function leaveCurrentChallenge() {
         alert('Failed to leave challenge');
     }
 }
+
+// Global handler for leaving challenge directly from card
+window.leaveChallengeFromCard = async function(event, challengeId) {
+    if (event) {
+        event.stopPropagation(); // prevent opening leaderboard
+    }
+    
+    currentChallengeId = challengeId;
+    await leaveCurrentChallenge();
+};
+
 
 // ============================================================
 // CHALLENGE TYPE PROGRESS TRACKING
