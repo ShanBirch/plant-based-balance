@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v32'; // v30: Updates for instant game lobbies
+const CACHE_NAME = 'pbb-app-v33'; // v30: Updates for instant game lobbies
 const MODEL_CACHE_NAME = 'pbb-models-v4'; // v4: evict any cached 404s from old /dbz/ URLs
 const ASSETS = [
   './dashboard.html',
