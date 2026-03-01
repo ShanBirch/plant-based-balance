@@ -2502,6 +2502,10 @@ async function initFriendsView() {
     if (typeof loadActiveGames === 'function') {
         loadActiveGames();
     }
+    // Check for pending game invites and show notifications
+    if (typeof window.checkGameInvitesOnLoad === 'function') {
+        window.checkGameInvitesOnLoad();
+    }
     // Load photo feed on feed page
     if (typeof loadPhotoFeed === 'function') {
         loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
