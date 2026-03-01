@@ -180,7 +180,7 @@ BEGIN
 
     -- 3. Refund if the challenge is still pending (didn't start yet)
     IF v_challenge_status = 'pending' AND v_user_paid = TRUE THEN
-        PERFORM public.credit_coins(p_user_id, v_entry_fee, 'challenge_refund', 'Refund for cancelled challenge entry');
+        PERFORM public.credit_coins(p_user_id, v_entry_fee, 'refund', 'Refund for cancelled challenge entry');
         RAISE NOTICE '[LeaveChallenge] Refunded % coins to %', v_entry_fee, p_user_id;
     END IF;
 
@@ -202,7 +202,7 @@ BEGIN
                 other_user_id UUID;
              BEGIN
                 FOR other_user_id IN (SELECT user_id FROM public.challenge_participants WHERE challenge_id = p_challenge_id AND status = 'accepted' AND has_paid = TRUE) LOOP
-                    PERFORM public.credit_coins(other_user_id, v_entry_fee, 'challenge_refund', 'Challenge cancelled - entry fee refunded');
+                    PERFORM public.credit_coins(other_user_id, v_entry_fee, 'refund', 'Challenge cancelled - entry fee refunded');
                 END LOOP;
              END;
         END IF;
