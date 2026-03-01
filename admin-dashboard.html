@@ -541,7 +541,7 @@
             const c=document.getElementById('conversation-messages');c.innerHTML='<div class="loading">Loading conversations...</div>';
             try{const convos=await dbHelpers.admin.getUserConversations(userId);if(!convos.length){c.innerHTML='<p style="color:#64748b;text-align:center;padding:20px;">No conversations found.</p>';return;}
             let h='';convos.forEach(m=>{h+=`<div class="chat-message ${m.role==='user'?'user':'bot'}"><div><strong>${m.role==='user'?'User':'Shannon'}</strong></div><div>${m.message_text}</div><div class="timestamp">${new Date(m.timestamp).toLocaleString()}</div></div>`;});c.innerHTML=h;c.scrollTop=c.scrollHeight;
-            }catch(e){console.error('Failed to load conversations:',e);c.innerHTML='<p style="color:#ef4444;padding:20px;">Failed to load conversations.</p>';}
+            }catch(e){console.error('Failed to load conversations:',e);c.innerHTML='<p style="color:#ef4444;padding:20px;">Failed to load conversations.<br><br><pre>'+e.stack+'</pre></p>';}
             lucide.createIcons();
         }
         function backToConversationList(){currentConvoUserId=null;document.getElementById('conversation-detail-view').style.display='none';document.getElementById('conversation-list-view').style.display='block';}
