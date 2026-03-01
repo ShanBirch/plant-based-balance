@@ -552,7 +552,7 @@
             // Also insert into nudges table so the user's DM inbox receives it
             const coachUser=await window.supabaseClient.auth.getUser();
             if(coachUser?.data?.user?.id){
-                await window.supabaseClient.from('nudges').insert({sender_id:coachUser.data.user.id,receiver_id:currentConvoUserId,message:msg}).catch(e=>console.warn('Nudge insert:',e));
+                await window.supabaseClient.from('nudges').insert({sender_id:coachUser.data.user.id,receiver_id:currentConvoUserId,message:msg});
             }
             // Send push notification to the client
             fetch('/.netlify/functions/send-dm-notification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipientId:currentConvoUserId,senderName:'Coach Shannon',messageText:msg})}).catch(e=>console.warn('Push notify:',e));
@@ -1009,7 +1009,7 @@
                 // Also insert into nudges so the user's DM inbox receives it
                 const coachUser2=await window.supabaseClient.auth.getUser();
                 if(coachUser2?.data?.user?.id){
-                    await window.supabaseClient.from('nudges').insert({sender_id:coachUser2.data.user.id,receiver_id:targetId,message:msgText}).catch(e=>console.warn('Nudge insert:',e));
+                    await window.supabaseClient.from('nudges').insert({sender_id:coachUser2.data.user.id,receiver_id:targetId,message:msgText});
                 }
                 // Send push notification
                 fetch('/.netlify/functions/send-dm-notification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipientId:targetId,senderName:'Coach Shannon',messageText:msgText})}).catch(e=>console.warn('Push notify:',e));
