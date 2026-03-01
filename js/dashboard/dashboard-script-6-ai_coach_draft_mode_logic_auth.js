@@ -4150,22 +4150,45 @@ async function acceptChallengeInvite(challengeId) {
 async function doAcceptChallenge(challengeId) {
     try {
         const { data, error } = await window.supabaseClient
-            .rpc('accept_challenge_invitation', {
-                challenge_uuid: challengeId,
-                user_uuid: window.currentUser.id
+            .rpc('join_wellness_challenge', {
+                p_challenge_id: challengeId,
+                p_user_id: window.currentUser.id
             });
 
-        if (error) throw error;
+        if (error) {
+            console.error('⚔️ [doAcceptChallenge] RPC ERROR:', error);
+            throw error;
+        }
+
+        if (data && data.error) {
+            console.error('⚔️ [doAcceptChallenge] DB LOGIC ERROR:', data);
+            throw new Error(data.message || data.error);
+        }
+
+        if (typeof showToast === 'function') {
+            showToast('Challenge accepted! Good luck!', 'success');
+        } else {
+            alert('Challenge accepted! Good luck!');
+        }
 
         // Refresh challenges on home screen
-        setTimeout(() => {
-            if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
-        }, 1000);
-        alert('Challenge accepted! Good luck!');
+        if (typeof loadHomeChallenges === 'function') {
+            await loadHomeChallenges();
+        }
+        if (typeof loadCoinBalance === 'function') {
+            loadCoinBalance();
+        }
+
+        // Pop open the leaderboard automatically now that they joined
+        openChallengeLeaderboard(challengeId);
 
     } catch (error) {
         console.error('Error accepting challenge:', error);
-        alert('Failed to accept challenge');
+        if (typeof showToast === 'function') {
+            showToast(error.message || 'Failed to accept challenge', 'error');
+        } else {
+            alert(error.message || 'Failed to accept challenge');
+        }
     }
 }
 

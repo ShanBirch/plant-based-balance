@@ -133,9 +133,10 @@ BEGIN
         paid_at = NOW()
     WHERE challenge_id = p_challenge_id AND user_id = p_user_id;
 
-    -- 5. If challenge was pending and now has 2+ participants, maybe start it?
-    -- (JS usually handles this manually or via start_challenge RPC, but we can automagically if preferred)
-
+    -- 5. Auto-start challenge if 2+ participants
+    IF v_challenge_status = 'pending' THEN
+        PERFORM public.start_challenge(p_challenge_id);
+    END IF;
     RAISE NOTICE '[JoinChallenge] Success. New Balance: %', v_new_balance;
 
     RETURN jsonb_build_object(
