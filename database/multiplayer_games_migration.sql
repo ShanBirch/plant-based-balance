@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS public.game_matches (
     CHECK (challenger_id != opponent_id)
 );
 
+ALTER TABLE IF EXISTS public.game_matches ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '24 hours';
+
 CREATE INDEX IF NOT EXISTS idx_game_matches_challenger ON public.game_matches(challenger_id, status);
 CREATE INDEX IF NOT EXISTS idx_game_matches_opponent ON public.game_matches(opponent_id, status);
 CREATE INDEX IF NOT EXISTS idx_game_matches_status ON public.game_matches(status);
