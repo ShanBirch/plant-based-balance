@@ -555,7 +555,16 @@
                 await window.supabaseClient.from('nudges').insert({sender_id:coachUser.data.user.id,receiver_id:currentConvoUserId,message:msg});
             }
             // Send push notification to the client
-            fetch('/.netlify/functions/send-dm-notification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipientId:currentConvoUserId,senderName:'Coach Shannon',messageText:msg})}).catch(e=>console.warn('Push notify:',e));
+            fetch('/.netlify/functions/send-dm-notification',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({
+                    recipientId:currentConvoUserId,
+                    senderName:'Coach Shannon',
+                    messageText:msg,
+                    senderId:coachUser.data.user.id
+                })
+            }).catch(e=>console.warn('Push notify:',e));
             const ch=document.getElementById('conversation-messages'),md=document.createElement('div');md.className='chat-message bot';md.innerHTML=`<div><strong>Coach Shannon</strong></div><div>${msg}</div><div class="timestamp">${new Date().toLocaleString()}</div>`;ch.appendChild(md);ch.scrollTop=ch.scrollHeight;inp.value='';
             }catch(e){console.error('Failed to send message:',e);alert('Failed to send message: '+e.message);}
             btn.disabled=false;inp.disabled=false;inp.focus();
@@ -1012,7 +1021,16 @@
                     await window.supabaseClient.from('nudges').insert({sender_id:coachUser2.data.user.id,receiver_id:targetId,message:msgText});
                 }
                 // Send push notification
-                fetch('/.netlify/functions/send-dm-notification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipientId:targetId,senderName:'Coach Shannon',messageText:msgText})}).catch(e=>console.warn('Push notify:',e));
+                fetch('/.netlify/functions/send-dm-notification',{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({
+                        recipientId:targetId,
+                        senderName:'Coach Shannon',
+                        messageText:msgText,
+                        senderId:coachUser2.data.user.id
+                    })
+                }).catch(e=>console.warn('Push notify:',e));
                 // Replace action bar with sent badge
                 const rendered=aiFormatMarkdown(msgText);
                 el.innerHTML=rendered+'<div class="ai-msg-sent-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Sent to '+targetName+'</div>';
