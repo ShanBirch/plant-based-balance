@@ -12450,6 +12450,17 @@ function initializeMovementWeeklyTrendsSwipeNavigation() {
     });
 }
 
+function initializeRecoveryTrendsSwipeNavigation() {
+    enableSwipeBackNavigation('recovery-trends-page', () => {
+        const page = document.getElementById('recovery-trends-page');
+        if (page) {
+            page.classList.remove('active');
+            page.style.transform = '';
+            page.style.transition = '';
+        }
+    });
+}
+
 // Dynamic swipe-back for views that swap content in a single container (e.g. Learning tab)
 function enableDynamicSwipeBackNavigation(viewId, getBackHandler) {
     const view = document.getElementById(viewId);
@@ -12599,6 +12610,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeMovementSwipeNavigation();
     initializeWeeklyTrendsSwipeNavigation();
     initializeMovementWeeklyTrendsSwipeNavigation();
+    initializeRecoveryTrendsSwipeNavigation();
     initializeLearningSwipeNavigation();
     initializeUserProfileSwipeNavigation();
     initializeAndroidBackNavigation();

@@ -4477,12 +4477,19 @@ function openWeeklyTrendsPage() {
     const page = document.getElementById('weekly-trends-page');
     if (!page) return;
 
+    // Move to body so it stacks above all app views
+    if (page.parentElement !== document.body) {
+        document.body.appendChild(page);
+    }
+
     page.classList.add('active');
     page.style.transform = 'translateX(100%)';
     page.style.transition = 'transform 0.3s ease-out';
     requestAnimationFrame(() => {
         page.style.transform = 'translateX(0)';
     });
+
+    pushNavigationState('weekly-trends-page', () => closeWeeklyTrendsPage());
 
     // Load data for the page
     Promise.allSettled([

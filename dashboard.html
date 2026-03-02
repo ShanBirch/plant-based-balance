@@ -4038,15 +4038,6 @@ async function applyAppTheme(themeKey) {
                     </div>
                 </div>
 
-                <!-- Weekly Trends Button -->
-                <button class="weekly-trends-btn" onclick="openWeeklyTrendsPage()">
-                    <span class="weekly-trends-btn-left">
-                        <span style="font-size: 1.3rem;">📊</span>
-                        <span>Weekly Trends</span>
-                    </span>
-                    <span class="weekly-trends-btn-arrow">&#x203A;</span>
-                </button>
-
                 <!-- Daily Nutrition Score (hidden - now shown as popup) -->
                 <div class="nutrition-score-card" id="nutrition-score-section" style="display: none;">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
@@ -8706,15 +8697,6 @@ async function applyAppTheme(themeKey) {
         <!-- Dynamic Grid Container -->
         <div id="movement-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
 
-        <!-- Weekly Trends Button -->
-        <button class="weekly-trends-btn" onclick="openMovementWeeklyTrendsPage()" style="margin-top: 25px;">
-            <span class="weekly-trends-btn-left">
-                <span style="font-size: 1.3rem;">📊</span>
-                <span>Weekly Trends</span>
-            </span>
-            <span class="weekly-trends-btn-arrow">&#x203A;</span>
-        </button>
-
         <!-- Workout Feedback Insights Card -->
         <div id="workout-insights-card" style="display:none; margin-top:15px; background:white; border-radius:16px; padding:18px 20px; border:1px solid #e2e8f0; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
@@ -12204,96 +12186,6 @@ function viewWorkoutHistoryDetail(date) {
                     </div>
                 </div>
 
-            </div>
-
-            <!-- Quick Links -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div onclick="openRecoveryTrendsPage()" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <span style="font-size: 1rem;">📈</span>
-                    <span style="font-size: 0.75rem; font-weight: 700; color: #475569;">Correlations</span>
-                </div>
-                <div onclick="openRecoveryTrendsPage()" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <span style="font-size: 1rem;">⌚</span>
-                    <span style="font-size: 0.75rem; font-weight: 700; color: #475569;">Trackers</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Loading State -->
-        <div id="insights-loading" style="text-align: center; padding: 60px 20px;">
-            <div style="font-size: 2rem; margin-bottom: 10px;">📊</div>
-            <div style="color: var(--text-muted);">Loading insights...</div>
-        </div>
-
-        <!-- Main Content -->
-        <div id="insights-main-content" style="display: none; padding-bottom: 40px;">
-
-            <!-- Energy Balance / Real BMR -->
-            <div style="padding: 0 20px 20px;">
-                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
-                    <h3 style="margin: 0 0 4px 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Energy Balance</h3>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Your real numbers vs estimates</div>
-                    <div id="insights-energy-balance-container">
-                        <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">Needs 10+ days of nutrition tracking + weigh-ins to calculate</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Strength Progress -->
-            <div id="insights-strength-section" style="padding: 0 20px 20px;">
-                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
-                    <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px;">
-                        <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Strength Progress</h3>
-                        <span id="insights-strength-count" style="font-size: 0.8rem; color: #10b981; font-weight: 700;"></span>
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Exercises where you've increased weight</div>
-                    <div id="insights-strength-progress" style="width: 100%;"></div>
-                </div>
-            </div>
-
-            <!-- Correlations -->
-            <div id="insights-correlations-section" style="padding: 0 20px 20px;">
-                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
-                    <h3 style="margin: 0 0 16px 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Correlations</h3>
-                    <div id="insights-correlations-container">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sleep & Recovery -->
-            <div id="insights-sleep-section" style="padding: 0 20px 20px;">
-                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
-                    <h3 style="margin: 0 0 16px 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Sleep &amp; Recovery</h3>
-                    <div id="insights-sleep-container">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mood & Energy Trends -->
-            <div id="insights-mood-section" style="padding: 0 20px 20px;">
-                <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow);">
-                    <h3 style="margin: 0 0 4px 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Mood &amp; Energy</h3>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Last 7 days from your check-ins</div>
-                    <div id="insights-mood-container">
-                        <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">Start logging mood check-ins to see trends</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Connect a Tracker (shown when no wearable synced) -->
-            <div id="insights-connect-section" style="padding: 0 20px 20px; display: none;">
-                <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 20px; padding: 20px;">
-                    <div style="color: white; font-weight: 700; font-size: 1rem; margin-bottom: 6px;">Unlock Deeper Insights</div>
-                    <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-bottom: 16px;">Connect a fitness tracker to correlate sleep, heart rate &amp; calories with your workouts.</div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button onclick="event.stopPropagation(); toggleFitbitConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Fitbit</button>
-                        <button onclick="event.stopPropagation(); toggleWhoopConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">WHOOP</button>
-                        <button onclick="event.stopPropagation(); toggleOuraConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Oura</button>
-                        <button onclick="event.stopPropagation(); toggleStravaConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Strava</button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
