@@ -555,7 +555,7 @@ async function applyAppTheme(themeKey) {
                 </div>
             </div>
 
-            <div class="arena-trigger-btn" onclick="event.stopPropagation(); showArenaInviteModal();" title="Arena Mode">
+            <div class="arena-trigger-btn" onclick="event.stopPropagation(); showArenaInviteModal();" title="Arena Mode" style="display: none;">
                 🗺️
             </div>
 
@@ -3897,7 +3897,7 @@ async function applyAppTheme(themeKey) {
                     </button>
                 </div>
                         <div id="hydration-goal-display" style="font-size:0.72rem; color:#0369a1; font-weight:600; margin-bottom:10px;">Goal: 2,000 ml</div>
-                        <div class="hydration-circle-wrap" id="hydration-circle-tap" onclick="addHydrationGlass()">
+                        <div class="hydration-circle-wrap" id="hydration-circle-tap" onclick="logWaterWithPhoto()">
                             <svg class="hydration-circle-svg" viewBox="0 0 100 100">
                                 <circle class="hydration-circle-bg" cx="50" cy="50" r="42"/>
                                 <circle class="hydration-circle-fill" id="hydration-circle-fill" cx="50" cy="50" r="42"
@@ -14606,7 +14606,7 @@ function openAsClient() {
                     <p style="margin:0; font-size:0.88rem; color:#166534; font-weight:600;">
                         That's <span id="wizard-glass-count" style="font-size:1.1rem; font-weight:800;">8</span> cups per day
                     </p>
-                    <p style="margin:4px 0 0; font-size:0.75rem; color:#166534;">Tap the hydration circle in the Nutrition tab to log each cup</p>
+                    <p style="margin:4px 0 0; font-size:0.75rem; color:#166534;">Tap the hydration circle in the Nutrition tab to take a photo to log each cup</p>
                 </div>
             </div>
 
