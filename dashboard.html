@@ -10,9 +10,9 @@
 <!-- Open Graph Tags -->
 <meta property="og:title" content="Balance Dashboard">
 <meta property="og:description" content="Access your personalized protocol and track your progress.">
-<meta property="og:image" content="https://plantbased-balance.org/assets/app_logo.jpg">
+<meta property="og:image" content="https://plantbased-balance.org/assets/balance_logo.png">
 <meta property="og:type" content="website">
-<link rel="apple-touch-icon" href="assets/app_logo.jpg">
+<link rel="apple-touch-icon" href="assets/balance_logo.png">
 
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -20,7 +20,7 @@
 <link rel="dns-prefetch" href="https://f005.backblazeb2.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
 <link href="manifest.json" rel="manifest"/>
-<link rel="apple-touch-icon" href="assets/Logo_dots.jpg">
+<link rel="icon" type="image/png" href="assets/balance_logo.png">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
 <script>
 // MIGRATION v1: Fix cached model URLs that incorrectly include /dbz/ subfolder.
@@ -108,12 +108,14 @@
 (function() {
     // If the user has already completed their first dashboard load,
     // hide the loading overlay instantly so it doesn't flash on page reloads
-    // (e.g. when returning from native camera on mobile).
+    // Instead of hiding the overlay immediately with CSS injected into head,
+    // we use a class that guarantees it eventually fades out if the JS loader misses it.
+    // However, we want to allow the "3 second splash screen" logic to run via JS below.
+    // The previous implementation added `display: none !important;` which killed the splash entirely.
     var isReturning = localStorage.getItem('dashboardInitialized') === 'true';
     if (isReturning) {
-        var style = document.createElement('style');
-        style.textContent = '.login-loading-overlay { display: none !important; }';
-        document.head.appendChild(style);
+        // We will no longer inject the immediate disguise for the full app reset.
+        // We still preload the character to keep the rest fast.
     }
 
     // For returning users, preload their actual character model instead of the baby
@@ -294,9 +296,10 @@ async function applyAppTheme(themeKey) {
 </head>
 <body>
 <!-- Login Loading Overlay -->
-<div id="login-loading-overlay" class="login-loading-overlay">
-    <div id="login-loading-text" class="login-loading-text">Loading your dashboard...</div>
-    <div class="login-loading-bar-track">
+<div id="login-loading-overlay" class="login-loading-overlay" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff;">
+    <img src="assets/balance_logo.png" alt="Balance Logo" style="width: 150px; margin-bottom: 24px; max-width: 80%; mix-blend-mode: multiply; filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.1)); border-radius: 50%;">
+    <div id="login-loading-text" class="login-loading-text" style="color: var(--primary); font-weight: 600;">Loading your dashboard...</div>
+    <div class="login-loading-bar-track" style="background: rgba(0,0,0,0.1);">
         <div id="login-loading-bar" class="login-loading-bar-fill"></div>
     </div>
 </div>
@@ -552,7 +555,6 @@ async function applyAppTheme(themeKey) {
                 </div>
             </div>
 
-            <!-- Arena Trigger Button -->
             <div class="arena-trigger-btn" onclick="event.stopPropagation(); showArenaInviteModal();" title="Arena Mode">
                 🗺️
             </div>
@@ -3884,10 +3886,16 @@ async function applyAppTheme(themeKey) {
 
                     <!-- Hydration Circle (inside daily tracker card) -->
                     <div class="hydration-circle-container" id="hydration-section">
-                        <div class="hydration-circle-header">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#0284c7"><path d="M12 2c0 0-8 9.5-8 14a8 8 0 0 0 16 0C20 11.5 12 2 12 2z"/></svg>
-                            Hydration
-                        </div>
+                <div class="hydration-circle-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#0284c7"><path d="M12 2c0 0-8 9.5-8 14a8 8 0 0 0 16 0C20 11.5 12 2 12 2z"/></svg>
+                        Hydration
+                    </div>
+                    <button onclick="logWaterWithPhoto()" style="background: rgba(2, 132, 199, 0.1); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 8px; padding: 4px 8px; display: flex; align-items: center; gap: 4px; color: #0284c7; font-size: 0.7rem; font-weight: 700; cursor: pointer;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                        Verify
+                    </button>
+                </div>
                         <div id="hydration-goal-display" style="font-size:0.72rem; color:#0369a1; font-weight:600; margin-bottom:10px;">Goal: 2,000 ml</div>
                         <div class="hydration-circle-wrap" id="hydration-circle-tap" onclick="addHydrationGlass()">
                             <svg class="hydration-circle-svg" viewBox="0 0 100 100">
@@ -11174,6 +11182,8 @@ function viewWorkoutHistoryDetail(date) {
                             <img src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\'color: white; font-size: 1.4rem; font-weight: 700;\'>S</span>'">
                         </div>
                         <div style="position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></div>
+                        <!-- Unread dot for coach -->
+                        <div id="coach-unread-dot-friends" class="dm-unread-dot coach-unread-dot" style="display: none; position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; background: #ef4444; border-radius: 50%; border: 2.5px solid white; z-index: 2;"></div>
                     </div>
                     <div style="flex: 1; min-width: 0;">
                         <div style="font-weight: 600; color: var(--text-main); font-size: 0.95rem;">Coach Shannon</div>
@@ -11328,6 +11338,8 @@ function viewWorkoutHistoryDetail(date) {
                             <img src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\'color: white; font-size: 1.1rem; font-weight: 700;\'>S</span>'">
                         </div>
                         <div style="position: absolute; bottom: 1px; right: 1px; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></div>
+                        <!-- Unread dot for coach in panel -->
+                        <div id="coach-unread-dot-panel" class="dm-unread-dot coach-unread-dot" style="display: none; position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; background: #ef4444; border-radius: 50%; border: 2.5px solid white; z-index: 2;"></div>
                     </div>
                     <div style="flex: 1;">
                         <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">Coach Shannon</div>
@@ -14980,7 +14992,12 @@ function openAsClient() {
 
 <script>
 // --- COACH CHAT - DIRECT MESSAGING ---
-const COACH_EMAILS = ['shannon@plantbased-balance.org', 'shannonbirch@cocospersonaltraining.com'];
+const COACH_EMAILS = [
+    'shannon@plantbasedbalance.com',
+    'shannon.birch@cocospersonaltraining.com',
+    'shannon@plantbased-balance.org',
+    'shannonbirch@cocospersonaltraining.com'
+];
 window._coachUserId = null;
 
 // Look up coach user ID by email

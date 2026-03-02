@@ -1456,8 +1456,19 @@ function refreshPanelUnreadDots() {
     var dots = document.querySelectorAll('.dm-unread-dot');
     dots.forEach(function(dot) {
         var sid = dot.getAttribute('data-sender-id');
-        dot.style.display = senders.indexOf(sid) !== -1 ? 'block' : 'none';
+        if (sid) {
+            dot.style.display = senders.indexOf(sid) !== -1 ? 'block' : 'none';
+        }
     });
+
+    // Handle hardcoded coach dots
+    if (window._coachUserId) {
+        var coachDots = document.querySelectorAll('.coach-unread-dot');
+        var hasUnreadCoach = senders.indexOf(window._coachUserId) !== -1;
+        coachDots.forEach(function(dot) {
+            dot.style.display = hasUnreadCoach ? 'block' : 'none';
+        });
+    }
 }
 
 // Expose messaging functions on window so native-push.js can call them
@@ -3455,7 +3466,7 @@ const CHALLENGE_UNIT_LABELS = {
     xp: 'XP',
     workouts: 'workouts',
     volume: 'kg',
-    calories: 'days',
+    calories: 'meals',
     steps: 'steps',
     streak: 'days',
     sleep: 'min',
@@ -3467,7 +3478,7 @@ const CHALLENGE_TYPES = {
     xp:       { emoji: '⚡', name: 'Level Up',  desc: 'Most XP earned', subtitle: '30-day XP battle with friends', color: '#c084fc', howStep2: 'Earn <strong style="color: #4ade80;">double XP</strong> on everything for 30 days.', howStep3: 'Most <strong style="color: #c084fc;">XP</strong> at the end wins.' },
     workouts: { emoji: '💪', name: 'Workout',   desc: 'Most workouts logged', subtitle: '30-day workout challenge', color: '#ef4444', howStep2: 'Log your <strong style="color: #4ade80;">workouts</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #ef4444;">workouts logged</strong> wins.' },
     volume:   { emoji: '🏋️', name: 'Volume',    desc: 'Most total kg lifted', subtitle: '30-day volume challenge', color: '#fb923c', howStep2: 'Track your <strong style="color: #4ade80;">lifting volume</strong> for 30 days.', howStep3: 'Most <strong style="color: #fb923c;">total kg lifted</strong> wins.' },
-    calories: { emoji: '🍎', name: 'Calories',  desc: 'Most days hitting calorie goal', subtitle: '30-day calorie challenge', color: '#4ade80', howStep2: 'Hit your <strong style="color: #4ade80;">calorie goals</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #4ade80;">days hitting goal</strong> wins.' },
+    calories: { emoji: '🍎', name: 'Calories',  desc: 'Most meals tracked with photo', subtitle: '30-day nutrition battle', color: '#4ade80', howStep2: 'Track your <strong style="color: #4ade80;">meals with photos</strong> consistently.', howStep3: 'Every <strong style="color: #4ade80;">verified meal</strong> = 1 point.' },
     steps:    { emoji: '👟', name: 'Steps',     desc: 'Most total steps', subtitle: '30-day step challenge', color: '#3b82f6', howStep2: 'Track your <strong style="color: #4ade80;">steps</strong> every day for 30 days.', howStep3: 'Most <strong style="color: #3b82f6;">total steps</strong> wins.' },
     sleep:    { emoji: '🌙', name: 'Sleep',     desc: 'Most minutes of deep sleep', subtitle: '30-day sleep challenge', color: '#a855f7', howStep2: 'Track your <strong style="color: #4ade80;">sleep</strong> every night for 30 days.', howStep3: 'Most <strong style="color: #a855f7;">minutes of sleep</strong> wins.' },
     water:    { emoji: '💧', name: 'Hydration', desc: 'Most days hitting water goal', subtitle: '30-day water challenge', color: '#0ea5e9', howStep2: 'Log your <strong style="color: #4ade80;">water intake</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #0ea5e9;">days hitting goal</strong> wins.' },
@@ -5000,6 +5011,11 @@ function closeDirectMessageModal() {
 
 // Open coach chat modal
 function openCoachChatModal() {
+    // Clear coach unread status when opening
+    if (window._coachUserId && typeof clearUnreadSender === 'function') {
+        clearUnreadSender(window._coachUserId);
+    }
+
     const modal = document.getElementById('coach-chat-modal');
     if (modal) {
         modal.style.display = 'flex';
